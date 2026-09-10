@@ -310,101 +310,108 @@ export function FocusModeModal() {
       )}
 
       {/* Bottom Controls: Ambient Sound Player */}
-      <div className="relative z-10 flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-slate-900">
+      <div className="relative z-10 flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-white/[0.08]">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-semibold text-slate-400 mr-2 flex items-center gap-1.5">
+          <span className="text-xs font-semibold text-neutral-400 mr-1 flex items-center gap-1.5">
             <Music className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Atmosphere:</span>
+            <span className="tracking-tight">Atmosphere:</span>
           </span>
 
           <button
             onClick={() => handleAmbientChange('none')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all duration-150 active:scale-95 cursor-pointer ${
               ambientSound === 'none'
-                ? 'bg-slate-800 text-white border border-slate-700'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-white/[0.12] text-white border border-white/25 shadow-sm shadow-white/5'
+                : 'bg-white/[0.03] hover:bg-white/[0.08] text-neutral-400 hover:text-white border border-white/[0.06] hover:border-white/[0.12]'
             }`}
           >
-            Silent
+            {ambientSound === 'none' && <span className="w-1.5 h-1.5 rounded-full bg-neutral-300" />}
+            <span>Silent</span>
           </button>
 
           <button
             onClick={() => handleAmbientChange('whitenoise')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
+            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all duration-150 active:scale-95 cursor-pointer ${
               ambientSound === 'whitenoise'
-                ? 'bg-teal-500/20 text-teal-300 border border-teal-500/40 shadow-sm'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-teal-500/15 text-teal-200 border border-teal-500/40 shadow-sm shadow-teal-500/20'
+                : 'bg-white/[0.03] hover:bg-white/[0.08] text-neutral-400 hover:text-white border border-white/[0.06] hover:border-white/[0.12]'
             }`}
           >
-            <Radio className="w-3.5 h-3.5 text-teal-300" />
+            <Radio className="w-3.5 h-3.5 text-teal-400" />
             <span>White Noise</span>
+            {ambientSound === 'whitenoise' && <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse" />}
           </button>
 
           <button
             onClick={() => handleAmbientChange('brownnoise')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
+            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all duration-150 active:scale-95 cursor-pointer ${
               ambientSound === 'brownnoise'
-                ? 'bg-amber-600/25 text-amber-200 border border-amber-600/40 shadow-sm'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-amber-600/20 text-amber-200 border border-amber-600/40 shadow-sm shadow-amber-500/20'
+                : 'bg-white/[0.03] hover:bg-white/[0.08] text-neutral-400 hover:text-white border border-white/[0.06] hover:border-white/[0.12]'
             }`}
           >
-            <Headphones className="w-3.5 h-3.5 text-amber-300" />
+            <Headphones className="w-3.5 h-3.5 text-amber-400" />
             <span>Brown Noise</span>
+            {ambientSound === 'brownnoise' && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />}
           </button>
 
           <button
             onClick={() => handleAmbientChange('rain')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
+            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all duration-150 active:scale-95 cursor-pointer ${
               ambientSound === 'rain'
-                ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40 shadow-sm'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-blue-500/15 text-blue-200 border border-blue-500/40 shadow-sm shadow-blue-500/20'
+                : 'bg-white/[0.03] hover:bg-white/[0.08] text-neutral-400 hover:text-white border border-white/[0.06] hover:border-white/[0.12]'
             }`}
           >
-            <CloudRain className="w-3.5 h-3.5" />
+            <CloudRain className="w-3.5 h-3.5 text-blue-400" />
             <span>Rain</span>
+            {ambientSound === 'rain' && <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />}
           </button>
 
           <button
             onClick={() => handleAmbientChange('lofi')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
+            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all duration-150 active:scale-95 cursor-pointer ${
               ambientSound === 'lofi'
-                ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40 shadow-sm'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-purple-500/15 text-purple-200 border border-purple-500/40 shadow-sm shadow-purple-500/20'
+                : 'bg-white/[0.03] hover:bg-white/[0.08] text-neutral-400 hover:text-white border border-white/[0.06] hover:border-white/[0.12]'
             }`}
           >
-            <Sparkles className="w-3.5 h-3.5" />
+            <Sparkles className="w-3.5 h-3.5 text-purple-400" />
             <span>Lofi Cafe</span>
+            {ambientSound === 'lofi' && <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />}
           </button>
 
           <button
             onClick={() => handleAmbientChange('campfire')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
+            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all duration-150 active:scale-95 cursor-pointer ${
               ambientSound === 'campfire'
-                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-orange-500/15 text-orange-200 border border-orange-500/40 shadow-sm shadow-orange-500/20'
+                : 'bg-white/[0.03] hover:bg-white/[0.08] text-neutral-400 hover:text-white border border-white/[0.06] hover:border-white/[0.12]'
             }`}
           >
-            <Flame className="w-3.5 h-3.5 text-amber-400" />
+            <Flame className="w-3.5 h-3.5 text-orange-400" />
             <span>Fireplace</span>
+            {ambientSound === 'campfire' && <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />}
           </button>
 
           <button
             onClick={() => handleAmbientChange('waves')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
+            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all duration-150 active:scale-95 cursor-pointer ${
               ambientSound === 'waves'
-                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-cyan-500/15 text-cyan-200 border border-cyan-500/40 shadow-sm shadow-cyan-500/20'
+                : 'bg-white/[0.03] hover:bg-white/[0.08] text-neutral-400 hover:text-white border border-white/[0.06] hover:border-white/[0.12]'
             }`}
           >
-            <Waves className="w-3.5 h-3.5" />
+            <Waves className="w-3.5 h-3.5 text-cyan-400" />
             <span>Waves</span>
+            {ambientSound === 'waves' && <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />}
           </button>
         </div>
 
         {/* Volume Slider if sound active */}
         {ambientSound !== 'none' && (
-          <div className="flex items-center gap-2">
-            <Volume2 className="w-4 h-4 text-slate-400" />
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.06]">
+            <Volume2 className="w-4 h-4 text-neutral-400" />
             <input
               type="range"
               min="0"
@@ -412,7 +419,7 @@ export function FocusModeModal() {
               step="0.05"
               value={ambientVolume}
               onChange={e => handleVolumeChange(parseFloat(e.target.value))}
-              className="w-24 accent-emerald-500 bg-slate-800 cursor-pointer"
+              className="w-24 accent-emerald-400 bg-white/10 rounded-lg cursor-pointer"
             />
           </div>
         )}

@@ -84,28 +84,28 @@ export function StudyTimer() {
       />
 
       {/* Main Timer Glass Card */}
-      <div className="relative rounded-3xl bg-slate-900/80 border border-slate-800/80 backdrop-blur-xl p-6 sm:p-10 shadow-2xl overflow-hidden">
+      <div className="relative rounded-3xl bg-neutral-900/50 border border-white/[0.08] backdrop-blur-2xl p-6 sm:p-10 shadow-2xl overflow-hidden">
         {/* Glow ambient background */}
         <div
-          className="absolute -top-24 -right-24 w-72 h-72 rounded-full blur-[100px] opacity-25 pointer-events-none transition-all duration-700"
+          className="absolute -top-24 -right-24 w-72 h-72 rounded-full blur-[100px] opacity-20 pointer-events-none transition-all duration-700"
           style={{ backgroundColor: subjectColor }}
         />
         <div
-          className="absolute -bottom-24 -left-24 w-72 h-72 rounded-full blur-[100px] opacity-15 pointer-events-none transition-all duration-700"
+          className="absolute -bottom-24 -left-24 w-72 h-72 rounded-full blur-[100px] opacity-10 pointer-events-none transition-all duration-700"
           style={{ backgroundColor: subjectColor }}
         />
 
         {/* Top Controls: Mode Switcher & Focus Mode Button */}
-        <div className="flex flex-wrap items-center justify-between gap-4 relative z-10 pb-6 border-b border-slate-800/80">
+        <div className="flex flex-wrap items-center justify-between gap-4 relative z-10 pb-6 border-b border-white/[0.08]">
           {/* Mode Pill Toggle */}
-          <div className="flex items-center gap-1 p-1 rounded-2xl bg-slate-950/80 border border-slate-800">
+          <div className="flex items-center gap-1 p-1 rounded-2xl bg-black/60 border border-white/[0.08]">
             <button
               onClick={() => { if (!isStudying) setTimerMode('stopwatch'); }}
               disabled={isStudying}
-              className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 ${
                 timerMode === 'stopwatch'
                   ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
-                  : 'text-slate-400 hover:text-white'
+                  : 'text-neutral-400 hover:text-white'
               } disabled:cursor-not-allowed`}
             >
               Stopwatch
@@ -113,10 +113,10 @@ export function StudyTimer() {
             <button
               onClick={() => { if (!isStudying) setTimerMode('pomodoro'); }}
               disabled={isStudying}
-              className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 ${
                 timerMode === 'pomodoro'
                   ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
-                  : 'text-slate-400 hover:text-white'
+                  : 'text-neutral-400 hover:text-white'
               } disabled:cursor-not-allowed`}
             >
               Pomodoro (25/5)
@@ -126,7 +126,7 @@ export function StudyTimer() {
           {/* Fullscreen Focus Mode Quick Trigger */}
           <button
             onClick={() => setIsFocusModeOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-750 border border-slate-700 text-slate-200 text-xs font-semibold transition-all hover:border-emerald-500/50 shadow-sm"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] text-slate-200 text-xs font-semibold transition-all hover:border-emerald-500/40 shadow-sm active:scale-95 cursor-pointer"
           >
             <Maximize2 className="w-4 h-4 text-emerald-400" />
             <span>Fullscreen Focus Mode</span>
@@ -255,7 +255,7 @@ export function StudyTimer() {
 
                 {/* Big Digital Numbers */}
                 <div
-                  className="font-mono text-4xl sm:text-5xl md:text-6xl font-black tracking-tight text-white drop-shadow-md"
+                  className="font-mono text-4xl sm:text-5xl md:text-6xl font-black tracking-tight text-white drop-shadow-md tabular-nums select-none"
                   style={{ fontVariantNumeric: 'tabular-nums' }}
                 >
                   {displayTime}
@@ -281,7 +281,7 @@ export function StudyTimer() {
             {!isStudying ? (
               <button
                 onClick={() => startTimer()}
-                className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black text-sm transition-all shadow-xl shadow-emerald-500/25 flex items-center gap-2.5 scale-100 hover:scale-105"
+                className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black text-sm transition-all shadow-xl shadow-emerald-500/25 flex items-center gap-2.5 active:scale-95 hover:scale-[1.02] cursor-pointer"
               >
                 <Play className="w-5 h-5 fill-current" />
                 <span>Start Studying</span>
@@ -291,7 +291,7 @@ export function StudyTimer() {
                 {isPaused ? (
                   <button
                     onClick={resumeTimer}
-                    className="px-6 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm transition-all shadow-lg shadow-emerald-500/25 flex items-center gap-2"
+                    className="px-6 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm transition-all shadow-lg shadow-emerald-500/25 flex items-center gap-2 active:scale-95 cursor-pointer"
                   >
                     <Play className="w-4 h-4 fill-current" />
                     <span>Resume</span>
@@ -299,7 +299,7 @@ export function StudyTimer() {
                 ) : (
                   <button
                     onClick={pauseTimer}
-                    className="px-6 py-3 rounded-2xl bg-slate-800 hover:bg-slate-750 text-amber-300 font-bold text-sm border border-amber-500/30 transition-all flex items-center gap-2"
+                    className="px-6 py-3 rounded-2xl bg-neutral-900 hover:bg-neutral-800 text-amber-300 font-bold text-sm border border-amber-500/30 transition-all flex items-center gap-2 active:scale-95 cursor-pointer"
                   >
                     <Pause className="w-4 h-4" />
                     <span>Pause</span>
@@ -308,7 +308,7 @@ export function StudyTimer() {
 
                 <button
                   onClick={() => stopTimer()}
-                  className="px-6 py-3 rounded-2xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 font-bold text-sm transition-all flex items-center gap-2"
+                  className="px-6 py-3 rounded-2xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 font-bold text-sm transition-all flex items-center gap-2 active:scale-95 cursor-pointer"
                   title="Stop and save session"
                 >
                   <Square className="w-4 h-4 fill-current" />
@@ -317,7 +317,7 @@ export function StudyTimer() {
 
                 <button
                   onClick={resetTimer}
-                  className="p-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+                  className="p-3 rounded-2xl bg-neutral-900 hover:bg-neutral-800 border border-white/[0.08] text-neutral-400 hover:text-white transition-colors active:scale-95 cursor-pointer"
                   title="Reset Timer"
                 >
                   <RotateCcw className="w-4 h-4" />

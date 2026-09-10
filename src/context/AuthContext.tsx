@@ -25,6 +25,7 @@ interface AuthContextType {
   updateProfile: (updates: Partial<UserProfile>) => void;
   logout: () => void;
   resetAllData: () => void;
+  deleteAccount: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -440,6 +441,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsAuthenticated(false);
   };
 
+  const deleteAccount = async () => {
+    setIsLoading(true);
+    const supabase = getSupabase();
+    if (supabase && user.id) {
+      try {
+        await supabase.from('study_sessions').delete().eq('user_id', user.id);
+        await supabase.from('todos').delete().eq('user_id', user.id);
+        await supabase.from('subjects').delete().eq('user_id', user.id);
+        await supabase.from('room_presence').delete().eq('user_id', user.id);
+        await supabase.from('profiles').delete().eq('id', user.id);
+        await supabase.auth.signOut();
+      } catch {
+        // ignore
+      }
+    }
+
+    try {
+      localStorage.removeItem('studypulse_active_user');
+      localStorage.removeItem('studypulse_is_authenticated');
+      localStorage.removeItem('studypulse_sessions');
+      localStorage.removeItem('studypulse_todos');
+      localStorage.removeItem('studypulse_subjects');
+      localStorage.removeItem('studypulse_selected_subject');
+      localStorage.removeItem('studypulse_custom_rooms');
+      const accounts = getStoredAccounts();
+      if (user.email && accounts[user.email.toLowerCase()]) {
+        delete accounts[user.email.toLowerCase()];
+        localStorage.setItem('studyio_registered_accounts', JSON.stringify(accounts));
+      }
+    } catch {
+      // ignore
+    }
+
+    saveUser(INITIAL_USER);
+    setIsAuthenticated(false);
+    setIsLoading(false);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -453,6 +492,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         updateProfile,
         logout,
         resetAllData,
+        deleteAccount,
       }}
     >
       {children}

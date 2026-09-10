@@ -16,7 +16,6 @@ import {
   Flame,
   User,
   Radio,
-  RotateCcw,
   LogIn,
   LogOut,
 } from 'lucide-react';
@@ -38,7 +37,7 @@ export function Navbar({
   onOpenProfile,
   onOpenSettings,
 }: NavbarProps) {
-  const { user, resetAllData, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
   const { isStudying, getTodayTotalSeconds, setIsFocusModeOpen } = useStudy();
   const { currentRoom, activeStudierCount } = useRoom();
 
@@ -47,7 +46,7 @@ export function Navbar({
   const todayTotal = getTodayTotalSeconds();
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-xl">
+    <header className="sticky top-0 z-40 w-full border-b border-white/[0.08] bg-[#090A0C]/85 backdrop-blur-xl">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
         {/* Logo & Brand */}
         <div className="flex items-center gap-6">
@@ -136,11 +135,11 @@ export function Navbar({
             /* Streak badge when authenticated */
             <div
               onClick={onOpenProfile}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900/80 border border-slate-800 hover:border-amber-500/40 text-amber-400 cursor-pointer transition-colors shadow-sm"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-neutral-900/60 border border-white/[0.08] hover:border-amber-500/40 text-amber-400 cursor-pointer transition-colors shadow-sm active:scale-95"
               title={`${user.streakDays} Day Study Streak`}
             >
               <Flame className="w-4 h-4 fill-amber-400" />
-              <span className="text-xs font-black font-mono">{user.streakDays}d</span>
+              <span className="text-xs font-black font-mono tabular-nums">{user.streakDays}d</span>
             </div>
           )}
 
@@ -226,7 +225,7 @@ export function Navbar({
                     className="w-full text-left px-2 py-1.5 rounded-lg text-xs font-medium text-slate-200 hover:bg-slate-800 hover:text-white transition-colors flex items-center gap-2"
                   >
                     <Settings className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Settings & Cloud Sync</span>
+                    <span>Settings & Preferences</span>
                   </button>
 
                   {isAuthenticated && (
@@ -238,21 +237,6 @@ export function Navbar({
                       <span>Sign Out</span>
                     </button>
                   )}
-                </div>
-
-                <div className="pt-1 border-t border-slate-800 mt-1">
-                  <button
-                    onClick={() => {
-                      if (confirm('Reset all study sessions, tasks, and start completely fresh?')) {
-                        resetAllData();
-                      }
-                      setShowPersonaMenu(false);
-                    }}
-                    className="w-full text-left px-2 py-1.5 rounded-lg text-xs font-medium text-rose-400 hover:bg-rose-500/10 transition-colors flex items-center gap-2"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    <span>Reset to Fresh State</span>
-                  </button>
                 </div>
               </div>
             )}
