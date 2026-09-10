@@ -51,13 +51,13 @@ export function Navbar({
         {/* Logo & Brand */}
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => setActiveTab('timer')}>
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-500 via-teal-400 to-cyan-400 flex items-center justify-center text-slate-950 font-black shadow-lg shadow-emerald-500/20">
+            <div className="w-9 h-9 rounded-xl bg-[#5A6B6A]/30 border border-[#5A6B6A]/40 flex items-center justify-center text-[#9AB0AF] font-bold shadow-sm">
               ⚡
             </div>
             <div>
               <div className="text-base font-extrabold tracking-tight text-white flex items-center gap-1.5">
                 <span>study.io</span>
-                <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.2 rounded bg-[#5A6B6A]/20 text-[#8FA3A1] border border-[#5A6B6A]/30">
                   Focus
                 </span>
               </div>
@@ -135,11 +135,17 @@ export function Navbar({
             /* Streak badge when authenticated */
             <div
               onClick={onOpenProfile}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-neutral-900/60 border border-white/[0.08] hover:border-amber-500/40 text-amber-400 cursor-pointer transition-colors shadow-sm active:scale-95"
-              title={`${user.streakDays} Day Study Streak`}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-neutral-900/60 border border-white/[0.08] hover:border-[#5A6B6A]/50 text-neutral-300 cursor-pointer transition-colors shadow-sm active:scale-95"
+              title={user.streakDays > 0 ? `${user.streakDays} Day Study Streak` : 'Start your streak today'}
             >
-              <Flame className="w-4 h-4 fill-amber-400" />
-              <span className="text-xs font-black font-mono tabular-nums">{user.streakDays}d</span>
+              {user.streakDays > 0 ? (
+                <>
+                  <Flame className="w-4 h-4 text-[#8FA3A1] fill-[#5A6B6A]" />
+                  <span className="text-xs font-bold font-mono tabular-nums text-neutral-200">{user.streakDays}d</span>
+                </>
+              ) : (
+                <span className="text-xs font-medium text-[#8FA3A1]">Start your streak</span>
+              )}
             </div>
           )}
 

@@ -18,7 +18,7 @@ export const INITIAL_SUBJECTS: Subject[] = [
   {
     id: 'sub-1',
     name: 'General Focus',
-    color: '#3B82F6', // Blue
+    color: '#5A6B6A', // Muted Teal-Gray
     targetMinutesPerDay: 60,
     createdAt: new Date().toISOString(),
   },

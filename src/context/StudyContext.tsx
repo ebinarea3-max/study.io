@@ -78,7 +78,9 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     try {
       const savedSubjects = localStorage.getItem('studypulse_subjects');
       if (savedSubjects) {
-        const parsed = JSON.parse(savedSubjects);
+        const parsed = JSON.parse(savedSubjects).map((s: Subject) =>
+          s.name === 'General Focus' && (s.color === '#3B82F6' || !s.color) ? { ...s, color: '#5A6B6A' } : s
+        );
         setSubjects(parsed.length > 0 ? parsed : INITIAL_SUBJECTS);
         setSelectedSubjectId(parsed[0]?.id || INITIAL_SUBJECTS[0]?.id || '');
       }

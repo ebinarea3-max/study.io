@@ -11,7 +11,7 @@ interface SubjectManagerModalProps {
 }
 
 const COLOR_PRESETS = [
-  '#3B82F6', // Blue
+  '#5A6B6A', // Muted Teal-Gray
   '#10B981', // Emerald
   '#8B5CF6', // Purple
   '#EC4899', // Pink
