@@ -175,6 +175,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+
   // Sign Up: Requires valid email, min 6 char password
   const signUpWithEmail = async (email: string, pass: string, name?: string) => {
     setIsLoading(true);
@@ -201,10 +202,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (error) {
           setIsLoading(false);
-          throw new Error(error.message);
+          throw new Error(formatAuthError(error));
         }
 
         if (data?.user) {
+          // Explicitly save name into profiles table
+          try {
+            await supabase.from('profiles').upsert({
+              id: data.user.id,
+              name: name?.trim() || normalizedEmail.split('@')[0],
+              avatar_url: null,
+            });
+          } catch {
+            // ignore
+          }
+
           await syncSupabaseProfile(supabase, data.user);
           setIsAuthenticated(true);
           try { localStorage.setItem('studypulse_is_authenticated', 'true'); } catch {}
@@ -213,8 +225,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       } catch (err: unknown) {
         setIsLoading(false);
-        const message = err instanceof Error ? err.message : 'Registration failed';
-        throw new Error(message);
+        throw new Error(formatAuthError(err));
       }
     }
 
@@ -456,3 +467,33 @@ export function useAuth() {
   }
   return context;
 }
+
+export function formatAuthError(err: unknown): string {
+  if (!err) return 'Authentication failed. Please try again.';
+  const raw = err instanceof Error ? err.message : String(err);
+  const msg = raw.toLowerCase();
+
+  if (msg.includes('invalid login credentials') || msg.includes('invalid_grant') || msg.includes('invalid credentials')) {
+    return 'Invalid email or password. Please check your credentials and try again.';
+  }
+  if (msg.includes('user already registered') || msg.includes('already been registered') || msg.includes('already exists')) {
+    return 'An account with this email already exists. Please switch to Sign In.';
+  }
+  if (msg.includes('password should be at least') || msg.includes('weak_password')) {
+    return 'Password must be at least 6 characters long.';
+  }
+  if (msg.includes('email rate limit exceeded') || msg.includes('rate limit')) {
+    return 'Too many attempts. Please wait a few moments and try again.';
+  }
+  if (msg.includes('unable to validate email address') || msg.includes('valid email')) {
+    return 'Please enter a valid email address.';
+  }
+  if (msg.includes('signup is disabled') || msg.includes('signups not allowed')) {
+    return 'New account registrations are temporarily restricted.';
+  }
+  if (msg.includes('network') || msg.includes('failed to fetch')) {
+    return 'Unable to reach authentication server. Please check your connection.';
+  }
+  return raw || 'Authentication encountered an error. Please try again.';
+}
+
