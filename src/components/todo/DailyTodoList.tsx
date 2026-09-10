@@ -58,7 +58,7 @@ export function DailyTodoList({ onLaunchTimer }: DailyTodoListProps = {}) {
               <ListTodo className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-xl sm:text-2xl font-black text-white">Daily Checklist</h1>
+              <h1 className="text-xl sm:text-2xl font-black text-white">Todo List</h1>
               <p className="text-xs text-slate-400">Simple task list for your study day</p>
             </div>
           </div>
