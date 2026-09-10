@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStudy } from '../../context/StudyContext';
 import { useAuth } from '../../context/AuthContext';
 import { SubjectManagerModal } from './SubjectManagerModal';
@@ -17,7 +17,14 @@ import {
   Clock,
   Sparkles,
   ChevronDown,
+  MessageCircle,
 } from 'lucide-react';
+
+const EMPTY_STATE_QUOTES = [
+  'Every long streak starts with one session.',
+  'Future you will thank you for starting now.',
+  "Small steps. Press Start whenever you're ready.",
+];
 
 export function StudyTimer() {
   const { user } = useAuth();
@@ -47,6 +54,11 @@ export function StudyTimer() {
 
   const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [randomQuoteIndex, setRandomQuoteIndex] = useState(0);
+
+  useEffect(() => {
+    setRandomQuoteIndex(Math.floor(Math.random() * EMPTY_STATE_QUOTES.length));
+  }, []);
 
   // Time calculations
   let displayTime = formatSeconds(elapsedSeconds);
@@ -91,6 +103,51 @@ export function StudyTimer() {
   const recentSessions = [...sessions]
     .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
     .slice(0, 4);
+
+  // Dynamic Motivation & Boost Messaging
+  const streak = user?.streakDays || 0;
+  let primaryBoostMessage = '';
+  let secondaryBoostMessage = '';
+
+  // 1. Streak-based evaluation
+  if (streak >= 30) {
+    primaryBoostMessage = "🔥 30-day streak! You've basically made this a lifestyle.";
+  } else if (streak >= 14) {
+    primaryBoostMessage = "🔥 Two weeks strong — this is becoming a habit now.";
+  } else if (streak >= 7) {
+    primaryBoostMessage = "🔥 7-day streak! Consistency is compounding.";
+  } else if (streak >= 3) {
+    primaryBoostMessage = `🔥 You're on a ${streak}-day streak — don't break the chain.`;
+  } else if (streak === 2) {
+    primaryBoostMessage = "🔥 You're on a 2-day streak — don't break the chain.";
+  } else if (streak === 1) {
+    primaryBoostMessage = "🔥 Day 1 logged. Come back tomorrow to start a streak.";
+  }
+
+  // 2. Session-length based evaluation
+  let sessionMessage = '';
+  if (todayTotalSeconds >= 4 * 3600) {
+    sessionMessage = "4+ hours today. Seriously — consider a break.";
+  } else if (todayTotalSeconds >= 2 * 3600) {
+    sessionMessage = "2 hours of deep focus already. Great pace.";
+  } else if (todayTotalSeconds >= 25 * 60) {
+    sessionMessage = "Nice, you completed a full focus block today.";
+  }
+
+  // Priority & secondary combining logic
+  if (primaryBoostMessage) {
+    if (sessionMessage) {
+      secondaryBoostMessage = sessionMessage;
+    }
+  } else if (sessionMessage) {
+    primaryBoostMessage = sessionMessage;
+  } else if (streak === 0 && todayTotalSeconds === 0 && todaySessionsCount === 0) {
+    // 3. Empty state (streak 0 AND totalFocusToday 0 AND sessions 0)
+    primaryBoostMessage = EMPTY_STATE_QUOTES[randomQuoteIndex];
+  } else {
+    // Fallback when streak === 0
+    primaryBoostMessage = "No pressure — just hit Start and your streak begins.";
+  }
 
   return (
     <div className="w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -503,6 +560,25 @@ export function StudyTimer() {
               })}
             </div>
           )}
+        </div>
+
+        {/* Today's Boost / Motivation Card */}
+        <div className="rounded-3xl bg-neutral-900/50 border border-white/[0.08] backdrop-blur-xl p-5 shadow-xl space-y-3">
+          <div className="flex items-center gap-2 pb-2.5 border-b border-white/[0.08]">
+            <MessageCircle className="w-4 h-4 text-[#8FA3A1]" />
+            <span className="text-xs font-bold text-white tracking-tight uppercase">Today's Boost</span>
+          </div>
+
+          <div className="min-h-[40px] flex flex-col justify-center">
+            <p className="text-[15px] font-medium text-neutral-300 leading-snug">
+              {primaryBoostMessage}
+            </p>
+            {secondaryBoostMessage && (
+              <p className="text-xs text-neutral-400 mt-1 leading-normal">
+                {secondaryBoostMessage}
+              </p>
+            )}
+          </div>
         </div>
       </div>
     </div>
