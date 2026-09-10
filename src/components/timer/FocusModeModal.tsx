@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useStudy } from '../../context/StudyContext';
 import { useAuth } from '../../context/AuthContext';
 import { formatSeconds } from '../../lib/utils';
-import { soundFx } from '../../lib/audio';
+import { soundFx, AmbientSoundType } from '../../lib/audio';
 import {
   Minimize2,
   Play,
@@ -19,6 +19,8 @@ import {
   Waves,
   Sparkles,
   Edit3,
+  Radio,
+  Headphones,
 } from 'lucide-react';
 
 const MOTIVATIONAL_QUOTES = [
@@ -51,7 +53,7 @@ export function FocusModeModal() {
     setCurrentNotes,
   } = useStudy();
 
-  const [ambientSound, setAmbientSound] = useState<'none' | 'rain' | 'lofi' | 'campfire' | 'waves' | 'whitenoise'>('none');
+  const [ambientSound, setAmbientSound] = useState<AmbientSoundType | 'none'>('none');
   const [ambientVolume, setAmbientVolume] = useState(0.5);
   const [quoteIndex, setQuoteIndex] = useState(0);
   const [showNotes, setShowNotes] = useState(false);
@@ -64,16 +66,36 @@ export function FocusModeModal() {
     return () => clearInterval(interval);
   }, []);
 
-  // Ambient sound management
+  // Ambient sound management and unmount safety
   useEffect(() => {
     if (!isFocusModeOpen) {
       soundFx.stopAmbient();
       setAmbientSound('none');
       return;
     }
+
+    return () => {
+      soundFx.stopAmbient();
+      setAmbientSound('none');
+    };
   }, [isFocusModeOpen]);
 
-  const handleAmbientChange = (type: 'none' | 'rain' | 'lofi' | 'campfire' | 'waves' | 'whitenoise') => {
+  // Clean unmount safety
+  useEffect(() => {
+    return () => {
+      soundFx.stopAmbient();
+    };
+  }, []);
+
+  // When study session completes or stops
+  useEffect(() => {
+    if (!isStudying && ambientSound !== 'none') {
+      soundFx.stopAmbient();
+      setAmbientSound('none');
+    }
+  }, [isStudying, ambientSound]);
+
+  const handleAmbientChange = (type: AmbientSoundType | 'none') => {
     setAmbientSound(type);
     if (type === 'none') {
       soundFx.stopAmbient();
@@ -145,8 +167,12 @@ export function FocusModeModal() {
 
           {/* Exit Focus Mode */}
           <button
-            onClick={() => setIsFocusModeOpen(false)}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white text-xs font-semibold transition-all"
+            onClick={() => {
+              soundFx.stopAmbient();
+              setAmbientSound('none');
+              setIsFocusModeOpen(false);
+            }}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white text-xs font-semibold transition-all cursor-pointer"
           >
             <Minimize2 className="w-4 h-4" />
             <span>Exit Fullscreen</span>
@@ -244,8 +270,12 @@ export function FocusModeModal() {
               )}
 
               <button
-                onClick={() => stopTimer()}
-                className="px-6 py-3 rounded-2xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 font-bold text-sm transition-all flex items-center gap-2"
+                onClick={() => {
+                  soundFx.stopAmbient();
+                  setAmbientSound('none');
+                  stopTimer();
+                }}
+                className="px-6 py-3 rounded-2xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 font-bold text-sm transition-all flex items-center gap-2 cursor-pointer"
               >
                 <Square className="w-4 h-4 fill-current" />
                 <span>Save & Finish</span>
@@ -281,7 +311,7 @@ export function FocusModeModal() {
 
       {/* Bottom Controls: Ambient Sound Player */}
       <div className="relative z-10 flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-slate-900">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs font-semibold text-slate-400 mr-2 flex items-center gap-1.5">
             <Music className="w-3.5 h-3.5 text-emerald-400" />
             <span>Atmosphere:</span>
@@ -289,7 +319,7 @@ export function FocusModeModal() {
 
           <button
             onClick={() => handleAmbientChange('none')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
               ambientSound === 'none'
                 ? 'bg-slate-800 text-white border border-slate-700'
                 : 'text-slate-400 hover:text-white'
@@ -299,8 +329,32 @@ export function FocusModeModal() {
           </button>
 
           <button
+            onClick={() => handleAmbientChange('whitenoise')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
+              ambientSound === 'whitenoise'
+                ? 'bg-teal-500/20 text-teal-300 border border-teal-500/40 shadow-sm'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <Radio className="w-3.5 h-3.5 text-teal-300" />
+            <span>White Noise</span>
+          </button>
+
+          <button
+            onClick={() => handleAmbientChange('brownnoise')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
+              ambientSound === 'brownnoise'
+                ? 'bg-amber-600/25 text-amber-200 border border-amber-600/40 shadow-sm'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <Headphones className="w-3.5 h-3.5 text-amber-300" />
+            <span>Brown Noise</span>
+          </button>
+
+          <button
             onClick={() => handleAmbientChange('rain')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
               ambientSound === 'rain'
                 ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40 shadow-sm'
                 : 'text-slate-400 hover:text-white'
@@ -312,7 +366,7 @@ export function FocusModeModal() {
 
           <button
             onClick={() => handleAmbientChange('lofi')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
               ambientSound === 'lofi'
                 ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40 shadow-sm'
                 : 'text-slate-400 hover:text-white'
@@ -324,7 +378,7 @@ export function FocusModeModal() {
 
           <button
             onClick={() => handleAmbientChange('campfire')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
               ambientSound === 'campfire'
                 ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm'
                 : 'text-slate-400 hover:text-white'
@@ -336,7 +390,7 @@ export function FocusModeModal() {
 
           <button
             onClick={() => handleAmbientChange('waves')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
               ambientSound === 'waves'
                 ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
                 : 'text-slate-400 hover:text-white'
