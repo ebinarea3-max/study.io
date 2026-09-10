@@ -41,6 +41,8 @@ interface StudyContextType {
   addTodo: (todo: Omit<TodoItem, 'id' | 'userId' | 'createdAt'>) => void;
   toggleTodo: (id: string) => void;
   deleteTodo: (id: string) => void;
+  updateTodoTitle: (id: string, title: string) => void;
+  clearCompletedTodos: () => void;
   getTodayTotalSeconds: () => number;
 }
 
@@ -466,7 +468,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
   // To-Dos Management
   const addTodo = (newTodo: Omit<TodoItem, 'id' | 'userId' | 'createdAt'>) => {
-    const tempId = `todo-${Date.now()}`;
+    const tempId = `todo-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
     const targetSub = subjects.find(s => s.id === newTodo.subjectId);
     const item: TodoItem = {
       ...newTodo,
@@ -476,7 +478,14 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       subjectColor: targetSub?.color,
       createdAt: new Date().toISOString(),
     };
-    saveTodos([item, ...todos]);
+
+    setTodos(prev => {
+      const updated = [item, ...prev];
+      try {
+        localStorage.setItem('studypulse_todos', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
 
     const supabase = getSupabase();
     if (supabase && user.id && !user.id.startsWith('user-scholar-')) {
@@ -494,47 +503,126 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         })
         .select()
         .single()
-        .then(({ data }) => {
-          if (data) {
-            setTodos(prev => prev.map(t => t.id === tempId ? { ...t, id: data.id } : t));
+        .then(
+          ({ data }) => {
+            if (data) {
+              setTodos(prev => {
+                const updated = prev.map(t => (t.id === tempId ? { ...t, id: data.id } : t));
+                try {
+                  localStorage.setItem('studypulse_todos', JSON.stringify(updated));
+                } catch {}
+                return updated;
+              });
+            }
+          },
+          (err: unknown) => {
+            console.warn('Supabase todo insert error:', err);
           }
-        });
+        );
     }
   };
 
   const toggleTodo = (id: string) => {
-    const target = todos.find(t => t.id === id);
-    if (!target) return;
-    const nextCompleted = !target.completed;
-    if (nextCompleted) {
-      soundFx.playReactionPop();
-    }
-
-    const updated = todos.map(t => {
-      if (t.id === id) {
-        return {
-          ...t,
-          completed: nextCompleted,
-          completedAt: nextCompleted ? new Date().toISOString() : undefined,
-        };
+    let nextCompleted = false;
+    setTodos(prev => {
+      const target = prev.find(t => t.id === id);
+      if (!target) return prev;
+      nextCompleted = !target.completed;
+      if (nextCompleted) {
+        soundFx.playReactionPop();
       }
-      return t;
+
+      const updated = prev.map(t => {
+        if (t.id === id) {
+          return {
+            ...t,
+            completed: nextCompleted,
+            completedAt: nextCompleted ? new Date().toISOString() : undefined,
+          };
+        }
+        return t;
+      });
+      try {
+        localStorage.setItem('studypulse_todos', JSON.stringify(updated));
+      } catch {}
+      return updated;
     });
-    saveTodos(updated);
 
     const supabase = getSupabase();
     if (supabase && id.length === 36) {
-      supabase.from('todos').update({ is_completed: nextCompleted }).eq('id', id).then();
+      supabase
+        .from('todos')
+        .update({ is_completed: nextCompleted })
+        .eq('id', id)
+        .then(
+          () => {},
+          (err: unknown) => console.warn('Supabase todo update error:', err)
+        );
     }
   };
 
   const deleteTodo = (id: string) => {
-    const filtered = todos.filter(t => t.id !== id);
-    saveTodos(filtered);
+    setTodos(prev => {
+      const filtered = prev.filter(t => t.id !== id);
+      try {
+        localStorage.setItem('studypulse_todos', JSON.stringify(filtered));
+      } catch {}
+      return filtered;
+    });
 
     const supabase = getSupabase();
     if (supabase && id.length === 36) {
-      supabase.from('todos').delete().eq('id', id).then();
+      supabase
+        .from('todos')
+        .delete()
+        .eq('id', id)
+        .then(
+          () => {},
+          (err: unknown) => console.warn('Supabase todo delete error:', err)
+        );
+    }
+  };
+
+  const updateTodoTitle = (id: string, title: string) => {
+    setTodos(prev => {
+      const updated = prev.map(t => (t.id === id ? { ...t, title } : t));
+      try {
+        localStorage.setItem('studypulse_todos', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+
+    const supabase = getSupabase();
+    if (supabase && id.length === 36) {
+      supabase
+        .from('todos')
+        .update({ task: title })
+        .eq('id', id)
+        .then(
+          () => {},
+          (err: unknown) => console.warn('Supabase todo update error:', err)
+        );
+    }
+  };
+
+  const clearCompletedTodos = () => {
+    let completedIds: string[] = [];
+    setTodos(prev => {
+      completedIds = prev.filter(t => t.completed).map(t => t.id);
+      const active = prev.filter(t => !t.completed);
+      try {
+        localStorage.setItem('studypulse_todos', JSON.stringify(active));
+      } catch {}
+      return active;
+    });
+
+    const supabase = getSupabase();
+    if (supabase) {
+      completedIds.forEach(id => {
+        if (id.length === 36) {
+          supabase.from('todos').delete().eq('id', id).then(() => {}, () => {});
+        }
+      });
     }
   };
 
@@ -582,6 +670,8 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         addTodo,
         toggleTodo,
         deleteTodo,
+        updateTodoTitle,
+        clearCompletedTodos,
         getTodayTotalSeconds,
       }}
     >

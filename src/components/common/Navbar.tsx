@@ -23,8 +23,8 @@ import Image from 'next/image';
 import { UserAvatar } from './UserAvatar';
 
 interface NavbarProps {
-  activeTab: 'timer' | 'room' | 'todo' | 'analytics';
-  setActiveTab: (tab: 'timer' | 'room' | 'todo' | 'analytics') => void;
+  activeTab: 'timer' | 'room' | 'analytics';
+  setActiveTab: (tab: 'timer' | 'room' | 'analytics') => void;
   onOpenAuth: () => void;
   onOpenProfile: () => void;
   onOpenSettings: () => void;
@@ -92,18 +92,6 @@ export function Navbar({
               {activeStudierCount > 0 && (
                 <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
               )}
-            </button>
-
-            <button
-              onClick={() => setActiveTab('todo')}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                activeTab === 'todo'
-                  ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-              }`}
-            >
-              <CheckSquare className="w-3.5 h-3.5" />
-              <span>Planner</span>
             </button>
 
             <button

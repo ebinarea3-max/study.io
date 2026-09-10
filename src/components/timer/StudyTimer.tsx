@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useStudy } from '../../context/StudyContext';
 import { useAuth } from '../../context/AuthContext';
 import { SubjectManagerModal } from './SubjectManagerModal';
@@ -22,6 +22,9 @@ import {
   CheckSquare,
   CheckCircle2,
   Trash2,
+  Plus,
+  X,
+  GripVertical,
 } from 'lucide-react';
 import { soundFx } from '../../lib/audio';
 import confetti from 'canvas-confetti';
@@ -60,29 +63,40 @@ export function StudyTimer() {
     addTodo,
     toggleTodo,
     deleteTodo,
+    updateTodoTitle,
+    clearCompletedTodos,
   } = useStudy();
 
   const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [randomQuoteIndex, setRandomQuoteIndex] = useState(0);
   const [todoInput, setTodoInput] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCompletedOpen, setIsCompletedOpen] = useState(true);
+  const quickAddInputRef = useRef<HTMLInputElement>(null);
 
-  const completedTodosCount = todos.filter(t => t.completed).length;
-  const totalTodosCount = todos.length;
-  const todoProgressPercent = totalTodosCount > 0 ? Math.round((completedTodosCount / totalTodosCount) * 100) : 0;
+  const activeTodos = todos.filter(t => !t.completed);
+  const completedTodos = todos.filter(t => t.completed);
+  const todoProgressPercent = todos.length > 0 ? Math.round((completedTodos.length / todos.length) * 100) : 0;
 
-  const handleAddTodo = (e: React.FormEvent) => {
+  const handleQuickAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!todoInput.trim()) return;
+    const cleanTitle = todoInput.trim();
+    if (!cleanTitle || isSubmitting) return;
 
-    addTodo({
-      title: todoInput.trim(),
-      date: new Date().toISOString().slice(0, 10),
-      completed: false,
-      priority: 'medium',
-    });
-
-    setTodoInput('');
+    try {
+      setIsSubmitting(true);
+      addTodo({
+        title: cleanTitle,
+        date: new Date().toISOString().slice(0, 10),
+        completed: false,
+        priority: 'medium',
+      });
+      setTodoInput('');
+    } finally {
+      setIsSubmitting(false);
+      setTimeout(() => quickAddInputRef.current?.focus(), 20);
+    }
   };
 
   const handleToggleTodo = (id: string, currentlyCompleted: boolean) => {
@@ -511,20 +525,21 @@ export function StudyTimer() {
 
       {/* Right Secondary Column (Todo List, Daily Overview & Today's Boost - Home Page Sidebar) */}
       <div className="lg:col-span-4 space-y-6">
-        {/* 1. Todo List Card (Moved to the top) */}
-        <div className="rounded-3xl bg-neutral-900/50 border border-white/[0.08] backdrop-blur-xl p-5 shadow-xl space-y-3.5">
-          <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
+        {/* 1. Todo List Card - Google Notes / Keep Checklist Aesthetic */}
+        <div className="rounded-3xl bg-neutral-900/50 border border-white/[0.08] backdrop-blur-xl p-5 shadow-xl space-y-3">
+          {/* Header */}
+          <div className="flex items-center justify-between pb-2.5 border-b border-white/[0.08]">
             <div className="flex items-center gap-2">
               <CheckSquare className="w-4 h-4 text-[#8FA3A1]" />
               <span className="text-xs font-bold text-white tracking-tight uppercase">Todo List</span>
             </div>
             <span className="text-[11px] text-neutral-400 font-medium font-mono">
-              <span className="text-emerald-400 font-bold">{completedTodosCount}</span> / {totalTodosCount} completed
+              <span className="text-emerald-400 font-bold">{completedTodos.length}</span> / {todos.length} completed
             </span>
           </div>
 
-          {/* Minimal Progress Bar */}
-          {totalTodosCount > 0 && (
+          {/* Minimal Progress Bar (if items exist) */}
+          {todos.length > 0 && (
             <div className="h-1.5 w-full rounded-full bg-black/50 overflow-hidden border border-white/[0.05]">
               <div
                 className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-500 shadow-sm shadow-emerald-500/20"
@@ -533,86 +548,142 @@ export function StudyTimer() {
             </div>
           )}
 
-          {/* Simple Add Task Input */}
-          <form onSubmit={handleAddTodo} className="flex items-center gap-2">
+          {/* Clean, borderless inline input at the top: + Take a note / Add an item... */}
+          <form
+            onSubmit={handleQuickAdd}
+            className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-black/40 border border-white/[0.08] focus-within:border-[#5A6B6A] focus-within:bg-black/60 transition-all"
+          >
+            <Plus className="w-4 h-4 text-neutral-400 flex-shrink-0" />
             <input
+              ref={quickAddInputRef}
               type="text"
               value={todoInput}
               onChange={e => setTodoInput(e.target.value)}
-              placeholder="Add a new task... (press Enter)"
-              className="w-full px-3.5 py-2.5 bg-black/40 border border-white/[0.08] rounded-xl text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-[#5A6B6A] transition-colors"
+              placeholder="+ Take a note / Add an item..."
+              disabled={isSubmitting}
+              className="w-full bg-transparent text-xs text-neutral-200 placeholder-neutral-500 focus:outline-none font-sans py-0.5"
             />
+            {todoInput.trim() && (
+              <button
+                type="submit"
+                disabled={!todoInput.trim() || isSubmitting}
+                className="px-2.5 py-1 text-[11px] font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 rounded-lg transition-all flex-shrink-0 cursor-pointer disabled:opacity-50"
+              >
+                Add
+              </button>
+            )}
           </form>
 
-          {/* Todo List / Empty State */}
-          {todos.length === 0 ? (
-            <div className="py-7 text-center rounded-2xl border border-dashed border-white/[0.08] bg-black/20 px-3">
-              <CheckCircle2 className="w-8 h-8 text-neutral-600 mx-auto mb-1.5" />
-              <h3 className="text-xs font-bold text-neutral-300">Your checklist is empty</h3>
-              <p className="text-[11px] text-neutral-500 mt-1">
-                Type a task above and press Enter to add it to your daily plan.
-              </p>
-            </div>
-          ) : (
-            <div className="max-h-56 overflow-y-auto space-y-2 pr-0.5">
-              {todos.map(task => (
-                <div
-                  key={task.id}
-                  className={`group flex items-center justify-between p-2.5 rounded-xl border transition-all ${
-                    task.completed
-                      ? 'bg-black/20 border-white/[0.04] opacity-70'
-                      : 'bg-black/30 border-white/[0.06] hover:border-white/[0.1]'
-                  }`}
+          {/* Items Container */}
+          <div className="max-h-72 overflow-y-auto space-y-0.5 pr-0.5 select-none">
+            {/* Active (Uncompleted) Tasks */}
+            {activeTodos.map(task => (
+              <div
+                key={task.id}
+                className="group flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-neutral-800/40 transition-colors"
+              >
+                <GripVertical className="w-3.5 h-3.5 text-neutral-600 opacity-0 group-hover:opacity-40 transition-opacity flex-shrink-0 cursor-grab" />
+
+                {/* Google Keep Square Checkbox with smooth animation */}
+                <button
+                  type="button"
+                  onClick={() => handleToggleTodo(task.id, task.completed)}
+                  aria-label="Mark task complete"
+                  className="w-[18px] h-[18px] rounded-[4px] border-[1.5px] border-neutral-500 hover:border-emerald-400 bg-black/40 hover:bg-emerald-500/10 transition-all flex items-center justify-center flex-shrink-0 cursor-pointer group-hover:border-neutral-300 active:scale-95"
+                />
+
+                {/* Inline Editable Task Title */}
+                <input
+                  type="text"
+                  value={task.title}
+                  onChange={e => updateTodoTitle(task.id, e.target.value)}
+                  className="w-full bg-transparent text-xs text-neutral-200 focus:text-white focus:outline-none py-0.5 tracking-wide leading-relaxed font-sans"
+                />
+
+                {/* Delete button on hover */}
+                <button
+                  type="button"
+                  onClick={() => deleteTodo(task.id)}
+                  title="Delete item"
+                  className="opacity-0 group-hover:opacity-100 text-neutral-500 hover:text-rose-400 p-1 transition-opacity cursor-pointer flex-shrink-0"
                 >
-                  <div
-                    onClick={() => handleToggleTodo(task.id, task.completed)}
-                    className="flex items-center gap-2.5 flex-1 min-w-0 cursor-pointer select-none"
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))}
+
+            {/* Empty State message if 0 todos */}
+            {todos.length === 0 && (
+              <div className="py-5 text-center text-xs text-neutral-500 space-y-1">
+                <CheckCircle2 className="w-7 h-7 text-neutral-600 mx-auto mb-1 opacity-70" />
+                <p className="text-neutral-400 font-medium">Your checklist is empty</p>
+                <p className="text-[11px] text-neutral-600 mt-0.5">Type above in &quot;+ Take a note / Add an item...&quot; and press Enter</p>
+              </div>
+            )}
+
+            {/* Google Keep Completed Items Collapsible Section */}
+            {completedTodos.length > 0 && (
+              <div className="pt-2">
+                <div className="border-t border-white/[0.08] pt-2 mb-1 flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={() => setIsCompletedOpen(!isCompletedOpen)}
+                    className="flex items-center gap-1.5 text-xs font-semibold text-neutral-400 hover:text-neutral-200 transition-colors cursor-pointer select-none"
                   >
-                    <button
-                      type="button"
-                      aria-label={task.completed ? 'Mark incomplete' : 'Mark complete'}
-                      className={`w-4 h-4 rounded-md border flex items-center justify-center transition-all flex-shrink-0 ${
-                        task.completed
-                          ? 'bg-emerald-500 border-emerald-400 text-slate-950 shadow-sm'
-                          : 'border-neutral-600 hover:border-emerald-400 bg-neutral-900/80 group-hover:scale-105'
+                    <ChevronDown
+                      className={`w-3.5 h-3.5 text-neutral-400 transition-transform duration-200 ${
+                        isCompletedOpen ? '' : '-rotate-90'
                       }`}
-                    >
-                      {task.completed && <Check className="w-3 h-3 stroke-[3]" />}
-                    </button>
-                    <span
-                      className={`text-xs transition-all truncate ${
-                        task.completed ? 'line-through text-neutral-500' : 'text-neutral-200 font-medium'
-                      }`}
-                    >
-                      {task.title}
+                    />
+                    <span className="flex items-center gap-1.5">
+                      <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[2.5]" />
+                      <span>Completed items ({completedTodos.length})</span>
                     </span>
-                  </div>
+                  </button>
 
                   <button
                     type="button"
-                    onClick={() => deleteTodo(task.id)}
-                    title="Delete task"
-                    className="p-1 text-neutral-500 hover:text-rose-400 rounded-md hover:bg-rose-500/10 transition-colors ml-1.5 opacity-0 group-hover:opacity-100 cursor-pointer"
+                    onClick={clearCompletedTodos}
+                    className="text-[11px] text-neutral-500 hover:text-rose-400 transition-colors cursor-pointer"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    Clear all
                   </button>
                 </div>
-              ))}
-            </div>
-          )}
 
-          {/* Footer: Clear completed */}
-          {completedTodosCount > 0 && (
-            <div className="pt-1 flex justify-end">
-              <button
-                type="button"
-                onClick={() => todos.filter(t => t.completed).forEach(t => deleteTodo(t.id))}
-                className="text-[11px] text-neutral-500 hover:text-rose-400 transition-colors cursor-pointer"
-              >
-                Clear completed ({completedTodosCount})
-              </button>
-            </div>
-          )}
+                {isCompletedOpen && (
+                  <div className="space-y-0.5">
+                    {completedTodos.map(task => (
+                      <div
+                        key={task.id}
+                        className="group flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-neutral-800/30 transition-colors"
+                      >
+                        <div className="w-3.5 flex-shrink-0" />
+                        <button
+                          type="button"
+                          onClick={() => handleToggleTodo(task.id, task.completed)}
+                          aria-label="Mark task incomplete"
+                          className="w-[18px] h-[18px] rounded-[4px] bg-emerald-500 border border-emerald-400 text-slate-950 flex items-center justify-center transition-all flex-shrink-0 cursor-pointer shadow-sm active:scale-95"
+                        >
+                          <Check className="w-3 h-3 stroke-[3]" />
+                        </button>
+                        <span className="w-full text-xs text-neutral-500 line-through py-0.5 tracking-wide leading-relaxed truncate font-sans">
+                          {task.title}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => deleteTodo(task.id)}
+                          title="Delete item"
+                          className="opacity-0 group-hover:opacity-100 text-neutral-500 hover:text-rose-400 p-1 transition-opacity cursor-pointer flex-shrink-0"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* 2. Daily Overview (Moved below Todo List) */}

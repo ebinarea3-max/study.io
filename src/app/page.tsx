@@ -10,13 +10,12 @@ import { FloatingReactions } from '../components/common/FloatingReactions';
 import { StudyTimer } from '../components/timer/StudyTimer';
 import { FocusModeModal } from '../components/timer/FocusModeModal';
 import { StudyRoomGrid } from '../components/rooms/StudyRoomGrid';
-import { DailyTodoList } from '../components/todo/DailyTodoList';
 import { AnalyticsDashboard } from '../components/analytics/AnalyticsDashboard';
 import { IntroductionAndLogin } from '../components/common/IntroductionAndLogin';
 
 export default function Home() {
   const { isAuthenticated, isLoading } = useAuth();
-  const [activeTab, setActiveTab] = useState<'timer' | 'room' | 'todo' | 'analytics'>('timer');
+  const [activeTab, setActiveTab] = useState<'timer' | 'room' | 'analytics'>('timer');
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -63,7 +62,6 @@ export default function Home() {
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 relative z-10">
         {activeTab === 'timer' && <StudyTimer />}
         {activeTab === 'room' && <StudyRoomGrid />}
-        {activeTab === 'todo' && <DailyTodoList />}
         {activeTab === 'analytics' && <AnalyticsDashboard />}
       </main>
 
