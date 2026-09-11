@@ -10,13 +10,13 @@ interface UserAvatarProps {
 }
 
 const GRADIENT_PALETTES = [
+  'from-cyan-500 via-teal-400 to-emerald-500',
   'from-emerald-400 via-teal-500 to-cyan-500',
-  'from-blue-500 via-indigo-500 to-purple-600',
+  'from-indigo-500 via-violet-500 to-purple-600',
   'from-violet-500 via-purple-500 to-fuchsia-500',
   'from-amber-400 via-orange-500 to-rose-500',
-  'from-teal-400 via-emerald-500 to-green-600',
-  'from-rose-400 via-pink-500 to-purple-500',
-  'from-cyan-400 via-blue-500 to-indigo-600',
+  'from-teal-400 via-emerald-500 to-green-500',
+  'from-cyan-400 via-teal-500 to-emerald-600',
 ];
 
 export function getInitials(name?: string): string {

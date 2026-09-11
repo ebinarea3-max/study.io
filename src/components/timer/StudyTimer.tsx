@@ -165,7 +165,7 @@ export function StudyTimer() {
       {/* Main Left Column (Timer & Subject Goal Progress) */}
       <div className="lg:col-span-8 space-y-6">
         {/* Main Timer Glass Card */}
-        <div className="relative rounded-3xl bg-neutral-900/50 border border-white/[0.08] backdrop-blur-2xl p-6 sm:p-10 shadow-2xl overflow-hidden">
+        <div className="relative rounded-3xl bg-neutral-900/50 border border-white/[0.08] hover:border-emerald-500/25 backdrop-blur-2xl p-6 sm:p-10 shadow-2xl overflow-hidden transition-all">
           {/* Subtle Ambient Glow */}
           <div
             className="absolute -top-24 -right-24 w-72 h-72 rounded-full blur-[100px] opacity-15 pointer-events-none transition-all duration-700"
@@ -185,7 +185,7 @@ export function StudyTimer() {
                 disabled={isStudying}
                 className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer ${
                   timerMode === 'stopwatch'
-                    ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
+                    ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/30'
                     : 'text-neutral-400 hover:text-white'
                 } disabled:cursor-not-allowed`}
               >
@@ -196,7 +196,7 @@ export function StudyTimer() {
                 disabled={isStudying}
                 className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer ${
                   timerMode === 'pomodoro'
-                    ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
+                    ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/30'
                     : 'text-neutral-400 hover:text-white'
                 } disabled:cursor-not-allowed`}
               >
@@ -301,15 +301,21 @@ export function StudyTimer() {
 
           {/* Center Timer Circular Display */}
           <div className="relative z-10 flex flex-col items-center justify-center py-6">
-            <div className="relative flex items-center justify-center">
+            <div className="relative flex items-center justify-center p-2">
+              {/* Subtle Emerald Outer Halo / Gradient Rim */}
+              <div className="absolute inset-0 rounded-full bg-gradient-to-b from-emerald-500/20 via-emerald-500/5 to-transparent blur-lg pointer-events-none" />
+              <div className="absolute inset-1 sm:inset-1.5 rounded-full border border-emerald-500/25 pointer-events-none" />
+
               {/* Outer Animated Ring */}
               <div
-                className={`w-64 h-64 sm:w-80 sm:h-80 rounded-full border-4 flex items-center justify-center transition-all duration-700 ${
-                  isStudying && !isPaused ? 'shadow-2xl' : ''
+                className={`w-64 h-64 sm:w-80 sm:h-80 rounded-full border-4 flex items-center justify-center transition-all duration-700 relative z-10 ${
+                  isStudying && !isPaused ? 'shadow-2xl' : 'shadow-[0_0_35px_rgba(16,185,129,0.12)]'
                 }`}
                 style={{
-                  borderColor: `${subjectColor}40`,
-                  boxShadow: isStudying && !isPaused ? `0 0 50px ${subjectColor}25` : 'none',
+                  borderColor: isStudying ? `${subjectColor}50` : 'rgba(16, 185, 129, 0.35)',
+                  boxShadow: isStudying && !isPaused
+                    ? `0 0 50px ${subjectColor}30, 0 0 30px rgba(16, 185, 129, 0.2)`
+                    : '0 0 35px rgba(16, 185, 129, 0.12)',
                 }}
               >
                 {/* Inner Dial */}
@@ -419,7 +425,7 @@ export function StudyTimer() {
           {/* Current Session Reflection Notes Input */}
           <div className="relative z-10 mt-6 pt-6 border-t border-white/[0.08]">
             <div className="flex items-center gap-2 text-xs font-semibold text-neutral-400 mb-2">
-              <FileText className="w-3.5 h-3.5 text-[#8FA3A1]" />
+              <FileText className="w-3.5 h-3.5 text-emerald-400/80" />
               <span>Session Notes & Key Learnings (Optional)</span>
             </div>
             <input
@@ -427,7 +433,7 @@ export function StudyTimer() {
               value={currentNotes}
               onChange={e => setCurrentNotes(e.target.value)}
               placeholder="e.g. Solved problem set 3, learned dynamic programming memoization..."
-              className="w-full px-4 py-2.5 bg-black/40 border border-white/[0.08] rounded-xl text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-[#5A6B6A] transition-colors font-mono"
+              className="w-full px-4 py-2.5 bg-black/40 border border-white/[0.08] rounded-xl text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 transition-all font-mono"
             />
           </div>
         </div>
@@ -478,57 +484,67 @@ export function StudyTimer() {
         {/* 1. Todo List Card - Google Notes / Keep Checklist */}
         <DailyTodoList />
 
-        {/* 2. Daily Overview (Moved below Todo List) */}
-        <div className="rounded-3xl bg-neutral-900/50 border border-white/[0.08] backdrop-blur-xl p-5 shadow-xl space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
+        {/* 2. Daily Overview (Electric Violet / Indigo Accent) */}
+        <div className="rounded-3xl bg-neutral-900/50 border border-white/[0.08] hover:border-violet-500/30 backdrop-blur-xl p-5 shadow-xl space-y-4 transition-all relative overflow-hidden group">
+          {/* Subtle Ambient Violet Glow */}
+          <div className="absolute -top-12 -right-12 w-32 h-32 rounded-full bg-violet-600/10 blur-2xl pointer-events-none" />
+
+          <div className="flex items-center justify-between pb-3 border-b border-violet-500/15 relative z-10">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-[#8FA3A1]" />
-              <span className="text-xs font-bold text-white tracking-tight uppercase">Daily Overview</span>
+              <Sparkles className="w-4 h-4 text-violet-400" />
+              <span className="text-xs font-bold text-violet-200 tracking-tight uppercase">Daily Overview</span>
             </div>
-            <span className="text-[11px] text-neutral-400 font-medium font-mono">
+            <span className="text-[11px] text-violet-300/70 font-medium font-mono">
               {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
             </span>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="p-3 rounded-2xl bg-black/40 border border-white/[0.06] space-y-1">
-              <div className="text-[10px] uppercase font-bold tracking-wider text-neutral-400">Total Focus</div>
-              <div className="text-lg font-black text-white font-mono tabular-nums tracking-tight">
+          <div className="grid grid-cols-2 gap-3 relative z-10">
+            <div className="p-3 rounded-2xl bg-violet-950/20 border border-violet-800/30 hover:border-violet-700/40 transition-colors space-y-1">
+              <div className="text-[10px] uppercase font-bold tracking-wider text-violet-300/70">Total Focus</div>
+              <div className="text-lg font-black text-violet-100 font-mono tabular-nums tracking-tight">
                 {formatHoursAndMins(todayTotalSeconds)}
               </div>
             </div>
-            <div className="p-3 rounded-2xl bg-black/40 border border-white/[0.06] space-y-1">
-              <div className="text-[10px] uppercase font-bold tracking-wider text-neutral-400">Sessions</div>
-              <div className="text-lg font-black text-white font-mono tabular-nums tracking-tight">
+            <div className="p-3 rounded-2xl bg-violet-950/20 border border-violet-800/30 hover:border-violet-700/40 transition-colors space-y-1">
+              <div className="text-[10px] uppercase font-bold tracking-wider text-violet-300/70">Sessions</div>
+              <div className="text-lg font-black text-violet-100 font-mono tabular-nums tracking-tight">
                 {todaySessionsCount}
               </div>
             </div>
           </div>
 
-          <div className="pt-1 flex items-center justify-between text-xs text-neutral-400">
-            <span className="flex items-center gap-1.5">
-              <Flame className="w-3.5 h-3.5 text-[#8FA3A1] fill-[#5A6B6A]" />
-              <span>Streak</span>
+          <div className="pt-1 flex items-center justify-between text-xs relative z-10">
+            <span className="flex items-center gap-1.5 text-neutral-400">
+              <Flame className="w-3.5 h-3.5 text-[#f97316] fill-[#f97316]" />
+              <span className="font-medium">Streak</span>
             </span>
-            <span className="font-mono font-bold text-white tabular-nums">
-              {user.streakDays > 0 ? `${user.streakDays} days` : 'Start today'}
-            </span>
+            {user.streakDays > 0 ? (
+              <span className="px-2 py-0.5 rounded-full bg-orange-950/40 border border-orange-700/40 text-[#f97316] font-mono font-bold text-xs tabular-nums shadow-sm shadow-orange-950/30">
+                {user.streakDays} {user.streakDays === 1 ? 'day' : 'days'}
+              </span>
+            ) : (
+              <span className="font-mono font-bold text-neutral-400 tabular-nums">Start today</span>
+            )}
           </div>
         </div>
 
-        {/* 3. Today's Boost / Motivation Card (Stays last) */}
-        <div className="rounded-3xl bg-neutral-900/50 border border-white/[0.08] backdrop-blur-xl p-5 shadow-xl space-y-3">
-          <div className="flex items-center gap-2 pb-2.5 border-b border-white/[0.08]">
-            <MessageCircle className="w-4 h-4 text-[#8FA3A1]" />
-            <span className="text-xs font-bold text-white tracking-tight uppercase">Today's Boost</span>
+        {/* 3. Today's Boost / Motivation Card (Solar Amber / Warm Gold Accent) */}
+        <div className="rounded-3xl bg-amber-950/10 border border-amber-500/20 hover:border-amber-500/35 backdrop-blur-xl p-5 shadow-xl space-y-3 transition-all relative overflow-hidden group">
+          {/* Subtle Ambient Amber Glow */}
+          <div className="absolute -bottom-10 -right-10 w-32 h-32 rounded-full bg-amber-500/10 blur-2xl pointer-events-none" />
+
+          <div className="flex items-center gap-2 pb-2.5 border-b border-amber-500/15 relative z-10">
+            <MessageCircle className="w-4 h-4 text-amber-400" />
+            <span className="text-xs font-bold text-amber-300 tracking-tight uppercase">Today's Boost</span>
           </div>
 
-          <div className="min-h-[40px] flex flex-col justify-center">
-            <p className="text-[15px] font-medium text-neutral-300 leading-snug">
+          <div className="min-h-[40px] flex flex-col justify-center relative z-10">
+            <p className="text-[15px] font-semibold text-amber-100/95 leading-snug tracking-tight drop-shadow-sm">
               {primaryBoostMessage}
             </p>
             {secondaryBoostMessage && (
-              <p className="text-xs text-neutral-400 mt-1 leading-normal">
+              <p className="text-xs text-amber-300/80 mt-1.5 leading-normal font-medium">
                 {secondaryBoostMessage}
               </p>
             )}

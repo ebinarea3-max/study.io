@@ -334,23 +334,26 @@ export function DailyTodoList() {
   const progressPercent = todos.length > 0 ? Math.round((completedTodos.length / todos.length) * 100) : 0;
 
   return (
-    <div className="rounded-3xl bg-neutral-900/50 border border-white/[0.08] backdrop-blur-xl p-5 shadow-xl space-y-3">
+    <div className="rounded-3xl bg-neutral-900/50 border border-white/[0.08] hover:border-cyan-500/30 backdrop-blur-xl p-5 shadow-xl space-y-3 transition-all relative overflow-hidden group">
+      {/* Subtle Ambient Ice Cyan Glow */}
+      <div className="absolute -top-10 -left-10 w-32 h-32 rounded-full bg-cyan-500/10 blur-2xl pointer-events-none" />
+
       {/* Header Row */}
-      <div className="flex items-center justify-between pb-2.5 border-b border-white/[0.08]">
+      <div className="flex items-center justify-between pb-2.5 border-b border-cyan-500/15 relative z-10">
         <div className="flex items-center gap-2">
-          <CheckSquare className="w-4 h-4 text-[#8FA3A1]" />
+          <CheckSquare className="w-4 h-4 text-cyan-400" />
           <span className="text-xs font-bold text-white tracking-tight uppercase">Todo List</span>
         </div>
-        <span className="text-[11px] text-neutral-400 font-medium font-mono">
-          <span className="text-emerald-400 font-bold">{completedTodos.length}</span> / {todos.length} completed
+        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium bg-cyan-950/60 text-cyan-300 border border-cyan-800/50 shadow-sm">
+          <span className="font-bold text-cyan-200">{completedTodos.length}</span> / {todos.length} completed
         </span>
       </div>
 
       {/* Minimal Progress Line (when items exist) */}
       {todos.length > 0 && (
-        <div className="h-1.5 w-full rounded-full bg-black/50 overflow-hidden border border-white/[0.05]">
+        <div className="h-1.5 w-full rounded-full bg-black/50 overflow-hidden border border-white/[0.05] relative z-10">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-500 shadow-sm shadow-emerald-500/20"
+            className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-teal-400 transition-all duration-500 shadow-sm shadow-cyan-500/20"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
@@ -359,9 +362,9 @@ export function DailyTodoList() {
       {/* Task Input: Clean, borderless inline input at the top */}
       <form
         onSubmit={handleAddTask}
-        className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-black/40 border border-white/[0.08] focus-within:border-[#5A6B6A] focus-within:bg-black/60 transition-all"
+        className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-black/40 border border-white/[0.08] focus-within:border-cyan-500/50 focus-within:ring-1 focus-within:ring-cyan-500/20 focus-within:bg-black/60 transition-all relative z-10"
       >
-        <Plus className="w-4 h-4 text-neutral-400 flex-shrink-0" />
+        <Plus className="w-4 h-4 text-cyan-400/70 flex-shrink-0" />
         <input
           ref={inputRef}
           type="text"
@@ -374,7 +377,7 @@ export function DailyTodoList() {
           <button
             type="submit"
             disabled={!taskInput.trim()}
-            className="px-2.5 py-1 text-[11px] font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 rounded-lg transition-all flex-shrink-0 cursor-pointer disabled:opacity-50"
+            className="px-2.5 py-1 text-[11px] font-bold bg-cyan-500 hover:bg-cyan-400 text-slate-950 rounded-lg transition-all flex-shrink-0 cursor-pointer disabled:opacity-50 shadow-sm shadow-cyan-500/20"
           >
             Add
           </button>
@@ -382,7 +385,7 @@ export function DailyTodoList() {
       </form>
 
       {/* Items Container */}
-      <div className="max-h-72 overflow-y-auto space-y-0.5 pr-0.5 select-none">
+      <div className="max-h-72 overflow-y-auto space-y-0.5 pr-0.5 select-none relative z-10">
         {/* Active (Uncompleted) Tasks */}
         {activeTodos.map(item => (
           <div
@@ -396,7 +399,7 @@ export function DailyTodoList() {
               type="button"
               onClick={() => handleToggleTask(item.id, item.is_completed)}
               aria-label="Mark task complete"
-              className="w-[18px] h-[18px] rounded-[4px] border-[1.5px] border-neutral-500 hover:border-emerald-400 bg-black/40 hover:bg-emerald-500/10 transition-all flex items-center justify-center flex-shrink-0 cursor-pointer group-hover:border-neutral-300 active:scale-95"
+              className="w-[18px] h-[18px] rounded-[4px] border-[1.5px] border-neutral-600 hover:border-cyan-400 bg-black/40 hover:bg-cyan-500/10 transition-all flex items-center justify-center flex-shrink-0 cursor-pointer group-hover:border-neutral-400 active:scale-95"
             />
 
             {/* Inline Editable Task Title */}
@@ -443,7 +446,7 @@ export function DailyTodoList() {
                   }`}
                 />
                 <span className="flex items-center gap-1.5">
-                  <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[2.5]" />
+                  <Check className="w-3.5 h-3.5 text-cyan-400 stroke-[2.5]" />
                   <span>Completed items ({completedTodos.length})</span>
                 </span>
               </button>
@@ -469,7 +472,7 @@ export function DailyTodoList() {
                       type="button"
                       onClick={() => handleToggleTask(item.id, item.is_completed)}
                       aria-label="Mark task incomplete"
-                      className="w-[18px] h-[18px] rounded-[4px] bg-emerald-500 border border-emerald-400 text-slate-950 flex items-center justify-center transition-all flex-shrink-0 cursor-pointer shadow-sm active:scale-95"
+                      className="w-[18px] h-[18px] rounded-[4px] bg-cyan-500 border border-cyan-400 text-slate-950 flex items-center justify-center transition-all flex-shrink-0 cursor-pointer shadow-sm shadow-cyan-500/25 active:scale-95"
                     >
                       <Check className="w-3 h-3 stroke-[3]" />
                     </button>

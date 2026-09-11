@@ -51,13 +51,13 @@ export function Navbar({
         {/* Logo & Brand */}
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => setActiveTab('timer')}>
-            <div className="w-9 h-9 rounded-xl bg-[#5A6B6A]/30 border border-[#5A6B6A]/40 flex items-center justify-center text-[#9AB0AF] font-bold shadow-sm">
+            <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 font-bold shadow-sm shadow-amber-500/10">
               ⚡
             </div>
             <div>
               <div className="text-base font-extrabold tracking-tight text-white flex items-center gap-1.5">
                 <span>study.io</span>
-                <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.2 rounded bg-[#5A6B6A]/20 text-[#8FA3A1] border border-[#5A6B6A]/30">
+                <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-300 border border-amber-500/25">
                   Focus
                 </span>
               </div>
@@ -128,8 +128,8 @@ export function Navbar({
             >
               {user.streakDays > 0 ? (
                 <>
-                  <Flame className="w-4 h-4 text-[#8FA3A1] fill-[#5A6B6A]" />
-                  <span className="text-xs font-bold font-mono tabular-nums text-neutral-200">{user.streakDays}d</span>
+                  <Flame className="w-4 h-4 text-[#f97316] fill-[#f97316]" />
+                  <span className="text-xs font-bold font-mono tabular-nums text-orange-400">{user.streakDays}d</span>
                 </>
               ) : (
                 <span className="text-xs font-medium text-[#8FA3A1]">Start your streak</span>
@@ -161,15 +161,15 @@ export function Navbar({
               onClick={() => setShowPersonaMenu(!showPersonaMenu)}
               className="flex items-center gap-2.5 p-1 rounded-2xl hover:bg-slate-900 border border-transparent hover:border-slate-800 transition-colors"
             >
-              <div className="relative">
+              <div className="relative p-[2px] rounded-xl bg-gradient-to-tr from-cyan-500 to-emerald-500 shadow-sm shadow-emerald-500/20">
                 <UserAvatar
                   src={user.avatarUrl}
                   name={user.displayName}
-                  size={34}
-                  className="w-8.5 h-8.5 rounded-xl border border-slate-700"
+                  size={32}
+                  className="w-8 h-8 rounded-[10px]"
                 />
                 <span
-                  className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-slate-950 ${
+                  className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-slate-950 ${
                     isStudying ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'
                   }`}
                 />
