@@ -18,6 +18,7 @@ interface StudyContextType {
   setTimerMode: (mode: TimerMode) => void;
   isStudying: boolean;
   isPaused: boolean;
+  isRunning: boolean;
   elapsedSeconds: number;
   pomodoroPhase: PomodoroPhase;
   pomodoroWorkDuration: number;
@@ -34,7 +35,8 @@ interface StudyContextType {
   startTimer: (subjectId?: string, taskId?: string) => void;
   pauseTimer: () => void;
   resumeTimer: () => void;
-  stopTimer: (notes?: string) => void;
+  stopTimer: (notes?: string) => Promise<void>;
+  completeTimer: (notes?: string) => Promise<void>;
   resetTimer: () => void;
   addSubject: (subject: Omit<Subject, 'id' | 'createdAt'>) => void;
   updateSubject: (id: string, updates: Partial<Subject>) => void;
@@ -84,6 +86,9 @@ export function StudyProvider({ children }: { children: ReactNode }) {
   const [selectedDate, setSelectedDate] = useState<string>(getTodayDateString(0));
 
   const sessionStartTimeRef = useRef<Date | null>(null);
+  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const isRunning = isStudying && !isPaused;
 
   // Load from Supabase or localStorage fallback
   useEffect(() => {
@@ -497,35 +502,23 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     });
   }, [user.id, user.displayName, user.avatarUrl, sessions]);
 
-  // Active Timer Interval
+  // Active Timer Interval - pure local ticking, zero network/db calls during the interval
   useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
-    if (isStudying && !isPaused) {
-      interval = setInterval(() => {
+    // Clear any existing interval to prevent duplicate timers or frozen state
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
+
+    if (isRunning) {
+      timerIntervalRef.current = setInterval(() => {
         setElapsedSeconds(prev => {
           const next = prev + 1;
           if (timerMode === 'pomodoro') {
             if (pomodoroPhase === 'work' && next >= pomodoroWorkDuration) {
               soundFx.playMilestoneBell();
               confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
-
-              // Automatically record & persist completed pomodoro block
-              const sprintEndTime = new Date();
-              const sprintStartTime = sessionStartTimeRef.current || new Date(sprintEndTime.getTime() - pomodoroWorkDuration * 1000);
-
-              persistStudySession({
-                subjectId: selectedSubject?.id,
-                subjectName: selectedSubject?.name,
-                subjectColor: selectedSubject?.color,
-                durationSeconds: pomodoroWorkDuration,
-                startTime: sprintStartTime.toISOString(),
-                endTime: sprintEndTime.toISOString(),
-                notes: currentNotes,
-                mode: 'pomodoro',
-              }).then(() => {
-                refetchSessions();
-              });
-
+              // Automatically transition to break without database/network calls during the tick
               setPomodoroPhase('shortBreak');
               sessionStartTimeRef.current = new Date();
               return 0;
@@ -542,23 +535,15 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     }
 
     return () => {
-      if (interval) clearInterval(interval);
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
+      }
     };
-  }, [
-    isStudying,
-    isPaused,
-    timerMode,
-    pomodoroPhase,
-    pomodoroWorkDuration,
-    pomodoroBreakDuration,
-    selectedSubject,
-    currentNotes,
-    persistStudySession,
-    refetchSessions,
-  ]);
+  }, [isRunning, timerMode, pomodoroPhase, pomodoroWorkDuration, pomodoroBreakDuration]);
 
-  // Start Timer
-  const startTimer = (subjectId?: string, taskId?: string) => {
+  // Start Timer - cleanly starts session and toggles isRunning to true
+  const startTimer = useCallback((subjectId?: string, taskId?: string) => {
     if (subjectId) setSelectedSubjectId(subjectId);
     if (taskId) setActiveTaskId(taskId);
     
@@ -576,17 +561,21 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       currentSubjectColor: targetSub?.color,
       activeSessionStartTime: new Date().toISOString(),
     });
-  };
+  }, [subjects, selectedSubjectId, updateProfile]);
 
-  // Pause Timer
-  const pauseTimer = () => {
+  // Pause Timer - cleanly pauses interval and toggles isRunning to false
+  const pauseTimer = useCallback(() => {
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
     setIsPaused(true);
     soundFx.playStopChime();
     updateProfile({ status: 'resting' });
-  };
+  }, [updateProfile]);
 
-  // Resume Timer
-  const resumeTimer = () => {
+  // Resume Timer - cleanly resumes interval and toggles isRunning to true
+  const resumeTimer = useCallback(() => {
     setIsPaused(false);
     soundFx.playStartChime();
     const targetSub = selectedSubject;
@@ -596,10 +585,15 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       currentSubjectName: targetSub?.name,
       currentSubjectColor: targetSub?.color,
     });
-  };
+  }, [selectedSubject, updateProfile]);
 
   // Stop Timer and save session to Supabase immediately with localStorage fallback
-  const stopTimer = async (notesOverride?: string) => {
+  // Save to Supabase ONLY when "Stop" or "Complete" is clicked, never during active timer
+  const stopTimer = useCallback(async (notesOverride?: string) => {
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
     if (!isStudying && elapsedSeconds === 0) return;
 
     soundFx.playStopChime();
@@ -609,7 +603,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
     if (duration > 0) {
       const targetSub = selectedSubject;
-      const notesToSave = notesOverride || currentNotes;
+      const notesToSave = notesOverride !== undefined ? notesOverride : currentNotes;
 
       await persistStudySession({
         subjectId: targetSub?.id,
@@ -685,16 +679,41 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     setActiveTaskId(null);
     setCurrentNotes('');
     sessionStartTimeRef.current = null;
-  };
+  }, [
+    isStudying,
+    elapsedSeconds,
+    selectedSubject,
+    currentNotes,
+    persistStudySession,
+    timerMode,
+    user.id,
+    user.displayName,
+    user.avatarUrl,
+    user.dailyGoalHours,
+    user.totalStudySeconds,
+    sessions,
+    updateProfile,
+    refetchSessions,
+  ]);
 
-  const resetTimer = () => {
+  // Complete Timer - saves and finishes session cleanly
+  const completeTimer = useCallback(async (notesOverride?: string) => {
+    await stopTimer(notesOverride);
+  }, [stopTimer]);
+
+  // Reset Timer - cleanly resets elapsed time and isRunning state without network calls
+  const resetTimer = useCallback(() => {
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
     setIsStudying(false);
     setIsPaused(false);
     setElapsedSeconds(0);
     setActiveTaskId(null);
     sessionStartTimeRef.current = null;
     updateProfile({ status: 'resting' });
-  };
+  }, [updateProfile]);
 
   // Subjects Management
   const addSubject = (newSub: Omit<Subject, 'id' | 'createdAt'>) => {
@@ -955,10 +974,12 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         setSelectedDate,
         isFocusModeOpen,
         setIsFocusModeOpen,
+        isRunning,
         startTimer,
         pauseTimer,
         resumeTimer,
         stopTimer,
+        completeTimer,
         resetTimer,
         addSubject,
         updateSubject,

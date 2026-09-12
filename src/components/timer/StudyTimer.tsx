@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useStudy } from '../../context/StudyContext';
 import { useAuth } from '../../context/AuthContext';
 import { DailyTodoList } from '../todo/DailyTodoList';
@@ -38,7 +38,7 @@ const EMPTY_STATE_QUOTES = [
 ];
 
 export function StudyTimer() {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const {
     subjects,
     selectedSubject,
@@ -48,6 +48,7 @@ export function StudyTimer() {
     setTimerMode,
     isStudying,
     isPaused,
+    isRunning,
     elapsedSeconds,
     pomodoroPhase,
     pomodoroWorkDuration,
@@ -59,6 +60,7 @@ export function StudyTimer() {
     pauseTimer,
     resumeTimer,
     stopTimer,
+    completeTimer,
     resetTimer,
     sessions,
     refetchSessions,
@@ -68,6 +70,38 @@ export function StudyTimer() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [randomQuoteIndex, setRandomQuoteIndex] = useState(0);
   const [overviewView, setOverviewView] = useState<'today' | 'yesterday'>('today');
+
+  // Clean ref for interval ID to prevent duplicate timers or frozen state
+  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Clean handlers to toggle isRunning cleanly without causing infinite re-renders
+  const handleStart = useCallback(() => {
+    if (isPaused) {
+      resumeTimer();
+    } else {
+      startTimer();
+    }
+  }, [isPaused, resumeTimer, startTimer]);
+
+  const handlePause = useCallback(() => {
+    pauseTimer();
+  }, [pauseTimer]);
+
+  const handleResume = useCallback(() => {
+    resumeTimer();
+  }, [resumeTimer]);
+
+  const handleReset = useCallback(() => {
+    resetTimer();
+  }, [resetTimer]);
+
+  const handleStop = useCallback(async () => {
+    await stopTimer();
+  }, [stopTimer]);
+
+  const handleComplete = useCallback(async () => {
+    await completeTimer();
+  }, [completeTimer]);
 
   useEffect(() => {
     setRandomQuoteIndex(Math.floor(Math.random() * EMPTY_STATE_QUOTES.length));
@@ -95,7 +129,12 @@ export function StudyTimer() {
     });
   }, [sessions, startOfYesterday, endOfYesterday]);
 
-  // Calculate today's subject study time
+  // Completed focus time today across all subjects (stable, does not tick with active second)
+  const totalFocusToday = useMemo(() => {
+    return todaySessions.reduce((sum, s) => sum + (s.durationSeconds ?? 0), 0);
+  }, [todaySessions]);
+
+  // Calculate today's subject study time (includes active session for live goal progress)
   const todaySubjectSeconds = useMemo(() => {
     return (
       todaySessions
@@ -104,7 +143,7 @@ export function StudyTimer() {
     );
   }, [todaySessions, selectedSubject?.id, isStudying, elapsedSeconds]);
 
-  // Today's total focus time across all subjects
+  // Today's total focus time across all subjects (live display)
   const todayTotalSeconds = useMemo(() => {
     return (
       todaySessions.reduce((sum, s) => sum + s.durationSeconds, 0) +
@@ -146,50 +185,69 @@ export function StudyTimer() {
     .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
     .slice(0, 4);
 
-  // Dynamic Motivation & Boost Messaging
-  const streak = user?.streakDays || 0;
-  let primaryBoostMessage = '';
-  let secondaryBoostMessage = '';
-
-  // 1. Streak-based evaluation
-  if (streak >= 30) {
-    primaryBoostMessage = "🔥 30-day streak! You've basically made this a lifestyle.";
-  } else if (streak >= 14) {
-    primaryBoostMessage = "🔥 Two weeks strong — this is becoming a habit now.";
-  } else if (streak >= 7) {
-    primaryBoostMessage = "🔥 7-day streak! Consistency is compounding.";
-  } else if (streak >= 3) {
-    primaryBoostMessage = `🔥 You're on a ${streak}-day streak — don't break the chain.`;
-  } else if (streak === 2) {
-    primaryBoostMessage = "🔥 You're on a 2-day streak — don't break the chain.";
-  } else if (streak === 1) {
-    primaryBoostMessage = "🔥 Day 1 logged. Come back tomorrow to start a streak.";
-  }
-
-  // 2. Session-length based evaluation
-  let sessionMessage = '';
-  if (todayTotalSeconds >= 4 * 3600) {
-    sessionMessage = "4+ hours today. Seriously — consider a break.";
-  } else if (todayTotalSeconds >= 2 * 3600) {
-    sessionMessage = "2 hours of deep focus already. Great pace.";
-  } else if (todayTotalSeconds >= 25 * 60) {
-    sessionMessage = "Nice, you completed a full focus block today.";
-  }
-
-  // Priority & secondary combining logic
-  if (primaryBoostMessage) {
-    if (sessionMessage) {
-      secondaryBoostMessage = sessionMessage;
+  // Dynamic Motivation & Boost Messaging - memoized with stable fallback and defensive checks
+  const { primaryBoostMessage, secondaryBoostMessage } = useMemo(() => {
+    // If user stats are currently loading from Supabase, display a stable placeholder
+    if (isLoading) {
+      return {
+        primaryBoostMessage: 'Ready to begin your session.',
+        secondaryBoostMessage: '',
+      };
     }
-  } else if (sessionMessage) {
-    primaryBoostMessage = sessionMessage;
-  } else if (streak === 0 && todayTotalSeconds === 0 && todaySessionsCount === 0) {
-    // 3. Empty state (streak 0 AND totalFocusToday 0 AND sessions 0)
-    primaryBoostMessage = EMPTY_STATE_QUOTES[randomQuoteIndex];
-  } else {
-    // Fallback when streak === 0
-    primaryBoostMessage = "No pressure — just hit Start and your streak begins.";
-  }
+
+    // Defensive fallback checks before evaluating streak and session stats
+    const currentStreak = user?.streakDays ?? 0;
+    const focusMinutes = Math.floor((totalFocusToday ?? 0) / 60);
+    const completedCount = todaySessions.length;
+
+    let primary = '';
+    let secondary = '';
+
+    // 1. Streak-based evaluation
+    if (currentStreak >= 30) {
+      primary = "🔥 30-day streak! You've basically made this a lifestyle.";
+    } else if (currentStreak >= 14) {
+      primary = "🔥 Two weeks strong — this is becoming a habit now.";
+    } else if (currentStreak >= 7) {
+      primary = "🔥 7-day streak! Consistency is compounding.";
+    } else if (currentStreak >= 3) {
+      primary = `🔥 You're on a ${currentStreak}-day streak — don't break the chain.`;
+    } else if (currentStreak === 2) {
+      primary = "🔥 You're on a 2-day streak — don't break the chain.";
+    } else if (currentStreak === 1) {
+      primary = "🔥 Day 1 logged. Come back tomorrow to start a streak.";
+    }
+
+    // 2. Session-length based evaluation (based on completed focus time)
+    let sessionMsg = '';
+    if (focusMinutes >= 240) {
+      sessionMsg = '4+ hours today. Seriously — consider a break.';
+    } else if (focusMinutes >= 120) {
+      sessionMsg = '2 hours of deep focus already. Great pace.';
+    } else if (focusMinutes >= 25) {
+      sessionMsg = 'Nice, you completed a full focus block today.';
+    }
+
+    // Priority & secondary combining logic
+    if (primary) {
+      if (sessionMsg) {
+        secondary = sessionMsg;
+      }
+    } else if (sessionMsg) {
+      primary = sessionMsg;
+    } else if (currentStreak === 0 && (totalFocusToday ?? 0) === 0 && completedCount === 0) {
+      // 3. Empty state (streak 0 AND totalFocusToday 0 AND sessions 0)
+      primary = EMPTY_STATE_QUOTES[randomQuoteIndex] || EMPTY_STATE_QUOTES[0];
+    } else {
+      // Fallback when streak === 0
+      primary = 'No pressure — just hit Start and your streak begins.';
+    }
+
+    return {
+      primaryBoostMessage: primary,
+      secondaryBoostMessage: secondary,
+    };
+  }, [isLoading, user?.streakDays, totalFocusToday, todaySessions.length, randomQuoteIndex]);
 
   return (
     <div className="w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -412,7 +470,7 @@ export function StudyTimer() {
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3 relative z-10">
               {!isStudying ? (
                 <button
-                  onClick={() => startTimer()}
+                  onClick={handleStart}
                   className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black text-sm transition-all shadow-xl shadow-emerald-500/25 flex items-center gap-2.5 active:scale-95 hover:scale-[1.02] cursor-pointer"
                 >
                   <Play className="w-5 h-5 fill-current" />
@@ -422,7 +480,7 @@ export function StudyTimer() {
                 <>
                   {isPaused ? (
                     <button
-                      onClick={resumeTimer}
+                      onClick={handleResume}
                       className="px-6 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm transition-all shadow-lg shadow-emerald-500/25 flex items-center gap-2 active:scale-95 cursor-pointer"
                     >
                       <Play className="w-4 h-4 fill-current" />
@@ -430,7 +488,7 @@ export function StudyTimer() {
                     </button>
                   ) : (
                     <button
-                      onClick={pauseTimer}
+                      onClick={handlePause}
                       className="px-6 py-3 rounded-2xl bg-neutral-900 hover:bg-neutral-800 text-amber-300 font-bold text-sm border border-amber-500/30 transition-all flex items-center gap-2 active:scale-95 cursor-pointer"
                     >
                       <Pause className="w-4 h-4" />
@@ -439,7 +497,16 @@ export function StudyTimer() {
                   )}
 
                   <button
-                    onClick={() => stopTimer()}
+                    onClick={handleComplete}
+                    className="px-5 py-3 rounded-2xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 font-bold text-sm transition-all flex items-center gap-2 active:scale-95 cursor-pointer"
+                    title="Complete and save session"
+                  >
+                    <Check className="w-4 h-4 stroke-[2.5]" />
+                    <span>Complete</span>
+                  </button>
+
+                  <button
+                    onClick={handleStop}
                     className="px-6 py-3 rounded-2xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 font-bold text-sm transition-all flex items-center gap-2 active:scale-95 cursor-pointer"
                     title="Stop and save session"
                   >
@@ -448,7 +515,7 @@ export function StudyTimer() {
                   </button>
 
                   <button
-                    onClick={resetTimer}
+                    onClick={handleReset}
                     className="p-3 rounded-2xl bg-neutral-900 hover:bg-neutral-800 border border-white/[0.08] text-neutral-400 hover:text-white transition-colors active:scale-95 cursor-pointer"
                     title="Reset Timer"
                   >
@@ -585,9 +652,9 @@ export function StudyTimer() {
               <Flame className="w-3.5 h-3.5 text-[#f97316] fill-[#f97316]" />
               <span className="font-medium">Streak</span>
             </span>
-            {user.streakDays > 0 ? (
+            {(user?.streakDays ?? 0) > 0 ? (
               <span className="px-2 py-0.5 rounded-full bg-orange-950/40 border border-orange-700/40 text-[#f97316] font-mono font-bold text-xs tabular-nums shadow-sm shadow-orange-950/30">
-                {user.streakDays} {user.streakDays === 1 ? 'day' : 'days'}
+                {user?.streakDays ?? 0} {(user?.streakDays ?? 0) === 1 ? 'day' : 'days'}
               </span>
             ) : (
               <span className="font-mono font-bold text-neutral-400 tabular-nums">Start today</span>
