@@ -50,6 +50,7 @@ interface StudyContextType {
   getTodayTotalSeconds: () => number;
   refetchSessions: () => Promise<void>;
   querySessionsByRange: (startOfDay: Date, endOfDay: Date) => Promise<StudySession[]>;
+  addSession: (session: StudySession) => void;
   persistStudySession: (sessionData: {
     subjectId?: string;
     subjectName?: string;
@@ -463,39 +464,49 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const { data: authData, error: authError } = await supabase.auth.getUser();
+      const { data: authData } = await supabase.auth.getUser();
       const authUser = authData?.user;
-      if (authError || !authUser?.id) {
-        console.error("Error saving session:", authError || new Error("No active authenticated user"));
-        cacheLocallyFallback();
-        return false;
+      let authUserId: string | null = null;
+      if (authUser?.id && isValidUuid(authUser.id)) {
+        authUserId = authUser.id;
+      } else if (isValidUuid(user.id)) {
+        authUserId = user.id;
       }
 
-      const payload = {
-        user_id: authUser.id,
+      const payload: Record<string, any> = {
+        user_id: authUserId,
         subject_id: subjectIdToSave,
         duration_seconds: durationInt,
         started_at: sessionData.startTime,
         ended_at: sessionData.endTime,
         notes: sessionData.notes && sessionData.notes.trim().length > 0 ? sessionData.notes.trim() : null,
         mode: sessionData.mode || timerMode,
+        subject: sessionData.subjectName || targetSub?.name || 'General Focus',
       };
 
-      const { data, error: insertError } = await supabase
+      let insertRes = await supabase
         .from('study_sessions')
         .insert(payload)
         .select();
 
-      if (insertError) {
-        console.error("Error saving session:", insertError);
+      if (insertRes.error && (insertRes.error.code === 'PGRST204' || insertRes.error.message?.includes('subject'))) {
+        const fallback = { ...payload };
+        delete fallback.subject;
+        insertRes = await supabase.from('study_sessions').insert(fallback).select();
+      }
+
+      if (insertRes.error) {
+        console.error("Error saving session:", insertRes.error);
         cacheLocallyFallback();
         return false;
       }
 
-      console.log("Session saved successfully:", data);
+      console.log("Session saved successfully:", insertRes.data);
 
       // Immediately after a successful insert, trigger a refresh of the Daily Overview stats and session history
-      await refetchSessions();
+      if (authUserId) {
+        await refetchSessions();
+      }
       return true;
     } catch (error) {
       console.error("Error saving session:", error);
@@ -543,40 +554,37 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    // Fallback to in-memory sessions filtered by local timestamp bounds
+    // Fallback to local sessions
     return sessions.filter(s => {
       const t = new Date(s.startTime).getTime();
       return t >= startOfDay.getTime() && t <= endOfDay.getTime();
     });
   }, [user.id, user.displayName, user.avatarUrl, sessions]);
 
-  // Start Timer - cleanly starts session and toggles isRunning to true
+  // Start Timer - sets isStudying and starts synchronous ticking
   const startTimer = useCallback((subjectId?: string, taskId?: string) => {
-    if (subjectId) setSelectedSubjectId(subjectId);
-    if (taskId) setActiveTaskId(taskId);
-    
+    if (subjectId) {
+      setSelectedSubjectId(subjectId);
+    }
+    if (taskId) {
+      setActiveTaskId(taskId);
+    }
     sessionStartTimeRef.current = new Date();
     setIsStudying(true);
     setIsPaused(false);
     soundFx.playStartChime();
-
-    const targetSub = subjects.find(s => s.id === (subjectId || selectedSubjectId)) || subjects[0];
-
+    const targetSub = subjects.find(s => s.id === (subjectId || selectedSubjectId)) || selectedSubject;
     updateProfile({
       status: 'studying',
+      activeSessionStartTime: new Date().toISOString(),
       currentSubjectId: targetSub?.id,
       currentSubjectName: targetSub?.name,
       currentSubjectColor: targetSub?.color,
-      activeSessionStartTime: new Date().toISOString(),
     });
-  }, [subjects, selectedSubjectId, updateProfile]);
+  }, [selectedSubjectId, selectedSubject, subjects, updateProfile]);
 
-  // Pause Timer - cleanly toggles isRunning to false
+  // Pause Timer - cleanly toggles isRunning to false while preserving exact elapsed seconds
   const pauseTimer = useCallback(() => {
-    if (timerIntervalRef.current) {
-      clearInterval(timerIntervalRef.current);
-      timerIntervalRef.current = null;
-    }
     setIsPaused(true);
     soundFx.playStopChime();
     updateProfile({ status: 'resting' });
@@ -595,8 +603,27 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     });
   }, [selectedSubject, updateProfile]);
 
+  // Instantly add a session and sync metrics, Daily Overview, and Analytics
+  const addSession = useCallback((newSession: StudySession) => {
+    setSessions(prev => {
+      const filtered = prev.filter(s => s.id !== newSession.id);
+      const updated = [newSession, ...filtered];
+      try {
+        localStorage.setItem('studypulse_sessions', JSON.stringify(updated));
+      } catch {}
+
+      const realStreak = calculateStreak(updated);
+      const realTotalSeconds = updated.reduce((sum, s) => sum + s.durationSeconds, 0);
+      updateProfile({
+        streakDays: realStreak,
+        totalStudySeconds: realTotalSeconds,
+      });
+
+      return updated;
+    });
+  }, [updateProfile]);
+
   // Stop Timer and save session to Supabase immediately with localStorage fallback
-  // Save to Supabase ONLY when duration > 10 seconds and "Stop & Save" is clicked
   const stopTimer = useCallback(async (durationOverride?: number, notesOverride?: string) => {
     if (timerIntervalRef.current) {
       clearInterval(timerIntervalRef.current);
@@ -608,78 +635,115 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     soundFx.playStopChime();
     const endTime = new Date();
     const startTime = sessionStartTimeRef.current || new Date(endTime.getTime() - duration * 1000);
+    const createdAt = new Date().toISOString();
+    const targetSub = selectedSubject;
+    const notesToSave = notesOverride !== undefined ? notesOverride : currentNotes;
+    const subjectName = (typeof targetSub === 'string' ? targetSub : targetSub?.name) || 'General Focus';
 
-    if (duration > 10) {
-      const targetSub = selectedSubject;
-      const notesToSave = notesOverride !== undefined ? notesOverride : currentNotes;
-
-      // Optimistically update local Daily Overview count by +1 session and add duration
-      const todayStart = getLocalStartOfDay(new Date());
-      const todayEnd = getLocalEndOfDay(new Date());
-      const newSession: StudySession = {
-        id: `sess-now-${Date.now()}`,
-        userId: user.id,
-        userName: user.displayName,
-        userAvatar: user.avatarUrl,
-        subjectId: targetSub?.id || '',
-        subjectName: targetSub?.name || 'General Focus',
-        subjectColor: targetSub?.color || '#10B981',
-        startTime: startTime.toISOString(),
-        endTime: endTime.toISOString(),
-        durationSeconds: duration,
-        notes: notesToSave,
-        mode: timerMode,
-        createdAt: new Date().toISOString(),
-      };
-
-      const allSessionsNow = [newSession, ...sessions];
-      setSessions(allSessionsNow);
+    // 1. Fetch current user with supabase.auth.getUser() (or sets user_id to null / guest fallback)
+    const supabase = getSupabase();
+    let currentUserId: string | null = null;
+    if (supabase) {
       try {
-        localStorage.setItem('studypulse_sessions', JSON.stringify(allSessionsNow));
-      } catch {}
-
-      const totalToday = allSessionsNow
-        .filter(s => {
-          const t = new Date(s.startTime).getTime();
-          return t >= todayStart.getTime() && t <= todayEnd.getTime();
-        })
-        .reduce((sum, s) => sum + s.durationSeconds, 0);
-
-      const dailyGoalSeconds = user.dailyGoalHours * 3600;
-      if (totalToday >= dailyGoalSeconds && totalToday - duration < dailyGoalSeconds) {
-        confetti({
-          particleCount: 120,
-          spread: 80,
-          origin: { y: 0.5 },
-        });
-        soundFx.playMilestoneBell();
+        const { data: authData, error: authError } = await supabase.auth.getUser();
+        if (!authError && authData?.user?.id) {
+          currentUserId = authData.user.id;
+        }
+      } catch (err) {
+        console.log('Error getting auth user:', err);
       }
-
-      const newStreak = calculateStreak(allSessionsNow);
-      const totalSec = (user.totalStudySeconds || 0) + duration;
-      updateProfile({
-        totalStudySeconds: totalSec,
-        streakDays: newStreak,
-        status: 'resting',
-        activeSessionStartTime: undefined,
-      });
-
-      await persistStudySession({
-        subjectId: targetSub?.id,
-        subjectName: targetSub?.name,
-        subjectColor: targetSub?.color,
-        durationSeconds: duration,
-        startTime: startTime.toISOString(),
-        endTime: endTime.toISOString(),
-        notes: notesToSave,
-        mode: timerMode,
-      });
-    } else {
-      updateProfile({
-        status: 'resting',
-        activeSessionStartTime: undefined,
-      });
     }
+    if (!currentUserId && user?.id) {
+      const isValidUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(user.id);
+      currentUserId = isValidUuid ? user.id : null;
+    }
+
+    // 2. Directly insert the session into 'study_sessions' table
+    const insertPayload: Record<string, any> = {
+      user_id: currentUserId ?? null,
+      subject: subjectName,
+      duration_seconds: duration,
+      mode: timerMode || 'stopwatch',
+      created_at: createdAt,
+      started_at: startTime.toISOString(),
+      ended_at: endTime.toISOString(),
+      notes: notesToSave && notesToSave.trim().length > 0 ? notesToSave.trim() : null,
+    };
+
+    if (targetSub?.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetSub.id)) {
+      insertPayload.subject_id = targetSub.id;
+    }
+
+    let insertResponse: any = null;
+    if (supabase) {
+      try {
+        insertResponse = await supabase.from('study_sessions').insert(insertPayload).select();
+        // If 'subject' column does not exist in the database schema cache, retry without 'subject'
+        if (insertResponse.error && (insertResponse.error.code === 'PGRST204' || insertResponse.error.message?.includes('subject'))) {
+          const fallbackPayload = { ...insertPayload };
+          delete fallbackPayload.subject;
+          insertResponse = await supabase.from('study_sessions').insert(fallbackPayload).select();
+        }
+      } catch (err) {
+        insertResponse = { error: err };
+      }
+    } else {
+      insertResponse = { error: new Error('Supabase client not initialized') };
+    }
+
+    // 3. Log the Supabase insert response/error to console.log
+    console.log('Supabase insert response/error:', insertResponse?.error || insertResponse?.data || insertResponse);
+
+    // 4. Immediately update the Daily Overview and Analytics stats state so the UI reflects the new session without a manual reload
+    const newSession: StudySession = {
+      id: insertResponse?.data?.[0]?.id || `sess-${Date.now()}`,
+      userId: currentUserId || user?.id || 'guest',
+      userName: user.displayName,
+      userAvatar: user.avatarUrl,
+      subjectId: targetSub?.id || '',
+      subjectName: subjectName,
+      subjectColor: targetSub?.color || '#10B981',
+      startTime: startTime.toISOString(),
+      endTime: endTime.toISOString(),
+      durationSeconds: duration,
+      notes: notesToSave,
+      mode: timerMode,
+      createdAt: createdAt,
+    };
+
+    const allSessionsNow = [newSession, ...sessions.filter(s => s.id !== newSession.id)];
+    setSessions(allSessionsNow);
+    try {
+      localStorage.setItem('studypulse_sessions', JSON.stringify(allSessionsNow));
+    } catch {}
+
+    const todayStart = getLocalStartOfDay(new Date());
+    const todayEnd = getLocalEndOfDay(new Date());
+    const totalToday = allSessionsNow
+      .filter(s => {
+        const t = new Date(s.startTime).getTime();
+        return t >= todayStart.getTime() && t <= todayEnd.getTime();
+      })
+      .reduce((sum, s) => sum + s.durationSeconds, 0);
+
+    const dailyGoalSeconds = user.dailyGoalHours * 3600;
+    if (totalToday >= dailyGoalSeconds && totalToday - duration < dailyGoalSeconds) {
+      confetti({
+        particleCount: 120,
+        spread: 80,
+        origin: { y: 0.5 },
+      });
+      soundFx.playMilestoneBell();
+    }
+
+    const newStreak = calculateStreak(allSessionsNow);
+    const totalSec = (user.totalStudySeconds || 0) + duration;
+    updateProfile({
+      totalStudySeconds: totalSec,
+      streakDays: newStreak,
+      status: 'resting',
+      activeSessionStartTime: undefined,
+    });
 
     setIsStudying(false);
     setIsPaused(false);
@@ -687,20 +751,20 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     setActiveTaskId(null);
     setCurrentNotes('');
     sessionStartTimeRef.current = null;
+
+    if (currentUserId) {
+      await refetchSessions();
+    }
   }, [
     isStudying,
     elapsedSeconds,
     selectedSubject,
     currentNotes,
-    persistStudySession,
     timerMode,
-    user.id,
-    user.displayName,
-    user.avatarUrl,
-    user.dailyGoalHours,
-    user.totalStudySeconds,
+    user,
     sessions,
     updateProfile,
+    refetchSessions,
   ]);
 
   // Complete Timer - alias for stopTimer
@@ -1000,6 +1064,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         getTodayTotalSeconds,
         refetchSessions,
         querySessionsByRange,
+        addSession,
         persistStudySession,
       }}
     >

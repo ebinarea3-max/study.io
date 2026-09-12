@@ -29,6 +29,8 @@ import {
 } from 'lucide-react';
 import { soundFx } from '../../lib/audio';
 import confetti from 'canvas-confetti';
+import { getSupabase } from '../../lib/supabase';
+import { StudySession } from '../../types';
 
 const EMPTY_STATE_QUOTES = [
   'Every long streak starts with one session.',
@@ -60,6 +62,8 @@ export function StudyTimer() {
     resetTimer,
     sessions,
     refetchSessions,
+    addSession,
+    currentNotes,
   } = useStudy();
 
   const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
@@ -89,8 +93,135 @@ export function StudyTimer() {
   }, [resetTimer]);
 
   const handleStopAndSave = useCallback(async () => {
-    await stopTimer();
-  }, [stopTimer]);
+    const supabase = getSupabase();
+    const duration = elapsedSeconds;
+    const now = new Date();
+    const createdAt = now.toISOString();
+    const startTime = new Date(now.getTime() - duration * 1000);
+
+    // 1. Fetch current user with supabase.auth.getUser() (or sets user_id to null / guest fallback if unauthenticated)
+    let currentUserId: string | null = null;
+    if (supabase) {
+      try {
+        const { data: authData, error: authError } = await supabase.auth.getUser();
+        if (!authError && authData?.user?.id) {
+          currentUserId = authData.user.id;
+        }
+      } catch (err) {
+        console.log('Error fetching user with supabase.auth.getUser():', err);
+      }
+    }
+
+    // Guest fallback / validate UUID if unauthenticated
+    if (!currentUserId && user?.id) {
+      const isValidUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(user.id);
+      currentUserId = isValidUuid ? user.id : null;
+    }
+
+    // 2. Directly insert the session into 'study_sessions' table:
+    //    - user_id: user?.id ?? null
+    //    - subject: selectedSubject || 'General Focus'
+    //    - duration_seconds: current duration in seconds
+    //    - mode: current mode ('stopwatch' or 'pomodoro')
+    //    - created_at: new Date().toISOString()
+    const subjectName = (typeof selectedSubject === 'string' ? selectedSubject : selectedSubject?.name) || 'General Focus';
+    const currentMode = timerMode || 'stopwatch';
+
+    const insertPayload: Record<string, any> = {
+      user_id: currentUserId ?? null,
+      subject: subjectName,
+      duration_seconds: duration,
+      mode: currentMode,
+      created_at: createdAt,
+      started_at: startTime.toISOString(),
+      ended_at: now.toISOString(),
+      notes: currentNotes && currentNotes.trim().length > 0 ? currentNotes.trim() : null,
+    };
+
+    if (selectedSubject?.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(selectedSubject.id)) {
+      insertPayload.subject_id = selectedSubject.id;
+    }
+
+    let insertResponse: any = null;
+    if (supabase) {
+      try {
+        insertResponse = await supabase.from('study_sessions').insert(insertPayload).select();
+
+        // If 'subject' column is not in the schema cache (PGRST204), retry without 'subject'
+        if (insertResponse.error && (insertResponse.error.code === 'PGRST204' || insertResponse.error.message?.includes('subject'))) {
+          const fallbackPayload = { ...insertPayload };
+          delete fallbackPayload.subject;
+          insertResponse = await supabase.from('study_sessions').insert(fallbackPayload).select();
+        }
+      } catch (err) {
+        insertResponse = { error: err };
+      }
+    } else {
+      insertResponse = { error: new Error('Supabase client not initialized') };
+    }
+
+    // 3. Log the Supabase insert response/error to console.log
+    console.log('Supabase insert response/error:', insertResponse?.error || insertResponse?.data || insertResponse);
+
+    // 4. Immediately update the Daily Overview and Analytics stats state so the UI reflects the new session without a manual reload
+    const newSession: StudySession = {
+      id: insertResponse?.data?.[0]?.id || `sess-${Date.now()}`,
+      userId: currentUserId || user?.id || 'guest',
+      userName: user?.displayName || 'Scholar',
+      userAvatar: user?.avatarUrl,
+      subjectId: selectedSubject?.id || '',
+      subjectName: subjectName,
+      subjectColor: selectedSubject?.color || '#10B981',
+      startTime: startTime.toISOString(),
+      endTime: now.toISOString(),
+      durationSeconds: duration,
+      notes: currentNotes || '',
+      mode: currentMode,
+      createdAt: createdAt,
+    };
+
+    addSession(newSession);
+
+    soundFx.playStopChime();
+    const todayStart = getLocalStartOfDay(new Date());
+    const todayEnd = getLocalEndOfDay(new Date());
+    const allSessionsWithNew = [newSession, ...sessions.filter(s => s.id !== newSession.id)];
+    const totalToday = allSessionsWithNew
+      .filter(s => {
+        const t = new Date(s.startTime).getTime();
+        return t >= todayStart.getTime() && t <= todayEnd.getTime();
+      })
+      .reduce((sum, s) => sum + s.durationSeconds, 0);
+
+    const dailyGoalSeconds = (user?.dailyGoalHours || 2) * 3600;
+    if (totalToday >= dailyGoalSeconds && totalToday - duration < dailyGoalSeconds) {
+      confetti({
+        particleCount: 120,
+        spread: 80,
+        origin: { y: 0.5 },
+      });
+      soundFx.playMilestoneBell();
+    }
+
+    // Reset and stop active timer engine
+    resetTimer();
+
+    // Trigger refetch if authenticated to sync Supabase
+    if (currentUserId) {
+      await refetchSessions();
+    }
+  }, [
+    elapsedSeconds,
+    selectedSubject,
+    timerMode,
+    user,
+    currentNotes,
+    addSession,
+    soundFx,
+    sessions,
+    resetTimer,
+    refetchSessions,
+  ]);
 
   useEffect(() => {
     refetchSessions();
