@@ -1,11 +1,17 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useStudy } from '../../context/StudyContext';
 import { useAuth } from '../../context/AuthContext';
 import { DailyTodoList } from '../todo/DailyTodoList';
 import { SubjectManagerModal } from './SubjectManagerModal';
-import { formatSeconds, formatHoursAndMins } from '../../lib/utils';
+import {
+  formatSeconds,
+  formatHoursAndMins,
+  getLocalStartOfDay,
+  getLocalEndOfDay,
+  getYesterdayRange,
+} from '../../lib/utils';
 import {
   Play,
   Pause,
@@ -55,15 +61,65 @@ export function StudyTimer() {
     stopTimer,
     resetTimer,
     sessions,
+    refetchSessions,
   } = useStudy();
 
   const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [randomQuoteIndex, setRandomQuoteIndex] = useState(0);
+  const [overviewView, setOverviewView] = useState<'today' | 'yesterday'>('today');
 
   useEffect(() => {
     setRandomQuoteIndex(Math.floor(Math.random() * EMPTY_STATE_QUOTES.length));
-  }, []);
+    refetchSessions();
+  }, [refetchSessions]);
+
+  // Local browser timezone day bounds
+  const startOfToday = useMemo(() => getLocalStartOfDay(new Date()), []);
+  const endOfToday = useMemo(() => getLocalEndOfDay(new Date()), []);
+  const { startOfDay: startOfYesterday, endOfDay: endOfYesterday } = useMemo(() => getYesterdayRange(), []);
+
+  // Filtered sessions for Today (browser-local timezone)
+  const todaySessions = useMemo(() => {
+    return sessions.filter(s => {
+      const t = new Date(s.startTime).getTime();
+      return t >= startOfToday.getTime() && t <= endOfToday.getTime();
+    });
+  }, [sessions, startOfToday, endOfToday]);
+
+  // Filtered sessions for Yesterday (browser-local timezone)
+  const yesterdaySessions = useMemo(() => {
+    return sessions.filter(s => {
+      const t = new Date(s.startTime).getTime();
+      return t >= startOfYesterday.getTime() && t <= endOfYesterday.getTime();
+    });
+  }, [sessions, startOfYesterday, endOfYesterday]);
+
+  // Calculate today's subject study time
+  const todaySubjectSeconds = useMemo(() => {
+    return (
+      todaySessions
+        .filter(s => s.subjectId === selectedSubject?.id)
+        .reduce((sum, s) => sum + s.durationSeconds, 0) + (isStudying ? elapsedSeconds : 0)
+    );
+  }, [todaySessions, selectedSubject?.id, isStudying, elapsedSeconds]);
+
+  // Today's total focus time across all subjects
+  const todayTotalSeconds = useMemo(() => {
+    return (
+      todaySessions.reduce((sum, s) => sum + s.durationSeconds, 0) +
+      (isStudying ? elapsedSeconds : 0)
+    );
+  }, [todaySessions, isStudying, elapsedSeconds]);
+
+  // Today's completed sessions count
+  const todaySessionsCount = todaySessions.length;
+
+  // Yesterday's metrics
+  const yesterdayTotalSeconds = useMemo(() => {
+    return yesterdaySessions.reduce((sum, s) => sum + s.durationSeconds, 0);
+  }, [yesterdaySessions]);
+  const yesterdaySessionsCount = yesterdaySessions.length;
 
   // Time calculations
   let displayTime = formatSeconds(elapsedSeconds);
@@ -76,11 +132,7 @@ export function StudyTimer() {
     progressPercent = Math.min(100, (elapsedSeconds / target) * 100);
   } else {
     const subjectTargetSeconds = (selectedSubject?.targetMinutesPerDay || 120) * 60;
-    const subjectTodaySeconds = sessions
-      .filter(s => s.subjectId === selectedSubject?.id && s.startTime.startsWith(new Date().toISOString().slice(0, 10)))
-      .reduce((sum, s) => sum + s.durationSeconds, 0) + (isStudying ? elapsedSeconds : 0);
-
-    progressPercent = Math.min(100, (subjectTodaySeconds / subjectTargetSeconds) * 100);
+    progressPercent = Math.min(100, (todaySubjectSeconds / subjectTargetSeconds) * 100);
   }
 
   // Muted teal-gray (#5A6B6A) for General Focus, reserving vibrant emerald solely for primary actions
@@ -88,21 +140,6 @@ export function StudyTimer() {
     selectedSubject?.name === 'General Focus' && (selectedSubject?.color === '#3B82F6' || !selectedSubject?.color)
       ? '#5A6B6A'
       : selectedSubject?.color || '#5A6B6A';
-
-  // Calculate today's subject study time
-  const todaySubjectSeconds = sessions
-    .filter(s => s.subjectId === selectedSubject?.id && s.startTime.startsWith(new Date().toISOString().slice(0, 10)))
-    .reduce((sum, s) => sum + s.durationSeconds, 0) + (isStudying ? elapsedSeconds : 0);
-
-  // Today's total focus time across all subjects
-  const todayTotalSeconds = sessions
-    .filter(s => s.startTime.startsWith(new Date().toISOString().slice(0, 10)))
-    .reduce((sum, s) => sum + s.durationSeconds, 0) + (isStudying ? elapsedSeconds : 0);
-
-  // Today's completed sessions count
-  const todaySessionsCount = sessions.filter(s =>
-    s.startTime.startsWith(new Date().toISOString().slice(0, 10))
-  ).length;
 
   // Recent 4 sessions
   const recentSessions = [...sessions]
@@ -494,8 +531,37 @@ export function StudyTimer() {
               <Sparkles className="w-4 h-4 text-violet-400" />
               <span className="text-xs font-bold text-violet-200 tracking-tight uppercase">Daily Overview</span>
             </div>
-            <span className="text-[11px] text-violet-300/70 font-medium font-mono">
-              {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+            {/* Today vs Yesterday Toggle */}
+            <div className="flex items-center gap-1 p-0.5 rounded-xl bg-violet-950/50 border border-violet-800/40 text-[10px]">
+              <button
+                onClick={() => setOverviewView('today')}
+                className={`px-2 py-0.5 rounded-lg font-bold transition-all cursor-pointer ${
+                  overviewView === 'today'
+                    ? 'bg-violet-500 text-slate-950 shadow-sm'
+                    : 'text-violet-300/70 hover:text-white'
+                }`}
+              >
+                Today
+              </button>
+              <button
+                onClick={() => setOverviewView('yesterday')}
+                className={`px-2 py-0.5 rounded-lg font-bold transition-all cursor-pointer ${
+                  overviewView === 'yesterday'
+                    ? 'bg-violet-500 text-slate-950 shadow-sm'
+                    : 'text-violet-300/70 hover:text-white'
+                }`}
+              >
+                Yesterday
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between text-[11px] text-violet-300/70 font-medium font-mono relative z-10">
+            <span>{overviewView === 'today' ? "Today's Activity" : "Yesterday's Activity"}</span>
+            <span>
+              {overviewView === 'today'
+                ? new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+                : new Date(Date.now() - 86400000).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
             </span>
           </div>
 
@@ -503,13 +569,13 @@ export function StudyTimer() {
             <div className="p-3 rounded-2xl bg-violet-950/20 border border-violet-800/30 hover:border-violet-700/40 transition-colors space-y-1">
               <div className="text-[10px] uppercase font-bold tracking-wider text-violet-300/70">Total Focus</div>
               <div className="text-lg font-black text-violet-100 font-mono tabular-nums tracking-tight">
-                {formatHoursAndMins(todayTotalSeconds)}
+                {formatHoursAndMins(overviewView === 'today' ? todayTotalSeconds : yesterdayTotalSeconds)}
               </div>
             </div>
             <div className="p-3 rounded-2xl bg-violet-950/20 border border-violet-800/30 hover:border-violet-700/40 transition-colors space-y-1">
               <div className="text-[10px] uppercase font-bold tracking-wider text-violet-300/70">Sessions</div>
               <div className="text-lg font-black text-violet-100 font-mono tabular-nums tracking-tight">
-                {todaySessionsCount}
+                {overviewView === 'today' ? todaySessionsCount : yesterdaySessionsCount}
               </div>
             </div>
           </div>

@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useStudy } from '../context/StudyContext';
 import { Navbar } from '../components/common/Navbar';
 import { AuthModal } from '../components/common/AuthModal';
 import { ProfileModal } from '../components/common/ProfileModal';
@@ -15,10 +16,39 @@ import { IntroductionAndLogin } from '../components/common/IntroductionAndLogin'
 
 export default function Home() {
   const { isAuthenticated, isLoading } = useAuth();
+  const { refetchSessions } = useStudy();
   const [activeTab, setActiveTab] = useState<'timer' | 'room' | 'analytics'>('timer');
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  // Re-fetch sessions automatically whenever the user navigates back to Dashboard or switches tabs
+  useEffect(() => {
+    if (isAuthenticated) {
+      refetchSessions();
+    }
+  }, [activeTab, isAuthenticated, refetchSessions]);
+
+  // Re-fetch sessions when window or tab gains focus
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const handleFocus = () => {
+      refetchSessions();
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        refetchSessions();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isAuthenticated, refetchSessions]);
 
   // Loading state while verifying stored session
   if (isLoading) {

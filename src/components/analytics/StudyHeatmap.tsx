@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { StudySession } from '../../types';
-import { formatHoursAndMins } from '../../lib/utils';
+import { formatHoursAndMins, getLocalDateString } from '../../lib/utils';
 import { Flame, Calendar, Sparkles } from 'lucide-react';
 
 interface StudyHeatmapProps {
@@ -16,16 +16,19 @@ export function StudyHeatmap({ sessions, streakDays }: StudyHeatmapProps) {
   const now = new Date();
   const days = [];
 
-  // Group session seconds by date YYYY-MM-DD
+  // Group session seconds by local calendar date YYYY-MM-DD
   const secondsByDate: Record<string, number> = {};
   sessions.forEach(s => {
-    const dateKey = s.startTime.slice(0, 10);
-    secondsByDate[dateKey] = (secondsByDate[dateKey] || 0) + s.durationSeconds;
+    if (s.startTime) {
+      const localDate = new Date(s.startTime);
+      const dateKey = getLocalDateString(localDate);
+      secondsByDate[dateKey] = (secondsByDate[dateKey] || 0) + s.durationSeconds;
+    }
   });
 
   for (let i = totalDays - 1; i >= 0; i--) {
-    const d = new Date(now.getTime() - i * 86400000);
-    const dateStr = d.toISOString().slice(0, 10);
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+    const dateStr = getLocalDateString(d);
     const totalSec = secondsByDate[dateStr] || 0;
     const hours = totalSec / 3600;
 

@@ -1,5 +1,5 @@
 import { StudySession, Subject, TodoItem, UserProfile } from '../types';
-import { formatSeconds } from './utils';
+import { formatSeconds, getLocalDateString } from './utils';
 
 /**
  * Downloads full StudyPulse account data as a formatted JSON backup.
@@ -34,7 +34,7 @@ export function exportDataAsJSON(
 
   const jsonString = JSON.stringify(exportPayload, null, 2);
   const blob = new Blob([jsonString], { type: 'application/json' });
-  const dateStr = new Date().toISOString().slice(0, 10);
+  const dateStr = getLocalDateString();
   triggerDownload(blob, `studypulse-backup-${dateStr}.json`);
 }
 
@@ -59,7 +59,7 @@ export function exportSessionsAsCSV(sessions: StudySession[], subjects: Subject[
   ];
 
   const rows = sessions.map(s => {
-    const dateStr = s.startTime ? s.startTime.slice(0, 10) : '';
+    const dateStr = s.startTime ? getLocalDateString(new Date(s.startTime)) : '';
     const color = subjectColorMap.get(s.subjectId) || s.subjectColor || '#10B981';
     const durationMins = (s.durationSeconds / 60).toFixed(1);
     const formattedDuration = formatSeconds(s.durationSeconds);
@@ -82,7 +82,7 @@ export function exportSessionsAsCSV(sessions: StudySession[], subjects: Subject[
 
   const csvContent = [headers.join(','), ...rows].join('\r\n');
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const dateStr = new Date().toISOString().slice(0, 10);
+  const dateStr = getLocalDateString();
   triggerDownload(blob, `studypulse-study-sessions-${dateStr}.csv`);
 }
 

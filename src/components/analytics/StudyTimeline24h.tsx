@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { StudySession } from '../../types';
-import { formatSeconds, formatHoursAndMins } from '../../lib/utils';
+import { formatSeconds, formatHoursAndMins, getLocalStartOfDay, getLocalEndOfDay } from '../../lib/utils';
 import { Clock, Info } from 'lucide-react';
 
 interface StudyTimeline24hProps {
@@ -11,8 +11,14 @@ interface StudyTimeline24hProps {
 }
 
 export function StudyTimeline24h({ sessions, dateStr }: StudyTimeline24hProps) {
-  // Filter sessions for this specific date
-  const daySessions = sessions.filter(s => s.startTime.startsWith(dateStr));
+  const startOfDay = getLocalStartOfDay(dateStr);
+  const endOfDay = getLocalEndOfDay(dateStr);
+
+  // Filter sessions for this specific local calendar date
+  const daySessions = sessions.filter(s => {
+    const t = new Date(s.startTime).getTime();
+    return t >= startOfDay.getTime() && t <= endOfDay.getTime();
+  });
 
   // Build 24 hour slots (0 to 23)
   const hours = Array.from({ length: 24 }, (_, i) => i);

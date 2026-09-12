@@ -1,9 +1,15 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useStudy } from '../../context/StudyContext';
 import { useAuth } from '../../context/AuthContext';
-import { formatHoursAndMins, formatSeconds } from '../../lib/utils';
+import {
+  formatHoursAndMins,
+  formatSeconds,
+  getLocalStartOfDay,
+  getLocalEndOfDay,
+  getLocalDateString,
+} from '../../lib/utils';
 import { SubjectDonutChart } from './SubjectDonutChart';
 import { StudyBarChart } from './StudyBarChart';
 import { StudyTimeline24h } from './StudyTimeline24h';
@@ -31,37 +37,53 @@ type Timeframe = 'day' | 'week' | 'month' | 'year';
 
 export function AnalyticsDashboard() {
   const { user } = useAuth();
-  const { sessions, subjects, todos, selectedDate } = useStudy();
+  const { sessions, subjects, todos, selectedDate, setSelectedDate, refetchSessions } = useStudy();
   const [showExportMenu, setShowExportMenu] = useState(false);
 
   const [timeframe, setTimeframe] = useState<Timeframe>('day');
 
-  // Filter sessions based on timeframe
+  useEffect(() => {
+    refetchSessions();
+  }, [refetchSessions]);
+
+  // Filter sessions based on timeframe using local browser timezone bounds
   const filteredSessions = useMemo(() => {
     const now = new Date();
-    const todayStr = selectedDate || now.toISOString().slice(0, 10);
 
-    return sessions.filter(s => {
-      const sessionDate = new Date(s.startTime);
-      const sessionDateStr = s.startTime.slice(0, 10);
-
-      if (timeframe === 'day') {
-        return sessionDateStr === todayStr;
-      } else if (timeframe === 'week') {
-        // Past 7 days
-        const diffDays = (now.getTime() - sessionDate.getTime()) / (1000 * 3600 * 24);
-        return diffDays >= 0 && diffDays <= 7;
-      } else if (timeframe === 'month') {
-        // Past 30 days
-        const diffDays = (now.getTime() - sessionDate.getTime()) / (1000 * 3600 * 24);
-        return diffDays >= 0 && diffDays <= 30;
-      } else if (timeframe === 'year') {
-        // Past 365 days
-        const diffDays = (now.getTime() - sessionDate.getTime()) / (1000 * 3600 * 24);
-        return diffDays >= 0 && diffDays <= 365;
-      }
-      return true;
-    });
+    if (timeframe === 'day') {
+      const targetDate = selectedDate || getLocalDateString();
+      const startOfDay = getLocalStartOfDay(targetDate);
+      const endOfDay = getLocalEndOfDay(targetDate);
+      return sessions.filter(s => {
+        const t = new Date(s.startTime).getTime();
+        return t >= startOfDay.getTime() && t <= endOfDay.getTime();
+      });
+    } else if (timeframe === 'week') {
+      // Past 7 local days (from 6 days ago startOfDay to today endOfDay)
+      const startOfWeek = getLocalStartOfDay(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6));
+      const endOfToday = getLocalEndOfDay(now);
+      return sessions.filter(s => {
+        const t = new Date(s.startTime).getTime();
+        return t >= startOfWeek.getTime() && t <= endOfToday.getTime();
+      });
+    } else if (timeframe === 'month') {
+      // Past 30 local days
+      const startOfMonth = getLocalStartOfDay(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 29));
+      const endOfToday = getLocalEndOfDay(now);
+      return sessions.filter(s => {
+        const t = new Date(s.startTime).getTime();
+        return t >= startOfMonth.getTime() && t <= endOfToday.getTime();
+      });
+    } else if (timeframe === 'year') {
+      // Past 365 local days
+      const startOfYear = getLocalStartOfDay(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 364));
+      const endOfToday = getLocalEndOfDay(now);
+      return sessions.filter(s => {
+        const t = new Date(s.startTime).getTime();
+        return t >= startOfYear.getTime() && t <= endOfToday.getTime();
+      });
+    }
+    return sessions;
   }, [sessions, timeframe, selectedDate]);
 
   // Aggregate metrics
@@ -145,14 +167,18 @@ export function AnalyticsDashboard() {
         });
       });
     } else if (timeframe === 'week') {
-      // Past 7 days
+      // Past 7 local calendar days
       for (let i = 6; i >= 0; i--) {
-        const d = new Date(now.getTime() - i * 86400000);
-        const dayKey = d.toISOString().slice(0, 10);
+        const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+        const startD = getLocalStartOfDay(d);
+        const endD = getLocalEndOfDay(d);
         const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
 
         const sec = sessions
-          .filter(s => s.startTime.startsWith(dayKey))
+          .filter(s => {
+            const t = new Date(s.startTime).getTime();
+            return t >= startD.getTime() && t <= endD.getTime();
+          })
           .reduce((sum, s) => sum + s.durationSeconds, 0);
 
         data.push({
@@ -162,19 +188,17 @@ export function AnalyticsDashboard() {
         });
       }
     } else if (timeframe === 'month') {
-      // 4 weeks
+      // 4 weeks of local days
       for (let w = 4; w >= 1; w--) {
-        const startDay = (w - 1) * 7;
-        const endDay = w * 7;
-        let weekSec = 0;
+        const startD = getLocalStartOfDay(new Date(now.getFullYear(), now.getMonth(), now.getDate() - w * 7 + 1));
+        const endD = getLocalEndOfDay(new Date(now.getFullYear(), now.getMonth(), now.getDate() - (w - 1) * 7));
 
-        for (let i = startDay; i < endDay; i++) {
-          const d = new Date(now.getTime() - i * 86400000);
-          const dayKey = d.toISOString().slice(0, 10);
-          weekSec += sessions
-            .filter(s => s.startTime.startsWith(dayKey))
-            .reduce((sum, s) => sum + s.durationSeconds, 0);
-        }
+        const weekSec = sessions
+          .filter(s => {
+            const t = new Date(s.startTime).getTime();
+            return t >= startD.getTime() && t <= endD.getTime();
+          })
+          .reduce((sum, s) => sum + s.durationSeconds, 0);
 
         data.push({
           label: `Wk ${5 - w}`,
@@ -183,14 +207,17 @@ export function AnalyticsDashboard() {
         });
       }
     } else if (timeframe === 'year') {
-      // Past 12 months
+      // Past 12 local calendar months
       for (let m = 11; m >= 0; m--) {
-        const d = new Date(now.getFullYear(), now.getMonth() - m, 1);
-        const monthKey = d.toISOString().slice(0, 7); // YYYY-MM
-        const monthName = d.toLocaleDateString('en-US', { month: 'short' });
+        const firstOfMonth = new Date(now.getFullYear(), now.getMonth() - m, 1, 0, 0, 0, 0);
+        const lastOfMonth = new Date(now.getFullYear(), now.getMonth() - m + 1, 0, 23, 59, 59, 999);
+        const monthName = firstOfMonth.toLocaleDateString('en-US', { month: 'short' });
 
         const sec = sessions
-          .filter(s => s.startTime.startsWith(monthKey))
+          .filter(s => {
+            const t = new Date(s.startTime).getTime();
+            return t >= firstOfMonth.getTime() && t <= lastOfMonth.getTime();
+          })
           .reduce((sum, s) => sum + s.durationSeconds, 0);
 
         data.push({
@@ -269,6 +296,32 @@ export function AnalyticsDashboard() {
               </div>
             )}
           </div>
+
+          {/* Day View Quick Selector: Today / Yesterday */}
+          {timeframe === 'day' && (
+            <div className="flex items-center gap-1 p-1 rounded-2xl bg-slate-950/80 border border-slate-800 text-xs">
+              <button
+                onClick={() => setSelectedDate(getLocalDateString(new Date(), 0))}
+                className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
+                  selectedDate === getLocalDateString(new Date(), 0) || !selectedDate
+                    ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Today
+              </button>
+              <button
+                onClick={() => setSelectedDate(getLocalDateString(new Date(), -1))}
+                className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
+                  selectedDate === getLocalDateString(new Date(), -1)
+                    ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Yesterday
+              </button>
+            </div>
+          )}
 
           {/* Timeframe Pill Switcher */}
           <div className="flex items-center gap-1 p-1 rounded-2xl bg-slate-950/80 border border-slate-800">
@@ -392,7 +445,7 @@ export function AnalyticsDashboard() {
       <div className="p-6 rounded-3xl bg-slate-900/80 border border-slate-800/80 backdrop-blur-xl shadow-2xl">
         <StudyTimeline24h
           sessions={sessions}
-          dateStr={selectedDate || new Date().toISOString().slice(0, 10)}
+          dateStr={selectedDate || getLocalDateString()}
         />
       </div>
 

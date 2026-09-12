@@ -147,7 +147,11 @@ export function calculateStreak(sessions: StudySession[]): number {
   sessions.forEach(s => {
     // Only count meaningful sessions (at least 30 seconds)
     if (s.startTime && s.durationSeconds >= 30) {
-      studyDates.add(s.startTime.slice(0, 10));
+      const localDate = new Date(s.startTime);
+      const year = localDate.getFullYear();
+      const month = String(localDate.getMonth() + 1).padStart(2, '0');
+      const day = String(localDate.getDate()).padStart(2, '0');
+      studyDates.add(`${year}-${month}-${day}`);
     }
   });
 

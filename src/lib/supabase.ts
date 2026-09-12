@@ -14,7 +14,7 @@ export function getSupabase(): SupabaseClient | null {
 
   // Check env vars first, then localStorage config
   const envUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const envKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const envKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
   let localUrl = '';
   let localKey = '';
