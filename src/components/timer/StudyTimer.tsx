@@ -20,7 +20,6 @@ import {
   Maximize2,
   FolderPlus,
   Flame,
-  FileText,
   Clock,
   Sparkles,
   ChevronDown,
@@ -49,12 +48,10 @@ export function StudyTimer() {
     isStudying,
     isPaused,
     isRunning,
+    elapsedSeconds,
     pomodoroPhase,
-    setPomodoroPhase,
     pomodoroWorkDuration,
     pomodoroBreakDuration,
-    currentNotes,
-    setCurrentNotes,
     setIsFocusModeOpen,
     startTimer,
     pauseTimer,
@@ -69,62 +66,17 @@ export function StudyTimer() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [overviewView, setOverviewView] = useState<'today' | 'yesterday'>('today');
 
-  // Strictly local timer interval & elapsed seconds - decoupled from global state to prevent full-page re-renders
-  const [localElapsedSeconds, setLocalElapsedSeconds] = useState(0);
-  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
-
   // Lock the motivation quote in useState on initial load so it NEVER changes while timer is running
   const [lockedEmptyQuote] = useState(() => {
     return EMPTY_STATE_QUOTES[Math.floor(Math.random() * EMPTY_STATE_QUOTES.length)];
   });
 
-  // Active 1-second local timer interval
-  useEffect(() => {
-    if (timerIntervalRef.current) {
-      clearInterval(timerIntervalRef.current);
-      timerIntervalRef.current = null;
-    }
-
-    if (isStudying && !isPaused) {
-      timerIntervalRef.current = setInterval(() => {
-        setLocalElapsedSeconds(prev => {
-          const next = prev + 1;
-          if (timerMode === 'pomodoro') {
-            if (pomodoroPhase === 'work' && next >= pomodoroWorkDuration) {
-              soundFx.playMilestoneBell();
-              confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
-              setPomodoroPhase('shortBreak');
-              return 0;
-            } else if (pomodoroPhase === 'shortBreak' && next >= pomodoroBreakDuration) {
-              soundFx.playStartChime();
-              setPomodoroPhase('work');
-              return 0;
-            }
-          }
-          return next;
-        });
-      }, 1000);
-    }
-
-    return () => {
-      if (timerIntervalRef.current) {
-        clearInterval(timerIntervalRef.current);
-        timerIntervalRef.current = null;
-      }
-    };
-  }, [isStudying, isPaused, timerMode, pomodoroPhase, pomodoroWorkDuration, pomodoroBreakDuration, setPomodoroPhase]);
-
-  // Streamlined control handlers cleanly toggling state without infinite re-renders
+  // Streamlined control handlers cleanly controlling synchronized StudyContext timer engine
   const handleStartSession = useCallback(() => {
-    setLocalElapsedSeconds(0);
     startTimer();
   }, [startTimer]);
 
   const handlePause = useCallback(() => {
-    if (timerIntervalRef.current) {
-      clearInterval(timerIntervalRef.current);
-      timerIntervalRef.current = null;
-    }
     pauseTimer();
   }, [pauseTimer]);
 
@@ -133,23 +85,12 @@ export function StudyTimer() {
   }, [resumeTimer]);
 
   const handleReset = useCallback(() => {
-    if (timerIntervalRef.current) {
-      clearInterval(timerIntervalRef.current);
-      timerIntervalRef.current = null;
-    }
-    setLocalElapsedSeconds(0);
     resetTimer();
   }, [resetTimer]);
 
   const handleStopAndSave = useCallback(async () => {
-    if (timerIntervalRef.current) {
-      clearInterval(timerIntervalRef.current);
-      timerIntervalRef.current = null;
-    }
-    const duration = localElapsedSeconds;
-    setLocalElapsedSeconds(0);
-    await stopTimer(duration, currentNotes);
-  }, [localElapsedSeconds, stopTimer, currentNotes]);
+    await stopTimer();
+  }, [stopTimer]);
 
   useEffect(() => {
     refetchSessions();
@@ -195,17 +136,17 @@ export function StudyTimer() {
   }, [todaySessions, selectedSubject?.id]);
 
   // Time calculations strictly for display
-  let displayTime = formatSeconds(localElapsedSeconds);
+  let displayTime = formatSeconds(elapsedSeconds);
   let progressPercent = 0;
 
   if (timerMode === 'pomodoro') {
     const target = pomodoroPhase === 'work' ? pomodoroWorkDuration : pomodoroBreakDuration;
-    const remaining = Math.max(0, target - localElapsedSeconds);
+    const remaining = Math.max(0, target - elapsedSeconds);
     displayTime = formatSeconds(remaining);
-    progressPercent = Math.min(100, (localElapsedSeconds / target) * 100);
+    progressPercent = Math.min(100, (elapsedSeconds / target) * 100);
   } else {
     const subjectTargetSeconds = (selectedSubject?.targetMinutesPerDay || 120) * 60;
-    progressPercent = Math.min(100, ((todaySubjectSeconds + localElapsedSeconds) / subjectTargetSeconds) * 100);
+    progressPercent = Math.min(100, ((todaySubjectSeconds + elapsedSeconds) / subjectTargetSeconds) * 100);
   }
 
   // Muted teal-gray (#5A6B6A) for General Focus, reserving vibrant emerald solely for primary actions
@@ -558,21 +499,6 @@ export function StudyTimer() {
                 </>
               )}
             </div>
-          </div>
-
-          {/* Current Session Reflection Notes Input */}
-          <div className="relative z-10 mt-6 pt-6 border-t border-white/[0.08]">
-            <div className="flex items-center gap-2 text-xs font-semibold text-neutral-400 mb-2">
-              <FileText className="w-3.5 h-3.5 text-emerald-400/80" />
-              <span>Session Notes & Key Learnings (Optional)</span>
-            </div>
-            <input
-              type="text"
-              value={currentNotes}
-              onChange={e => setCurrentNotes(e.target.value)}
-              placeholder="e.g. Solved problem set 3, learned dynamic programming memoization..."
-              className="w-full px-4 py-2.5 bg-black/40 border border-white/[0.08] rounded-xl text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 transition-all font-mono"
-            />
           </div>
         </div>
 

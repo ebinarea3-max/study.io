@@ -87,8 +87,45 @@ export function StudyProvider({ children }: { children: ReactNode }) {
   const [selectedDate, setSelectedDate] = useState<string>(getTodayDateString(0));
 
   const sessionStartTimeRef = useRef<Date | null>(null);
+  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const isRunning = isStudying && !isPaused;
+
+  // Synchronized 1-second timer interval engine across standard view and Fullscreen Focus Mode
+  useEffect(() => {
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
+
+    if (isStudying && !isPaused) {
+      timerIntervalRef.current = setInterval(() => {
+        setElapsedSeconds(prev => {
+          const next = prev + 1;
+          if (timerMode === 'pomodoro') {
+            if (pomodoroPhase === 'work' && next >= pomodoroWorkDuration) {
+              soundFx.playMilestoneBell();
+              confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
+              setPomodoroPhase('shortBreak');
+              return 0;
+            } else if (pomodoroPhase === 'shortBreak' && next >= pomodoroBreakDuration) {
+              soundFx.playStartChime();
+              setPomodoroPhase('work');
+              return 0;
+            }
+          }
+          return next;
+        });
+      }, 1000);
+    }
+
+    return () => {
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
+      }
+    };
+  }, [isStudying, isPaused, timerMode, pomodoroPhase, pomodoroWorkDuration, pomodoroBreakDuration]);
 
   // Load from Supabase or localStorage fallback
   useEffect(() => {
@@ -364,47 +401,50 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
   // Persist study session immediately to Supabase, logging explicit error and caching locally on failure
   const persistStudySession = useCallback(async (sessionData: {
-    subjectId?: string;
+    subjectId?: string | null;
     subjectName?: string;
     subjectColor?: string;
     durationSeconds: number;
     startTime: string;
     endTime: string;
-    notes?: string;
+    notes?: string | null;
     mode?: TimerMode;
   }): Promise<boolean> => {
-    if (sessionData.durationSeconds <= 0) return false;
+    const durationInt = Math.round(Number(sessionData.durationSeconds)) || 0;
+    if (durationInt <= 0) return false;
 
     const supabase = getSupabase();
     const targetSub = subjects.find(s => s.id === sessionData.subjectId) || selectedSubject;
-    const isUuid = sessionData.subjectId && sessionData.subjectId.length === 36;
-    const subjectIdToSave = isUuid ? sessionData.subjectId : (targetSub?.id?.length === 36 ? targetSub.id : null);
+
+    const isValidUuid = (val?: string | null): boolean => {
+      if (!val || typeof val !== 'string') return false;
+      return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val.trim());
+    };
+
+    let subjectIdToSave: string | null = null;
+    if (isValidUuid(sessionData.subjectId)) {
+      subjectIdToSave = sessionData.subjectId!.trim();
+    } else if (isValidUuid(targetSub?.id)) {
+      subjectIdToSave = targetSub!.id.trim();
+    }
 
     const newLocalSession: StudySession = {
       id: `sess-${Date.now()}`,
       userId: user.id,
       userName: user.displayName,
       userAvatar: user.avatarUrl,
-      subjectId: targetSub?.id || sessionData.subjectId || '',
+      subjectId: subjectIdToSave || targetSub?.id || '',
       subjectName: sessionData.subjectName || targetSub?.name || 'General Focus',
       subjectColor: sessionData.subjectColor || targetSub?.color || '#10B981',
       startTime: sessionData.startTime,
       endTime: sessionData.endTime,
-      durationSeconds: sessionData.durationSeconds,
+      durationSeconds: durationInt,
       notes: sessionData.notes || '',
       mode: sessionData.mode || timerMode,
       createdAt: new Date().toISOString(),
     };
 
-    // Immediately cache in local sessions state and localStorage so data is never lost
-    setSessions(prev => {
-      const updated = [newLocalSession, ...prev];
-      try {
-        localStorage.setItem('studypulse_sessions', JSON.stringify(updated));
-      } catch {}
-      return updated;
-    });
-
+    // Cache fallback helper
     const cacheLocallyFallback = () => {
       try {
         const pendingRaw = localStorage.getItem('studypulse_pending_sessions');
@@ -413,48 +453,56 @@ export function StudyProvider({ children }: { children: ReactNode }) {
           pending.push(newLocalSession);
           localStorage.setItem('studypulse_pending_sessions', JSON.stringify(pending));
         }
-      } catch {
-        // ignore
-      }
+      } catch {}
     };
 
     if (!supabase) {
-      console.error("Failed to save study session:", new Error("Supabase client not initialized"));
+      console.error("Error saving session:", new Error("Supabase client not initialized"));
       cacheLocallyFallback();
       return false;
     }
 
     try {
-      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
-      if (authError || !authUser) {
-        console.error("Failed to save study session:", authError || new Error("No active authenticated user"));
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      const authUser = authData?.user;
+      if (authError || !authUser?.id) {
+        console.error("Error saving session:", authError || new Error("No active authenticated user"));
         cacheLocallyFallback();
         return false;
       }
 
-      const { error: insertError } = await supabase.from('study_sessions').insert({
+      const payload = {
         user_id: authUser.id,
         subject_id: subjectIdToSave,
-        duration_seconds: sessionData.durationSeconds,
+        duration_seconds: durationInt,
         started_at: sessionData.startTime,
         ended_at: sessionData.endTime,
-        notes: sessionData.notes || null,
+        notes: sessionData.notes && sessionData.notes.trim().length > 0 ? sessionData.notes.trim() : null,
         mode: sessionData.mode || timerMode,
-      });
+      };
+
+      const { data, error: insertError } = await supabase
+        .from('study_sessions')
+        .insert(payload)
+        .select();
 
       if (insertError) {
-        console.error("Failed to save study session:", insertError);
+        console.error("Error saving session:", insertError);
         cacheLocallyFallback();
         return false;
       }
 
+      console.log("Session saved successfully:", data);
+
+      // Immediately after a successful insert, trigger a refresh of the Daily Overview stats and session history
+      await refetchSessions();
       return true;
     } catch (error) {
-      console.error("Failed to save study session:", error);
+      console.error("Error saving session:", error);
       cacheLocallyFallback();
       return false;
     }
-  }, [subjects, selectedSubject, user.id, user.displayName, user.avatarUrl, timerMode]);
+  }, [subjects, selectedSubject, user.id, user.displayName, user.avatarUrl, timerMode, refetchSessions]);
 
   // Query sessions using browser-local timezone timestamp bounds (>= startOfDay, <= endOfDay)
   const querySessionsByRange = useCallback(async (startOfDay: Date, endOfDay: Date): Promise<StudySession[]> => {
@@ -525,6 +573,10 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
   // Pause Timer - cleanly toggles isRunning to false
   const pauseTimer = useCallback(() => {
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
     setIsPaused(true);
     soundFx.playStopChime();
     updateProfile({ status: 'resting' });
@@ -546,6 +598,10 @@ export function StudyProvider({ children }: { children: ReactNode }) {
   // Stop Timer and save session to Supabase immediately with localStorage fallback
   // Save to Supabase ONLY when duration > 10 seconds and "Stop & Save" is clicked
   const stopTimer = useCallback(async (durationOverride?: number, notesOverride?: string) => {
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
     const duration = durationOverride !== undefined ? durationOverride : elapsedSeconds;
     if (!isStudying && duration === 0) return;
 
@@ -556,17 +612,6 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     if (duration > 10) {
       const targetSub = selectedSubject;
       const notesToSave = notesOverride !== undefined ? notesOverride : currentNotes;
-
-      await persistStudySession({
-        subjectId: targetSub?.id,
-        subjectName: targetSub?.name,
-        subjectColor: targetSub?.color,
-        durationSeconds: duration,
-        startTime: startTime.toISOString(),
-        endTime: endTime.toISOString(),
-        notes: notesToSave,
-        mode: timerMode,
-      });
 
       // Optimistically update local Daily Overview count by +1 session and add duration
       const todayStart = getLocalStartOfDay(new Date());
@@ -589,6 +634,9 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
       const allSessionsNow = [newSession, ...sessions];
       setSessions(allSessionsNow);
+      try {
+        localStorage.setItem('studypulse_sessions', JSON.stringify(allSessionsNow));
+      } catch {}
 
       const totalToday = allSessionsNow
         .filter(s => {
@@ -616,8 +664,16 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         activeSessionStartTime: undefined,
       });
 
-      // Automatically re-fetch sessions from Supabase
-      await refetchSessions();
+      await persistStudySession({
+        subjectId: targetSub?.id,
+        subjectName: targetSub?.name,
+        subjectColor: targetSub?.color,
+        durationSeconds: duration,
+        startTime: startTime.toISOString(),
+        endTime: endTime.toISOString(),
+        notes: notesToSave,
+        mode: timerMode,
+      });
     } else {
       updateProfile({
         status: 'resting',
@@ -645,7 +701,6 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     user.totalStudySeconds,
     sessions,
     updateProfile,
-    refetchSessions,
   ]);
 
   // Complete Timer - alias for stopTimer
@@ -655,12 +710,16 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
   // Reset Timer - cleanly resets elapsed time and isRunning state without network calls
   const resetTimer = useCallback(() => {
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
     setIsStudying(false);
     setIsPaused(false);
     setElapsedSeconds(0);
     setActiveTaskId(null);
     sessionStartTimeRef.current = null;
-    updateProfile({ status: 'resting' });
+    updateProfile({ status: 'resting', activeSessionStartTime: undefined });
   }, [updateProfile]);
 
   // Subjects Management

@@ -10,6 +10,7 @@ import {
   Play,
   Pause,
   Square,
+  RotateCcw,
   Volume2,
   VolumeX,
   Flame,
@@ -49,6 +50,7 @@ export function FocusModeModal() {
     pauseTimer,
     resumeTimer,
     stopTimer,
+    resetTimer,
     currentNotes,
     setCurrentNotes,
   } = useStudy();
@@ -87,13 +89,7 @@ export function FocusModeModal() {
     };
   }, []);
 
-  // When study session completes or stops
-  useEffect(() => {
-    if (!isStudying && ambientSound !== 'none') {
-      soundFx.stopAmbient();
-      setAmbientSound('none');
-    }
-  }, [isStudying, ambientSound]);
+
 
   const handleAmbientChange = (type: AmbientSoundType | 'none') => {
     setAmbientSound(type);
@@ -239,46 +235,63 @@ export function FocusModeModal() {
           </p>
         </div>
 
-        {/* Timer Control Buttons */}
-        <div className="mt-8 flex items-center gap-4">
+        {/* Timer Control Buttons: Synchronized with StudyTimer */}
+        <div className="mt-8 flex items-center gap-3">
           {!isStudying ? (
+            /* IDLE State: One primary button */
             <button
               onClick={() => startTimer()}
-              className="px-8 py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm transition-all shadow-xl shadow-emerald-500/25 flex items-center gap-2"
+              className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black text-sm transition-all shadow-xl shadow-emerald-500/25 flex items-center gap-2.5 active:scale-95 hover:scale-[1.02] cursor-pointer"
             >
               <Play className="w-5 h-5 fill-current" />
               <span>Start Session</span>
             </button>
-          ) : (
+          ) : !isPaused ? (
+            /* RUNNING State: Two buttons (Pause & Stop & Save) */
             <>
-              {isPaused ? (
-                <button
-                  onClick={resumeTimer}
-                  className="px-6 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm transition-all shadow-lg shadow-emerald-500/25 flex items-center gap-2"
-                >
-                  <Play className="w-4 h-4 fill-current" />
-                  <span>Resume</span>
-                </button>
-              ) : (
-                <button
-                  onClick={pauseTimer}
-                  className="px-6 py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold text-sm border border-amber-500/30 transition-all flex items-center gap-2"
-                >
-                  <Pause className="w-4 h-4" />
-                  <span>Pause</span>
-                </button>
-              )}
+              <button
+                onClick={pauseTimer}
+                className="px-6 py-3 rounded-2xl bg-slate-900/90 hover:bg-slate-800 text-amber-300 font-bold text-sm border border-amber-500/30 transition-all flex items-center gap-2 active:scale-95 cursor-pointer"
+              >
+                <Pause className="w-4 h-4" />
+                <span>Pause</span>
+              </button>
 
               <button
-                onClick={() => {
-                  soundFx.stopAmbient();
-                  setAmbientSound('none');
-                  stopTimer();
-                }}
-                className="px-6 py-3 rounded-2xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 font-bold text-sm transition-all flex items-center gap-2 cursor-pointer"
+                onClick={() => stopTimer()}
+                className="px-6 py-3 rounded-2xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 font-bold text-sm transition-all flex items-center gap-2 active:scale-95 cursor-pointer"
+                title="Stop and save session"
               >
                 <Square className="w-4 h-4 fill-current" />
-                <span>Save & Finish</span>
+                <span>Stop & Save</span>
+              </button>
+            </>
+          ) : (
+            /* PAUSED State: Two buttons (Resume & Stop & Save) plus subtle Reset icon */
+            <>
+              <button
+                onClick={resumeTimer}
+                className="px-6 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm transition-all shadow-lg shadow-emerald-500/25 flex items-center gap-2 active:scale-95 cursor-pointer"
+              >
+                <Play className="w-4 h-4 fill-current" />
+                <span>Resume</span>
+              </button>
+
+              <button
+                onClick={() => stopTimer()}
+                className="px-6 py-3 rounded-2xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 font-bold text-sm transition-all flex items-center gap-2 active:scale-95 cursor-pointer"
+                title="Stop and save session"
+              >
+                <Square className="w-4 h-4 fill-current" />
+                <span>Stop & Save</span>
+              </button>
+
+              <button
+                onClick={resetTimer}
+                className="p-3 rounded-2xl bg-slate-900/80 hover:bg-slate-800 border border-white/[0.08] text-neutral-400 hover:text-white transition-colors active:scale-95 cursor-pointer"
+                title="Reset Timer"
+              >
+                <RotateCcw className="w-4 h-4" />
               </button>
             </>
           )}
