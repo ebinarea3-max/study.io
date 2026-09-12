@@ -141,6 +141,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsAuthenticated(true);
         try { localStorage.setItem('studypulse_is_authenticated', 'true'); } catch {}
         await syncSupabaseProfile(supabase, session.user);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('studypulse:auth-changed', { detail: { session } }));
+        }
       } else if (event === 'SIGNED_OUT') {
         setIsAuthenticated(false);
         setUser(INITIAL_USER);

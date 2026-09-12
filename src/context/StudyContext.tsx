@@ -400,6 +400,28 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     }
   }, [user.id, user.displayName, user.avatarUrl, updateProfile, syncPendingSessions]);
 
+  // Listen to Supabase auth state change to automatically refresh dashboard stats & sessions upon sign-in return
+  useEffect(() => {
+    const supabase = getSupabase();
+    if (!supabase) return;
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        await refetchSessions();
+      }
+    });
+
+    const handleAuthChanged = () => {
+      refetchSessions();
+    };
+    window.addEventListener('studypulse:auth-changed', handleAuthChanged);
+
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener('studypulse:auth-changed', handleAuthChanged);
+    };
+  }, [refetchSessions]);
+
   // Persist study session immediately to Supabase, logging explicit error and caching locally on failure
   const persistStudySession = useCallback(async (sessionData: {
     subjectId?: string | null;

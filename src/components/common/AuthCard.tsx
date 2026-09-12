@@ -1,86 +1,46 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useAuth, formatAuthError } from '../../context/AuthContext';
-import {
-  Mail,
-  Lock,
-  User,
-  Eye,
-  EyeOff,
-  AlertCircle,
-  ShieldCheck,
-  ArrowRight,
-  Loader2,
-  CheckCircle2,
-  XCircle,
-} from 'lucide-react';
+import { getSupabase } from '../../lib/supabase';
+import { Loader2, AlertCircle } from 'lucide-react';
 
 interface AuthCardProps {
   onSuccess?: () => void;
-  initialTab?: 'signin' | 'signup';
+  initialTab?: string;
   isModal?: boolean;
 }
 
-export function AuthCard({ onSuccess, initialTab = 'signin', isModal = false }: AuthCardProps) {
-  const { signInWithEmail, signUpWithEmail } = useAuth();
-
-  const [activeTab, setActiveTab] = useState<'signin' | 'signup'>(initialTab);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [displayName, setDisplayName] = useState('');
-
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
+export function AuthCard({ onSuccess, isModal = false }: AuthCardProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  const isSignUp = activeTab === 'signup';
-  const passwordsMatch = isSignUp && confirmPassword.length > 0 && password === confirmPassword;
-  const passwordsMismatch = isSignUp && confirmPassword.length > 0 && password !== confirmPassword;
-  const passwordTooShort = isSignUp && password.length > 0 && password.length < 6;
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email.trim() || !password) return;
-
-    if (isSignUp) {
-      if (password.length < 6) {
-        setErrorMsg('Password must be at least 6 characters long.');
-        return;
-      }
-      if (password !== confirmPassword) {
-        setErrorMsg('Passwords do not match. Please verify your password.');
-        return;
-      }
-    }
-
-    setIsLoading(true);
-    setErrorMsg('');
-
+  const handleGoogleSignIn = async () => {
     try {
-      if (isSignUp) {
-        await signUpWithEmail(email, password, displayName || undefined);
-      } else {
-        await signInWithEmail(email, password);
+      setIsLoading(true);
+      setErrorMsg('');
+      const supabase = getSupabase();
+      if (!supabase) {
+        throw new Error('Supabase client not initialized');
       }
-      if (onSuccess) {
-        onSuccess();
+
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/`,
+        },
+      });
+
+      if (error) {
+        console.error('Google sign-in error:', error.message);
+        setErrorMsg(error.message);
+        setIsLoading(false);
       }
     } catch (err: unknown) {
-      setErrorMsg(formatAuthError(err));
-      setPassword('');
-      setConfirmPassword('');
-    } finally {
+      const message = err instanceof Error ? err.message : 'Unexpected auth error occurred';
+      console.error('Unexpected auth error:', err);
+      setErrorMsg(message);
       setIsLoading(false);
     }
-  };
-
-  const switchTab = (tab: 'signin' | 'signup') => {
-    setActiveTab(tab);
-    setErrorMsg('');
   };
 
   return (
@@ -88,219 +48,79 @@ export function AuthCard({ onSuccess, initialTab = 'signin', isModal = false }: 
       className={`w-full relative overflow-hidden ${
         isModal
           ? ''
-          : 'bg-slate-900/95 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-2xl'
+          : 'bg-[#0B0C0E] border border-white/[0.08] rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-2xl'
       }`}
     >
-      {/* Sleek Tabs Switcher */}
-      <div className="grid grid-cols-2 p-1 bg-slate-950/80 border border-slate-800/90 rounded-2xl mb-5 shadow-inner">
-        <button
-          type="button"
-          onClick={() => switchTab('signin')}
-          className={`py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-            !isSignUp
-              ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 shadow-md shadow-emerald-500/20'
-              : 'text-slate-400 hover:text-white'
-          }`}
-        >
-          <span>Sign In</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => switchTab('signup')}
-          className={`py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-            isSignUp
-              ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 shadow-md shadow-emerald-500/20'
-              : 'text-slate-400 hover:text-white'
-          }`}
-        >
-          <span>Create Account</span>
-        </button>
-      </div>
+      {/* Decorative ambient lighting */}
+      <div className="absolute -top-16 -right-16 w-36 h-36 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-16 -left-16 w-36 h-36 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
 
       {/* Header Info */}
-      <div className="text-center mb-5">
-        <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-          {isSignUp ? 'Join study.io' : 'Welcome Back'}
-        </h3>
-        <p className="text-xs text-slate-400 mt-1">
-          {isSignUp
-            ? 'Set up your credentials to sync sessions, streaks & rooms.'
-            : 'Enter your email and password to access your focus sanctuary.'}
+      <div className="text-center mb-6 relative z-10">
+        <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-white/[0.04] border border-white/[0.08] shadow-inner mb-4">
+          <div className="w-7 h-7 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center font-black text-slate-950 text-sm shadow-md shadow-emerald-500/20">
+            ⚡
+          </div>
+        </div>
+        <h2 className="text-2xl font-black text-white tracking-tight">
+          Welcome to Study App
+        </h2>
+        <p className="text-sm text-neutral-400 mt-1.5 leading-relaxed">
+          Sign in to sync your study sessions and tasks
         </p>
       </div>
 
       {/* Error Notice */}
       {errorMsg && (
-        <div className="mb-4 p-3.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-xs text-rose-300 font-medium flex items-start gap-2.5 animate-in fade-in zoom-in-95 duration-150">
+        <div className="mb-5 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/25 text-xs text-rose-300 font-medium flex items-start gap-2.5 animate-in fade-in zoom-in-95 duration-150 relative z-10">
           <AlertCircle className="w-4 h-4 text-rose-400 flex-shrink-0 mt-0.5" />
           <div className="leading-snug">{errorMsg}</div>
         </div>
       )}
 
-      {/* Form Fields */}
-      <form onSubmit={handleSubmit} className="space-y-3.5">
-        {/* Full Name / Display Name (Create Account only) */}
-        {isSignUp && (
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">Display Name</label>
-            <div className="relative">
-              <User className="absolute left-3.5 top-3 w-4 h-4 text-slate-500" />
-              <input
-                type="text"
-                value={displayName}
-                onChange={e => setDisplayName(e.target.value)}
-                placeholder="e.g. Alex Jordan"
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-950/80 border border-slate-700/80 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 transition-colors"
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Email Address */}
-        <div>
-          <label className="block text-xs font-semibold text-slate-300 mb-1">Email Address</label>
-          <div className="relative">
-            <Mail className="absolute left-3.5 top-3 w-4 h-4 text-slate-500" />
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={e => {
-                setEmail(e.target.value);
-                if (errorMsg) setErrorMsg('');
-              }}
-              placeholder="you@example.com"
-              className="w-full pl-10 pr-4 py-2.5 bg-slate-950/80 border border-slate-700/80 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 transition-colors"
-            />
-          </div>
-        </div>
-
-        {/* Password */}
-        <div>
-          <div className="flex items-center justify-between mb-1">
-            <label className="text-xs font-semibold text-slate-300">Password</label>
-            {passwordTooShort && (
-              <span className="text-[11px] text-amber-400 font-medium flex items-center gap-1">
-                Min 6 characters ({password.length}/6)
-              </span>
-            )}
-            {isSignUp && password.length >= 6 && (
-              <span className="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
-                <CheckCircle2 className="w-3 h-3" /> Valid length
-              </span>
-            )}
-          </div>
-          <div className="relative">
-            <Lock className="absolute left-3.5 top-3 w-4 h-4 text-slate-500" />
-            <input
-              type={showPassword ? 'text' : 'password'}
-              required
-              value={password}
-              onChange={e => {
-                setPassword(e.target.value);
-                if (errorMsg) setErrorMsg('');
-              }}
-              placeholder={isSignUp ? 'At least 6 characters' : '••••••••'}
-              className="w-full pl-10 pr-11 py-2.5 bg-slate-950/80 border border-slate-700/80 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 transition-colors"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              tabIndex={-1}
-              className="absolute right-3 top-2.5 p-1 text-slate-400 hover:text-white rounded-lg transition-colors cursor-pointer"
-              title={showPassword ? 'Hide password' : 'Show password'}
-            >
-              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
-          </div>
-        </div>
-
-        {/* Confirm Password (Create Account only) */}
-        {isSignUp && (
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="text-xs font-semibold text-slate-300">Confirm Password</label>
-              {passwordsMatch && (
-                <span className="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3" /> Passwords match
-                </span>
-              )}
-              {passwordsMismatch && (
-                <span className="text-[11px] text-rose-400 font-medium flex items-center gap-1">
-                  <XCircle className="w-3 h-3" /> Passwords do not match
-                </span>
-              )}
-            </div>
-            <div className="relative">
-              <Lock className="absolute left-3.5 top-3 w-4 h-4 text-slate-500" />
-              <input
-                type={showConfirmPassword ? 'text' : 'password'}
-                required
-                value={confirmPassword}
-                onChange={e => {
-                  setConfirmPassword(e.target.value);
-                  if (errorMsg) setErrorMsg('');
-                }}
-                placeholder="Re-type your password"
-                className={`w-full pl-10 pr-11 py-2.5 bg-slate-950/80 border rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none transition-colors ${
-                  passwordsMismatch
-                    ? 'border-rose-500/80 focus:border-rose-500 focus:ring-1 focus:ring-rose-500/30'
-                    : passwordsMatch
-                    ? 'border-emerald-500/80 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30'
-                    : 'border-slate-700/80 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30'
-                }`}
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                tabIndex={-1}
-                className="absolute right-3 top-2.5 p-1 text-slate-400 hover:text-white rounded-lg transition-colors cursor-pointer"
-                title={showConfirmPassword ? 'Hide password' : 'Show password'}
-              >
-                {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Submit Button */}
+      {/* Full-width Google Sign-in Button */}
+      <div className="relative z-10">
         <button
-          type="submit"
-          disabled={isLoading || (isSignUp && (password.length < 6 || password !== confirmPassword))}
-          className="w-full py-3 px-4 bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 hover:from-emerald-400 hover:to-cyan-300 text-slate-950 font-bold text-sm rounded-xl transition-all shadow-lg shadow-emerald-500/25 active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none mt-2 flex items-center justify-center gap-2 cursor-pointer group"
+          type="button"
+          onClick={handleGoogleSignIn}
+          disabled={isLoading}
+          className="w-full flex items-center justify-center gap-3 py-3.5 px-5 rounded-2xl bg-neutral-900/90 hover:bg-neutral-800 active:bg-neutral-850 border border-white/[0.12] hover:border-white/25 text-white font-semibold text-sm transition-all shadow-lg hover:shadow-neutral-950/50 active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100 cursor-pointer group"
         >
           {isLoading ? (
             <>
-              <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
-              <span>{isSignUp ? 'Creating Account...' : 'Signing In...'}</span>
+              <Loader2 className="w-5 h-5 animate-spin text-neutral-300" />
+              <span className="font-medium text-neutral-200">Connecting...</span>
             </>
           ) : (
             <>
-              <span>{isSignUp ? 'Create Account & Enter' : 'Sign In & Enter'}</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+              <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24">
+                <path
+                  fill="#4285F4"
+                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                />
+                <path
+                  fill="#EA4335"
+                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                />
+              </svg>
+              <span>Continue with Google</span>
             </>
           )}
         </button>
-      </form>
-
-      {/* Switcher link */}
-      <div className="mt-5 text-center">
-        <button
-          type="button"
-          onClick={() => switchTab(isSignUp ? 'signin' : 'signup')}
-          className="text-xs text-slate-400 hover:text-emerald-400 transition-colors cursor-pointer"
-        >
-          {isSignUp
-            ? 'Already have an account? Click here to Sign In'
-            : "Don't have an account yet? Click here to Create one"}
-        </button>
       </div>
 
-      {/* Privacy note */}
-      <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-center gap-1.5 text-[11px] text-slate-500">
-        <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-        <span>Your study sessions, stats & streaks are saved securely</span>
-      </div>
+      {/* Small Muted Footer Note */}
+      <p className="mt-6 text-xs text-neutral-500 text-center leading-relaxed relative z-10">
+        By continuing, you agree to our Terms and Privacy Policy.
+      </p>
     </div>
   );
 }
