@@ -49,8 +49,8 @@ export function StudyTimer() {
     isStudying,
     isPaused,
     isRunning,
-    elapsedSeconds,
     pomodoroPhase,
+    setPomodoroPhase,
     pomodoroWorkDuration,
     pomodoroBreakDuration,
     currentNotes,
@@ -60,7 +60,6 @@ export function StudyTimer() {
     pauseTimer,
     resumeTimer,
     stopTimer,
-    completeTimer,
     resetTimer,
     sessions,
     refetchSessions,
@@ -68,22 +67,64 @@ export function StudyTimer() {
 
   const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
-  const [randomQuoteIndex, setRandomQuoteIndex] = useState(0);
   const [overviewView, setOverviewView] = useState<'today' | 'yesterday'>('today');
 
-  // Clean ref for interval ID to prevent duplicate timers or frozen state
+  // Strictly local timer interval & elapsed seconds - decoupled from global state to prevent full-page re-renders
+  const [localElapsedSeconds, setLocalElapsedSeconds] = useState(0);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Clean handlers to toggle isRunning cleanly without causing infinite re-renders
-  const handleStart = useCallback(() => {
-    if (isPaused) {
-      resumeTimer();
-    } else {
-      startTimer();
+  // Lock the motivation quote in useState on initial load so it NEVER changes while timer is running
+  const [lockedEmptyQuote] = useState(() => {
+    return EMPTY_STATE_QUOTES[Math.floor(Math.random() * EMPTY_STATE_QUOTES.length)];
+  });
+
+  // Active 1-second local timer interval
+  useEffect(() => {
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
     }
-  }, [isPaused, resumeTimer, startTimer]);
+
+    if (isStudying && !isPaused) {
+      timerIntervalRef.current = setInterval(() => {
+        setLocalElapsedSeconds(prev => {
+          const next = prev + 1;
+          if (timerMode === 'pomodoro') {
+            if (pomodoroPhase === 'work' && next >= pomodoroWorkDuration) {
+              soundFx.playMilestoneBell();
+              confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
+              setPomodoroPhase('shortBreak');
+              return 0;
+            } else if (pomodoroPhase === 'shortBreak' && next >= pomodoroBreakDuration) {
+              soundFx.playStartChime();
+              setPomodoroPhase('work');
+              return 0;
+            }
+          }
+          return next;
+        });
+      }, 1000);
+    }
+
+    return () => {
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
+      }
+    };
+  }, [isStudying, isPaused, timerMode, pomodoroPhase, pomodoroWorkDuration, pomodoroBreakDuration, setPomodoroPhase]);
+
+  // Streamlined control handlers cleanly toggling state without infinite re-renders
+  const handleStartSession = useCallback(() => {
+    setLocalElapsedSeconds(0);
+    startTimer();
+  }, [startTimer]);
 
   const handlePause = useCallback(() => {
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
     pauseTimer();
   }, [pauseTimer]);
 
@@ -92,19 +133,25 @@ export function StudyTimer() {
   }, [resumeTimer]);
 
   const handleReset = useCallback(() => {
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
+    setLocalElapsedSeconds(0);
     resetTimer();
   }, [resetTimer]);
 
-  const handleStop = useCallback(async () => {
-    await stopTimer();
-  }, [stopTimer]);
-
-  const handleComplete = useCallback(async () => {
-    await completeTimer();
-  }, [completeTimer]);
+  const handleStopAndSave = useCallback(async () => {
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
+    const duration = localElapsedSeconds;
+    setLocalElapsedSeconds(0);
+    await stopTimer(duration, currentNotes);
+  }, [localElapsedSeconds, stopTimer, currentNotes]);
 
   useEffect(() => {
-    setRandomQuoteIndex(Math.floor(Math.random() * EMPTY_STATE_QUOTES.length));
     refetchSessions();
   }, [refetchSessions]);
 
@@ -129,49 +176,36 @@ export function StudyTimer() {
     });
   }, [sessions, startOfYesterday, endOfYesterday]);
 
-  // Completed focus time today across all subjects (stable, does not tick with active second)
-  const totalFocusToday = useMemo(() => {
-    return todaySessions.reduce((sum, s) => sum + (s.durationSeconds ?? 0), 0);
+  // Overview metrics (Today & Yesterday) - calculated strictly from saved sessions, never recalculates during active ticks
+  const overviewTodaySeconds = useMemo(() => {
+    return todaySessions.reduce((sum, s) => sum + s.durationSeconds, 0);
   }, [todaySessions]);
+  const overviewTodaySessionsCount = todaySessions.length;
 
-  // Calculate today's subject study time (includes active session for live goal progress)
-  const todaySubjectSeconds = useMemo(() => {
-    return (
-      todaySessions
-        .filter(s => s.subjectId === selectedSubject?.id)
-        .reduce((sum, s) => sum + s.durationSeconds, 0) + (isStudying ? elapsedSeconds : 0)
-    );
-  }, [todaySessions, selectedSubject?.id, isStudying, elapsedSeconds]);
-
-  // Today's total focus time across all subjects (live display)
-  const todayTotalSeconds = useMemo(() => {
-    return (
-      todaySessions.reduce((sum, s) => sum + s.durationSeconds, 0) +
-      (isStudying ? elapsedSeconds : 0)
-    );
-  }, [todaySessions, isStudying, elapsedSeconds]);
-
-  // Today's completed sessions count
-  const todaySessionsCount = todaySessions.length;
-
-  // Yesterday's metrics
   const yesterdayTotalSeconds = useMemo(() => {
     return yesterdaySessions.reduce((sum, s) => sum + s.durationSeconds, 0);
   }, [yesterdaySessions]);
   const yesterdaySessionsCount = yesterdaySessions.length;
 
-  // Time calculations
-  let displayTime = formatSeconds(elapsedSeconds);
+  // Calculate today's subject study time (completed sessions only to avoid active ticking re-evaluations)
+  const todaySubjectSeconds = useMemo(() => {
+    return todaySessions
+      .filter(s => s.subjectId === selectedSubject?.id)
+      .reduce((sum, s) => sum + s.durationSeconds, 0);
+  }, [todaySessions, selectedSubject?.id]);
+
+  // Time calculations strictly for display
+  let displayTime = formatSeconds(localElapsedSeconds);
   let progressPercent = 0;
 
   if (timerMode === 'pomodoro') {
     const target = pomodoroPhase === 'work' ? pomodoroWorkDuration : pomodoroBreakDuration;
-    const remaining = Math.max(0, target - elapsedSeconds);
+    const remaining = Math.max(0, target - localElapsedSeconds);
     displayTime = formatSeconds(remaining);
-    progressPercent = Math.min(100, (elapsedSeconds / target) * 100);
+    progressPercent = Math.min(100, (localElapsedSeconds / target) * 100);
   } else {
     const subjectTargetSeconds = (selectedSubject?.targetMinutesPerDay || 120) * 60;
-    progressPercent = Math.min(100, (todaySubjectSeconds / subjectTargetSeconds) * 100);
+    progressPercent = Math.min(100, ((todaySubjectSeconds + localElapsedSeconds) / subjectTargetSeconds) * 100);
   }
 
   // Muted teal-gray (#5A6B6A) for General Focus, reserving vibrant emerald solely for primary actions
@@ -185,9 +219,8 @@ export function StudyTimer() {
     .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
     .slice(0, 4);
 
-  // Dynamic Motivation & Boost Messaging - memoized with stable fallback and defensive checks
+  // Dynamic Motivation & Boost Messaging - memoized based on saved sessions and locked quote
   const { primaryBoostMessage, secondaryBoostMessage } = useMemo(() => {
-    // If user stats are currently loading from Supabase, display a stable placeholder
     if (isLoading) {
       return {
         primaryBoostMessage: 'Ready to begin your session.',
@@ -195,10 +228,9 @@ export function StudyTimer() {
       };
     }
 
-    // Defensive fallback checks before evaluating streak and session stats
     const currentStreak = user?.streakDays ?? 0;
-    const focusMinutes = Math.floor((totalFocusToday ?? 0) / 60);
-    const completedCount = todaySessions.length;
+    const focusMinutes = Math.floor(overviewTodaySeconds / 60);
+    const sessionCount = todaySessions.length;
 
     let primary = '';
     let secondary = '';
@@ -235,11 +267,10 @@ export function StudyTimer() {
       }
     } else if (sessionMsg) {
       primary = sessionMsg;
-    } else if (currentStreak === 0 && (totalFocusToday ?? 0) === 0 && completedCount === 0) {
-      // 3. Empty state (streak 0 AND totalFocusToday 0 AND sessions 0)
-      primary = EMPTY_STATE_QUOTES[randomQuoteIndex] || EMPTY_STATE_QUOTES[0];
+    } else if (currentStreak === 0 && overviewTodaySeconds === 0 && sessionCount === 0) {
+      // Locked quote evaluated once on page load
+      primary = lockedEmptyQuote;
     } else {
-      // Fallback when streak === 0
       primary = 'No pressure — just hit Start and your streak begins.';
     }
 
@@ -247,7 +278,7 @@ export function StudyTimer() {
       primaryBoostMessage: primary,
       secondaryBoostMessage: secondary,
     };
-  }, [isLoading, user?.streakDays, totalFocusToday, todaySessions.length, randomQuoteIndex]);
+  }, [isLoading, user?.streakDays, overviewTodaySeconds, todaySessions.length, lockedEmptyQuote]);
 
   return (
     <div className="w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -466,47 +497,50 @@ export function StudyTimer() {
               </div>
             </div>
 
-            {/* Action Buttons: Emerald reserved exclusively for Primary Action (Start/Resume) */}
+            {/* Action Buttons: Streamlined 3-state controls without redundant Complete button */}
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3 relative z-10">
               {!isStudying ? (
+                /* 1. IDLE State: One primary button */
                 <button
-                  onClick={handleStart}
+                  onClick={handleStartSession}
                   className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black text-sm transition-all shadow-xl shadow-emerald-500/25 flex items-center gap-2.5 active:scale-95 hover:scale-[1.02] cursor-pointer"
                 >
                   <Play className="w-5 h-5 fill-current" />
-                  <span>Start Studying</span>
+                  <span>Start Session</span>
                 </button>
-              ) : (
+              ) : !isPaused ? (
+                /* 2. RUNNING State: Two buttons (Pause & Stop & Save) */
                 <>
-                  {isPaused ? (
-                    <button
-                      onClick={handleResume}
-                      className="px-6 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm transition-all shadow-lg shadow-emerald-500/25 flex items-center gap-2 active:scale-95 cursor-pointer"
-                    >
-                      <Play className="w-4 h-4 fill-current" />
-                      <span>Resume</span>
-                    </button>
-                  ) : (
-                    <button
-                      onClick={handlePause}
-                      className="px-6 py-3 rounded-2xl bg-neutral-900 hover:bg-neutral-800 text-amber-300 font-bold text-sm border border-amber-500/30 transition-all flex items-center gap-2 active:scale-95 cursor-pointer"
-                    >
-                      <Pause className="w-4 h-4" />
-                      <span>Pause</span>
-                    </button>
-                  )}
-
                   <button
-                    onClick={handleComplete}
-                    className="px-5 py-3 rounded-2xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 font-bold text-sm transition-all flex items-center gap-2 active:scale-95 cursor-pointer"
-                    title="Complete and save session"
+                    onClick={handlePause}
+                    className="px-6 py-3 rounded-2xl bg-neutral-900 hover:bg-neutral-800 text-amber-300 font-bold text-sm border border-amber-500/30 transition-all flex items-center gap-2 active:scale-95 cursor-pointer"
                   >
-                    <Check className="w-4 h-4 stroke-[2.5]" />
-                    <span>Complete</span>
+                    <Pause className="w-4 h-4" />
+                    <span>Pause</span>
                   </button>
 
                   <button
-                    onClick={handleStop}
+                    onClick={handleStopAndSave}
+                    className="px-6 py-3 rounded-2xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 font-bold text-sm transition-all flex items-center gap-2 active:scale-95 cursor-pointer"
+                    title="Stop and save session"
+                  >
+                    <Square className="w-4 h-4 fill-current" />
+                    <span>Stop & Save</span>
+                  </button>
+                </>
+              ) : (
+                /* 3. PAUSED State: Two buttons (Resume & Stop & Save) plus subtle Reset icon */
+                <>
+                  <button
+                    onClick={handleResume}
+                    className="px-6 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm transition-all shadow-lg shadow-emerald-500/25 flex items-center gap-2 active:scale-95 cursor-pointer"
+                  >
+                    <Play className="w-4 h-4 fill-current" />
+                    <span>Resume</span>
+                  </button>
+
+                  <button
+                    onClick={handleStopAndSave}
                     className="px-6 py-3 rounded-2xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 font-bold text-sm transition-all flex items-center gap-2 active:scale-95 cursor-pointer"
                     title="Stop and save session"
                   >
@@ -516,7 +550,7 @@ export function StudyTimer() {
 
                   <button
                     onClick={handleReset}
-                    className="p-3 rounded-2xl bg-neutral-900 hover:bg-neutral-800 border border-white/[0.08] text-neutral-400 hover:text-white transition-colors active:scale-95 cursor-pointer"
+                    className="p-3 rounded-2xl bg-neutral-900/80 hover:bg-neutral-800 border border-white/[0.08] text-neutral-400 hover:text-white transition-colors active:scale-95 cursor-pointer"
                     title="Reset Timer"
                   >
                     <RotateCcw className="w-4 h-4" />
@@ -636,13 +670,13 @@ export function StudyTimer() {
             <div className="p-3 rounded-2xl bg-violet-950/20 border border-violet-800/30 hover:border-violet-700/40 transition-colors space-y-1">
               <div className="text-[10px] uppercase font-bold tracking-wider text-violet-300/70">Total Focus</div>
               <div className="text-lg font-black text-violet-100 font-mono tabular-nums tracking-tight">
-                {formatHoursAndMins(overviewView === 'today' ? todayTotalSeconds : yesterdayTotalSeconds)}
+                {formatHoursAndMins(overviewView === 'today' ? overviewTodaySeconds : yesterdayTotalSeconds)}
               </div>
             </div>
             <div className="p-3 rounded-2xl bg-violet-950/20 border border-violet-800/30 hover:border-violet-700/40 transition-colors space-y-1">
               <div className="text-[10px] uppercase font-bold tracking-wider text-violet-300/70">Sessions</div>
               <div className="text-lg font-black text-violet-100 font-mono tabular-nums tracking-tight">
-                {overviewView === 'today' ? todaySessionsCount : yesterdaySessionsCount}
+                {overviewView === 'today' ? overviewTodaySessionsCount : yesterdaySessionsCount}
               </div>
             </div>
           </div>
