@@ -41,7 +41,7 @@ interface StudyContextType {
   resetTimer: () => void;
   addSubject: (subject: Omit<Subject, 'id' | 'createdAt'>) => void;
   updateSubject: (id: string, updates: Partial<Subject>) => void;
-  deleteSubject: (id: string) => void;
+  deleteSubject: (id: string) => Promise<void>;
   addTodo: (todo: Omit<TodoItem, 'id' | 'userId' | 'createdAt'>) => void;
   toggleTodo: (id: string) => void;
   deleteTodo: (id: string) => void;
@@ -61,6 +61,18 @@ interface StudyContextType {
     notes?: string;
     mode?: TimerMode;
   }) => Promise<boolean>;
+}
+
+export function deduplicateSubjects(list: Subject[]): Subject[] {
+  const seen = new Set<string>();
+  const result: Subject[] = [];
+  for (const item of list) {
+    const normalized = (item.name || '').trim().toLowerCase();
+    if (!normalized || seen.has(normalized)) continue;
+    seen.add(normalized);
+    result.push(item);
+  }
+  return result;
 }
 
 const StudyContext = createContext<StudyContextType | undefined>(undefined);
@@ -144,8 +156,12 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         const parsed = JSON.parse(savedSubjects).map((s: Subject) =>
           s.name === 'General Focus' && (s.color === '#3B82F6' || !s.color) ? { ...s, color: '#5A6B6A' } : s
         );
-        setSubjects(parsed.length > 0 ? parsed : INITIAL_SUBJECTS);
-        setSelectedSubjectId(parsed[0]?.id || INITIAL_SUBJECTS[0]?.id || '');
+        const unique = deduplicateSubjects(parsed);
+        setSubjects(unique.length > 0 ? unique : INITIAL_SUBJECTS);
+        setSelectedSubjectId(unique[0]?.id || INITIAL_SUBJECTS[0]?.id || '');
+      } else {
+        setSubjects(INITIAL_SUBJECTS);
+        setSelectedSubjectId(INITIAL_SUBJECTS[0]?.id || '');
       }
 
       const savedSessions = localStorage.getItem('studypulse_sessions');
@@ -185,17 +201,53 @@ export function StudyProvider({ children }: { children: ReactNode }) {
             userId: s.user_id,
             createdAt: s.created_at,
           }));
-          setSubjects(mappedSubjects);
-          setSelectedSubjectId(mappedSubjects[0].id);
-          try { localStorage.setItem('studypulse_subjects', JSON.stringify(mappedSubjects)); } catch {}
-        } else {
-          // Seed initial subjects into Supabase for new user
-          for (const initSub of INITIAL_SUBJECTS) {
-            await supabase.from('subjects').insert({
-              user_id: user.id,
-              name: initSub.name,
-              color: initSub.color,
+          const uniqueSubjects = deduplicateSubjects(mappedSubjects);
+          setSubjects(uniqueSubjects);
+          if (uniqueSubjects.length > 0) {
+            setSelectedSubjectId(prev => {
+              const stillExists = uniqueSubjects.some(s => s.id === prev);
+              return stillExists ? prev : uniqueSubjects[0].id;
             });
+          }
+          try { localStorage.setItem('studypulse_subjects', JSON.stringify(uniqueSubjects)); } catch {}
+        } else {
+          // Check again if subjects already exist in Supabase for user to prevent duplicate seeding
+          const { data: existingSubjects } = await supabase
+            .from('subjects')
+            .select('id')
+            .eq('user_id', user.id);
+
+          if (!existingSubjects || existingSubjects.length === 0) {
+            // Seed initial subjects into Supabase for new user
+            const seededSubjects: Subject[] = [];
+            for (const initSub of INITIAL_SUBJECTS) {
+              const { data: created } = await supabase
+                .from('subjects')
+                .insert({
+                  user_id: user.id,
+                  name: initSub.name,
+                  color: initSub.color,
+                })
+                .select()
+                .single();
+
+              if (created) {
+                seededSubjects.push({
+                  id: created.id,
+                  name: created.name,
+                  color: created.color,
+                  userId: created.user_id,
+                  createdAt: created.created_at,
+                });
+              }
+            }
+
+            if (seededSubjects.length > 0) {
+              const uniqueSeeded = deduplicateSubjects(seededSubjects);
+              setSubjects(uniqueSeeded);
+              setSelectedSubjectId(uniqueSeeded[0].id);
+              try { localStorage.setItem('studypulse_subjects', JSON.stringify(uniqueSeeded)); } catch {}
+            }
           }
         }
 
@@ -271,11 +323,12 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     fetchSupabaseData();
   }, [user.id, isAuthenticated, updateProfile]);
 
-  // Persist local subjects
+  // Persist local subjects with deduplication
   const saveSubjects = (newSubjects: Subject[]) => {
-    setSubjects(newSubjects);
+    const deduplicated = deduplicateSubjects(newSubjects);
+    setSubjects(deduplicated);
     try {
-      localStorage.setItem('studypulse_subjects', JSON.stringify(newSubjects));
+      localStorage.setItem('studypulse_subjects', JSON.stringify(deduplicated));
     } catch {
       // ignore
     }
@@ -836,9 +889,22 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
   // Subjects Management
   const addSubject = (newSub: Omit<Subject, 'id' | 'createdAt'>) => {
+    const trimmedName = (newSub.name || '').trim();
+    if (!trimmedName) return;
+
+    // Prevent duplicate subjects (case-insensitive)
+    const existing = subjects.find(
+      s => s.name.trim().toLowerCase() === trimmedName.toLowerCase()
+    );
+    if (existing) {
+      setSelectedSubjectId(existing.id);
+      return;
+    }
+
     const tempId = `sub-${Date.now()}`;
     const sub: Subject = {
       ...newSub,
+      name: trimmedName,
       id: tempId,
       userId: user.id,
       createdAt: new Date().toISOString(),
@@ -852,14 +918,17 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         .from('subjects')
         .insert({
           user_id: user.id,
-          name: newSub.name,
+          name: trimmedName,
           color: newSub.color,
         })
         .select()
         .single()
-        .then(({ data }) => {
-          if (data) {
-            setSubjects(prev => prev.map(s => s.id === tempId ? { ...s, id: data.id } : s));
+        .then(({ data, error }) => {
+          if (data && !error) {
+            setSubjects(prev => {
+              const updated = prev.map(s => s.id === tempId ? { ...s, id: data.id } : s);
+              return deduplicateSubjects(updated);
+            });
             setSelectedSubjectId(data.id);
           }
         });
@@ -867,32 +936,56 @@ export function StudyProvider({ children }: { children: ReactNode }) {
   };
 
   const updateSubject = (id: string, updates: Partial<Subject>) => {
-    const updated = subjects.map(s => s.id === id ? { ...s, ...updates } : s);
+    const trimmedUpdates = {
+      ...updates,
+      ...(updates.name !== undefined ? { name: updates.name.trim() } : {}),
+    };
+    const updated = subjects.map(s => s.id === id ? { ...s, ...trimmedUpdates } : s);
     saveSubjects(updated);
 
     const supabase = getSupabase();
-    if (supabase && user.id && id.length === 36) {
-      supabase
-        .from('subjects')
-        .update({
-          name: updates.name,
-          color: updates.color,
-        })
-        .eq('id', id)
-        .then();
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    if (supabase && user.id && isUuid) {
+      const dbUpdates: Record<string, any> = {};
+      if (trimmedUpdates.name !== undefined) dbUpdates.name = trimmedUpdates.name;
+      if (trimmedUpdates.color !== undefined) dbUpdates.color = trimmedUpdates.color;
+      if (Object.keys(dbUpdates).length > 0) {
+        supabase
+          .from('subjects')
+          .update(dbUpdates)
+          .eq('id', id)
+          .then(() => {}, (err) => console.error("Failed to update subject in Supabase:", err));
+      }
     }
   };
 
-  const deleteSubject = (id: string) => {
+  const deleteSubject = async (id: string): Promise<void> => {
     const filtered = subjects.filter(s => s.id !== id);
-    saveSubjects(filtered);
-    if (selectedSubjectId === id && filtered.length > 0) {
-      setSelectedSubjectId(filtered[0].id);
+    if (filtered.length === 0) {
+      const fallback: Subject = {
+        id: `sub-${Date.now()}`,
+        name: 'General Focus',
+        color: '#5A6B6A',
+        userId: user.id,
+        createdAt: new Date().toISOString(),
+      };
+      saveSubjects([fallback]);
+      setSelectedSubjectId(fallback.id);
+    } else {
+      saveSubjects(filtered);
+      if (selectedSubjectId === id) {
+        setSelectedSubjectId(filtered[0].id);
+      }
     }
 
     const supabase = getSupabase();
-    if (supabase && user.id && id.length === 36) {
-      supabase.from('subjects').delete().eq('id', id).then();
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    if (supabase && user.id && isUuid) {
+      try {
+        await supabase.from('subjects').delete().eq('id', id);
+      } catch (err) {
+        console.error("Failed to delete subject from Supabase:", err);
+      }
     }
   };
 

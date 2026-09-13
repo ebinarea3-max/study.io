@@ -31,6 +31,9 @@ export function SubjectManagerModal({ isOpen, onClose }: SubjectManagerModalProp
   const [color, setColor] = useState(COLOR_PRESETS[0]);
   const [targetMinutes, setTargetMinutes] = useState(90);
   const [isCreating, setIsCreating] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -39,6 +42,8 @@ export function SubjectManagerModal({ isOpen, onClose }: SubjectManagerModalProp
     setColor(COLOR_PRESETS[Math.floor(Math.random() * COLOR_PRESETS.length)]);
     setTargetMinutes(90);
     setEditingId(null);
+    setErrorMessage(null);
+    setDeletingId(null);
     setIsCreating(true);
   };
 
@@ -47,27 +52,50 @@ export function SubjectManagerModal({ isOpen, onClose }: SubjectManagerModalProp
     setColor(sub.color);
     setTargetMinutes(sub.targetMinutesPerDay || 90);
     setEditingId(sub.id);
+    setErrorMessage(null);
+    setDeletingId(null);
     setIsCreating(false);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    const trimmed = name.trim();
+    if (!trimmed) return;
+
+    // Check duplicate name
+    const isDuplicate = subjects.some(
+      s => s.id !== editingId && s.name.trim().toLowerCase() === trimmed.toLowerCase()
+    );
+    if (isDuplicate) {
+      setErrorMessage(`A subject named "${trimmed}" already exists.`);
+      return;
+    }
+    setErrorMessage(null);
 
     if (editingId) {
       updateSubject(editingId, {
-        name: name.trim(),
+        name: trimmed,
         color,
         targetMinutesPerDay: Number(targetMinutes),
       });
       setEditingId(null);
     } else {
       addSubject({
-        name: name.trim(),
+        name: trimmed,
         color,
         targetMinutesPerDay: Number(targetMinutes),
       });
       setIsCreating(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    setIsDeleting(true);
+    try {
+      await deleteSubject(id);
+    } finally {
+      setIsDeleting(false);
+      setDeletingId(null);
     }
   };
 
@@ -82,7 +110,7 @@ export function SubjectManagerModal({ isOpen, onClose }: SubjectManagerModalProp
             </div>
             <div>
               <h3 className="font-bold text-lg text-white">Manage Subjects</h3>
-              <p className="text-xs text-slate-400">Add & color-code your study topics</p>
+              <p className="text-xs text-slate-400">Add, customize, or remove study topics</p>
             </div>
           </div>
           <button
@@ -102,7 +130,7 @@ export function SubjectManagerModal({ isOpen, onClose }: SubjectManagerModalProp
               </h4>
               <button
                 type="button"
-                onClick={() => { setIsCreating(false); setEditingId(null); }}
+                onClick={() => { setIsCreating(false); setEditingId(null); setErrorMessage(null); }}
                 className="text-xs text-slate-400 hover:text-white"
               >
                 Cancel
@@ -115,10 +143,16 @@ export function SubjectManagerModal({ isOpen, onClose }: SubjectManagerModalProp
                 type="text"
                 required
                 value={name}
-                onChange={e => setName(e.target.value)}
+                onChange={e => {
+                  setName(e.target.value);
+                  if (errorMessage) setErrorMessage(null);
+                }}
                 placeholder="e.g. Organic Chemistry, Linear Algebra..."
                 className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-emerald-500"
               />
+              {errorMessage && (
+                <p className="text-xs text-rose-400 font-medium mt-1">{errorMessage}</p>
+              )}
             </div>
 
             {/* Color preset picker */}
@@ -195,37 +229,59 @@ export function SubjectManagerModal({ isOpen, onClose }: SubjectManagerModalProp
               key={sub.id}
               className="p-3 rounded-xl bg-slate-800/60 border border-slate-700/60 flex items-center justify-between hover:border-slate-600 transition-colors"
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 min-w-0 pr-2">
                 <div
                   className="w-4 h-4 rounded-full shadow-sm flex-shrink-0"
                   style={{ backgroundColor: sub.color }}
                 />
-                <div>
-                  <div className="font-bold text-sm text-white">{sub.name}</div>
+                <div className="truncate">
+                  <div className="font-bold text-sm text-white truncate">{sub.name}</div>
                   <div className="text-[11px] text-slate-400">
                     Target: {Math.floor((sub.targetMinutesPerDay || 60) / 60)}h {(sub.targetMinutesPerDay || 60) % 60}m / day
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() => handleStartEdit(sub)}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
-                  title="Edit Subject"
-                >
-                  <Edit2 className="w-4 h-4" />
-                </button>
-                {subjects.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => deleteSubject(sub.id)}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-700 transition-colors"
-                    title="Delete Subject"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                {deletingId === sub.id ? (
+                  <div className="flex items-center gap-1.5 bg-rose-500/10 border border-rose-500/30 px-2 py-1 rounded-lg text-xs animate-in fade-in">
+                    <span className="text-rose-300 font-medium text-[11px]">Delete?</span>
+                    <button
+                      type="button"
+                      disabled={isDeleting}
+                      onClick={() => handleDelete(sub.id)}
+                      className="px-2 py-0.5 rounded bg-rose-500 hover:bg-rose-600 text-white font-semibold transition-colors disabled:opacity-50 text-[11px]"
+                    >
+                      {isDeleting ? '...' : 'Yes'}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isDeleting}
+                      onClick={() => setDeletingId(null)}
+                      className="px-1.5 py-0.5 rounded text-slate-400 hover:text-white transition-colors text-[11px]"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => handleStartEdit(sub)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+                      title="Edit Subject"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDeletingId(sub.id)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-700 transition-colors"
+                      title="Delete Subject"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </>
                 )}
               </div>
             </div>
