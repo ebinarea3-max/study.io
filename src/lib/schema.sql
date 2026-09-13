@@ -10,6 +10,7 @@ create table if not exists public.profiles (
   daily_goal_hours numeric default 4.0,
   streak_days integer default 0,
   level integer default 1,
+  xp bigint default 0,
   total_study_seconds bigint default 0,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );

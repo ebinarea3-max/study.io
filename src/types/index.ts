@@ -49,6 +49,8 @@ export type UserProfile = {
   dailyGoalHours: number;
   streakDays: number;
   level: number;
+  xp?: number;
+  levelTitle?: string;
   totalStudySeconds: number;
   status: 'studying' | 'resting' | 'offline';
   currentSubjectId?: string;

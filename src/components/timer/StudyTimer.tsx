@@ -31,6 +31,7 @@ import { soundFx } from '../../lib/audio';
 import confetti from 'canvas-confetti';
 import { getSupabase } from '../../lib/supabase';
 import { StudySession } from '../../types';
+import { calculateFocusXP } from '../../lib/gamification';
 
 const EMPTY_STATE_QUOTES = [
   'Every long streak starts with one session.',
@@ -64,6 +65,7 @@ export function StudyTimer() {
     refetchSessions,
     addSession,
     currentNotes,
+    triggerXpEarned,
   } = useStudy();
 
   const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
@@ -218,6 +220,12 @@ export function StudyTimer() {
 
         // Immediately update local Daily Overview and Analytics stats state
         addSession(newSession);
+
+        // Trigger celebratory XP gain notification
+        const earnedXP = calculateFocusXP(seconds);
+        if (earnedXP > 0) {
+          triggerXpEarned(earnedXP, `${Math.max(1, Math.round(seconds / 60))} min Focus Session`, 'focus');
+        }
 
         soundFx.playStopChime();
         const todayStart = getLocalStartOfDay(new Date());

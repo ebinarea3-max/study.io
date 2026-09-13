@@ -10,14 +10,23 @@ import { SettingsModal } from '../components/common/SettingsModal';
 import { FloatingReactions } from '../components/common/FloatingReactions';
 import { StudyTimer } from '../components/timer/StudyTimer';
 import { FocusModeModal } from '../components/timer/FocusModeModal';
-import { StudyRoomGrid } from '../components/rooms/StudyRoomGrid';
 import { AnalyticsDashboard } from '../components/analytics/AnalyticsDashboard';
 import { IntroductionAndLogin } from '../components/common/IntroductionAndLogin';
+import { LevelUpModal } from '../components/gamification/LevelUpModal';
+import { XpFloatingNotification } from '../components/gamification/XpFloatingNotification';
 
 export default function Home() {
   const { isAuthenticated, isLoading } = useAuth();
-  const { refetchSessions } = useStudy();
-  const [activeTab, setActiveTab] = useState<'timer' | 'room' | 'analytics'>('timer');
+  const {
+    refetchSessions,
+    levelUpData,
+    dismissLevelUpModal,
+    lastXpEarned,
+    dismissXpNotification,
+  } = useStudy();
+
+  // Navigation tabs: Rooms removed, strictly Home (timer) and Analytics
+  const [activeTab, setActiveTab] = useState<'timer' | 'analytics'>('timer');
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -79,7 +88,13 @@ export default function Home() {
       {/* Floating Animated Cheers */}
       <FloatingReactions />
 
-      {/* Top Navigation Bar */}
+      {/* Floating XP Celebrations Toast */}
+      <XpFloatingNotification
+        notification={lastXpEarned}
+        onDismiss={dismissXpNotification}
+      />
+
+      {/* Top Navigation Bar (Rooms removed) */}
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -91,15 +106,25 @@ export default function Home() {
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 relative z-10">
         {activeTab === 'timer' && <StudyTimer />}
-        {activeTab === 'room' && <StudyRoomGrid />}
         {activeTab === 'analytics' && <AnalyticsDashboard />}
       </main>
 
-      {/* Modals */}
+      {/* Modals & Celebrations */}
       <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
       <ProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
       <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
       <FocusModeModal />
+
+      {/* Level Up Celebratory Modal */}
+      {levelUpData && (
+        <LevelUpModal
+          isOpen={Boolean(levelUpData)}
+          oldLevel={levelUpData.oldLevel}
+          newLevel={levelUpData.newLevel}
+          title={levelUpData.title}
+          onClose={dismissLevelUpModal}
+        />
+      )}
     </div>
   );
 }

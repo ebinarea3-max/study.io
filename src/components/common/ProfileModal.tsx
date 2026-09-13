@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { X, Target, Award, Flame, Check, Sparkles } from 'lucide-react';
+import { useStudy } from '../../context/StudyContext';
+import { X, Target, Award, Flame, Check, Sparkles, Trophy } from 'lucide-react';
 import Image from 'next/image';
 import { UserAvatar } from './UserAvatar';
 
@@ -24,6 +25,7 @@ const PRESET_AVATARS = [
 
 export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   const { user, updateProfile } = useAuth();
+  const { gamification } = useStudy();
 
   const [displayName, setDisplayName] = useState(user.displayName);
   const [avatarUrl, setAvatarUrl] = useState(user.avatarUrl);
@@ -68,34 +70,61 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
           </button>
         </div>
 
-        {/* User stats banner */}
-        <div className="my-4 p-3.5 rounded-xl bg-slate-800/80 border border-slate-700/80 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <UserAvatar
-                src={avatarUrl}
-                name={displayName}
-                size={56}
-                className="w-14 h-14 rounded-full border-2 border-emerald-500 shadow-md"
-              />
-              <span className="absolute -bottom-1 -right-1 bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-black text-[10px] px-1.5 py-0.5 rounded-full flex items-center gap-0.5 shadow">
-                <Flame className="w-2.5 h-2.5 fill-current" />
-                {user.streakDays}d
-              </span>
-            </div>
-            <div>
-              <div className="font-bold text-white flex items-center gap-1.5">
-                <span>{displayName}</span>
-                <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-semibold border border-emerald-500/30">
-                  Lv. {user.level}
+        {/* User stats banner with Gamification Level & XP Progress */}
+        <div className="my-4 p-4 rounded-2xl bg-slate-800/80 border border-slate-700/80 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <UserAvatar
+                  src={avatarUrl}
+                  name={displayName}
+                  size={56}
+                  className="w-14 h-14 rounded-full border-2 border-emerald-500 shadow-md"
+                />
+                <span className="absolute -bottom-1 -right-1 bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-black text-[10px] px-1.5 py-0.5 rounded-full flex items-center gap-0.5 shadow">
+                  <Flame className="w-2.5 h-2.5 fill-current" />
+                  {user.streakDays}d
                 </span>
               </div>
-              <div className="text-xs text-slate-400">{user.email}</div>
+              <div>
+                <div className="font-bold text-white flex items-center gap-2">
+                  <span>{displayName}</span>
+                  <span className={`text-[11px] px-2.5 py-0.5 rounded-full font-bold border ${gamification.tierBadge.badgeClass}`}>
+                    {gamification.tierBadge.icon} Lv. {gamification.level} · {gamification.title}
+                  </span>
+                </div>
+                <div className="text-xs text-slate-400 mt-0.5">{user.email}</div>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-[11px] text-slate-400">Daily Target</div>
+              <div className="text-base font-black text-emerald-400">{dailyGoalHours}h / day</div>
             </div>
           </div>
-          <div className="text-right">
-            <div className="text-[11px] text-slate-400">Daily Target</div>
-            <div className="text-base font-black text-emerald-400">{dailyGoalHours}h / day</div>
+
+          {/* XP Progress Bar to Next Level */}
+          <div className="pt-2 border-t border-slate-700/60">
+            <div className="flex items-center justify-between text-xs mb-1.5">
+              <span className="text-slate-300 font-semibold flex items-center gap-1.5">
+                <Trophy className="w-3.5 h-3.5 text-amber-400" />
+                <span>{gamification.totalXP.toLocaleString()} Total XP</span>
+              </span>
+              <span className="text-emerald-400 font-bold font-mono">
+                {Math.round(gamification.progressPercent)}% to Lv. {gamification.level + 1}
+              </span>
+            </div>
+            <div className="w-full h-2 rounded-full bg-slate-900 overflow-hidden relative shadow-inner">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 transition-all duration-500"
+                style={{ width: `${gamification.progressPercent}%` }}
+              />
+            </div>
+            <div className="mt-1 flex items-center justify-between text-[10px] text-slate-400">
+              <span>{gamification.xpInCurrentLevel} / {gamification.xpNeededForNextLevel} XP in current level</span>
+              <span className="text-emerald-400 font-mono font-medium">
+                {gamification.xpRemaining} XP remaining
+              </span>
+            </div>
           </div>
         </div>
 

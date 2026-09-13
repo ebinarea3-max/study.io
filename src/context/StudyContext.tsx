@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode, useRef, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useRef, useCallback, useMemo } from 'react';
 import { Subject, StudySession, TodoItem, TimerMode, PomodoroPhase } from '../types';
 import { INITIAL_SUBJECTS, INITIAL_TODOS, getTodayDateString, calculateStreak, cleanupLegacyDemoData } from '../lib/mockData';
 import { getLocalStartOfDay, getLocalEndOfDay } from '../lib/dateUtils';
@@ -8,8 +8,19 @@ import { useAuth } from './AuthContext';
 import { getSupabase } from '../lib/supabase';
 import { soundFx } from '../lib/audio';
 import confetti from 'canvas-confetti';
+import {
+  getLevelProgress,
+  calculateFocusXP,
+  LevelProgress,
+} from '../lib/gamification';
 
 interface StudyContextType {
+  gamification: LevelProgress;
+  lastXpEarned: { id: string; amount: number; reason: string; type?: 'focus' | 'todo' | 'streak' | 'general' } | null;
+  levelUpData: { newLevel: number; oldLevel: number; title: string } | null;
+  dismissLevelUpModal: () => void;
+  dismissXpNotification: () => void;
+  triggerXpEarned: (amount: number, reason: string, type?: 'focus' | 'todo' | 'streak' | 'general') => void;
   subjects: Subject[];
   selectedSubject: Subject | null;
   selectedSubjectId: string;
@@ -103,6 +114,84 @@ export function StudyProvider({ children }: { children: ReactNode }) {
   const [sessions, setSessions] = useState<StudySession[]>([]);
   const [todos, setTodos] = useState<TodoItem[]>(INITIAL_TODOS);
   const [selectedDate, setSelectedDate] = useState<string>(getTodayDateString(0));
+
+  // Gamification & Celebrations State
+  const [lastXpEarned, setLastXpEarned] = useState<{
+    id: string;
+    amount: number;
+    reason: string;
+    type?: 'focus' | 'todo' | 'streak' | 'general';
+  } | null>(null);
+
+  const [levelUpData, setLevelUpData] = useState<{
+    newLevel: number;
+    oldLevel: number;
+    title: string;
+  } | null>(null);
+
+  const triggerXpEarned = useCallback((
+    amount: number,
+    reason: string,
+    type: 'focus' | 'todo' | 'streak' | 'general' = 'general'
+  ) => {
+    if (amount <= 0) return;
+    setLastXpEarned({
+      id: `xp-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      amount,
+      reason,
+      type,
+    });
+  }, []);
+
+  const dismissLevelUpModal = useCallback(() => {
+    setLevelUpData(null);
+  }, []);
+
+  const dismissXpNotification = useCallback(() => {
+    setLastXpEarned(null);
+  }, []);
+
+  // Compute total focus time in seconds from all saved sessions
+  const totalStudySeconds = useMemo(() => {
+    return sessions.reduce((sum, s) => sum + (s.durationSeconds || 0), 0);
+  }, [sessions]);
+
+  // Compute total completed tasks
+  const completedTodosCount = useMemo(() => {
+    return todos.filter(t => t.completed).length;
+  }, [todos]);
+
+  // Derive real-time Gamification level progress
+  const gamification = useMemo(() => {
+    return getLevelProgress(totalStudySeconds, completedTodosCount, user.streakDays || 0);
+  }, [totalStudySeconds, completedTodosCount, user.streakDays]);
+
+  // Monitor level changes to trigger celebratory modal and keep profile state synced
+  const prevLevelRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (prevLevelRef.current === null) {
+      prevLevelRef.current = gamification.level;
+      return;
+    }
+
+    if (gamification.level > prevLevelRef.current) {
+      setLevelUpData({
+        newLevel: gamification.level,
+        oldLevel: prevLevelRef.current,
+        title: gamification.title,
+      });
+    }
+    prevLevelRef.current = gamification.level;
+
+    // Synchronize level and XP onto active user profile
+    if (user.level !== gamification.level || user.xp !== gamification.totalXP) {
+      updateProfile({
+        level: gamification.level,
+        xp: gamification.totalXP,
+        levelTitle: gamification.title,
+      });
+    }
+  }, [gamification.level, gamification.totalXP, gamification.title, user.level, user.xp, updateProfile]);
 
   const sessionStartTimeRef = useRef<Date | null>(null);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -824,6 +913,12 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       addSession(newSession);
       soundFx.playStopChime();
 
+      // Trigger gamification XP gain notification
+      const earnedXP = calculateFocusXP(seconds);
+      if (earnedXP > 0) {
+        triggerXpEarned(earnedXP, `${Math.max(1, Math.round(seconds / 60))} min Focus Session`, 'focus');
+      }
+
       const todayStart = getLocalStartOfDay(new Date());
       const todayEnd = getLocalEndOfDay(new Date());
       const allSessionsNow = [newSession, ...sessions.filter(s => s.id !== newSession.id)];
@@ -1053,6 +1148,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       nextCompleted = !target.completed;
       if (nextCompleted) {
         soundFx.playReactionPop();
+        triggerXpEarned(25, 'Task Completed', 'todo');
       }
 
       const updated = prev.map(t => {
@@ -1165,6 +1261,12 @@ export function StudyProvider({ children }: { children: ReactNode }) {
   return (
     <StudyContext.Provider
       value={{
+        gamification,
+        lastXpEarned,
+        levelUpData,
+        dismissLevelUpModal,
+        dismissXpNotification,
+        triggerXpEarned,
         subjects,
         selectedSubject,
         selectedSubjectId,

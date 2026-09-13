@@ -83,6 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             dailyGoalHours: Number(profile.daily_goal_hours ?? prev.dailyGoalHours ?? 4.0),
             streakDays: Number(profile.streak_days ?? prev.streakDays ?? 0),
             level: Number(profile.level ?? prev.level ?? 1),
+            xp: Number(profile.xp ?? prev.xp ?? 0),
             totalStudySeconds: Number(profile.total_study_seconds ?? prev.totalStudySeconds ?? 0),
             status: prev.status || 'resting',
             createdAt: profile.created_at || prev.createdAt || new Date().toISOString(),
@@ -397,9 +398,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ...updates,
       };
 
-      if (updates.totalStudySeconds !== undefined) {
-        const hours = updates.totalStudySeconds / 3600;
-        updated.level = Math.max(1, Math.floor(Math.sqrt(hours * 2)) + 1);
+      if (updates.level !== undefined) {
+        updated.level = updates.level;
+      } else if (updates.xp !== undefined) {
+        updated.level = Math.max(1, Math.floor(Math.sqrt(Math.max(0, updates.xp) / 100)) + 1);
       }
 
       try {
@@ -408,14 +410,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const supabase = getSupabase();
       if (supabase && prev.id && !prev.id.startsWith('user-scholar')) {
-        supabase.from('profiles').update({
+        const payload: Record<string, any> = {
           name: updated.displayName,
           avatar_url: updated.avatarUrl || null,
           daily_goal_hours: updated.dailyGoalHours,
           streak_days: updated.streakDays,
           level: updated.level,
           total_study_seconds: updated.totalStudySeconds,
-        }).eq('id', prev.id).then();
+        };
+        if (updated.xp !== undefined) {
+          payload.xp = updated.xp;
+        }
+
+        supabase.from('profiles').update(payload).eq('id', prev.id).then(
+          ({ error }) => {
+            // Fallback: if 'xp' column doesn't exist in profiles table yet, retry without 'xp'
+            if (error && (error.code === 'PGRST204' || error.message?.includes('xp'))) {
+              delete payload.xp;
+              supabase.from('profiles').update(payload).eq('id', prev.id).then();
+            }
+          }
+        );
       }
 
       return updated;
