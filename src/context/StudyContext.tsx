@@ -50,6 +50,8 @@ interface StudyContextType {
   stopTimer: (durationOverride?: number, notesOverride?: string) => Promise<void>;
   completeTimer: (durationOverride?: number, notesOverride?: string) => Promise<void>;
   resetTimer: () => void;
+  restoreTimerSession: (seconds: number, mode?: TimerMode, subjectIdOrName?: string) => void;
+  clearPersistedTimer: () => void;
   addSubject: (subject: Omit<Subject, 'id' | 'createdAt'>) => void;
   updateSubject: (id: string, updates: Partial<Subject>) => void;
   deleteSubject: (id: string) => Promise<void>;
@@ -294,8 +296,8 @@ export function StudyProvider({ children }: { children: ReactNode }) {
           setSubjects(uniqueSubjects);
           if (uniqueSubjects.length > 0) {
             setSelectedSubjectId(prev => {
-              const stillExists = uniqueSubjects.some(s => s.id === prev);
-              return stillExists ? prev : uniqueSubjects[0].id;
+              const matched = uniqueSubjects.find(s => s.id === prev || s.name.toLowerCase() === prev.toLowerCase());
+              return matched ? matched.id : uniqueSubjects[0].id;
             });
           }
           try { localStorage.setItem('studypulse_subjects', JSON.stringify(uniqueSubjects)); } catch {}
@@ -767,6 +769,43 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     });
   }, [selectedSubject, updateProfile]);
 
+  // Cleanly wipe any persisted timer state from localStorage
+  const clearPersistedTimer = useCallback(() => {
+    try {
+      localStorage.removeItem('studyio_timer_seconds');
+      localStorage.removeItem('studyio_timer_subject');
+      localStorage.removeItem('studyio_timer_mode');
+    } catch (e) {
+      console.warn('Failed to clear timer state from localStorage:', e);
+    }
+  }, []);
+
+  // Restore recovered timer session in paused state
+  const restoreTimerSession = useCallback((seconds: number, mode?: TimerMode, subjectIdOrName?: string) => {
+    if (seconds <= 0) return;
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
+    setElapsedSeconds(seconds);
+    setIsStudying(true);
+    setIsPaused(true);
+    if (mode && (mode === 'stopwatch' || mode === 'pomodoro')) {
+      setTimerMode(mode);
+    }
+    if (subjectIdOrName) {
+      const match = subjects.find(
+        s => s.id === subjectIdOrName || s.name.toLowerCase() === subjectIdOrName.toLowerCase()
+      );
+      if (match) {
+        setSelectedSubjectId(match.id);
+      } else if (subjectIdOrName.trim()) {
+        setSelectedSubjectId(subjectIdOrName.trim());
+      }
+    }
+    updateProfile({ status: 'resting' });
+  }, [subjects, updateProfile]);
+
   // Instantly add a session and sync metrics, Daily Overview, and Analytics
   const addSession = useCallback((newSession: StudySession) => {
     setSessions(prev => {
@@ -945,6 +984,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       setActiveTaskId(null);
       setCurrentNotes('');
       sessionStartTimeRef.current = null;
+      clearPersistedTimer();
 
       if (activeUser?.id) {
         await refetchSessions();
@@ -979,8 +1019,9 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     setElapsedSeconds(0);
     setActiveTaskId(null);
     sessionStartTimeRef.current = null;
+    clearPersistedTimer();
     updateProfile({ status: 'resting', activeSessionStartTime: undefined });
-  }, [updateProfile]);
+  }, [clearPersistedTimer, updateProfile]);
 
   // Subjects Management
   const addSubject = (newSub: Omit<Subject, 'id' | 'createdAt'>) => {
@@ -1296,6 +1337,8 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         stopTimer,
         completeTimer,
         resetTimer,
+        restoreTimerSession,
+        clearPersistedTimer,
         addSubject,
         updateSubject,
         deleteSubject,

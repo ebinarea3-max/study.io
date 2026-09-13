@@ -30,7 +30,7 @@ import {
 import { soundFx } from '../../lib/audio';
 import confetti from 'canvas-confetti';
 import { getSupabase } from '../../lib/supabase';
-import { StudySession } from '../../types';
+import { StudySession, TimerMode } from '../../types';
 import { calculateFocusXP } from '../../lib/gamification';
 
 const EMPTY_STATE_QUOTES = [
@@ -61,6 +61,8 @@ export function StudyTimer() {
     resumeTimer,
     stopTimer,
     resetTimer,
+    restoreTimerSession,
+    clearPersistedTimer,
     sessions,
     refetchSessions,
     addSession,
@@ -72,6 +74,7 @@ export function StudyTimer() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [overviewView, setOverviewView] = useState<'today' | 'yesterday'>('today');
   const [isSaving, setIsSaving] = useState(false);
+  const [showRecoveryBanner, setShowRecoveryBanner] = useState(false);
 
   // Lock the motivation quote in useState on initial load so it NEVER changes while timer is running
   const [lockedEmptyQuote] = useState(() => {
@@ -80,6 +83,7 @@ export function StudyTimer() {
 
   // Streamlined control handlers cleanly controlling synchronized StudyContext timer engine
   const handleStartSession = useCallback(() => {
+    setShowRecoveryBanner(false);
     startTimer();
   }, [startTimer]);
 
@@ -88,12 +92,15 @@ export function StudyTimer() {
   }, [pauseTimer]);
 
   const handleResume = useCallback(() => {
+    setShowRecoveryBanner(false);
     resumeTimer();
   }, [resumeTimer]);
 
   const handleReset = useCallback(() => {
     resetTimer();
-  }, [resetTimer]);
+    clearPersistedTimer();
+    setShowRecoveryBanner(false);
+  }, [resetTimer, clearPersistedTimer]);
 
   const handleStopAndSave = useCallback(async () => {
     if (isSaving) return;
@@ -113,6 +120,8 @@ export function StudyTimer() {
     // Handle sessions under 5 seconds gracefully
     if (seconds <= 0) {
       resetTimer();
+      clearPersistedTimer();
+      setShowRecoveryBanner(false);
       return;
     }
     if (seconds < 5) {
@@ -250,6 +259,8 @@ export function StudyTimer() {
 
         // Reset and stop active timer engine
         resetTimer();
+        clearPersistedTimer();
+        setShowRecoveryBanner(false);
 
         // Trigger immediate refresh of Daily Overview and Analytics data so stats update instantly
         if (activeUser?.id) {
@@ -272,12 +283,76 @@ export function StudyTimer() {
     soundFx,
     sessions,
     resetTimer,
+    clearPersistedTimer,
     refetchSessions,
   ]);
 
   useEffect(() => {
     refetchSessions();
   }, [refetchSessions]);
+
+  // 1. State Persistence Strategy: Persist timer state in localStorage on every tick while running or state change
+  useEffect(() => {
+    if (isStudying && elapsedSeconds > 0) {
+      try {
+        localStorage.setItem('studyio_timer_seconds', String(elapsedSeconds));
+        const subIdOrName = selectedSubject?.id || selectedSubject?.name || selectedSubjectId;
+        if (subIdOrName) {
+          localStorage.setItem('studyio_timer_subject', subIdOrName);
+        }
+        localStorage.setItem('studyio_timer_mode', timerMode || 'stopwatch');
+      } catch (e) {
+        console.warn('Failed to persist timer state to localStorage:', e);
+      }
+    }
+  }, [isStudying, elapsedSeconds, selectedSubject, selectedSubjectId, timerMode]);
+
+  // 2. On Component Mount / Page Load: Check localStorage and recover session in Paused state
+  useEffect(() => {
+    try {
+      const savedSecondsStr = localStorage.getItem('studyio_timer_seconds');
+      if (savedSecondsStr) {
+        const savedSeconds = parseInt(savedSecondsStr, 10);
+        if (!isNaN(savedSeconds) && savedSeconds > 0) {
+          const savedSubject = localStorage.getItem('studyio_timer_subject') || undefined;
+          const savedMode = localStorage.getItem('studyio_timer_mode') as TimerMode | null;
+          const validatedMode = savedMode === 'pomodoro' || savedMode === 'stopwatch' ? savedMode : undefined;
+
+          restoreTimerSession(savedSeconds, validatedMode, savedSubject);
+          setShowRecoveryBanner(true);
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to restore timer from localStorage:', e);
+    }
+  }, [restoreTimerSession]);
+
+  // Auto-dismiss recovery banner after 8 seconds
+  useEffect(() => {
+    if (!showRecoveryBanner) return;
+    const timer = setTimeout(() => {
+      setShowRecoveryBanner(false);
+    }, 8000);
+    return () => clearTimeout(timer);
+  }, [showRecoveryBanner]);
+
+  // 3. beforeunload event listener: warn user before closing or reloading tab if timer is running or has unsaved progress
+  useEffect(() => {
+    const hasUnsavedProgress = isRunning || (isStudying && elapsedSeconds > 0) || elapsedSeconds > 0;
+    if (!hasUnsavedProgress) return;
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+      return '';
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [isRunning, isStudying, elapsedSeconds]);
 
   // Local browser timezone day bounds
   const startOfToday = useMemo(() => getLocalStartOfDay(new Date()), []);
@@ -425,6 +500,25 @@ export function StudyTimer() {
             className="absolute -bottom-24 -left-24 w-72 h-72 rounded-full blur-[100px] opacity-10 pointer-events-none transition-all duration-700"
             style={{ backgroundColor: subjectColor }}
           />
+
+          {/* Subtle Previous Session Recovery Banner */}
+          {showRecoveryBanner && (
+            <div className="relative z-30 mb-6 flex items-center justify-between gap-3 px-4 py-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs font-semibold backdrop-blur-md shadow-lg shadow-amber-500/5 animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center flex-shrink-0">
+                  <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
+                </div>
+                <span>Previous session recovered and paused.</span>
+              </div>
+              <button
+                onClick={() => setShowRecoveryBanner(false)}
+                className="p-1.5 rounded-xl hover:bg-amber-500/20 text-amber-300 transition-colors cursor-pointer"
+                title="Dismiss"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
 
           {/* Top Controls: Mode Switcher & Focus Mode Button */}
           <div className="flex flex-wrap items-center justify-between gap-4 relative z-10 pb-6 border-b border-white/[0.08]">
