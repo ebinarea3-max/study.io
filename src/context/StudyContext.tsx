@@ -68,6 +68,11 @@ const StudyContext = createContext<StudyContextType | undefined>(undefined);
 export function StudyProvider({ children }: { children: ReactNode }) {
   const { user, isAuthenticated, updateProfile } = useAuth();
   
+  const userRef = useRef(user);
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
+
   // State
   const [subjects, setSubjects] = useState<Subject[]>(INITIAL_SUBJECTS);
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>(INITIAL_SUBJECTS[0]?.id || '');
@@ -352,7 +357,8 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       await syncPendingSessions();
 
       const { data: { user: authUser } } = await supabase.auth.getUser();
-      const targetUserId = authUser?.id || user.id;
+      const currentUser = userRef.current;
+      const targetUserId = authUser?.id || currentUser.id;
       if (!targetUserId || targetUserId.startsWith('user-scholar-')) return;
 
       const { data: dbSessions, error } = await supabase
@@ -370,14 +376,14 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         const mappedSessions: StudySession[] = dbSessions.map(s => ({
           id: s.id,
           userId: s.user_id,
-          userName: user.displayName,
-          userAvatar: user.avatarUrl,
+          userName: currentUser.displayName,
+          userAvatar: currentUser.avatarUrl,
           subjectId: s.subject_id || '',
-          subjectName: s.subjects?.name || 'General Focus',
+          subjectName: s.subjects?.name || s.subject || 'General Focus',
           subjectColor: s.subjects?.color || '#10B981',
           startTime: s.started_at,
           endTime: s.ended_at,
-          durationSeconds: s.duration_seconds,
+          durationSeconds: s.duration_seconds ?? s.duration ?? s.seconds ?? 0,
           notes: s.notes || '',
           mode: (s.mode as TimerMode) || 'stopwatch',
           createdAt: s.created_at,
@@ -390,34 +396,28 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
         const realStreak = calculateStreak(mappedSessions);
         const realTotalSeconds = mappedSessions.reduce((sum, s) => sum + s.durationSeconds, 0);
-        updateProfile({
-          streakDays: realStreak,
-          totalStudySeconds: realTotalSeconds,
-        });
+
+        // Only update profile if streak or study seconds actually changed to avoid re-render thrashing
+        if (currentUser.streakDays !== realStreak || currentUser.totalStudySeconds !== realTotalSeconds) {
+          updateProfile({
+            streakDays: realStreak,
+            totalStudySeconds: realTotalSeconds,
+          });
+        }
       }
     } catch (err) {
       console.error("Failed to refetch sessions:", err);
     }
-  }, [user.id, user.displayName, user.avatarUrl, updateProfile, syncPendingSessions]);
+  }, [updateProfile, syncPendingSessions]);
 
-  // Listen to Supabase auth state change to automatically refresh dashboard stats & sessions upon sign-in return
+  // Listen to studypulse auth change event to automatically refresh dashboard stats & sessions
   useEffect(() => {
-    const supabase = getSupabase();
-    if (!supabase) return;
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        await refetchSessions();
-      }
-    });
-
     const handleAuthChanged = () => {
       refetchSessions();
     };
     window.addEventListener('studypulse:auth-changed', handleAuthChanged);
 
     return () => {
-      subscription.unsubscribe();
       window.removeEventListener('studypulse:auth-changed', handleAuthChanged);
     };
   }, [refetchSessions]);
@@ -647,135 +647,162 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
   // Stop Timer and save session to Supabase immediately with localStorage fallback
   const stopTimer = useCallback(async (durationOverride?: number, notesOverride?: string) => {
+    // 1. Capture variables into local scope BEFORE touching state
+    const seconds = durationOverride !== undefined ? durationOverride : elapsedSeconds;
+    if (!isStudying && seconds === 0) return;
+
     if (timerIntervalRef.current) {
       clearInterval(timerIntervalRef.current);
       timerIntervalRef.current = null;
     }
-    const duration = durationOverride !== undefined ? durationOverride : elapsedSeconds;
-    if (!isStudying && duration === 0) return;
 
-    soundFx.playStopChime();
-    const endTime = new Date();
-    const startTime = sessionStartTimeRef.current || new Date(endTime.getTime() - duration * 1000);
-    const createdAt = new Date().toISOString();
-    const targetSub = selectedSubject;
+    if (seconds <= 0) {
+      setIsStudying(false);
+      setIsPaused(false);
+      setElapsedSeconds(0);
+      setActiveTaskId(null);
+      setCurrentNotes('');
+      sessionStartTimeRef.current = null;
+      return;
+    }
+
+    if (seconds < 5) {
+      console.info(`StudyContext: Session was under 5 seconds (${seconds}s). Handling gracefully.`);
+    }
+
+    const now = new Date();
+    const endedAt = now.toISOString();
+    const startedAt = (sessionStartTimeRef.current || new Date(now.getTime() - seconds * 1000)).toISOString();
+    const activeSubject = selectedSubject;
+    const subjectName = (typeof activeSubject === 'string' ? activeSubject : activeSubject?.name) || 'General Focus';
+    const subjectId = activeSubject?.id;
+    const subjectColor = activeSubject?.color || '#10B981';
     const notesToSave = notesOverride !== undefined ? notesOverride : currentNotes;
-    const subjectName = (typeof targetSub === 'string' ? targetSub : targetSub?.name) || 'General Focus';
+    const currentMode = timerMode || 'stopwatch';
+    const currentUser = userRef.current;
 
-    // 1. Fetch current user with supabase.auth.getUser() (or sets user_id to null / guest fallback)
+    // 2. Fetch active user from Supabase auth
     const supabase = getSupabase();
-    let currentUserId: string | null = null;
+    let activeUser = null;
     if (supabase) {
       try {
         const { data: authData, error: authError } = await supabase.auth.getUser();
-        if (!authError && authData?.user?.id) {
-          currentUserId = authData.user.id;
+        if (!authError && authData?.user) {
+          activeUser = authData.user;
         }
       } catch (err) {
-        console.log('Error getting auth user:', err);
+        console.warn('StudyContext: Error getting auth user:', err);
       }
     }
-    if (!currentUserId && user?.id) {
-      const isValidUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(user.id);
-      currentUserId = isValidUuid ? user.id : null;
+
+    if (!activeUser) {
+      console.warn('StudyContext: No active user session present. Logging session locally.');
     }
 
-    // 2. Directly insert the session into 'study_sessions' table
-    const insertPayload: Record<string, any> = {
-      user_id: currentUserId ?? null,
-      subject: subjectName,
-      duration_seconds: duration,
-      mode: timerMode || 'stopwatch',
-      created_at: createdAt,
-      started_at: startTime.toISOString(),
-      ended_at: endTime.toISOString(),
-      notes: notesToSave && notesToSave.trim().length > 0 ? notesToSave.trim() : null,
-    };
+    // 3. Persist record into study_sessions
+    let insertSuccess = false;
+    let insertedRecordId: string | null = null;
 
-    if (targetSub?.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetSub.id)) {
-      insertPayload.subject_id = targetSub.id;
-    }
+    if (supabase && activeUser?.id) {
+      const insertPayload: Record<string, any> = {
+        user_id: activeUser.id,
+        subject: subjectName,
+        duration_seconds: seconds,
+        mode: currentMode,
+        created_at: endedAt,
+        started_at: startedAt,
+        ended_at: endedAt,
+        notes: notesToSave && notesToSave.trim().length > 0 ? notesToSave.trim() : null,
+      };
 
-    let insertResponse: any = null;
-    if (supabase) {
+      if (subjectId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(subjectId)) {
+        insertPayload.subject_id = subjectId;
+      }
+
       try {
-        insertResponse = await supabase.from('study_sessions').insert(insertPayload).select();
+        let insertResponse = await supabase.from('study_sessions').insert(insertPayload).select();
+
         // If 'subject' column does not exist in the database schema cache, retry without 'subject'
         if (insertResponse.error && (insertResponse.error.code === 'PGRST204' || insertResponse.error.message?.includes('subject'))) {
-          const fallbackPayload = { ...insertPayload };
+          const fallbackPayload: Record<string, any> = { ...insertPayload };
           delete fallbackPayload.subject;
           insertResponse = await supabase.from('study_sessions').insert(fallbackPayload).select();
         }
+
+        // If duration_seconds column does not exist, retry with duration
+        if (insertResponse.error && (insertResponse.error.code === 'PGRST204' || insertResponse.error.message?.includes('duration_seconds'))) {
+          const fallbackPayload: Record<string, any> = { ...insertPayload, duration: seconds };
+          delete fallbackPayload.duration_seconds;
+          insertResponse = await supabase.from('study_sessions').insert(fallbackPayload).select();
+        }
+
+        if (insertResponse.error) {
+          console.error('StudyContext: Supabase insert error:', insertResponse.error);
+        } else {
+          insertSuccess = true;
+          insertedRecordId = insertResponse.data?.[0]?.id || null;
+        }
       } catch (err) {
-        insertResponse = { error: err };
+        console.error('StudyContext: Exception inserting session:', err);
       }
     } else {
-      insertResponse = { error: new Error('Supabase client not initialized') };
+      // Local/guest mode allowed
+      insertSuccess = true;
     }
 
-    // 3. Log the Supabase insert response/error to console.log
-    console.log('Supabase insert response/error:', insertResponse?.error || insertResponse?.data || insertResponse);
+    // 4. Only reset timer and update Daily Overview stats AFTER insert returns successfully
+    if (insertSuccess) {
+      const newSession: StudySession = {
+        id: insertedRecordId || `sess-${Date.now()}`,
+        userId: activeUser?.id || currentUser.id || 'guest',
+        userName: currentUser.displayName,
+        userAvatar: currentUser.avatarUrl,
+        subjectId: subjectId || '',
+        subjectName: subjectName,
+        subjectColor: subjectColor,
+        startTime: startedAt,
+        endTime: endedAt,
+        durationSeconds: seconds,
+        notes: notesToSave,
+        mode: currentMode,
+        createdAt: endedAt,
+      };
 
-    // 4. Immediately update the Daily Overview and Analytics stats state so the UI reflects the new session without a manual reload
-    const newSession: StudySession = {
-      id: insertResponse?.data?.[0]?.id || `sess-${Date.now()}`,
-      userId: currentUserId || user?.id || 'guest',
-      userName: user.displayName,
-      userAvatar: user.avatarUrl,
-      subjectId: targetSub?.id || '',
-      subjectName: subjectName,
-      subjectColor: targetSub?.color || '#10B981',
-      startTime: startTime.toISOString(),
-      endTime: endTime.toISOString(),
-      durationSeconds: duration,
-      notes: notesToSave,
-      mode: timerMode,
-      createdAt: createdAt,
-    };
+      addSession(newSession);
+      soundFx.playStopChime();
 
-    const allSessionsNow = [newSession, ...sessions.filter(s => s.id !== newSession.id)];
-    setSessions(allSessionsNow);
-    try {
-      localStorage.setItem('studypulse_sessions', JSON.stringify(allSessionsNow));
-    } catch {}
+      const todayStart = getLocalStartOfDay(new Date());
+      const todayEnd = getLocalEndOfDay(new Date());
+      const allSessionsNow = [newSession, ...sessions.filter(s => s.id !== newSession.id)];
+      const totalToday = allSessionsNow
+        .filter(s => {
+          const t = new Date(s.startTime).getTime();
+          return t >= todayStart.getTime() && t <= todayEnd.getTime();
+        })
+        .reduce((sum, s) => sum + s.durationSeconds, 0);
 
-    const todayStart = getLocalStartOfDay(new Date());
-    const todayEnd = getLocalEndOfDay(new Date());
-    const totalToday = allSessionsNow
-      .filter(s => {
-        const t = new Date(s.startTime).getTime();
-        return t >= todayStart.getTime() && t <= todayEnd.getTime();
-      })
-      .reduce((sum, s) => sum + s.durationSeconds, 0);
+      const dailyGoalSeconds = (currentUser.dailyGoalHours || 4) * 3600;
+      if (totalToday >= dailyGoalSeconds && totalToday - seconds < dailyGoalSeconds) {
+        confetti({
+          particleCount: 120,
+          spread: 80,
+          origin: { y: 0.5 },
+        });
+        soundFx.playMilestoneBell();
+      }
 
-    const dailyGoalSeconds = user.dailyGoalHours * 3600;
-    if (totalToday >= dailyGoalSeconds && totalToday - duration < dailyGoalSeconds) {
-      confetti({
-        particleCount: 120,
-        spread: 80,
-        origin: { y: 0.5 },
-      });
-      soundFx.playMilestoneBell();
-    }
+      setIsStudying(false);
+      setIsPaused(false);
+      setElapsedSeconds(0);
+      setActiveTaskId(null);
+      setCurrentNotes('');
+      sessionStartTimeRef.current = null;
 
-    const newStreak = calculateStreak(allSessionsNow);
-    const totalSec = (user.totalStudySeconds || 0) + duration;
-    updateProfile({
-      totalStudySeconds: totalSec,
-      streakDays: newStreak,
-      status: 'resting',
-      activeSessionStartTime: undefined,
-    });
-
-    setIsStudying(false);
-    setIsPaused(false);
-    setElapsedSeconds(0);
-    setActiveTaskId(null);
-    setCurrentNotes('');
-    sessionStartTimeRef.current = null;
-
-    if (currentUserId) {
-      await refetchSessions();
+      if (activeUser?.id) {
+        await refetchSessions();
+      }
+    } else {
+      console.error('StudyContext: Session persistence failed. Timer state preserved.');
     }
   }, [
     isStudying,
@@ -783,9 +810,8 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     selectedSubject,
     currentNotes,
     timerMode,
-    user,
     sessions,
-    updateProfile,
+    addSession,
     refetchSessions,
   ]);
 

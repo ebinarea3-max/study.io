@@ -57,6 +57,14 @@ export type UserProfile = {
   activeSessionStartTime?: string; // ISO string if currently studying
   currentSessionElapsedSeconds?: number;
   createdAt: string;
+  user_metadata?: {
+    avatar_url?: string;
+    picture?: string;
+    full_name?: string;
+    name?: string;
+    display_name?: string;
+    [key: string]: unknown;
+  };
 };
 
 export type StudyRoom = {

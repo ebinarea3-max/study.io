@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useAuth } from '../../context/AuthContext';
 import { useStudy } from '../../context/StudyContext';
@@ -42,6 +42,31 @@ export function Navbar({
   const { currentRoom, activeStudierCount } = useRoom();
 
   const [showPersonaMenu, setShowPersonaMenu] = useState(false);
+
+  // Memoize user session avatar & display name extraction to prevent flickering
+  const avatarUrl = useMemo(() => {
+    return (
+      user?.user_metadata?.avatar_url ||
+      (user as any)?.user_metadata?.picture ||
+      user?.avatarUrl ||
+      ''
+    );
+  }, [user?.user_metadata?.avatar_url, (user as any)?.user_metadata?.picture, user?.avatarUrl]);
+
+  const displayName = useMemo(() => {
+    return (
+      user?.user_metadata?.full_name ||
+      (user as any)?.user_metadata?.name ||
+      (user as any)?.user_metadata?.display_name ||
+      user?.displayName ||
+      'Focus Scholar'
+    );
+  }, [
+    user?.user_metadata?.full_name,
+    (user as any)?.user_metadata?.name,
+    (user as any)?.user_metadata?.display_name,
+    user?.displayName,
+  ]);
 
   const todayTotal = getTodayTotalSeconds();
 
@@ -163,8 +188,8 @@ export function Navbar({
             >
               <div className="relative p-[2px] rounded-xl bg-gradient-to-tr from-cyan-500 to-emerald-500 shadow-sm shadow-emerald-500/20">
                 <UserAvatar
-                  src={user.avatarUrl}
-                  name={user.displayName}
+                  src={avatarUrl}
+                  name={displayName}
                   size={32}
                   className="w-8 h-8 rounded-[10px]"
                 />
@@ -176,7 +201,7 @@ export function Navbar({
               </div>
               <div className="text-left hidden xl:block">
                 <div className="text-xs font-bold text-white leading-tight truncate max-w-[90px]">
-                  {user.displayName}
+                  {displayName}
                 </div>
                 <div className="text-[10px] text-emerald-400 leading-none">Lv. {user.level}</div>
               </div>
@@ -186,7 +211,7 @@ export function Navbar({
             {showPersonaMenu && (
               <div className="absolute right-0 mt-2 w-60 rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95 duration-100">
                 <div className="p-2 border-b border-slate-800 mb-1">
-                  <div className="font-bold text-xs text-white">{user.displayName}</div>
+                  <div className="font-bold text-xs text-white">{displayName}</div>
                   <div className="text-[10px] text-slate-400 truncate">{user.email}</div>
                   <div className="mt-1.5 flex items-center justify-between text-[10px]">
                     <span className="text-emerald-400 font-bold">Level {user.level} Scholar</span>

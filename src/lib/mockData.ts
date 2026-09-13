@@ -4,7 +4,7 @@ export const INITIAL_USER: UserProfile = {
   id: 'user-scholar-1',
   email: 'user@study.io',
   displayName: 'Focus Scholar',
-  avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
+  avatarUrl: '',
   bio: 'Dedicated to deep work & daily focus 🎯',
   dailyGoalHours: 4.0,
   streakDays: 0,

@@ -59,6 +59,17 @@ export function FocusModeModal() {
   const [ambientVolume, setAmbientVolume] = useState(0.5);
   const [quoteIndex, setQuoteIndex] = useState(0);
   const [showNotes, setShowNotes] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleStopAndSave = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
+    try {
+      await stopTimer();
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   // Quote rotation
   useEffect(() => {
@@ -258,12 +269,22 @@ export function FocusModeModal() {
               </button>
 
               <button
-                onClick={() => stopTimer()}
-                className="px-6 py-3 rounded-2xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 font-bold text-sm transition-all flex items-center gap-2 active:scale-95 cursor-pointer"
-                title="Stop and save session"
+                onClick={handleStopAndSave}
+                disabled={isSaving}
+                className="px-6 py-3 rounded-2xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 font-bold text-sm transition-all flex items-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                title={isSaving ? "Saving session..." : "Stop and save session"}
               >
-                <Square className="w-4 h-4 fill-current" />
-                <span>Stop & Save</span>
+                {isSaving ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-rose-300 border-t-transparent rounded-full animate-spin" />
+                    <span>Saving...</span>
+                  </>
+                ) : (
+                  <>
+                    <Square className="w-4 h-4 fill-current" />
+                    <span>Stop & Save</span>
+                  </>
+                )}
               </button>
             </>
           ) : (
@@ -271,19 +292,30 @@ export function FocusModeModal() {
             <>
               <button
                 onClick={resumeTimer}
-                className="px-6 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm transition-all shadow-lg shadow-emerald-500/25 flex items-center gap-2 active:scale-95 cursor-pointer"
+                disabled={isSaving}
+                className="px-6 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm transition-all shadow-lg shadow-emerald-500/25 flex items-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50"
               >
                 <Play className="w-4 h-4 fill-current" />
                 <span>Resume</span>
               </button>
 
               <button
-                onClick={() => stopTimer()}
-                className="px-6 py-3 rounded-2xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 font-bold text-sm transition-all flex items-center gap-2 active:scale-95 cursor-pointer"
-                title="Stop and save session"
+                onClick={handleStopAndSave}
+                disabled={isSaving}
+                className="px-6 py-3 rounded-2xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 font-bold text-sm transition-all flex items-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                title={isSaving ? "Saving session..." : "Stop and save session"}
               >
-                <Square className="w-4 h-4 fill-current" />
-                <span>Stop & Save</span>
+                {isSaving ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-rose-300 border-t-transparent rounded-full animate-spin" />
+                    <span>Saving...</span>
+                  </>
+                ) : (
+                  <>
+                    <Square className="w-4 h-4 fill-current" />
+                    <span>Stop & Save</span>
+                  </>
+                )}
               </button>
 
               <button

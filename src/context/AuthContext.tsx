@@ -47,60 +47,65 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Fetch or create profile row in Supabase
   const syncSupabaseProfile = useCallback(async (supabase: ReturnType<typeof getSupabase>, authUser: { id: string; email?: string; user_metadata?: Record<string, unknown> }) => {
-    if (!supabase) return;
+    if (!supabase || !authUser?.id) return;
+
+    // Immediately extract user_metadata for stable, zero-flicker UI
+    const metaAvatar = (authUser.user_metadata?.avatar_url as string) || (authUser.user_metadata?.picture as string) || '';
+    const metaName = (authUser.user_metadata?.full_name as string) || (authUser.user_metadata?.name as string) || (authUser.user_metadata?.display_name as string) || authUser.email?.split('@')[0] || 'Focus Scholar';
+
+    setUser(prev => {
+      const merged: UserProfile = {
+        ...prev,
+        id: authUser.id,
+        email: authUser.email || prev.email || '',
+        displayName: metaName || prev.displayName,
+        avatarUrl: metaAvatar || prev.avatarUrl,
+        user_metadata: authUser.user_metadata,
+      };
+      try { localStorage.setItem('studypulse_active_user', JSON.stringify(merged)); } catch {}
+      return merged;
+    });
 
     try {
       const { data: profile } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', authUser.id)
-        .single();
+        .maybeSingle();
 
       if (profile) {
-        const synced: UserProfile = {
-          id: profile.id,
-          email: authUser.email || '',
-          displayName: profile.name || (authUser.user_metadata?.display_name as string) || authUser.email?.split('@')[0] || 'Focus Scholar',
-          avatarUrl: profile.avatar_url || (authUser.user_metadata?.avatar_url as string) || '',
-          dailyGoalHours: Number(profile.daily_goal_hours ?? 4.0),
-          streakDays: Number(profile.streak_days ?? 0),
-          level: Number(profile.level ?? 1),
-          totalStudySeconds: Number(profile.total_study_seconds ?? 0),
-          status: 'resting',
-          createdAt: profile.created_at || new Date().toISOString(),
-        };
-        saveUser(synced);
+        setUser(prev => {
+          const synced: UserProfile = {
+            id: profile.id,
+            email: authUser.email || prev.email || '',
+            displayName: profile.name || metaName || prev.displayName,
+            avatarUrl: profile.avatar_url || metaAvatar || prev.avatarUrl,
+            dailyGoalHours: Number(profile.daily_goal_hours ?? prev.dailyGoalHours ?? 4.0),
+            streakDays: Number(profile.streak_days ?? prev.streakDays ?? 0),
+            level: Number(profile.level ?? prev.level ?? 1),
+            totalStudySeconds: Number(profile.total_study_seconds ?? prev.totalStudySeconds ?? 0),
+            status: prev.status || 'resting',
+            createdAt: profile.created_at || prev.createdAt || new Date().toISOString(),
+            user_metadata: authUser.user_metadata,
+          };
+          try { localStorage.setItem('studypulse_active_user', JSON.stringify(synced)); } catch {}
+          return synced;
+        });
       } else {
-        const displayName = (authUser.user_metadata?.display_name as string) || (authUser.user_metadata?.name as string) || authUser.email?.split('@')[0] || 'Focus Scholar';
-        const avatarUrl = (authUser.user_metadata?.avatar_url as string) || (authUser.user_metadata?.picture as string) || '';
-
         await supabase.from('profiles').upsert({
           id: authUser.id,
-          name: displayName,
-          avatar_url: avatarUrl || null,
+          name: metaName,
+          avatar_url: metaAvatar || null,
         });
-
-        const created: UserProfile = {
-          id: authUser.id,
-          email: authUser.email || '',
-          displayName,
-          avatarUrl,
-          dailyGoalHours: 4.0,
-          streakDays: 0,
-          level: 1,
-          totalStudySeconds: 0,
-          status: 'resting',
-          createdAt: new Date().toISOString(),
-        };
-        saveUser(created);
       }
     } catch {
       // fallback
     }
-  }, [saveUser]);
+  }, []);
 
   // Clean legacy demo data and setup Supabase Auth Listener
   useEffect(() => {
+    let isSubscribed = true;
     cleanupLegacyDemoData();
 
     // Check local storage initial state
@@ -127,6 +132,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Check current active session in Supabase
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!isSubscribed) return;
       if (session?.user) {
         setIsAuthenticated(true);
         try { localStorage.setItem('studypulse_is_authenticated', 'true'); } catch {}
@@ -137,6 +143,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Listen to real-time auth changes (Sign In, Sign Out, Token Refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!isSubscribed) return;
       if (session?.user) {
         setIsAuthenticated(true);
         try { localStorage.setItem('studypulse_is_authenticated', 'true'); } catch {}
@@ -156,6 +163,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => {
+      isSubscribed = false;
       subscription.unsubscribe();
     };
   }, [syncSupabaseProfile]);
@@ -181,7 +189,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 
   // Sign Up: Requires valid email, min 6 char password
-  const signUpWithEmail = async (email: string, pass: string, name?: string) => {
+  const signUpWithEmail = useCallback(async (email: string, pass: string, name?: string) => {
     setIsLoading(true);
     const normalizedEmail = email.toLowerCase().trim();
 
@@ -266,10 +274,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsAuthenticated(true);
     try { localStorage.setItem('studypulse_is_authenticated', 'true'); } catch {}
     setIsLoading(false);
-  };
+  }, [syncSupabaseProfile, saveUser]);
 
   // Sign In: Validates password and email
-  const signInWithEmail = async (email: string, pass: string) => {
+  const signInWithEmail = useCallback(async (email: string, pass: string) => {
     setIsLoading(true);
     const normalizedEmail = email.toLowerCase().trim();
 
@@ -324,29 +332,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error('Incorrect password. Please verify your password and try again.');
     }
 
-    const updatedProfile: UserProfile = {
-      ...user,
-      id: existing.id,
-      email: existing.email,
-      displayName: existing.displayName,
-      avatarUrl: existing.avatarUrl,
-      status: 'resting',
-    };
-    saveUser(updatedProfile);
+    setUser(prev => {
+      const updatedProfile: UserProfile = {
+        ...prev,
+        id: existing.id,
+        email: existing.email,
+        displayName: existing.displayName,
+        avatarUrl: existing.avatarUrl,
+        status: 'resting',
+      };
+      try { localStorage.setItem('studypulse_active_user', JSON.stringify(updatedProfile)); } catch {}
+      return updatedProfile;
+    });
     setIsAuthenticated(true);
     try { localStorage.setItem('studypulse_is_authenticated', 'true'); } catch {}
     setIsLoading(false);
-  };
+  }, [syncSupabaseProfile]);
 
-  const loginWithEmail = async (email: string, pass: string, name?: string) => {
+  const loginWithEmail = useCallback(async (email: string, pass: string, name?: string) => {
     if (name) {
       await signUpWithEmail(email, pass, name);
     } else {
       await signInWithEmail(email, pass);
     }
-  };
+  }, [signUpWithEmail, signInWithEmail]);
 
-  const loginWithGoogle = async () => {
+  const loginWithGoogle = useCallback(async () => {
     setIsLoading(true);
     const supabase = getSupabase();
     if (supabase) {
@@ -363,46 +374,55 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     // Local development fallback
-    const googleProfile: UserProfile = {
-      ...user,
-      id: 'google-user-' + Math.floor(Math.random() * 10000),
-      email: 'user.google@gmail.com',
-      displayName: 'Google Scholar',
-      avatarUrl: '',
-    };
-    saveUser(googleProfile);
+    setUser(prev => {
+      const googleProfile: UserProfile = {
+        ...prev,
+        id: 'google-user-' + Math.floor(Math.random() * 10000),
+        email: 'user.google@gmail.com',
+        displayName: 'Google Scholar',
+        avatarUrl: '',
+      };
+      try { localStorage.setItem('studypulse_active_user', JSON.stringify(googleProfile)); } catch {}
+      return googleProfile;
+    });
     setIsAuthenticated(true);
     try { localStorage.setItem('studypulse_is_authenticated', 'true'); } catch {}
     setIsLoading(false);
-  };
+  }, []);
 
-  const updateProfile = (updates: Partial<UserProfile>) => {
-    const updated: UserProfile = {
-      ...user,
-      ...updates,
-    };
+  const updateProfile = useCallback((updates: Partial<UserProfile>) => {
+    setUser(prev => {
+      const updated: UserProfile = {
+        ...prev,
+        ...updates,
+      };
 
-    if (updates.totalStudySeconds !== undefined) {
-      const hours = updates.totalStudySeconds / 3600;
-      updated.level = Math.max(1, Math.floor(Math.sqrt(hours * 2)) + 1);
-    }
+      if (updates.totalStudySeconds !== undefined) {
+        const hours = updates.totalStudySeconds / 3600;
+        updated.level = Math.max(1, Math.floor(Math.sqrt(hours * 2)) + 1);
+      }
 
-    saveUser(updated);
+      try {
+        localStorage.setItem('studypulse_active_user', JSON.stringify(updated));
+      } catch {}
 
-    const supabase = getSupabase();
-    if (supabase && user.id && !user.id.startsWith('user-scholar')) {
-      supabase.from('profiles').update({
-        name: updated.displayName,
-        avatar_url: updated.avatarUrl || null,
-        daily_goal_hours: updated.dailyGoalHours,
-        streak_days: updated.streakDays,
-        level: updated.level,
-        total_study_seconds: updated.totalStudySeconds,
-      }).eq('id', user.id).then();
-    }
-  };
+      const supabase = getSupabase();
+      if (supabase && prev.id && !prev.id.startsWith('user-scholar')) {
+        supabase.from('profiles').update({
+          name: updated.displayName,
+          avatar_url: updated.avatarUrl || null,
+          daily_goal_hours: updated.dailyGoalHours,
+          streak_days: updated.streakDays,
+          level: updated.level,
+          total_study_seconds: updated.totalStudySeconds,
+        }).eq('id', prev.id).then();
+      }
 
-  const logout = async () => {
+      return updated;
+    });
+  }, []);
+
+  const logout = useCallback(async () => {
     const supabase = getSupabase();
     if (supabase) {
       try {
@@ -417,18 +437,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem('studypulse_is_authenticated');
       localStorage.removeItem('studypulse_active_user');
     } catch {}
-  };
+  }, [saveUser]);
 
-  const resetAllData = async () => {
+  const resetAllData = useCallback(async () => {
     const supabase = getSupabase();
-    if (supabase && user.id) {
-      try {
-        await supabase.from('study_sessions').delete().eq('user_id', user.id);
-        await supabase.from('todos').delete().eq('user_id', user.id);
-      } catch {
-        // ignore
+    setUser(prev => {
+      if (supabase && prev.id) {
+        try {
+          supabase.from('study_sessions').delete().eq('user_id', prev.id).then();
+          supabase.from('todos').delete().eq('user_id', prev.id).then();
+        } catch {
+          // ignore
+        }
       }
-    }
+      return INITIAL_USER;
+    });
 
     try {
       localStorage.removeItem('studypulse_active_user');
@@ -442,23 +465,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     saveUser(INITIAL_USER);
     setIsAuthenticated(false);
-  };
+  }, [saveUser]);
 
-  const deleteAccount = async () => {
+  const deleteAccount = useCallback(async () => {
     setIsLoading(true);
     const supabase = getSupabase();
-    if (supabase && user.id) {
-      try {
-        await supabase.from('study_sessions').delete().eq('user_id', user.id);
-        await supabase.from('todos').delete().eq('user_id', user.id);
-        await supabase.from('subjects').delete().eq('user_id', user.id);
-        await supabase.from('room_presence').delete().eq('user_id', user.id);
-        await supabase.from('profiles').delete().eq('id', user.id);
-        await supabase.auth.signOut();
-      } catch {
-        // ignore
+    setUser(prev => {
+      if (supabase && prev.id) {
+        try {
+          supabase.from('study_sessions').delete().eq('user_id', prev.id).then();
+          supabase.from('todos').delete().eq('user_id', prev.id).then();
+          supabase.from('subjects').delete().eq('user_id', prev.id).then();
+          supabase.from('room_presence').delete().eq('user_id', prev.id).then();
+          supabase.from('profiles').delete().eq('id', prev.id).then();
+          supabase.auth.signOut().then();
+        } catch {
+          // ignore
+        }
       }
-    }
+      if (prev.email) {
+        const accounts = getStoredAccounts();
+        if (accounts[prev.email.toLowerCase()]) {
+          delete accounts[prev.email.toLowerCase()];
+          try {
+            localStorage.setItem('studyio_registered_accounts', JSON.stringify(accounts));
+          } catch {}
+        }
+      }
+      return INITIAL_USER;
+    });
 
     try {
       localStorage.removeItem('studypulse_active_user');
@@ -468,11 +503,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem('studypulse_subjects');
       localStorage.removeItem('studypulse_selected_subject');
       localStorage.removeItem('studypulse_custom_rooms');
-      const accounts = getStoredAccounts();
-      if (user.email && accounts[user.email.toLowerCase()]) {
-        delete accounts[user.email.toLowerCase()];
-        localStorage.setItem('studyio_registered_accounts', JSON.stringify(accounts));
-      }
     } catch {
       // ignore
     }
@@ -480,7 +510,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     saveUser(INITIAL_USER);
     setIsAuthenticated(false);
     setIsLoading(false);
-  };
+  }, [saveUser]);
 
   return (
     <AuthContext.Provider

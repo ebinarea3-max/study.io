@@ -69,6 +69,7 @@ export function StudyTimer() {
   const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [overviewView, setOverviewView] = useState<'today' | 'yesterday'>('today');
+  const [isSaving, setIsSaving] = useState(false);
 
   // Lock the motivation quote in useState on initial load so it NEVER changes while timer is running
   const [lockedEmptyQuote] = useState(() => {
@@ -93,124 +94,167 @@ export function StudyTimer() {
   }, [resetTimer]);
 
   const handleStopAndSave = useCallback(async () => {
-    const supabase = getSupabase();
-    const duration = elapsedSeconds;
-    const now = new Date();
-    const createdAt = now.toISOString();
-    const startTime = new Date(now.getTime() - duration * 1000);
+    if (isSaving) return;
 
-    // 1. Fetch current user with supabase.auth.getUser() (or sets user_id to null / guest fallback if unauthenticated)
-    let currentUserId: string | null = null;
-    if (supabase) {
-      try {
-        const { data: authData, error: authError } = await supabase.auth.getUser();
-        if (!authError && authData?.user?.id) {
-          currentUserId = authData.user.id;
-        }
-      } catch (err) {
-        console.log('Error fetching user with supabase.auth.getUser():', err);
-      }
-    }
-
-    // Guest fallback / validate UUID if unauthenticated
-    if (!currentUserId && user?.id) {
-      const isValidUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(user.id);
-      currentUserId = isValidUuid ? user.id : null;
-    }
-
-    // 2. Directly insert the session into 'study_sessions' table:
-    //    - user_id: user?.id ?? null
-    //    - subject: selectedSubject || 'General Focus'
-    //    - duration_seconds: current duration in seconds
-    //    - mode: current mode ('stopwatch' or 'pomodoro')
-    //    - created_at: new Date().toISOString()
-    const subjectName = (typeof selectedSubject === 'string' ? selectedSubject : selectedSubject?.name) || 'General Focus';
+    // 1. Prevent race conditions: Capture current values BEFORE mutating any state or resetting timer display
+    const seconds = elapsedSeconds;
+    const activeSubject = selectedSubject;
+    const subjectName = (typeof activeSubject === 'string' ? activeSubject : activeSubject?.name) || 'General Focus';
+    const subjectId = activeSubject?.id;
+    const subjectColor = activeSubject?.color || '#10B981';
     const currentMode = timerMode || 'stopwatch';
+    const notesToSave = currentNotes?.trim() || null;
+    const now = new Date();
+    const endedAt = now.toISOString();
+    const startedAt = new Date(now.getTime() - seconds * 1000).toISOString();
 
-    const insertPayload: Record<string, any> = {
-      user_id: currentUserId ?? null,
-      subject: subjectName,
-      duration_seconds: duration,
-      mode: currentMode,
-      created_at: createdAt,
-      started_at: startTime.toISOString(),
-      ended_at: now.toISOString(),
-      notes: currentNotes && currentNotes.trim().length > 0 ? currentNotes.trim() : null,
-    };
-
-    if (selectedSubject?.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(selectedSubject.id)) {
-      insertPayload.subject_id = selectedSubject.id;
+    // Handle sessions under 5 seconds gracefully
+    if (seconds <= 0) {
+      resetTimer();
+      return;
+    }
+    if (seconds < 5) {
+      console.info(`Session duration was under 5 seconds (${seconds}s). Proceeding with graceful save.`);
     }
 
-    let insertResponse: any = null;
-    if (supabase) {
-      try {
-        insertResponse = await supabase.from('study_sessions').insert(insertPayload).select();
+    setIsSaving(true);
 
-        // If 'subject' column is not in the schema cache (PGRST204), retry without 'subject'
-        if (insertResponse.error && (insertResponse.error.code === 'PGRST204' || insertResponse.error.message?.includes('subject'))) {
-          const fallbackPayload = { ...insertPayload };
-          delete fallbackPayload.subject;
-          insertResponse = await supabase.from('study_sessions').insert(fallbackPayload).select();
+    try {
+      const supabase = getSupabase();
+
+      // 2. Ensure active user is present via supabase.auth.getUser()
+      let activeUser: any = null;
+      if (supabase) {
+        try {
+          const authRes = await supabase.auth.getUser();
+          if (!authRes.error && authRes.data?.user) {
+            activeUser = authRes.data.user;
+          }
+        } catch (err) {
+          console.warn('Error fetching active user via supabase.auth.getUser():', err);
         }
-      } catch (err) {
-        insertResponse = { error: err };
       }
-    } else {
-      insertResponse = { error: new Error('Supabase client not initialized') };
-    }
 
-    // 3. Log the Supabase insert response/error to console.log
-    console.log('Supabase insert response/error:', insertResponse?.error || insertResponse?.data || insertResponse);
+      if (!activeUser) {
+        console.warn('No active user logged in. Session will be recorded in local overview mode.');
+      }
 
-    // 4. Immediately update the Daily Overview and Analytics stats state so the UI reflects the new session without a manual reload
-    const newSession: StudySession = {
-      id: insertResponse?.data?.[0]?.id || `sess-${Date.now()}`,
-      userId: currentUserId || user?.id || 'guest',
-      userName: user?.displayName || 'Scholar',
-      userAvatar: user?.avatarUrl,
-      subjectId: selectedSubject?.id || '',
-      subjectName: subjectName,
-      subjectColor: selectedSubject?.color || '#10B981',
-      startTime: startTime.toISOString(),
-      endTime: now.toISOString(),
-      durationSeconds: duration,
-      notes: currentNotes || '',
-      mode: currentMode,
-      createdAt: createdAt,
-    };
+      // 3. Insert the record into study_sessions
+      let insertSuccess = false;
+      let insertedRecordId: string | null = null;
 
-    addSession(newSession);
+      if (supabase && activeUser?.id) {
+        const insertPayload: Record<string, any> = {
+          user_id: activeUser.id,
+          subject: subjectName,
+          duration_seconds: seconds,
+          mode: currentMode,
+          created_at: endedAt,
+          started_at: startedAt,
+          ended_at: endedAt,
+          notes: notesToSave,
+        };
 
-    soundFx.playStopChime();
-    const todayStart = getLocalStartOfDay(new Date());
-    const todayEnd = getLocalEndOfDay(new Date());
-    const allSessionsWithNew = [newSession, ...sessions.filter(s => s.id !== newSession.id)];
-    const totalToday = allSessionsWithNew
-      .filter(s => {
-        const t = new Date(s.startTime).getTime();
-        return t >= todayStart.getTime() && t <= todayEnd.getTime();
-      })
-      .reduce((sum, s) => sum + s.durationSeconds, 0);
+        if (subjectId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(subjectId)) {
+          insertPayload.subject_id = subjectId;
+        }
 
-    const dailyGoalSeconds = (user?.dailyGoalHours || 2) * 3600;
-    if (totalToday >= dailyGoalSeconds && totalToday - duration < dailyGoalSeconds) {
-      confetti({
-        particleCount: 120,
-        spread: 80,
-        origin: { y: 0.5 },
-      });
-      soundFx.playMilestoneBell();
-    }
+        try {
+          let res = await supabase.from('study_sessions').insert(insertPayload).select();
 
-    // Reset and stop active timer engine
-    resetTimer();
+          // Schema fallback 1: If 'subject' column is not in schema, retry without 'subject'
+          if (res.error && (res.error.code === 'PGRST204' || res.error.message?.includes('subject'))) {
+            const fallbackPayload: Record<string, any> = { ...insertPayload };
+            delete fallbackPayload.subject;
+            res = await supabase.from('study_sessions').insert(fallbackPayload).select();
+          }
 
-    // Trigger refetch if authenticated to sync Supabase
-    if (currentUserId) {
-      await refetchSessions();
+          // Schema fallback 2: If 'duration_seconds' is missing, retry with 'duration'
+          if (res.error && (res.error.code === 'PGRST204' || res.error.message?.includes('duration_seconds'))) {
+            const fallbackPayload: Record<string, any> = { ...insertPayload, duration: seconds };
+            delete fallbackPayload.duration_seconds;
+            res = await supabase.from('study_sessions').insert(fallbackPayload).select();
+          }
+
+          // Schema fallback 3: If 'duration' is missing, retry with 'seconds'
+          if (res.error && (res.error.code === 'PGRST204' || res.error.message?.includes('duration'))) {
+            const fallbackPayload: Record<string, any> = { ...insertPayload, seconds: seconds };
+            delete fallbackPayload.duration;
+            res = await supabase.from('study_sessions').insert(fallbackPayload).select();
+          }
+
+          if (res.error) {
+            console.error('Supabase study_sessions insert error:', res.error);
+          } else {
+            insertSuccess = true;
+            insertedRecordId = res.data?.[0]?.id || null;
+            console.log('Session successfully persisted to Supabase:', res.data);
+          }
+        } catch (err) {
+          console.error('Exception during Supabase study_sessions insert:', err);
+        }
+      } else {
+        // Guest or unauthenticated local session
+        insertSuccess = true;
+      }
+
+      // 4. Only reset the timer and update the local Daily Overview stats AFTER Supabase insert returns successfully
+      if (insertSuccess) {
+        const newSession: StudySession = {
+          id: insertedRecordId || `sess-${Date.now()}`,
+          userId: activeUser?.id || user?.id || 'guest',
+          userName: user?.displayName || 'Scholar',
+          userAvatar: user?.avatarUrl,
+          subjectId: subjectId || '',
+          subjectName: subjectName,
+          subjectColor: subjectColor,
+          startTime: startedAt,
+          endTime: endedAt,
+          durationSeconds: seconds,
+          notes: notesToSave || '',
+          mode: currentMode,
+          createdAt: endedAt,
+        };
+
+        // Immediately update local Daily Overview and Analytics stats state
+        addSession(newSession);
+
+        soundFx.playStopChime();
+        const todayStart = getLocalStartOfDay(new Date());
+        const todayEnd = getLocalEndOfDay(new Date());
+        const allSessionsWithNew = [newSession, ...sessions.filter(s => s.id !== newSession.id)];
+        const totalToday = allSessionsWithNew
+          .filter(s => {
+            const t = new Date(s.startTime).getTime();
+            return t >= todayStart.getTime() && t <= todayEnd.getTime();
+          })
+          .reduce((sum, s) => sum + s.durationSeconds, 0);
+
+        const dailyGoalSeconds = (user?.dailyGoalHours || 2) * 3600;
+        if (totalToday >= dailyGoalSeconds && totalToday - seconds < dailyGoalSeconds) {
+          confetti({
+            particleCount: 120,
+            spread: 80,
+            origin: { y: 0.5 },
+          });
+          soundFx.playMilestoneBell();
+        }
+
+        // Reset and stop active timer engine
+        resetTimer();
+
+        // Trigger immediate refresh of Daily Overview and Analytics data so stats update instantly
+        if (activeUser?.id) {
+          await refetchSessions();
+        }
+      } else {
+        console.error('Stop & Save failed to persist session to database. Timer state preserved to prevent data loss.');
+      }
+    } finally {
+      setIsSaving(false);
     }
   }, [
+    isSaving,
     elapsedSeconds,
     selectedSubject,
     timerMode,
@@ -593,11 +637,21 @@ export function StudyTimer() {
 
                   <button
                     onClick={handleStopAndSave}
-                    className="px-6 py-3 rounded-2xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 font-bold text-sm transition-all flex items-center gap-2 active:scale-95 cursor-pointer"
-                    title="Stop and save session"
+                    disabled={isSaving}
+                    className="px-6 py-3 rounded-2xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 font-bold text-sm transition-all flex items-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    title={isSaving ? "Saving session..." : "Stop and save session"}
                   >
-                    <Square className="w-4 h-4 fill-current" />
-                    <span>Stop & Save</span>
+                    {isSaving ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-rose-300 border-t-transparent rounded-full animate-spin" />
+                        <span>Saving...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Square className="w-4 h-4 fill-current" />
+                        <span>Stop & Save</span>
+                      </>
+                    )}
                   </button>
                 </>
               ) : (
@@ -605,7 +659,8 @@ export function StudyTimer() {
                 <>
                   <button
                     onClick={handleResume}
-                    className="px-6 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm transition-all shadow-lg shadow-emerald-500/25 flex items-center gap-2 active:scale-95 cursor-pointer"
+                    disabled={isSaving}
+                    className="px-6 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm transition-all shadow-lg shadow-emerald-500/25 flex items-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50"
                   >
                     <Play className="w-4 h-4 fill-current" />
                     <span>Resume</span>
@@ -613,11 +668,21 @@ export function StudyTimer() {
 
                   <button
                     onClick={handleStopAndSave}
-                    className="px-6 py-3 rounded-2xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 font-bold text-sm transition-all flex items-center gap-2 active:scale-95 cursor-pointer"
-                    title="Stop and save session"
+                    disabled={isSaving}
+                    className="px-6 py-3 rounded-2xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 font-bold text-sm transition-all flex items-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    title={isSaving ? "Saving session..." : "Stop and save session"}
                   >
-                    <Square className="w-4 h-4 fill-current" />
-                    <span>Stop & Save</span>
+                    {isSaving ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-rose-300 border-t-transparent rounded-full animate-spin" />
+                        <span>Saving...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Square className="w-4 h-4 fill-current" />
+                        <span>Stop & Save</span>
+                      </>
+                    )}
                   </button>
 
                   <button
