@@ -101,7 +101,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
   // State
   const [subjects, setSubjects] = useState<Subject[]>(INITIAL_SUBJECTS);
-  const [selectedSubjectId, setSelectedSubjectId] = useState<string>(INITIAL_SUBJECTS[0]?.id || '');
+  const [selectedSubjectId, setSelectedSubjectId] = useState<string>('');
   const [timerMode, setTimerMode] = useState<TimerMode>('stopwatch');
   
   const [isStudying, setIsStudying] = useState(false);
@@ -309,10 +309,8 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         );
         const unique = deduplicateSubjects(parsed);
         setSubjects(unique.length > 0 ? unique : INITIAL_SUBJECTS);
-        setSelectedSubjectId(unique[0]?.id || INITIAL_SUBJECTS[0]?.id || '');
       } else {
         setSubjects(INITIAL_SUBJECTS);
-        setSelectedSubjectId(INITIAL_SUBJECTS[0]?.id || '');
       }
 
       const savedSessions = localStorage.getItem('studypulse_sessions');
@@ -356,8 +354,9 @@ export function StudyProvider({ children }: { children: ReactNode }) {
           setSubjects(uniqueSubjects);
           if (uniqueSubjects.length > 0) {
             setSelectedSubjectId(prev => {
+              if (!prev) return '';
               const matched = uniqueSubjects.find(s => s.id === prev || s.name.toLowerCase() === prev.toLowerCase());
-              return matched ? matched.id : uniqueSubjects[0].id;
+              return matched ? matched.id : '';
             });
           }
           try { localStorage.setItem('studypulse_subjects', JSON.stringify(uniqueSubjects)); } catch {}
@@ -396,7 +395,6 @@ export function StudyProvider({ children }: { children: ReactNode }) {
             if (seededSubjects.length > 0) {
               const uniqueSeeded = deduplicateSubjects(seededSubjects);
               setSubjects(uniqueSeeded);
-              setSelectedSubjectId(uniqueSeeded[0].id);
               try { localStorage.setItem('studypulse_subjects', JSON.stringify(uniqueSeeded)); } catch {}
             }
           }
@@ -505,7 +503,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const selectedSubject = subjects.find(s => s.id === selectedSubjectId) || subjects[0] || null;
+  const selectedSubject = selectedSubjectId ? (subjects.find(s => s.id === selectedSubjectId) || null) : null;
 
   // Synchronize pending sessions from localStorage fallback to Supabase
   const syncPendingSessions = useCallback(async () => {

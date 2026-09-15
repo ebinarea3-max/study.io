@@ -76,17 +76,33 @@ export function StudyTimer() {
   const [overviewView, setOverviewView] = useState<'today' | 'yesterday'>('today');
   const [isSaving, setIsSaving] = useState(false);
   const [showRecoveryBanner, setShowRecoveryBanner] = useState(false);
+  const [subjectWarning, setSubjectWarning] = useState(false);
 
   // Lock the motivation quote in useState on initial load so it NEVER changes while timer is running
   const [lockedEmptyQuote] = useState(() => {
     return EMPTY_STATE_QUOTES[Math.floor(Math.random() * EMPTY_STATE_QUOTES.length)];
   });
 
+  // Auto-dismiss subject warning after 5 seconds
+  useEffect(() => {
+    if (!subjectWarning) return;
+    const timer = setTimeout(() => {
+      setSubjectWarning(false);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [subjectWarning]);
+
   // Streamlined control handlers cleanly controlling synchronized StudyContext timer engine
   const handleStartSession = useCallback(() => {
+    if (!selectedSubject && !selectedSubjectId) {
+      setSubjectWarning(true);
+      setShowDropdown(true);
+      return;
+    }
+    setSubjectWarning(false);
     setShowRecoveryBanner(false);
     startTimer();
-  }, [startTimer]);
+  }, [selectedSubject, selectedSubjectId, startTimer]);
 
   const handlePause = useCallback(() => {
     pauseTimer();
@@ -409,14 +425,17 @@ export function StudyTimer() {
     progressPercent = Math.min(100, (elapsedSeconds / target) * 100);
   } else {
     const subjectTargetSeconds = (selectedSubject?.targetMinutesPerDay || 120) * 60;
-    progressPercent = Math.min(100, ((todaySubjectSeconds + elapsedSeconds) / subjectTargetSeconds) * 100);
+    progressPercent = selectedSubject
+      ? Math.min(100, ((todaySubjectSeconds + elapsedSeconds) / subjectTargetSeconds) * 100)
+      : 0;
   }
 
-  // Muted teal-gray (#5A6B6A) for General Focus, reserving vibrant emerald solely for primary actions
-  const subjectColor =
-    selectedSubject?.name === 'General Focus' && (selectedSubject?.color === '#3B82F6' || !selectedSubject?.color)
-      ? '#5A6B6A'
-      : selectedSubject?.color || '#5A6B6A';
+  // Muted teal-gray (#5A6B6A) for General Focus, neutral slate-gray (#64748B) when no subject is selected
+  const subjectColor = !selectedSubject
+    ? '#64748B'
+    : selectedSubject?.name === 'General Focus' && (selectedSubject?.color === '#3B82F6' || !selectedSubject?.color)
+    ? '#5A6B6A'
+    : selectedSubject?.color || '#5A6B6A';
 
   // Recent 4 sessions
   const recentSessions = [...sessions]
