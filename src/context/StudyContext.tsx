@@ -30,6 +30,7 @@ interface StudyContextType {
   isStudying: boolean;
   isPaused: boolean;
   isRunning: boolean;
+  startTimeRef: React.MutableRefObject<number | null>;
   elapsedSeconds: number;
   pomodoroPhase: PomodoroPhase;
   setPomodoroPhase: (phase: PomodoroPhase) => void;
@@ -195,12 +196,14 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     }
   }, [gamification.level, gamification.totalXP, gamification.title, user.level, user.xp, updateProfile]);
 
+  const startTimeRef = useRef<number | null>(null);
+  const accumulatedSecondsRef = useRef<number>(0);
   const sessionStartTimeRef = useRef<Date | null>(null);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const isRunning = isStudying && !isPaused;
 
-  // Synchronized 1-second timer interval engine across standard view and Fullscreen Focus Mode
+  // Real-Time Delta Tracking: Synchronized interval engine running at 500ms tick to eliminate background throttling drift
   useEffect(() => {
     if (timerIntervalRef.current) {
       clearInterval(timerIntervalRef.current);
@@ -208,24 +211,37 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     }
 
     if (isStudying && !isPaused) {
+      // Ensure anchor timestamp exists
+      if (startTimeRef.current === null) {
+        startTimeRef.current = Date.now() - (accumulatedSecondsRef.current * 1000);
+      }
+
       timerIntervalRef.current = setInterval(() => {
-        setElapsedSeconds(prev => {
-          const next = prev + 1;
-          if (timerMode === 'pomodoro') {
-            if (pomodoroPhase === 'work' && next >= pomodoroWorkDuration) {
+        if (startTimeRef.current === null) return;
+        const actualElapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
+        accumulatedSecondsRef.current = actualElapsed;
+
+        if (timerMode === 'pomodoro') {
+          const target = pomodoroPhase === 'work' ? pomodoroWorkDuration : pomodoroBreakDuration;
+          if (actualElapsed >= target) {
+            if (pomodoroPhase === 'work') {
               soundFx.playMilestoneBell();
               confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
               setPomodoroPhase('shortBreak');
-              return 0;
-            } else if (pomodoroPhase === 'shortBreak' && next >= pomodoroBreakDuration) {
+            } else {
               soundFx.playStartChime();
               setPomodoroPhase('work');
-              return 0;
             }
+            // Reset anchor for the upcoming pomodoro phase
+            startTimeRef.current = Date.now();
+            accumulatedSecondsRef.current = 0;
+            setElapsedSeconds(0);
+            return;
           }
-          return next;
-        });
-      }, 1000);
+        }
+
+        setElapsedSeconds(actualElapsed);
+      }, 500);
     }
 
     return () => {
@@ -233,6 +249,50 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         clearInterval(timerIntervalRef.current);
         timerIntervalRef.current = null;
       }
+    };
+  }, [isStudying, isPaused, timerMode, pomodoroPhase, pomodoroWorkDuration, pomodoroBreakDuration]);
+
+  // Window Focus / Tab Visibility Resync:
+  // When document.visibilityState === 'visible' and timer is running, immediately recalculate elapsed seconds from Date.now() - startTimeRef.current
+  useEffect(() => {
+    const handleVisibilityOrFocus = () => {
+      if (
+        document.visibilityState === 'visible' &&
+        isStudying &&
+        !isPaused &&
+        startTimeRef.current !== null
+      ) {
+        const actualElapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
+        accumulatedSecondsRef.current = actualElapsed;
+
+        if (timerMode === 'pomodoro') {
+          const target = pomodoroPhase === 'work' ? pomodoroWorkDuration : pomodoroBreakDuration;
+          if (actualElapsed >= target) {
+            if (pomodoroPhase === 'work') {
+              soundFx.playMilestoneBell();
+              confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
+              setPomodoroPhase('shortBreak');
+            } else {
+              soundFx.playStartChime();
+              setPomodoroPhase('work');
+            }
+            startTimeRef.current = Date.now();
+            accumulatedSecondsRef.current = 0;
+            setElapsedSeconds(0);
+            return;
+          }
+        }
+
+        setElapsedSeconds(actualElapsed);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityOrFocus);
+    window.addEventListener('focus', handleVisibilityOrFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
+      window.removeEventListener('focus', handleVisibilityOrFocus);
     };
   }, [isStudying, isPaused, timerMode, pomodoroPhase, pomodoroWorkDuration, pomodoroBreakDuration]);
 
@@ -727,7 +787,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     });
   }, [user.id, user.displayName, user.avatarUrl, sessions]);
 
-  // Start Timer - sets isStudying and starts synchronous ticking
+  // Start Timer - sets anchor timestamp and starts real-time delta tracking
   const startTimer = useCallback((subjectId?: string, taskId?: string) => {
     if (subjectId) {
       setSelectedSubjectId(subjectId);
@@ -735,7 +795,9 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     if (taskId) {
       setActiveTaskId(taskId);
     }
-    sessionStartTimeRef.current = new Date();
+    // Record start anchor timestamp
+    startTimeRef.current = Date.now() - (accumulatedSecondsRef.current * 1000);
+    sessionStartTimeRef.current = new Date(startTimeRef.current);
     setIsStudying(true);
     setIsPaused(false);
     soundFx.playStartChime();
@@ -749,15 +811,26 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     });
   }, [selectedSubjectId, selectedSubject, subjects, updateProfile]);
 
-  // Pause Timer - cleanly toggles isRunning to false while preserving exact elapsed seconds
+  // Pause Timer - freeze accumulatedSeconds = actualElapsed and clear the interval
   const pauseTimer = useCallback(() => {
+    if (startTimeRef.current !== null) {
+      const actualElapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
+      accumulatedSecondsRef.current = actualElapsed;
+      setElapsedSeconds(actualElapsed);
+    }
+    startTimeRef.current = null;
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
     setIsPaused(true);
     soundFx.playStopChime();
     updateProfile({ status: 'resting' });
   }, [updateProfile]);
 
-  // Resume Timer - cleanly toggles isRunning to true
+  // Resume Timer - recalculate startTimeRef.current = Date.now() - (accumulatedSeconds * 1000)
   const resumeTimer = useCallback(() => {
+    startTimeRef.current = Date.now() - (accumulatedSecondsRef.current * 1000);
     setIsPaused(false);
     soundFx.playStartChime();
     const targetSub = selectedSubject;
@@ -787,6 +860,8 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       clearInterval(timerIntervalRef.current);
       timerIntervalRef.current = null;
     }
+    accumulatedSecondsRef.current = seconds;
+    startTimeRef.current = null;
     setElapsedSeconds(seconds);
     setIsStudying(true);
     setIsPaused(true);
@@ -829,7 +904,10 @@ export function StudyProvider({ children }: { children: ReactNode }) {
   // Stop Timer and save session to Supabase immediately with localStorage fallback
   const stopTimer = useCallback(async (durationOverride?: number, notesOverride?: string) => {
     // 1. Capture variables into local scope BEFORE touching state
-    const seconds = durationOverride !== undefined ? durationOverride : elapsedSeconds;
+    const currentActual = startTimeRef.current !== null && !isPaused
+      ? Math.floor((Date.now() - startTimeRef.current) / 1000)
+      : accumulatedSecondsRef.current;
+    const seconds = durationOverride !== undefined ? durationOverride : Math.max(elapsedSeconds, currentActual);
     if (!isStudying && seconds === 0) return;
 
     if (timerIntervalRef.current) {
@@ -838,12 +916,15 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     }
 
     if (seconds <= 0) {
+      startTimeRef.current = null;
+      accumulatedSecondsRef.current = 0;
       setIsStudying(false);
       setIsPaused(false);
       setElapsedSeconds(0);
       setActiveTaskId(null);
       setCurrentNotes('');
       sessionStartTimeRef.current = null;
+      clearPersistedTimer();
       return;
     }
 
@@ -978,6 +1059,9 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         soundFx.playMilestoneBell();
       }
 
+      // Clear references and reset state to 0 on save
+      startTimeRef.current = null;
+      accumulatedSecondsRef.current = 0;
       setIsStudying(false);
       setIsPaused(false);
       setElapsedSeconds(0);
@@ -994,13 +1078,16 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     }
   }, [
     isStudying,
+    isPaused,
     elapsedSeconds,
     selectedSubject,
     currentNotes,
     timerMode,
     sessions,
     addSession,
+    clearPersistedTimer,
     refetchSessions,
+    triggerXpEarned,
   ]);
 
   // Complete Timer - alias for stopTimer
@@ -1008,17 +1095,19 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     await stopTimer(durationOverride, notesOverride);
   }, [stopTimer]);
 
-  // Reset Timer - cleanly resets elapsed time and isRunning state without network calls
+  // Reset Timer - cleanly resets elapsed time, references, and isRunning state without network calls
   const resetTimer = useCallback(() => {
     if (timerIntervalRef.current) {
       clearInterval(timerIntervalRef.current);
       timerIntervalRef.current = null;
     }
+    startTimeRef.current = null;
+    accumulatedSecondsRef.current = 0;
+    sessionStartTimeRef.current = null;
     setIsStudying(false);
     setIsPaused(false);
     setElapsedSeconds(0);
     setActiveTaskId(null);
-    sessionStartTimeRef.current = null;
     clearPersistedTimer();
     updateProfile({ status: 'resting', activeSessionStartTime: undefined });
   }, [clearPersistedTimer, updateProfile]);
@@ -1331,6 +1420,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         isFocusModeOpen,
         setIsFocusModeOpen,
         isRunning,
+        startTimeRef,
         startTimer,
         pauseTimer,
         resumeTimer,

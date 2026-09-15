@@ -51,6 +51,7 @@ export function StudyTimer() {
     isStudying,
     isPaused,
     isRunning,
+    startTimeRef,
     elapsedSeconds,
     pomodoroPhase,
     pomodoroWorkDuration,
@@ -105,8 +106,10 @@ export function StudyTimer() {
   const handleStopAndSave = useCallback(async () => {
     if (isSaving) return;
 
-    // 1. Prevent race conditions: Capture current values BEFORE mutating any state or resetting timer display
-    const seconds = elapsedSeconds;
+    // 1. Prevent race conditions: Capture exact real-time duration BEFORE mutating any state or resetting timer display
+    const seconds = isRunning && startTimeRef?.current
+      ? Math.max(elapsedSeconds, Math.floor((Date.now() - startTimeRef.current) / 1000))
+      : elapsedSeconds;
     const activeSubject = selectedSubject;
     const subjectName = (typeof activeSubject === 'string' ? activeSubject : activeSubject?.name) || 'General Focus';
     const subjectId = activeSubject?.id;
@@ -274,6 +277,8 @@ export function StudyTimer() {
     }
   }, [
     isSaving,
+    isRunning,
+    startTimeRef,
     elapsedSeconds,
     selectedSubject,
     timerMode,
