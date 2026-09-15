@@ -129,10 +129,9 @@ export function Navbar({
               <span>Sign In</span>
             </Link>
           ) : (
-            /* Streak badge when authenticated */
+            /* Static streak badge when authenticated */
             <div
-              onClick={onOpenProfile}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-neutral-900/60 border border-white/[0.08] hover:border-[#5A6B6A]/50 text-neutral-300 cursor-pointer transition-colors shadow-sm active:scale-95"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-neutral-900/60 border border-white/[0.08] text-neutral-300 cursor-default select-none shadow-sm"
               title={user.streakDays > 0 ? `${user.streakDays} Day Study Streak (+${user.streakDays * 50} XP bonus)` : 'Start your streak today'}
             >
               {user.streakDays > 0 ? (
