@@ -583,88 +583,115 @@ export function StudyTimer() {
           </div>
 
           {/* Subject Selection Bar */}
-          <div className="relative z-20 my-6 flex flex-wrap items-center justify-between gap-3">
-            {/* Subject Dropdown */}
-            <div className="relative flex-1 min-w-[240px]">
+          <div className="relative z-20 my-6">
+            {/* Subject warning banner */}
+            {subjectWarning && (
+              <div className="mb-3 flex items-center justify-between gap-3 px-4 py-3 rounded-2xl bg-amber-500/15 border border-amber-500/40 text-amber-200 text-xs font-semibold backdrop-blur-md shadow-lg shadow-amber-500/10 animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="flex items-center gap-2">
+                  <span className="text-amber-400 text-sm">⚠️</span>
+                  <span>Please select a subject before starting the timer.</span>
+                </div>
+                <button
+                  onClick={() => setSubjectWarning(false)}
+                  className="p-1 rounded-lg hover:bg-amber-500/20 text-amber-300 transition-colors cursor-pointer"
+                  title="Dismiss"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              {/* Subject Dropdown */}
+              <div className="relative flex-1 min-w-[240px]">
+                <button
+                  onClick={() => setShowDropdown(!showDropdown)}
+                  disabled={isStudying}
+                  className={`w-full flex items-center justify-between px-4 py-3 bg-black/40 hover:bg-black/60 border rounded-2xl text-sm font-semibold transition-all disabled:opacity-75 disabled:cursor-not-allowed cursor-pointer ${
+                    subjectWarning
+                      ? 'border-amber-500/80 ring-2 ring-amber-500/30 shadow-lg shadow-amber-500/10'
+                      : 'border-white/[0.08]'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <span
+                      className="w-3 h-3 rounded-full flex-shrink-0 shadow-sm transition-colors"
+                      style={{ backgroundColor: selectedSubject ? subjectColor : '#64748B' }}
+                    />
+                    <span className={selectedSubject ? "text-white font-bold tracking-tight" : "text-neutral-400 font-medium tracking-tight"}>
+                      {selectedSubject ? selectedSubject.name : 'Select a Subject'}
+                    </span>
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-neutral-400" />
+                </button>
+
+                {showDropdown && !isStudying && (
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-[#0d0e12] border border-white/[0.08] rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95 duration-150">
+                    <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-neutral-500 select-none border-b border-white/[0.06] mb-1">
+                      Select a subject to focus on
+                    </div>
+                    <div className="max-h-60 overflow-y-auto space-y-1">
+                      {subjects.map(sub => {
+                        const itemColor =
+                          sub.name === 'General Focus' && (sub.color === '#3B82F6' || !sub.color)
+                            ? '#5A6B6A'
+                            : sub.color || '#5A6B6A';
+
+                        return (
+                          <button
+                            key={sub.id}
+                            onClick={() => {
+                              setSelectedSubjectId(sub.id);
+                              setShowDropdown(false);
+                              setSubjectWarning(false);
+                            }}
+                            className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                              sub.id === selectedSubjectId
+                                ? 'bg-white/[0.08] text-white'
+                                : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <span
+                                className="w-2.5 h-2.5 rounded-full"
+                                style={{ backgroundColor: itemColor }}
+                              />
+                              <span>{sub.name}</span>
+                            </div>
+                            <span className="text-[10px] text-neutral-400 font-mono">
+                              {Math.floor((sub.targetMinutesPerDay || 60) / 60)}h goal
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <div className="pt-2 mt-2 border-t border-white/[0.08]">
+                      <button
+                        onClick={() => {
+                          setIsSubjectModalOpen(true);
+                          setShowDropdown(false);
+                        }}
+                        className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold text-[#8FA3A1] hover:bg-white/[0.06] transition-colors cursor-pointer"
+                      >
+                        <FolderPlus className="w-3.5 h-3.5 text-[#8FA3A1]" />
+                        <span>Manage / Add Subjects</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Manage Subjects Quick Button (Muted Teal-Gray Icon) */}
               <button
-                onClick={() => setShowDropdown(!showDropdown)}
-                disabled={isStudying}
-                className="w-full flex items-center justify-between px-4 py-3 bg-black/40 hover:bg-black/60 border border-white/[0.08] rounded-2xl text-sm font-semibold transition-all disabled:opacity-75 disabled:cursor-not-allowed cursor-pointer"
+                onClick={() => setIsSubjectModalOpen(true)}
+                className="p-3.5 rounded-2xl bg-neutral-900/70 hover:bg-neutral-800 border border-white/[0.08] text-neutral-300 hover:text-white transition-colors flex items-center gap-2 text-xs font-semibold active:scale-95 cursor-pointer shadow-sm"
+                title="Edit Subjects"
               >
-                <div className="flex items-center gap-2.5">
-                  <span
-                    className="w-3 h-3 rounded-full flex-shrink-0 shadow-sm"
-                    style={{ backgroundColor: subjectColor }}
-                  />
-                  <span className="text-white font-bold tracking-tight">
-                    {selectedSubject?.name || 'General Focus'}
-                  </span>
-                </div>
-                <ChevronDown className="w-4 h-4 text-neutral-400" />
+                <FolderPlus className="w-4 h-4 text-[#8FA3A1]" />
+                <span className="hidden sm:inline">Edit Subjects</span>
               </button>
-
-              {showDropdown && !isStudying && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-[#0d0e12] border border-white/[0.08] rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95 duration-150">
-                  <div className="max-h-60 overflow-y-auto space-y-1">
-                    {subjects.map(sub => {
-                      const itemColor =
-                        sub.name === 'General Focus' && (sub.color === '#3B82F6' || !sub.color)
-                          ? '#5A6B6A'
-                          : sub.color || '#5A6B6A';
-
-                      return (
-                        <button
-                          key={sub.id}
-                          onClick={() => {
-                            setSelectedSubjectId(sub.id);
-                            setShowDropdown(false);
-                          }}
-                          className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                            sub.id === selectedSubjectId
-                              ? 'bg-white/[0.08] text-white'
-                              : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2">
-                            <span
-                              className="w-2.5 h-2.5 rounded-full"
-                              style={{ backgroundColor: itemColor }}
-                            />
-                            <span>{sub.name}</span>
-                          </div>
-                          <span className="text-[10px] text-neutral-400 font-mono">
-                            {Math.floor((sub.targetMinutesPerDay || 60) / 60)}h goal
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  <div className="pt-2 mt-2 border-t border-white/[0.08]">
-                    <button
-                      onClick={() => {
-                        setIsSubjectModalOpen(true);
-                        setShowDropdown(false);
-                      }}
-                      className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold text-[#8FA3A1] hover:bg-white/[0.06] transition-colors cursor-pointer"
-                    >
-                      <FolderPlus className="w-3.5 h-3.5 text-[#8FA3A1]" />
-                      <span>Manage / Add Subjects</span>
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
-
-            {/* Manage Subjects Quick Button (Muted Teal-Gray Icon) */}
-            <button
-              onClick={() => setIsSubjectModalOpen(true)}
-              className="p-3.5 rounded-2xl bg-neutral-900/70 hover:bg-neutral-800 border border-white/[0.08] text-neutral-300 hover:text-white transition-colors flex items-center gap-2 text-xs font-semibold active:scale-95 cursor-pointer shadow-sm"
-              title="Edit Subjects"
-            >
-              <FolderPlus className="w-4 h-4 text-[#8FA3A1]" />
-              <span className="hidden sm:inline">Edit Subjects</span>
-            </button>
           </div>
 
           {/* Center Timer Circular Display */}
@@ -697,16 +724,16 @@ export function StudyTimer() {
                   <div
                     className="mb-2 text-[11px] font-bold px-3 py-0.5 rounded-full border transition-colors"
                     style={{
-                      backgroundColor: `${subjectColor}15`,
-                      borderColor: `${subjectColor}40`,
-                      color: subjectColor,
+                      backgroundColor: selectedSubject ? `${subjectColor}15` : 'rgba(100, 116, 139, 0.12)',
+                      borderColor: selectedSubject ? `${subjectColor}40` : 'rgba(100, 116, 139, 0.25)',
+                      color: selectedSubject ? subjectColor : '#94A3B8',
                     }}
                   >
                     {timerMode === 'pomodoro'
                       ? pomodoroPhase === 'work'
                         ? '🔥 Focus Sprint (25m)'
                         : '☕ Short Break (5m)'
-                      : selectedSubject?.name || 'General Focus'}
+                      : selectedSubject?.name || 'Select a subject below'}
                   </div>
 
                   {/* Big Digital Numbers with Strict Tabular Monospaced Formatting */}
@@ -745,7 +772,12 @@ export function StudyTimer() {
                 /* 1. IDLE State: One primary button */
                 <button
                   onClick={handleStartSession}
-                  className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black text-sm transition-all shadow-xl shadow-emerald-500/25 flex items-center gap-2.5 active:scale-95 hover:scale-[1.02] cursor-pointer"
+                  className={`px-8 py-3.5 rounded-2xl font-black text-sm transition-all flex items-center gap-2.5 ${
+                    !selectedSubject
+                      ? 'bg-neutral-800/80 text-neutral-500 border border-white/[0.08] opacity-50 cursor-not-allowed shadow-none'
+                      : 'bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 shadow-xl shadow-emerald-500/25 active:scale-95 hover:scale-[1.02] cursor-pointer'
+                  }`}
+                  title={!selectedSubject ? 'Please select a subject before starting the timer' : 'Start Focus Session'}
                 >
                   <Play className="w-5 h-5 fill-current" />
                   <span>Start Session</span>
@@ -834,12 +866,16 @@ export function StudyTimer() {
               <Clock className="w-5 h-5" style={{ color: subjectColor }} />
             </div>
             <div>
-              <div className="text-xs text-neutral-400">Today on {selectedSubject?.name || 'General Focus'}</div>
+              <div className="text-xs text-neutral-400">
+                {selectedSubject ? `Today on ${selectedSubject.name}` : 'Today on Subject'}
+              </div>
               <div className="text-base font-bold text-white flex items-center gap-2">
                 <span className="font-mono tabular-nums">{formatHoursAndMins(todaySubjectSeconds)}</span>
-                <span className="text-xs text-neutral-500 font-normal font-mono">
-                  / {Math.floor((selectedSubject?.targetMinutesPerDay || 120) / 60)}h target
-                </span>
+                {selectedSubject && (
+                  <span className="text-xs text-neutral-500 font-normal font-mono">
+                    / {Math.floor((selectedSubject?.targetMinutesPerDay || 120) / 60)}h target
+                  </span>
+                )}
               </div>
             </div>
           </div>

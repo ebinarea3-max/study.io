@@ -36,12 +36,14 @@ const MOTIVATIONAL_QUOTES = [
 export function FocusModeModal() {
   const { user } = useAuth();
   const {
+    subjects,
     isFocusModeOpen,
     setIsFocusModeOpen,
     isStudying,
     isPaused,
     elapsedSeconds,
     selectedSubject,
+    setSelectedSubjectId,
     timerMode,
     pomodoroPhase,
     pomodoroWorkDuration,
@@ -128,7 +130,7 @@ export function FocusModeModal() {
     progressPercent = Math.min(100, (elapsedSeconds / target) * 100);
   }
 
-  const subjectColor = selectedSubject?.color || '#10B981';
+  const subjectColor = selectedSubject?.color || '#5A6B6A';
 
   return (
     <div className="fixed inset-0 z-50 bg-[#050811] text-white flex flex-col justify-between p-6 sm:p-10 select-none overflow-hidden animate-in fade-in duration-300">
@@ -147,7 +149,7 @@ export function FocusModeModal() {
           />
           <div>
             <div className="text-sm font-bold text-white flex items-center gap-2">
-              <span>{selectedSubject?.name || 'General Focus'}</span>
+              <span>{selectedSubject?.name || 'No Subject Selected'}</span>
               <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 font-mono">
                 {timerMode.toUpperCase()}
               </span>
@@ -251,7 +253,19 @@ export function FocusModeModal() {
           {!isStudying ? (
             /* IDLE State: One primary button */
             <button
-              onClick={() => startTimer()}
+              onClick={() => {
+                if (!selectedSubject) {
+                  const general = subjects.find(s => s.name.toLowerCase() === 'general focus') || subjects[0];
+                  if (general) {
+                    setSelectedSubjectId(general.id);
+                    startTimer(general.id);
+                  } else {
+                    startTimer();
+                  }
+                } else {
+                  startTimer();
+                }
+              }}
               className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black text-sm transition-all shadow-xl shadow-emerald-500/25 flex items-center gap-2.5 active:scale-95 hover:scale-[1.02] cursor-pointer"
             >
               <Play className="w-5 h-5 fill-current" />
