@@ -22,6 +22,9 @@ import {
   Edit3,
   Radio,
   Headphones,
+  Coffee,
+  SkipForward,
+  X,
 } from 'lucide-react';
 
 const MOTIVATIONAL_QUOTES = [
@@ -48,6 +51,12 @@ export function FocusModeModal() {
     pomodoroPhase,
     pomodoroWorkDuration,
     pomodoroBreakDuration,
+    pomodoroPreset,
+    pomodoroCompletedPhase,
+    setPomodoroCompletedPhase,
+    saveAndStartBreak,
+    skipPomodoroBreak,
+    startPomodoroBreak,
     startTimer,
     pauseTimer,
     resumeTimer,
@@ -214,7 +223,9 @@ export function FocusModeModal() {
                     color: subjectColor,
                   }}
                 >
-                  {pomodoroPhase === 'work' ? '🔥 Focus Sprint' : '☕ Recharge Break'}
+                  {pomodoroPhase === 'work'
+                    ? `🔥 Focus Sprint (${pomodoroPreset === '50/10' ? '50m' : '25m'})`
+                    : `☕ Recharge Break (${pomodoroPreset === '50/10' ? '10m' : '5m'})`}
                 </div>
               )}
 
@@ -230,11 +241,29 @@ export function FocusModeModal() {
               <div className="mt-3 flex items-center gap-2">
                 <span
                   className={`w-2 h-2 rounded-full ${
-                    isStudying && !isPaused ? 'bg-emerald-400 animate-ping' : 'bg-slate-500'
+                    pomodoroCompletedPhase === 'work'
+                      ? 'bg-emerald-400 animate-ping'
+                      : pomodoroCompletedPhase === 'break'
+                      ? 'bg-amber-400 animate-bounce'
+                      : isStudying && !isPaused
+                      ? 'bg-emerald-400 animate-ping'
+                      : 'bg-slate-500'
                   }`}
                 />
                 <span className="text-xs font-medium text-slate-400">
-                  {isStudying ? (isPaused ? 'Paused' : 'Focusing Deeply') : 'Ready to begin'}
+                  {pomodoroCompletedPhase === 'work'
+                    ? 'Focus Complete!'
+                    : pomodoroCompletedPhase === 'break'
+                    ? 'Break Over'
+                    : timerMode === 'pomodoro' && pomodoroPhase === 'shortBreak'
+                    ? isPaused
+                      ? 'Break Paused — Ready'
+                      : 'Recharging Break'
+                    : isStudying
+                    ? isPaused
+                      ? 'Paused'
+                      : 'Focusing Deeply'
+                    : 'Ready to begin'}
                 </span>
               </div>
             </div>
@@ -242,15 +271,143 @@ export function FocusModeModal() {
         </div>
 
         {/* Motivational quote */}
-        <div className="mt-8 max-w-md px-4">
+        <div className="mt-6 max-w-md px-4">
           <p className="text-xs sm:text-sm text-slate-400 italic font-medium transition-all duration-500">
             &ldquo;{MOTIVATIONAL_QUOTES[quoteIndex]}&rdquo;
           </p>
         </div>
 
+        {/* Focus Block Complete Banner */}
+        {pomodoroCompletedPhase === 'work' && (
+          <div className="mt-4 flex items-center justify-between gap-3 px-5 py-3 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-200 text-xs font-semibold backdrop-blur-md shadow-xl shadow-emerald-500/10 animate-in fade-in duration-300">
+            <div className="flex items-center gap-2.5">
+              <Sparkles className="w-4 h-4 text-emerald-300 animate-pulse" />
+              <span>Focus Block Complete! 🎉 Save session and take a break or skip.</span>
+            </div>
+          </div>
+        )}
+
+        {/* Break Over Banner */}
+        {pomodoroCompletedPhase === 'break' && (
+          <div className="mt-4 flex items-center justify-between gap-3 px-5 py-3 rounded-2xl bg-amber-500/20 border border-amber-500/40 text-amber-200 text-xs font-semibold backdrop-blur-md shadow-xl shadow-amber-500/10 animate-in fade-in duration-300">
+            <div className="flex items-center gap-2.5">
+              <Flame className="w-4 h-4 text-amber-300 animate-pulse" />
+              <span>Break Over — Ready to Study? Click Start when you are ready.</span>
+            </div>
+            <button
+              onClick={() => setPomodoroCompletedPhase(null)}
+              className="p-1 rounded-lg hover:bg-amber-500/20 text-amber-300 cursor-pointer"
+              title="Dismiss"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
         {/* Timer Control Buttons: Synchronized with StudyTimer */}
-        <div className="mt-8 flex items-center gap-3">
-          {!isStudying ? (
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+          {pomodoroCompletedPhase === 'work' ? (
+            /* Prompt 1: Focus session reached 00:00 -> Save & Start Break / Skip Break */
+            <>
+              <button
+                onClick={async () => {
+                  setIsSaving(true);
+                  try {
+                    await saveAndStartBreak();
+                  } finally {
+                    setIsSaving(false);
+                  }
+                }}
+                disabled={isSaving}
+                className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black text-sm transition-all shadow-xl shadow-emerald-500/25 flex items-center gap-2 active:scale-95 hover:scale-[1.02] cursor-pointer disabled:opacity-50"
+              >
+                {isSaving ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                    <span>Saving...</span>
+                  </>
+                ) : (
+                  <>
+                    <Coffee className="w-4 h-4 fill-current" />
+                    <span>Save & Start Break</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                onClick={async () => {
+                  setIsSaving(true);
+                  try {
+                    await skipPomodoroBreak();
+                  } finally {
+                    setIsSaving(false);
+                  }
+                }}
+                disabled={isSaving}
+                className="px-6 py-3.5 rounded-2xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white font-bold text-sm transition-all flex items-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50"
+              >
+                <SkipForward className="w-4 h-4" />
+                <span>Skip Break</span>
+              </button>
+            </>
+          ) : timerMode === 'pomodoro' && pomodoroPhase === 'shortBreak' ? (
+            /* Prompt 2: Break Mode Controls (Paused awaiting click vs Running) */
+            isPaused ? (
+              <>
+                <button
+                  onClick={startPomodoroBreak}
+                  className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-teal-400 to-emerald-500 hover:from-teal-300 hover:to-emerald-400 text-slate-950 font-black text-sm transition-all shadow-xl shadow-teal-500/25 flex items-center gap-2 active:scale-95 hover:scale-[1.02] cursor-pointer"
+                >
+                  <Play className="w-4 h-4 fill-current" />
+                  <span>Start Break</span>
+                </button>
+                <button
+                  onClick={resetTimer}
+                  className="px-5 py-3.5 rounded-2xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700 text-slate-400 hover:text-white font-bold text-sm transition-colors active:scale-95 cursor-pointer"
+                >
+                  <span>Skip Break</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={pauseTimer}
+                  className="px-6 py-3 rounded-2xl bg-slate-900/90 hover:bg-slate-800 text-amber-300 font-bold text-sm border border-amber-500/30 transition-all flex items-center gap-2 active:scale-95 cursor-pointer"
+                >
+                  <Pause className="w-4 h-4" />
+                  <span>Pause Break</span>
+                </button>
+                <button
+                  onClick={resetTimer}
+                  className="px-6 py-3 rounded-2xl bg-slate-900/80 hover:bg-slate-800 border border-slate-700 text-slate-400 hover:text-white font-bold text-sm transition-colors active:scale-95 cursor-pointer"
+                >
+                  <span>End Break</span>
+                </button>
+              </>
+            )
+          ) : pomodoroCompletedPhase === 'break' ? (
+            /* Break completed, waiting for user click */
+            <button
+              onClick={() => {
+                setPomodoroCompletedPhase(null);
+                if (!selectedSubject) {
+                  const general = subjects.find(s => s.name.toLowerCase() === 'general focus') || subjects[0];
+                  if (general) {
+                    setSelectedSubjectId(general.id);
+                    startTimer(general.id);
+                  } else {
+                    startTimer();
+                  }
+                } else {
+                  startTimer();
+                }
+              }}
+              className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black text-sm transition-all shadow-xl shadow-emerald-500/25 flex items-center gap-2 active:scale-95 hover:scale-[1.02] cursor-pointer"
+            >
+              <Flame className="w-5 h-5 fill-current" />
+              <span>Start Focus Session</span>
+            </button>
+          ) : !isStudying ? (
             /* IDLE State: One primary button */
             <button
               onClick={() => {

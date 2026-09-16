@@ -152,3 +152,7 @@ export type CheerReaction = {
 export type TimerMode = 'stopwatch' | 'pomodoro' | 'countdown';
 
 export type PomodoroPhase = 'work' | 'shortBreak' | 'longBreak';
+
+export type PomodoroPreset = '25/5' | '50/10';
+
+export type PomodoroCompletedPhase = 'work' | 'break' | null;

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useRef, useCallback, useMemo } from 'react';
-import { Subject, StudySession, TodoItem, TimerMode, PomodoroPhase, RankSettlementData, SeasonRecapData } from '../types';
+import { Subject, StudySession, TodoItem, TimerMode, PomodoroPhase, PomodoroPreset, PomodoroCompletedPhase, RankSettlementData, SeasonRecapData } from '../types';
 import { INITIAL_SUBJECTS, INITIAL_TODOS, getTodayDateString, calculateStreak, cleanupLegacyDemoData } from '../lib/mockData';
 import { getLocalStartOfDay, getLocalEndOfDay } from '../lib/dateUtils';
 import { useAuth } from './AuthContext';
@@ -47,6 +47,13 @@ interface StudyContextType {
   setPomodoroPhase: (phase: PomodoroPhase) => void;
   pomodoroWorkDuration: number;
   pomodoroBreakDuration: number;
+  pomodoroPreset: PomodoroPreset;
+  setPomodoroPreset: (preset: PomodoroPreset) => void;
+  pomodoroCompletedPhase: PomodoroCompletedPhase;
+  setPomodoroCompletedPhase: (phase: PomodoroCompletedPhase) => void;
+  saveAndStartBreak: () => Promise<void>;
+  skipPomodoroBreak: () => Promise<void>;
+  startPomodoroBreak: () => void;
   activeTaskId: string | null;
   currentNotes: string;
   setCurrentNotes: (notes: string) => void;
@@ -104,7 +111,6 @@ const StudyContext = createContext<StudyContextType | undefined>(undefined);
 
 export function StudyProvider({ children }: { children: ReactNode }) {
   const { user, isAuthenticated, updateProfile } = useAuth();
-  
   const userRef = useRef(user);
   useEffect(() => {
     userRef.current = user;
@@ -119,8 +125,37 @@ export function StudyProvider({ children }: { children: ReactNode }) {
   const [isPaused, setIsPaused] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [pomodoroPhase, setPomodoroPhase] = useState<PomodoroPhase>('work');
-  const [pomodoroWorkDuration] = useState(25 * 60);
-  const [pomodoroBreakDuration] = useState(5 * 60);
+  const [pomodoroPreset, setPomodoroPresetState] = useState<PomodoroPreset>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('studypulse_pomodoro_preset');
+        if (saved === '25/5' || saved === '50/10') return saved;
+      } catch {}
+    }
+    return '25/5';
+  });
+  const [pomodoroCompletedPhase, setPomodoroCompletedPhase] = useState<PomodoroCompletedPhase>(null);
+
+  const pomodoroWorkDuration = useMemo(() => {
+    return pomodoroPreset === '50/10' ? 50 * 60 : 25 * 60;
+  }, [pomodoroPreset]);
+
+  const pomodoroBreakDuration = useMemo(() => {
+    return pomodoroPreset === '50/10' ? 10 * 60 : 5 * 60;
+  }, [pomodoroPreset]);
+
+  const setPomodoroPreset = useCallback((preset: PomodoroPreset) => {
+    if (isStudying) {
+      console.warn('Cannot change Pomodoro preset while session is running.');
+      return;
+    }
+    setPomodoroPresetState(preset);
+    try {
+      localStorage.setItem('studypulse_pomodoro_preset', preset);
+    } catch {}
+    setElapsedSeconds(0);
+    accumulatedSecondsRef.current = 0;
+  }, [isStudying]);
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [currentNotes, setCurrentNotes] = useState('');
   const [isFocusModeOpen, setIsFocusModeOpen] = useState(false);
@@ -318,18 +353,36 @@ export function StudyProvider({ children }: { children: ReactNode }) {
           const target = pomodoroPhase === 'work' ? pomodoroWorkDuration : pomodoroBreakDuration;
           if (actualElapsed >= target) {
             if (pomodoroPhase === 'work') {
+              // 1. Freeze at 00:00, chime, and wait for manual phase transition
+              if (timerIntervalRef.current) {
+                clearInterval(timerIntervalRef.current);
+                timerIntervalRef.current = null;
+              }
+              accumulatedSecondsRef.current = target;
+              setElapsedSeconds(target);
+              startTimeRef.current = null;
+              setIsPaused(true);
+              setPomodoroCompletedPhase('work');
               soundFx.playMilestoneBell();
-              confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
-              setPomodoroPhase('shortBreak');
+              confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 } });
+              return;
             } else {
-              soundFx.playStartChime();
+              // 2. Break reached 00:00: chime, freeze, and switch to work in PAUSED state
+              if (timerIntervalRef.current) {
+                clearInterval(timerIntervalRef.current);
+                timerIntervalRef.current = null;
+              }
+              startTimeRef.current = null;
+              accumulatedSecondsRef.current = 0;
+              setElapsedSeconds(0);
               setPomodoroPhase('work');
+              setIsStudying(false);
+              setIsPaused(true);
+              setPomodoroCompletedPhase('break');
+              soundFx.playMilestoneBell();
+              confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } });
+              return;
             }
-            // Reset anchor for the upcoming pomodoro phase
-            startTimeRef.current = Date.now();
-            accumulatedSecondsRef.current = 0;
-            setElapsedSeconds(0);
-            return;
           }
         }
 
@@ -362,17 +415,34 @@ export function StudyProvider({ children }: { children: ReactNode }) {
           const target = pomodoroPhase === 'work' ? pomodoroWorkDuration : pomodoroBreakDuration;
           if (actualElapsed >= target) {
             if (pomodoroPhase === 'work') {
+              if (timerIntervalRef.current) {
+                clearInterval(timerIntervalRef.current);
+                timerIntervalRef.current = null;
+              }
+              accumulatedSecondsRef.current = target;
+              setElapsedSeconds(target);
+              startTimeRef.current = null;
+              setIsPaused(true);
+              setPomodoroCompletedPhase('work');
               soundFx.playMilestoneBell();
-              confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
-              setPomodoroPhase('shortBreak');
+              confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 } });
+              return;
             } else {
-              soundFx.playStartChime();
+              if (timerIntervalRef.current) {
+                clearInterval(timerIntervalRef.current);
+                timerIntervalRef.current = null;
+              }
+              startTimeRef.current = null;
+              accumulatedSecondsRef.current = 0;
+              setElapsedSeconds(0);
               setPomodoroPhase('work');
+              setIsStudying(false);
+              setIsPaused(true);
+              setPomodoroCompletedPhase('break');
+              soundFx.playMilestoneBell();
+              confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } });
+              return;
             }
-            startTimeRef.current = Date.now();
-            accumulatedSecondsRef.current = 0;
-            setElapsedSeconds(0);
-            return;
           }
         }
 
@@ -903,6 +973,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     if (taskId) {
       setActiveTaskId(taskId);
     }
+    setPomodoroCompletedPhase(null);
     // Record start anchor timestamp
     startTimeRef.current = Date.now() - (accumulatedSecondsRef.current * 1000);
     sessionStartTimeRef.current = new Date(startTimeRef.current);
@@ -911,13 +982,13 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     soundFx.playStartChime();
     const targetSub = subjects.find(s => s.id === (subjectId || selectedSubjectId)) || selectedSubject;
     updateProfile({
-      status: 'studying',
+      status: timerMode === 'pomodoro' && pomodoroPhase === 'shortBreak' ? 'resting' : 'studying',
       activeSessionStartTime: new Date().toISOString(),
       currentSubjectId: targetSub?.id,
       currentSubjectName: targetSub?.name,
       currentSubjectColor: targetSub?.color,
     });
-  }, [selectedSubjectId, selectedSubject, subjects, updateProfile]);
+  }, [selectedSubjectId, selectedSubject, subjects, timerMode, pomodoroPhase, updateProfile]);
 
   // Pause Timer - freeze accumulatedSeconds = actualElapsed and clear the interval
   const pauseTimer = useCallback(() => {
@@ -940,15 +1011,20 @@ export function StudyProvider({ children }: { children: ReactNode }) {
   const resumeTimer = useCallback(() => {
     startTimeRef.current = Date.now() - (accumulatedSecondsRef.current * 1000);
     setIsPaused(false);
+    setPomodoroCompletedPhase(null);
     soundFx.playStartChime();
-    const targetSub = selectedSubject;
-    updateProfile({
-      status: 'studying',
-      currentSubjectId: targetSub?.id,
-      currentSubjectName: targetSub?.name,
-      currentSubjectColor: targetSub?.color,
-    });
-  }, [selectedSubject, updateProfile]);
+    if (timerMode === 'pomodoro' && pomodoroPhase === 'shortBreak') {
+      updateProfile({ status: 'resting' });
+    } else {
+      const targetSub = selectedSubject;
+      updateProfile({
+        status: 'studying',
+        currentSubjectId: targetSub?.id,
+        currentSubjectName: targetSub?.name,
+        currentSubjectColor: targetSub?.color,
+      });
+    }
+  }, [timerMode, pomodoroPhase, selectedSubject, updateProfile]);
 
   // Cleanly wipe any persisted timer state from localStorage
   const clearPersistedTimer = useCallback(() => {
@@ -1009,9 +1085,170 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     });
   }, [updateProfile]);
 
+  // Core helper to persist a session record to Supabase, update overview stats, and trigger Free Fire settlement
+  const persistCompletedSession = useCallback(async (secondsToSave: number, notesOverride?: string) => {
+    if (secondsToSave <= 0) return false;
+
+    const now = new Date();
+    const endedAt = now.toISOString();
+    const startedAt = (sessionStartTimeRef.current || new Date(now.getTime() - secondsToSave * 1000)).toISOString();
+    const activeSubject = selectedSubject;
+    const subjectName = (typeof activeSubject === 'string' ? activeSubject : activeSubject?.name) || 'General Focus';
+    const subjectId = activeSubject?.id;
+    const subjectColor = activeSubject?.color || '#10B981';
+    const notesToSave = notesOverride !== undefined ? notesOverride : currentNotes;
+    const currentMode = timerMode || 'pomodoro';
+    const currentUser = userRef.current;
+
+    const supabase = getSupabase();
+    let activeUser = null;
+    if (supabase) {
+      try {
+        const { data: authData, error: authError } = await supabase.auth.getUser();
+        if (!authError && authData?.user) {
+          activeUser = authData.user;
+        }
+      } catch (err) {
+        console.warn('StudyContext: Error getting auth user:', err);
+      }
+    }
+
+    let insertSuccess = false;
+    let insertedRecordId: string | null = null;
+
+    if (supabase && activeUser?.id) {
+      const insertPayload: Record<string, any> = {
+        user_id: activeUser.id,
+        subject: subjectName,
+        duration_seconds: secondsToSave,
+        mode: currentMode,
+        created_at: endedAt,
+        started_at: startedAt,
+        ended_at: endedAt,
+        notes: notesToSave && notesToSave.trim().length > 0 ? notesToSave.trim() : null,
+      };
+
+      if (subjectId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(subjectId)) {
+        insertPayload.subject_id = subjectId;
+      }
+
+      try {
+        let insertResponse = await supabase.from('study_sessions').insert(insertPayload).select();
+
+        if (insertResponse.error && (insertResponse.error.code === 'PGRST204' || insertResponse.error.message?.includes('subject'))) {
+          const fallbackPayload: Record<string, any> = { ...insertPayload };
+          delete fallbackPayload.subject;
+          insertResponse = await supabase.from('study_sessions').insert(fallbackPayload).select();
+        }
+
+        if (insertResponse.error && (insertResponse.error.code === 'PGRST204' || insertResponse.error.message?.includes('duration_seconds'))) {
+          const fallbackPayload: Record<string, any> = { ...insertPayload, duration: secondsToSave };
+          delete fallbackPayload.duration_seconds;
+          insertResponse = await supabase.from('study_sessions').insert(fallbackPayload).select();
+        }
+
+        if (insertResponse.error) {
+          console.error('StudyContext: Supabase insert error:', insertResponse.error);
+        } else {
+          insertSuccess = true;
+          insertedRecordId = insertResponse.data?.[0]?.id || null;
+        }
+      } catch (err) {
+        console.error('StudyContext: Exception inserting session:', err);
+      }
+    } else {
+      insertSuccess = true;
+    }
+
+    if (insertSuccess) {
+      const newSession: StudySession = {
+        id: insertedRecordId || `sess-${Date.now()}`,
+        userId: activeUser?.id || currentUser.id || 'guest',
+        userName: currentUser.displayName,
+        userAvatar: currentUser.avatarUrl,
+        subjectId: subjectId || '',
+        subjectName: subjectName,
+        subjectColor: subjectColor,
+        startTime: startedAt,
+        endTime: endedAt,
+        durationSeconds: secondsToSave,
+        notes: notesToSave,
+        mode: currentMode,
+        createdAt: endedAt,
+      };
+
+      addSession(newSession);
+
+      const earnedXP = calculateFocusXP(secondsToSave);
+      if (earnedXP > 0) {
+        triggerXpEarned(earnedXP, `${Math.max(1, Math.round(secondsToSave / 60))} min Focus Session`, 'focus');
+      }
+
+      const todayStart = getLocalStartOfDay(new Date());
+      const todayEnd = getLocalEndOfDay(new Date());
+      const allSessionsNow = [newSession, ...sessions.filter(s => s.id !== newSession.id)];
+      const totalToday = allSessionsNow
+        .filter(s => {
+          const t = new Date(s.startTime).getTime();
+          return t >= todayStart.getTime() && t <= todayEnd.getTime();
+        })
+        .reduce((sum, s) => sum + s.durationSeconds, 0);
+
+      const dailyGoalSeconds = (currentUser.dailyGoalHours || 4) * 3600;
+      if (totalToday >= dailyGoalSeconds && totalToday - secondsToSave < dailyGoalSeconds) {
+        confetti({
+          particleCount: 120,
+          spread: 80,
+          origin: { y: 0.5 },
+        });
+        soundFx.playMilestoneBell();
+      }
+
+      const hasStreakOrGoal = (currentUser?.streakDays || 0) > 0 || totalToday >= dailyGoalSeconds;
+      const hasCompletedTask = Boolean(activeTaskId);
+      const rpBreakdown = calculateSessionRP(secondsToSave, {
+        hasStreakOrGoal,
+        hasCompletedTask,
+      });
+
+      const prevRP = Number((currentUser as any)?.rp ?? currentUser?.seasonRp ?? 0);
+      const newRP = prevRP + rpBreakdown.totalGained;
+
+      updateProfile({
+        seasonRp: newRP,
+        rp: newRP,
+      });
+
+      setSettlementData({
+        prevRP,
+        newRP,
+        breakdown: rpBreakdown,
+        subjectName,
+        subjectColor,
+      });
+
+      if (activeUser?.id) {
+        await refetchSessions();
+      }
+
+      return true;
+    }
+
+    return false;
+  }, [
+    selectedSubject,
+    currentNotes,
+    timerMode,
+    activeTaskId,
+    addSession,
+    triggerXpEarned,
+    sessions,
+    updateProfile,
+    refetchSessions,
+  ]);
+
   // Stop Timer and save session to Supabase immediately with localStorage fallback
   const stopTimer = useCallback(async (durationOverride?: number, notesOverride?: string) => {
-    // 1. Capture variables into local scope BEFORE touching state
     const currentActual = startTimeRef.current !== null && !isPaused
       ? Math.floor((Date.now() - startTimeRef.current) / 1000)
       : accumulatedSecondsRef.current;
@@ -1036,191 +1273,83 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    if (seconds < 5) {
-      console.info(`StudyContext: Session was under 5 seconds (${seconds}s). Handling gracefully.`);
-    }
+    await persistCompletedSession(seconds, notesOverride);
 
-    const now = new Date();
-    const endedAt = now.toISOString();
-    const startedAt = (sessionStartTimeRef.current || new Date(now.getTime() - seconds * 1000)).toISOString();
-    const activeSubject = selectedSubject;
-    const subjectName = (typeof activeSubject === 'string' ? activeSubject : activeSubject?.name) || 'General Focus';
-    const subjectId = activeSubject?.id;
-    const subjectColor = activeSubject?.color || '#10B981';
-    const notesToSave = notesOverride !== undefined ? notesOverride : currentNotes;
-    const currentMode = timerMode || 'stopwatch';
-    const currentUser = userRef.current;
-
-    // 2. Fetch active user from Supabase auth
-    const supabase = getSupabase();
-    let activeUser = null;
-    if (supabase) {
-      try {
-        const { data: authData, error: authError } = await supabase.auth.getUser();
-        if (!authError && authData?.user) {
-          activeUser = authData.user;
-        }
-      } catch (err) {
-        console.warn('StudyContext: Error getting auth user:', err);
-      }
-    }
-
-    if (!activeUser) {
-      console.warn('StudyContext: No active user session present. Logging session locally.');
-    }
-
-    // 3. Persist record into study_sessions
-    let insertSuccess = false;
-    let insertedRecordId: string | null = null;
-
-    if (supabase && activeUser?.id) {
-      const insertPayload: Record<string, any> = {
-        user_id: activeUser.id,
-        subject: subjectName,
-        duration_seconds: seconds,
-        mode: currentMode,
-        created_at: endedAt,
-        started_at: startedAt,
-        ended_at: endedAt,
-        notes: notesToSave && notesToSave.trim().length > 0 ? notesToSave.trim() : null,
-      };
-
-      if (subjectId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(subjectId)) {
-        insertPayload.subject_id = subjectId;
-      }
-
-      try {
-        let insertResponse = await supabase.from('study_sessions').insert(insertPayload).select();
-
-        // If 'subject' column does not exist in the database schema cache, retry without 'subject'
-        if (insertResponse.error && (insertResponse.error.code === 'PGRST204' || insertResponse.error.message?.includes('subject'))) {
-          const fallbackPayload: Record<string, any> = { ...insertPayload };
-          delete fallbackPayload.subject;
-          insertResponse = await supabase.from('study_sessions').insert(fallbackPayload).select();
-        }
-
-        // If duration_seconds column does not exist, retry with duration
-        if (insertResponse.error && (insertResponse.error.code === 'PGRST204' || insertResponse.error.message?.includes('duration_seconds'))) {
-          const fallbackPayload: Record<string, any> = { ...insertPayload, duration: seconds };
-          delete fallbackPayload.duration_seconds;
-          insertResponse = await supabase.from('study_sessions').insert(fallbackPayload).select();
-        }
-
-        if (insertResponse.error) {
-          console.error('StudyContext: Supabase insert error:', insertResponse.error);
-        } else {
-          insertSuccess = true;
-          insertedRecordId = insertResponse.data?.[0]?.id || null;
-        }
-      } catch (err) {
-        console.error('StudyContext: Exception inserting session:', err);
-      }
-    } else {
-      // Local/guest mode allowed
-      insertSuccess = true;
-    }
-
-    // 4. Only reset timer and update Daily Overview stats AFTER insert returns successfully
-    if (insertSuccess) {
-      const newSession: StudySession = {
-        id: insertedRecordId || `sess-${Date.now()}`,
-        userId: activeUser?.id || currentUser.id || 'guest',
-        userName: currentUser.displayName,
-        userAvatar: currentUser.avatarUrl,
-        subjectId: subjectId || '',
-        subjectName: subjectName,
-        subjectColor: subjectColor,
-        startTime: startedAt,
-        endTime: endedAt,
-        durationSeconds: seconds,
-        notes: notesToSave,
-        mode: currentMode,
-        createdAt: endedAt,
-      };
-
-      addSession(newSession);
-      soundFx.playStopChime();
-
-      // Trigger gamification XP gain notification
-      const earnedXP = calculateFocusXP(seconds);
-      if (earnedXP > 0) {
-        triggerXpEarned(earnedXP, `${Math.max(1, Math.round(seconds / 60))} min Focus Session`, 'focus');
-      }
-
-      const todayStart = getLocalStartOfDay(new Date());
-      const todayEnd = getLocalEndOfDay(new Date());
-      const allSessionsNow = [newSession, ...sessions.filter(s => s.id !== newSession.id)];
-      const totalToday = allSessionsNow
-        .filter(s => {
-          const t = new Date(s.startTime).getTime();
-          return t >= todayStart.getTime() && t <= todayEnd.getTime();
-        })
-        .reduce((sum, s) => sum + s.durationSeconds, 0);
-
-      const dailyGoalSeconds = (currentUser.dailyGoalHours || 4) * 3600;
-      if (totalToday >= dailyGoalSeconds && totalToday - seconds < dailyGoalSeconds) {
-        confetti({
-          particleCount: 120,
-          spread: 80,
-          origin: { y: 0.5 },
-        });
-        soundFx.playMilestoneBell();
-      }
-
-      // Free Fire Post-Match RP Calculation & Settlement Trigger
-      const hasStreakOrGoal = (currentUser?.streakDays || 0) > 0 || totalToday >= dailyGoalSeconds;
-      const hasCompletedTask = Boolean(activeTaskId);
-      const rpBreakdown = calculateSessionRP(seconds, {
-        hasStreakOrGoal,
-        hasCompletedTask,
-      });
-
-      const prevRP = Number((currentUser as any)?.rp ?? currentUser?.seasonRp ?? 0);
-      const newRP = prevRP + rpBreakdown.totalGained;
-
-      updateProfile({
-        seasonRp: newRP,
-        rp: newRP,
-      });
-
-      setSettlementData({
-        prevRP,
-        newRP,
-        breakdown: rpBreakdown,
-        subjectName,
-        subjectColor,
-      });
-
-      // Clear references and reset state to 0 on save
-      startTimeRef.current = null;
-      accumulatedSecondsRef.current = 0;
-      setIsStudying(false);
-      setIsPaused(false);
-      setElapsedSeconds(0);
-      setActiveTaskId(null);
-      setCurrentNotes('');
-      sessionStartTimeRef.current = null;
-      clearPersistedTimer();
-
-      if (activeUser?.id) {
-        await refetchSessions();
-      }
-    } else {
-      console.error('StudyContext: Session persistence failed. Timer state preserved.');
-    }
+    // Clear references and reset state to 0 on save
+    startTimeRef.current = null;
+    accumulatedSecondsRef.current = 0;
+    setIsStudying(false);
+    setIsPaused(false);
+    setElapsedSeconds(0);
+    setActiveTaskId(null);
+    setCurrentNotes('');
+    sessionStartTimeRef.current = null;
+    clearPersistedTimer();
   }, [
     isStudying,
     isPaused,
     elapsedSeconds,
-    selectedSubject,
-    currentNotes,
-    timerMode,
-    sessions,
-    addSession,
+    persistCompletedSession,
     clearPersistedTimer,
-    refetchSessions,
-    triggerXpEarned,
   ]);
+
+  // Save completed Pomodoro Focus session to Supabase and switch to Break mode in PAUSED state
+  const saveAndStartBreak = useCallback(async () => {
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
+    const secondsToSave = pomodoroWorkDuration;
+    await persistCompletedSession(secondsToSave);
+
+    // Switch timer to Break mode in a PAUSED state!
+    setPomodoroPhase('shortBreak');
+    setElapsedSeconds(0);
+    accumulatedSecondsRef.current = 0;
+    startTimeRef.current = null;
+    sessionStartTimeRef.current = null;
+    setIsStudying(true);
+    setIsPaused(true);
+    setPomodoroCompletedPhase(null);
+    clearPersistedTimer();
+    updateProfile({ status: 'resting' });
+  }, [pomodoroWorkDuration, persistCompletedSession, clearPersistedTimer, updateProfile]);
+
+  // Skip Break: Save session and reset timer for another study round
+  const skipPomodoroBreak = useCallback(async () => {
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
+    const secondsToSave = pomodoroWorkDuration;
+    await persistCompletedSession(secondsToSave);
+
+    // Reset timer for another study round
+    setPomodoroPhase('work');
+    setElapsedSeconds(0);
+    accumulatedSecondsRef.current = 0;
+    startTimeRef.current = null;
+    sessionStartTimeRef.current = null;
+    setIsStudying(false);
+    setIsPaused(false);
+    setPomodoroCompletedPhase(null);
+    clearPersistedTimer();
+    updateProfile({ status: 'resting' });
+  }, [pomodoroWorkDuration, persistCompletedSession, clearPersistedTimer, updateProfile]);
+
+  // Explicitly start the break countdown from paused break state
+  const startPomodoroBreak = useCallback(() => {
+    setPomodoroPhase('shortBreak');
+    accumulatedSecondsRef.current = 0;
+    startTimeRef.current = Date.now();
+    sessionStartTimeRef.current = new Date();
+    setElapsedSeconds(0);
+    setIsStudying(true);
+    setIsPaused(false);
+    setPomodoroCompletedPhase(null);
+    soundFx.playStartChime();
+    updateProfile({ status: 'resting' });
+  }, [updateProfile]);
 
   // Complete Timer - alias for stopTimer
   const completeTimer = useCallback(async (durationOverride?: number, notesOverride?: string) => {
@@ -1239,6 +1368,8 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     setIsStudying(false);
     setIsPaused(false);
     setElapsedSeconds(0);
+    setPomodoroCompletedPhase(null);
+    setPomodoroPhase('work');
     setActiveTaskId(null);
     clearPersistedTimer();
     updateProfile({ status: 'resting', activeSessionStartTime: undefined });
@@ -1246,11 +1377,14 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
   const dismissRankSettlement = useCallback(() => {
     setSettlementData(null);
-    resetTimer();
+    // Keep paused break state intact if transitioning to break
+    if (timerMode !== 'pomodoro' || pomodoroPhase !== 'shortBreak') {
+      resetTimer();
+    }
     setCurrentNotes('');
     setIsFocusModeOpen(false);
     refetchSessions();
-  }, [resetTimer, refetchSessions]);
+  }, [timerMode, pomodoroPhase, resetTimer, refetchSessions]);
 
   // Subjects Management
   const addSubject = (newSub: Omit<Subject, 'id' | 'createdAt'>) => {
@@ -1556,6 +1690,13 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         setPomodoroPhase,
         pomodoroWorkDuration,
         pomodoroBreakDuration,
+        pomodoroPreset,
+        setPomodoroPreset,
+        pomodoroCompletedPhase,
+        setPomodoroCompletedPhase,
+        saveAndStartBreak,
+        skipPomodoroBreak,
+        startPomodoroBreak,
         activeTaskId,
         currentNotes,
         setCurrentNotes,

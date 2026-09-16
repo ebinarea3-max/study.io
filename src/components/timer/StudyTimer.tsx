@@ -26,6 +26,8 @@ import {
   MessageCircle,
   Check,
   X,
+  Coffee,
+  SkipForward,
 } from 'lucide-react';
 import { soundFx } from '../../lib/audio';
 import confetti from 'canvas-confetti';
@@ -57,6 +59,13 @@ export function StudyTimer() {
     pomodoroPhase,
     pomodoroWorkDuration,
     pomodoroBreakDuration,
+    pomodoroPreset,
+    setPomodoroPreset,
+    pomodoroCompletedPhase,
+    setPomodoroCompletedPhase,
+    saveAndStartBreak,
+    skipPomodoroBreak,
+    startPomodoroBreak,
     setIsFocusModeOpen,
     startTimer,
     pauseTimer,
@@ -576,32 +585,78 @@ export function StudyTimer() {
             </div>
           )}
 
-          {/* Top Controls: Mode Switcher & Focus Mode Button */}
+          {/* Top Controls: Mode Switcher, Preset Selector & Focus Mode Button */}
           <div className="flex flex-wrap items-center justify-between gap-4 relative z-10 pb-6 border-b border-white/[0.08]">
-            {/* Mode Pill Toggle */}
-            <div className="flex items-center gap-1 p-1 rounded-2xl bg-black/60 border border-white/[0.08]">
-              <button
-                onClick={() => { if (!isStudying) setTimerMode('stopwatch'); }}
-                disabled={isStudying}
-                className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer ${
-                  timerMode === 'stopwatch'
-                    ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/30'
-                    : 'text-neutral-400 hover:text-white'
-                } disabled:cursor-not-allowed`}
-              >
-                Stopwatch
-              </button>
-              <button
-                onClick={() => { if (!isStudying) setTimerMode('pomodoro'); }}
-                disabled={isStudying}
-                className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer ${
-                  timerMode === 'pomodoro'
-                    ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/30'
-                    : 'text-neutral-400 hover:text-white'
-                } disabled:cursor-not-allowed`}
-              >
-                Pomodoro (25/5)
-              </button>
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Mode Pill Toggle */}
+              <div className="flex items-center gap-1 p-1 rounded-2xl bg-black/60 border border-white/[0.08]">
+                <button
+                  onClick={() => { if (!isStudying) setTimerMode('stopwatch'); }}
+                  disabled={isStudying}
+                  className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 ${
+                    timerMode === 'stopwatch'
+                      ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/30'
+                      : 'text-neutral-400 hover:text-white'
+                  } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+                >
+                  Stopwatch
+                </button>
+                <button
+                  onClick={() => { if (!isStudying) setTimerMode('pomodoro'); }}
+                  disabled={isStudying}
+                  className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 ${
+                    timerMode === 'pomodoro'
+                      ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/30'
+                      : 'text-neutral-400 hover:text-white'
+                  } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+                >
+                  Pomodoro
+                </button>
+              </div>
+
+              {/* Clean Pill/Segment Preset Selector (25/5 and 50/10) */}
+              {timerMode === 'pomodoro' && (
+                <div
+                  className="flex items-center gap-1 p-1 rounded-2xl bg-black/60 border border-white/[0.08] animate-in fade-in zoom-in-95 duration-200"
+                  title={isStudying ? "Interval presets are locked while session is running" : "Choose focus / break interval preset"}
+                >
+                  <button
+                    onClick={() => {
+                      if (!isStudying) setPomodoroPreset('25/5');
+                    }}
+                    disabled={isStudying}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 active:scale-95 ${
+                      pomodoroPreset === '25/5'
+                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/50 shadow-sm shadow-emerald-500/20'
+                        : 'text-neutral-400 hover:text-white border border-transparent'
+                    } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+                    title="25m Focus / 5m Break (Standard)"
+                  >
+                    <span>25 / 5</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.06] text-neutral-400 font-normal">
+                      Std
+                    </span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      if (!isStudying) setPomodoroPreset('50/10');
+                    }}
+                    disabled={isStudying}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 active:scale-95 ${
+                      pomodoroPreset === '50/10'
+                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/50 shadow-sm shadow-emerald-500/20'
+                        : 'text-neutral-400 hover:text-white border border-transparent'
+                    } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+                    title="50m Focus / 10m Break (Deep Work)"
+                  >
+                    <span>50 / 10</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.06] text-neutral-400 font-normal">
+                      Deep
+                    </span>
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* High-Contrast Semi-Solid Fullscreen Focus Mode Button */}
@@ -763,8 +818,8 @@ export function StudyTimer() {
                   >
                     {timerMode === 'pomodoro'
                       ? pomodoroPhase === 'work'
-                        ? '🔥 Focus Sprint (25m)'
-                        : '☕ Short Break (5m)'
+                        ? `🔥 Focus Sprint (${pomodoroPreset === '50/10' ? '50m' : '25m'})`
+                        : `☕ Recharge Break (${pomodoroPreset === '50/10' ? '10m' : '5m'})`
                       : selectedSubject?.name || 'Select a subject below'}
                   </div>
 
@@ -783,7 +838,11 @@ export function StudyTimer() {
                   <div className="mt-2 flex items-center gap-2 text-xs text-neutral-400">
                     <span
                       className={`w-2 h-2 rounded-full transition-all ${
-                        isStudying
+                        pomodoroCompletedPhase === 'work'
+                          ? 'bg-emerald-400 animate-ping'
+                          : pomodoroCompletedPhase === 'break'
+                          ? 'bg-amber-400 animate-bounce'
+                          : isStudying
                           ? isPaused
                             ? 'bg-amber-400'
                             : 'bg-emerald-400 animate-pulse'
@@ -791,16 +850,160 @@ export function StudyTimer() {
                       }`}
                     />
                     <span>
-                      {isStudying ? (isPaused ? 'Timer Paused' : 'Studying Live') : 'Ready to Start'}
+                      {pomodoroCompletedPhase === 'work'
+                        ? 'Focus Complete!'
+                        : pomodoroCompletedPhase === 'break'
+                        ? 'Break Over'
+                        : timerMode === 'pomodoro' && pomodoroPhase === 'shortBreak'
+                        ? isPaused
+                          ? 'Break Paused — Ready'
+                          : 'Recharging'
+                        : isStudying
+                        ? isPaused
+                          ? 'Timer Paused'
+                          : 'Studying Live'
+                        : 'Ready to Start'}
                     </span>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Action Buttons: Streamlined 3-state controls without redundant Complete button */}
+            {/* Focus Block Complete Alert Banner */}
+            {pomodoroCompletedPhase === 'work' && (
+              <div className="mt-6 w-full max-w-md flex items-center justify-between gap-3 px-5 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500/20 via-teal-500/15 to-emerald-500/10 border border-emerald-500/40 text-emerald-200 text-xs font-semibold backdrop-blur-md shadow-xl shadow-emerald-500/10 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center flex-shrink-0">
+                    <Sparkles className="w-4 h-4 text-emerald-300 animate-pulse" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-black text-white">Focus Block Complete! 🎉</div>
+                    <div className="text-[11px] text-emerald-300/90 font-normal">
+                      Save session to trigger rank settlement and pause for break, or skip.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Break Over Alert Banner */}
+            {pomodoroCompletedPhase === 'break' && (
+              <div className="mt-6 w-full max-w-md flex items-center justify-between gap-3 px-5 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500/20 via-amber-500/15 to-transparent border border-amber-500/40 text-amber-200 text-xs font-semibold backdrop-blur-md shadow-xl shadow-amber-500/10 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center flex-shrink-0">
+                    <Flame className="w-4 h-4 text-amber-300 animate-pulse" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-black text-white">Break Over — Ready to Study?</div>
+                    <div className="text-[11px] text-amber-300/90 font-normal">
+                      Timer switched back to focus mode. Click start when ready.
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setPomodoroCompletedPhase(null)}
+                  className="p-1 rounded-lg hover:bg-amber-500/20 text-amber-300 transition-colors cursor-pointer"
+                  title="Dismiss"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+
+            {/* Action Buttons: Context-aware controls */}
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3 relative z-10">
-              {!isStudying ? (
+              {pomodoroCompletedPhase === 'work' ? (
+                /* Prompt 1: Focus Block Complete -> Save & Start Break / Skip Break */
+                <>
+                  <button
+                    onClick={async () => {
+                      setIsSaving(true);
+                      try {
+                        await saveAndStartBreak();
+                      } finally {
+                        setIsSaving(false);
+                      }
+                    }}
+                    disabled={isSaving}
+                    className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black text-sm transition-all shadow-xl shadow-emerald-500/25 flex items-center gap-2 active:scale-95 hover:scale-[1.02] cursor-pointer disabled:opacity-50"
+                  >
+                    {isSaving ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                        <span>Saving...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Coffee className="w-4 h-4 fill-current" />
+                        <span>Save & Start Break</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={async () => {
+                      setIsSaving(true);
+                      try {
+                        await skipPomodoroBreak();
+                      } finally {
+                        setIsSaving(false);
+                      }
+                    }}
+                    disabled={isSaving}
+                    className="px-6 py-3.5 rounded-2xl bg-neutral-900 hover:bg-neutral-800 border border-white/[0.12] text-neutral-300 hover:text-white font-bold text-sm transition-all flex items-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50"
+                  >
+                    <SkipForward className="w-4 h-4" />
+                    <span>Skip Break</span>
+                  </button>
+                </>
+              ) : timerMode === 'pomodoro' && pomodoroPhase === 'shortBreak' ? (
+                /* Prompt 2: Break Mode Controls (Paused awaiting click vs Running) */
+                isPaused ? (
+                  <>
+                    <button
+                      onClick={startPomodoroBreak}
+                      className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-teal-400 to-emerald-500 hover:from-teal-300 hover:to-emerald-400 text-slate-950 font-black text-sm transition-all shadow-xl shadow-teal-500/25 flex items-center gap-2 active:scale-95 hover:scale-[1.02] cursor-pointer"
+                    >
+                      <Play className="w-4 h-4 fill-current" />
+                      <span>Start Break</span>
+                    </button>
+                    <button
+                      onClick={handleReset}
+                      className="px-5 py-3.5 rounded-2xl bg-neutral-900 hover:bg-neutral-800 border border-white/[0.08] text-neutral-400 hover:text-white font-bold text-sm transition-colors active:scale-95 cursor-pointer"
+                    >
+                      <span>Skip Break</span>
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={handlePause}
+                      className="px-6 py-3 rounded-2xl bg-neutral-900 hover:bg-neutral-800 text-amber-300 font-bold text-sm border border-amber-500/30 transition-all flex items-center gap-2 active:scale-95 cursor-pointer"
+                    >
+                      <Pause className="w-4 h-4" />
+                      <span>Pause Break</span>
+                    </button>
+                    <button
+                      onClick={handleReset}
+                      className="px-6 py-3 rounded-2xl bg-neutral-900/80 hover:bg-neutral-800 border border-white/[0.08] text-neutral-400 hover:text-white font-bold text-sm transition-colors active:scale-95 cursor-pointer"
+                    >
+                      <span>End Break</span>
+                    </button>
+                  </>
+                )
+              ) : pomodoroCompletedPhase === 'break' ? (
+                /* Break completed, waiting for user click */
+                <button
+                  onClick={() => {
+                    setPomodoroCompletedPhase(null);
+                    handleStartSession();
+                  }}
+                  className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black text-sm transition-all shadow-xl shadow-emerald-500/25 flex items-center gap-2 active:scale-95 hover:scale-[1.02] cursor-pointer"
+                >
+                  <Flame className="w-5 h-5 fill-current" />
+                  <span>Start Focus Session</span>
+                </button>
+              ) : !isStudying ? (
                 /* 1. IDLE State: One primary button */
                 <button
                   onClick={handleStartSession}
