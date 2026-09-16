@@ -61,6 +61,7 @@ export type UserProfile = {
   createdAt: string;
   currentSeasonId?: string;
   seasonRp?: number;
+  rp?: number;
   user_metadata?: {
     avatar_url?: string;
     picture?: string;

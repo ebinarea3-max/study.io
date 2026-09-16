@@ -287,12 +287,13 @@ export function StudyTimer() {
           hasCompletedTask,
         });
 
-        const prevRP = user?.seasonRp || 0;
+        const prevRP = Number((user as any)?.rp ?? user?.seasonRp ?? 0);
         const newRP = prevRP + rpBreakdown.totalGained;
 
         // Persist new RP in profile
         updateProfile({
           seasonRp: newRP,
+          rp: newRP,
         });
 
         // Trigger Free Fire Post-Match Settlement Modal immediately

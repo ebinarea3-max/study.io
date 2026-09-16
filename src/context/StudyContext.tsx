@@ -524,12 +524,19 @@ export function StudyProvider({ children }: { children: ReactNode }) {
           setSessions(mappedSessions);
           try { localStorage.setItem('studypulse_sessions', JSON.stringify(mappedSessions)); } catch {}
 
-          // Update real streak and total study seconds
+          // Update real streak, total study seconds, and ensure RP matches minimum expected from total study time
           const realStreak = calculateStreak(mappedSessions);
           const realTotalSeconds = mappedSessions.reduce((sum, s) => sum + s.durationSeconds, 0);
+          const totalStudyMinutes = Math.floor(realTotalSeconds / 60);
+          const minExpectedRP = totalStudyMinutes * 10;
+          const currentRP = Number((userRef.current as any)?.rp ?? userRef.current?.seasonRp ?? 0);
+          const finalRP = Math.max(minExpectedRP, currentRP);
+
           updateProfile({
             streakDays: realStreak,
             totalStudySeconds: realTotalSeconds,
+            seasonRp: finalRP,
+            rp: finalRP,
           });
         }
 
@@ -691,12 +698,22 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
         const realStreak = calculateStreak(mappedSessions);
         const realTotalSeconds = mappedSessions.reduce((sum, s) => sum + s.durationSeconds, 0);
+        const totalStudyMinutes = Math.floor(realTotalSeconds / 60);
+        const minExpectedRP = totalStudyMinutes * 10;
+        const currentRP = Number((currentUser as any)?.rp ?? currentUser.seasonRp ?? 0);
+        const finalRP = Math.max(minExpectedRP, currentRP);
 
-        // Only update profile if streak or study seconds actually changed to avoid re-render thrashing
-        if (currentUser.streakDays !== realStreak || currentUser.totalStudySeconds !== realTotalSeconds) {
+        // Only update profile if streak, study seconds, or RP actually changed to avoid re-render thrashing
+        if (
+          currentUser.streakDays !== realStreak ||
+          currentUser.totalStudySeconds !== realTotalSeconds ||
+          currentRP < minExpectedRP
+        ) {
           updateProfile({
             streakDays: realStreak,
             totalStudySeconds: realTotalSeconds,
+            seasonRp: finalRP,
+            rp: finalRP,
           });
         }
       }
@@ -1158,11 +1175,12 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         hasCompletedTask,
       });
 
-      const prevRP = currentUser?.seasonRp || 0;
+      const prevRP = Number((currentUser as any)?.rp ?? currentUser?.seasonRp ?? 0);
       const newRP = prevRP + rpBreakdown.totalGained;
 
       updateProfile({
         seasonRp: newRP,
+        rp: newRP,
       });
 
       setSettlementData({
@@ -1231,7 +1249,8 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     resetTimer();
     setCurrentNotes('');
     setIsFocusModeOpen(false);
-  }, [resetTimer]);
+    refetchSessions();
+  }, [resetTimer, refetchSessions]);
 
   // Subjects Management
   const addSubject = (newSub: Omit<Subject, 'id' | 'createdAt'>) => {

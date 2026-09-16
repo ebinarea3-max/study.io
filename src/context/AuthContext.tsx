@@ -74,6 +74,52 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .eq('id', authUser.id)
         .maybeSingle();
 
+      // Compute total accumulated study minutes across all rows in study_sessions for the current user
+      const { data: dbSessions } = await supabase
+        .from('study_sessions')
+        .select('duration_seconds, duration, seconds')
+        .eq('user_id', authUser.id);
+
+      // Also check local storage sessions in case offline / pending sessions exist
+      let localSessionSeconds = 0;
+      try {
+        const rawSess = localStorage.getItem('studypulse_sessions');
+        if (rawSess) {
+          const parsed = JSON.parse(rawSess);
+          if (Array.isArray(parsed)) {
+            localSessionSeconds = parsed.reduce((acc: number, s: any) => acc + (Number(s.durationSeconds ?? s.duration_seconds ?? 0)), 0);
+          }
+        }
+      } catch {}
+
+      const dbSessionSeconds = dbSessions
+        ? dbSessions.reduce((acc, s: any) => acc + (Number(s.duration_seconds ?? s.duration ?? s.seconds ?? 0)), 0)
+        : 0;
+      const totalStudySeconds = Math.max(dbSessionSeconds, localSessionSeconds, Number(profile?.total_study_seconds ?? 0));
+      const totalStudyMinutes = Math.floor(totalStudySeconds / 60);
+      const calculatedRP = totalStudyMinutes * 10;
+      const currentProfileRP = Number(profile?.rp ?? profile?.season_rp ?? 0);
+      const syncedRP = Math.max(calculatedRP, currentProfileRP);
+
+      // Auto-Sync Fix: If totalStudyMinutes * 10 > profile.rp, automatically update profile.rp in Supabase
+      if (calculatedRP > currentProfileRP && authUser.id && !authUser.id.startsWith('user-scholar')) {
+        const updatePayload: Record<string, any> = {
+          rp: syncedRP,
+          season_rp: syncedRP,
+          total_study_seconds: totalStudySeconds,
+        };
+        try {
+          const { error: updateErr } = await supabase.from('profiles').update(updatePayload).eq('id', authUser.id);
+          if (updateErr) {
+            // If column 'rp' doesn't exist, retry with season_rp
+            delete updatePayload.rp;
+            await supabase.from('profiles').update(updatePayload).eq('id', authUser.id);
+          }
+        } catch (e) {
+          console.warn('Failed to auto-sync RP to Supabase profile:', e);
+        }
+      }
+
       if (profile) {
         setUser(prev => {
           const synced: UserProfile = {
@@ -86,8 +132,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             level: Number(profile.level ?? prev.level ?? 1),
             xp: Number(profile.xp ?? prev.xp ?? 0),
             currentSeasonId: profile.current_season_id || prev.currentSeasonId || getCurrentSeasonId(),
-            seasonRp: Number(profile.season_rp ?? prev.seasonRp ?? 0),
-            totalStudySeconds: Number(profile.total_study_seconds ?? prev.totalStudySeconds ?? 0),
+            seasonRp: syncedRP,
+            rp: syncedRP,
+            totalStudySeconds: totalStudySeconds,
             status: prev.status || 'resting',
             createdAt: profile.created_at || prev.createdAt || new Date().toISOString(),
             user_metadata: authUser.user_metadata,
@@ -100,6 +147,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           id: authUser.id,
           name: metaName,
           avatar_url: metaAvatar || null,
+          rp: syncedRP,
+          season_rp: syncedRP,
+          total_study_seconds: totalStudySeconds,
         });
       }
     } catch {
@@ -427,18 +477,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (updated.currentSeasonId !== undefined) {
           payload.current_season_id = updated.currentSeasonId;
         }
-        if (updated.seasonRp !== undefined) {
-          payload.season_rp = updated.seasonRp;
+        if (updated.seasonRp !== undefined || updated.rp !== undefined) {
+          const rpVal = updated.rp !== undefined ? updated.rp : updated.seasonRp;
+          payload.season_rp = rpVal;
+          payload.rp = rpVal;
         }
 
         supabase.from('profiles').update(payload).eq('id', prev.id).then(
           ({ error }) => {
-            // Fallback: if 'xp', 'current_season_id', or 'season_rp' column doesn't exist in profiles table yet, retry without them
-            if (error && (error.code === 'PGRST204' || error.message?.includes('xp') || error.message?.includes('season'))) {
+            // Fallback: if 'xp', 'current_season_id', 'season_rp', or 'rp' column doesn't exist in profiles table yet, retry gracefully
+            if (error) {
               const fallbackPayload = { ...payload };
-              delete fallbackPayload.xp;
-              delete fallbackPayload.current_season_id;
-              delete fallbackPayload.season_rp;
+              if (error.code === 'PGRST204' || error.message?.includes('rp')) {
+                delete fallbackPayload.rp;
+              }
+              if (error.code === 'PGRST204' || error.message?.includes('season')) {
+                delete fallbackPayload.current_season_id;
+                delete fallbackPayload.season_rp;
+              }
+              if (error.code === 'PGRST204' || error.message?.includes('xp')) {
+                delete fallbackPayload.xp;
+              }
               supabase.from('profiles').update(fallbackPayload).eq('id', prev.id).then();
             }
           }

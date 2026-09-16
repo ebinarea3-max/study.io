@@ -66,7 +66,10 @@ export function Navbar({
     user?.displayName,
   ]);
 
-  const userRank = useMemo(() => getRankTier(user?.seasonRp || 0), [user?.seasonRp]);
+  const userRank = useMemo(
+    () => getRankTier((user as any)?.rp ?? user?.seasonRp ?? 0),
+    [(user as any)?.rp, user?.seasonRp]
+  );
 
   // SVG Progress Ring calculations (radius 18, circumference 113.1)
   const radius = 17;
@@ -134,11 +137,10 @@ export function Navbar({
             </Link>
           ) : (
             <>
-              {/* Free Fire Rank Badge Pill */}
+              {/* Free Fire Rank Badge Pill - Static Display Badge */}
               <div
-                onClick={onOpenProfile}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900/90 border border-white/[0.08] hover:border-amber-500/40 text-slate-200 cursor-pointer select-none shadow-sm transition-all hover:scale-105"
-                title={`Ranked Season RP: ${userRank.rp.toLocaleString()} RP (${userRank.fullTitle}) · Click to view`}
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900/90 border border-white/[0.08] text-slate-200 cursor-default select-none shadow-sm"
+                title={`Ranked Season RP: ${userRank.rp.toLocaleString()} RP (${userRank.fullTitle})`}
               >
                 <div
                   className="w-2 h-2 rounded-full animate-pulse"
