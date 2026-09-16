@@ -59,6 +59,8 @@ export type UserProfile = {
   activeSessionStartTime?: string; // ISO string if currently studying
   currentSessionElapsedSeconds?: number;
   createdAt: string;
+  currentSeasonId?: string;
+  seasonRp?: number;
   user_metadata?: {
     avatar_url?: string;
     picture?: string;
@@ -67,6 +69,31 @@ export type UserProfile = {
     display_name?: string;
     [key: string]: unknown;
   };
+};
+
+export type RankSettlementBreakdown = {
+  sessionRP: number;          // 10 RP per focused minute
+  goalStreakBonus: number;     // +50 RP (Goal / Streak Bonus)
+  taskBonus: number;           // +10 RP (Task Completion)
+  totalGained: number;         // Total RP gained
+  durationSeconds: number;
+};
+
+export type RankSettlementData = {
+  prevRP: number;
+  newRP: number;
+  breakdown: RankSettlementBreakdown;
+  subjectName?: string;
+  subjectColor?: string;
+};
+
+export type SeasonRecapData = {
+  previousSeasonId: string;
+  newSeasonId: string;
+  previousRP: number;
+  previousTierTitle: string;
+  newRP: number;
+  newTierTitle: string;
 };
 
 export type StudyRoom = {

@@ -12,8 +12,14 @@ create table if not exists public.profiles (
   level integer default 1,
   xp bigint default 0,
   total_study_seconds bigint default 0,
+  current_season_id text default to_char(now(), 'YYYY-MM'),
+  season_rp integer default 0,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+
+-- Migration for existing instances:
+alter table public.profiles add column if not exists current_season_id text default to_char(now(), 'YYYY-MM');
+alter table public.profiles add column if not exists season_rp integer default 0;
 
 -- 2. Subjects Table
 create table if not exists public.subjects (

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useRef, useCallback, useMemo } from 'react';
-import { Subject, StudySession, TodoItem, TimerMode, PomodoroPhase } from '../types';
+import { Subject, StudySession, TodoItem, TimerMode, PomodoroPhase, RankSettlementData, SeasonRecapData } from '../types';
 import { INITIAL_SUBJECTS, INITIAL_TODOS, getTodayDateString, calculateStreak, cleanupLegacyDemoData } from '../lib/mockData';
 import { getLocalStartOfDay, getLocalEndOfDay } from '../lib/dateUtils';
 import { useAuth } from './AuthContext';
@@ -13,9 +13,20 @@ import {
   calculateFocusXP,
   LevelProgress,
 } from '../lib/gamification';
+import {
+  calculateSessionRP,
+  calculateSeasonReset,
+  getCurrentSeasonId,
+} from '../lib/rankedSystem';
 
 interface StudyContextType {
   gamification: LevelProgress;
+  settlementData: RankSettlementData | null;
+  showRankSettlement: (data: RankSettlementData) => void;
+  dismissRankSettlement: () => void;
+  seasonRecap: SeasonRecapData | null;
+  dismissSeasonRecap: () => void;
+  simulateSeasonReset: () => void;
   lastXpEarned: { id: string; amount: number; reason: string; type?: 'focus' | 'todo' | 'streak' | 'general' } | null;
   levelUpData: { newLevel: number; oldLevel: number; title: string } | null;
   dismissLevelUpModal: () => void;
@@ -153,6 +164,88 @@ export function StudyProvider({ children }: { children: ReactNode }) {
   const dismissXpNotification = useCallback(() => {
     setLastXpEarned(null);
   }, []);
+
+  // Free Fire Ranked Settlement & Monthly Season State
+  const [settlementData, setSettlementData] = useState<RankSettlementData | null>(null);
+  const [seasonRecap, setSeasonRecap] = useState<SeasonRecapData | null>(null);
+
+  const showRankSettlement = useCallback((data: RankSettlementData) => {
+    setSettlementData(data);
+  }, []);
+
+  const dismissSeasonRecap = useCallback(() => {
+    setSeasonRecap(null);
+    try {
+      localStorage.removeItem('studypulse_season_recap');
+    } catch {}
+  }, []);
+
+  // Developer / Test simulation of monthly season soft-reset
+  const simulateSeasonReset = useCallback(() => {
+    const currentMonth = getCurrentSeasonId();
+    const previousRP = user?.seasonRp || 1450; // Demo value or existing
+    const resetResult = calculateSeasonReset(previousRP);
+    const recap: SeasonRecapData = {
+      previousSeasonId: '2026-08',
+      newSeasonId: currentMonth,
+      previousRP,
+      previousTierTitle: resetResult.previousTier.fullTitle,
+      newRP: resetResult.newRP,
+      newTierTitle: resetResult.newTier.fullTitle,
+    };
+    updateProfile({
+      currentSeasonId: currentMonth,
+      seasonRp: resetResult.newRP,
+    });
+    setSeasonRecap(recap);
+    try {
+      localStorage.setItem('studypulse_season_recap', JSON.stringify(recap));
+    } catch {}
+  }, [user?.seasonRp, updateProfile]);
+
+  // Monthly Ranked Season Check on app launch
+  useEffect(() => {
+    const currentMonth = getCurrentSeasonId();
+
+    try {
+      const savedRecap = localStorage.getItem('studypulse_season_recap');
+      if (savedRecap) {
+        setSeasonRecap(JSON.parse(savedRecap));
+      }
+    } catch {}
+
+    if (user && user.id && !user.id.startsWith('user-scholar')) {
+      if (user.currentSeasonId && user.currentSeasonId !== currentMonth) {
+        const prevSeason = user.currentSeasonId;
+        const prevRP = user.seasonRp || 0;
+        const reset = calculateSeasonReset(prevRP);
+
+        const recap: SeasonRecapData = {
+          previousSeasonId: prevSeason,
+          newSeasonId: currentMonth,
+          previousRP: prevRP,
+          previousTierTitle: reset.previousTier.fullTitle,
+          newRP: reset.newRP,
+          newTierTitle: reset.newTier.fullTitle,
+        };
+
+        updateProfile({
+          currentSeasonId: currentMonth,
+          seasonRp: reset.newRP,
+        });
+
+        setSeasonRecap(recap);
+        try {
+          localStorage.setItem('studypulse_season_recap', JSON.stringify(recap));
+        } catch {}
+      } else if (!user.currentSeasonId) {
+        updateProfile({
+          currentSeasonId: currentMonth,
+          seasonRp: user.seasonRp ?? 0,
+        });
+      }
+    }
+  }, [user?.id, user?.currentSeasonId, user?.seasonRp, updateProfile]);
 
   // Compute total focus time in seconds from all saved sessions
   const totalStudySeconds = useMemo(() => {
@@ -1057,6 +1150,29 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         soundFx.playMilestoneBell();
       }
 
+      // Free Fire Post-Match RP Calculation & Settlement Trigger
+      const hasStreakOrGoal = (currentUser?.streakDays || 0) > 0 || totalToday >= dailyGoalSeconds;
+      const hasCompletedTask = Boolean(activeTaskId);
+      const rpBreakdown = calculateSessionRP(seconds, {
+        hasStreakOrGoal,
+        hasCompletedTask,
+      });
+
+      const prevRP = currentUser?.seasonRp || 0;
+      const newRP = prevRP + rpBreakdown.totalGained;
+
+      updateProfile({
+        seasonRp: newRP,
+      });
+
+      setSettlementData({
+        prevRP,
+        newRP,
+        breakdown: rpBreakdown,
+        subjectName,
+        subjectColor,
+      });
+
       // Clear references and reset state to 0 on save
       startTimeRef.current = null;
       accumulatedSecondsRef.current = 0;
@@ -1109,6 +1225,13 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     clearPersistedTimer();
     updateProfile({ status: 'resting', activeSessionStartTime: undefined });
   }, [clearPersistedTimer, updateProfile]);
+
+  const dismissRankSettlement = useCallback(() => {
+    setSettlementData(null);
+    resetTimer();
+    setCurrentNotes('');
+    setIsFocusModeOpen(false);
+  }, [resetTimer]);
 
   // Subjects Management
   const addSubject = (newSub: Omit<Subject, 'id' | 'createdAt'>) => {
@@ -1390,6 +1513,12 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     <StudyContext.Provider
       value={{
         gamification,
+        settlementData,
+        showRankSettlement,
+        dismissRankSettlement,
+        seasonRecap,
+        dismissSeasonRecap,
+        simulateSeasonReset,
         lastXpEarned,
         levelUpData,
         dismissLevelUpModal,

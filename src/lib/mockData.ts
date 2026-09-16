@@ -11,6 +11,8 @@ export const INITIAL_USER: UserProfile = {
   level: 1,
   totalStudySeconds: 0,
   status: 'resting',
+  currentSeasonId: '2026-09',
+  seasonRp: 0,
   createdAt: new Date().toISOString(),
 };
 

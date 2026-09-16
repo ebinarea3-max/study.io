@@ -14,6 +14,8 @@ import { AnalyticsDashboard } from '../components/analytics/AnalyticsDashboard';
 import { IntroductionAndLogin } from '../components/common/IntroductionAndLogin';
 import { LevelUpModal } from '../components/gamification/LevelUpModal';
 import { XpFloatingNotification } from '../components/gamification/XpFloatingNotification';
+import { RankSettlementModal } from '../components/RankSettlementModal';
+import { SeasonRecapBanner } from '../components/gamification/SeasonRecapBanner';
 
 export default function Home() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -23,6 +25,10 @@ export default function Home() {
     dismissLevelUpModal,
     lastXpEarned,
     dismissXpNotification,
+    settlementData,
+    dismissRankSettlement,
+    seasonRecap,
+    dismissSeasonRecap,
   } = useStudy();
 
   // Navigation tabs: Rooms removed, strictly Home (timer) and Analytics
@@ -103,6 +109,14 @@ export default function Home() {
         onOpenSettings={() => setIsSettingsOpen(true)}
       />
 
+      {/* Monthly Season Settlement Recap Banner */}
+      {seasonRecap && (
+        <SeasonRecapBanner
+          recap={seasonRecap}
+          onDismiss={dismissSeasonRecap}
+        />
+      )}
+
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 relative z-10">
         {activeTab === 'timer' && <StudyTimer />}
@@ -114,6 +128,13 @@ export default function Home() {
       <ProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
       <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
       <FocusModeModal />
+
+      {/* Free Fire Post-Match Rank Settlement Fullscreen Screen */}
+      <RankSettlementModal
+        isOpen={Boolean(settlementData)}
+        data={settlementData}
+        onContinue={dismissRankSettlement}
+      />
 
       {/* Level Up Celebratory Modal */}
       {levelUpData && (

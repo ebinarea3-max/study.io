@@ -354,6 +354,67 @@ class AudioEngine {
     }
   }
 
+  // Play esports victory rank settlement fanfare
+  public playRankSettlementSound() {
+    try {
+      const ctx = this.getContext();
+      const now = ctx.currentTime;
+      // High-energy heroic esports chords: D4, F#4, A4, D5, E5, F#5
+      const notes = [293.66, 369.99, 440.0, 587.33, 659.25, 739.99];
+
+      notes.forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(freq, now + idx * 0.09);
+
+        // Lowpass filter to give smooth analog brass synth tone
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(2200, now);
+        filter.frequency.exponentialRampToValueAtTime(4500, now + idx * 0.09 + 0.1);
+
+        gain.gain.setValueAtTime(0, now + idx * 0.09);
+        gain.gain.linearRampToValueAtTime(0.12, now + idx * 0.09 + 0.03);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.09 + 1.2);
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(now + idx * 0.09);
+        osc.stop(now + idx * 0.09 + 1.3);
+      });
+    } catch {
+      // ignore
+    }
+  }
+
+  // Play subtle futuristic mechanical tick for RP progress counter
+  public playRankTickSound() {
+    try {
+      const ctx = this.getContext();
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(800, now);
+      osc.frequency.exponentialRampToValueAtTime(1400, now + 0.03);
+
+      gain.gain.setValueAtTime(0.04, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.03);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.035);
+    } catch {
+      // ignore
+    }
+  }
+
   public stopAmbient() {
     if (this.ambientGain && this.ctx) {
       try {

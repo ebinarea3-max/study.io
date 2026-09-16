@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useCa
 import { UserProfile } from '../types';
 import { INITIAL_USER, cleanupLegacyDemoData } from '../lib/mockData';
 import { getSupabase } from '../lib/supabase';
+import { getCurrentSeasonId } from '../lib/rankedSystem';
 
 export type StoredAccount = {
   id: string;
@@ -84,6 +85,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             streakDays: Number(profile.streak_days ?? prev.streakDays ?? 0),
             level: Number(profile.level ?? prev.level ?? 1),
             xp: Number(profile.xp ?? prev.xp ?? 0),
+            currentSeasonId: profile.current_season_id || prev.currentSeasonId || getCurrentSeasonId(),
+            seasonRp: Number(profile.season_rp ?? prev.seasonRp ?? 0),
             totalStudySeconds: Number(profile.total_study_seconds ?? prev.totalStudySeconds ?? 0),
             status: prev.status || 'resting',
             createdAt: profile.created_at || prev.createdAt || new Date().toISOString(),
@@ -421,13 +424,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (updated.xp !== undefined) {
           payload.xp = updated.xp;
         }
+        if (updated.currentSeasonId !== undefined) {
+          payload.current_season_id = updated.currentSeasonId;
+        }
+        if (updated.seasonRp !== undefined) {
+          payload.season_rp = updated.seasonRp;
+        }
 
         supabase.from('profiles').update(payload).eq('id', prev.id).then(
           ({ error }) => {
-            // Fallback: if 'xp' column doesn't exist in profiles table yet, retry without 'xp'
-            if (error && (error.code === 'PGRST204' || error.message?.includes('xp'))) {
-              delete payload.xp;
-              supabase.from('profiles').update(payload).eq('id', prev.id).then();
+            // Fallback: if 'xp', 'current_season_id', or 'season_rp' column doesn't exist in profiles table yet, retry without them
+            if (error && (error.code === 'PGRST204' || error.message?.includes('xp') || error.message?.includes('season'))) {
+              const fallbackPayload = { ...payload };
+              delete fallbackPayload.xp;
+              delete fallbackPayload.current_season_id;
+              delete fallbackPayload.season_rp;
+              supabase.from('profiles').update(fallbackPayload).eq('id', prev.id).then();
             }
           }
         );

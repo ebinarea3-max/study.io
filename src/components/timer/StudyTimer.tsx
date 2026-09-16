@@ -32,6 +32,7 @@ import confetti from 'canvas-confetti';
 import { getSupabase } from '../../lib/supabase';
 import { StudySession, TimerMode } from '../../types';
 import { calculateFocusXP } from '../../lib/gamification';
+import { calculateSessionRP } from '../../lib/rankedSystem';
 
 const EMPTY_STATE_QUOTES = [
   'Every long streak starts with one session.',
@@ -40,7 +41,7 @@ const EMPTY_STATE_QUOTES = [
 ];
 
 export function StudyTimer() {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, updateProfile } = useAuth();
   const {
     subjects,
     selectedSubject,
@@ -69,6 +70,8 @@ export function StudyTimer() {
     addSession,
     currentNotes,
     triggerXpEarned,
+    showRankSettlement,
+    activeTaskId,
   } = useStudy();
 
   const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
@@ -276,6 +279,31 @@ export function StudyTimer() {
           soundFx.playMilestoneBell();
         }
 
+        // Free Fire RP Calculation & Post-Match Rank Settlement Trigger
+        const hasStreakOrGoal = (user?.streakDays || 0) > 0 || totalToday >= dailyGoalSeconds;
+        const hasCompletedTask = Boolean(activeTaskId);
+        const rpBreakdown = calculateSessionRP(seconds, {
+          hasStreakOrGoal,
+          hasCompletedTask,
+        });
+
+        const prevRP = user?.seasonRp || 0;
+        const newRP = prevRP + rpBreakdown.totalGained;
+
+        // Persist new RP in profile
+        updateProfile({
+          seasonRp: newRP,
+        });
+
+        // Trigger Free Fire Post-Match Settlement Modal immediately
+        showRankSettlement({
+          prevRP,
+          newRP,
+          breakdown: rpBreakdown,
+          subjectName,
+          subjectColor,
+        });
+
         // Reset and stop active timer engine
         resetTimer();
         clearPersistedTimer();
@@ -306,6 +334,9 @@ export function StudyTimer() {
     resetTimer,
     clearPersistedTimer,
     refetchSessions,
+    activeTaskId,
+    showRankSettlement,
+    updateProfile,
   ]);
 
   useEffect(() => {

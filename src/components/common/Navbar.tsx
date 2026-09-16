@@ -16,8 +16,10 @@ import {
   Zap,
   CheckCircle2,
   Trophy,
+  Shield,
 } from 'lucide-react';
 import { UserAvatar } from './UserAvatar';
+import { getRankTier } from '../../lib/rankedSystem';
 
 interface NavbarProps {
   activeTab: 'timer' | 'analytics';
@@ -64,6 +66,8 @@ export function Navbar({
     user?.displayName,
   ]);
 
+  const userRank = useMemo(() => getRankTier(user?.seasonRp || 0), [user?.seasonRp]);
+
   // SVG Progress Ring calculations (radius 18, circumference 113.1)
   const radius = 17;
   const circumference = 2 * Math.PI * radius;
@@ -99,8 +103,8 @@ export function Navbar({
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
               }`}
             >
-              <Timer className="w-3.5 h-3.5" />
-              <span>Home</span>
+              <Timer className="w-4 h-4" />
+              <span>Dashboard</span>
             </button>
 
             <button
@@ -111,7 +115,7 @@ export function Navbar({
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
               }`}
             >
-              <BarChart3 className="w-3.5 h-3.5" />
+              <BarChart3 className="w-4 h-4" />
               <span>Analytics</span>
             </button>
           </nav>
@@ -129,20 +133,43 @@ export function Navbar({
               <span>Sign In</span>
             </Link>
           ) : (
-            /* Static streak badge when authenticated */
-            <div
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-neutral-900/60 border border-white/[0.08] text-neutral-300 cursor-default select-none shadow-sm"
-              title={user.streakDays > 0 ? `${user.streakDays} Day Study Streak (+${user.streakDays * 50} XP bonus)` : 'Start your streak today'}
-            >
-              {user.streakDays > 0 ? (
-                <>
-                  <Flame className="w-4 h-4 text-[#f97316] fill-[#f97316]" />
-                  <span className="text-xs font-bold font-mono tabular-nums text-orange-400">{user.streakDays}d</span>
-                </>
-              ) : (
-                <span className="text-xs font-medium text-[#8FA3A1]">Start streak</span>
-              )}
-            </div>
+            <>
+              {/* Free Fire Rank Badge Pill */}
+              <div
+                onClick={onOpenProfile}
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900/90 border border-white/[0.08] hover:border-amber-500/40 text-slate-200 cursor-pointer select-none shadow-sm transition-all hover:scale-105"
+                title={`Ranked Season RP: ${userRank.rp.toLocaleString()} RP (${userRank.fullTitle}) · Click to view`}
+              >
+                <div
+                  className="w-2 h-2 rounded-full animate-pulse"
+                  style={{ backgroundColor: userRank.config.badgeAccent }}
+                />
+                <span
+                  className="text-xs font-black italic tracking-wider uppercase"
+                  style={{ color: userRank.config.badgeAccent }}
+                >
+                  {userRank.fullTitle}
+                </span>
+                <span className="text-[11px] font-mono text-slate-400 font-bold">
+                  {userRank.rp.toLocaleString()} RP
+                </span>
+              </div>
+
+              {/* Static streak badge when authenticated */}
+              <div
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-neutral-900/60 border border-white/[0.08] text-neutral-300 cursor-default select-none shadow-sm"
+                title={user.streakDays > 0 ? `${user.streakDays} Day Study Streak (+${user.streakDays * 50} XP bonus)` : 'Start your streak today'}
+              >
+                {user.streakDays > 0 ? (
+                  <>
+                    <Flame className="w-4 h-4 text-[#f97316] fill-[#f97316]" />
+                    <span className="text-xs font-bold font-mono tabular-nums text-orange-400">{user.streakDays}d</span>
+                  </>
+                ) : (
+                  <span className="text-xs font-medium text-[#8FA3A1]">Start streak</span>
+                )}
+              </div>
+            </>
           )}
 
           {/* Fullscreen Zen Mode Button */}

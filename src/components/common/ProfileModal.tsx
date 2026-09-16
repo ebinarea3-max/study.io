@@ -3,9 +3,10 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useStudy } from '../../context/StudyContext';
-import { X, Target, Award, Flame, Check, Sparkles, Trophy } from 'lucide-react';
+import { X, Target, Award, Flame, Check, Sparkles, Trophy, Shield, RefreshCw } from 'lucide-react';
 import Image from 'next/image';
 import { UserAvatar } from './UserAvatar';
+import { getRankTier, getSeasonDisplayName } from '../../lib/rankedSystem';
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -25,7 +26,10 @@ const PRESET_AVATARS = [
 
 export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   const { user, updateProfile } = useAuth();
-  const { gamification } = useStudy();
+  const { gamification, simulateSeasonReset } = useStudy();
+
+  const userRank = getRankTier(user.seasonRp || 0);
+  const currentSeason = user.currentSeasonId || '2026-09';
 
   const [displayName, setDisplayName] = useState(user.displayName);
   const [avatarUrl, setAvatarUrl] = useState(user.avatarUrl);
@@ -125,6 +129,55 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                 {gamification.xpRemaining} XP remaining
               </span>
             </div>
+          </div>
+        </div>
+
+        {/* Free Fire Ranked Season Card */}
+        <div className="mb-4 p-3.5 rounded-2xl bg-slate-900/90 border border-slate-700/80 shadow-lg space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div
+                className="w-2 h-2 rounded-full animate-pulse"
+                style={{ backgroundColor: userRank.config.badgeAccent }}
+              />
+              <span className="text-[11px] font-black tracking-wider uppercase text-slate-300">
+                RANKED SEASON · {currentSeason}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={simulateSeasonReset}
+              className="text-[10px] font-bold text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 px-2 py-0.5 rounded flex items-center gap-1 transition-colors cursor-pointer"
+              title="Test Monthly Soft Rank Reset"
+            >
+              <RefreshCw className="w-2.5 h-2.5" />
+              <span>Simulate Reset</span>
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span
+                className={`text-sm sm:text-base font-black italic tracking-wider uppercase bg-gradient-to-r ${userRank.config.metallicGradient} bg-clip-text text-transparent`}
+              >
+                {userRank.fullTitle}
+              </span>
+            </div>
+            <div className="text-right font-mono text-xs font-bold text-slate-300">
+              <span style={{ color: userRank.config.badgeAccent }}>{userRank.rp.toLocaleString()}</span>
+              <span className="text-slate-400"> / {userRank.maxRP.toLocaleString()} RP</span>
+            </div>
+          </div>
+
+          <div className="w-full h-1.5 rounded-full bg-slate-950 overflow-hidden relative border border-white/5">
+            <div
+              className="h-full rounded-full transition-all duration-500"
+              style={{
+                width: `${Math.min(100, Math.max(5, userRank.progressPercent))}%`,
+                backgroundColor: userRank.config.badgeAccent,
+                boxShadow: `0 0 10px ${userRank.config.glowColor}`,
+              }}
+            />
           </div>
         </div>
 
