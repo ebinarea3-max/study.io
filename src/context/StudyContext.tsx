@@ -208,6 +208,12 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     setSettlementData(data);
   }, []);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as unknown as { __showRankSettlement?: (data: RankSettlementData) => void }).__showRankSettlement = showRankSettlement;
+    }
+  }, [showRankSettlement]);
+
   const dismissSeasonRecap = useCallback(() => {
     setSeasonRecap(null);
     try {

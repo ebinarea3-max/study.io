@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useMemo, useRef } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { soundFx } from '../lib/audio';
 import confetti from 'canvas-confetti';
 import {
@@ -9,7 +9,7 @@ import {
   RankTierDetails,
 } from '../lib/rankedSystem';
 import { RankSettlementData } from '../types';
-import { ChevronRight, Sparkles, Zap } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 
 interface RankSettlementModalProps {
   isOpen: boolean;
@@ -53,16 +53,16 @@ function EsportsRankCrest({
             <stop offset="100%" stopColor="#0F172A" />
           </linearGradient>
 
-          {/* Bronze Metallic Inlay */}
+          {/* Bronze Metallic Inlay (Refined Antique Bronze) */}
           <linearGradient id="tierBronzeLight" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#FDE68A" />
-            <stop offset="35%" stopColor="#F59E0B" />
-            <stop offset="100%" stopColor="#B45309" />
+            <stop offset="0%" stopColor="#E2C499" />
+            <stop offset="35%" stopColor="#C2884A" />
+            <stop offset="100%" stopColor="#8A501F" />
           </linearGradient>
           <linearGradient id="tierBronzeDark" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#D97706" />
-            <stop offset="55%" stopColor="#92400E" />
-            <stop offset="100%" stopColor="#451A03" />
+            <stop offset="0%" stopColor="#A0522D" />
+            <stop offset="55%" stopColor="#6E2C00" />
+            <stop offset="100%" stopColor="#3B1C06" />
           </linearGradient>
 
           {/* Silver Chrome Inlay */}
@@ -338,6 +338,7 @@ export function RankSettlementModal({
   const sessionRP = data?.breakdown.sessionRP ?? 0;
   const goalStreakBonus = data?.breakdown.goalStreakBonus ?? 0;
   const taskBonus = data?.breakdown.taskBonus ?? 0;
+  const durationSeconds = data?.breakdown.durationSeconds ?? 0;
 
   const [animatingRP, setAnimatingRP] = useState(prevRP);
   const [displayedGain, setDisplayedGain] = useState(0);
@@ -348,14 +349,26 @@ export function RankSettlementModal({
   const prevRankDetails = useMemo(() => getRankTier(prevRP), [prevRP]);
   const isRankUp = newRankDetails.fullTitle !== prevRankDetails.fullTitle;
 
-  // Sound throttler ref for RP micro-clicks
-  const lastClickTimeRef = useRef(0);
+  // Format focus duration cleanly (e.g., 25m or 1h 15m)
+  const formattedDuration = useMemo(() => {
+    const minutes = Math.floor(durationSeconds / 60);
+    const seconds = durationSeconds % 60;
+    if (minutes >= 60) {
+      const hours = Math.floor(minutes / 60);
+      const remMins = minutes % 60;
+      return remMins > 0 ? `${hours}h ${remMins}m` : `${hours}h`;
+    }
+    if (minutes > 0) {
+      return seconds > 0 ? `${minutes}m ${seconds}s` : `${minutes}m`;
+    }
+    return `${seconds}s`;
+  }, [durationSeconds]);
 
-  // 1. Spacebar listener for rapid dismissal
+  // 1. Keyboard listeners (Spacebar or Enter) for rapid dismissal
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.code === 'Space' || e.key === ' ') {
+      if (e.code === 'Space' || e.key === ' ' || e.code === 'Enter' || e.key === 'Enter') {
         e.preventDefault();
         onContinue();
       }
@@ -364,7 +377,7 @@ export function RankSettlementModal({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onContinue]);
 
-  // 2. Heavy "Slam-and-Impact" Sequence & Web Audio FX
+  // 2. Realistic Weighted Descent Sequence & Sub-Bass Audio FX
   useEffect(() => {
     if (!isOpen) {
       setAnimPhase('slam');
@@ -388,46 +401,44 @@ export function RankSettlementModal({
     setAnimatingRP(prevRP);
     setDisplayedGain(0);
 
-    // Timeline triggers
     const timers: NodeJS.Timeout[] = [];
 
-    // Phase 1 Impact at 0.35s (350ms):
-    // Crest slams down, camera shakes for 150ms, shockwave expands, bass thud plays
+    // Phase 1: Weighted Crest Impact at 0.35s (350ms)
+    // Low-frequency sub-bass drop (110Hz -> 28Hz) & brief ground impact
     timers.push(
       setTimeout(() => {
         setAnimPhase('impact');
         setIsShaking(true);
         setShowShockwave(true);
-        soundFx.playBassImpactThud();
+        soundFx.playSubBassImpact();
 
         if (isRankUp) {
           confetti({
-            particleCount: 100,
-            spread: 80,
-            origin: { y: 0.55 },
-            colors: [newRankDetails.config.badgeAccent, '#FFFFFF', '#38BDF8'],
+            particleCount: 80,
+            spread: 70,
+            origin: { y: 0.52 },
+            colors: [newRankDetails.config.badgeAccent, '#FFFFFF', '#CBD5E1'],
           });
         }
       }, 350)
     );
 
-    // End camera shake at 500ms
+    // End micro ground settle at 480ms
     timers.push(
       setTimeout(() => {
         setIsShaking(false);
-      }, 500)
+      }, 480)
     );
 
-    // Phase 2: Title & Rank Reveal at 0.5s (500ms)
+    // Phase 2: Title Reveal at 0.5s (500ms) - Clean transition without arcade fanfare
     timers.push(
       setTimeout(() => {
         setShowTitle(true);
         setAnimPhase('title');
-        soundFx.playRankSettlementSound();
       }, 500)
     );
 
-    // Phase 3: Segmented RP Fill & Sound (0.8s - 2.0s)
+    // Phase 3: Smooth Linear RP Fill (0.8s - 2.0s) & Resonant 432Hz Chime upon completion
     let animationFrameId: number;
     timers.push(
       setTimeout(() => {
@@ -436,12 +447,12 @@ export function RankSettlementModal({
 
         const startTime = performance.now();
         const duration = 1200; // 1.2s smooth roll-up
-        lastClickTimeRef.current = 0;
+        let hasTriggeredChime = false;
 
         const tick = (currentTime: number) => {
           const elapsed = currentTime - startTime;
           const progress = Math.min(1, elapsed / duration);
-          // Smooth ease-out cubic
+          // Smooth cubic deceleration
           const ease = 1 - Math.pow(1 - progress, 3);
 
           const currentRP = Math.round(prevRP + (newRP - prevRP) * ease);
@@ -449,13 +460,6 @@ export function RankSettlementModal({
 
           setAnimatingRP(currentRP);
           setDisplayedGain(currentGain);
-
-          // Play micro-click audio feedback throttled every ~70ms
-          const now = performance.now();
-          if (now - lastClickTimeRef.current >= 70 && progress < 1) {
-            lastClickTimeRef.current = now;
-            soundFx.playRankTickSound();
-          }
 
           const inTier = Math.max(0, currentRP - tierMin);
           setProgressRatio(Math.min(1, inTier / needed));
@@ -467,6 +471,12 @@ export function RankSettlementModal({
             setDisplayedGain(totalGained);
             const finalInTier = Math.max(0, newRP - tierMin);
             setProgressRatio(Math.min(1, finalInTier / needed));
+
+            // RP Fill Completion: Single warm resonant chime/overtone at 432Hz
+            if (!hasTriggeredChime) {
+              hasTriggeredChime = true;
+              soundFx.playRankFillCompletion();
+            }
           }
         };
 
@@ -474,7 +484,7 @@ export function RankSettlementModal({
       }, 800)
     );
 
-    // Phase 4: Continue CTA at 2.1s (2100ms)
+    // Phase 4: Minimalist Action CTA at 2.1s (2100ms)
     timers.push(
       setTimeout(() => {
         setShowContinue(true);
@@ -491,75 +501,58 @@ export function RankSettlementModal({
   if (!isOpen || !data) return null;
 
   const remainingRP = Math.max(0, newRankDetails.maxRP - newRP);
-  const nextMilestoneText = newRankDetails.isMaxTier
-    ? 'Peak Rank Achieved'
-    : `Next Milestone: ${newRankDetails.nextTierTitle} (${remainingRP} RP remaining)`;
 
   return (
     <div className="fixed inset-0 z-50 bg-[#080b12]/95 backdrop-blur-md flex flex-col items-center justify-center select-none overflow-hidden animate-in fade-in duration-300">
       
-      {/* 1. Subtle Radial Speed-Lines & Center Backlight */}
+      {/* Top-Left Academic Watermark */}
+      <div className="absolute top-6 left-6 sm:top-8 sm:left-8 flex items-center gap-2.5 select-none pointer-events-none z-20">
+        <div className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+        <span className="text-xs uppercase tracking-[0.25em] text-slate-400 font-semibold">
+          STUDY.IO PERFORMANCE
+        </span>
+      </div>
+
+      {/* Subtle Atmospheric Ambient Backlight */}
       <div
         className="absolute inset-0 pointer-events-none transition-all duration-1000"
         style={{
-          background: `radial-gradient(ellipse 65% 55% at 50% 35%, ${newRankDetails.config.glowColor}, rgba(8,11,18,0.98) 75%)`,
+          background: `radial-gradient(ellipse 60% 50% at 50% 36%, ${newRankDetails.config.glowColor}, rgba(8,11,18,0.98) 72%)`,
         }}
       />
 
-      {/* Subtle Radial Speed-Lines SVG */}
-      <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-25">
-        <g stroke="currentColor" strokeWidth="1" strokeDasharray="6,12">
-          {/* Radial lines shooting outward from center (50%, 40%) */}
-          <line x1="50%" y1="38%" x2="0%" y2="0%" className="text-cyan-400" />
-          <line x1="50%" y1="38%" x2="25%" y2="0%" className="text-amber-300" />
-          <line x1="50%" y1="38%" x2="50%" y2="0%" className="text-cyan-400" />
-          <line x1="50%" y1="38%" x2="75%" y2="0%" className="text-amber-300" />
-          <line x1="50%" y1="38%" x2="100%" y2="0%" className="text-cyan-400" />
-          <line x1="50%" y1="38%" x2="100%" y2="35%" className="text-amber-300" />
-          <line x1="50%" y1="38%" x2="100%" y2="70%" className="text-cyan-400" />
-          <line x1="50%" y1="38%" x2="100%" y2="100%" className="text-amber-300" />
-          <line x1="50%" y1="38%" x2="75%" y2="100%" className="text-cyan-400" />
-          <line x1="50%" y1="38%" x2="50%" y2="100%" className="text-amber-300" />
-          <line x1="50%" y1="38%" x2="25%" y2="100%" className="text-cyan-400" />
-          <line x1="50%" y1="38%" x2="0%" y2="100%" className="text-amber-300" />
-          <line x1="50%" y1="38%" x2="0%" y2="70%" className="text-cyan-400" />
-          <line x1="50%" y1="38%" x2="0%" y2="35%" className="text-amber-300" />
-        </g>
-      </svg>
-
-      {/* Container with Camera Shake & Slam Dynamics */}
+      {/* Container with Deceleration & Subtle Impact Dynamics */}
       <div
-        className={`relative z-10 w-full max-w-xl flex flex-col items-center text-center px-4 transition-transform duration-75 ${
-          isShaking ? 'translate-x-1.5 -translate-y-1 scale-[1.015]' : 'translate-x-0 translate-y-0 scale-100'
+        className={`relative z-10 w-full max-w-xl flex flex-col items-center text-center px-4 transition-transform duration-100 ${
+          isShaking ? 'translate-y-[2px] scale-y-[0.99] scale-x-[1.005]' : 'translate-y-0 scale-100'
         }`}
       >
-        {/* Crest Section with Slam-Down Animation (scale 2.5 -> 1.0) & Expanding Shockwave */}
-        <div className="relative flex items-center justify-center my-2 sm:my-3">
+        {/* Crest Section with Weighted Descent Animation & Expanding Shockwave */}
+        <div className="relative flex items-center justify-center my-3 sm:my-4">
           
           {/* Expanding Shockwave Ripple Ring (emitted on impact at 0.35s) */}
           {showShockwave && (
             <div
-              className="absolute w-56 h-56 sm:w-72 sm:h-72 rounded-full border-2 pointer-events-none transition-all duration-700 ease-out"
+              className="absolute w-56 h-56 sm:w-72 sm:h-72 rounded-full border border-white/20 pointer-events-none transition-all duration-700 ease-out"
               style={{
-                borderColor: newRankDetails.config.badgeAccent,
-                boxShadow: `0 0 30px ${newRankDetails.config.badgeAccent}, inset 0 0 20px ${newRankDetails.config.badgeAccent}`,
-                animation: 'ffShockwave 600ms cubic-bezier(0.1, 0.8, 0.3, 1) forwards',
+                boxShadow: `0 0 25px ${newRankDetails.config.badgeAccent}40`,
+                animation: 'ffSubtleShockwave 650ms cubic-bezier(0.16, 1, 0.3, 1) forwards',
               }}
             />
           )}
 
-          {/* Soft Centered Radial Backlight strictly behind the badge */}
+          {/* Soft Centered Radial Backlight */}
           <div
-            className="absolute w-56 h-56 rounded-full blur-[70px] opacity-25 pointer-events-none transition-all duration-700"
+            className="absolute w-60 h-60 rounded-full blur-[80px] opacity-20 pointer-events-none transition-all duration-700"
             style={{ backgroundColor: newRankDetails.config.badgeAccent }}
           />
 
-          {/* Heavy Slam-and-Impact Crest Container */}
+          {/* Weighted Crest Descent Container (Physical deceleration with ground impact) */}
           <div
-            className={`transform transition-all duration-350 ease-[cubic-bezier(0.1,0.9,0.2,1.2)] ${
+            className={`transform transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] ${
               animPhase === 'slam'
-                ? 'scale-[2.5] opacity-0 blur-[10px]'
-                : 'scale-100 opacity-100 blur-0'
+                ? 'translate-y-[-40px] scale-[1.08] opacity-0 blur-[2px]'
+                : 'translate-y-0 scale-100 opacity-100 blur-0'
             }`}
           >
             <EsportsRankCrest
@@ -569,52 +562,46 @@ export function RankSettlementModal({
           </div>
         </div>
 
-        {/* Phase 2: Title & Rank Reveal (Stamped into view at 0.5s) */}
+        {/* Phase 2: Title & Rank Reveal (Refined Micro-Text & High-Contrast Typography) */}
         <div
           className={`flex flex-col items-center transition-all duration-300 transform ${
-            showTitle ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+            showTitle ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
           }`}
         >
-          {/* Header Label */}
-          <div className="flex items-center gap-2 mb-1">
-            <Zap className={`w-3.5 h-3.5 fill-current ${isRankUp ? 'text-amber-400' : 'text-cyan-400'} animate-pulse`} />
-            <span className="text-[11px] font-black tracking-[0.3em] uppercase text-cyan-400">
-              {isRankUp ? 'TIER UPGRADE' : 'MATCH SETTLEMENT'}
+          {/* Header Status Label */}
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-xs uppercase tracking-[0.25em] text-slate-400 font-semibold">
+              {isRankUp ? 'RANK ADVANCEMENT' : 'SESSION COMPLETE'}
             </span>
-            <Zap className={`w-3.5 h-3.5 fill-current ${isRankUp ? 'text-amber-400' : 'text-cyan-400'} animate-pulse`} />
           </div>
 
-          {/* Metallic Rank Title (e.g. "DIAMOND II") */}
-          <h1
-            className={`text-3xl sm:text-5xl font-black italic tracking-widest uppercase bg-gradient-to-b ${newRankDetails.config.metallicGradient} bg-clip-text text-transparent`}
-            style={{
-              filter: `drop-shadow(0 0 15px ${newRankDetails.config.glowColor})`,
-            }}
-          >
+          {/* Geometric High-Contrast Sans-Serif Tier Title (e.g., "BRONZE II", "PLATINUM I") */}
+          <h1 className="text-3xl sm:text-5xl font-sans font-bold tracking-[0.18em] uppercase text-white drop-shadow-[0_4px_16px_rgba(0,0,0,0.6)]">
             {newRankDetails.fullTitle}
           </h1>
 
           {/* Subtext: Milestone countdown */}
-          <p className="text-xs sm:text-sm font-bold tracking-wider text-slate-300 mt-1">
-            <span className="text-slate-400">NEXT MILESTONE: </span>
-            <span style={{ color: newRankDetails.config.badgeAccent }} className="font-mono font-black">
+          <p className="text-xs sm:text-sm font-medium tracking-wider text-slate-400 mt-2">
+            <span className="text-xs uppercase tracking-[0.25em] text-slate-400 font-semibold">NEXT MILESTONE: </span>
+            <span style={{ color: newRankDetails.config.badgeAccent }} className="font-semibold text-slate-200">
               {newRankDetails.nextTierTitle}
             </span>
-            <span className="text-slate-400 font-mono"> ({remainingRP} RP remaining)</span>
+            <span className="text-slate-500 font-mono"> ({remainingRP} RP remaining)</span>
           </p>
         </div>
 
         {/* Phase 3: Segmented RP Fill & Sound (0.8s - 2.0s) */}
         <div
-          className={`w-full max-w-xl transition-all duration-400 transform mt-4 sm:mt-5 ${
+          className={`w-full max-w-xl transition-all duration-400 transform mt-5 ${
             showProgress ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3 pointer-events-none'
           }`}
         >
-          {/* Unified Stat Breakdown Glassmorphic Strip */}
-          <div className="w-full mb-3 px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] backdrop-blur-md flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs text-slate-300">
+          {/* Consolidated Session Stats Glassmorphic Strip */}
+          <div className="w-full mb-3.5 px-4 sm:px-5 py-2.5 rounded-lg bg-white/[0.03] border border-white/[0.08] backdrop-blur-md flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-xs text-slate-400">
             <span className="flex items-center gap-1.5">
-              <span className="text-slate-400">Focus Time</span>
-              <span className="font-mono font-bold text-emerald-400">+{sessionRP} RP</span>
+              <span className="text-slate-400">Focus Duration</span>
+              <span className="font-medium text-slate-200">{formattedDuration}</span>
+              <span className="font-mono text-emerald-400/90">+{sessionRP} RP</span>
             </span>
 
             {goalStreakBonus > 0 && (
@@ -622,7 +609,7 @@ export function RankSettlementModal({
                 <span className="text-slate-600 select-none">•</span>
                 <span className="flex items-center gap-1.5">
                   <span className="text-slate-400">Streak Bonus</span>
-                  <span className="font-mono font-bold text-amber-400">+{goalStreakBonus} RP</span>
+                  <span className="font-mono text-amber-400/90">+{goalStreakBonus} RP</span>
                 </span>
               </>
             )}
@@ -632,102 +619,77 @@ export function RankSettlementModal({
                 <span className="text-slate-600 select-none">•</span>
                 <span className="flex items-center gap-1.5">
                   <span className="text-slate-400">Task Bonus</span>
-                  <span className="font-mono font-bold text-cyan-400">+{taskBonus} RP</span>
+                  <span className="font-mono text-cyan-400/90">+{taskBonus} RP</span>
                 </span>
               </>
             )}
 
             <span className="text-slate-600 select-none">=</span>
-            <span className="font-mono font-black text-white">
-              +{totalGained} RP Total
+            <span className="flex items-center gap-1.5">
+              <span className="text-slate-400">Total Gained</span>
+              <span className="font-mono font-bold text-white">+{totalGained} RP</span>
             </span>
           </div>
 
-          {/* Progress Header with Floating Glowing Indicator */}
-          <div className="flex items-center justify-between text-xs sm:text-sm font-black tracking-wider mb-2">
+          {/* Progress Header */}
+          <div className="flex items-center justify-between text-xs font-semibold tracking-wider mb-2">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span className="text-slate-300 text-xs tracking-wider">TIER PROGRESS</span>
-              {/* Floating +{displayedGain} RP Indicator */}
-              <div className="inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/50 text-emerald-300 font-mono font-black text-xs shadow-[0_0_12px_rgba(16,185,129,0.4)] animate-pulse">
-                +{displayedGain} RP GAINED
+              <span className="text-xs uppercase tracking-[0.25em] text-slate-400 font-semibold">
+                TIER PROGRESS
+              </span>
+              <div className="inline-flex items-center px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 font-mono font-semibold text-[11px]">
+                +{displayedGain} RP
               </div>
             </div>
-            <div className="font-mono text-slate-200 text-xs sm:text-sm">
-              <span className="text-white font-extrabold">{animatingRP.toLocaleString()}</span>
-              <span className="text-slate-400"> / {newRankDetails.maxRP.toLocaleString()} RP</span>
+            <div className="font-mono text-xs text-slate-300">
+              <span className="text-white font-bold">{animatingRP.toLocaleString()}</span>
+              <span className="text-slate-500"> / {newRankDetails.maxRP.toLocaleString()} RP</span>
             </div>
           </div>
 
-          {/* Angled Segmented Futuristic Progress Bar */}
-          <div className="relative w-full h-7 sm:h-8 bg-black/85 rounded-md p-1 border border-white/[0.12] shadow-inner flex items-center overflow-hidden transform -skew-x-12">
-            {/* Smooth Dynamic Fill */}
+          {/* Slim Linear Progress Bar */}
+          <div className="relative w-full h-2.5 sm:h-3 bg-white/[0.06] rounded-full p-[1px] border border-white/10 overflow-hidden shadow-inner">
             <div
-              className="h-full rounded-sm transition-all duration-75 relative overflow-hidden"
+              className="h-full rounded-full transition-all duration-75 relative"
               style={{
-                width: `${Math.min(100, Math.max(2, progressRatio * 100))}%`,
+                width: `${Math.min(100, Math.max(1, progressRatio * 100))}%`,
                 background: `linear-gradient(90deg, ${newRankDetails.config.badgeSecondary}, ${newRankDetails.config.badgeAccent})`,
-                boxShadow: `0 0 20px ${newRankDetails.config.glowColor}`,
               }}
-            >
-              {/* High-speed inner shimmer streak */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/35 to-transparent animate-shimmer" />
-            </div>
-
-            {/* Segmented Angular Notches (12 futuristic dividers) */}
-            <div className="absolute inset-0 pointer-events-none flex justify-between px-2 items-center">
-              {Array.from({ length: 12 }).map((_, idx) => (
-                <div
-                  key={idx}
-                  className="w-[1.5px] h-full bg-black/75 transform -skew-x-12"
-                />
-              ))}
-            </div>
+            />
           </div>
         </div>
 
-        {/* Phase 4: Continue CTA (Fades in at 2.1s) */}
+        {/* Phase 4: Continue CTA (Minimalist Action Button) */}
         <div
-          className={`mt-6 sm:mt-8 flex flex-col items-center transition-all duration-400 transform ${
+          className={`mt-6 sm:mt-8 flex flex-col items-center transition-all duration-300 transform ${
             showContinue ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'
           }`}
         >
           <button
             onClick={onContinue}
-            className="group relative cursor-pointer select-none transition-all duration-300 transform active:scale-95 hover:scale-105"
+            className="px-8 py-3.5 rounded-md border border-white/20 bg-white/10 hover:bg-white/20 text-white text-xs tracking-widest font-semibold uppercase transition-all cursor-pointer select-none active:scale-[0.98] shadow-sm flex items-center gap-2"
           >
-            {/* Glowing Ambient Halo */}
-            <div
-              className="absolute -inset-1 rounded-2xl blur-lg opacity-75 group-hover:opacity-100 transition-opacity duration-300"
-              style={{ backgroundColor: newRankDetails.config.badgeAccent }}
-            />
-
-            {/* Angled Futuristic Button Body */}
-            <div className="relative px-12 sm:px-16 py-3.5 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-slate-950 font-black text-base italic tracking-[0.25em] uppercase rounded-xl border border-yellow-200/90 shadow-2xl flex items-center gap-3 transform -skew-x-12 hover:brightness-110">
-              <span className="transform skew-x-12 flex items-center gap-2">
-                <span>CONTINUE</span>
-                <ChevronRight className="w-5 h-5 stroke-[3] group-hover:translate-x-1.5 transition-transform" />
-              </span>
-            </div>
+            <span>CONTINUE</span>
+            <ChevronRight className="w-3.5 h-3.5 text-slate-300 stroke-[2.5]" />
           </button>
 
-          {/* Spacebar keyboard hint */}
-          <span className="text-[10px] text-slate-400 font-mono tracking-widest uppercase mt-3 opacity-75">
-            PRESS SPACEBAR OR CLICK TO CONTINUE
+          {/* Keyboard Hint */}
+          <span className="text-[10px] text-slate-500 font-mono tracking-widest uppercase mt-3">
+            PRESS SPACEBAR OR ENTER TO CONTINUE
           </span>
         </div>
 
       </div>
 
-      {/* Global Inline Keyframes for Shockwave & Shake */}
+      {/* Global Inline Keyframes for Subtle Shockwave */}
       <style jsx>{`
-        @keyframes ffShockwave {
+        @keyframes ffSubtleShockwave {
           0% {
-            transform: scale(0.8);
-            opacity: 0.95;
+            transform: scale(0.85);
+            opacity: 0.7;
           }
           100% {
-            transform: scale(2.2);
+            transform: scale(1.55);
             opacity: 0;
           }
         }

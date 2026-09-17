@@ -415,8 +415,8 @@ class AudioEngine {
     }
   }
 
-  // Play low-frequency bass impact thud for rank crest slam
-  public playBassImpactThud() {
+  // Cinematic Sub-Bass Impact Slam (110Hz -> 28Hz over 400ms with soft exponential decay)
+  public playSubBassImpact() {
     try {
       const ctx = this.getContext();
       const now = ctx.currentTime;
@@ -424,20 +424,50 @@ class AudioEngine {
       const gain = ctx.createGain();
 
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(120, now);
-      osc.frequency.exponentialRampToValueAtTime(30, now + 0.35);
+      osc.frequency.setValueAtTime(110, now);
+      osc.frequency.exponentialRampToValueAtTime(28, now + 0.4);
 
-      gain.gain.setValueAtTime(0.5, now);
-      gain.gain.linearRampToValueAtTime(0.4, now + 0.04);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+      gain.gain.setValueAtTime(0.6, now);
+      gain.gain.linearRampToValueAtTime(0.5, now + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.4);
 
       osc.connect(gain);
       gain.connect(ctx.destination);
 
       osc.start(now);
-      osc.stop(now + 0.5);
+      osc.stop(now + 0.42);
     } catch {
-      // ignore
+      // ignore audio context restrictions
+    }
+  }
+
+  // Backwards compatibility alias
+  public playBassImpactThud() {
+    this.playSubBassImpact();
+  }
+
+  // Warm resonant chime / overtone at 432Hz for RP fill completion
+  public playRankFillCompletion() {
+    try {
+      const ctx = this.getContext();
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(432, now);
+
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.12, now + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.2);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(now);
+      osc.stop(now + 1.25);
+    } catch {
+      // ignore audio context restrictions
     }
   }
 
