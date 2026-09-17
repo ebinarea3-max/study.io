@@ -63,7 +63,7 @@ export function AuthCard({ onSuccess, isModal = false }: AuthCardProps) {
           </div>
         </div>
         <h2 className="text-2xl font-black text-white tracking-tight">
-          Welcome to Study App
+          Welcome to study.io
         </h2>
         <p className="text-sm text-neutral-400 mt-1.5 leading-relaxed">
           Sign in to sync your study sessions and tasks

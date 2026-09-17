@@ -3,7 +3,7 @@
 import React from 'react';
 import {
   Timer,
-  Users,
+  Trophy,
   CheckSquare,
   BarChart3,
   Sparkles,
@@ -33,7 +33,7 @@ export function IntroductionAndLogin() {
                 Focus
               </span>
             </div>
-            <div className="text-[10px] text-slate-400 -mt-0.5">Collaborative Study & Productivity</div>
+            <div className="text-[10px] text-slate-400 -mt-0.5">Gamified Focus &amp; Productivity</div>
           </div>
         </div>
 
@@ -61,8 +61,7 @@ export function IntroductionAndLogin() {
             </h1>
 
             <p className="text-sm sm:text-base text-slate-300 leading-relaxed max-w-xl">
-              <strong className="text-emerald-300">study.io</strong> is your all-in-one focus sanctuary designed for deep work and peak productivity. 
-              Combine precision study timers, real-time peer study halls, a clean daily checklist, and deep productivity analytics to build consistent daily study habits.
+              <strong className="text-emerald-300">study.io</strong> turns deep work into a rewarding progression system. Track focus sessions with precision timers, stay accountable with daily checklists, and climb competitive rank tiers from Bronze to Grandmaster.
             </p>
           </div>
 
@@ -73,31 +72,31 @@ export function IntroductionAndLogin() {
               <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
                 <Timer className="w-4 h-4" />
               </div>
-              <h3 className="font-bold text-sm text-white">Precision Timers & Audio</h3>
+              <h3 className="font-bold text-sm text-white">Precision Timer &amp; Soundscapes</h3>
               <p className="text-xs text-slate-400 leading-normal">
-                Stopwatch, Pomodoro & Countdown. Built-in procedural rain, cafe soundscapes, and start/stop chimes.
+                Stopwatch, Pomodoro (25/5 &amp; 50/10), and ambient background audio (Rain, Cafe, White Noise) with background-tab throttling protection.
               </p>
             </div>
 
             {/* Feature 2 */}
             <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-slate-700 transition-all backdrop-blur-md space-y-2">
-              <div className="w-8 h-8 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold">
-                <Users className="w-4 h-4" />
+              <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold">
+                <Trophy className="w-4 h-4" />
               </div>
-              <h3 className="font-bold text-sm text-white">Live Study Lounges</h3>
+              <h3 className="font-bold text-sm text-white">Rank Tiers &amp; RP System</h3>
               <p className="text-xs text-slate-400 leading-normal">
-                Hold down your desk alongside peers with live ticking timers, subjects, and mutual encouragement cheers.
+                Earn RP for every focused minute. Level up from Bronze to Grandmaster with post-session milestone breakdowns and monthly season resets.
               </p>
             </div>
 
             {/* Feature 3 */}
             <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-slate-700 transition-all backdrop-blur-md space-y-2">
-              <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold">
+              <div className="w-8 h-8 rounded-xl bg-teal-500/20 text-teal-400 flex items-center justify-center font-bold">
                 <CheckSquare className="w-4 h-4" />
               </div>
               <h3 className="font-bold text-sm text-white">Daily Task Checklist</h3>
               <p className="text-xs text-slate-400 leading-normal">
-                Fast, distraction-free checklist. Type your task and press Enter to organize your daily priorities.
+                Fast, keyboard-friendly checklist with streak tracking and session focus goals to eliminate distractions.
               </p>
             </div>
 
@@ -106,9 +105,9 @@ export function IntroductionAndLogin() {
               <div className="w-8 h-8 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold">
                 <BarChart3 className="w-4 h-4" />
               </div>
-              <h3 className="font-bold text-sm text-white">24-Hour Visual Analytics</h3>
+              <h3 className="font-bold text-sm text-white">24-Hour Timeline &amp; Heatmaps</h3>
               <p className="text-xs text-slate-400 leading-normal">
-                Hour-by-hour timeline blocks, GitHub-style consistency heatmaps, and subject breakdown charts.
+                Inspect hourly study distributions, GitHub-style 12-week consistency heatmaps, and per-subject breakdown stats.
               </p>
             </div>
           </div>
@@ -124,7 +123,7 @@ export function IntroductionAndLogin() {
       <footer className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 border-t border-slate-800/80 text-center text-xs text-slate-500 relative z-10 flex flex-col sm:flex-row items-center justify-between gap-2">
         <div>study.io &copy; {new Date().getFullYear()} &bull; Built for deep focus & accountability</div>
         <div className="flex items-center gap-4 text-[11px]">
-          <span>Pomodoro &bull; Stopwatch &bull; Rooms &bull; Planner &bull; Analytics</span>
+          <span>Pomodoro &bull; Stopwatch &bull; Ranked RP &bull; Planner &bull; Analytics</span>
         </div>
       </footer>
     </div>
