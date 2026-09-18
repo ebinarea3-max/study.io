@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { StudySession } from '../../types';
 import { formatSeconds, formatHoursAndMins, getLocalStartOfDay, getLocalEndOfDay } from '../../lib/utils';
 import { Clock, Info } from 'lucide-react';
@@ -11,6 +11,7 @@ interface StudyTimeline24hProps {
 }
 
 export function StudyTimeline24h({ sessions, dateStr }: StudyTimeline24hProps) {
+  const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
   const startOfDay = getLocalStartOfDay(dateStr);
   const endOfDay = getLocalEndOfDay(dateStr);
 
@@ -57,8 +58,8 @@ export function StudyTimeline24h({ sessions, dateStr }: StudyTimeline24hProps) {
         </span>
       </div>
 
-      {/* Visual Timeline Grid */}
-      <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800/80 overflow-x-auto">
+      {/* Visual Timeline Grid - Horizontal scroll container with scrollbar-thin */}
+      <div className="p-3 sm:p-4 rounded-2xl bg-slate-950/80 border border-slate-800/80 overflow-x-auto pb-2 scrollbar-thin">
         <div className="min-w-[640px] space-y-2">
           {/* Top Hour Labels */}
           <div className="grid grid-cols-24 gap-1 text-[9px] text-slate-500 font-mono text-center">
@@ -75,34 +76,50 @@ export function StudyTimeline24h({ sessions, dateStr }: StudyTimeline24hProps) {
               const blocks = getBlocksForHour(h);
               return (
                 <div key={h} className="flex gap-0.5 h-10 rounded-md bg-slate-900/90 p-0.5 border border-slate-800">
-                  {blocks.map((b, idx) => (
-                    <div
-                      key={idx}
-                      className="flex-1 rounded-sm transition-all relative group"
-                      style={{
-                        backgroundColor: b.match ? b.match.subjectColor : 'transparent',
-                        opacity: b.match ? 0.9 : 0.2,
-                      }}
-                    >
-                      {b.match && (
-                        <div className="hidden group-hover:block absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-slate-900 border border-slate-700 text-[10px] text-white p-2 rounded-xl shadow-2xl z-30 whitespace-nowrap pointer-events-none">
-                          <div className="font-bold flex items-center gap-1.5">
-                            <span
-                              className="w-2 h-2 rounded-full"
-                              style={{ backgroundColor: b.match.subjectColor }}
-                            />
-                            <span>{b.match.subjectName}</span>
+                  {blocks.map((b, idx) => {
+                    const blockKey = `${h}-${b.minute}`;
+                    const isTooltipOpen = activeTooltip === blockKey;
+
+                    return (
+                      <div
+                        key={idx}
+                        onClick={() => {
+                          if (b.match) {
+                            setActiveTooltip(prev => (prev === blockKey ? null : blockKey));
+                          }
+                        }}
+                        className={`flex-1 rounded-sm transition-all relative group cursor-pointer p-0.5 sm:p-0 ${
+                          b.match ? 'hover:scale-105 active:scale-95' : ''
+                        }`}
+                        style={{
+                          backgroundColor: b.match ? b.match.subjectColor : 'transparent',
+                          opacity: b.match ? 0.9 : 0.2,
+                        }}
+                      >
+                        {b.match && (
+                          <div
+                            className={`${
+                              isTooltipOpen ? 'block' : 'hidden group-hover:block'
+                            } absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-slate-900 border border-slate-700 text-[10px] text-white p-2.5 rounded-xl shadow-2xl z-30 whitespace-nowrap pointer-events-none animate-in fade-in zoom-in-95 duration-100`}
+                          >
+                            <div className="font-bold flex items-center gap-1.5">
+                              <span
+                                className="w-2 h-2 rounded-full"
+                                style={{ backgroundColor: b.match.subjectColor }}
+                              />
+                              <span>{b.match.subjectName}</span>
+                            </div>
+                            <div className="text-slate-400 mt-0.5">
+                              {new Date(b.match.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(b.match.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </div>
+                            <div className="text-emerald-400 font-bold">
+                              {formatHoursAndMins(b.match.durationSeconds)}
+                            </div>
                           </div>
-                          <div className="text-slate-400 mt-0.5">
-                            {new Date(b.match.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(b.match.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </div>
-                          <div className="text-emerald-400 font-bold">
-                            {formatHoursAndMins(b.match.durationSeconds)}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               );
             })}

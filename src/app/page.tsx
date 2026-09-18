@@ -87,7 +87,7 @@ export default function Home() {
 
   // Authenticated: Full StudyPulse focus dashboard
   return (
-    <div className="min-h-screen bg-[#090A0C] text-slate-100 flex flex-col relative selection:bg-emerald-500/30 selection:text-emerald-200">
+    <div className="min-h-screen overflow-x-hidden bg-[#090A0C] text-slate-100 flex flex-col relative selection:bg-emerald-500/30 selection:text-emerald-200">
       {/* Subtle Developer-grade Dot Grid Overlay */}
       <div className="fixed inset-0 pointer-events-none bg-[radial-gradient(#ffffff0a_1px,transparent_1px)] [background-size:16px_16px] z-0" />
 
@@ -118,7 +118,7 @@ export default function Home() {
       )}
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 relative z-10">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3.5 sm:px-6 py-5 sm:py-8 pb-24 md:pb-12 relative z-10">
         {activeTab === 'timer' && <StudyTimer />}
         {activeTab === 'analytics' && <AnalyticsDashboard />}
       </main>

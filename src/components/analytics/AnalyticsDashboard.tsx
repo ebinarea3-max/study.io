@@ -234,13 +234,13 @@ export function AnalyticsDashboard() {
   return (
     <div className="w-full max-w-7xl mx-auto space-y-6">
       {/* Top Header & Timeframe Switcher */}
-      <div className="rounded-3xl bg-slate-900/80 border border-slate-800/80 backdrop-blur-xl p-6 sm:p-8 shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+      <div className="rounded-3xl bg-slate-900/80 border border-slate-800/80 backdrop-blur-xl p-4 sm:p-6 md:p-8 shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 sm:gap-6">
         <div>
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-400 mb-1">
             <BarChart3 className="w-4 h-4" />
             <span>Study Analytics & Insights</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+          <h1 className="text-xl sm:text-3xl font-extrabold text-white tracking-tight">
             Performance Breakdown
           </h1>
           <p className="text-xs sm:text-sm text-slate-400 mt-1">
@@ -249,12 +249,12 @@ export function AnalyticsDashboard() {
         </div>
 
         {/* Actions & Timeframe Switcher */}
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 w-full md:w-auto">
           {/* Export Data Dropdown */}
           <div className="relative">
             <button
               onClick={() => setShowExportMenu(!showExportMenu)}
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-slate-800/80 hover:bg-slate-750 border border-slate-700/80 text-white text-xs font-bold transition-all shadow-md"
+              className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-2xl bg-slate-800/80 hover:bg-slate-750 border border-slate-700/80 text-white text-xs font-bold transition-all shadow-md"
               title="Export lifetime study sessions"
             >
               <Download className="w-3.5 h-3.5 text-emerald-400" />
@@ -263,7 +263,7 @@ export function AnalyticsDashboard() {
             </button>
 
             {showExportMenu && (
-              <div className="absolute right-0 mt-2 w-56 rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl p-2 z-30 animate-in fade-in zoom-in-95 duration-100">
+              <div className="absolute left-0 sm:left-auto sm:right-0 mt-2 w-56 rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl p-2 z-30 animate-in fade-in zoom-in-95 duration-100">
                 <div className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-800 mb-1">
                   Lifetime Study Backup
                 </div>
@@ -302,7 +302,7 @@ export function AnalyticsDashboard() {
             <div className="flex items-center gap-1 p-1 rounded-2xl bg-slate-950/80 border border-slate-800 text-xs">
               <button
                 onClick={() => setSelectedDate(getLocalDateString(new Date(), 0))}
-                className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
+                className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl font-bold transition-all cursor-pointer text-xs ${
                   selectedDate === getLocalDateString(new Date(), 0) || !selectedDate
                     ? 'bg-emerald-500 text-slate-950 shadow-sm'
                     : 'text-slate-400 hover:text-white'
@@ -312,7 +312,7 @@ export function AnalyticsDashboard() {
               </button>
               <button
                 onClick={() => setSelectedDate(getLocalDateString(new Date(), -1))}
-                className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
+                className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl font-bold transition-all cursor-pointer text-xs ${
                   selectedDate === getLocalDateString(new Date(), -1)
                     ? 'bg-emerald-500 text-slate-950 shadow-sm'
                     : 'text-slate-400 hover:text-white'
@@ -324,12 +324,12 @@ export function AnalyticsDashboard() {
           )}
 
           {/* Timeframe Pill Switcher */}
-          <div className="flex items-center gap-1 p-1 rounded-2xl bg-slate-950/80 border border-slate-800">
+          <div className="flex items-center gap-1 p-1 rounded-2xl bg-slate-950/80 border border-slate-800 overflow-x-auto">
             {(['day', 'week', 'month', 'year'] as Timeframe[]).map(tf => (
               <button
                 key={tf}
                 onClick={() => setTimeframe(tf)}
-                className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
+                className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-[11px] sm:text-xs font-bold uppercase tracking-wider transition-all ${
                   timeframe === tf
                     ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
                     : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
@@ -342,8 +342,8 @@ export function AnalyticsDashboard() {
         </div>
       </div>
 
-      {/* 4 Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* 4 Summary Cards - Vertical Stack on Mobile */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
         {/* Total Time */}
         <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800/80 backdrop-blur-xl shadow-lg">
           <div className="flex items-center justify-between text-slate-400 text-xs font-medium mb-2">
@@ -405,9 +405,9 @@ export function AnalyticsDashboard() {
       </div>
 
       {/* Visual Charts Row: Donut Chart & Trend Bar Chart */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 items-start">
         {/* Subject Donut Chart */}
-        <div className="p-6 rounded-3xl bg-slate-900/80 border border-slate-800/80 backdrop-blur-xl shadow-2xl space-y-4">
+        <div className="p-4 sm:p-6 rounded-3xl bg-slate-900/80 border border-slate-800/80 backdrop-blur-xl shadow-2xl space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <PieIcon className="w-4 h-4 text-emerald-400" />
@@ -420,7 +420,7 @@ export function AnalyticsDashboard() {
         </div>
 
         {/* Study Bar Chart (Trends) */}
-        <div className="p-6 rounded-3xl bg-slate-900/80 border border-slate-800/80 backdrop-blur-xl shadow-2xl space-y-4">
+        <div className="p-4 sm:p-6 rounded-3xl bg-slate-900/80 border border-slate-800/80 backdrop-blur-xl shadow-2xl space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <BarChart3 className="w-4 h-4 text-cyan-400" />
@@ -442,7 +442,7 @@ export function AnalyticsDashboard() {
       </div>
 
       {/* 24-Hour Timeline Bar (Active in Day View or as Overview) */}
-      <div className="p-6 rounded-3xl bg-slate-900/80 border border-slate-800/80 backdrop-blur-xl shadow-2xl">
+      <div className="p-4 sm:p-6 rounded-3xl bg-slate-900/80 border border-slate-800/80 backdrop-blur-xl shadow-2xl">
         <StudyTimeline24h
           sessions={sessions}
           dateStr={selectedDate || getLocalDateString()}
@@ -450,12 +450,12 @@ export function AnalyticsDashboard() {
       </div>
 
       {/* Consistency Heatmap */}
-      <div className="p-6 rounded-3xl bg-slate-900/80 border border-slate-800/80 backdrop-blur-xl shadow-2xl">
+      <div className="p-4 sm:p-6 rounded-3xl bg-slate-900/80 border border-slate-800/80 backdrop-blur-xl shadow-2xl">
         <StudyHeatmap sessions={sessions} streakDays={user.streakDays} />
       </div>
 
       {/* Detailed Breakdown Table */}
-      <div className="p-6 rounded-3xl bg-slate-900/80 border border-slate-800/80 backdrop-blur-xl shadow-2xl space-y-4">
+      <div className="p-4 sm:p-6 rounded-3xl bg-slate-900/80 border border-slate-800/80 backdrop-blur-xl shadow-2xl space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Layers className="w-4 h-4 text-emerald-400" />

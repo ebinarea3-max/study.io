@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { StudySession } from '../../types';
 import { formatHoursAndMins, getLocalDateString } from '../../lib/utils';
 import { Flame, Calendar, Sparkles } from 'lucide-react';
@@ -11,6 +11,8 @@ interface StudyHeatmapProps {
 }
 
 export function StudyHeatmap({ sessions, streakDays }: StudyHeatmapProps) {
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+
   // Generate past 84 days (12 weeks of 7 days)
   const totalDays = 84;
   const now = new Date();
@@ -63,26 +65,34 @@ export function StudyHeatmap({ sessions, streakDays }: StudyHeatmapProps) {
         </div>
       </div>
 
-      {/* Heatmap Grid */}
-      <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800/80 overflow-x-auto">
+      {/* Heatmap Grid - Horizontal swipe with scrollbar-thin */}
+      <div className="p-3 sm:p-4 rounded-2xl bg-slate-950/80 border border-slate-800/80 overflow-x-auto pb-2 scrollbar-thin">
         <div className="min-w-[500px]">
           <div className="grid grid-flow-col grid-rows-7 gap-1.5 justify-start">
-            {days.map(d => (
-              <div
-                key={d.date}
-                className={`w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-sm border transition-all cursor-pointer relative group ${getColorClass(
-                  d.hours
-                )}`}
-              >
-                {/* Tooltip */}
-                <div className="hidden group-hover:block absolute bottom-full mb-1.5 left-1/2 -translate-x-1/2 bg-slate-900 border border-slate-700 text-[10px] text-white p-2 rounded-xl shadow-2xl z-30 whitespace-nowrap pointer-events-none">
-                  <div className="font-bold">{d.date}</div>
-                  <div className="text-emerald-400 font-mono">
-                    {d.seconds > 0 ? formatHoursAndMins(d.seconds) : 'No study logged'}
+            {days.map(d => {
+              const isSelected = selectedDate === d.date;
+              return (
+                <div
+                  key={d.date}
+                  onClick={() => setSelectedDate(prev => (prev === d.date ? null : d.date))}
+                  className={`w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-sm border transition-all cursor-pointer relative group p-0.5 ${getColorClass(
+                    d.hours
+                  )} hover:scale-125 active:scale-95`}
+                >
+                  {/* Tooltip */}
+                  <div
+                    className={`${
+                      isSelected ? 'block' : 'hidden group-hover:block'
+                    } absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-slate-900 border border-slate-700 text-[10px] text-white p-2.5 rounded-xl shadow-2xl z-30 whitespace-nowrap pointer-events-none animate-in fade-in zoom-in-95 duration-100`}
+                  >
+                    <div className="font-bold">{d.date}</div>
+                    <div className="text-emerald-400 font-mono">
+                      {d.seconds > 0 ? formatHoursAndMins(d.seconds) : 'No study logged'}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Legend */}

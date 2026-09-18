@@ -27,8 +27,8 @@ export function SubjectBreakdownTable({ data, totalSeconds }: SubjectBreakdownTa
 
   return (
     <div className="rounded-2xl bg-slate-950/80 border border-slate-800/80 overflow-hidden shadow-xl">
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-xs border-collapse">
+      <div className="overflow-x-auto pb-2 scrollbar-thin">
+        <table className="w-full text-left text-xs border-collapse min-w-[560px]">
           <thead>
             <tr className="border-b border-slate-800 bg-slate-900/80 text-slate-400 font-bold uppercase text-[10px] tracking-wider">
               <th className="py-3 px-4">Subject Name</th>

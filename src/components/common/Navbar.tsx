@@ -77,55 +77,56 @@ export function Navbar({
   const strokeDashoffset = circumference - (gamification.progressPercent / 100) * circumference;
 
   return (
+    <>
     <header className="sticky top-0 z-40 w-full border-b border-white/[0.08] bg-[#090A0C]/85 backdrop-blur-xl">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 h-16 flex items-center justify-between gap-2 sm:gap-4">
         {/* Logo & Brand */}
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => setActiveTab('timer')}>
-            <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 font-bold shadow-sm shadow-amber-500/10">
+        <div className="flex items-center gap-2.5 sm:gap-6">
+          <div className="flex items-center gap-2 sm:gap-2.5 cursor-pointer" onClick={() => setActiveTab('timer')}>
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 font-bold shadow-sm shadow-amber-500/10 flex-shrink-0">
               ⚡
             </div>
             <div>
-              <div className="text-base font-extrabold tracking-tight text-white flex items-center gap-1.5">
+              <div className="text-sm sm:text-base font-extrabold tracking-tight text-white flex items-center gap-1 sm:gap-1.5">
                 <span>study.io</span>
-                <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-300 border border-amber-500/25">
+                <span className="hidden sm:inline-block text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-300 border border-amber-500/25">
                   Focus
                 </span>
               </div>
-              <div className="text-[10px] text-slate-400 -mt-0.5">Focus & Habit Tracking</div>
+              <div className="hidden sm:block text-[10px] text-slate-400 -mt-0.5">Focus & Habit Tracking</div>
             </div>
           </div>
 
-          {/* Desktop Navigation Tabs - Rooms tab cleanly removed, keeping Home and Analytics */}
-          <nav className="hidden md:flex items-center gap-1 p-1 rounded-2xl bg-slate-900/90 border border-slate-800/80">
+          {/* Navigation Tabs - Never hidden on mobile */}
+          <nav className="flex items-center gap-1 p-1 rounded-2xl bg-slate-900/90 border border-slate-800/80">
             <button
               onClick={() => setActiveTab('timer')}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              className={`flex items-center gap-1 sm:gap-2 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl text-xs font-bold transition-all ${
                 activeTab === 'timer'
                   ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
               }`}
             >
-              <Timer className="w-4 h-4" />
-              <span>Dashboard</span>
+              <Timer className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="text-[11px] sm:text-xs">Dashboard</span>
             </button>
 
             <button
               onClick={() => setActiveTab('analytics')}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              className={`flex items-center gap-1 sm:gap-2 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl text-xs font-bold transition-all ${
                 activeTab === 'analytics'
                   ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
               }`}
             >
-              <BarChart3 className="w-4 h-4" />
-              <span>Analytics</span>
+              <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="text-[11px] sm:text-xs">Analytics</span>
             </button>
           </nav>
         </div>
 
         {/* Right Action Bar */}
-        <div className="flex items-center gap-2.5 sm:gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3">
           {/* Sign In Button (if not authenticated) */}
           {!isAuthenticated ? (
             <Link
@@ -367,5 +368,72 @@ export function Navbar({
         </div>
       </div>
     </header>
+
+    {/* Mobile Sticky Bottom Navigation Bar */}
+    <nav
+      aria-label="Mobile Bottom Navigation"
+      className="fixed bottom-0 left-0 right-0 z-40 bg-[#0d1117]/90 backdrop-blur-lg border-t border-white/10 md:hidden flex justify-around items-center py-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] px-3 shadow-2xl"
+    >
+      <button
+        onClick={() => setActiveTab('timer')}
+        className={`flex flex-col items-center justify-center gap-1 py-1 px-3 rounded-xl transition-all active:scale-95 ${
+          activeTab === 'timer'
+            ? 'text-emerald-400 font-bold'
+            : 'text-slate-400 hover:text-white'
+        }`}
+      >
+        <div
+          className={`p-1.5 rounded-xl transition-all ${
+            activeTab === 'timer'
+              ? 'bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/40'
+              : 'text-slate-400'
+          }`}
+        >
+          <Timer className="w-5 h-5" />
+        </div>
+        <span className="text-[10px] tracking-tight">Dashboard</span>
+      </button>
+
+      <button
+        onClick={() => setActiveTab('analytics')}
+        className={`flex flex-col items-center justify-center gap-1 py-1 px-3 rounded-xl transition-all active:scale-95 ${
+          activeTab === 'analytics'
+            ? 'text-emerald-400 font-bold'
+            : 'text-slate-400 hover:text-white'
+        }`}
+      >
+        <div
+          className={`p-1.5 rounded-xl transition-all ${
+            activeTab === 'analytics'
+              ? 'bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/40'
+              : 'text-slate-400'
+          }`}
+        >
+          <BarChart3 className="w-5 h-5" />
+        </div>
+        <span className="text-[10px] tracking-tight">Analytics</span>
+      </button>
+
+      <button
+        onClick={() => setIsFocusModeOpen(true)}
+        className="flex flex-col items-center justify-center gap-1 py-1 px-3 rounded-xl text-slate-400 hover:text-emerald-300 transition-all active:scale-95"
+      >
+        <div className="p-1.5 rounded-xl bg-slate-900/60 border border-slate-800 text-teal-400 hover:border-teal-500/40">
+          <Maximize2 className="w-5 h-5" />
+        </div>
+        <span className="text-[10px] tracking-tight">Zen Mode</span>
+      </button>
+
+      <button
+        onClick={onOpenSettings}
+        className="flex flex-col items-center justify-center gap-1 py-1 px-3 rounded-xl text-slate-400 hover:text-white transition-all active:scale-95"
+      >
+        <div className="p-1.5 rounded-xl bg-slate-900/60 border border-slate-800 text-slate-400 hover:text-white">
+          <Settings className="w-5 h-5" />
+        </div>
+        <span className="text-[10px] tracking-tight">Settings</span>
+      </button>
+    </nav>
+    </>
   );
 }
