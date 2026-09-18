@@ -1,9 +1,9 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useRef, useCallback, useMemo } from 'react';
-import { Subject, StudySession, TodoItem, TimerMode, PomodoroPhase, PomodoroPreset, PomodoroCompletedPhase, RankSettlementData, SeasonRecapData } from '../types';
+import { Subject, StudySession, TodoItem, TimerMode, PomodoroPhase, PomodoroPreset, PomodoroCompletedPhase, RankSettlementData, SeasonRecapData, UserProfile } from '../types';
 import { INITIAL_SUBJECTS, INITIAL_TODOS, getTodayDateString, calculateStreak, cleanupLegacyDemoData } from '../lib/mockData';
-import { getLocalStartOfDay, getLocalEndOfDay } from '../lib/dateUtils';
+import { getLocalStartOfDay, getLocalEndOfDay, getLocalDateString } from '../lib/dateUtils';
 import { useAuth } from './AuthContext';
 import { getSupabase } from '../lib/supabase';
 import { soundFx } from '../lib/audio';
@@ -1210,20 +1210,38 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         soundFx.playMilestoneBell();
       }
 
+      const todayString = getLocalDateString(new Date());
+      let localStreakBonusDate: string | null = null;
+      try {
+        localStreakBonusDate = localStorage.getItem('studypulse_last_streak_bonus_date');
+      } catch {}
+      const lastStreakBonusDate = currentUser?.last_streak_bonus_date || currentUser?.lastStreakBonusDate || localStreakBonusDate;
       const hasStreakOrGoal = (currentUser?.streakDays || 0) > 0 || totalToday >= dailyGoalSeconds;
       const hasCompletedTask = Boolean(activeTaskId);
       const rpBreakdown = calculateSessionRP(secondsToSave, {
         hasStreakOrGoal,
         hasCompletedTask,
+        lastStreakBonusDate,
+        todayString,
       });
 
       const prevRP = Number((currentUser as any)?.rp ?? currentUser?.seasonRp ?? 0);
       const newRP = prevRP + rpBreakdown.totalGained;
 
-      updateProfile({
+      const profileUpdates: Partial<UserProfile> = {
         seasonRp: newRP,
         rp: newRP,
-      });
+      };
+
+      if (rpBreakdown.goalStreakBonus > 0) {
+        profileUpdates.last_streak_bonus_date = todayString;
+        profileUpdates.lastStreakBonusDate = todayString;
+        try {
+          localStorage.setItem('studypulse_last_streak_bonus_date', todayString);
+        } catch {}
+      }
+
+      updateProfile(profileUpdates);
 
       setSettlementData({
         prevRP,

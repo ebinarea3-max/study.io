@@ -32,9 +32,10 @@ import {
 import { soundFx } from '../../lib/audio';
 import confetti from 'canvas-confetti';
 import { getSupabase } from '../../lib/supabase';
-import { StudySession, TimerMode } from '../../types';
+import { StudySession, TimerMode, UserProfile } from '../../types';
 import { calculateFocusXP } from '../../lib/gamification';
 import { calculateSessionRP } from '../../lib/rankedSystem';
+import { getLocalDateString } from '../../lib/dateUtils';
 
 const EMPTY_STATE_QUOTES = [
   'Every long streak starts with one session.',
@@ -289,21 +290,39 @@ export function StudyTimer() {
         }
 
         // Free Fire RP Calculation & Post-Match Rank Settlement Trigger
+        const todayString = getLocalDateString(new Date());
+        let localStreakBonusDate: string | null = null;
+        try {
+          localStreakBonusDate = localStorage.getItem('studypulse_last_streak_bonus_date');
+        } catch {}
+        const lastStreakBonusDate = user?.last_streak_bonus_date || user?.lastStreakBonusDate || localStreakBonusDate;
         const hasStreakOrGoal = (user?.streakDays || 0) > 0 || totalToday >= dailyGoalSeconds;
         const hasCompletedTask = Boolean(activeTaskId);
         const rpBreakdown = calculateSessionRP(seconds, {
           hasStreakOrGoal,
           hasCompletedTask,
+          lastStreakBonusDate,
+          todayString,
         });
 
         const prevRP = Number((user as any)?.rp ?? user?.seasonRp ?? 0);
         const newRP = prevRP + rpBreakdown.totalGained;
 
-        // Persist new RP in profile
-        updateProfile({
+        // Persist new RP and streak bonus date in profile
+        const profileUpdates: Partial<UserProfile> = {
           seasonRp: newRP,
           rp: newRP,
-        });
+        };
+
+        if (rpBreakdown.goalStreakBonus > 0) {
+          profileUpdates.last_streak_bonus_date = todayString;
+          profileUpdates.lastStreakBonusDate = todayString;
+          try {
+            localStorage.setItem('studypulse_last_streak_bonus_date', todayString);
+          } catch {}
+        }
+
+        updateProfile(profileUpdates);
 
         // Trigger Free Fire Post-Match Settlement Modal immediately
         showRankSettlement({

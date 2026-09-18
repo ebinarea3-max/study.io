@@ -14,12 +14,14 @@ create table if not exists public.profiles (
   total_study_seconds bigint default 0,
   current_season_id text default to_char(now(), 'YYYY-MM'),
   season_rp integer default 0,
+  last_streak_bonus_date text default null,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
 -- Migration for existing instances:
 alter table public.profiles add column if not exists current_season_id text default to_char(now(), 'YYYY-MM');
 alter table public.profiles add column if not exists season_rp integer default 0;
+alter table public.profiles add column if not exists last_streak_bonus_date text default null;
 
 -- 2. Subjects Table
 create table if not exists public.subjects (

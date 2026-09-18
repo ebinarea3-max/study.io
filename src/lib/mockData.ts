@@ -13,6 +13,8 @@ export const INITIAL_USER: UserProfile = {
   status: 'resting',
   currentSeasonId: '2026-09',
   seasonRp: 0,
+  last_streak_bonus_date: undefined,
+  lastStreakBonusDate: undefined,
   createdAt: new Date().toISOString(),
 };
 

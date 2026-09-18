@@ -62,6 +62,8 @@ export type UserProfile = {
   currentSeasonId?: string;
   seasonRp?: number;
   rp?: number;
+  last_streak_bonus_date?: string; // YYYY-MM-DD
+  lastStreakBonusDate?: string;     // alias for convenience
   user_metadata?: {
     avatar_url?: string;
     picture?: string;
@@ -78,6 +80,8 @@ export type RankSettlementBreakdown = {
   taskBonus: number;           // +10 RP (Task Completion)
   totalGained: number;         // Total RP gained
   durationSeconds: number;
+  isUnderMinDuration?: boolean;
+  streakBonusClaimedToday?: boolean;
 };
 
 export type RankSettlementData = {

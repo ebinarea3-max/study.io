@@ -406,6 +406,8 @@ export function RankSettlementModal({
   const goalStreakBonus = data?.breakdown.goalStreakBonus ?? 0;
   const taskBonus = data?.breakdown.taskBonus ?? 0;
   const durationSeconds = data?.breakdown.durationSeconds ?? 0;
+  const streakBonusClaimedToday = Boolean(data?.breakdown.streakBonusClaimedToday);
+  const isUnderMinDuration = Boolean(data?.breakdown.isUnderMinDuration ?? (durationSeconds < 300));
 
   const prevRankDetails = useMemo(() => getRankTier(prevRP), [prevRP]);
   const newRankDetails = useMemo(() => getRankTier(newRP), [newRP]);
@@ -1073,10 +1075,15 @@ export function RankSettlementModal({
             <span className="flex items-center gap-1.5">
               <span className="text-slate-400">Focus Duration</span>
               <span className="font-medium text-slate-200">{formattedDuration}</span>
-              <span className="font-mono text-emerald-400/90">+{sessionRP} RP</span>
+              <span className={`font-mono ${sessionRP > 0 ? 'text-emerald-400/90' : 'text-slate-400'}`}>+{sessionRP} RP</span>
+              {isUnderMinDuration && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-300/90 border border-rose-500/20 font-sans font-medium">
+                  &lt; 5m min
+                </span>
+              )}
             </span>
 
-            {goalStreakBonus > 0 && (
+            {goalStreakBonus > 0 ? (
               <>
                 <span className="text-slate-600 select-none">•</span>
                 <span className="flex items-center gap-1.5">
@@ -1084,7 +1091,18 @@ export function RankSettlementModal({
                   <span className="font-mono text-amber-400/90">+{goalStreakBonus} RP</span>
                 </span>
               </>
-            )}
+            ) : streakBonusClaimedToday ? (
+              <>
+                <span className="text-slate-600 select-none">•</span>
+                <span className="flex items-center gap-1.5">
+                  <span className="text-slate-400">Streak Bonus</span>
+                  <span className="font-mono text-slate-400">0 RP</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-300/90 border border-amber-500/20 font-sans font-medium">
+                    Claimed Today
+                  </span>
+                </span>
+              </>
+            ) : null}
 
             {taskBonus > 0 && (
               <>
@@ -1099,7 +1117,7 @@ export function RankSettlementModal({
             <span className="text-slate-600 select-none">=</span>
             <span className="flex items-center gap-1.5">
               <span className="text-slate-400">Total Gained</span>
-              <span className="font-mono font-bold text-white">+{totalGained} RP</span>
+              <span className={`font-mono font-bold ${totalGained > 0 ? 'text-white' : 'text-slate-400'}`}>+{totalGained} RP</span>
             </span>
           </div>
 
@@ -1109,7 +1127,11 @@ export function RankSettlementModal({
               <span className="text-xs uppercase tracking-[0.25em] text-slate-400 font-semibold">
                 TIER PROGRESS
               </span>
-              <div className="inline-flex items-center px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 font-mono font-semibold text-[11px]">
+              <div className={`inline-flex items-center px-2 py-0.5 rounded ${
+                totalGained > 0
+                  ? 'bg-emerald-500/10 border border-emerald-500/25 text-emerald-300'
+                  : 'bg-slate-500/10 border border-slate-500/25 text-slate-400'
+              } font-mono font-semibold text-[11px]`}>
                 +{displayedGain} RP
               </div>
             </div>

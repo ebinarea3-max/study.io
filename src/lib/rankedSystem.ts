@@ -19,6 +19,8 @@
  * - Bronze (I - III) -> Bronze I (0 RP)
  */
 
+import { getLocalDateString } from './dateUtils';
+
 export type RankTierName = 
   | 'Bronze'
   | 'Silver'
@@ -379,29 +381,60 @@ export function getRankTier(rp: number): RankTierDetails {
   };
 }
 
+/** Minimum session duration (in seconds) required to earn RP and bonuses (5 minutes) */
+export const MIN_RANKED_SESSION_SECONDS = 300;
+
+export interface CalculateSessionRPOptions {
+  hasStreakOrGoal?: boolean;
+  hasCompletedTask?: boolean;
+  lastStreakBonusDate?: string | null;
+  todayString?: string;
+}
+
 /**
  * Calculate post-match RP rewards breakdown
- * - Study Duration: 10 RP per focused minute
- * - Goal / Streak Bonus: +50 RP
- * - Task Completion: +10 RP
+ * Anti-Exploit Rules:
+ * 1. Minimum Duration Threshold:
+ *    - If durationSeconds < 300 (less than 5 minutes):
+ *      * Award 0 RP for duration and 0 RP for streak/task bonuses (totalGained: 0)
+ *      * Preserves durationSeconds for history/tracking, but eliminates 1-second rank farming.
+ * 2. Daily Streak Bonus Restriction:
+ *    - +50 RP streak bonus is awarded ONLY IF:
+ *      * session meets the 5-minute threshold (>= 300s)
+ *      * user has an active streak or reached daily goal
+ *      * user has not already claimed the streak bonus today (lastStreakBonusDate !== todayString)
  */
 export function calculateSessionRP(
   durationSeconds: number,
-  options?: {
-    hasStreakOrGoal?: boolean;
-    hasCompletedTask?: boolean;
-  }
+  options?: CalculateSessionRPOptions
 ) {
   const safeDuration = Math.max(0, durationSeconds || 0);
-  const focusedMinutes = safeDuration / 60;
-  
-  // 10 RP per focused minute. For short testing sessions >= 10s, award minimum 2 RP
-  let sessionRP = Math.round(focusedMinutes * 10);
-  if (sessionRP === 0 && safeDuration >= 10) {
-    sessionRP = Math.max(2, Math.ceil(focusedMinutes * 10));
+  const today = options?.todayString || getLocalDateString(new Date());
+  const alreadyClaimedToday = Boolean(options?.lastStreakBonusDate && options.lastStreakBonusDate === today);
+  const meetsMinThreshold = safeDuration >= MIN_RANKED_SESSION_SECONDS;
+
+  // 1. Enforce minimum session threshold for RP & bonuses (< 300s / 5 mins)
+  if (!meetsMinThreshold) {
+    return {
+      sessionRP: 0,
+      goalStreakBonus: 0,
+      taskBonus: 0,
+      totalGained: 0,
+      durationSeconds: safeDuration,
+      isUnderMinDuration: true,
+      streakBonusClaimedToday: alreadyClaimedToday,
+    };
   }
 
-  const goalStreakBonus = options?.hasStreakOrGoal ? 50 : 0;
+  // 2. Base duration RP: 10 RP per focused minute
+  const focusedMinutes = safeDuration / 60;
+  const sessionRP = Math.round(focusedMinutes * 10);
+
+  // 3. Streak bonus: restricted to once per calendar day
+  const eligibleForStreak = Boolean(options?.hasStreakOrGoal);
+  const goalStreakBonus = eligibleForStreak && !alreadyClaimedToday ? 50 : 0;
+  const streakBonusClaimedToday = alreadyClaimedToday;
+
   const taskBonus = options?.hasCompletedTask ? 10 : 0;
   const totalGained = sessionRP + goalStreakBonus + taskBonus;
 
@@ -411,6 +444,8 @@ export function calculateSessionRP(
     taskBonus,
     totalGained,
     durationSeconds: safeDuration,
+    isUnderMinDuration: false,
+    streakBonusClaimedToday,
   };
 }
 
