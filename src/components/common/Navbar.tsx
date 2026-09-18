@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useAuth } from '../../context/AuthContext';
 import { useStudy } from '../../context/StudyContext';
@@ -8,6 +8,7 @@ import {
   Timer,
   BarChart3,
   Maximize2,
+  Minimize2,
   Settings,
   Flame,
   User,
@@ -40,6 +41,83 @@ export function Navbar({
   const { isStudying, setIsFocusModeOpen, gamification } = useStudy();
 
   const [showPersonaMenu, setShowPersonaMenu] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Sync fullscreen state with document fullscreenchange events & vendor fallbacks
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      if (typeof document === 'undefined') return;
+      const doc = document as any;
+      setIsFullscreen(
+        Boolean(
+          doc.fullscreenElement ||
+          doc.webkitFullscreenElement ||
+          doc.mozFullScreenElement ||
+          doc.msFullscreenElement
+        )
+      );
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+    handleFullscreenChange();
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+    };
+  }, []);
+
+  // Native fullscreen toggle with cross-browser / vendor prefix safety
+  const toggleFullscreen = useCallback(() => {
+    if (typeof document === 'undefined') return;
+    const doc = document as any;
+    const docEl = document.documentElement as any;
+
+    try {
+      const isFs = Boolean(
+        doc.fullscreenElement ||
+        doc.webkitFullscreenElement ||
+        doc.mozFullScreenElement ||
+        doc.msFullscreenElement
+      );
+
+      if (!isFs) {
+        const requestFs =
+          docEl.requestFullscreen ||
+          docEl.webkitRequestFullscreen ||
+          docEl.mozRequestFullScreen ||
+          docEl.msRequestFullscreen;
+
+        if (requestFs) {
+          const promise = requestFs.call(docEl);
+          if (promise && typeof promise.catch === 'function') {
+            promise.catch((err: any) => console.warn('Fullscreen request failed:', err));
+          }
+        }
+      } else {
+        const exitFs =
+          doc.exitFullscreen ||
+          doc.webkitExitFullscreen ||
+          doc.mozCancelFullScreen ||
+          doc.msExitFullscreen;
+
+        if (exitFs) {
+          const promise = exitFs.call(doc);
+          if (promise && typeof promise.catch === 'function') {
+            promise.catch((err: any) => console.warn('Exit fullscreen failed:', err));
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Fullscreen toggle failed:', err);
+    }
+  }, []);
 
   // Memoize user session avatar & display name extraction to prevent flickering
   const avatarUrl = useMemo(() => {
@@ -175,13 +253,18 @@ export function Navbar({
             </>
           )}
 
-          {/* Fullscreen Zen Mode Button */}
+          {/* Native Fullscreen Toggle Button */}
           <button
-            onClick={() => setIsFocusModeOpen(true)}
-            className="p-2 rounded-xl bg-slate-900/80 border border-slate-800 hover:border-emerald-500/40 text-slate-300 hover:text-emerald-400 transition-colors shadow-sm hidden sm:flex items-center justify-center"
-            title="Open Fullscreen Zen Focus Mode"
+            onClick={toggleFullscreen}
+            className="p-2 rounded-xl bg-slate-900/80 border border-slate-800 hover:border-emerald-500/40 text-slate-300 hover:text-emerald-400 transition-colors shadow-sm hidden sm:flex items-center justify-center cursor-pointer"
+            title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+            aria-label={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
           >
-            <Maximize2 className="w-4 h-4" />
+            {isFullscreen ? (
+              <Minimize2 className="w-4 h-4" />
+            ) : (
+              <Maximize2 className="w-4 h-4" />
+            )}
           </button>
 
           {/* Settings Button */}
