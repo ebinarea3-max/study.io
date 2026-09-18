@@ -11,14 +11,30 @@ class AudioEngine {
   private activeNodes: (AudioNode & { stop?: () => void })[] = [];
 
   private getContext(): AudioContext {
+    if (typeof window === 'undefined') {
+      throw new Error('AudioContext not available on server');
+    }
     if (!this.ctx) {
       const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (!AudioCtx) {
+        throw new Error('AudioContext not supported');
+      }
       this.ctx = new AudioCtx();
     }
     if (this.ctx.state === 'suspended') {
-      this.ctx.resume();
+      this.ctx.resume().catch(() => {});
     }
     return this.ctx;
+  }
+
+  public resumeContext() {
+    try {
+      if (this.ctx && this.ctx.state === 'suspended') {
+        this.ctx.resume().catch(() => {});
+      }
+    } catch {
+      // ignore
+    }
   }
 
   // Play start chime
@@ -415,27 +431,88 @@ class AudioEngine {
     }
   }
 
-  // Cinematic Sub-Bass Impact Slam (110Hz -> 28Hz over 400ms with soft exponential decay)
+  // Helper to create soft saturation distortion curve for WaveShaper
+  private createDistortionCurve(amount = 15): Float32Array<ArrayBuffer> {
+    const nSamples = 44100;
+    const buffer = new ArrayBuffer(nSamples * Float32Array.BYTES_PER_ELEMENT);
+    const curve = new Float32Array(buffer);
+    const deg = Math.PI / 180;
+    for (let i = 0; i < nSamples; ++i) {
+      const x = (i * 2) / nSamples - 1;
+      curve[i] = ((3 + amount) * x * 20 * deg) / (Math.PI + amount * Math.abs(x));
+    }
+    return curve;
+  }
+
+  // Cinematic Sub-Bass Impact Slam (Layered: WaveShaped 110Hz->28Hz sweep + 1200Hz lowpass white-noise crack + 60Hz sub body)
   public playSubBassImpact() {
     try {
       const ctx = this.getContext();
+      if (!ctx) return;
       const now = ctx.currentTime;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
 
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(110, now);
-      osc.frequency.exponentialRampToValueAtTime(28, now + 0.4);
+      // 1. Core Heavy Sub-Bass Sweep (110Hz -> 28Hz over 400ms) with WaveShaper saturation
+      const sweepOsc = ctx.createOscillator();
+      const sweepGain = ctx.createGain();
+      sweepOsc.type = 'sine';
+      sweepOsc.frequency.setValueAtTime(110, now);
+      sweepOsc.frequency.exponentialRampToValueAtTime(28, now + 0.4);
 
-      gain.gain.setValueAtTime(0.6, now);
-      gain.gain.linearRampToValueAtTime(0.5, now + 0.03);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.4);
+      sweepGain.gain.setValueAtTime(0.65, now);
+      sweepGain.gain.linearRampToValueAtTime(0.55, now + 0.03);
+      sweepGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.42);
 
-      osc.connect(gain);
-      gain.connect(ctx.destination);
+      const shaper = ctx.createWaveShaper();
+      shaper.curve = this.createDistortionCurve(16);
+      shaper.oversample = '2x';
 
-      osc.start(now);
-      osc.stop(now + 0.42);
+      sweepOsc.connect(shaper);
+      shaper.connect(sweepGain);
+      sweepGain.connect(ctx.destination);
+
+      sweepOsc.start(now);
+      sweepOsc.stop(now + 0.45);
+
+      // 2. White-noise burst through lowpass filter (cutoff 1200Hz, 120ms decay) for "crack"
+      const bufferLength = Math.max(1, Math.floor(ctx.sampleRate * 0.14));
+      const noiseBuffer = ctx.createBuffer(1, bufferLength, ctx.sampleRate);
+      const output = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < bufferLength; i++) {
+        output[i] = (Math.random() * 2 - 1) * 0.75;
+      }
+      const noiseSource = ctx.createBufferSource();
+      noiseSource.buffer = noiseBuffer;
+
+      const noiseFilter = ctx.createBiquadFilter();
+      noiseFilter.type = 'lowpass';
+      noiseFilter.frequency.setValueAtTime(1200, now);
+      noiseFilter.frequency.exponentialRampToValueAtTime(180, now + 0.12);
+
+      const noiseGain = ctx.createGain();
+      noiseGain.gain.setValueAtTime(0.42, now);
+      noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
+
+      noiseSource.connect(noiseFilter);
+      noiseFilter.connect(noiseGain);
+      noiseGain.connect(ctx.destination);
+
+      noiseSource.start(now);
+      noiseSource.stop(now + 0.13);
+
+      // 3. 60Hz Sine sub-oscillator at low gain for tactile low-end body
+      const bodyOsc = ctx.createOscillator();
+      const bodyGain = ctx.createGain();
+      bodyOsc.type = 'sine';
+      bodyOsc.frequency.setValueAtTime(60, now);
+
+      bodyGain.gain.setValueAtTime(0.32, now);
+      bodyGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.38);
+
+      bodyOsc.connect(bodyGain);
+      bodyGain.connect(ctx.destination);
+
+      bodyOsc.start(now);
+      bodyOsc.stop(now + 0.4);
     } catch {
       // ignore audio context restrictions
     }
@@ -444,6 +521,67 @@ class AudioEngine {
   // Backwards compatibility alias
   public playBassImpactThud() {
     this.playSubBassImpact();
+  }
+
+  // Segment ticks: short, quiet click (square wave, 1800Hz, 15ms, gain 0.03) with pitch rising slightly
+  public playSegmentTick(progress = 0) {
+    try {
+      const ctx = this.getContext();
+      if (!ctx) return;
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      // Pitch rises slightly as bar progresses from 1800Hz up to ~2300Hz
+      const pitch = 1800 + Math.max(0, Math.min(1, progress)) * 500;
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(pitch, now);
+
+      gain.gain.setValueAtTime(0.03, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.015);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.018);
+    } catch {
+      // ignore
+    }
+  }
+
+  // Tier-up fanfare: rising two-note interval (perfect fifth: D5 587.33Hz -> A5 880.00Hz)
+  public playTierUpFanfare() {
+    try {
+      const ctx = this.getContext();
+      if (!ctx) return;
+      const now = ctx.currentTime;
+
+      const notes = [
+        { freq: 587.33, offset: 0, dur: 0.18, gain: 0.15 },
+        { freq: 880.00, offset: 0.11, dur: 0.4, gain: 0.2 },
+      ];
+
+      notes.forEach(({ freq, offset, dur, gain: noteGain }) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, now + offset);
+
+        gain.gain.setValueAtTime(0, now + offset);
+        gain.gain.linearRampToValueAtTime(noteGain, now + offset + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + dur);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(now + offset);
+        osc.stop(now + offset + dur + 0.02);
+      });
+    } catch {
+      // ignore
+    }
   }
 
   // Warm resonant chime / overtone at 432Hz for RP fill completion

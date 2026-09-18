@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { soundFx } from '../lib/audio';
 import confetti from 'canvas-confetti';
 import {
@@ -17,6 +17,35 @@ interface RankSettlementModalProps {
   onContinue: () => void;
 }
 
+// Particle interface for radial spark burst on badge impact
+interface SparkParticle {
+  id: number;
+  dx: number;
+  dy: number;
+  rot: number;
+  size: number;
+  opacity: number;
+  color: string;
+}
+
+// Cubic bezier evaluator for cubic-bezier(0.22, 1, 0.36, 1) - fast start, graceful settle
+function cubicBezierEase(t: number): number {
+  if (t <= 0) return 0;
+  if (t >= 1) return 1;
+  const x1 = 0.22, y1 = 1, x2 = 0.36, y2 = 1;
+  let low = 0, high = 1, u = t;
+  for (let i = 0; i < 8; i++) {
+    const oneMinusU = 1 - u;
+    const bx = 3 * oneMinusU * oneMinusU * u * x1 + 3 * oneMinusU * u * u * x2 + u * u * u;
+    if (Math.abs(bx - t) < 0.001) break;
+    if (bx < t) low = u;
+    else high = u;
+    u = (low + high) / 2;
+  }
+  const oneMinusU = 1 - u;
+  return 3 * oneMinusU * oneMinusU * u * y1 + 3 * oneMinusU * u * u * y2 + u * u * u;
+}
+
 /**
  * Sharp, Metallic Esports Rank Crest:
  * Winged shield with faceted diamond/jewel center styled for the active tier.
@@ -24,21 +53,32 @@ interface RankSettlementModalProps {
 function EsportsRankCrest({
   tier,
   details,
+  isGhost = false,
+  ghostColor,
+  showSheen = true,
 }: {
   tier: RankTierName;
   details: RankTierDetails;
+  isGhost?: boolean;
+  ghostColor?: string;
+  showSheen?: boolean;
 }) {
   const { config } = details;
 
   return (
-    <div className="relative flex items-center justify-center w-56 h-56 sm:w-72 sm:h-72 select-none">
+    <div
+      className="relative flex items-center justify-center w-56 h-56 sm:w-72 sm:h-72 select-none"
+      style={{
+        filter: isGhost && ghostColor ? `drop-shadow(0 0 10px ${ghostColor})` : undefined,
+      }}
+    >
       <svg
         viewBox="0 0 340 320"
-        className="w-full h-full filter transition-all duration-500 drop-shadow-[0_15px_35px_rgba(0,0,0,0.8)]"
+        className="w-full h-full filter transition-all duration-500 drop-shadow-[0_15px_35px_rgba(0,0,0,0.85)]"
       >
         <defs>
           {/* Steel Light Chrome Gradient */}
-          <linearGradient id="crestSteelLight" x1="0%" y1="0%" x2="100%" y2="100%">
+          <linearGradient id={`crestSteelLight-${tier}`} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#FFFFFF" />
             <stop offset="25%" stopColor="#F1F5F9" />
             <stop offset="60%" stopColor="#CBD5E1" />
@@ -46,101 +86,101 @@ function EsportsRankCrest({
           </linearGradient>
 
           {/* Steel Dark Brushed Shadow Gradient */}
-          <linearGradient id="crestSteelDark" x1="0%" y1="0%" x2="100%" y2="100%">
+          <linearGradient id={`crestSteelDark-${tier}`} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#94A3B8" />
             <stop offset="40%" stopColor="#64748B" />
             <stop offset="75%" stopColor="#334155" />
             <stop offset="100%" stopColor="#0F172A" />
           </linearGradient>
 
-          {/* Bronze Metallic Inlay (Refined Antique Bronze) */}
-          <linearGradient id="tierBronzeLight" x1="0%" y1="0%" x2="100%" y2="100%">
+          {/* Bronze Metallic Inlay */}
+          <linearGradient id={`tierBronzeLight-${tier}`} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#E2C499" />
             <stop offset="35%" stopColor="#C2884A" />
             <stop offset="100%" stopColor="#8A501F" />
           </linearGradient>
-          <linearGradient id="tierBronzeDark" x1="0%" y1="0%" x2="100%" y2="100%">
+          <linearGradient id={`tierBronzeDark-${tier}`} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#A0522D" />
             <stop offset="55%" stopColor="#6E2C00" />
             <stop offset="100%" stopColor="#3B1C06" />
           </linearGradient>
 
           {/* Silver Chrome Inlay */}
-          <linearGradient id="tierSilverLight" x1="0%" y1="0%" x2="100%" y2="100%">
+          <linearGradient id={`tierSilverLight-${tier}`} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#FFFFFF" />
             <stop offset="45%" stopColor="#E2E8F0" />
             <stop offset="100%" stopColor="#94A3B8" />
           </linearGradient>
-          <linearGradient id="tierSilverDark" x1="0%" y1="0%" x2="100%" y2="100%">
+          <linearGradient id={`tierSilverDark-${tier}`} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#94A3B8" />
             <stop offset="50%" stopColor="#64748B" />
             <stop offset="100%" stopColor="#1E293B" />
           </linearGradient>
 
           {/* Gold Inlay */}
-          <linearGradient id="tierGoldLight" x1="0%" y1="0%" x2="100%" y2="100%">
+          <linearGradient id={`tierGoldLight-${tier}`} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#FEF9C3" />
             <stop offset="40%" stopColor="#FACC15" />
             <stop offset="100%" stopColor="#CA8A04" />
           </linearGradient>
-          <linearGradient id="tierGoldDark" x1="0%" y1="0%" x2="100%" y2="100%">
+          <linearGradient id={`tierGoldDark-${tier}`} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#EAB308" />
             <stop offset="50%" stopColor="#A16207" />
             <stop offset="100%" stopColor="#713F12" />
           </linearGradient>
 
           {/* Platinum Inlay */}
-          <linearGradient id="tierPlatinumLight" x1="0%" y1="0%" x2="100%" y2="100%">
+          <linearGradient id={`tierPlatinumLight-${tier}`} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#E0F2FE" />
             <stop offset="40%" stopColor="#38BDF8" />
             <stop offset="100%" stopColor="#0284C7" />
           </linearGradient>
-          <linearGradient id="tierPlatinumDark" x1="0%" y1="0%" x2="100%" y2="100%">
+          <linearGradient id={`tierPlatinumDark-${tier}`} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#0284C7" />
             <stop offset="50%" stopColor="#0369A1" />
             <stop offset="100%" stopColor="#075985" />
           </linearGradient>
 
-          {/* Diamond Inlay (Crisp Ice-Blue Sapphire & Chrome) */}
-          <linearGradient id="tierDiamondLight" x1="0%" y1="0%" x2="100%" y2="100%">
+          {/* Diamond Inlay */}
+          <linearGradient id={`tierDiamondLight-${tier}`} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#FFFFFF" />
             <stop offset="30%" stopColor="#BAE6FD" />
             <stop offset="70%" stopColor="#38BDF8" />
             <stop offset="100%" stopColor="#0284C7" />
           </linearGradient>
-          <linearGradient id="tierDiamondDark" x1="0%" y1="0%" x2="100%" y2="100%">
+          <linearGradient id={`tierDiamondDark-${tier}`} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#38BDF8" />
             <stop offset="45%" stopColor="#0369A1" />
             <stop offset="85%" stopColor="#1E3A8A" />
             <stop offset="100%" stopColor="#0F172A" />
           </linearGradient>
 
-          {/* Heroic Inlay (Ruby Steel) */}
-          <linearGradient id="tierHeroicLight" x1="0%" y1="0%" x2="100%" y2="100%">
+          {/* Heroic Inlay */}
+          <linearGradient id={`tierHeroicLight-${tier}`} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#FEE2E2" />
             <stop offset="40%" stopColor="#EF4444" />
             <stop offset="100%" stopColor="#B91C1C" />
           </linearGradient>
-          <linearGradient id="tierHeroicDark" x1="0%" y1="0%" x2="100%" y2="100%">
+          <linearGradient id={`tierHeroicDark-${tier}`} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#B91C1C" />
             <stop offset="50%" stopColor="#7F1D1D" />
             <stop offset="100%" stopColor="#450A0A" />
           </linearGradient>
 
-          {/* Grandmaster Inlay (Ember Gold & Fiery Obsidian) */}
-          <linearGradient id="tierGrandmasterLight" x1="0%" y1="0%" x2="100%" y2="100%">
+          {/* Grandmaster Inlay */}
+          <linearGradient id={`tierGrandmasterLight-${tier}`} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#FFFBEB" />
             <stop offset="40%" stopColor="#F59E0B" />
             <stop offset="100%" stopColor="#EA580C" />
           </linearGradient>
-          <linearGradient id="tierGrandmasterDark" x1="0%" y1="0%" x2="100%" y2="100%">
+          <linearGradient id={`tierGrandmasterDark-${tier}`} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#EA580C" />
             <stop offset="50%" stopColor="#C2410C" />
             <stop offset="100%" stopColor="#431407" />
           </linearGradient>
 
           {/* Faceted Gem Core Radial Glow */}
-          <radialGradient id="gemCoreGlow" cx="50%" cy="50%" r="50%">
+          <radialGradient id={`gemCoreGlow-${tier}`} cx="50%" cy="50%" r="50%">
             <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.9" />
             <stop offset="50%" stopColor={config.badgeAccent} stopOpacity="0.8" />
             <stop offset="100%" stopColor={config.badgeSecondary} stopOpacity="0.2" />
@@ -149,22 +189,25 @@ function EsportsRankCrest({
 
         {(() => {
           const accentLight =
-            tier === 'Bronze' ? 'url(#tierBronzeLight)' :
-            tier === 'Silver' ? 'url(#tierSilverLight)' :
-            tier === 'Gold' ? 'url(#tierGoldLight)' :
-            tier === 'Platinum' ? 'url(#tierPlatinumLight)' :
-            tier === 'Diamond' ? 'url(#tierDiamondLight)' :
-            tier === 'Heroic' ? 'url(#tierHeroicLight)' :
-            'url(#tierGrandmasterLight)';
+            tier === 'Bronze' ? `url(#tierBronzeLight-${tier})` :
+            tier === 'Silver' ? `url(#tierSilverLight-${tier})` :
+            tier === 'Gold' ? `url(#tierGoldLight-${tier})` :
+            tier === 'Platinum' ? `url(#tierPlatinumLight-${tier})` :
+            tier === 'Diamond' ? `url(#tierDiamondLight-${tier})` :
+            tier === 'Heroic' ? `url(#tierHeroicLight-${tier})` :
+            `url(#tierGrandmasterLight-${tier})`;
 
           const accentDark =
-            tier === 'Bronze' ? 'url(#tierBronzeDark)' :
-            tier === 'Silver' ? 'url(#tierSilverDark)' :
-            tier === 'Gold' ? 'url(#tierGoldDark)' :
-            tier === 'Platinum' ? 'url(#tierPlatinumDark)' :
-            tier === 'Diamond' ? 'url(#tierDiamondDark)' :
-            tier === 'Heroic' ? 'url(#tierHeroicDark)' :
-            'url(#tierGrandmasterDark)';
+            tier === 'Bronze' ? `url(#tierBronzeDark-${tier})` :
+            tier === 'Silver' ? `url(#tierSilverDark-${tier})` :
+            tier === 'Gold' ? `url(#tierGoldDark-${tier})` :
+            tier === 'Platinum' ? `url(#tierPlatinumDark-${tier})` :
+            tier === 'Diamond' ? `url(#tierDiamondDark-${tier})` :
+            tier === 'Heroic' ? `url(#tierHeroicDark-${tier})` :
+            `url(#tierGrandmasterDark-${tier})`;
+
+          const steelLight = `url(#crestSteelLight-${tier})`;
+          const steelDark = `url(#crestSteelDark-${tier})`;
 
           return (
             <g>
@@ -172,13 +215,13 @@ function EsportsRankCrest({
               {/* LEFT WING: Upper Razor Blade */}
               <polygon
                 points="150,140 100,75 40,48 70,88 120,150"
-                fill="url(#crestSteelLight)"
+                fill={steelLight}
                 stroke="rgba(255,255,255,0.4)"
                 strokeWidth="1"
               />
               <polygon
                 points="120,150 70,88 40,48 60,110 135,170"
-                fill="url(#crestSteelDark)"
+                fill={steelDark}
               />
               {/* LEFT WING: Mid Razor Blade */}
               <polygon
@@ -192,19 +235,19 @@ function EsportsRankCrest({
               {/* LEFT WING: Lower Blade Flange */}
               <polygon
                 points="140,195 90,170 45,175 75,205 135,225"
-                fill="url(#crestSteelDark)"
+                fill={steelDark}
               />
 
               {/* RIGHT WING: Upper Razor Blade */}
               <polygon
                 points="190,140 240,75 300,48 270,88 220,150"
-                fill="url(#crestSteelLight)"
+                fill={steelLight}
                 stroke="rgba(255,255,255,0.4)"
                 strokeWidth="1"
               />
               <polygon
                 points="220,150 270,88 300,48 280,110 205,170"
-                fill="url(#crestSteelDark)"
+                fill={steelDark}
               />
               {/* RIGHT WING: Mid Razor Blade */}
               <polygon
@@ -218,18 +261,18 @@ function EsportsRankCrest({
               {/* RIGHT WING: Lower Blade Flange */}
               <polygon
                 points="200,195 250,170 295,175 265,205 205,225"
-                fill="url(#crestSteelDark)"
+                fill={steelDark}
               />
 
               {/* === 2. CENTER HEAVY COMBAT SHIELD === */}
               {/* Outer Chiseled Shield Frame (Left Highlight / Right Shadow) */}
               <polygon
                 points="170,72 108,110 118,205 170,268 170,248 132,195 124,122 170,88"
-                fill="url(#crestSteelLight)"
+                fill={steelLight}
               />
               <polygon
                 points="170,72 232,110 222,205 170,268 170,248 208,195 216,122 170,88"
-                fill="url(#crestSteelDark)"
+                fill={steelDark}
               />
               {/* Outer Sharp Border */}
               <polygon
@@ -264,8 +307,8 @@ function EsportsRankCrest({
                 stroke="#FFFFFF"
                 strokeWidth="1"
               />
-              <polygon points="152,65 162,82 152,78 144,82" fill="url(#crestSteelLight)" />
-              <polygon points="188,65 196,82 188,78 178,82" fill="url(#crestSteelDark)" />
+              <polygon points="152,65 162,82 152,78 144,82" fill={steelLight} />
+              <polygon points="188,65 196,82 188,78 178,82" fill={steelDark} />
 
               {/* === 4. FACETED DIAMOND / JEWEL CENTER === */}
               {/* Outer Gem Bevel Housing */}
@@ -277,7 +320,7 @@ function EsportsRankCrest({
               />
 
               {/* Radial Gem Glow */}
-              <circle cx="170" cy="168" r="32" fill="url(#gemCoreGlow)" />
+              <circle cx="170" cy="168" r="32" fill={`url(#gemCoreGlow-${tier})`} />
 
               {/* Faceted Cut Gem: Top-Left (Brilliant Highlight) */}
               <polygon
@@ -292,12 +335,12 @@ function EsportsRankCrest({
               {/* Faceted Cut Gem: Bottom-Left (Specular Cut) */}
               <polygon
                 points="142,156 170,214 170,168"
-                fill="url(#crestSteelLight)"
+                fill={steelLight}
               />
               {/* Faceted Cut Gem: Bottom-Right (Deep Shadow Reflection) */}
               <polygon
                 points="198,156 170,214 170,168"
-                fill="url(#crestSteelDark)"
+                fill={steelDark}
               />
 
               {/* Inner Diamond Star Core Facet */}
@@ -314,6 +357,27 @@ function EsportsRankCrest({
           );
         })()}
       </svg>
+
+      {/* Ambient Rotating Conic Sheen across badge surface (8s linear loop for metal luster) */}
+      {showSheen && !isGhost && (
+        <div
+          className="absolute inset-2 sm:inset-4 rounded-full pointer-events-none mix-blend-overlay overflow-hidden opacity-35"
+          style={{
+            maskImage: 'radial-gradient(circle at center, black 65%, transparent 75%)',
+            WebkitMaskImage: 'radial-gradient(circle at center, black 65%, transparent 75%)',
+          }}
+        >
+          <div
+            className="w-full h-full rounded-full"
+            style={{
+              background:
+                'conic-gradient(from 0deg at 50% 50%, transparent 0deg, rgba(255,255,255,0.02) 40deg, rgba(255,255,255,0.4) 90deg, rgba(255,255,255,0.02) 140deg, transparent 180deg, rgba(255,255,255,0.25) 270deg, transparent 360deg)',
+              animation: 'conicSheenRotate 8s linear infinite',
+              willChange: 'transform',
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -323,15 +387,18 @@ export function RankSettlementModal({
   data,
   onContinue,
 }: RankSettlementModalProps) {
-  // Animation Phase State Machine
-  const [animPhase, setAnimPhase] = useState<'slam' | 'impact' | 'title' | 'progress' | 'ready'>('slam');
-  const [isShaking, setIsShaking] = useState(false);
-  const [showShockwave, setShowShockwave] = useState(false);
-  const [showTitle, setShowTitle] = useState(false);
-  const [showProgress, setShowProgress] = useState(false);
-  const [showContinue, setShowContinue] = useState(false);
+  // Accessibility: Prefers-reduced-motion check
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setPrefersReducedMotion(mediaQuery.matches);
+    const handler = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
+    mediaQuery.addEventListener('change', handler);
+    return () => mediaQuery.removeEventListener('change', handler);
+  }, []);
 
-  // RP Counting & Bar state
+  // Rank Details
   const prevRP = data?.prevRP ?? 0;
   const newRP = data?.newRP ?? 0;
   const totalGained = data?.breakdown.totalGained ?? 0;
@@ -340,16 +407,38 @@ export function RankSettlementModal({
   const taskBonus = data?.breakdown.taskBonus ?? 0;
   const durationSeconds = data?.breakdown.durationSeconds ?? 0;
 
+  const prevRankDetails = useMemo(() => getRankTier(prevRP), [prevRP]);
+  const newRankDetails = useMemo(() => getRankTier(newRP), [newRP]);
+  const isRankUp = newRankDetails.fullTitle !== prevRankDetails.fullTitle;
+
+  // Active crest details (morphs during tier up)
+  const [displayRank, setDisplayRank] = useState<RankTierDetails>(
+    isRankUp ? prevRankDetails : newRankDetails
+  );
+
+  // Stage & Feedback States
+  const [animPhase, setAnimPhase] = useState<'slam' | 'impact' | 'title' | 'progress' | 'ready'>('slam');
+  const [shakeOffset, setShakeOffset] = useState({ x: 0, y: 0 });
+  const [showShockwave, setShowShockwave] = useState(false);
+  const [showRadialFlash, setShowRadialFlash] = useState(false);
+  const [particles, setParticles] = useState<SparkParticle[]>([]);
+  const [showChromatic, setShowChromatic] = useState(false);
+  const [showTitle, setShowTitle] = useState(false);
+  const [showProgress, setShowProgress] = useState(false);
+  const [showContinue, setShowContinue] = useState(false);
+
+  // RP Bar & Counter States
   const [animatingRP, setAnimatingRP] = useState(prevRP);
   const [displayedGain, setDisplayedGain] = useState(0);
   const [progressRatio, setProgressRatio] = useState(0);
+  const [activeBarColor, setActiveBarColor] = useState(
+    isRankUp ? prevRankDetails.config.badgeAccent : newRankDetails.config.badgeAccent
+  );
+  const [isBarFlashing, setIsBarFlashing] = useState(false);
+  const [poppedSegment, setPoppedSegment] = useState<number | null>(null);
+  const [counterPopped, setCounterPopped] = useState(false);
 
-  // Get rank details for target tier
-  const newRankDetails = useMemo(() => getRankTier(newRP), [newRP]);
-  const prevRankDetails = useMemo(() => getRankTier(prevRP), [prevRP]);
-  const isRankUp = newRankDetails.fullTitle !== prevRankDetails.fullTitle;
-
-  // Format focus duration cleanly (e.g., 25m or 1h 15m)
+  // Format focus duration
   const formattedDuration = useMemo(() => {
     const minutes = Math.floor(durationSeconds / 60);
     const seconds = durationSeconds % 60;
@@ -364,12 +453,26 @@ export function RankSettlementModal({
     return `${seconds}s`;
   }, [durationSeconds]);
 
-  // 1. Keyboard listeners (Spacebar or Enter) for rapid dismissal
+  // Ambient backdrop floating motes (generated once)
+  const ambientMotes = useMemo(() => {
+    return Array.from({ length: 16 }).map((_, i) => ({
+      id: i,
+      left: `${(i * 6.25 + 3) % 96}%`,
+      top: `${(i * 13.7 + 10) % 85}%`,
+      size: 2 + (i % 3),
+      duration: 16 + (i % 6) * 2,
+      delay: (i * 1.3) % 8,
+      opacity: 0.12 + ((i % 4) * 0.06),
+    }));
+  }, []);
+
+  // Keyboard navigation (Spacebar or Enter to dismiss)
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === 'Space' || e.key === ' ' || e.code === 'Enter' || e.key === 'Enter') {
         e.preventDefault();
+        soundFx.resumeContext();
         onContinue();
       }
     };
@@ -377,135 +480,382 @@ export function RankSettlementModal({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onContinue]);
 
-  // 2. Realistic Weighted Descent Sequence & Sub-Bass Audio FX
+  // Main 5-Stage Cinematic Choreography
+  const animFrameRef = useRef<number | null>(null);
+  const shakeFrameRef = useRef<number | null>(null);
+
   useEffect(() => {
-    if (!isOpen) {
+    if (!isOpen || !data) {
       setAnimPhase('slam');
-      setIsShaking(false);
+      setShakeOffset({ x: 0, y: 0 });
       setShowShockwave(false);
+      setShowRadialFlash(false);
+      setParticles([]);
+      setShowChromatic(false);
       setShowTitle(false);
       setShowProgress(false);
       setShowContinue(false);
       setAnimatingRP(prevRP);
       setDisplayedGain(0);
       setProgressRatio(0);
+      setIsBarFlashing(false);
+      setPoppedSegment(null);
+      setCounterPopped(false);
+      setDisplayRank(isRankUp ? prevRankDetails : newRankDetails);
+      setActiveBarColor(isRankUp ? prevRankDetails.config.badgeAccent : newRankDetails.config.badgeAccent);
       return;
     }
 
-    // Reset initial numbers
-    const tierMin = newRankDetails.minRP;
-    const tierMax = newRankDetails.maxRP;
-    const initialInTier = Math.max(0, prevRP - tierMin);
-    const needed = Math.max(1, tierMax - tierMin);
-    setProgressRatio(Math.min(1, initialInTier / needed));
-    setAnimatingRP(prevRP);
-    setDisplayedGain(0);
+    // Attempt audio context resume on user screen opening gesture
+    soundFx.resumeContext();
+
+    // If prefers-reduced-motion, instantly show final resolved state
+    if (prefersReducedMotion) {
+      setAnimPhase('ready');
+      setDisplayRank(newRankDetails);
+      setActiveBarColor(newRankDetails.config.badgeAccent);
+      setAnimatingRP(newRP);
+      setDisplayedGain(totalGained);
+      const tierMin = newRankDetails.minRP;
+      const tierMax = newRankDetails.maxRP;
+      const finalInTier = Math.max(0, newRP - tierMin);
+      const needed = Math.max(1, tierMax - tierMin);
+      setProgressRatio(Math.min(1, finalInTier / needed));
+      setShowTitle(true);
+      setShowProgress(true);
+      setShowContinue(true);
+      return;
+    }
 
     const timers: NodeJS.Timeout[] = [];
 
-    // Phase 1: Weighted Crest Impact at 0.35s (350ms)
-    // Low-frequency sub-bass drop (110Hz -> 28Hz) & brief ground impact
+    // Initial setup for the active tier
+    const initialTier = isRankUp ? prevRankDetails : newRankDetails;
+    setDisplayRank(initialTier);
+    setActiveBarColor(initialTier.config.badgeAccent);
+
+    const initialTierMin = initialTier.minRP;
+    const initialTierMax = initialTier.maxRP;
+    const initialInTier = Math.max(0, prevRP - initialTierMin);
+    const initialNeeded = Math.max(1, initialTierMax - initialTierMin);
+    setProgressRatio(Math.min(1, initialInTier / initialNeeded));
+    setAnimatingRP(prevRP);
+    setDisplayedGain(0);
+
+    // ==========================================
+    // STAGE 1 -> 2: IMPACT MOMENT at ~0.35s (340ms)
+    // ==========================================
     timers.push(
       setTimeout(() => {
         setAnimPhase('impact');
-        setIsShaking(true);
         setShowShockwave(true);
+        setShowRadialFlash(true);
+        setShowChromatic(true);
+
+        // Deep multi-layered sub-bass audio impact (sweep + crack + sub body)
         soundFx.playSubBassImpact();
 
-        if (isRankUp) {
-          confetti({
-            particleCount: 80,
-            spread: 70,
-            origin: { y: 0.52 },
-            colors: [newRankDetails.config.badgeAccent, '#FFFFFF', '#CBD5E1'],
-          });
-        }
-      }, 350)
+        // Screen shake: decaying random offset (amplitude 14px -> 0 over 0.45s at ~60fps)
+        const shakeStart = performance.now();
+        const shakeDuration = 450;
+        const runShake = (now: number) => {
+          const elapsed = now - shakeStart;
+          const p = Math.min(1, elapsed / shakeDuration);
+          if (p < 1) {
+            const amp = 14 * Math.pow(1 - p, 2);
+            const x = (Math.random() * 2 - 1) * amp;
+            const y = (Math.random() * 2 - 1) * amp;
+            setShakeOffset({ x, y });
+            shakeFrameRef.current = requestAnimationFrame(runShake);
+          } else {
+            setShakeOffset({ x: 0, y: 0 });
+          }
+        };
+        shakeFrameRef.current = requestAnimationFrame(runShake);
+
+        // Generate 20 radial spark/shard particles emitted from crest center
+        const generatedParticles: SparkParticle[] = Array.from({ length: 20 }).map((_, i) => {
+          const angle = (i / 20) * 2 * Math.PI + (Math.random() - 0.5) * 0.35;
+          const dist = 80 + Math.random() * 140; // 80 - 220px
+          return {
+            id: i,
+            dx: Math.cos(angle) * dist,
+            dy: Math.sin(angle) * dist + 35, // Gravity fall offset
+            rot: Math.random() * 540 - 270,
+            size: 3 + Math.random() * 4,
+            opacity: 0.75 + Math.random() * 0.25,
+            color: (i % 3 === 0) ? '#FFFFFF' : initialTier.config.badgeAccent,
+          };
+        });
+        setParticles(generatedParticles);
+
+        // Radial flash unmount after 250ms
+        timers.push(setTimeout(() => setShowRadialFlash(false), 260));
+
+        // Chromatic aberration unmount after 300ms
+        timers.push(setTimeout(() => setShowChromatic(false), 310));
+
+        // Shockwave rings unmount after 1.1s
+        timers.push(setTimeout(() => setShowShockwave(false), 1100));
+
+        // Particles unmount after 950ms
+        timers.push(setTimeout(() => setParticles([]), 950));
+      }, 340)
     );
 
-    // End micro ground settle at 480ms
-    timers.push(
-      setTimeout(() => {
-        setIsShaking(false);
-      }, 480)
-    );
-
-    // Phase 2: Title Reveal at 0.5s (500ms) - Clean transition without arcade fanfare
+    // ==========================================
+    // STAGE 3: TEXT STAMP at 0.52s (520ms)
+    // ==========================================
     timers.push(
       setTimeout(() => {
         setShowTitle(true);
         setAnimPhase('title');
-      }, 500)
+      }, 520)
     );
 
-    // Phase 3: Smooth Linear RP Fill (0.8s - 2.0s) & Resonant 432Hz Chime upon completion
-    let animationFrameId: number;
+    // ==========================================
+    // STAGE 4: EARNED RP BAR PROGRESS at 0.85s (850ms)
+    // ==========================================
     timers.push(
       setTimeout(() => {
         setShowProgress(true);
         setAnimPhase('progress');
 
-        const startTime = performance.now();
-        const duration = 1200; // 1.2s smooth roll-up
-        let hasTriggeredChime = false;
+        const lastPoppedRef = { current: -1 };
 
-        const tick = (currentTime: number) => {
-          const elapsed = currentTime - startTime;
-          const progress = Math.min(1, elapsed / duration);
-          // Smooth cubic deceleration
-          const ease = 1 - Math.pow(1 - progress, 3);
+        if (!isRankUp) {
+          // Standard single tier fill from prevRP to newRP
+          const startTime = performance.now();
+          const duration = 1200; // 1.2s smooth roll-up
+          const tierMin = newRankDetails.minRP;
+          const tierMax = newRankDetails.maxRP;
+          const needed = Math.max(1, tierMax - tierMin);
+          const startRatio = Math.min(1, Math.max(0, prevRP - tierMin) / needed);
+          const targetRatio = Math.min(1, Math.max(0, newRP - tierMin) / needed);
 
-          const currentRP = Math.round(prevRP + (newRP - prevRP) * ease);
-          const currentGain = Math.round(totalGained * ease);
+          const runProgress = (now: number) => {
+            const elapsed = now - startTime;
+            const progress = Math.min(1, elapsed / duration);
+            const ease = cubicBezierEase(progress);
 
-          setAnimatingRP(currentRP);
-          setDisplayedGain(currentGain);
+            const curRP = Math.round(prevRP + (newRP - prevRP) * ease);
+            const curGain = Math.round(totalGained * ease);
+            const curRatio = startRatio + (targetRatio - startRatio) * ease;
 
-          const inTier = Math.max(0, currentRP - tierMin);
-          setProgressRatio(Math.min(1, inTier / needed));
+            setAnimatingRP(curRP);
+            setDisplayedGain(curGain);
+            setProgressRatio(curRatio);
 
-          if (progress < 1) {
-            animationFrameId = requestAnimationFrame(tick);
-          } else {
-            setAnimatingRP(newRP);
-            setDisplayedGain(totalGained);
-            const finalInTier = Math.max(0, newRP - tierMin);
-            setProgressRatio(Math.min(1, finalInTier / needed));
+            // Check segment pop (5 segments: 0.2 each)
+            const currentSegment = Math.floor(curRatio / 0.2);
+            if (currentSegment > lastPoppedRef.current && currentSegment < 5) {
+              lastPoppedRef.current = currentSegment;
+              setPoppedSegment(currentSegment);
+              soundFx.playSegmentTick(curRatio);
+              setTimeout(() => setPoppedSegment(null), 160);
+            }
 
-            // RP Fill Completion: Single warm resonant chime/overtone at 432Hz
-            if (!hasTriggeredChime) {
-              hasTriggeredChime = true;
+            if (progress < 1) {
+              animFrameRef.current = requestAnimationFrame(runProgress);
+            } else {
+              setAnimatingRP(newRP);
+              setDisplayedGain(totalGained);
+              setProgressRatio(targetRatio);
+
+              // Final tick: scale counter and play 432Hz completion chime
+              setCounterPopped(true);
+              setTimeout(() => setCounterPopped(false), 250);
               soundFx.playRankFillCompletion();
             }
-          }
-        };
+          };
 
-        animationFrameId = requestAnimationFrame(tick);
-      }, 800)
+          animFrameRef.current = requestAnimationFrame(runProgress);
+        } else {
+          // TIER-UP MULTI-PHASE SEQUENCE:
+          // 1. Fill previous tier from prevRP to 100% (prevRankDetails.maxRP)
+          const startTime = performance.now();
+          const durationStage1 = 700;
+          const pTierMin = prevRankDetails.minRP;
+          const pTierMax = prevRankDetails.maxRP;
+          const pNeeded = Math.max(1, pTierMax - pTierMin);
+          const pStartRatio = Math.min(1, Math.max(0, prevRP - pTierMin) / pNeeded);
+
+          const runStage1 = (now: number) => {
+            const elapsed = now - startTime;
+            const progress = Math.min(1, elapsed / durationStage1);
+            const ease = cubicBezierEase(progress);
+
+            const curRP = Math.round(prevRP + (pTierMax - prevRP) * ease);
+            const curGain = Math.round((pTierMax - prevRP) * ease);
+            const curRatio = pStartRatio + (1 - pStartRatio) * ease;
+
+            setAnimatingRP(curRP);
+            setDisplayedGain(curGain);
+            setProgressRatio(curRatio);
+
+            const currentSegment = Math.floor(curRatio / 0.2);
+            if (currentSegment > lastPoppedRef.current && currentSegment < 5) {
+              lastPoppedRef.current = currentSegment;
+              setPoppedSegment(currentSegment);
+              soundFx.playSegmentTick(curRatio);
+              setTimeout(() => setPoppedSegment(null), 160);
+            }
+
+            if (progress < 1) {
+              animFrameRef.current = requestAnimationFrame(runStage1);
+            } else {
+              // 2. Reached 100%! Pause 0.3s, flash bar white, play tier-up fanfare, and burst confetti
+              setProgressRatio(1);
+              setIsBarFlashing(true);
+              soundFx.playTierUpFanfare();
+
+              confetti({
+                particleCount: 90,
+                spread: 75,
+                origin: { y: 0.52 },
+                colors: [newRankDetails.config.badgeAccent, '#FFFFFF', '#CBD5E1'],
+              });
+
+              // 3. Morph/crossfade crest to new tier and switch active bar color
+              timers.push(
+                setTimeout(() => {
+                  setDisplayRank(newRankDetails);
+                  setActiveBarColor(newRankDetails.config.badgeAccent);
+                  setIsBarFlashing(false);
+                  setProgressRatio(0);
+                  lastPoppedRef.current = -1;
+
+                  // 4. Fill into NEW tier from minRP to newRP
+                  const startStage2 = performance.now();
+                  const durationStage2 = 700;
+                  const nTierMin = newRankDetails.minRP;
+                  const nTierMax = newRankDetails.maxRP;
+                  const nNeeded = Math.max(1, nTierMax - nTierMin);
+                  const targetRatio = Math.min(1, Math.max(0, newRP - nTierMin) / nNeeded);
+
+                  const runStage2 = (now2: number) => {
+                    const elapsed2 = now2 - startStage2;
+                    const progress2 = Math.min(1, elapsed2 / durationStage2);
+                    const ease2 = cubicBezierEase(progress2);
+
+                    const curRP2 = Math.round(nTierMin + (newRP - nTierMin) * ease2);
+                    const curGain2 = Math.round((pTierMax - prevRP) + (newRP - nTierMin) * ease2);
+                    const curRatio2 = targetRatio * ease2;
+
+                    setAnimatingRP(curRP2);
+                    setDisplayedGain(curGain2);
+                    setProgressRatio(curRatio2);
+
+                    const currentSegment2 = Math.floor(curRatio2 / 0.2);
+                    if (currentSegment2 > lastPoppedRef.current && currentSegment2 < 5) {
+                      lastPoppedRef.current = currentSegment2;
+                      setPoppedSegment(currentSegment2);
+                      soundFx.playSegmentTick(curRatio2);
+                      setTimeout(() => setPoppedSegment(null), 160);
+                    }
+
+                    if (progress2 < 1) {
+                      animFrameRef.current = requestAnimationFrame(runStage2);
+                    } else {
+                      setAnimatingRP(newRP);
+                      setDisplayedGain(totalGained);
+                      setProgressRatio(targetRatio);
+
+                      // Final tick completion chime
+                      setCounterPopped(true);
+                      setTimeout(() => setCounterPopped(false), 250);
+                      soundFx.playRankFillCompletion();
+                    }
+                  };
+
+                  animFrameRef.current = requestAnimationFrame(runStage2);
+                }, 320)
+              );
+            }
+          };
+
+          animFrameRef.current = requestAnimationFrame(runStage1);
+        }
+      }, 850)
     );
 
-    // Phase 4: Minimalist Action CTA at 2.1s (2100ms)
+    // ==========================================
+    // STAGE 5: CONTINUE BUTTON at 2.45s (or 2.65s for rank up)
+    // ==========================================
+    const continueDelay = isRankUp ? 2650 : 2350;
     timers.push(
       setTimeout(() => {
         setShowContinue(true);
         setAnimPhase('ready');
-      }, 2100)
+      }, continueDelay)
     );
 
     return () => {
       timers.forEach(clearTimeout);
-      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+      if (shakeFrameRef.current) cancelAnimationFrame(shakeFrameRef.current);
     };
-  }, [isOpen, prevRP, newRP, totalGained, isRankUp, newRankDetails]);
+  }, [isOpen, data, prevRP, newRP, totalGained, isRankUp, newRankDetails, prevRankDetails, prefersReducedMotion]);
 
   if (!isOpen || !data) return null;
 
-  const remainingRP = Math.max(0, newRankDetails.maxRP - newRP);
+  const remainingRP = Math.max(0, displayRank.maxRP - animatingRP);
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#080b12]/95 backdrop-blur-md flex flex-col items-center justify-center select-none overflow-hidden animate-in fade-in duration-300">
+    <div className="fixed inset-0 z-50 bg-[#06080F]/95 backdrop-blur-md flex flex-col items-center justify-center select-none overflow-hidden animate-in fade-in duration-300">
       
-      {/* Top-Left Academic Watermark */}
+      {/* 1. Backdrop Vignette: Darkening at screen edges to push focus to center */}
+      <div
+        className="absolute inset-0 pointer-events-none z-0"
+        style={{
+          background: 'radial-gradient(ellipse at center, transparent 35%, rgba(4,6,12,0.65) 75%, rgba(2,3,7,0.95) 100%)',
+        }}
+      />
+
+      {/* 2. Backdrop Radial Glow: Breathing opacity 0.5 <-> 0.75 on a 4s ease-in-out loop */}
+      <div
+        className="absolute inset-0 pointer-events-none z-0 transition-colors duration-700"
+        style={{
+          background: `radial-gradient(ellipse 65% 55% at 50% 36%, ${displayRank.config.glowColor}, rgba(6,8,15,0.98) 72%)`,
+          animation: prefersReducedMotion ? 'none' : 'ffBreatheGlow 4s ease-in-out infinite',
+          willChange: 'opacity, transform',
+        }}
+      />
+
+      {/* 3. Ambient Drifting Light Motes / Dust in backdrop (20s gentle loop) */}
+      {!prefersReducedMotion && (
+        <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+          {ambientMotes.map((mote) => (
+            <div
+              key={mote.id}
+              className="absolute rounded-full bg-white"
+              style={{
+                left: mote.left,
+                top: mote.top,
+                width: `${mote.size}px`,
+                height: `${mote.size}px`,
+                opacity: mote.opacity,
+                filter: 'blur(0.5px)',
+                animation: `floatMoteDrift ${mote.duration}s linear ${mote.delay}s infinite`,
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* 4. Fullscreen Radial Flash on landing impact (~0.35s, 0 -> 0.35 -> 0 over 0.25s) */}
+      {showRadialFlash && !prefersReducedMotion && (
+        <div
+          className="absolute inset-0 pointer-events-none z-10"
+          style={{
+            background: `radial-gradient(circle at 50% 36%, ${displayRank.config.badgeAccent}66 0%, ${displayRank.config.badgeAccent}22 45%, transparent 75%)`,
+            animation: 'radialFlashAnim 0.25s ease-out forwards',
+            willChange: 'opacity',
+          }}
+        />
+      )}
+
+      {/* Academic Brand Watermark */}
       <div className="absolute top-6 left-6 sm:top-8 sm:left-8 flex items-center gap-2.5 select-none pointer-events-none z-20">
         <div className="w-1.5 h-1.5 rounded-full bg-slate-400" />
         <span className="text-xs uppercase tracking-[0.25em] text-slate-400 font-semibold">
@@ -513,91 +863,213 @@ export function RankSettlementModal({
         </span>
       </div>
 
-      {/* Subtle Atmospheric Ambient Backlight */}
+      {/* 5. Main Container with Dedicated Screen-Shake Translation (Text remains crisp on separate layers) */}
       <div
-        className="absolute inset-0 pointer-events-none transition-all duration-1000"
+        className="relative z-10 w-full max-w-xl flex flex-col items-center text-center px-4"
         style={{
-          background: `radial-gradient(ellipse 60% 50% at 50% 36%, ${newRankDetails.config.glowColor}, rgba(8,11,18,0.98) 72%)`,
+          transform: `translate3d(${shakeOffset.x}px, ${shakeOffset.y}px, 0)`,
+          willChange: 'transform',
         }}
-      />
-
-      {/* Container with Deceleration & Subtle Impact Dynamics */}
-      <div
-        className={`relative z-10 w-full max-w-xl flex flex-col items-center text-center px-4 transition-transform duration-100 ${
-          isShaking ? 'translate-y-[2px] scale-y-[0.99] scale-x-[1.005]' : 'translate-y-0 scale-100'
-        }`}
       >
-        {/* Crest Section with Weighted Descent Animation & Expanding Shockwave */}
-        <div className="relative flex items-center justify-center my-3 sm:my-4">
-          
-          {/* Expanding Shockwave Ripple Ring (emitted on impact at 0.35s) */}
-          {showShockwave && (
-            <div
-              className="absolute w-56 h-56 sm:w-72 sm:h-72 rounded-full border border-white/20 pointer-events-none transition-all duration-700 ease-out"
-              style={{
-                boxShadow: `0 0 25px ${newRankDetails.config.badgeAccent}40`,
-                animation: 'ffSubtleShockwave 650ms cubic-bezier(0.16, 1, 0.3, 1) forwards',
-              }}
-            />
+        {/* ==========================================
+            CREST SECTION: Mass Slam, Wobble, Shockwaves, Particles & Chromatic Aberration
+            ========================================== */}
+        <div className="relative flex items-center justify-center my-2 sm:my-3">
+
+          {/* DUAL SHOCKWAVE RINGS (Triggered simultaneously at ~0.35s impact) */}
+          {showShockwave && !prefersReducedMotion && (
+            <>
+              {/* Ring 1: scale 0.2 -> 2.4 over 0.7s, border color = rank tier */}
+              <div
+                className="absolute w-56 h-56 sm:w-72 sm:h-72 rounded-full pointer-events-none"
+                style={{
+                  borderColor: displayRank.config.badgeAccent,
+                  boxShadow: `0 0 30px ${displayRank.config.badgeAccent}60`,
+                  animation: 'shockwaveRing1 0.7s cubic-bezier(0.1, 0.85, 0.25, 1) forwards',
+                  willChange: 'transform, opacity, border-width',
+                }}
+              />
+              {/* Ring 2: scale 0.2 -> 3.6 over 1.0s with 0.08s delay */}
+              <div
+                className="absolute w-56 h-56 sm:w-72 sm:h-72 rounded-full pointer-events-none"
+                style={{
+                  borderColor: displayRank.config.badgeAccent,
+                  boxShadow: `0 0 35px ${displayRank.config.badgeAccent}40`,
+                  animation: 'shockwaveRing2 1.0s cubic-bezier(0.1, 0.85, 0.25, 1) 0.08s forwards',
+                  willChange: 'transform, opacity, border-width',
+                }}
+              />
+            </>
           )}
 
-          {/* Soft Centered Radial Backlight */}
+          {/* RADIAL PARTICLE BURST: 20 Shards/Sparks falling with gravity over 0.9s */}
+          {particles.length > 0 && !prefersReducedMotion && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+              {particles.map((p) => (
+                <div
+                  key={p.id}
+                  className="absolute pointer-events-none"
+                  style={{
+                    width: `${p.size}px`,
+                    height: `${p.size * 1.5}px`,
+                    backgroundColor: p.color,
+                    boxShadow: `0 0 6px ${p.color}`,
+                    borderRadius: '1px',
+                    // Pass trajectory data via CSS variables for smooth GPU animation
+                    transform: 'translate(0, 0) scale(1) rotate(0deg)',
+                    animation: `particleBurstAnim 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards`,
+                    // Custom end coordinates
+                    ['--target-x' as string]: `${p.dx}px`,
+                    ['--target-y' as string]: `${p.dy}px`,
+                    ['--target-rot' as string]: `${p.rot}deg`,
+                    opacity: p.opacity,
+                    willChange: 'transform, opacity',
+                  }}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Soft Centered Ambient Backlight */}
           <div
-            className="absolute w-60 h-60 rounded-full blur-[80px] opacity-20 pointer-events-none transition-all duration-700"
-            style={{ backgroundColor: newRankDetails.config.badgeAccent }}
+            className="absolute w-64 h-64 rounded-full blur-[80px] opacity-25 pointer-events-none transition-all duration-700"
+            style={{ backgroundColor: displayRank.config.badgeAccent }}
           />
 
-          {/* Weighted Crest Descent Container (Physical deceleration with ground impact) */}
+          {/* CHROMATIC ABERRATION PULSE (Decaying red & cyan badge copies offset by 3px) */}
+          {showChromatic && !prefersReducedMotion && (
+            <>
+              {/* Cyan Copy (-3px X offset) */}
+              <div
+                className="absolute inset-0 flex items-center justify-center pointer-events-none mix-blend-screen opacity-70"
+                style={{
+                  animation: 'chromaticDecayCyan 0.3s ease-out forwards',
+                  willChange: 'transform, opacity',
+                }}
+              >
+                <EsportsRankCrest
+                  tier={displayRank.tier}
+                  details={displayRank}
+                  isGhost
+                  ghostColor="#00E5FF"
+                  showSheen={false}
+                />
+              </div>
+
+              {/* Red Copy (+3px X offset) */}
+              <div
+                className="absolute inset-0 flex items-center justify-center pointer-events-none mix-blend-screen opacity-70"
+                style={{
+                  animation: 'chromaticDecayRed 0.3s ease-out forwards',
+                  willChange: 'transform, opacity',
+                }}
+              >
+                <EsportsRankCrest
+                  tier={displayRank.tier}
+                  details={displayRank}
+                  isGhost
+                  ghostColor="#FF1744"
+                  showSheen={false}
+                />
+              </div>
+            </>
+          )}
+
+          {/* TWO-PHASE MASS SLAM & LANDING WOBBLE CONTAINER */}
+          {/* Outer Layer: Landing Wobble (damps out 2-3 degree rotation over 0.6s on landing) */}
           <div
-            className={`transform transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-              animPhase === 'slam'
-                ? 'translate-y-[-40px] scale-[1.08] opacity-0 blur-[2px]'
-                : 'translate-y-0 scale-100 opacity-100 blur-0'
-            }`}
+            className="relative"
+            style={{
+              animation: prefersReducedMotion ? 'none' : 'landingWobble 0.92s cubic-bezier(0.2, 0.8, 0.4, 1) forwards',
+              willChange: 'transform',
+            }}
           >
-            <EsportsRankCrest
-              tier={newRankDetails.tier}
-              details={newRankDetails}
-            />
+            {/* Inner Layer: Phase A (0-0.32s) scale 2.2->0.92, blur 12->0px + Phase B (0.32-0.52s) spring overshoot settle */}
+            <div
+              className="relative transition-all duration-300"
+              style={{
+                animation: prefersReducedMotion ? 'simpleFadeIn 0.3s ease-out forwards' : 'badgeMassSlam 0.52s linear forwards',
+                willChange: 'transform, opacity, filter',
+              }}
+            >
+              <EsportsRankCrest
+                tier={displayRank.tier}
+                details={displayRank}
+                showSheen={!prefersReducedMotion}
+              />
+            </div>
           </div>
         </div>
 
-        {/* Phase 2: Title & Rank Reveal (Refined Micro-Text & High-Contrast Typography) */}
+        {/* ==========================================
+            TEXT REVEAL: Stamped Typography & Rule Wipe
+            ========================================== */}
         <div
-          className={`flex flex-col items-center transition-all duration-300 transform ${
-            showTitle ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
+          className={`flex flex-col items-center transition-all duration-300 ${
+            showTitle ? 'opacity-100' : 'opacity-0 pointer-events-none'
           }`}
         >
-          {/* Header Status Label */}
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-xs uppercase tracking-[0.25em] text-slate-400 font-semibold">
+          {/* Header Status Label: Stamped letter-spacing 0.6em -> 0.15em with blur 6px -> 0 */}
+          <div className="flex items-center gap-2 mb-1.5">
+            <span
+              className="text-xs uppercase font-semibold text-slate-400 inline-block"
+              style={{
+                animation: prefersReducedMotion ? 'none' : 'headerLetterStamp 0.4s ease-out forwards',
+                willChange: 'letter-spacing, opacity, filter',
+              }}
+            >
               {isRankUp ? 'RANK ADVANCEMENT' : 'SESSION COMPLETE'}
             </span>
           </div>
 
-          {/* Geometric High-Contrast Sans-Serif Tier Title (e.g., "BRONZE II", "PLATINUM I") */}
-          <h1 className="text-3xl sm:text-5xl font-sans font-bold tracking-[0.18em] uppercase text-white drop-shadow-[0_4px_16px_rgba(0,0,0,0.6)]">
-            {newRankDetails.fullTitle}
+          {/* Geometric High-Contrast Rank Title: Individual Character Stagger (0.03s apart, scale 1.3 -> 1.0) */}
+          <h1 className="text-3xl sm:text-5xl font-sans font-bold tracking-[0.18em] uppercase text-white drop-shadow-[0_4px_16px_rgba(0,0,0,0.6)] flex items-center justify-center flex-wrap">
+            {displayRank.fullTitle.split('').map((char, idx) => (
+              <span
+                key={`${displayRank.fullTitle}-${idx}`}
+                className="inline-block"
+                style={{
+                  animation: prefersReducedMotion ? 'none' : `charStamp 0.22s cubic-bezier(0.16, 1, 0.3, 1) ${idx * 30}ms both`,
+                  willChange: 'transform, opacity',
+                  minWidth: char === ' ' ? '0.35em' : undefined,
+                }}
+              >
+                {char === ' ' ? '\u00A0' : char}
+              </span>
+            ))}
           </h1>
 
-          {/* Subtext: Milestone countdown */}
-          <p className="text-xs sm:text-sm font-medium tracking-wider text-slate-400 mt-2">
+          {/* Thin Horizontal Rule: Wipes outward from center in active tier color */}
+          <div
+            className="w-32 sm:w-48 h-[1.5px] mt-2 mb-2 rounded-full"
+            style={{
+              background: `linear-gradient(90deg, transparent, ${displayRank.config.badgeAccent}, transparent)`,
+              boxShadow: `0 0 10px ${displayRank.config.badgeAccent}80`,
+              animation: prefersReducedMotion ? 'none' : 'ruleWipeOut 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+              willChange: 'transform, opacity',
+            }}
+          />
+
+          {/* Milestone Countdown */}
+          <p className="text-xs sm:text-sm font-medium tracking-wider text-slate-400 mt-0.5">
             <span className="text-xs uppercase tracking-[0.25em] text-slate-400 font-semibold">NEXT MILESTONE: </span>
-            <span style={{ color: newRankDetails.config.badgeAccent }} className="font-semibold text-slate-200">
-              {newRankDetails.nextTierTitle}
+            <span style={{ color: displayRank.config.badgeAccent }} className="font-semibold text-slate-200">
+              {displayRank.nextTierTitle}
             </span>
-            <span className="text-slate-500 font-mono"> ({remainingRP} RP remaining)</span>
+            <span className="text-slate-500 font-mono"> ({remainingRP.toLocaleString()} RP remaining)</span>
           </p>
         </div>
 
-        {/* Phase 3: Segmented RP Fill & Sound (0.8s - 2.0s) */}
+        {/* ==========================================
+            EARNED RP BAR: Segmented Pops, Leading Edge Glow & Rolling Counter
+            ========================================== */}
         <div
-          className={`w-full max-w-xl transition-all duration-400 transform mt-5 ${
+          className={`w-full max-w-xl transition-all duration-400 mt-4 ${
             showProgress ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3 pointer-events-none'
           }`}
         >
           {/* Consolidated Session Stats Glassmorphic Strip */}
-          <div className="w-full mb-3.5 px-4 sm:px-5 py-2.5 rounded-lg bg-white/[0.03] border border-white/[0.08] backdrop-blur-md flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-xs text-slate-400">
+          <div className="w-full mb-3 px-4 sm:px-5 py-2.5 rounded-lg bg-white/[0.03] border border-white/[0.08] backdrop-blur-md flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-xs text-slate-400">
             <span className="flex items-center gap-1.5">
               <span className="text-slate-400">Focus Duration</span>
               <span className="font-medium text-slate-200">{formattedDuration}</span>
@@ -631,7 +1103,7 @@ export function RankSettlementModal({
             </span>
           </div>
 
-          {/* Progress Header */}
+          {/* Progress Header with Rolling RP Counter */}
           <div className="flex items-center justify-between text-xs font-semibold tracking-wider mb-2">
             <div className="flex items-center gap-2">
               <span className="text-xs uppercase tracking-[0.25em] text-slate-400 font-semibold">
@@ -641,33 +1113,89 @@ export function RankSettlementModal({
                 +{displayedGain} RP
               </div>
             </div>
-            <div className="font-mono text-xs text-slate-300">
+            
+            {/* Rolling Counter (pops 1.0 -> 1.15 -> 1.0 on final resolution tick) */}
+            <div
+              className={`font-mono text-xs text-slate-300 transition-transform duration-200 ${
+                counterPopped ? 'scale-115 text-white' : 'scale-100'
+              }`}
+              style={{ willChange: 'transform' }}
+            >
               <span className="text-white font-bold">{animatingRP.toLocaleString()}</span>
-              <span className="text-slate-500"> / {newRankDetails.maxRP.toLocaleString()} RP</span>
+              <span className="text-slate-500"> / {displayRank.maxRP.toLocaleString()} RP</span>
             </div>
           </div>
 
-          {/* Slim Linear Progress Bar */}
-          <div className="relative w-full h-2.5 sm:h-3 bg-white/[0.06] rounded-full p-[1px] border border-white/10 overflow-hidden shadow-inner">
+          {/* 5-SEGMENT EARNED PROGRESS BAR TRACK */}
+          <div
+            className={`relative w-full h-3 sm:h-3.5 bg-white/[0.06] rounded-full p-[1.5px] border border-white/10 overflow-hidden shadow-inner transition-colors duration-300 ${
+              isBarFlashing ? 'bg-white shadow-[0_0_20px_#ffffff]' : ''
+            }`}
+          >
+            {/* 5 Distinct Track Segments with Discrete Pop Animations */}
+            <div className="absolute inset-[1.5px] grid grid-cols-5 gap-[1.5px] pointer-events-none z-10">
+              {[0, 1, 2, 3, 4].map((segIdx) => (
+                <div
+                  key={segIdx}
+                  className={`h-full border-r border-black/30 last:border-r-0 transition-transform duration-150 ${
+                    poppedSegment === segIdx ? 'scale-y-[1.28] bg-white/20' : 'scale-y-100'
+                  }`}
+                  style={{ willChange: 'transform' }}
+                />
+              ))}
+            </div>
+
+            {/* Continuous Smooth Cubic Fill Bar */}
             <div
-              className="h-full rounded-full transition-all duration-75 relative"
+              className="h-full rounded-full transition-all duration-75 relative z-0"
               style={{
-                width: `${Math.min(100, Math.max(1, progressRatio * 100))}%`,
-                background: `linear-gradient(90deg, ${newRankDetails.config.badgeSecondary}, ${newRankDetails.config.badgeAccent})`,
+                width: `${Math.min(100, Math.max(0, progressRatio * 100))}%`,
+                background: `linear-gradient(90deg, ${displayRank.config.badgeSecondary}, ${activeBarColor})`,
+                boxShadow: `0 0 14px ${activeBarColor}80`,
+                willChange: 'width',
               }}
-            />
+            >
+              {/* Bright Leading-Edge Glow Highlight traveling at the fill head */}
+              {progressRatio > 0.01 && progressRatio < 0.999 && (
+                <div
+                  className="absolute right-0 top-0 bottom-0 w-2.5 rounded-full bg-white pointer-events-none"
+                  style={{
+                    boxShadow: `0 0 10px #FFFFFF, 0 0 20px ${activeBarColor}, 0 0 30px ${activeBarColor}`,
+                    transform: 'translateX(50%)',
+                    willChange: 'transform',
+                  }}
+                />
+              )}
+            </div>
+
+            {/* White Flash Overlay (Fired when crossing tier boundary at 100%) */}
+            {isBarFlashing && (
+              <div className="absolute inset-0 bg-white pointer-events-none z-20 animate-pulse" />
+            )}
           </div>
         </div>
 
-        {/* Phase 4: Continue CTA (Minimalist Action Button) */}
+        {/* ==========================================
+            STAGE 5: CONTINUE BUTTON (Slide up 12px + Pulsing Outline Glow)
+            ========================================== */}
         <div
-          className={`mt-6 sm:mt-8 flex flex-col items-center transition-all duration-300 transform ${
-            showContinue ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'
+          className={`mt-6 sm:mt-7 flex flex-col items-center transition-all duration-350 transform ${
+            showContinue
+              ? 'opacity-100 translate-y-0'
+              : 'opacity-0 translate-y-3 pointer-events-none'
           }`}
+          style={{ willChange: 'transform, opacity' }}
         >
           <button
-            onClick={onContinue}
-            className="px-8 py-3.5 rounded-md border border-white/20 bg-white/10 hover:bg-white/20 text-white text-xs tracking-widest font-semibold uppercase transition-all cursor-pointer select-none active:scale-[0.98] shadow-sm flex items-center gap-2"
+            onClick={() => {
+              soundFx.resumeContext();
+              onContinue();
+            }}
+            className="px-8 py-3.5 rounded-md border border-white/25 bg-white/10 hover:bg-white/20 text-white text-xs tracking-widest font-semibold uppercase transition-all cursor-pointer select-none active:scale-[0.98] shadow-sm flex items-center gap-2 relative"
+            style={{
+              animation: prefersReducedMotion ? 'none' : 'continuePulseOutline 2.4s ease-in-out infinite',
+              willChange: 'box-shadow',
+            }}
           >
             <span>CONTINUE</span>
             <ChevronRight className="w-3.5 h-3.5 text-slate-300 stroke-[2.5]" />
@@ -681,16 +1209,226 @@ export function RankSettlementModal({
 
       </div>
 
-      {/* Global Inline Keyframes for Subtle Shockwave */}
+      {/* ==========================================
+          GLOBAL CSS KEYFRAMES (High-Performance GPU Transitions)
+          ========================================== */}
       <style jsx>{`
-        @keyframes ffSubtleShockwave {
+        /* 1. BADGE MASS SLAM: Phase A (0-0.32s) + Phase B (0.32-0.52s) Spring Overshoot */
+        @keyframes badgeMassSlam {
           0% {
-            transform: scale(0.85);
+            transform: translateY(-40px) scale(2.2);
+            opacity: 0;
+            filter: blur(12px);
+            animation-timing-function: cubic-bezier(0.7, 0, 0.84, 0);
+          }
+          61.5% {
+            /* Landing moment at 0.32s */
+            transform: translateY(0px) scale(0.92);
+            opacity: 1;
+            filter: blur(0px);
+            animation-timing-function: ease-out;
+          }
+          80% {
+            /* Spring overshoot at ~0.42s matching stiffness 380, damping 14, mass 1.2 */
+            transform: translateY(0px) scale(1.028);
+            opacity: 1;
+            filter: blur(0px);
+          }
+          92% {
+            transform: translateY(0px) scale(0.995);
+            opacity: 1;
+            filter: blur(0px);
+          }
+          100% {
+            transform: translateY(0px) scale(1.0);
+            opacity: 1;
+            filter: blur(0px);
+          }
+        }
+
+        /* 2. LANDING WOBBLE: 2-3 degree rotation wobble on landing that damps out over 0.6s */
+        @keyframes landingWobble {
+          0%, 34% {
+            transform: rotate(0deg);
+          }
+          38% {
+            transform: rotate(2.8deg);
+          }
+          48% {
+            transform: rotate(-1.9deg);
+          }
+          62% {
+            transform: rotate(0.9deg);
+          }
+          78% {
+            transform: rotate(-0.35deg);
+          }
+          100% {
+            transform: rotate(0deg);
+          }
+        }
+
+        /* 3. DUAL SHOCKWAVE RINGS */
+        @keyframes shockwaveRing1 {
+          0% {
+            transform: scale(0.2);
+            opacity: 0.9;
+            border-width: 4px;
+          }
+          100% {
+            transform: scale(2.4);
+            opacity: 0;
+            border-width: 0px;
+          }
+        }
+
+        @keyframes shockwaveRing2 {
+          0% {
+            transform: scale(0.2);
+            opacity: 0.9;
+            border-width: 4px;
+          }
+          100% {
+            transform: scale(3.6);
+            opacity: 0;
+            border-width: 0px;
+          }
+        }
+
+        /* 4. RADIAL FLASH */
+        @keyframes radialFlashAnim {
+          0% {
+            opacity: 0;
+          }
+          28% {
+            opacity: 0.35;
+          }
+          100% {
+            opacity: 0;
+          }
+        }
+
+        /* 5. RADIAL SPARK / SHARD BURST (Trajectory driven by CSS variables) */
+        @keyframes particleBurstAnim {
+          0% {
+            transform: translate(0, 0) scale(1) rotate(0deg);
+            opacity: 1;
+          }
+          100% {
+            transform: translate(var(--target-x), var(--target-y)) scale(0.3) rotate(var(--target-rot));
+            opacity: 0;
+          }
+        }
+
+        /* 6. CHROMATIC ABERRATION DECAY */
+        @keyframes chromaticDecayCyan {
+          0% {
+            transform: translateX(-3px);
             opacity: 0.7;
           }
           100% {
-            transform: scale(1.55);
+            transform: translateX(0px);
             opacity: 0;
+          }
+        }
+
+        @keyframes chromaticDecayRed {
+          0% {
+            transform: translateX(3px);
+            opacity: 0.7;
+          }
+          100% {
+            transform: translateX(0px);
+            opacity: 0;
+          }
+        }
+
+        /* 7. TEXT STAMP ANIMATIONS */
+        @keyframes headerLetterStamp {
+          0% {
+            letter-spacing: 0.6em;
+            opacity: 0;
+            filter: blur(6px);
+          }
+          100% {
+            letter-spacing: 0.15em;
+            opacity: 1;
+            filter: blur(0px);
+          }
+        }
+
+        @keyframes charStamp {
+          0% {
+            transform: scale(1.3);
+            opacity: 0;
+          }
+          100% {
+            transform: scale(1.0);
+            opacity: 1;
+          }
+        }
+
+        @keyframes ruleWipeOut {
+          0% {
+            transform: scaleX(0);
+            opacity: 0;
+          }
+          100% {
+            transform: scaleX(1);
+            opacity: 0.85;
+          }
+        }
+
+        /* 8. AMBIENT LUSTER & MOTES */
+        @keyframes conicSheenRotate {
+          0% {
+            transform: rotate(0deg);
+          }
+          100% {
+            transform: rotate(360deg);
+          }
+        }
+
+        @keyframes ffBreatheGlow {
+          0%, 100% {
+            opacity: 0.5;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 0.75;
+            transform: scale(1.06);
+          }
+        }
+
+        @keyframes floatMoteDrift {
+          0% {
+            transform: translateY(0px) translateX(0px);
+          }
+          50% {
+            transform: translateY(-40px) translateX(15px);
+          }
+          100% {
+            transform: translateY(-80px) translateX(0px);
+          }
+        }
+
+        /* 9. CONTINUE BUTTON PULSING OUTLINE GLOW */
+        @keyframes continuePulseOutline {
+          0%, 100% {
+            box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15), 0 0 12px rgba(255, 255, 255, 0.05);
+          }
+          50% {
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.45), 0 0 22px rgba(255, 255, 255, 0.3);
+          }
+        }
+
+        /* 10. SIMPLE FADE IN (Reduced Motion Mode) */
+        @keyframes simpleFadeIn {
+          0% {
+            opacity: 0;
+          }
+          100% {
+            opacity: 1;
           }
         }
       `}</style>
