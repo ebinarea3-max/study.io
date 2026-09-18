@@ -49,12 +49,13 @@ export function UserAvatar({ src, name, size = 36, className = '' }: UserAvatarP
 
   const initials = getInitials(name);
   const gradient = getAvatarGradient(name);
+  const roundedClass = className.includes('rounded-') ? '' : 'rounded-xl';
 
   // If no source provided or loading failed, display the gradient initials avatar
   if (!src || hasError) {
     return (
       <div
-        className={`rounded-xl bg-gradient-to-tr ${gradient} flex items-center justify-center font-black text-slate-950 tracking-wider select-none shadow-md ${className}`}
+        className={`${roundedClass} bg-gradient-to-tr ${gradient} flex items-center justify-center font-black text-slate-950 tracking-wider select-none shadow-md ${className}`}
         style={{
           width: size,
           height: size,
@@ -74,8 +75,9 @@ export function UserAvatar({ src, name, size = 36, className = '' }: UserAvatarP
       width={size}
       height={size}
       loading="lazy"
+      referrerPolicy="no-referrer"
       onError={() => setHasError(true)}
-      className={`rounded-xl object-cover ${className}`}
+      className={`${roundedClass} object-cover ${className}`}
       style={{
         width: size,
         height: size,
