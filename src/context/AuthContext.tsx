@@ -206,15 +206,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // If currently on /auth/callback route, keep isLoading true while the server exchanges the code
+    if (typeof window !== 'undefined' && window.location.pathname.startsWith('/auth/callback')) {
+      return () => {
+        isSubscribed = false;
+      };
+    }
+
     // Check current active session in Supabase
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!isSubscribed) return;
       if (session?.user) {
         setIsAuthenticated(true);
         try { localStorage.setItem('studypulse_is_authenticated', 'true'); } catch {}
-        syncSupabaseProfile(supabase, session.user);
+        await syncSupabaseProfile(supabase, session.user);
       }
-      setIsLoading(false);
+      if (isSubscribed) {
+        setIsLoading(false);
+      }
+    }).catch(() => {
+      if (isSubscribed) {
+        setIsLoading(false);
+      }
     });
 
     // Listen to real-time auth changes (Sign In, Sign Out, Token Refresh)
@@ -235,7 +248,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           localStorage.removeItem('studypulse_active_user');
         } catch {}
       }
-      setIsLoading(false);
+      if (isSubscribed) {
+        setIsLoading(false);
+      }
     });
 
     return () => {
@@ -440,12 +455,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const { error } = await supabase.auth.signInWithOAuth({
           provider: 'google',
-          options: { redirectTo: typeof window !== 'undefined' ? window.location.origin : undefined },
+          options: {
+            redirectTo: typeof window !== 'undefined'
+              ? `${window.location.origin}/auth/callback?next=/dashboard`
+              : undefined,
+          },
         });
         if (error) throw error;
         return;
-      } catch {
-        // fallback
+      } catch (err) {
+        setIsLoading(false);
+        throw err;
       }
     }
 

@@ -12,7 +12,15 @@ interface AuthCardProps {
 
 export function AuthCard({ onSuccess, isModal = false }: AuthCardProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('error') === 'auth-failed') {
+        return 'Google sign-in could not be completed. Please try again.';
+      }
+    }
+    return '';
+  });
 
   const handleGoogleSignIn = async () => {
     try {
@@ -26,7 +34,7 @@ export function AuthCard({ onSuccess, isModal = false }: AuthCardProps) {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/`,
+          redirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
         },
       });
 
