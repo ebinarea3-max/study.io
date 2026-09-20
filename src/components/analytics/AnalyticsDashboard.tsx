@@ -211,35 +211,28 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
   const distSessions = useMemo(() => {
     const startTime = distRange.start.getTime();
     const endTime = distRange.end.getTime();
-    const subjectList = Array.isArray(subjects) ? subjects : [];
 
     return sessions.filter(s => {
-      // 3. Clean up legacy / dummy test sessions:
-      // For past session logs belonging to the current user that were saved with the title "General Focus",
-      // ignore them if they do not match any user-created subject so test artifacts no longer dominate the distribution view
-      const rawName = (s.subjectName || (s as any).subject_name || (s as any).subject?.name || (s as any).subject || '').trim();
-      const isLegacyGeneralFocus = rawName.toLowerCase() === 'general focus';
-      const hasSubjectMatch = subjectList.some(sub =>
-        sub && (
-          (s.subjectId && sub.id === s.subjectId) ||
-          (sub.name && sub.name.trim().toLowerCase() === rawName.toLowerCase())
-        )
-      );
-
-      if (isLegacyGeneralFocus && !hasSubjectMatch) {
+      // Exclude stray unassigned/dummy test sessions so donut chart resets cleanly
+      const rawName = (s.subjectName || (s as any).subject_name || (s as any).subject?.name || (s as any).subject || '').trim().toLowerCase();
+      if (rawName === 'unassigned' || rawName === 'general focus' || rawName === '' || (!s.subjectId && !rawName)) {
         return false;
       }
-
       const t = new Date(s.startTime).getTime();
       return t >= startTime && t <= endTime;
     });
-  }, [sessions, distRange, subjects]);
+  }, [sessions, distRange]);
 
   const distTotalSeconds = useMemo(() => {
     return distSessions.reduce((sum, s) => sum + s.durationSeconds, 0);
   }, [distSessions]);
 
   const distSubjectBreakdown = useMemo(() => {
+    // If total focus time today is 0 or only empty sessions exist, show clean empty state ("No focus records logged for this range")
+    if (distTotalSeconds <= 0 || distSessions.length === 0) {
+      return [];
+    }
+
     const map: Record<string, { name: string; seconds: number; color: string; sessionCount: number }> = {};
 
     // Get subjects list with local storage fallback if state hasn't populated yet
@@ -255,64 +248,51 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
             localStorage.getItem('studypulse_subjects');
           if (stored) {
             const parsed = JSON.parse(stored);
-            if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+            if (Array.isArray(parsed)) return parsed;
           }
         } catch {}
       }
       return [];
     })();
 
-    // 1. Initialize from all subjects in state (both active and archived)
-    subjectList.forEach(sub => {
-      if (!sub) return;
-      map[sub.id] = {
-        name: sub.name || 'Untitled Subject',
-        seconds: 0,
-        color: sub.color || '#10B981',
-        sessionCount: 0,
-      };
-    });
-
-    // 2. Aggregate each session into its subject, matching strictly by subject_id or subject_name
+    // Aggregate each session strictly by session.subject_name
     distSessions.forEach(s => {
-      const sessionSubjectName = (s.subjectName || (s as any).subject_name || (s as any).subject?.name || (s as any).subject || '').trim();
-      const sessionSubjectId = (s.subjectId || '').trim();
+      const sessionSubjectName = ((s as any).subject_name || s.subjectName || (s as any).subject?.name || (s as any).subject || '').trim();
+      const sessionSubjectId = (s.subjectId || (s as any).subject_id || '').trim();
+
+      if (!sessionSubjectName || sessionSubjectName.toLowerCase() === 'unassigned' || sessionSubjectName.toLowerCase() === 'general focus') {
+        return;
+      }
 
       const matchedSubject = subjectList.find(
         sub =>
           sub && (
             (sessionSubjectId && sub.id === sessionSubjectId) ||
-            (sessionSubjectName && sessionSubjectName.toLowerCase() !== 'unassigned' && (sub.name || '').trim().toLowerCase() === sessionSubjectName.toLowerCase())
+            (sub.name && sub.name.trim().toLowerCase() === sessionSubjectName.toLowerCase())
           )
       );
 
-      const subjectLabel =
-        matchedSubject?.name ||
-        (sessionSubjectName && sessionSubjectName.toLowerCase() !== 'general focus' && sessionSubjectName.toLowerCase() !== 'unassigned' ? sessionSubjectName : null) ||
-        (sessionSubjectId && subjectList.find(sub => sub.id === sessionSubjectId)?.name) ||
-        'Unassigned';
-
+      const subjectLabel = sessionSubjectName || matchedSubject?.name;
       const subjectColor =
-        matchedSubject?.color ||
         (s.subjectColor && s.subjectColor !== '#5A6B6A' ? s.subjectColor : null) ||
+        (s as any).subject_color ||
+        matchedSubject?.color ||
         '#10B981';
 
-      const groupKey = matchedSubject
-        ? matchedSubject.id
-        : sessionSubjectId !== ''
-        ? sessionSubjectId
-        : `name-${subjectLabel.trim().toLowerCase()}`;
+      const groupKey = subjectLabel.toLowerCase();
 
       if (map[groupKey]) {
         map[groupKey].seconds += s.durationSeconds;
         map[groupKey].sessionCount += 1;
-        if (matchedSubject) {
+        if (matchedSubject?.name) {
           map[groupKey].name = matchedSubject.name;
-          map[groupKey].color = matchedSubject.color || '#10B981';
+        }
+        if (matchedSubject?.color) {
+          map[groupKey].color = matchedSubject.color;
         }
       } else {
         map[groupKey] = {
-          name: subjectLabel,
+          name: matchedSubject?.name || subjectLabel,
           seconds: s.durationSeconds,
           color: subjectColor,
           sessionCount: 1,
@@ -330,7 +310,7 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
             : 0,
       }))
       .sort((a, b) => b.seconds - a.seconds);
-  }, [subjects, distSessions, distTotalSeconds]);
+  }, [distSessions, distTotalSeconds, subjects, user?.id]);
 
   // Distribution Stepper Navigation Handlers
   const handleDistStep = (direction: 'prev' | 'next') => {
@@ -696,7 +676,7 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
               </svg>
               <div className="text-xs font-bold text-slate-400">No Data</div>
               <p className="text-[11px] text-slate-500 max-w-xs">
-                No focus records logged for this {distTimeframe} range.
+                No focus records logged for this range.
               </p>
             </div>
           ) : (

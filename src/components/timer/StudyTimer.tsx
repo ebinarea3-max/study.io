@@ -33,7 +33,7 @@ import {
 import { soundFx } from '../../lib/audio';
 import confetti from 'canvas-confetti';
 import { getSupabase } from '../../lib/supabase';
-import { StudySession, TimerMode, UserProfile } from '../../types';
+import { StudySession, Subject, TimerMode, UserProfile } from '../../types';
 import { calculateFocusXP } from '../../lib/gamification';
 import { calculateSessionRP } from '../../lib/rankedSystem';
 import { getLocalDateString } from '../../lib/dateUtils';
@@ -121,14 +121,26 @@ export function StudyTimer() {
     return () => clearTimeout(timer);
   }, [subjectWarning]);
 
+  // Maintain a fresh ref to the currently active subject to prevent stale closures in timer callbacks
+  const activeSubjectRef = useRef<Subject | null>(selectedSubject);
+  useEffect(() => {
+    const sub =
+      (Array.isArray(subjects) ? subjects : []).find(s => s && s.id === selectedSubjectId && !s.is_archived) ||
+      selectedSubject ||
+      null;
+    activeSubjectRef.current = sub;
+  }, [selectedSubject, selectedSubjectId, subjects]);
+
   // Streamlined control handlers cleanly controlling synchronized StudyContext timer engine
   const handleStartSession = useCallback(() => {
     const activeSub =
+      activeSubjectRef.current ||
       activeSubjects.find(s => s && s.id === selectedSubjectId) ||
       selectedSubject ||
       null;
 
     if (!activeSub?.id) {
+      alert("Please choose a subject before recording focus time.");
       setSubjectWarning(true);
       if (activeSubjects.length === 0) {
         handleOpenSubjectManager();
@@ -165,8 +177,9 @@ export function StudyTimer() {
       ? Math.max(elapsedSeconds, Math.floor((Date.now() - startTimeRef.current) / 1000))
       : elapsedSeconds;
 
-    // Read the currently selected subject directly from state/storage:
+    // Direct, fresh capture of active subject via ref and state/storage
     let activeSubject =
+      activeSubjectRef.current ||
       activeSubjects.find(s => s && s.id === selectedSubjectId) ||
       subjectList.find(s => s && s.id === selectedSubjectId) ||
       selectedSubject ||
@@ -192,11 +205,18 @@ export function StudyTimer() {
       } catch {}
     }
 
-    const subjectName = activeSubject?.name || 'Unassigned';
-    const rawSubjectId = activeSubject?.id || null;
+    if (!activeSubject || !activeSubject.id) {
+      alert("Please choose a subject before recording focus time.");
+      setSubjectWarning(true);
+      setShowDropdown(true);
+      return;
+    }
+
+    const subjectName = activeSubject.name;
+    const rawSubjectId = activeSubject.id;
     const isUuid = (id?: string | null) => typeof id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
     const subjectId = isUuid(rawSubjectId) ? rawSubjectId : null;
-    const subjectColor = activeSubject?.color || '#10B981';
+    const subjectColor = activeSubject.color || '#10B981';
     const currentMode = timerMode || 'stopwatch';
     const notesToSave = currentNotes?.trim() || null;
     const now = new Date();
@@ -245,6 +265,7 @@ export function StudyTimer() {
           user_id: activeUser.id,
           subject_id: subjectId,
           subject_name: subjectName,
+          subject_color: subjectColor,
           subject: subjectName,
           duration_seconds: seconds,
           completed_at: endedAt,
@@ -265,6 +286,9 @@ export function StudyTimer() {
 
             if (res.error.code === 'PGRST204' || res.error.message?.includes('subject_name')) {
               delete fallbackPayload.subject_name;
+            }
+            if (res.error.code === 'PGRST204' || res.error.message?.includes('subject_color')) {
+              delete fallbackPayload.subject_color;
             }
             if (res.error.code === 'PGRST204' || res.error.message?.includes('completed_at')) {
               delete fallbackPayload.completed_at;

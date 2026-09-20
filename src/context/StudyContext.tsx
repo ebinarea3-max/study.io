@@ -254,16 +254,13 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         if (saved) {
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed)) {
-            return parsed.map((s: any) =>
-              s.subjectName === 'General Focus' || s.subject === 'General Focus'
-                ? {
-                    ...s,
-                    subjectName: 'Unassigned',
-                    subject_name: 'Unassigned',
-                    subjectColor: s.subjectColor === '#5A6B6A' ? '#10B981' : (s.subjectColor || '#10B981'),
-                  }
-                : s
-            );
+            // Delete / purge stray 'Unassigned' or 'General Focus' dummy test sessions so the donut chart resets cleanly
+            const cleaned = parsed.filter((s: any) => {
+              const name = (s.subjectName || s.subject_name || s.subject?.name || s.subject || '').trim().toLowerCase();
+              return name !== 'unassigned' && name !== 'general focus' && name !== '' && s.subjectId && s.subjectId !== '';
+            });
+            localStorage.setItem('studypulse_sessions', JSON.stringify(cleaned));
+            return cleaned;
           }
         }
       } catch {}
@@ -652,18 +649,13 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       if (savedSessions) {
         const parsedSessions: StudySession[] = JSON.parse(savedSessions);
         if (Array.isArray(parsedSessions)) {
-          const cleanedSessions = parsedSessions.map(s => {
-            if (s.subjectName === 'General Focus' || (s as any).subject === 'General Focus') {
-              return {
-                ...s,
-                subjectName: 'Unassigned',
-                subject_name: 'Unassigned',
-                subjectColor: s.subjectColor === '#5A6B6A' ? '#10B981' : (s.subjectColor || '#10B981'),
-              };
-            }
-            return s;
+          // Delete / purge stray 'Unassigned' or 'General Focus' dummy test sessions so the donut chart resets cleanly
+          const cleanedSessions = parsedSessions.filter(s => {
+            const name = (s.subjectName || (s as any).subject_name || (s as any).subject?.name || (s as any).subject || '').trim().toLowerCase();
+            return name !== 'unassigned' && name !== 'general focus' && name !== '' && s.subjectId && s.subjectId !== '';
           });
           setSessions(cleanedSessions);
+          localStorage.setItem('studypulse_sessions', JSON.stringify(cleanedSessions));
         }
       }
 
@@ -763,6 +755,17 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         const { data: { user: authUser } } = await supabase.auth.getUser();
         const activeUserId = authUser?.id || user.id;
 
+        // Clean up stray 'Unassigned' test sessions from Supabase for this user
+        try {
+          await supabase
+            .from('study_sessions')
+            .delete()
+            .eq('user_id', activeUserId)
+            .or('subject.eq.Unassigned,subject.eq.General Focus,subject.is.null,subject_id.is.null');
+        } catch (delErr) {
+          console.warn("Note: delete stray unassigned sessions query:", delErr);
+        }
+
         const { data: dbSessions, error: sessError } = await supabase
           .from('study_sessions')
           .select('*, subjects(name, color)')
@@ -772,7 +775,12 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         if (sessError) {
           console.error("Failed to fetch initial study sessions:", sessError);
         } else if (dbSessions) {
-          const mappedSessions: StudySession[] = dbSessions.map(s => {
+          // Exclude stray unassigned sessions
+          const validDbSessions = dbSessions.filter(s => {
+            const rawName = (s.subject_name || s.subject || s.subjects?.name || '').trim().toLowerCase();
+            return rawName !== 'unassigned' && rawName !== 'general focus' && rawName !== '' && Boolean(s.subject_id);
+          });
+          const mappedSessions: StudySession[] = validDbSessions.map(s => {
             const subjectList = Array.isArray(subjects) ? subjects : [];
             const localSub = subjectList.find(sub => sub && sub.id === s.subject_id);
             const resolvedName = localSub?.name || s.subject_name || s.subjects?.name || (s.subject && s.subject !== 'General Focus' ? s.subject : null) || 'Unassigned';
@@ -955,6 +963,24 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       const targetUserId = authUser?.id || currentUser.id;
       if (!targetUserId || targetUserId.startsWith('user-scholar-')) return;
 
+      // Clean up stray 'Unassigned' test sessions from Supabase for this user
+      try {
+        await supabase
+          .from('study_sessions')
+          .delete()
+          .eq('user_id', targetUserId)
+          .or('subject.eq.Unassigned,subject.eq.General Focus,subject.is.null,subject_id.is.null');
+      } catch (delErr) {
+        console.warn("Note: delete stray unassigned sessions query:", delErr);
+      }
+      try {
+        await supabase
+          .from('study_sessions')
+          .delete()
+          .eq('user_id', targetUserId)
+          .eq('subject_name', 'Unassigned');
+      } catch {}
+
       const { data: dbSessions, error } = await supabase
         .from('study_sessions')
         .select('*, subjects(name, color)')
@@ -967,7 +993,11 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       }
 
       if (dbSessions) {
-        const mappedSessions: StudySession[] = dbSessions.map(s => {
+        const validDbSessions = dbSessions.filter(s => {
+          const rawName = (s.subject_name || s.subject || s.subjects?.name || '').trim().toLowerCase();
+          return rawName !== 'unassigned' && rawName !== 'general focus' && rawName !== '' && Boolean(s.subject_id);
+        });
+        const mappedSessions: StudySession[] = validDbSessions.map(s => {
           const subjectList = Array.isArray(subjects) ? subjects : [];
           const localSub = subjectList.find(sub => sub && sub.id === s.subject_id);
           const resolvedName = localSub?.name || s.subject_name || s.subjects?.name || (s.subject && s.subject !== 'General Focus' ? s.subject : null) || 'Unassigned';
@@ -1332,7 +1362,11 @@ export function StudyProvider({ children }: { children: ReactNode }) {
   // Instantly add a session and sync metrics, Daily Overview, and Analytics
   const addSession = useCallback((newSession: StudySession) => {
     setSessions(prev => {
-      const filtered = prev.filter(s => s.id !== newSession.id);
+      const filtered = prev.filter(s => {
+        if (s.id === newSession.id) return false;
+        const name = (s.subjectName || (s as any).subject_name || (s as any).subject?.name || (s as any).subject || '').trim().toLowerCase();
+        return name !== 'unassigned' && name !== 'general focus' && name !== '' && s.subjectId && s.subjectId !== '';
+      });
       const updated = [newSession, ...filtered];
       try {
         localStorage.setItem('studypulse_sessions', JSON.stringify(updated));
@@ -1349,16 +1383,24 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     });
   }, [updateProfile]);
 
+  // Maintain fresh ref to active subject to eliminate stale closures
+  const activeSubjectRef = useRef<Subject | null>(selectedSubject);
+  useEffect(() => {
+    const sub =
+      (Array.isArray(subjects) ? subjects : []).find(s => s && s.id === selectedSubjectId && !s.is_archived) ||
+      selectedSubject ||
+      null;
+    activeSubjectRef.current = sub;
+  }, [selectedSubject, selectedSubjectId, subjects]);
+
   // Core helper to persist a session record to Supabase, update overview stats, and trigger Free Fire settlement
   const persistCompletedSession = useCallback(async (secondsToSave: number, notesOverride?: string) => {
     if (secondsToSave <= 0) return false;
 
-    const now = new Date();
-    const endedAt = now.toISOString();
-    const startedAt = (sessionStartTimeRef.current || new Date(now.getTime() - secondsToSave * 1000)).toISOString();
     const subjectList = Array.isArray(subjects) ? subjects : [];
     let activeSubject =
-      subjectList.find(s => s && s.id === selectedSubjectId) ||
+      activeSubjectRef.current ||
+      subjectList.find(s => s && s.id === selectedSubjectId && !s.is_archived) ||
       selectedSubject ||
       null;
 
@@ -1382,10 +1424,22 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       } catch {}
     }
 
-    const subjectName = activeSubject?.name || 'Unassigned';
-    const rawSubjectId = activeSubject?.id || null;
-    const subjectId = rawSubjectId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawSubjectId) ? rawSubjectId : null;
-    const subjectColor = activeSubject?.color || '#10B981';
+    if (!activeSubject || !activeSubject.id) {
+      if (typeof window !== 'undefined') {
+        alert("Please choose a subject before recording focus time.");
+      }
+      console.warn("persistCompletedSession: No active subject selected. Recording aborted.");
+      return false;
+    }
+
+    const now = new Date();
+    const endedAt = now.toISOString();
+    const startedAt = (sessionStartTimeRef.current || new Date(now.getTime() - secondsToSave * 1000)).toISOString();
+    const subjectName = activeSubject.name;
+    const rawSubjectId = activeSubject.id;
+    const isUuid = (id?: string | null) => typeof id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    const subjectId = isUuid(rawSubjectId) ? rawSubjectId : null;
+    const subjectColor = activeSubject.color || '#10B981';
     const notesToSave = notesOverride !== undefined ? notesOverride : currentNotes;
     const currentMode = timerMode || 'pomodoro';
     const currentUser = userRef.current;
@@ -1411,6 +1465,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         user_id: activeUser.id,
         subject_id: subjectId,
         subject_name: subjectName,
+        subject_color: subjectColor,
         subject: subjectName,
         duration_seconds: secondsToSave,
         completed_at: endedAt,
@@ -1430,6 +1485,9 @@ export function StudyProvider({ children }: { children: ReactNode }) {
           const fallbackPayload: Record<string, any> = { ...insertPayload };
           if (insertResponse.error.code === 'PGRST204' || insertResponse.error.message?.includes('subject_name')) {
             delete fallbackPayload.subject_name;
+          }
+          if (insertResponse.error.code === 'PGRST204' || insertResponse.error.message?.includes('subject_color')) {
+            delete fallbackPayload.subject_color;
           }
           if (insertResponse.error.code === 'PGRST204' || insertResponse.error.message?.includes('completed_at')) {
             delete fallbackPayload.completed_at;

@@ -74,6 +74,10 @@ export function FocusModeModal() {
 
   const handleStopAndSave = async () => {
     if (isSaving) return;
+    if (!selectedSubject) {
+      alert("Please choose a subject before recording focus time.");
+      return;
+    }
     setIsSaving(true);
     try {
       await stopTimer();
