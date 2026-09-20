@@ -13,11 +13,13 @@ import {
   AlertTriangle,
   Loader2,
   Trash2,
+  Smartphone,
 } from 'lucide-react';
 import { soundFx } from '../../lib/audio';
 import { useAuth } from '../../context/AuthContext';
 import { useStudy } from '../../context/StudyContext';
 import { exportDataAsJSON, exportSessionsAsCSV } from '../../lib/exportData';
+import { InstallAppButton } from './InstallAppButton';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -126,6 +128,20 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
               <span>Test Chimes</span>
             </button>
+          </div>
+
+          {/* Section: Progressive Web App Installation */}
+          <div className="p-4 rounded-2xl bg-neutral-900/40 border border-white/[0.06] flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 flex-shrink-0">
+                <Smartphone className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="text-xs font-bold text-white tracking-tight">App Installation (PWA)</div>
+                <div className="text-[11px] text-neutral-400">Install study.io on your device for standalone distraction-free focus</div>
+              </div>
+            </div>
+            <InstallAppButton variant="settings" />
           </div>
 
           {/* Section 3: Export Lifetime Data (CSV / JSON) */}

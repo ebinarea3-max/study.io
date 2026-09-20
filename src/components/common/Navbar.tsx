@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { UserAvatar } from './UserAvatar';
 import { getRankTier } from '../../lib/rankedSystem';
+import { InstallAppButton } from './InstallAppButton';
 
 interface NavbarProps {
   activeTab: 'timer' | 'analytics';
@@ -205,6 +206,9 @@ export function Navbar({
 
         {/* Right Action Bar */}
         <div className="flex items-center gap-1.5 sm:gap-3">
+          {/* Subtle PWA Install Action */}
+          <InstallAppButton variant="nav" />
+
           {/* Sign In Button (if not authenticated) */}
           {!isAuthenticated ? (
             <Link
