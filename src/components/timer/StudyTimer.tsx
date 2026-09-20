@@ -160,8 +160,10 @@ export function StudyTimer() {
       ? Math.max(elapsedSeconds, Math.floor((Date.now() - startTimeRef.current) / 1000))
       : elapsedSeconds;
     const activeSubject = selectedSubject;
-    const subjectName = (typeof activeSubject === 'string' ? activeSubject : activeSubject?.name) || 'General Focus';
-    const subjectId = activeSubject?.id;
+    const subjectName = (typeof activeSubject === 'string' ? activeSubject : activeSubject?.name) || 'Unassigned';
+    const rawSubjectId = activeSubject?.id || null;
+    const isUuid = (id?: string | null) => typeof id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    const subjectId = isUuid(rawSubjectId) ? rawSubjectId : null;
     const subjectColor = activeSubject?.color || '#10B981';
     const currentMode = timerMode || 'stopwatch';
     const notesToSave = currentNotes?.trim() || null;
@@ -207,10 +209,13 @@ export function StudyTimer() {
       let insertedRecordId: string | null = null;
 
       if (supabase && activeUser?.id) {
-        const insertPayload: Record<string, any> = {
+        const sessionPayload: Record<string, any> = {
           user_id: activeUser.id,
+          subject_id: subjectId,
+          subject_name: subjectName,
           subject: subjectName,
           duration_seconds: seconds,
+          completed_at: endedAt,
           mode: currentMode,
           created_at: endedAt,
           started_at: startedAt,
@@ -218,32 +223,39 @@ export function StudyTimer() {
           notes: notesToSave,
         };
 
-        if (subjectId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(subjectId)) {
-          insertPayload.subject_id = subjectId;
-        }
-
         try {
-          let res = await supabase.from('study_sessions').insert(insertPayload).select();
+          let res = await supabase.from('study_sessions').insert(sessionPayload).select();
 
-          // Schema fallback 1: If 'subject' column is not in schema, retry without 'subject'
-          if (res.error && (res.error.code === 'PGRST204' || res.error.message?.includes('subject'))) {
-            const fallbackPayload: Record<string, any> = { ...insertPayload };
-            delete fallbackPayload.subject;
-            res = await supabase.from('study_sessions').insert(fallbackPayload).select();
-          }
+          // Graceful fallback for schema variations
+          if (res.error) {
+            console.warn('Initial session insert failed, attempting fallback schema payload:', res.error);
+            const fallbackPayload: Record<string, any> = { ...sessionPayload };
 
-          // Schema fallback 2: If 'duration_seconds' is missing, retry with 'duration'
-          if (res.error && (res.error.code === 'PGRST204' || res.error.message?.includes('duration_seconds'))) {
-            const fallbackPayload: Record<string, any> = { ...insertPayload, duration: seconds };
-            delete fallbackPayload.duration_seconds;
-            res = await supabase.from('study_sessions').insert(fallbackPayload).select();
-          }
+            if (res.error.code === 'PGRST204' || res.error.message?.includes('subject_name')) {
+              delete fallbackPayload.subject_name;
+            }
+            if (res.error.code === 'PGRST204' || res.error.message?.includes('completed_at')) {
+              delete fallbackPayload.completed_at;
+            }
+            if (res.error.code === 'PGRST204' || (res.error.message?.includes('subject') && !res.error.message?.includes('subject_id'))) {
+              delete fallbackPayload.subject;
+            }
 
-          // Schema fallback 3: If 'duration' is missing, retry with 'seconds'
-          if (res.error && (res.error.code === 'PGRST204' || res.error.message?.includes('duration'))) {
-            const fallbackPayload: Record<string, any> = { ...insertPayload, seconds: seconds };
-            delete fallbackPayload.duration;
             res = await supabase.from('study_sessions').insert(fallbackPayload).select();
+
+            // Schema fallback 2: If 'duration_seconds' is missing, retry with 'duration'
+            if (res.error && (res.error.code === 'PGRST204' || res.error.message?.includes('duration_seconds'))) {
+              delete fallbackPayload.duration_seconds;
+              fallbackPayload.duration = seconds;
+              res = await supabase.from('study_sessions').insert(fallbackPayload).select();
+            }
+
+            // Schema fallback 3: If 'duration' is missing, retry with 'seconds'
+            if (res.error && (res.error.code === 'PGRST204' || res.error.message?.includes('duration'))) {
+              delete fallbackPayload.duration;
+              fallbackPayload.seconds = seconds;
+              res = await supabase.from('study_sessions').insert(fallbackPayload).select();
+            }
           }
 
           if (res.error) {
@@ -268,9 +280,10 @@ export function StudyTimer() {
           userId: activeUser?.id || user?.id || 'guest',
           userName: user?.displayName || 'Scholar',
           userAvatar: user?.avatarUrl,
-          subjectId: subjectId || '',
+          subjectId: rawSubjectId || '',
           subjectName: subjectName,
           subjectColor: subjectColor,
+          subject_name: subjectName,
           startTime: startedAt,
           endTime: endedAt,
           durationSeconds: seconds,

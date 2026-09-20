@@ -18,6 +18,8 @@ export type StudySession = {
   subjectId: string;
   subjectName: string;
   subjectColor: string;
+  subject_name?: string;
+  subject?: any;
   startTime: string; // ISO string
   endTime: string;   // ISO string
   durationSeconds: number;

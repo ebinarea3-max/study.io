@@ -205,7 +205,21 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     if (typeof window !== 'undefined') {
       try {
         const saved = localStorage.getItem('studypulse_sessions');
-        if (saved) return JSON.parse(saved);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) {
+            return parsed.map((s: any) =>
+              s.subjectName === 'General Focus' || s.subject === 'General Focus'
+                ? {
+                    ...s,
+                    subjectName: 'Unassigned',
+                    subject_name: 'Unassigned',
+                    subjectColor: s.subjectColor === '#5A6B6A' ? '#10B981' : (s.subjectColor || '#10B981'),
+                  }
+                : s
+            );
+          }
+        }
       } catch {}
     }
     return [];
@@ -587,7 +601,20 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       const savedSessions = localStorage.getItem('studypulse_sessions');
       if (savedSessions) {
         const parsedSessions: StudySession[] = JSON.parse(savedSessions);
-        setSessions(parsedSessions);
+        if (Array.isArray(parsedSessions)) {
+          const cleanedSessions = parsedSessions.map(s => {
+            if (s.subjectName === 'General Focus' || (s as any).subject === 'General Focus') {
+              return {
+                ...s,
+                subjectName: 'Unassigned',
+                subject_name: 'Unassigned',
+                subjectColor: s.subjectColor === '#5A6B6A' ? '#10B981' : (s.subjectColor || '#10B981'),
+              };
+            }
+            return s;
+          });
+          setSessions(cleanedSessions);
+        }
       }
 
       const savedTodos = localStorage.getItem('studypulse_todos');
@@ -664,14 +691,18 @@ export function StudyProvider({ children }: { children: ReactNode }) {
           const mappedSessions: StudySession[] = dbSessions.map(s => {
             const subjectList = Array.isArray(subjects) ? subjects : [];
             const localSub = subjectList.find(sub => sub && sub.id === s.subject_id);
+            const resolvedName = localSub?.name || s.subject_name || s.subjects?.name || (s.subject && s.subject !== 'General Focus' ? s.subject : null) || 'Unassigned';
+            const resolvedColor = localSub?.color || s.subjects?.color || '#10B981';
             return {
               id: s.id,
               userId: s.user_id,
               userName: user.displayName,
               userAvatar: user.avatarUrl,
               subjectId: s.subject_id || '',
-              subjectName: s.subjects?.name || s.subject || localSub?.name || 'General Focus',
-              subjectColor: s.subjects?.color || localSub?.color || '#10B981',
+              subjectName: resolvedName,
+              subjectColor: resolvedColor,
+              subject_name: resolvedName,
+              subject: s.subjects || s.subject,
               startTime: s.started_at,
               endTime: s.ended_at,
               durationSeconds: s.duration_seconds,
@@ -850,14 +881,18 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         const mappedSessions: StudySession[] = dbSessions.map(s => {
           const subjectList = Array.isArray(subjects) ? subjects : [];
           const localSub = subjectList.find(sub => sub && sub.id === s.subject_id);
+          const resolvedName = localSub?.name || s.subject_name || s.subjects?.name || (s.subject && s.subject !== 'General Focus' ? s.subject : null) || 'Unassigned';
+          const resolvedColor = localSub?.color || s.subjects?.color || '#10B981';
           return {
             id: s.id,
             userId: s.user_id,
             userName: currentUser.displayName,
             userAvatar: currentUser.avatarUrl,
             subjectId: s.subject_id || '',
-            subjectName: s.subjects?.name || s.subject || localSub?.name || 'General Focus',
-            subjectColor: s.subjects?.color || localSub?.color || '#10B981',
+            subjectName: resolvedName,
+            subjectColor: resolvedColor,
+            subject_name: resolvedName,
+            subject: s.subjects || s.subject,
             startTime: s.started_at,
             endTime: s.ended_at,
             durationSeconds: s.duration_seconds ?? s.duration ?? s.seconds ?? 0,
@@ -940,14 +975,18 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       subjectIdToSave = targetSub!.id.trim();
     }
 
+    const subjectNameToSave = sessionData.subjectName || targetSub?.name || 'Unassigned';
+    const subjectColorToSave = sessionData.subjectColor || targetSub?.color || '#10B981';
+
     const newLocalSession: StudySession = {
       id: `sess-${Date.now()}`,
       userId: user.id,
       userName: user.displayName,
       userAvatar: user.avatarUrl,
       subjectId: subjectIdToSave || targetSub?.id || '',
-      subjectName: sessionData.subjectName || targetSub?.name || 'General Focus',
-      subjectColor: sessionData.subjectColor || targetSub?.color || '#10B981',
+      subjectName: subjectNameToSave,
+      subjectColor: subjectColorToSave,
+      subject_name: subjectNameToSave,
       startTime: sessionData.startTime,
       endTime: sessionData.endTime,
       durationSeconds: durationInt,
@@ -987,12 +1026,14 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       const payload: Record<string, any> = {
         user_id: authUserId,
         subject_id: subjectIdToSave,
+        subject_name: subjectNameToSave,
+        subject: subjectNameToSave,
         duration_seconds: durationInt,
+        completed_at: sessionData.endTime || new Date().toISOString(),
         started_at: sessionData.startTime,
         ended_at: sessionData.endTime,
         notes: sessionData.notes && sessionData.notes.trim().length > 0 ? sessionData.notes.trim() : null,
         mode: sessionData.mode || timerMode,
-        subject: sessionData.subjectName || targetSub?.name || 'General Focus',
       };
 
       let insertRes = await supabase
@@ -1000,9 +1041,17 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         .insert(payload)
         .select();
 
-      if (insertRes.error && (insertRes.error.code === 'PGRST204' || insertRes.error.message?.includes('subject'))) {
+      if (insertRes.error && (insertRes.error.code === 'PGRST204' || insertRes.error.message?.includes('subject_name') || insertRes.error.message?.includes('completed_at') || insertRes.error.message?.includes('subject'))) {
         const fallback = { ...payload };
-        delete fallback.subject;
+        if (insertRes.error.code === 'PGRST204' || insertRes.error.message?.includes('subject_name')) {
+          delete fallback.subject_name;
+        }
+        if (insertRes.error.code === 'PGRST204' || insertRes.error.message?.includes('completed_at')) {
+          delete fallback.completed_at;
+        }
+        if (insertRes.error.code === 'PGRST204' || (insertRes.error.message?.includes('subject') && !insertRes.error.message?.includes('subject_id'))) {
+          delete fallback.subject;
+        }
         insertRes = await supabase.from('study_sessions').insert(fallback).select();
       }
 
@@ -1046,14 +1095,18 @@ export function StudyProvider({ children }: { children: ReactNode }) {
             return dbSessions.map(s => {
               const subjectList = Array.isArray(subjects) ? subjects : [];
               const localSub = subjectList.find(sub => sub && sub.id === s.subject_id);
+              const resolvedName = localSub?.name || s.subject_name || s.subjects?.name || (s.subject && s.subject !== 'General Focus' ? s.subject : null) || 'Unassigned';
+              const resolvedColor = localSub?.color || s.subjects?.color || '#10B981';
               return {
                 id: s.id,
                 userId: s.user_id,
                 userName: user.displayName,
                 userAvatar: user.avatarUrl,
                 subjectId: s.subject_id || '',
-                subjectName: s.subjects?.name || s.subject || localSub?.name || 'General Focus',
-                subjectColor: s.subjects?.color || localSub?.color || '#10B981',
+                subjectName: resolvedName,
+                subjectColor: resolvedColor,
+                subject_name: resolvedName,
+                subject: s.subjects || s.subject,
                 startTime: s.started_at,
                 endTime: s.ended_at,
                 durationSeconds: s.duration_seconds,
@@ -1206,8 +1259,9 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     const endedAt = now.toISOString();
     const startedAt = (sessionStartTimeRef.current || new Date(now.getTime() - secondsToSave * 1000)).toISOString();
     const activeSubject = selectedSubject;
-    const subjectName = (typeof activeSubject === 'string' ? activeSubject : activeSubject?.name) || 'General Focus';
-    const subjectId = activeSubject?.id;
+    const subjectName = (typeof activeSubject === 'string' ? activeSubject : activeSubject?.name) || 'Unassigned';
+    const rawSubjectId = activeSubject?.id || null;
+    const subjectId = rawSubjectId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawSubjectId) ? rawSubjectId : null;
     const subjectColor = activeSubject?.color || '#10B981';
     const notesToSave = notesOverride !== undefined ? notesOverride : currentNotes;
     const currentMode = timerMode || 'pomodoro';
@@ -1232,8 +1286,11 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     if (supabase && activeUser?.id) {
       const insertPayload: Record<string, any> = {
         user_id: activeUser.id,
+        subject_id: subjectId,
+        subject_name: subjectName,
         subject: subjectName,
         duration_seconds: secondsToSave,
+        completed_at: endedAt,
         mode: currentMode,
         created_at: endedAt,
         started_at: startedAt,
@@ -1241,23 +1298,29 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         notes: notesToSave && notesToSave.trim().length > 0 ? notesToSave.trim() : null,
       };
 
-      if (subjectId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(subjectId)) {
-        insertPayload.subject_id = subjectId;
-      }
-
       try {
         let insertResponse = await supabase.from('study_sessions').insert(insertPayload).select();
 
-        if (insertResponse.error && (insertResponse.error.code === 'PGRST204' || insertResponse.error.message?.includes('subject'))) {
+        // Graceful fallback for schema variations
+        if (insertResponse.error) {
+          console.warn('StudyContext: Initial session insert failed, trying schema fallbacks:', insertResponse.error);
           const fallbackPayload: Record<string, any> = { ...insertPayload };
-          delete fallbackPayload.subject;
+          if (insertResponse.error.code === 'PGRST204' || insertResponse.error.message?.includes('subject_name')) {
+            delete fallbackPayload.subject_name;
+          }
+          if (insertResponse.error.code === 'PGRST204' || insertResponse.error.message?.includes('completed_at')) {
+            delete fallbackPayload.completed_at;
+          }
+          if (insertResponse.error.code === 'PGRST204' || (insertResponse.error.message?.includes('subject') && !insertResponse.error.message?.includes('subject_id'))) {
+            delete fallbackPayload.subject;
+          }
           insertResponse = await supabase.from('study_sessions').insert(fallbackPayload).select();
-        }
 
-        if (insertResponse.error && (insertResponse.error.code === 'PGRST204' || insertResponse.error.message?.includes('duration_seconds'))) {
-          const fallbackPayload: Record<string, any> = { ...insertPayload, duration: secondsToSave };
-          delete fallbackPayload.duration_seconds;
-          insertResponse = await supabase.from('study_sessions').insert(fallbackPayload).select();
+          if (insertResponse.error && (insertResponse.error.code === 'PGRST204' || insertResponse.error.message?.includes('duration_seconds'))) {
+            delete fallbackPayload.duration_seconds;
+            fallbackPayload.duration = secondsToSave;
+            insertResponse = await supabase.from('study_sessions').insert(fallbackPayload).select();
+          }
         }
 
         if (insertResponse.error) {
@@ -1279,14 +1342,15 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         userId: activeUser?.id || currentUser.id || 'guest',
         userName: currentUser.displayName,
         userAvatar: currentUser.avatarUrl,
-        subjectId: subjectId || '',
+        subjectId: rawSubjectId || '',
         subjectName: subjectName,
         subjectColor: subjectColor,
+        subject_name: subjectName,
         startTime: startedAt,
         endTime: endedAt,
         durationSeconds: secondsToSave,
         notes: notesToSave,
-        mode: currentMode,
+        mode: currentMode as TimerMode,
         createdAt: endedAt,
       };
 

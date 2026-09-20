@@ -210,11 +210,29 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
   const distSessions = useMemo(() => {
     const startTime = distRange.start.getTime();
     const endTime = distRange.end.getTime();
+    const subjectList = Array.isArray(subjects) ? subjects : [];
+
     return sessions.filter(s => {
+      // 3. Clean up legacy / dummy test sessions:
+      // For past session logs belonging to the current user that were saved with the title "General Focus",
+      // ignore them if they do not match any user-created subject so test artifacts no longer dominate the distribution view
+      const rawName = (s.subjectName || (s as any).subject_name || (s as any).subject?.name || (s as any).subject || '').trim();
+      const isLegacyGeneralFocus = rawName.toLowerCase() === 'general focus';
+      const hasSubjectMatch = subjectList.some(sub =>
+        sub && (
+          (s.subjectId && sub.id === s.subjectId) ||
+          (sub.name && sub.name.trim().toLowerCase() === rawName.toLowerCase())
+        )
+      );
+
+      if (isLegacyGeneralFocus && !hasSubjectMatch) {
+        return false;
+      }
+
       const t = new Date(s.startTime).getTime();
       return t >= startTime && t <= endTime;
     });
-  }, [sessions, distRange]);
+  }, [sessions, distRange, subjects]);
 
   const distTotalSeconds = useMemo(() => {
     return distSessions.reduce((sum, s) => sum + s.durationSeconds, 0);
@@ -236,7 +254,7 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
       };
     });
 
-    // 2. Aggregate each session into its subject, falling back gracefully to historical metadata
+    // 2. Aggregate each session into its subject, falling back gracefully to matching subject or 'Unassigned'
     distSessions.forEach(s => {
       const matchedSubject = subjectList.find(
         sub =>
@@ -246,23 +264,39 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
           )
       );
 
+      // Check how sessions are grouped:
+      // const subjectLabel = session.subject_name || session.subject?.name || 'Unassigned';
+      const subjectLabel =
+        matchedSubject?.name ||
+        (s as any).subject_name ||
+        (s as any).subject?.name ||
+        (s.subjectName && s.subjectName !== 'General Focus' ? s.subjectName : null) ||
+        'Unassigned';
+
+      // Ensure donut chart slices and list items use matching subject's assigned color (falling back to emerald/cyan only if unassigned)
+      const subjectColor =
+        matchedSubject?.color ||
+        (s.subjectColor && s.subjectColor !== '#5A6B6A' ? s.subjectColor : null) ||
+        '#10B981';
+
       const groupKey = matchedSubject
         ? matchedSubject.id
         : s.subjectId && s.subjectId.trim() !== ''
         ? s.subjectId
-        : `name-${(s.subjectName || 'General Focus').trim().toLowerCase()}`;
-
-      const historicalName = matchedSubject?.name || s.subjectName || 'General Focus';
-      const historicalColor = matchedSubject?.color || s.subjectColor || '#5A6B6A';
+        : `name-${subjectLabel.trim().toLowerCase()}`;
 
       if (map[groupKey]) {
         map[groupKey].seconds += s.durationSeconds;
         map[groupKey].sessionCount += 1;
+        if (matchedSubject) {
+          map[groupKey].name = matchedSubject.name;
+          map[groupKey].color = matchedSubject.color || '#10B981';
+        }
       } else {
         map[groupKey] = {
-          name: historicalName,
+          name: subjectLabel,
           seconds: s.durationSeconds,
-          color: historicalColor,
+          color: subjectColor,
           sessionCount: 1,
         };
       }
