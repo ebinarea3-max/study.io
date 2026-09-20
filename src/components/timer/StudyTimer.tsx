@@ -564,7 +564,7 @@ export function StudyTimer() {
   }, [isLoading, user?.streakDays, overviewTodaySeconds, todaySessions.length, lockedEmptyQuote]);
 
   return (
-    <div className="w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+    <div className="w-full max-w-6xl mx-auto h-[calc(100dvh-4rem)] md:h-auto flex flex-col md:grid md:grid-cols-1 lg:grid-cols-12 justify-between md:justify-start gap-4 lg:gap-6 overflow-hidden md:overflow-visible p-4 md:p-0">
       {/* Subject Manager Modal */}
       <SubjectManagerModal
         isOpen={isSubjectModalOpen}
@@ -572,9 +572,9 @@ export function StudyTimer() {
       />
 
       {/* Main Left Column (Timer & Subject Goal Progress) */}
-      <div className="lg:col-span-8 space-y-6">
+      <div className="lg:col-span-8 flex-1 md:flex-initial flex flex-col justify-between overflow-hidden md:overflow-visible space-y-0 md:space-y-6">
         {/* Main Timer Glass Card */}
-        <div className="relative rounded-3xl bg-neutral-900/50 border border-white/[0.08] hover:border-emerald-500/25 backdrop-blur-2xl p-4 sm:p-8 lg:p-10 shadow-2xl overflow-hidden transition-all">
+        <div className="relative rounded-3xl bg-neutral-900/50 border border-white/[0.08] hover:border-emerald-500/25 backdrop-blur-2xl p-3.5 sm:p-8 lg:p-10 shadow-2xl overflow-hidden flex-1 md:flex-initial flex flex-col justify-between transition-all">
           {/* Subtle Ambient Glow */}
           <div
             className="absolute -top-24 -right-24 w-72 h-72 rounded-full blur-[100px] opacity-15 pointer-events-none transition-all duration-700"
@@ -587,7 +587,7 @@ export function StudyTimer() {
 
           {/* Subtle Previous Session Recovery Banner */}
           {showRecoveryBanner && (
-            <div className="relative z-30 mb-6 flex items-center justify-between gap-3 px-4 py-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs font-semibold backdrop-blur-md shadow-lg shadow-amber-500/5 animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="relative z-30 mb-3 sm:mb-6 flex items-center justify-between gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs font-semibold backdrop-blur-md shadow-lg shadow-amber-500/5 animate-in fade-in slide-in-from-top-2 duration-300 flex-shrink-0">
               <div className="flex items-center gap-2.5">
                 <div className="w-7 h-7 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center flex-shrink-0">
                   <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
@@ -605,14 +605,14 @@ export function StudyTimer() {
           )}
 
           {/* Top Controls: Mode Switcher, Preset Selector & Focus Mode Button */}
-          <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4 relative z-10 pb-4 sm:pb-6 border-b border-white/[0.08]">
-            <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2.5 sm:gap-4 relative z-10 pb-3 sm:pb-6 border-b border-white/[0.08] flex-shrink-0">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
               {/* Mode Pill Toggle */}
-              <div className="flex items-center gap-1 p-1 rounded-2xl bg-black/60 border border-white/[0.08]">
+              <div className="flex items-center gap-1 p-0.5 sm:p-1 rounded-2xl bg-black/60 border border-white/[0.08]">
                 <button
                   onClick={() => { if (!isStudying) setTimerMode('stopwatch'); }}
                   disabled={isStudying}
-                  className={`px-3.5 sm:px-4 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 ${
+                  className={`px-3 sm:px-4 py-1 sm:py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 ${
                     timerMode === 'stopwatch'
                       ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/30'
                       : 'text-neutral-400 hover:text-white'
@@ -623,7 +623,7 @@ export function StudyTimer() {
                 <button
                   onClick={() => { if (!isStudying) setTimerMode('pomodoro'); }}
                   disabled={isStudying}
-                  className={`px-3.5 sm:px-4 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 ${
+                  className={`px-3 sm:px-4 py-1 sm:py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 ${
                     timerMode === 'pomodoro'
                       ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/30'
                       : 'text-neutral-400 hover:text-white'
@@ -636,7 +636,7 @@ export function StudyTimer() {
               {/* Clean Pill/Segment Preset Selector (25/5 and 50/10) */}
               {timerMode === 'pomodoro' && (
                 <div
-                  className="flex items-center gap-1 p-1 rounded-2xl bg-black/60 border border-white/[0.08] animate-in fade-in zoom-in-95 duration-200"
+                  className="flex items-center gap-1 p-0.5 sm:p-1 rounded-2xl bg-black/60 border border-white/[0.08] animate-in fade-in zoom-in-95 duration-200"
                   title={isStudying ? "Interval presets are locked while session is running" : "Choose focus / break interval preset"}
                 >
                   <button
@@ -644,7 +644,7 @@ export function StudyTimer() {
                       if (!isStudying) setPomodoroPreset('25/5');
                     }}
                     disabled={isStudying}
-                    className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 active:scale-95 ${
+                    className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 active:scale-95 ${
                       pomodoroPreset === '25/5'
                         ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/50 shadow-sm shadow-emerald-500/20'
                         : 'text-neutral-400 hover:text-white border border-transparent'
@@ -652,9 +652,6 @@ export function StudyTimer() {
                     title="25m Focus / 5m Break (Standard)"
                   >
                     <span>25 / 5</span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.06] text-neutral-400 font-normal">
-                      Std
-                    </span>
                   </button>
 
                   <button
@@ -662,7 +659,7 @@ export function StudyTimer() {
                       if (!isStudying) setPomodoroPreset('50/10');
                     }}
                     disabled={isStudying}
-                    className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 active:scale-95 ${
+                    className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 active:scale-95 ${
                       pomodoroPreset === '50/10'
                         ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/50 shadow-sm shadow-emerald-500/20'
                         : 'text-neutral-400 hover:text-white border border-transparent'
@@ -670,32 +667,29 @@ export function StudyTimer() {
                     title="50m Focus / 10m Break (Deep Work)"
                   >
                     <span>50 / 10</span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.06] text-neutral-400 font-normal">
-                      Deep
-                    </span>
                   </button>
                 </div>
               )}
             </div>
 
-            {/* High-Contrast Semi-Solid Fullscreen Focus Mode Button */}
+            {/* High-Contrast Fullscreen Focus Mode Button - Hidden on mobile */}
             <button
               onClick={() => setIsFocusModeOpen(true)}
-              className="flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/35 text-emerald-300 text-xs font-bold transition-all shadow-md shadow-emerald-500/10 active:scale-95 cursor-pointer w-full sm:w-auto"
+              className="hidden md:flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/35 text-emerald-300 text-xs font-bold transition-all shadow-md shadow-emerald-500/10 active:scale-95 cursor-pointer"
             >
               <Maximize2 className="w-4 h-4 text-emerald-400" />
               <span>Fullscreen Focus Mode</span>
             </button>
           </div>
 
-          {/* Subject Selection Bar */}
-          <div className="relative z-20 my-5 sm:my-6">
+          {/* Subject Selection Bar - Compact on Mobile */}
+          <div className="relative z-20 my-2 sm:my-5 flex-shrink-0">
             {/* Subject warning banner */}
             {subjectWarning && (
-              <div className="mb-3 flex items-center justify-between gap-3 px-4 py-3 rounded-2xl bg-amber-500/15 border border-amber-500/40 text-amber-200 text-xs font-semibold backdrop-blur-md shadow-lg shadow-amber-500/10 animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="mb-2 sm:mb-3 flex items-center justify-between gap-2.5 px-3 py-2 rounded-2xl bg-amber-500/15 border border-amber-500/40 text-amber-200 text-xs font-semibold backdrop-blur-md shadow-lg shadow-amber-500/10 animate-in fade-in slide-in-from-top-2 duration-200">
                 <div className="flex items-center gap-2">
-                  <span className="text-amber-400 text-sm">⚠️</span>
-                  <span>Please select a subject before starting the timer.</span>
+                  <span className="text-amber-400 text-xs">⚠️</span>
+                  <span className="text-[11px] sm:text-xs">Please select a subject before starting.</span>
                 </div>
                 <button
                   onClick={() => setSubjectWarning(false)}
@@ -707,13 +701,13 @@ export function StudyTimer() {
               </div>
             )}
 
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3">
+            <div className="flex items-center justify-between gap-2.5 sm:gap-3">
               {/* Subject Dropdown */}
               <div className="relative flex-1 min-w-0 w-full">
                 <button
                   onClick={() => setShowDropdown(!showDropdown)}
                   disabled={isStudying}
-                  className={`w-full flex items-center justify-between px-3.5 sm:px-4 py-2.5 sm:py-3 bg-black/40 hover:bg-black/60 border rounded-2xl text-xs sm:text-sm font-semibold transition-all disabled:opacity-75 disabled:cursor-not-allowed cursor-pointer ${
+                  className={`w-full flex items-center justify-between px-3 sm:px-4 py-2 sm:py-2.5 bg-black/40 hover:bg-black/60 border rounded-2xl text-xs sm:text-sm font-semibold transition-all disabled:opacity-75 disabled:cursor-not-allowed cursor-pointer ${
                     subjectWarning
                       ? 'border-amber-500/80 ring-2 ring-amber-500/30 shadow-lg shadow-amber-500/10'
                       : 'border-white/[0.08]'
@@ -721,7 +715,7 @@ export function StudyTimer() {
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
                     <span
-                      className="w-3 h-3 rounded-full flex-shrink-0 shadow-sm transition-colors"
+                      className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full flex-shrink-0 shadow-sm transition-colors"
                       style={{ backgroundColor: selectedSubject ? subjectColor : '#64748B' }}
                     />
                     <span className={`truncate ${selectedSubject ? "text-white font-bold tracking-tight" : "text-neutral-400 font-medium tracking-tight"}`}>
@@ -788,10 +782,10 @@ export function StudyTimer() {
                 )}
               </div>
 
-              {/* Manage Subjects Quick Button (Muted Teal-Gray Icon) */}
+              {/* Manage Subjects Button - Hidden on mobile to keep top compact, accessible inside dropdown */}
               <button
                 onClick={() => setIsSubjectModalOpen(true)}
-                className="p-2.5 sm:p-3.5 rounded-2xl bg-neutral-900/70 hover:bg-neutral-800 border border-white/[0.08] text-neutral-300 hover:text-white transition-colors flex items-center justify-center gap-2 text-xs font-semibold active:scale-95 cursor-pointer shadow-sm w-full sm:w-auto"
+                className="hidden sm:flex p-2.5 sm:py-2.5 sm:px-3.5 rounded-2xl bg-neutral-900/70 hover:bg-neutral-800 border border-white/[0.08] text-neutral-300 hover:text-white transition-colors items-center justify-center gap-2 text-xs font-semibold active:scale-95 cursor-pointer shadow-sm flex-shrink-0"
                 title="Edit Subjects"
               >
                 <FolderPlus className="w-4 h-4 text-[#8FA3A1]" />
@@ -800,16 +794,16 @@ export function StudyTimer() {
             </div>
           </div>
 
-          {/* Center Timer Circular Display - Responsive & Mobile Safe */}
-          <div className="relative z-10 flex flex-col items-center justify-center py-4 sm:py-6">
-            <div className="relative flex items-center justify-center p-2 w-full max-w-[280px] sm:max-w-xs mx-auto aspect-square">
+          {/* Center Timer Circular Display - Scaled to w-64 h-64 on Mobile */}
+          <div className="relative z-10 flex flex-col items-center justify-center my-auto py-1 sm:py-6 flex-shrink-0">
+            <div className="relative flex items-center justify-center p-1 sm:p-2 w-64 h-64 sm:w-80 sm:h-80 mx-auto aspect-square">
               {/* Subtle Emerald Outer Halo / Gradient Rim */}
               <div className="absolute inset-0 rounded-full bg-gradient-to-b from-emerald-500/20 via-emerald-500/5 to-transparent blur-lg pointer-events-none" />
               <div className="absolute inset-1 sm:inset-1.5 rounded-full border border-emerald-500/25 pointer-events-none" />
 
               {/* Outer Animated Ring */}
               <div
-                className={`w-full h-full max-w-[260px] max-h-[260px] sm:max-w-[320px] sm:max-h-[320px] rounded-full border-4 flex items-center justify-center transition-all duration-700 relative z-10 ${
+                className={`w-full h-full rounded-full border-4 flex items-center justify-center transition-all duration-700 relative z-10 ${
                   isStudying && !isPaused ? 'shadow-2xl' : 'shadow-[0_0_35px_rgba(16,185,129,0.12)]'
                 }`}
                 style={{
@@ -821,14 +815,14 @@ export function StudyTimer() {
               >
                 {/* Inner Dial */}
                 <div
-                  className="w-[82%] h-[82%] rounded-full bg-black/60 border border-white/[0.08] flex flex-col items-center justify-center p-3 sm:p-6 text-center shadow-inner"
+                  className="w-[84%] h-[84%] rounded-full bg-black/60 border border-white/[0.08] flex flex-col items-center justify-center p-2.5 sm:p-6 text-center shadow-inner"
                   style={{
                     borderColor: isStudying ? `${subjectColor}60` : undefined,
                   }}
                 >
                   {/* Pomodoro Phase / Subject Pill */}
                   <div
-                    className="mb-1.5 sm:mb-2 text-[10px] sm:text-[11px] font-bold px-2.5 sm:px-3 py-0.5 rounded-full border transition-colors max-w-[90%] truncate"
+                    className="mb-1 sm:mb-2 text-[10px] sm:text-[11px] font-bold px-2 sm:px-3 py-0.5 rounded-full border transition-colors max-w-[90%] truncate"
                     style={{
                       backgroundColor: selectedSubject ? `${subjectColor}15` : 'rgba(100, 116, 139, 0.12)',
                       borderColor: selectedSubject ? `${subjectColor}40` : 'rgba(100, 116, 139, 0.25)',
@@ -844,7 +838,7 @@ export function StudyTimer() {
 
                   {/* Big Digital Numbers with Strict Tabular Monospaced Formatting */}
                   <div
-                    className="font-mono text-3xl xs:text-4xl sm:text-5xl md:text-6xl font-black tracking-tight text-white drop-shadow-md tabular-nums select-none"
+                    className="font-mono text-4xl sm:text-5xl md:text-6xl font-black tracking-tight text-white drop-shadow-md tabular-nums select-none"
                     style={{
                       fontVariantNumeric: 'tabular-nums',
                       fontFamily: 'var(--font-geist-mono), monospace',
@@ -930,7 +924,7 @@ export function StudyTimer() {
             )}
 
             {/* Action Buttons: Context-aware controls */}
-            <div className="mt-6 sm:mt-8 flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 relative z-10 w-full">
+            <div className="mt-auto pt-2 sm:pt-8 flex flex-wrap items-center justify-center gap-2 sm:gap-3 relative z-10 w-full flex-shrink-0 pb-1 sm:pb-0">
               {pomodoroCompletedPhase === 'work' ? (
                 /* Prompt 1: Focus Block Complete -> Save & Start Break / Skip Break */
                 <>
@@ -1026,7 +1020,7 @@ export function StudyTimer() {
                 /* 1. IDLE State: One primary button */
                 <button
                   onClick={handleStartSession}
-                  className={`px-6 sm:px-8 py-3 sm:py-3.5 rounded-2xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-2 sm:gap-2.5 w-full xs:w-auto ${
+                  className={`px-6 sm:px-8 py-3.5 sm:py-3.5 rounded-2xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-2 sm:gap-2.5 w-full xs:w-auto ${
                     !selectedSubject
                       ? 'bg-neutral-800/80 text-neutral-500 border border-white/[0.08] opacity-50 cursor-not-allowed shadow-none'
                       : 'bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 shadow-xl shadow-emerald-500/25 active:scale-95 hover:scale-[1.02] cursor-pointer'
@@ -1110,8 +1104,8 @@ export function StudyTimer() {
           </div>
         </div>
 
-        {/* Subject Today's Progress Card */}
-        <div className="rounded-2xl bg-neutral-900/50 border border-white/[0.08] p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+        {/* Subject Today's Progress Card - Hidden on mobile single-screen view, visible on desktop */}
+        <div className="hidden md:flex rounded-2xl bg-neutral-900/50 border border-white/[0.08] p-5 flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
           <div className="flex items-center gap-3">
             <div
               className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white shadow-md"
@@ -1155,8 +1149,8 @@ export function StudyTimer() {
         </div>
       </div>
 
-      {/* Right Secondary Column (Todo List, Daily Overview & Today's Boost - Home Page Sidebar) */}
-      <div className="lg:col-span-4 space-y-6">
+      {/* Right Secondary Column (Todo List, Daily Overview & Today's Boost - Home Page Sidebar, exclusively rendered in Tasks tab on mobile) */}
+      <div className="hidden lg:block lg:col-span-4 space-y-6">
         {/* 1. Todo List Card - Google Notes / Keep Checklist */}
         <DailyTodoList />
 

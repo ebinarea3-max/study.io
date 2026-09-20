@@ -18,14 +18,15 @@ import {
   CheckCircle2,
   Trophy,
   Shield,
+  CheckSquare,
 } from 'lucide-react';
 import { UserAvatar } from './UserAvatar';
 import { getRankTier } from '../../lib/rankedSystem';
 import { InstallAppButton } from './InstallAppButton';
 
 interface NavbarProps {
-  activeTab: 'timer' | 'analytics';
-  setActiveTab: (tab: 'timer' | 'analytics') => void;
+  activeTab: 'timer' | 'tasks' | 'analytics';
+  setActiveTab: (tab: 'timer' | 'tasks' | 'analytics') => void;
   onOpenAuth: () => void;
   onOpenProfile: () => void;
   onOpenSettings: () => void;
@@ -176,23 +177,35 @@ export function Navbar({
             </div>
           </div>
 
-          {/* Navigation Tabs - Never hidden on mobile */}
-          <nav className="flex items-center gap-1 p-1 rounded-2xl bg-slate-900/90 border border-slate-800/80">
+          {/* Navigation Tabs - Hidden on mobile, handled by bottom navigation */}
+          <nav className="hidden md:flex items-center gap-1 p-1 rounded-2xl bg-slate-900/90 border border-slate-800/80">
             <button
               onClick={() => setActiveTab('timer')}
-              className={`flex items-center gap-1 sm:gap-2 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl text-xs font-bold transition-all ${
+              className={`flex items-center gap-1 sm:gap-2 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === 'timer'
                   ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
               }`}
             >
               <Timer className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span className="text-[11px] sm:text-xs">Dashboard</span>
+              <span className="text-[11px] sm:text-xs">Timer</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('tasks')}
+              className={`flex items-center gap-1 sm:gap-2 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                activeTab === 'tasks'
+                  ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+              }`}
+            >
+              <CheckSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="text-[11px] sm:text-xs">Tasks</span>
             </button>
 
             <button
               onClick={() => setActiveTab('analytics')}
-              className={`flex items-center gap-1 sm:gap-2 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl text-xs font-bold transition-all ${
+              className={`flex items-center gap-1 sm:gap-2 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === 'analytics'
                   ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
@@ -220,40 +233,36 @@ export function Navbar({
             </Link>
           ) : (
             <>
-              {/* Free Fire Rank Badge Pill - Static Display Badge */}
+              {/* Free Fire Rank Badge Pill - Visible on mobile & desktop */}
               <div
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900/90 border border-white/[0.08] text-slate-200 cursor-default select-none shadow-sm"
+                className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-slate-900/90 border border-white/[0.08] text-slate-200 cursor-default select-none shadow-sm"
                 title={`Ranked Season RP: ${userRank.rp.toLocaleString()} RP (${userRank.fullTitle})`}
               >
                 <div
-                  className="w-2 h-2 rounded-full animate-pulse"
+                  className="w-2 h-2 rounded-full animate-pulse flex-shrink-0"
                   style={{ backgroundColor: userRank.config.badgeAccent }}
                 />
                 <span
-                  className="text-xs font-black italic tracking-wider uppercase"
+                  className="text-[10px] sm:text-xs font-black italic tracking-wider uppercase truncate max-w-[75px] sm:max-w-none"
                   style={{ color: userRank.config.badgeAccent }}
                 >
                   {userRank.fullTitle}
                 </span>
-                <span className="text-[11px] font-mono text-slate-400 font-bold">
+                <span className="hidden sm:inline text-[11px] font-mono text-slate-400 font-bold">
                   {userRank.rp.toLocaleString()} RP
                 </span>
               </div>
 
-              {/* Static streak badge when authenticated */}
-              <div
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-neutral-900/60 border border-white/[0.08] text-neutral-300 cursor-default select-none shadow-sm"
-                title={user.streakDays > 0 ? `${user.streakDays} Day Study Streak (+${user.streakDays * 50} XP bonus)` : 'Start your streak today'}
-              >
-                {user.streakDays > 0 ? (
-                  <>
-                    <Flame className="w-4 h-4 text-[#f97316] fill-[#f97316]" />
-                    <span className="text-xs font-bold font-mono tabular-nums text-orange-400">{user.streakDays}d</span>
-                  </>
-                ) : (
-                  <span className="text-xs font-medium text-[#8FA3A1]">Start streak</span>
-                )}
-              </div>
+              {/* Streak Badge - Rendered only if streak > 0 (redundant 'Start streak' button removed on mobile) */}
+              {user.streakDays > 0 && (
+                <div
+                  className="flex items-center gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-neutral-900/60 border border-white/[0.08] text-neutral-300 cursor-default select-none shadow-sm"
+                  title={`${user.streakDays} Day Study Streak (+${user.streakDays * 50} XP bonus)`}
+                >
+                  <Flame className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#f97316] fill-[#f97316]" />
+                  <span className="text-[11px] sm:text-xs font-bold font-mono tabular-nums text-orange-400">{user.streakDays}d</span>
+                </div>
+              )}
             </>
           )}
 
@@ -456,14 +465,15 @@ export function Navbar({
       </div>
     </header>
 
-    {/* Mobile Sticky Bottom Navigation Bar */}
+    {/* Mobile Sticky Bottom Navigation Bar: 4 Dedicated Tabs */}
     <nav
       aria-label="Mobile Bottom Navigation"
-      className="fixed bottom-0 left-0 right-0 z-40 bg-[#0d1117]/90 backdrop-blur-lg border-t border-white/10 md:hidden flex justify-around items-center py-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] px-3 shadow-2xl"
+      className="fixed bottom-0 left-0 right-0 z-40 bg-[#0d1117]/95 backdrop-blur-xl border-t border-white/10 md:hidden flex justify-around items-center py-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] px-3 shadow-2xl"
     >
+      {/* Tab 1: Timer */}
       <button
         onClick={() => setActiveTab('timer')}
-        className={`flex flex-col items-center justify-center gap-1 py-1 px-3 rounded-xl transition-all active:scale-95 ${
+        className={`flex flex-col items-center justify-center gap-1 py-1 px-3 rounded-xl transition-all active:scale-95 cursor-pointer ${
           activeTab === 'timer'
             ? 'text-emerald-400 font-bold'
             : 'text-slate-400 hover:text-white'
@@ -478,12 +488,34 @@ export function Navbar({
         >
           <Timer className="w-5 h-5" />
         </div>
-        <span className="text-[10px] tracking-tight">Dashboard</span>
+        <span className="text-[10px] tracking-tight">Timer</span>
       </button>
 
+      {/* Tab 2: Tasks */}
+      <button
+        onClick={() => setActiveTab('tasks')}
+        className={`flex flex-col items-center justify-center gap-1 py-1 px-3 rounded-xl transition-all active:scale-95 cursor-pointer ${
+          activeTab === 'tasks'
+            ? 'text-emerald-400 font-bold'
+            : 'text-slate-400 hover:text-white'
+        }`}
+      >
+        <div
+          className={`p-1.5 rounded-xl transition-all ${
+            activeTab === 'tasks'
+              ? 'bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/40'
+              : 'text-slate-400'
+          }`}
+        >
+          <CheckSquare className="w-5 h-5" />
+        </div>
+        <span className="text-[10px] tracking-tight">Tasks</span>
+      </button>
+
+      {/* Tab 3: Analytics */}
       <button
         onClick={() => setActiveTab('analytics')}
-        className={`flex flex-col items-center justify-center gap-1 py-1 px-3 rounded-xl transition-all active:scale-95 ${
+        className={`flex flex-col items-center justify-center gap-1 py-1 px-3 rounded-xl transition-all active:scale-95 cursor-pointer ${
           activeTab === 'analytics'
             ? 'text-emerald-400 font-bold'
             : 'text-slate-400 hover:text-white'
@@ -501,19 +533,10 @@ export function Navbar({
         <span className="text-[10px] tracking-tight">Analytics</span>
       </button>
 
-      <button
-        onClick={() => setIsFocusModeOpen(true)}
-        className="flex flex-col items-center justify-center gap-1 py-1 px-3 rounded-xl text-slate-400 hover:text-emerald-300 transition-all active:scale-95"
-      >
-        <div className="p-1.5 rounded-xl bg-slate-900/60 border border-slate-800 text-teal-400 hover:border-teal-500/40">
-          <Maximize2 className="w-5 h-5" />
-        </div>
-        <span className="text-[10px] tracking-tight">Zen Mode</span>
-      </button>
-
+      {/* Tab 4: Settings */}
       <button
         onClick={onOpenSettings}
-        className="flex flex-col items-center justify-center gap-1 py-1 px-3 rounded-xl text-slate-400 hover:text-white transition-all active:scale-95"
+        className="flex flex-col items-center justify-center gap-1 py-1 px-3 rounded-xl text-slate-400 hover:text-white transition-all active:scale-95 cursor-pointer"
       >
         <div className="p-1.5 rounded-xl bg-slate-900/60 border border-slate-800 text-slate-400 hover:text-white">
           <Settings className="w-5 h-5" />

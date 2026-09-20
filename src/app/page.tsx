@@ -16,6 +16,7 @@ import { LevelUpModal } from '../components/gamification/LevelUpModal';
 import { XpFloatingNotification } from '../components/gamification/XpFloatingNotification';
 import { RankSettlementModal } from '../components/RankSettlementModal';
 import { SeasonRecapBanner } from '../components/gamification/SeasonRecapBanner';
+import { TasksOverview } from '../components/todo/TasksOverview';
 
 export default function Home() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -31,8 +32,8 @@ export default function Home() {
     dismissSeasonRecap,
   } = useStudy();
 
-  // Navigation tabs: Rooms removed, strictly Home (timer) and Analytics
-  const [activeTab, setActiveTab] = useState<'timer' | 'analytics'>('timer');
+  // Navigation tabs: Timer, Tasks, and Analytics
+  const [activeTab, setActiveTab] = useState<'timer' | 'tasks' | 'analytics'>('timer');
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -118,8 +119,15 @@ export default function Home() {
       )}
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-3.5 sm:px-6 py-5 sm:py-8 pb-24 md:pb-12 relative z-10">
+      <main
+        className={`flex-1 max-w-7xl w-full mx-auto relative z-10 ${
+          activeTab === 'timer'
+            ? 'p-0 md:px-6 md:py-8 pb-16 md:pb-12'
+            : 'px-3.5 sm:px-6 py-5 sm:py-8 pb-24 md:pb-12'
+        }`}
+      >
         {activeTab === 'timer' && <StudyTimer />}
+        {activeTab === 'tasks' && <TasksOverview />}
         {activeTab === 'analytics' && <AnalyticsDashboard />}
       </main>
 
