@@ -128,7 +128,9 @@ export default function Home() {
       >
         {activeTab === 'timer' && <StudyTimer />}
         {activeTab === 'tasks' && <TasksOverview />}
-        {activeTab === 'analytics' && <AnalyticsDashboard />}
+        {activeTab === 'analytics' && (
+          <AnalyticsDashboard onStartSession={() => setActiveTab('timer')} />
+        )}
       </main>
 
       {/* Modals & Celebrations */}
