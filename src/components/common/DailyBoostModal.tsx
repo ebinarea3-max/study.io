@@ -90,9 +90,13 @@ export function DailyBoostModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="daily-boost-title"
+      onClick={onClose}
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
     >
-      <div className="relative w-full max-w-md bg-slate-900 border border-slate-700/80 rounded-3xl shadow-2xl p-6 sm:p-8 text-center overflow-hidden animate-in zoom-in-95 duration-200">
+      <div
+        onClick={e => e.stopPropagation()}
+        className="relative w-full max-w-md bg-slate-900 border border-slate-700/80 rounded-3xl shadow-2xl p-6 sm:p-8 text-center overflow-hidden animate-in zoom-in-95 duration-200"
+      >
         {/* Ambient Top Glow */}
         <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-64 h-64 rounded-full blur-[100px] opacity-35 pointer-events-none bg-gradient-to-br from-amber-500/30 via-emerald-500/25 to-teal-500/20" />
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useStudy } from '../context/StudyContext';
 import { Navbar } from '../components/common/Navbar';
@@ -18,7 +18,6 @@ import { RankSettlementModal } from '../components/RankSettlementModal';
 import { SeasonRecapBanner } from '../components/gamification/SeasonRecapBanner';
 import { TasksOverview } from '../components/todo/TasksOverview';
 import { DailyBoostModal } from '../components/common/DailyBoostModal';
-import { getLocalDateString } from '../lib/dateUtils';
 
 export default function Home() {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -40,21 +39,23 @@ export default function Home() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showDailyBoost, setShowDailyBoost] = useState(false);
+  const hasTriggeredBoostRef = useRef(false);
 
-  // Daily Boost Welcome Modal (Once per day)
+  // Today's Boost Welcome Modal (Trigger on every session / sign-in)
   useEffect(() => {
-    if (isLoading || !isAuthenticated) return;
+    if (isLoading) return;
 
-    try {
-      const todayDateString = getLocalDateString();
-      const lastDailyBoostDate = localStorage.getItem('last_daily_boost_date');
+    if (!isAuthenticated) {
+      hasTriggeredBoostRef.current = false;
+      return;
+    }
 
-      if (lastDailyBoostDate !== todayDateString) {
-        setShowDailyBoost(true);
-        localStorage.setItem('last_daily_boost_date', todayDateString);
-      }
-    } catch {
-      // ignore
+    if (isAuthenticated && !hasTriggeredBoostRef.current) {
+      hasTriggeredBoostRef.current = true;
+      setShowDailyBoost(true);
+      try {
+        localStorage.removeItem('last_daily_boost_date');
+      } catch {}
     }
   }, [isLoading, isAuthenticated]);
 
