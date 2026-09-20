@@ -16,7 +16,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
-  CheckSquare,
   PieChart as PieIcon,
   BarChart3,
   Download,
@@ -72,13 +71,10 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
   } | null>(null);
 
   // -------------------------------------------------------------
-  // 3. Bottom Trend Charts State
+  // 3. Bottom Trend Chart State
   // -------------------------------------------------------------
   const [focusChartTimeframe, setFocusChartTimeframe] = useState<Timeframe>('daily');
   const [focusChartAnchorDate, setFocusChartAnchorDate] = useState<string>(todayStr);
-
-  const [taskChartTimeframe, setTaskChartTimeframe] = useState<Timeframe>('daily');
-  const [taskChartAnchorDate, setTaskChartAnchorDate] = useState<string>(todayStr);
 
   useEffect(() => {
     refetchSessions();
@@ -115,16 +111,6 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
     return map;
   }, [sessions]);
 
-  // Helper: Get task completion date string
-  const getTaskDateStr = (todo: (typeof todos)[0]): string => {
-    if (todo.completedAt) {
-      return getLocalDateString(new Date(todo.completedAt));
-    }
-    if (todo.date) {
-      return todo.date;
-    }
-    return getLocalDateString(new Date(todo.createdAt));
-  };
 
   // -------------------------------------------------------------
   // Top Row: 3 Focus Time Metrics
@@ -514,100 +500,6 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
     setFocusChartAnchorDate(getLocalDateString(current));
   };
 
-  // -------------------------------------------------------------
-  // Task Chart (Bottom Right) Data Generation
-  // -------------------------------------------------------------
-  const taskChartData = useMemo(() => {
-    const anchor = parseLocalDateString(taskChartAnchorDate);
-    const data: { label: string; tasks: number }[] = [];
-    const completedTodos = todos.filter(t => t.completed);
-
-    if (taskChartTimeframe === 'daily') {
-      // 7 Days of the Week containing the anchor date
-      const dayOfWeek = anchor.getDay();
-      const diffToMon = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-      const mon = new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate() + diffToMon);
-
-      for (let i = 0; i < 7; i++) {
-        const d = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + i);
-        const dateKey = getLocalDateString(d);
-        const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
-        const count = completedTodos.filter(t => getTaskDateStr(t) === dateKey).length;
-        data.push({
-          label: dayName,
-          tasks: count,
-        });
-      }
-    } else if (taskChartTimeframe === 'weekly') {
-      // 5 Weeks of the anchor month
-      const year = anchor.getFullYear();
-      const month = anchor.getMonth();
-      for (let w = 1; w <= 5; w++) {
-        const startD = new Date(year, month, (w - 1) * 7 + 1);
-        const endD = new Date(year, month, Math.min(new Date(year, month + 1, 0).getDate(), w * 7));
-        const startStr = getLocalDateString(startD);
-        const endStr = getLocalDateString(endD);
-
-        const count = completedTodos.filter(t => {
-          const dStr = getTaskDateStr(t);
-          return dStr >= startStr && dStr <= endStr;
-        }).length;
-
-        data.push({
-          label: `W${w}`,
-          tasks: count,
-        });
-      }
-    } else if (taskChartTimeframe === 'monthly') {
-      // 12 Months of the anchor year
-      const year = anchor.getFullYear();
-      for (let m = 0; m < 12; m++) {
-        const mDate = new Date(year, m, 1);
-        const monthShort = mDate.toLocaleDateString('en-US', { month: 'short' });
-        const count = completedTodos.filter(t => {
-          const d = parseLocalDateString(getTaskDateStr(t));
-          return d.getFullYear() === year && d.getMonth() === m;
-        }).length;
-
-        data.push({
-          label: monthShort,
-          tasks: count,
-        });
-      }
-    } else if (taskChartTimeframe === 'yearly') {
-      // Past 5 Years
-      const curYear = anchor.getFullYear();
-      for (let y = curYear - 4; y <= curYear; y++) {
-        const count = completedTodos.filter(t => {
-          const d = parseLocalDateString(getTaskDateStr(t));
-          return d.getFullYear() === y;
-        }).length;
-
-        data.push({
-          label: `${y}`,
-          tasks: count,
-        });
-      }
-    }
-
-    const maxTasks = Math.max(...data.map(d => d.tasks), 0);
-    const avgTasks = data.length > 0 ? (data.reduce((sum, d) => sum + d.tasks, 0) / data.length).toFixed(1) : '0';
-
-    return {
-      items: data,
-      topCount: maxTasks,
-      avgCount: avgTasks,
-    };
-  }, [taskChartAnchorDate, taskChartTimeframe, todos]);
-
-  const handleTaskChartStep = (direction: 'prev' | 'next') => {
-    const delta = direction === 'prev' ? -1 : 1;
-    const current = parseLocalDateString(taskChartAnchorDate);
-    if (taskChartTimeframe === 'daily') current.setDate(current.getDate() + delta * 7);
-    else if (taskChartTimeframe === 'weekly' || taskChartTimeframe === 'monthly') current.setMonth(current.getMonth() + delta);
-    else current.setFullYear(current.getFullYear() + delta);
-    setTaskChartAnchorDate(getLocalDateString(current));
-  };
 
   return (
     <div className="w-full max-w-7xl mx-auto p-4 space-y-4 md:p-6 md:space-y-6 text-slate-100">
@@ -665,20 +557,20 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
         </div>
       </div>
 
-      {/* 1. Top Row — 3 Focus Time Metric Cards */}
+      {/* 1. Top Row — 3 Focus Time Metric Cards (Chronological Granularity: Today -> Week -> Month) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Card 1: Focus Time of This Month */}
+        {/* Card 1 (Left): Focus Time of Today */}
         <div className="bg-[#0e1422] border border-slate-800/80 rounded-2xl p-3 sm:p-3.5 shadow-lg relative flex flex-col justify-between">
           <div className="h-0.5 w-7 bg-rose-500 rounded-full mb-2" />
           <div className="text-[11px] font-medium text-slate-400 leading-tight">
-            Focus Time of This Month
+            Focus Time of Today
           </div>
           <div className="text-base sm:text-lg font-black text-white font-mono mt-1 truncate">
-            {formatHoursAndMins(topMetrics.thisMonthFocusSec)}
+            {formatHoursAndMins(topMetrics.todayFocusSec)}
           </div>
         </div>
 
-        {/* Card 2: Focus Time of This Week */}
+        {/* Card 2 (Center): Focus Time of This Week */}
         <div className="bg-[#0e1422] border border-slate-800/80 rounded-2xl p-3 sm:p-3.5 shadow-lg relative flex flex-col justify-between">
           <div className="h-0.5 w-7 bg-rose-500 rounded-full mb-2" />
           <div className="text-[11px] font-medium text-slate-400 leading-tight">
@@ -689,14 +581,14 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
           </div>
         </div>
 
-        {/* Card 3: Focus Time of Today */}
+        {/* Card 3 (Right): Focus Time of This Month */}
         <div className="bg-[#0e1422] border border-slate-800/80 rounded-2xl p-3 sm:p-3.5 shadow-lg relative flex flex-col justify-between">
           <div className="h-0.5 w-7 bg-rose-500 rounded-full mb-2" />
           <div className="text-[11px] font-medium text-slate-400 leading-tight">
-            Focus Time of Today
+            Focus Time of This Month
           </div>
           <div className="text-base sm:text-lg font-black text-white font-mono mt-1 truncate">
-            {formatHoursAndMins(topMetrics.todayFocusSec)}
+            {formatHoursAndMins(topMetrics.thisMonthFocusSec)}
           </div>
         </div>
       </div>
@@ -1032,210 +924,111 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
         </div>
       </div>
 
-      {/* 3. Bottom Section — 2 Columns (Focus & Task Trends — 50/50 Split) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6 items-stretch">
-        {/* Left Card: Focus Time Chart */}
-        <div className="bg-[#0e1422] border border-slate-800/80 rounded-3xl p-4 sm:p-6 shadow-2xl space-y-3">
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-800/70">
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-emerald-400" />
-              <h3 className="text-sm sm:text-base font-bold text-white">Focus Time Chart</h3>
-            </div>
-
-            {/* Controls */}
-            <div className="flex items-center gap-1.5">
-              <div className="flex items-center bg-slate-950/80 border border-slate-800 rounded-xl p-0.5">
-                <button
-                  onClick={() => handleFocusChartStep('prev')}
-                  className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
-                >
-                  <ChevronLeft className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => handleFocusChartStep('next')}
-                  className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
-                >
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              <div className="flex items-center bg-slate-950/80 border border-slate-800 rounded-xl p-0.5 text-[11px] font-bold">
-                {(['daily', 'weekly', 'monthly', 'yearly'] as Timeframe[]).map(tf => (
-                  <button
-                    key={tf}
-                    onClick={() => setFocusChartTimeframe(tf)}
-                    className={`px-2 py-0.5 rounded-lg capitalize transition-all cursor-pointer ${
-                      focusChartTimeframe === tf
-                        ? 'bg-emerald-500 text-slate-950 font-black shadow-sm'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    {tf}
-                  </button>
-                ))}
-              </div>
-            </div>
+      {/* 3. Bottom Section — Focus Time Chart (Full Width) */}
+      <div className="w-full col-span-full bg-[#0e1422] border border-slate-800/80 rounded-3xl p-4 sm:p-6 shadow-2xl space-y-3">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-800/70">
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4 text-emerald-400" />
+            <h3 className="text-sm sm:text-base font-bold text-white">Focus Time Chart</h3>
           </div>
 
-          {/* Top Stat Indicators */}
-          <div className="flex items-center justify-between text-xs text-slate-400 px-0.5">
-            <div>
-              Top : <span className="text-white font-mono font-bold">{focusChartData.topFormatted}</span>
-            </div>
-            <div>
-              Average : <span className="text-emerald-400 font-mono font-bold">{focusChartData.avgFormatted}</span>
-            </div>
-          </div>
-
-          {/* Vertical Bar Chart with Dashed Goal Reference Line */}
-          <div className="w-full h-56 pt-2">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={focusChartData.items}
-                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+          {/* Controls */}
+          <div className="flex items-center gap-1.5">
+            <div className="flex items-center bg-slate-950/80 border border-slate-800 rounded-xl p-0.5">
+              <button
+                onClick={() => handleFocusChartStep('prev')}
+                className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                title="Previous period"
               >
-                <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" vertical={false} />
-                <XAxis
-                  dataKey="label"
-                  stroke="#64748B"
-                  fontSize={11}
-                  tickLine={false}
-                  axisLine={{ stroke: '#334155' }}
-                />
-                <YAxis
-                  stroke="#64748B"
-                  fontSize={11}
-                  tickLine={false}
-                  axisLine={{ stroke: '#334155' }}
-                  tickFormatter={val => `${val}h`}
-                />
-                {focusChartData.items[0]?.goalHours && (
-                  <ReferenceLine
-                    y={focusChartData.items[0].goalHours}
-                    stroke="#10B981"
-                    strokeDasharray="4 4"
-                    strokeWidth={1.5}
-                  />
-                )}
-                <RechartsTooltip
-                  content={({ active, payload }) => {
-                    if (active && payload && payload.length) {
-                      const item = payload[0].payload;
-                      return (
-                        <div className="bg-slate-900 border border-slate-700 p-2 rounded-xl shadow-2xl text-xs">
-                          <div className="font-bold text-white mb-0.5">{item.label}</div>
-                          <div className="text-emerald-400 font-mono font-bold">
-                            {formatHoursAndMins(item.rawSec)}
-                          </div>
-                        </div>
-                      );
-                    }
-                    return null;
-                  }}
-                />
-                <Bar dataKey="hours" fill="#10B981" radius={[4, 4, 0, 0]} maxBarSize={32} />
-              </BarChart>
-            </ResponsiveContainer>
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => handleFocusChartStep('next')}
+                className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                title="Next period"
+              >
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <div className="flex items-center bg-slate-950/80 border border-slate-800 rounded-xl p-0.5 text-[11px] font-bold">
+              {(['daily', 'weekly', 'monthly', 'yearly'] as Timeframe[]).map(tf => (
+                <button
+                  key={tf}
+                  onClick={() => setFocusChartTimeframe(tf)}
+                  className={`px-2 py-0.5 rounded-lg capitalize transition-all cursor-pointer ${
+                    focusChartTimeframe === tf
+                      ? 'bg-emerald-500 text-slate-950 font-black shadow-sm'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {tf}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* Right Card: Task Chart */}
-        <div className="bg-[#0e1422] border border-slate-800/80 rounded-3xl p-4 sm:p-6 shadow-2xl space-y-3">
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-800/70">
-            <div className="flex items-center gap-2">
-              <CheckSquare className="w-4 h-4 text-cyan-400" />
-              <h3 className="text-sm sm:text-base font-bold text-white">Task Chart</h3>
-            </div>
-
-            {/* Controls */}
-            <div className="flex items-center gap-1.5">
-              <div className="flex items-center bg-slate-950/80 border border-slate-800 rounded-xl p-0.5">
-                <button
-                  onClick={() => handleTaskChartStep('prev')}
-                  className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
-                >
-                  <ChevronLeft className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => handleTaskChartStep('next')}
-                  className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
-                >
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              <div className="flex items-center bg-slate-950/80 border border-slate-800 rounded-xl p-0.5 text-[11px] font-bold">
-                {(['daily', 'weekly', 'monthly', 'yearly'] as Timeframe[]).map(tf => (
-                  <button
-                    key={tf}
-                    onClick={() => setTaskChartTimeframe(tf)}
-                    className={`px-2 py-0.5 rounded-lg capitalize transition-all cursor-pointer ${
-                      taskChartTimeframe === tf
-                        ? 'bg-cyan-500 text-slate-950 font-black shadow-sm'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    {tf}
-                  </button>
-                ))}
-              </div>
-            </div>
+        {/* Top Stat Indicators */}
+        <div className="flex items-center justify-between text-xs text-slate-400 px-0.5">
+          <div>
+            Top : <span className="text-white font-mono font-bold">{focusChartData.topFormatted}</span>
           </div>
-
-          {/* Top Stat Indicators */}
-          <div className="flex items-center justify-between text-xs text-slate-400 px-0.5">
-            <div>
-              Top : <span className="text-white font-mono font-bold">{taskChartData.topCount} Tasks</span>
-            </div>
-            <div>
-              Average : <span className="text-cyan-400 font-mono font-bold">{taskChartData.avgCount} Tasks</span>
-            </div>
+          <div>
+            Average : <span className="text-emerald-400 font-mono font-bold">{focusChartData.avgFormatted}</span>
           </div>
+        </div>
 
-          {/* Vertical Bar Chart */}
-          <div className="w-full h-56 pt-2">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={taskChartData.items}
-                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" vertical={false} />
-                <XAxis
-                  dataKey="label"
-                  stroke="#64748B"
-                  fontSize={11}
-                  tickLine={false}
-                  axisLine={{ stroke: '#334155' }}
+        {/* Vertical Bar Chart with Dashed Goal Reference Line */}
+        <div className="w-full h-64 pt-2">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={focusChartData.items}
+              margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" vertical={false} />
+              <XAxis
+                dataKey="label"
+                stroke="#64748B"
+                fontSize={11}
+                tickLine={false}
+                axisLine={{ stroke: '#334155' }}
+              />
+              <YAxis
+                stroke="#64748B"
+                fontSize={11}
+                tickLine={false}
+                axisLine={{ stroke: '#334155' }}
+                tickFormatter={val => `${val}h`}
+              />
+              {focusChartData.items[0]?.goalHours && (
+                <ReferenceLine
+                  y={focusChartData.items[0].goalHours}
+                  stroke="#10B981"
+                  strokeDasharray="4 4"
+                  strokeWidth={1.5}
                 />
-                <YAxis
-                  stroke="#64748B"
-                  fontSize={11}
-                  tickLine={false}
-                  axisLine={{ stroke: '#334155' }}
-                  allowDecimals={false}
-                />
-                <RechartsTooltip
-                  content={({ active, payload }) => {
-                    if (active && payload && payload.length) {
-                      const item = payload[0].payload;
-                      return (
-                        <div className="bg-slate-900 border border-slate-700 p-2 rounded-xl shadow-2xl text-xs">
-                          <div className="font-bold text-white mb-0.5">{item.label}</div>
-                          <div className="text-cyan-400 font-mono font-bold">
-                            {item.tasks} {item.tasks === 1 ? 'task' : 'tasks'} completed
-                          </div>
+              )}
+              <RechartsTooltip
+                content={({ active, payload }) => {
+                  if (active && payload && payload.length) {
+                    const item = payload[0].payload;
+                    return (
+                      <div className="bg-slate-900 border border-slate-700 p-2 rounded-xl shadow-2xl text-xs">
+                        <div className="font-bold text-white mb-0.5">{item.label}</div>
+                        <div className="text-emerald-400 font-mono font-bold">
+                          {formatHoursAndMins(item.rawSec)}
                         </div>
-                      );
-                    }
-                    return null;
-                  }}
-                />
-                <Bar dataKey="tasks" fill="#06B6D4" radius={[4, 4, 0, 0]} maxBarSize={32} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                }}
+              />
+              <Bar dataKey="hours" fill="#10B981" radius={[4, 4, 0, 0]} maxBarSize={48} />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       </div>
     </div>
