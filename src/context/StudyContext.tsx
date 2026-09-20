@@ -157,9 +157,55 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     userRef.current = user;
   }, [user]);
 
-  // State
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [selectedSubjectId, setSelectedSubjectId] = useState<string>('');
+  // Helper keys for user-scoped and local storage
+  const getSubjectStorageKey = (uid?: string) => `study_io_subjects_${uid || 'guest'}`;
+  const getSelectedSubjectStorageKey = (uid?: string) => `study_io_selected_subject_${uid || 'guest'}`;
+
+  // State with immediate storage initialization
+  const [subjects, setSubjectsState] = useState<Subject[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const uid = user?.id || 'guest';
+        const saved =
+          localStorage.getItem(getSubjectStorageKey(uid)) ||
+          localStorage.getItem('study_io_subjects_guest') ||
+          localStorage.getItem('studypulse_subjects');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return deduplicateSubjects(parsed);
+          }
+        }
+      } catch {}
+    }
+    return [];
+  });
+
+  const [selectedSubjectId, setSelectedSubjectIdState] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const uid = user?.id || 'guest';
+        const saved =
+          localStorage.getItem(getSelectedSubjectStorageKey(uid)) ||
+          localStorage.getItem('study_io_selected_subject_guest') ||
+          localStorage.getItem('studypulse_selected_subject_id');
+        if (saved) return saved;
+      } catch {}
+    }
+    return '';
+  });
+
+  const setSelectedSubjectId = useCallback((id: string) => {
+    setSelectedSubjectIdState(id);
+    if (typeof window !== 'undefined') {
+      try {
+        const uid = userRef.current?.id || 'guest';
+        localStorage.setItem(getSelectedSubjectStorageKey(uid), id);
+        localStorage.setItem('studypulse_selected_subject_id', id);
+      } catch {}
+    }
+  }, []);
+
   const [timerMode, setTimerMode] = useState<TimerMode>('stopwatch');
   
   const [isStudying, setIsStudying] = useState(false);
@@ -574,28 +620,32 @@ export function StudyProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     cleanupLegacyDemoData();
 
-    // 1. Initial load from localStorage
+    // 1. Initial load from storage
     try {
-      const savedSubjects = localStorage.getItem('studypulse_subjects');
+      const uid = user?.id || 'guest';
+      const savedSubjects =
+        localStorage.getItem(getSubjectStorageKey(uid)) ||
+        localStorage.getItem('study_io_subjects_guest') ||
+        localStorage.getItem('studypulse_subjects');
+
+      let currentLoadedSubjects: Subject[] = [];
       if (savedSubjects) {
         const parsed = JSON.parse(savedSubjects).map((s: Subject) =>
           s.name === 'General Focus' && (s.color === '#3B82F6' || !s.color) ? { ...s, color: '#5A6B6A' } : s
         );
-        const unique = deduplicateSubjects(parsed);
-        setSubjects(unique);
-        const activeSubs = unique.filter(s => !s.is_archived);
-        if (activeSubs.length > 0) {
-          setSelectedSubjectId(prev => {
-            if (!prev) return activeSubs[0].id;
-            const matched = activeSubs.find(s => s.id === prev || s.name.toLowerCase() === prev.toLowerCase());
-            return matched ? matched.id : activeSubs[0].id;
-          });
-        } else {
-          setSelectedSubjectId('');
+        currentLoadedSubjects = deduplicateSubjects(parsed);
+        if (currentLoadedSubjects.length > 0) {
+          setSubjectsState(currentLoadedSubjects);
+          const activeSubs = currentLoadedSubjects.filter(s => !s.is_archived);
+          if (activeSubs.length > 0) {
+            const storedSelected =
+              localStorage.getItem(getSelectedSubjectStorageKey(uid)) ||
+              localStorage.getItem('study_io_selected_subject_guest') ||
+              localStorage.getItem('studypulse_selected_subject_id');
+            const matched = activeSubs.find(s => s.id === storedSelected || s.name.toLowerCase() === (storedSelected || '').toLowerCase());
+            setSelectedSubjectId(matched ? matched.id : activeSubs[0].id);
+          }
         }
-      } else {
-        setSubjects([]);
-        setSelectedSubjectId('');
       }
 
       const savedSessions = localStorage.getItem('studypulse_sessions');
@@ -633,18 +683,28 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
     const fetchSupabaseData = async () => {
       try {
+        const uid = user.id;
         // Fetch Subjects
         const { data: dbSubjects, error: subError } = await supabase
           .from('subjects')
           .select('*')
-          .eq('user_id', user.id)
+          .eq('user_id', uid)
           .order('created_at', { ascending: true });
 
-        if (subError || !dbSubjects) {
-          console.error("Failed to fetch subjects from Supabase:", subError);
-          setSubjects([]);
-          setSelectedSubjectId('');
-        } else if (Array.isArray(dbSubjects) && dbSubjects.length > 0) {
+        // Retrieve existing local cached subjects
+        let localCached: Subject[] = [];
+        try {
+          const raw =
+            localStorage.getItem(getSubjectStorageKey(uid)) ||
+            localStorage.getItem('study_io_subjects_guest') ||
+            localStorage.getItem('studypulse_subjects');
+          if (raw) {
+            const p = JSON.parse(raw);
+            if (Array.isArray(p)) localCached = p;
+          }
+        } catch {}
+
+        if (Array.isArray(dbSubjects) && dbSubjects.length > 0) {
           const mappedSubjects: Subject[] = dbSubjects.map(s => ({
             id: s.id,
             name: s.name || '',
@@ -655,24 +715,48 @@ export function StudyProvider({ children }: { children: ReactNode }) {
             daily_goal_minutes: s.daily_goal_minutes ?? s.target_minutes ?? 60,
             targetMinutesPerDay: s.daily_goal_minutes ?? s.target_minutes ?? 60,
           }));
-          const uniqueSubjects = deduplicateSubjects(mappedSubjects);
-          setSubjects(uniqueSubjects);
-          const activeSubs = uniqueSubjects.filter(s => !s.is_archived);
+
+          const merged = deduplicateSubjects([...mappedSubjects, ...localCached]);
+          saveSubjects(merged);
+
+          const activeSubs = merged.filter(s => !s.is_archived);
           if (activeSubs.length > 0) {
-            setSelectedSubjectId(prev => {
-              if (!prev) return activeSubs[0].id;
-              const matched = activeSubs.find(s => s.id === prev || (s.name && s.name.toLowerCase() === prev.toLowerCase()));
-              return matched ? matched.id : activeSubs[0].id;
+            const storedId =
+              localStorage.getItem(getSelectedSubjectStorageKey(uid)) ||
+              localStorage.getItem('studypulse_selected_subject_id');
+            const matched = activeSubs.find(s => s.id === storedId || (s.name && storedId && s.name.toLowerCase() === storedId.toLowerCase()));
+            setSelectedSubjectId(matched ? matched.id : activeSubs[0].id);
+          }
+        } else if (subError) {
+          console.warn("Supabase subjects fetch error, retaining local cached subjects:", subError);
+          // Retain cached subjects! Do NOT reset to []
+          if (localCached.length > 0) {
+            saveSubjects(localCached);
+          }
+        } else {
+          // Supabase returned 0 rows. Check if we have cached subjects created locally:
+          if (localCached.length > 0) {
+            console.log("Supabase subjects empty but cached subjects found; preserving and syncing to cloud:", localCached);
+            saveSubjects(localCached);
+            // Sync local cached subjects to Supabase
+            localCached.forEach(async (cachedSub) => {
+              try {
+                if (!cachedSub.name) return;
+                await supabase.from('subjects').insert({
+                  user_id: uid,
+                  name: cachedSub.name,
+                  color: cachedSub.color || '#10B981',
+                  daily_goal_minutes: cachedSub.daily_goal_minutes || 60,
+                  is_archived: Boolean(cachedSub.is_archived),
+                });
+              } catch (e) {
+                console.warn("Error syncing cached subject to Supabase:", e);
+              }
             });
           } else {
-            setSelectedSubjectId('');
+            // Truly new user with zero subjects anywhere
+            setSubjectsState([]);
           }
-          try { localStorage.setItem('studypulse_subjects', JSON.stringify(uniqueSubjects)); } catch {}
-        } else {
-          // New user or user with zero subjects: strictly empty collection, do NOT seed sample subjects
-          setSubjects([]);
-          setSelectedSubjectId('');
-          try { localStorage.setItem('studypulse_subjects', JSON.stringify([])); } catch {}
         }
 
         // Fetch Study Sessions with authenticated user
@@ -769,16 +853,21 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     fetchSupabaseData();
   }, [user.id, isAuthenticated, updateProfile]);
 
-  // Persist local subjects with deduplication
-  const saveSubjects = (newSubjects: Subject[]) => {
+  // Persist local subjects with deduplication and dual storage
+  const saveSubjects = useCallback((newSubjects: Subject[]) => {
     const deduplicated = deduplicateSubjects(newSubjects);
-    setSubjects(deduplicated);
-    try {
-      localStorage.setItem('studypulse_subjects', JSON.stringify(deduplicated));
-    } catch {
-      // ignore
+    setSubjectsState(deduplicated);
+    if (typeof window !== 'undefined') {
+      try {
+        const uid = userRef.current?.id || 'guest';
+        const json = JSON.stringify(deduplicated);
+        localStorage.setItem(getSubjectStorageKey(uid), json);
+        localStorage.setItem('studypulse_subjects', json);
+      } catch {
+        // ignore
+      }
     }
-  };
+  }, []);
 
   // Persist local sessions
   const saveSessions = (newSessions: StudySession[]) => {
@@ -1131,8 +1220,18 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
   // Start Timer - sets anchor timestamp and starts real-time delta tracking
   const startTimer = useCallback((subjectId?: string, taskId?: string) => {
-    if (subjectId) {
-      setSelectedSubjectId(subjectId);
+    const activeSubId = subjectId || selectedSubjectId;
+    const subjectList = Array.isArray(subjects) ? subjects : [];
+    const targetSub = subjectList.find(s => s && s.id === activeSubId && !s.is_archived) || selectedSubject;
+
+    // Prevent timer start if no subject is selected
+    if (!targetSub?.id) {
+      console.warn("Cannot start timer: No active subject selected. Please select a subject first.");
+      return false;
+    }
+
+    if (activeSubId) {
+      setSelectedSubjectId(activeSubId);
     }
     if (taskId) {
       setActiveTaskId(taskId);
@@ -1144,16 +1243,15 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     setIsStudying(true);
     setIsPaused(false);
     soundFx.playStartChime();
-    const subjectList = Array.isArray(subjects) ? subjects : [];
-    const targetSub = subjectList.find(s => s && s.id === (subjectId || selectedSubjectId)) || selectedSubject;
     updateProfile({
       status: timerMode === 'pomodoro' && pomodoroPhase === 'shortBreak' ? 'resting' : 'studying',
       activeSessionStartTime: new Date().toISOString(),
-      currentSubjectId: targetSub?.id,
-      currentSubjectName: targetSub?.name,
-      currentSubjectColor: targetSub?.color,
+      currentSubjectId: targetSub.id,
+      currentSubjectName: targetSub.name,
+      currentSubjectColor: targetSub.color,
     });
-  }, [selectedSubjectId, selectedSubject, subjects, timerMode, pomodoroPhase, updateProfile]);
+    return true;
+  }, [selectedSubjectId, selectedSubject, subjects, timerMode, pomodoroPhase, setSelectedSubjectId, updateProfile]);
 
   // Pause Timer - freeze accumulatedSeconds = actualElapsed and clear the interval
   const pauseTimer = useCallback(() => {
@@ -1258,8 +1356,33 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     const now = new Date();
     const endedAt = now.toISOString();
     const startedAt = (sessionStartTimeRef.current || new Date(now.getTime() - secondsToSave * 1000)).toISOString();
-    const activeSubject = selectedSubject;
-    const subjectName = (typeof activeSubject === 'string' ? activeSubject : activeSubject?.name) || 'Unassigned';
+    const subjectList = Array.isArray(subjects) ? subjects : [];
+    let activeSubject =
+      subjectList.find(s => s && s.id === selectedSubjectId) ||
+      selectedSubject ||
+      null;
+
+    if (!activeSubject && typeof window !== 'undefined') {
+      try {
+        const uid = userRef.current?.id || 'guest';
+        const storedSubId =
+          localStorage.getItem(getSelectedSubjectStorageKey(uid)) ||
+          localStorage.getItem('study_io_selected_subject_guest') ||
+          localStorage.getItem('studypulse_selected_subject_id');
+        const storedSubs =
+          localStorage.getItem(getSubjectStorageKey(uid)) ||
+          localStorage.getItem('study_io_subjects_guest') ||
+          localStorage.getItem('studypulse_subjects');
+        if (storedSubs) {
+          const parsed = JSON.parse(storedSubs);
+          if (Array.isArray(parsed)) {
+            activeSubject = parsed.find((s: any) => s && s.id === (selectedSubjectId || storedSubId));
+          }
+        }
+      } catch {}
+    }
+
+    const subjectName = activeSubject?.name || 'Unassigned';
     const rawSubjectId = activeSubject?.id || null;
     const subjectId = rawSubjectId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawSubjectId) ? rawSubjectId : null;
     const subjectColor = activeSubject?.color || '#10B981';
@@ -1642,11 +1765,11 @@ export function StudyProvider({ children }: { children: ReactNode }) {
             .single()
             .then(({ data, error }) => {
               if (data && !error) {
-                setSubjects(prev => {
+                setSubjectsState(prev => {
                   const prevList = Array.isArray(prev) ? prev : [];
                   const updated = prevList.map(s => (s && s.id === tempId ? { ...s, id: data.id, userId: activeUserId } : s));
                   const deduped = deduplicateSubjects(updated);
-                  try { localStorage.setItem('studypulse_subjects', JSON.stringify(deduped)); } catch {}
+                  saveSubjects(deduped);
                   return deduped;
                 });
                 setSelectedSubjectId(data.id);

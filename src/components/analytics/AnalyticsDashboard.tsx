@@ -3,6 +3,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useStudy } from '../../context/StudyContext';
 import { useAuth } from '../../context/AuthContext';
+import { Subject } from '../../types';
 import {
   formatHoursAndMins,
   getLocalStartOfDay,
@@ -241,7 +242,25 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
   const distSubjectBreakdown = useMemo(() => {
     const map: Record<string, { name: string; seconds: number; color: string; sessionCount: number }> = {};
 
-    const subjectList = Array.isArray(subjects) ? subjects : [];
+    // Get subjects list with local storage fallback if state hasn't populated yet
+    const subjectList: Subject[] = (() => {
+      const list = Array.isArray(subjects) ? subjects : [];
+      if (list.length > 0) return list;
+      if (typeof window !== 'undefined') {
+        try {
+          const uid = user?.id || 'guest';
+          const stored =
+            localStorage.getItem(`study_io_subjects_${uid}`) ||
+            localStorage.getItem('study_io_subjects_guest') ||
+            localStorage.getItem('studypulse_subjects');
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+          }
+        } catch {}
+      }
+      return [];
+    })();
 
     // 1. Initialize from all subjects in state (both active and archived)
     subjectList.forEach(sub => {
@@ -254,26 +273,25 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
       };
     });
 
-    // 2. Aggregate each session into its subject, falling back gracefully to matching subject or 'Unassigned'
+    // 2. Aggregate each session into its subject, matching strictly by subject_id or subject_name
     distSessions.forEach(s => {
+      const sessionSubjectName = (s.subjectName || (s as any).subject_name || (s as any).subject?.name || (s as any).subject || '').trim();
+      const sessionSubjectId = (s.subjectId || '').trim();
+
       const matchedSubject = subjectList.find(
         sub =>
           sub && (
-            (s.subjectId && sub.id === s.subjectId) ||
-            (s.subjectName && (sub.name || '').trim().toLowerCase() === s.subjectName.trim().toLowerCase())
+            (sessionSubjectId && sub.id === sessionSubjectId) ||
+            (sessionSubjectName && sessionSubjectName.toLowerCase() !== 'unassigned' && (sub.name || '').trim().toLowerCase() === sessionSubjectName.toLowerCase())
           )
       );
 
-      // Check how sessions are grouped:
-      // const subjectLabel = session.subject_name || session.subject?.name || 'Unassigned';
       const subjectLabel =
         matchedSubject?.name ||
-        (s as any).subject_name ||
-        (s as any).subject?.name ||
-        (s.subjectName && s.subjectName !== 'General Focus' ? s.subjectName : null) ||
+        (sessionSubjectName && sessionSubjectName.toLowerCase() !== 'general focus' && sessionSubjectName.toLowerCase() !== 'unassigned' ? sessionSubjectName : null) ||
+        (sessionSubjectId && subjectList.find(sub => sub.id === sessionSubjectId)?.name) ||
         'Unassigned';
 
-      // Ensure donut chart slices and list items use matching subject's assigned color (falling back to emerald/cyan only if unassigned)
       const subjectColor =
         matchedSubject?.color ||
         (s.subjectColor && s.subjectColor !== '#5A6B6A' ? s.subjectColor : null) ||
@@ -281,8 +299,8 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
 
       const groupKey = matchedSubject
         ? matchedSubject.id
-        : s.subjectId && s.subjectId.trim() !== ''
-        ? s.subjectId
+        : sessionSubjectId !== ''
+        ? sessionSubjectId
         : `name-${subjectLabel.trim().toLowerCase()}`;
 
       if (map[groupKey]) {

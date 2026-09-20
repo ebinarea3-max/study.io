@@ -123,7 +123,12 @@ export function StudyTimer() {
 
   // Streamlined control handlers cleanly controlling synchronized StudyContext timer engine
   const handleStartSession = useCallback(() => {
-    if (!selectedSubject?.id && !selectedSubjectId) {
+    const activeSub =
+      activeSubjects.find(s => s && s.id === selectedSubjectId) ||
+      selectedSubject ||
+      null;
+
+    if (!activeSub?.id) {
       setSubjectWarning(true);
       if (activeSubjects.length === 0) {
         handleOpenSubjectManager();
@@ -134,8 +139,8 @@ export function StudyTimer() {
     }
     setSubjectWarning(false);
     setShowRecoveryBanner(false);
-    startTimer();
-  }, [selectedSubject?.id, selectedSubjectId, startTimer, activeSubjects.length, handleOpenSubjectManager]);
+    startTimer(activeSub.id);
+  }, [activeSubjects, selectedSubject, selectedSubjectId, startTimer, handleOpenSubjectManager]);
 
   const handlePause = useCallback(() => {
     pauseTimer();
@@ -159,8 +164,35 @@ export function StudyTimer() {
     const seconds = isRunning && startTimeRef?.current
       ? Math.max(elapsedSeconds, Math.floor((Date.now() - startTimeRef.current) / 1000))
       : elapsedSeconds;
-    const activeSubject = selectedSubject;
-    const subjectName = (typeof activeSubject === 'string' ? activeSubject : activeSubject?.name) || 'Unassigned';
+
+    // Read the currently selected subject directly from state/storage:
+    let activeSubject =
+      activeSubjects.find(s => s && s.id === selectedSubjectId) ||
+      subjectList.find(s => s && s.id === selectedSubjectId) ||
+      selectedSubject ||
+      null;
+
+    if (!activeSubject && typeof window !== 'undefined') {
+      try {
+        const uid = user?.id || 'guest';
+        const storedSubId =
+          localStorage.getItem(`study_io_selected_subject_${uid}`) ||
+          localStorage.getItem('study_io_selected_subject_guest') ||
+          localStorage.getItem('studypulse_selected_subject_id');
+        const storedSubs =
+          localStorage.getItem(`study_io_subjects_${uid}`) ||
+          localStorage.getItem('study_io_subjects_guest') ||
+          localStorage.getItem('studypulse_subjects');
+        if (storedSubs) {
+          const parsed = JSON.parse(storedSubs);
+          if (Array.isArray(parsed)) {
+            activeSubject = parsed.find((s: any) => s && s.id === (selectedSubjectId || storedSubId));
+          }
+        }
+      } catch {}
+    }
+
+    const subjectName = activeSubject?.name || 'Unassigned';
     const rawSubjectId = activeSubject?.id || null;
     const isUuid = (id?: string | null) => typeof id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
     const subjectId = isUuid(rawSubjectId) ? rawSubjectId : null;
