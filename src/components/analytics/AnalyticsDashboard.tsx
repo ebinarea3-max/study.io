@@ -5,7 +5,6 @@ import { useStudy } from '../../context/StudyContext';
 import { useAuth } from '../../context/AuthContext';
 import {
   formatHoursAndMins,
-  formatSeconds,
   getLocalStartOfDay,
   getLocalEndOfDay,
   getLocalDateString,
@@ -17,40 +16,30 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
-  Target,
-  Award,
-  Flame,
-  Sparkles,
-  Download,
+  CheckSquare,
+  PieChart as PieIcon,
   BarChart3,
-  TrendingUp,
+  Download,
   FileSpreadsheet,
   FileJson,
   ChevronDown,
-  Play,
-  Layers,
+  Sparkles,
 } from 'lucide-react';
+import {
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip as RechartsTooltip,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  ReferenceLine,
+} from 'recharts';
 
-type ViewMode = 'day' | 'week' | 'month' | 'year';
-
-type CalendarDayCell =
-  | {
-      isPadding: true;
-      dayNumber: number;
-      dateKey: string;
-    }
-  | {
-      isPadding: false;
-      dayNumber: number;
-      dateKey: string;
-      stats: { totalSeconds: number; sessionCount: number };
-      intensity: number;
-      hours: number;
-      isSelectedDay: boolean;
-      isToday: boolean;
-      inActiveWeek: boolean;
-      inActiveMonth: boolean;
-    };
+type Timeframe = 'daily' | 'weekly' | 'monthly' | 'yearly';
 
 interface AnalyticsDashboardProps {
   onStartSession?: () => void;
@@ -60,168 +49,209 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
   const { user } = useAuth();
   const { sessions, subjects, todos, selectedDate, setSelectedDate, refetchSessions } = useStudy();
 
-  const [viewMode, setViewMode] = useState<ViewMode>('day');
+  const todayStr = getLocalDateString();
   const [showExportMenu, setShowExportMenu] = useState(false);
 
-  // Active inspected day (YYYY-MM-DD)
-  const todayStr = getLocalDateString();
-  const [activeDate, setActiveDate] = useState<string>(selectedDate || todayStr);
+  // -------------------------------------------------------------
+  // 1. Distribution Card State
+  // -------------------------------------------------------------
+  const [distTimeframe, setDistTimeframe] = useState<Timeframe>('daily');
+  const [distAnchorDate, setDistAnchorDate] = useState<string>(selectedDate || todayStr);
 
-  // Calendar month state (first day of displayed month)
-  const [displayedMonth, setDisplayedMonth] = useState<Date>(() => {
+  // -------------------------------------------------------------
+  // 2. Focus Time Goal Calendar State
+  // -------------------------------------------------------------
+  const [calMonth, setCalMonth] = useState<Date>(() => {
     const d = selectedDate ? parseLocalDateString(selectedDate) : new Date();
     return new Date(d.getFullYear(), d.getMonth(), 1);
   });
-
-  // Calendar day tooltip hover/tap state
-  const [hoveredDay, setHoveredDay] = useState<{
+  const [calSelectedDate, setCalSelectedDate] = useState<string>(selectedDate || todayStr);
+  const [hoveredCalDay, setHoveredCalDay] = useState<{
     dateStr: string;
     totalSeconds: number;
-    count: number;
-    topSubject?: string;
   } | null>(null);
 
-  // Active hourly block tooltip in timeline
-  const [activeHourTooltip, setActiveHourTooltip] = useState<string | null>(null);
+  // -------------------------------------------------------------
+  // 3. Bottom Trend Charts State
+  // -------------------------------------------------------------
+  const [focusChartTimeframe, setFocusChartTimeframe] = useState<Timeframe>('daily');
+  const [focusChartAnchorDate, setFocusChartAnchorDate] = useState<string>(todayStr);
+
+  const [taskChartTimeframe, setTaskChartTimeframe] = useState<Timeframe>('daily');
+  const [taskChartAnchorDate, setTaskChartAnchorDate] = useState<string>(todayStr);
 
   useEffect(() => {
     refetchSessions();
   }, [refetchSessions]);
 
-  // Keep activeDate in sync if external selectedDate changes
+  // Keep calendar selection synced with external selectedDate
   useEffect(() => {
-    if (selectedDate && selectedDate !== activeDate) {
-      setActiveDate(selectedDate);
+    if (selectedDate && selectedDate !== calSelectedDate) {
+      setCalSelectedDate(selectedDate);
+      setDistAnchorDate(selectedDate);
       const d = parseLocalDateString(selectedDate);
-      setDisplayedMonth(new Date(d.getFullYear(), d.getMonth(), 1));
+      setCalMonth(new Date(d.getFullYear(), d.getMonth(), 1));
     }
-  }, [selectedDate]);
+  }, [selectedDate, calSelectedDate]);
 
-  // Map of date string (YYYY-MM-DD) -> { totalSeconds, sessionCount, sessions }
+  // Daily target seconds from user profile (default 3 hours)
+  const dailyGoalHours = user.dailyGoalHours || 3;
+  const dailyGoalSeconds = dailyGoalHours * 3600;
+
+  // -------------------------------------------------------------
+  // Helper: Precalculate date-keyed map for sessions
+  // -------------------------------------------------------------
   const sessionsByDateMap = useMemo(() => {
-    const map: Record<
-      string,
-      { totalSeconds: number; sessionCount: number; topSubjectMap: Record<string, number> }
-    > = {};
-
+    const map: Record<string, { totalSeconds: number; count: number; sessions: typeof sessions }> = {};
     sessions.forEach(s => {
       const dateKey = getLocalDateString(new Date(s.startTime));
       if (!map[dateKey]) {
-        map[dateKey] = { totalSeconds: 0, sessionCount: 0, topSubjectMap: {} };
+        map[dateKey] = { totalSeconds: 0, count: 0, sessions: [] };
       }
       map[dateKey].totalSeconds += s.durationSeconds;
-      map[dateKey].sessionCount += 1;
-
-      const subName = s.subjectName || 'General';
-      map[dateKey].topSubjectMap[subName] =
-        (map[dateKey].topSubjectMap[subName] || 0) + s.durationSeconds;
+      map[dateKey].count += 1;
+      map[dateKey].sessions.push(s);
     });
-
     return map;
   }, [sessions]);
 
-  // Month navigation handlers
-  const handlePrevMonth = () => {
-    setDisplayedMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+  // Helper: Get task completion date string
+  const getTaskDateStr = (todo: (typeof todos)[0]): string => {
+    if (todo.completedAt) {
+      return getLocalDateString(new Date(todo.completedAt));
+    }
+    if (todo.date) {
+      return todo.date;
+    }
+    return getLocalDateString(new Date(todo.createdAt));
   };
 
-  const handleNextMonth = () => {
-    setDisplayedMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
-  };
-
-  const handleJumpToToday = () => {
+  // -------------------------------------------------------------
+  // Top Row: 6 High-Level Metrics
+  // -------------------------------------------------------------
+  const topMetrics = useMemo(() => {
+    // Current Week Bounds (Monday - Sunday)
     const now = new Date();
-    setDisplayedMonth(new Date(now.getFullYear(), now.getMonth(), 1));
-    setActiveDate(todayStr);
-    setSelectedDate(todayStr);
-  };
-
-  // Week range computation for activeDate (Monday through Sunday)
-  const weekRange = useMemo(() => {
-    const d = parseLocalDateString(activeDate);
-    const dayOfWeek = d.getDay(); // 0 is Sun, 1 is Mon
-    // Offset to Monday
+    const dayOfWeek = now.getDay();
     const diffToMon = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-    const monday = new Date(d.getFullYear(), d.getMonth(), d.getDate() + diffToMon);
-    const sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6);
+    const currentWeekMon = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToMon);
+    const currentWeekSun = new Date(currentWeekMon.getFullYear(), currentWeekMon.getMonth(), currentWeekMon.getDate() + 6);
+    const weekMonStr = getLocalDateString(currentWeekMon);
+    const weekSunStr = getLocalDateString(currentWeekSun);
+
+    // 1. Total Focus Time (Lifetime)
+    const totalFocusSec = sessions.reduce((sum, s) => sum + s.durationSeconds, 0);
+
+    // 2. Focus Time of This Week
+    const thisWeekFocusSec = sessions
+      .filter(s => {
+        const dStr = getLocalDateString(new Date(s.startTime));
+        return dStr >= weekMonStr && dStr <= weekSunStr;
+      })
+      .reduce((sum, s) => sum + s.durationSeconds, 0);
+
+    // 3. Focus Time of Today
+    const todayFocusSec = sessions
+      .filter(s => getLocalDateString(new Date(s.startTime)) === todayStr)
+      .reduce((sum, s) => sum + s.durationSeconds, 0);
+
+    // 4. Total Completed Tasks
+    const completedTodos = todos.filter(t => t.completed);
+    const totalCompletedTasks = completedTodos.length;
+
+    // 5. Tasks Completed This Week
+    const thisWeekCompletedTasks = completedTodos.filter(t => {
+      const dStr = getTaskDateStr(t);
+      return dStr >= weekMonStr && dStr <= weekSunStr;
+    }).length;
+
+    // 6. Tasks Completed Today
+    const todayCompletedTasks = completedTodos.filter(t => getTaskDateStr(t) === todayStr).length;
 
     return {
-      start: getLocalStartOfDay(monday),
-      end: getLocalEndOfDay(sunday),
-      startStr: getLocalDateString(monday),
-      endStr: getLocalDateString(sunday),
+      totalFocusSec,
+      thisWeekFocusSec,
+      todayFocusSec,
+      totalCompletedTasks,
+      thisWeekCompletedTasks,
+      todayCompletedTasks,
     };
-  }, [activeDate]);
+  }, [sessions, todos, todayStr]);
 
-  // Month range computation for displayedMonth
-  const monthRange = useMemo(() => {
-    const year = displayedMonth.getFullYear();
-    const month = displayedMonth.getMonth();
-    const start = new Date(year, month, 1, 0, 0, 0, 0);
-    const end = new Date(year, month + 1, 0, 23, 59, 59, 999);
+  // -------------------------------------------------------------
+  // Distribution Card: Range Calculation & Data Filtering
+  // -------------------------------------------------------------
+  const distRange = useMemo(() => {
+    const anchor = parseLocalDateString(distAnchorDate);
+
+    if (distTimeframe === 'daily') {
+      return {
+        label: anchor.toLocaleDateString('en-US', {
+          weekday: 'short',
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+        }),
+        isToday: distAnchorDate === todayStr,
+        start: getLocalStartOfDay(anchor),
+        end: getLocalEndOfDay(anchor),
+      };
+    }
+
+    if (distTimeframe === 'weekly') {
+      const dayOfWeek = anchor.getDay();
+      const diffToMon = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+      const mon = new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate() + diffToMon);
+      const sun = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + 6);
+      const label = `${mon.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${sun.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+      return {
+        label,
+        isToday: false,
+        start: getLocalStartOfDay(mon),
+        end: getLocalEndOfDay(sun),
+      };
+    }
+
+    if (distTimeframe === 'monthly') {
+      const start = new Date(anchor.getFullYear(), anchor.getMonth(), 1, 0, 0, 0, 0);
+      const end = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0, 23, 59, 59, 999);
+      const label = anchor.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      return {
+        label,
+        isToday: false,
+        start,
+        end,
+      };
+    }
+
+    // Yearly
+    const start = new Date(anchor.getFullYear(), 0, 1, 0, 0, 0, 0);
+    const end = new Date(anchor.getFullYear(), 11, 31, 23, 59, 59, 999);
+    const label = `${anchor.getFullYear()}`;
     return {
+      label,
+      isToday: false,
       start,
       end,
-      daysInMonth: end.getDate(),
     };
-  }, [displayedMonth]);
+  }, [distTimeframe, distAnchorDate, todayStr]);
 
-  // Filter sessions based on current viewMode & active inspection window
-  const activeSessions = useMemo(() => {
-    if (viewMode === 'day') {
-      const startOfDay = getLocalStartOfDay(activeDate);
-      const endOfDay = getLocalEndOfDay(activeDate);
-      return sessions.filter(s => {
-        const t = new Date(s.startTime).getTime();
-        return t >= startOfDay.getTime() && t <= endOfDay.getTime();
-      });
-    }
+  // Distribution Sessions & Subject Breakdown
+  const distSessions = useMemo(() => {
+    const startTime = distRange.start.getTime();
+    const endTime = distRange.end.getTime();
+    return sessions.filter(s => {
+      const t = new Date(s.startTime).getTime();
+      return t >= startTime && t <= endTime;
+    });
+  }, [sessions, distRange]);
 
-    if (viewMode === 'week') {
-      return sessions.filter(s => {
-        const t = new Date(s.startTime).getTime();
-        return t >= weekRange.start.getTime() && t <= weekRange.end.getTime();
-      });
-    }
+  const distTotalSeconds = useMemo(() => {
+    return distSessions.reduce((sum, s) => sum + s.durationSeconds, 0);
+  }, [distSessions]);
 
-    if (viewMode === 'month') {
-      return sessions.filter(s => {
-        const t = new Date(s.startTime).getTime();
-        return t >= monthRange.start.getTime() && t <= monthRange.end.getTime();
-      });
-    }
-
-    if (viewMode === 'year') {
-      const activeYear = displayedMonth.getFullYear();
-      const startOfYear = new Date(activeYear, 0, 1, 0, 0, 0, 0);
-      const endOfYear = new Date(activeYear, 11, 31, 23, 59, 59, 999);
-      return sessions.filter(s => {
-        const t = new Date(s.startTime).getTime();
-        return t >= startOfYear.getTime() && t <= endOfYear.getTime();
-      });
-    }
-
-    return [];
-  }, [sessions, viewMode, activeDate, weekRange, monthRange, displayedMonth]);
-
-  // Aggregates for the active window
-  const periodTotalSeconds = useMemo(() => {
-    return activeSessions.reduce((sum, s) => sum + s.durationSeconds, 0);
-  }, [activeSessions]);
-
-  const periodSessionCount = activeSessions.length;
-
-  // Subject breakdown for active window
-  const subjectBreakdown = useMemo(() => {
-    const map: Record<
-      string,
-      {
-        name: string;
-        seconds: number;
-        color: string;
-        sessionCount: number;
-      }
-    > = {};
+  const distSubjectBreakdown = useMemo(() => {
+    const map: Record<string, { name: string; seconds: number; color: string; sessionCount: number }> = {};
 
     subjects.forEach(sub => {
       map[sub.id] = {
@@ -232,7 +262,7 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
       };
     });
 
-    activeSessions.forEach(s => {
+    distSessions.forEach(s => {
       if (map[s.subjectId]) {
         map[s.subjectId].seconds += s.durationSeconds;
         map[s.subjectId].sessionCount += 1;
@@ -246,722 +276,1005 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
       }
     });
 
-    const activeList = Object.values(map)
+    return Object.values(map)
       .filter(item => item.seconds > 0)
       .map(item => ({
         ...item,
         percentage:
-          periodTotalSeconds > 0
-            ? Math.round((item.seconds / periodTotalSeconds) * 100)
+          distTotalSeconds > 0
+            ? Math.round((item.seconds / distTotalSeconds) * 100)
             : 0,
       }))
       .sort((a, b) => b.seconds - a.seconds);
+  }, [subjects, distSessions, distTotalSeconds]);
 
-    return activeList;
-  }, [subjects, activeSessions, periodTotalSeconds]);
+  // Distribution Stepper Navigation Handlers
+  const handleDistStep = (direction: 'prev' | 'next') => {
+    const delta = direction === 'prev' ? -1 : 1;
+    const current = parseLocalDateString(distAnchorDate);
 
-  // Top subject
-  const topSubject = subjectBreakdown.length > 0 ? subjectBreakdown[0] : null;
-
-  // Goal calculation for active window
-  const goalStats = useMemo(() => {
-    const dailyTargetSec = (user.dailyGoalHours || 4) * 3600;
-    let targetSec = dailyTargetSec;
-    let goalLabel = `${user.dailyGoalHours || 4}h goal`;
-
-    if (viewMode === 'week') {
-      targetSec = dailyTargetSec * 7;
-      goalLabel = `${(user.dailyGoalHours || 4) * 7}h week goal`;
-    } else if (viewMode === 'month') {
-      targetSec = dailyTargetSec * monthRange.daysInMonth;
-      goalLabel = `${(user.dailyGoalHours || 4) * monthRange.daysInMonth}h month goal`;
-    } else if (viewMode === 'year') {
-      targetSec = dailyTargetSec * 365;
-      goalLabel = `${(user.dailyGoalHours || 4) * 365}h year goal`;
+    if (distTimeframe === 'daily') {
+      current.setDate(current.getDate() + delta);
+    } else if (distTimeframe === 'weekly') {
+      current.setDate(current.getDate() + delta * 7);
+    } else if (distTimeframe === 'monthly') {
+      current.setMonth(current.getMonth() + delta);
+    } else if (distTimeframe === 'yearly') {
+      current.setFullYear(current.getFullYear() + delta);
     }
 
-    const percentage = targetSec > 0 ? Math.round((periodTotalSeconds / targetSec) * 100) : 0;
+    const nextStr = getLocalDateString(current);
+    setDistAnchorDate(nextStr);
+    setSelectedDate(nextStr);
+  };
+
+  const handleDistJumpToday = () => {
+    setDistAnchorDate(todayStr);
+    setSelectedDate(todayStr);
+  };
+
+  // -------------------------------------------------------------
+  // Calendar Card: Goal Days, Month Matrix, & Date Selection
+  // -------------------------------------------------------------
+  const calStats = useMemo(() => {
+    const year = calMonth.getFullYear();
+    const month = calMonth.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    let focusDays = 0;
+    let completedGoalDays = 0;
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const dayData = sessionsByDateMap[dateKey];
+      if (dayData && dayData.totalSeconds > 0) {
+        focusDays += 1;
+        if (dayData.totalSeconds >= dailyGoalSeconds) {
+          completedGoalDays += 1;
+        }
+      }
+    }
+
+    const completionRate = focusDays > 0 ? Math.round((completedGoalDays / focusDays) * 100) : 0;
+
     return {
-      percentage,
-      goalLabel,
+      focusDays,
+      completedGoalDays,
+      completionRate,
+      daysInMonth,
     };
-  }, [user.dailyGoalHours, viewMode, monthRange.daysInMonth, periodTotalSeconds]);
+  }, [calMonth, sessionsByDateMap, dailyGoalSeconds]);
 
-  // Selected period header title
-  const activePeriodTitle = useMemo(() => {
-    if (viewMode === 'day') {
-      const d = parseLocalDateString(activeDate);
-      const isToday = activeDate === todayStr;
-      const dateFormatted = d.toLocaleDateString('en-US', {
-        weekday: 'long',
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      });
-      return isToday ? `Today (${dateFormatted})` : dateFormatted;
-    }
+  // Calendar Day Cells
+  const calDays = useMemo(() => {
+    const year = calMonth.getFullYear();
+    const month = calMonth.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-    if (viewMode === 'week') {
-      const mon = parseLocalDateString(weekRange.startStr);
-      const sun = parseLocalDateString(weekRange.endStr);
-      return `Week of ${mon.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-      })} – ${sun.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      })}`;
-    }
+    // Monday first offset: Mon = 0, Sun = 6
+    const firstDay = new Date(year, month, 1).getDay();
+    const leadBlankCount = firstDay === 0 ? 6 : firstDay - 1;
 
-    if (viewMode === 'month') {
-      return `Month of ${displayedMonth.toLocaleDateString('en-US', {
-        month: 'long',
-        year: 'numeric',
-      })}`;
-    }
+    const cells: {
+      isPadding: boolean;
+      dayNumber: number;
+      dateKey: string;
+      totalSeconds: number;
+      metGoal: boolean;
+      hasActivity: boolean;
+      isSelected: boolean;
+      isToday: boolean;
+    }[] = [];
 
-    if (viewMode === 'year') {
-      return `Year ${displayedMonth.getFullYear()}`;
-    }
-
-    return '';
-  }, [viewMode, activeDate, todayStr, weekRange, displayedMonth]);
-
-  // Calendar Grid Cells Computation
-  const calendarDays = useMemo(() => {
-    const year = displayedMonth.getFullYear();
-    const month = displayedMonth.getMonth();
-
-    // Days in this month
-    const totalDays = new Date(year, month + 1, 0).getDate();
-
-    // Day of week of 1st day (0 = Sun, 1 = Mon ... 6 = Sat)
-    const firstDayOfWeek = new Date(year, month, 1).getDay();
-    // Monday-first offset: Mon=0, Tue=1, ... Sun=6
-    const leadBlankCount = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1;
-
-    const days: CalendarDayCell[] = [];
-
-    // Blank cells before month start
+    // Lead padding
     for (let i = 0; i < leadBlankCount; i++) {
-      days.push({ isPadding: true, dayNumber: 0, dateKey: `pad-${i}` });
+      cells.push({
+        isPadding: true,
+        dayNumber: 0,
+        dateKey: `pad-${i}`,
+        totalSeconds: 0,
+        metGoal: false,
+        hasActivity: false,
+        isSelected: false,
+        isToday: false,
+      });
     }
 
     // Actual month days
-    for (let d = 1; d <= totalDays; d++) {
+    for (let d = 1; d <= daysInMonth; d++) {
       const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-      const stats = sessionsByDateMap[dateKey] || { totalSeconds: 0, sessionCount: 0 };
-      const hours = stats.totalSeconds / 3600;
+      const totalSeconds = sessionsByDateMap[dateKey]?.totalSeconds || 0;
+      const metGoal = totalSeconds >= dailyGoalSeconds;
+      const hasActivity = totalSeconds > 0;
 
-      // Intensity level: 0 (none), 1 (<1h), 2 (1-3h), 3 (3-5h), 4 (>5h)
-      let intensity = 0;
-      if (hours > 0 && hours < 1) intensity = 1;
-      else if (hours >= 1 && hours < 3) intensity = 2;
-      else if (hours >= 3 && hours < 5) intensity = 3;
-      else if (hours >= 5) intensity = 4;
-
-      // Highlight logic
-      const isSelectedDay = dateKey === activeDate;
-      const isToday = dateKey === todayStr;
-      const inActiveWeek =
-        viewMode === 'week' &&
-        dateKey >= weekRange.startStr &&
-        dateKey <= weekRange.endStr;
-      const inActiveMonth = viewMode === 'month';
-
-      days.push({
+      cells.push({
         isPadding: false,
         dayNumber: d,
         dateKey,
-        stats,
-        intensity,
-        hours,
-        isSelectedDay,
-        isToday,
-        inActiveWeek,
-        inActiveMonth,
+        totalSeconds,
+        metGoal,
+        hasActivity,
+        isSelected: dateKey === calSelectedDate,
+        isToday: dateKey === todayStr,
       });
     }
 
-    return days;
-  }, [
-    displayedMonth,
-    sessionsByDateMap,
-    activeDate,
-    todayStr,
-    viewMode,
-    weekRange.startStr,
-    weekRange.endStr,
-  ]);
+    return cells;
+  }, [calMonth, sessionsByDateMap, dailyGoalSeconds, calSelectedDate, todayStr]);
 
-  // Hourly distribution computation for timeline (0 to 23 hours)
-  const hourlyData = useMemo(() => {
-    const hours = Array.from({ length: 24 }, (_, i) => ({
-      hour: i,
-      label: `${String(i).padStart(2, '0')}:00`,
-      seconds: 0,
-      sessions: [] as typeof activeSessions,
-    }));
+  const handleCalSelectDay = (dateKey: string) => {
+    setCalSelectedDate(dateKey);
+    setDistAnchorDate(dateKey);
+    setDistTimeframe('daily');
+    setSelectedDate(dateKey);
+  };
 
-    activeSessions.forEach(s => {
-      const start = new Date(s.startTime);
-      const h = start.getHours();
-      if (h >= 0 && h < 24) {
-        hours[h].seconds += s.durationSeconds;
-        hours[h].sessions.push(s);
+  const handleCalPrevMonth = () => {
+    setCalMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+  };
+
+  const handleCalNextMonth = () => {
+    setCalMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+  };
+
+  // -------------------------------------------------------------
+  // Focus Time Chart (Bottom Left) Data Generation
+  // -------------------------------------------------------------
+  const focusChartData = useMemo(() => {
+    const anchor = parseLocalDateString(focusChartAnchorDate);
+    const data: { label: string; hours: number; rawSec: number; goalHours: number }[] = [];
+
+    if (focusChartTimeframe === 'daily') {
+      // 7 Days of the Week containing the anchor date
+      const dayOfWeek = anchor.getDay();
+      const diffToMon = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+      const mon = new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate() + diffToMon);
+
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + i);
+        const dateKey = getLocalDateString(d);
+        const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+        const sec = sessionsByDateMap[dateKey]?.totalSeconds || 0;
+        data.push({
+          label: dayName,
+          hours: parseFloat((sec / 3600).toFixed(1)),
+          rawSec: sec,
+          goalHours: dailyGoalHours,
+        });
       }
-    });
+    } else if (focusChartTimeframe === 'weekly') {
+      // 5 Weeks leading up to the anchor month end
+      const year = anchor.getFullYear();
+      const month = anchor.getMonth();
+      for (let w = 1; w <= 5; w++) {
+        const startD = new Date(year, month, (w - 1) * 7 + 1);
+        const endD = new Date(year, month, Math.min(new Date(year, month + 1, 0).getDate(), w * 7));
+        const startStr = getLocalDateString(startD);
+        const endStr = getLocalDateString(endD);
 
-    const maxSeconds = Math.max(...hours.map(h => h.seconds), 1);
+        let sec = 0;
+        sessions.forEach(s => {
+          const dStr = getLocalDateString(new Date(s.startTime));
+          if (dStr >= startStr && dStr <= endStr) sec += s.durationSeconds;
+        });
 
-    return hours.map(h => ({
-      ...h,
-      hoursFormatted: (h.seconds / 3600).toFixed(1),
-      intensityPct: Math.min(100, Math.round((h.seconds / maxSeconds) * 100)),
-    }));
-  }, [activeSessions]);
+        data.push({
+          label: `W${w}`,
+          hours: parseFloat((sec / 3600).toFixed(1)),
+          rawSec: sec,
+          goalHours: dailyGoalHours * 7,
+        });
+      }
+    } else if (focusChartTimeframe === 'monthly') {
+      // 12 Months of the anchor year
+      const year = anchor.getFullYear();
+      for (let m = 0; m < 12; m++) {
+        const mDate = new Date(year, m, 1);
+        const monthShort = mDate.toLocaleDateString('en-US', { month: 'short' });
+        let sec = 0;
+        sessions.forEach(s => {
+          const d = new Date(s.startTime);
+          if (d.getFullYear() === year && d.getMonth() === m) {
+            sec += s.durationSeconds;
+          }
+        });
+        data.push({
+          label: monthShort,
+          hours: parseFloat((sec / 3600).toFixed(1)),
+          rawSec: sec,
+          goalHours: dailyGoalHours * 30,
+        });
+      }
+    } else if (focusChartTimeframe === 'yearly') {
+      // Past 5 Years
+      const curYear = anchor.getFullYear();
+      for (let y = curYear - 4; y <= curYear; y++) {
+        let sec = 0;
+        sessions.forEach(s => {
+          if (new Date(s.startTime).getFullYear() === y) {
+            sec += s.durationSeconds;
+          }
+        });
+        data.push({
+          label: `${y}`,
+          hours: parseFloat((sec / 3600).toFixed(1)),
+          rawSec: sec,
+          goalHours: dailyGoalHours * 365,
+        });
+      }
+    }
+
+    const maxSec = Math.max(...data.map(d => d.rawSec), 0);
+    const avgSec = data.length > 0 ? Math.round(data.reduce((sum, d) => sum + d.rawSec, 0) / data.length) : 0;
+
+    return {
+      items: data,
+      topFormatted: formatHoursAndMins(maxSec),
+      avgFormatted: formatHoursAndMins(avgSec),
+    };
+  }, [focusChartAnchorDate, focusChartTimeframe, sessionsByDateMap, dailyGoalHours, sessions]);
+
+  const handleFocusChartStep = (direction: 'prev' | 'next') => {
+    const delta = direction === 'prev' ? -1 : 1;
+    const current = parseLocalDateString(focusChartAnchorDate);
+    if (focusChartTimeframe === 'daily') current.setDate(current.getDate() + delta * 7);
+    else if (focusChartTimeframe === 'weekly' || focusChartTimeframe === 'monthly') current.setMonth(current.getMonth() + delta);
+    else current.setFullYear(current.getFullYear() + delta);
+    setFocusChartAnchorDate(getLocalDateString(current));
+  };
+
+  // -------------------------------------------------------------
+  // Task Chart (Bottom Right) Data Generation
+  // -------------------------------------------------------------
+  const taskChartData = useMemo(() => {
+    const anchor = parseLocalDateString(taskChartAnchorDate);
+    const data: { label: string; tasks: number }[] = [];
+    const completedTodos = todos.filter(t => t.completed);
+
+    if (taskChartTimeframe === 'daily') {
+      // 7 Days of the Week containing the anchor date
+      const dayOfWeek = anchor.getDay();
+      const diffToMon = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+      const mon = new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate() + diffToMon);
+
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + i);
+        const dateKey = getLocalDateString(d);
+        const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+        const count = completedTodos.filter(t => getTaskDateStr(t) === dateKey).length;
+        data.push({
+          label: dayName,
+          tasks: count,
+        });
+      }
+    } else if (taskChartTimeframe === 'weekly') {
+      // 5 Weeks of the anchor month
+      const year = anchor.getFullYear();
+      const month = anchor.getMonth();
+      for (let w = 1; w <= 5; w++) {
+        const startD = new Date(year, month, (w - 1) * 7 + 1);
+        const endD = new Date(year, month, Math.min(new Date(year, month + 1, 0).getDate(), w * 7));
+        const startStr = getLocalDateString(startD);
+        const endStr = getLocalDateString(endD);
+
+        const count = completedTodos.filter(t => {
+          const dStr = getTaskDateStr(t);
+          return dStr >= startStr && dStr <= endStr;
+        }).length;
+
+        data.push({
+          label: `W${w}`,
+          tasks: count,
+        });
+      }
+    } else if (taskChartTimeframe === 'monthly') {
+      // 12 Months of the anchor year
+      const year = anchor.getFullYear();
+      for (let m = 0; m < 12; m++) {
+        const mDate = new Date(year, m, 1);
+        const monthShort = mDate.toLocaleDateString('en-US', { month: 'short' });
+        const count = completedTodos.filter(t => {
+          const d = parseLocalDateString(getTaskDateStr(t));
+          return d.getFullYear() === year && d.getMonth() === m;
+        }).length;
+
+        data.push({
+          label: monthShort,
+          tasks: count,
+        });
+      }
+    } else if (taskChartTimeframe === 'yearly') {
+      // Past 5 Years
+      const curYear = anchor.getFullYear();
+      for (let y = curYear - 4; y <= curYear; y++) {
+        const count = completedTodos.filter(t => {
+          const d = parseLocalDateString(getTaskDateStr(t));
+          return d.getFullYear() === y;
+        }).length;
+
+        data.push({
+          label: `${y}`,
+          tasks: count,
+        });
+      }
+    }
+
+    const maxTasks = Math.max(...data.map(d => d.tasks), 0);
+    const avgTasks = data.length > 0 ? (data.reduce((sum, d) => sum + d.tasks, 0) / data.length).toFixed(1) : '0';
+
+    return {
+      items: data,
+      topCount: maxTasks,
+      avgCount: avgTasks,
+    };
+  }, [taskChartAnchorDate, taskChartTimeframe, todos]);
+
+  const handleTaskChartStep = (direction: 'prev' | 'next') => {
+    const delta = direction === 'prev' ? -1 : 1;
+    const current = parseLocalDateString(taskChartAnchorDate);
+    if (taskChartTimeframe === 'daily') current.setDate(current.getDate() + delta * 7);
+    else if (taskChartTimeframe === 'weekly' || taskChartTimeframe === 'monthly') current.setMonth(current.getMonth() + delta);
+    else current.setFullYear(current.getFullYear() + delta);
+    setTaskChartAnchorDate(getLocalDateString(current));
+  };
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-5 sm:space-y-6">
-      {/* 1. Top Hub Header & View Switcher */}
-      <div className="rounded-3xl bg-slate-900/80 border border-slate-800/80 backdrop-blur-xl p-4 sm:p-6 shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+    <div className="w-full max-w-7xl mx-auto space-y-4 sm:space-y-6">
+      {/* 0. Header & Export Actions */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-[#0e1422] border border-slate-800/80 rounded-2xl p-4 shadow-xl">
         <div>
-          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-400 mb-1">
-            <CalendarIcon className="w-4 h-4" />
-            <span>Activity & Performance Hub</span>
-          </div>
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-white tracking-tight">
-            Study Analytics
+          <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2.5">
+            <BarChart3 className="w-6 h-6 text-emerald-400" />
+            <span>Study Report & Analytics</span>
           </h1>
-          <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
-            Interactive calendar matrix, focus duration density, and hourly study patterns
+          <p className="text-xs text-slate-400 mt-0.5">
+            Comprehensive Focus To-Do activity, daily goal achievement, and trend distribution
           </p>
         </div>
 
-        {/* View Mode Switcher + Export Menu */}
-        <div className="flex items-center gap-2.5 w-full md:w-auto justify-between md:justify-end">
-          {/* View Switch: [ Day | Week | Month | Year ] */}
-          <div className="flex items-center p-1 rounded-2xl bg-slate-950/90 border border-slate-800 shadow-inner">
-            {(['day', 'week', 'month', 'year'] as ViewMode[]).map(mode => (
-              <button
-                key={mode}
-                onClick={() => setViewMode(mode)}
-                className={`px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-bold capitalize transition-all duration-200 cursor-pointer ${
-                  viewMode === mode
-                    ? 'bg-emerald-500 text-slate-950 font-black shadow-md shadow-emerald-500/20 scale-[1.02]'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
-                }`}
-              >
-                {mode}
-              </button>
-            ))}
-          </div>
+        {/* Export Data Dropdown */}
+        <div className="relative self-end sm:self-auto">
+          <button
+            onClick={() => setShowExportMenu(!showExportMenu)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/90 hover:bg-slate-750 border border-slate-700/80 text-white text-xs font-bold transition-all shadow-md cursor-pointer"
+            title="Backup study data"
+          >
+            <Download className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Export Data</span>
+            <ChevronDown className="w-3 h-3 text-slate-400" />
+          </button>
 
-          {/* Export Data Dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setShowExportMenu(!showExportMenu)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:py-2 rounded-2xl bg-slate-800/80 hover:bg-slate-750 border border-slate-700/80 text-white text-xs font-bold transition-all shadow-md cursor-pointer"
-              title="Backup lifetime sessions"
-            >
-              <Download className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="hidden sm:inline">Export</span>
-              <ChevronDown className="w-3 h-3 text-slate-400" />
-            </button>
-
-            {showExportMenu && (
-              <div className="absolute right-0 mt-2 w-52 rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl p-1.5 z-40 animate-in fade-in zoom-in-95 duration-100">
-                <div className="px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-800/80 mb-1">
-                  Backup Sessions
-                </div>
-                <button
-                  onClick={() => {
-                    exportSessionsAsCSV(sessions, subjects);
-                    setShowExportMenu(false);
-                  }}
-                  className="w-full text-left px-2.5 py-2 rounded-xl text-xs font-semibold text-slate-200 hover:bg-slate-800 hover:text-white transition-colors flex items-center gap-2 cursor-pointer"
-                >
-                  <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
-                  <span>Export as CSV</span>
-                </button>
-                <button
-                  onClick={() => {
-                    exportDataAsJSON(user, subjects, sessions, todos);
-                    setShowExportMenu(false);
-                  }}
-                  className="w-full text-left px-2.5 py-2 rounded-xl text-xs font-semibold text-slate-200 hover:bg-slate-800 hover:text-white transition-colors flex items-center gap-2 cursor-pointer"
-                >
-                  <FileJson className="w-4 h-4 text-cyan-400" />
-                  <span>Export as JSON</span>
-                </button>
+          {showExportMenu && (
+            <div className="absolute right-0 mt-2 w-52 rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl p-1.5 z-40 animate-in fade-in zoom-in-95 duration-100">
+              <div className="px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-800/80 mb-1">
+                Backup Lifetime Records
               </div>
-            )}
+              <button
+                onClick={() => {
+                  exportSessionsAsCSV(sessions, subjects);
+                  setShowExportMenu(false);
+                }}
+                className="w-full text-left px-2.5 py-2 rounded-xl text-xs font-semibold text-slate-200 hover:bg-slate-800 hover:text-white transition-colors flex items-center gap-2 cursor-pointer"
+              >
+                <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+                <span>Export as CSV</span>
+              </button>
+              <button
+                onClick={() => {
+                  exportDataAsJSON(user, subjects, sessions, todos);
+                  setShowExportMenu(false);
+                }}
+                className="w-full text-left px-2.5 py-2 rounded-xl text-xs font-semibold text-slate-200 hover:bg-slate-800 hover:text-white transition-colors flex items-center gap-2 cursor-pointer"
+              >
+                <FileJson className="w-4 h-4 text-cyan-400" />
+                <span>Export as JSON</span>
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 1. Top Row — 6 High-Level Metric Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+        {/* Card 1: Total Focus Time */}
+        <div className="bg-[#0e1422] border border-slate-800/80 rounded-2xl p-3 sm:p-3.5 shadow-lg relative flex flex-col justify-between">
+          <div className="h-0.5 w-7 bg-rose-500 rounded-full mb-2" />
+          <div className="text-[11px] font-medium text-slate-400 leading-tight">
+            Total Focus Time
+          </div>
+          <div className="text-base sm:text-lg font-black text-white font-mono mt-1 truncate">
+            {formatHoursAndMins(topMetrics.totalFocusSec)}
+          </div>
+        </div>
+
+        {/* Card 2: Focus Time of This Week */}
+        <div className="bg-[#0e1422] border border-slate-800/80 rounded-2xl p-3 sm:p-3.5 shadow-lg relative flex flex-col justify-between">
+          <div className="h-0.5 w-7 bg-rose-500 rounded-full mb-2" />
+          <div className="text-[11px] font-medium text-slate-400 leading-tight">
+            Focus Time This Week
+          </div>
+          <div className="text-base sm:text-lg font-black text-white font-mono mt-1 truncate">
+            {formatHoursAndMins(topMetrics.thisWeekFocusSec)}
+          </div>
+        </div>
+
+        {/* Card 3: Focus Time of Today */}
+        <div className="bg-[#0e1422] border border-slate-800/80 rounded-2xl p-3 sm:p-3.5 shadow-lg relative flex flex-col justify-between">
+          <div className="h-0.5 w-7 bg-rose-500 rounded-full mb-2" />
+          <div className="text-[11px] font-medium text-slate-400 leading-tight">
+            Focus Time Today
+          </div>
+          <div className="text-base sm:text-lg font-black text-white font-mono mt-1 truncate">
+            {formatHoursAndMins(topMetrics.todayFocusSec)}
+          </div>
+        </div>
+
+        {/* Card 4: Total Completed Tasks */}
+        <div className="bg-[#0e1422] border border-slate-800/80 rounded-2xl p-3 sm:p-3.5 shadow-lg relative flex flex-col justify-between">
+          <div className="h-0.5 w-7 bg-emerald-400 rounded-full mb-2" />
+          <div className="text-[11px] font-medium text-slate-400 leading-tight">
+            Total Tasks Done
+          </div>
+          <div className="text-base sm:text-lg font-black text-white font-mono mt-1 truncate">
+            {topMetrics.totalCompletedTasks}
+          </div>
+        </div>
+
+        {/* Card 5: Tasks Completed This Week */}
+        <div className="bg-[#0e1422] border border-slate-800/80 rounded-2xl p-3 sm:p-3.5 shadow-lg relative flex flex-col justify-between">
+          <div className="h-0.5 w-7 bg-emerald-400 rounded-full mb-2" />
+          <div className="text-[11px] font-medium text-slate-400 leading-tight">
+            Tasks This Week
+          </div>
+          <div className="text-base sm:text-lg font-black text-white font-mono mt-1 truncate">
+            {topMetrics.thisWeekCompletedTasks}
+          </div>
+        </div>
+
+        {/* Card 6: Tasks Completed Today */}
+        <div className="bg-[#0e1422] border border-slate-800/80 rounded-2xl p-3 sm:p-3.5 shadow-lg relative flex flex-col justify-between">
+          <div className="h-0.5 w-7 bg-emerald-400 rounded-full mb-2" />
+          <div className="text-[11px] font-medium text-slate-400 leading-tight">
+            Tasks Today
+          </div>
+          <div className="text-base sm:text-lg font-black text-white font-mono mt-1 truncate">
+            {topMetrics.todayCompletedTasks}
           </div>
         </div>
       </div>
 
-      {/* 2. Interactive Unified Calendar Section */}
-      <div className="rounded-3xl bg-slate-900/80 border border-slate-800/80 backdrop-blur-xl p-4 sm:p-6 shadow-2xl space-y-4">
-        {/* Calendar Navigation Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+      {/* 2. Middle Section — 2 Columns (Distribution & Calendar) */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-5 sm:gap-6 items-stretch">
+        {/* Left Card: Project / Subject Time Distribution (7 cols) */}
+        <div className="md:col-span-7 bg-[#0e1422] border border-slate-800/80 rounded-3xl p-4 sm:p-6 shadow-2xl flex flex-col justify-between space-y-4">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2 border-b border-slate-800/70">
+            <div className="flex items-center gap-2">
+              <PieIcon className="w-4 h-4 text-emerald-400" />
+              <h2 className="text-sm sm:text-base font-bold text-white">
+                Project Time Distribution
+              </h2>
+            </div>
+
+            {/* Timeframe Buttons & Navigation */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {/* Stepper buttons */}
+              <div className="flex items-center bg-slate-950/80 border border-slate-800 rounded-xl p-0.5">
+                <button
+                  onClick={() => handleDistStep('prev')}
+                  className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                  title="Previous period"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={handleDistJumpToday}
+                  className="px-2 py-0.5 text-[10px] font-bold text-slate-300 hover:text-white transition-colors cursor-pointer"
+                >
+                  Today
+                </button>
+                <button
+                  onClick={() => handleDistStep('next')}
+                  className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                  title="Next period"
+                >
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* [ Daily | Weekly | Monthly | Yearly ] */}
+              <div className="flex items-center bg-slate-950/80 border border-slate-800 rounded-xl p-0.5 text-[11px] font-bold">
+                {(['daily', 'weekly', 'monthly', 'yearly'] as Timeframe[]).map(tf => (
+                  <button
+                    key={tf}
+                    onClick={() => setDistTimeframe(tf)}
+                    className={`px-2 sm:px-2.5 py-1 rounded-lg capitalize transition-all cursor-pointer ${
+                      distTimeframe === tf
+                        ? 'bg-emerald-500 text-slate-950 font-black shadow-sm'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    {tf}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Active Range Sub-bar */}
+          <div className="flex items-center justify-between text-xs text-slate-400 px-0.5">
+            <span className="font-semibold text-slate-200">{distRange.label}</span>
+            <span className="font-mono text-emerald-400 font-bold">
+              Total: {formatHoursAndMins(distTotalSeconds)}
+            </span>
+          </div>
+
+          {/* Body: Donut Chart or Minimalist 3D Cube No Data State */}
+          {distSubjectBreakdown.length === 0 ? (
+            <div className="h-56 flex flex-col items-center justify-center text-center space-y-2">
+              {/* Minimalist 3D Cube SVG */}
+              <svg
+                className="w-14 h-14 mx-auto text-slate-700 opacity-60"
+                viewBox="0 0 64 64"
+                fill="none"
+              >
+                <path
+                  d="M32 8L52 19.5V42.5L32 54L12 42.5V19.5L32 8Z"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M32 8V31M52 19.5L32 31M12 19.5L32 31M32 31V54"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <div className="text-xs font-bold text-slate-400">No Data</div>
+              <p className="text-[11px] text-slate-500 max-w-xs">
+                No focus records logged for this {distTimeframe} range.
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 min-h-56">
+              {/* Donut Chart */}
+              <div className="w-full sm:w-1/2 h-52 relative">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={distSubjectBreakdown}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={50}
+                      outerRadius={75}
+                      paddingAngle={3}
+                      dataKey="seconds"
+                    >
+                      {distSubjectBreakdown.map((entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={entry.color}
+                          stroke="#0e1422"
+                          strokeWidth={2}
+                        />
+                      ))}
+                    </Pie>
+                    <RechartsTooltip
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          const item = payload[0].payload;
+                          return (
+                            <div className="bg-slate-900 border border-slate-700 p-2 rounded-xl shadow-2xl text-xs">
+                              <div className="flex items-center gap-1.5 font-bold text-white mb-0.5">
+                                <span
+                                  className="w-2 h-2 rounded-full"
+                                  style={{ backgroundColor: item.color }}
+                                />
+                                <span>{item.name}</span>
+                              </div>
+                              <div className="text-emerald-400 font-mono font-bold">
+                                {formatHoursAndMins(item.seconds)} ({item.percentage}%)
+                              </div>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Subject Breakdown Progress Bars List */}
+              <div className="w-full sm:w-1/2 space-y-2.5 overflow-y-auto max-h-52 pr-1">
+                {distSubjectBreakdown.map(sub => (
+                  <div key={sub.name} className="space-y-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span
+                          className="w-2 h-2 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: sub.color }}
+                        />
+                        <span className="font-semibold text-slate-200 truncate">
+                          {sub.name}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className="font-mono text-slate-300 font-bold text-[11px]">
+                          {formatHoursAndMins(sub.seconds)}
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-medium">
+                          {sub.percentage}%
+                        </span>
+                      </div>
+                    </div>
+                    {/* Progress Bar */}
+                    <div className="h-1.5 w-full rounded-full bg-slate-900 overflow-hidden border border-slate-800">
+                      <div
+                        className="h-full rounded-full transition-all duration-300"
+                        style={{
+                          width: `${sub.percentage}%`,
+                          backgroundColor: sub.color,
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Right Card: Focus Time Goal & Interactive Calendar (5 cols) */}
+        <div className="md:col-span-5 bg-[#0e1422] border border-slate-800/80 rounded-3xl p-4 sm:p-6 shadow-2xl flex flex-col justify-between space-y-3">
+          {/* Header & Goal Pill */}
+          <div className="flex items-center justify-between pb-2 border-b border-slate-800/70">
+            <h2 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+              <Clock className="w-4 h-4 text-emerald-400" />
+              <span>Focus Time Goal</span>
+            </h2>
+            <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-extrabold text-xs">
+              Goal: {dailyGoalHours}H
+            </span>
+          </div>
+
+          {/* Sub-stats bar */}
+          <div className="grid grid-cols-3 gap-1 text-center bg-slate-950/70 border border-slate-800/80 rounded-xl p-2 text-[10px] sm:text-[11px]">
+            <div>
+              <div className="text-slate-400">Focus Days</div>
+              <div className="font-black text-white font-mono mt-0.5">
+                {calStats.focusDays} d
+              </div>
+            </div>
+            <div className="border-x border-slate-800">
+              <div className="text-slate-400">Goal Met</div>
+              <div className="font-black text-emerald-400 font-mono mt-0.5">
+                {calStats.completedGoalDays} d
+              </div>
+            </div>
+            <div>
+              <div className="text-slate-400">Rate</div>
+              <div className="font-black text-cyan-300 font-mono mt-0.5">
+                {calStats.completionRate}%
+              </div>
+            </div>
+          </div>
+
+          {/* Centered Month Stepper */}
+          <div className="flex items-center justify-between px-1">
             <button
-              onClick={handlePrevMonth}
+              onClick={handleCalPrevMonth}
               aria-label="Previous month"
-              className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
+              className="p-1.5 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <h2 className="text-base sm:text-lg font-extrabold text-white tracking-tight min-w-[150px] sm:min-w-[180px] text-center">
-              {displayedMonth.toLocaleDateString('en-US', {
+            <span className="font-extrabold text-sm text-white">
+              {calMonth.toLocaleDateString('en-US', {
                 month: 'long',
                 year: 'numeric',
               })}
-            </h2>
+            </span>
             <button
-              onClick={handleNextMonth}
+              onClick={handleCalNextMonth}
               aria-label="Next month"
-              className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
+              className="p-1.5 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
 
-          <div className="flex items-center gap-2">
-            {/* Today Quick-Jump */}
-            <button
-              onClick={handleJumpToToday}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
-                activeDate === todayStr
-                  ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-400'
-                  : 'bg-slate-800/80 hover:bg-slate-750 border-slate-700/60 text-slate-300 hover:text-white'
-              }`}
-            >
-              Today
-            </button>
-
-            {/* Density Legend */}
-            <div className="hidden md:flex items-center gap-1.5 text-[11px] text-slate-400 bg-slate-950/60 px-2.5 py-1.5 rounded-xl border border-slate-800/80">
-              <span className="text-[10px] uppercase font-bold text-slate-500 mr-1">Intensity:</span>
-              <span className="w-2 h-2 rounded-full bg-slate-800 border border-slate-700" title="0 hours" />
-              <span className="w-2 h-2 rounded-full bg-emerald-500/30" title="< 1 hour" />
-              <span className="w-2 h-2 rounded-full bg-emerald-500/70" title="1h - 3h" />
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)]" title="3h - 5h" />
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-emerald-300 shadow-[0_0_8px_rgba(52,211,153,1)]" title="5h+ Peak" />
-            </div>
-          </div>
-        </div>
-
-        {/* Calendar Weekday Column Headers */}
-        <div className="grid grid-cols-7 gap-1 sm:gap-2 text-center text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400">
-          {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, idx) => (
-            <div key={day} className={idx >= 5 ? 'text-slate-500' : 'text-slate-400'}>
-              {day}
-            </div>
-          ))}
-        </div>
-
-        {/* Calendar Month Grid */}
-        <div className="grid grid-cols-7 gap-1 sm:gap-2">
-          {calendarDays.map((cell) => {
-            if (cell.isPadding) {
-              return (
-                <div
-                  key={cell.dateKey}
-                  className="aspect-square rounded-xl bg-slate-950/20 border border-transparent opacity-10 pointer-events-none"
-                />
-              );
-            }
-
-            const {
-              dateKey,
-              dayNumber,
-              stats,
-              intensity,
-              hours,
-              isSelectedDay,
-              isToday,
-              inActiveWeek,
-              inActiveMonth,
-            } = cell;
-
-            // Background & Border styling
-            let cellBg = 'bg-slate-950/60 border-slate-800/80 text-slate-300';
-            let dotEl = null;
-
-            if (intensity === 1) {
-              cellBg = 'bg-emerald-950/20 border-emerald-900/40 text-emerald-300';
-              dotEl = <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/60" />;
-            } else if (intensity === 2) {
-              cellBg = 'bg-emerald-950/30 border-emerald-800/50 text-emerald-200';
-              dotEl = (
-                <div className="flex gap-0.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                </div>
-              );
-            } else if (intensity === 3) {
-              cellBg = 'bg-emerald-900/30 border-emerald-600/50 text-emerald-100 shadow-[inset_0_0_12px_rgba(16,185,129,0.15)]';
-              dotEl = (
-                <div className="flex gap-0.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.8)]" />
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.8)]" />
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.8)]" />
-                </div>
-              );
-            } else if (intensity === 4) {
-              cellBg = 'bg-emerald-800/40 border-emerald-500/70 text-white shadow-[0_0_12px_rgba(16,185,129,0.25)]';
-              dotEl = (
-                <span className="px-1 py-0.2 rounded-full bg-emerald-400 text-slate-950 text-[9px] font-black shadow-[0_0_8px_rgba(52,211,153,0.9)]">
-                  {hours >= 10 ? `${Math.round(hours)}h` : `${hours.toFixed(1)}h`}
-                </span>
-              );
-            }
-
-            // In Week Highlight
-            if (inActiveWeek) {
-              cellBg += ' ring-1 ring-emerald-500/30 bg-emerald-950/25';
-            }
-
-            // In Month Highlight
-            if (inActiveMonth && viewMode === 'month') {
-              cellBg += ' ring-0.5 ring-emerald-500/20';
-            }
-
-            // Active Day Highlight (prominent emerald border & glow)
-            if (isSelectedDay) {
-              cellBg += ' !ring-2 !ring-emerald-400 !border-emerald-400 !shadow-[0_0_16px_rgba(16,185,129,0.5)] !z-10 scale-[1.02]';
-            }
-
-            return (
-              <div
-                key={dateKey}
-                onClick={() => {
-                  setActiveDate(dateKey);
-                  setSelectedDate(dateKey);
-                }}
-                onMouseEnter={() =>
-                  setHoveredDay({
-                    dateStr: dateKey,
-                    totalSeconds: stats.totalSeconds,
-                    count: stats.sessionCount,
-                  })
-                }
-                onMouseLeave={() => setHoveredDay(null)}
-                className={`relative aspect-square rounded-xl border p-1 sm:p-1.5 flex flex-col justify-between transition-all duration-150 cursor-pointer hover:border-emerald-400/80 hover:scale-[1.04] ${cellBg}`}
-              >
-                {/* Top Row: Day Number & Today indicator */}
-                <div className="flex items-center justify-between w-full leading-none">
-                  <span
-                    className={`text-[11px] sm:text-xs font-bold ${
-                      isToday
-                        ? 'text-cyan-300 font-extrabold flex items-center gap-0.5'
-                        : isSelectedDay
-                        ? 'text-emerald-300 font-extrabold'
-                        : ''
-                    }`}
-                  >
-                    {dayNumber}
-                    {isToday && (
-                      <span className="w-1 h-1 rounded-full bg-cyan-400 animate-pulse" />
-                    )}
-                  </span>
-
-                  {/* Intensity dots (on desktop/tablet) */}
-                  <div className="hidden sm:flex items-center">{dotEl}</div>
-                </div>
-
-                {/* Bottom Row: Micro dot on mobile or duration display */}
-                <div className="flex items-center justify-center sm:justify-start w-full leading-none">
-                  <div className="sm:hidden flex items-center justify-center">
-                    {intensity > 0 && (
-                      <span
-                        className={`w-1.5 h-1.5 rounded-full ${
-                          intensity === 4
-                            ? 'bg-emerald-300 shadow-[0_0_6px_rgba(52,211,153,1)]'
-                            : intensity >= 2
-                            ? 'bg-emerald-400'
-                            : 'bg-emerald-500/60'
-                        }`}
-                      />
-                    )}
-                  </div>
-                  {hours > 0 && (
-                    <span className="hidden sm:inline text-[9px] font-mono font-semibold text-slate-400 truncate">
-                      {formatHoursAndMins(stats.totalSeconds)}
-                    </span>
-                  )}
-                </div>
-
-                {/* Day Tooltip (on hover or tap) */}
-                {hoveredDay && hoveredDay.dateStr === dateKey && (
-                  <div className="absolute -top-12 left-1/2 -translate-x-1/2 z-50 pointer-events-none bg-slate-900/95 border border-slate-700/80 px-2.5 py-1.5 rounded-xl shadow-2xl text-[11px] whitespace-nowrap animate-in fade-in zoom-in-95 duration-100">
-                    <div className="font-bold text-white flex items-center gap-1.5">
-                      <span>{parseLocalDateString(dateKey).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}:</span>
-                      <span className="text-emerald-400 font-mono">
-                        {stats.totalSeconds > 0 ? formatHoursAndMins(stats.totalSeconds) : 'No study logged'}
-                      </span>
-                    </div>
-                    {stats.sessionCount > 0 && (
-                      <div className="text-[10px] text-slate-400">
-                        {stats.sessionCount} session{stats.sessionCount !== 1 ? 's' : ''} completed
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* 3. Selected Period Overview Bar */}
-      <div className="rounded-3xl bg-slate-900/80 border border-slate-800/80 backdrop-blur-xl p-4 sm:p-5 shadow-2xl space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-slate-800/80 pb-2.5">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-              Selected Window:
-            </span>
-            <span className="text-sm font-extrabold text-white">
-              {activePeriodTitle}
-            </span>
-          </div>
-          <span className="text-xs text-slate-400 font-medium">
-            Inspection Mode: <strong className="text-emerald-400 uppercase">{viewMode}</strong>
-          </span>
-        </div>
-
-        {/* 4 Compact Stat Pills */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
-          {/* Pill 1: Total Focus Time */}
-          <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800/80 shadow-sm flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center flex-shrink-0">
-              <Clock className="w-5 h-5 text-emerald-400" />
-            </div>
-            <div className="min-w-0">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                Focus Time
-              </div>
-              <div className="text-lg sm:text-xl font-black text-white font-mono truncate">
-                {formatHoursAndMins(periodTotalSeconds)}
-              </div>
-            </div>
-          </div>
-
-          {/* Pill 2: Sessions Completed */}
-          <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800/80 shadow-sm flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center flex-shrink-0">
-              <Award className="w-5 h-5 text-purple-400" />
-            </div>
-            <div className="min-w-0">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                Sessions
-              </div>
-              <div className="text-lg sm:text-xl font-black text-white font-mono truncate">
-                {periodSessionCount} {periodSessionCount === 1 ? 'block' : 'blocks'}
-              </div>
-            </div>
-          </div>
-
-          {/* Pill 3: Goal Progress */}
-          <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800/80 shadow-sm flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center flex-shrink-0">
-              <Target className="w-5 h-5 text-cyan-400" />
-            </div>
-            <div className="min-w-0">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                Goal Progress
-              </div>
-              <div className="text-lg sm:text-xl font-black text-cyan-300 font-mono truncate">
-                {goalStats.percentage}%
-              </div>
-              <div className="text-[9px] text-slate-400 truncate">
-                of {goalStats.goalLabel}
-              </div>
-            </div>
-          </div>
-
-          {/* Pill 4: Top Subject */}
-          <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800/80 shadow-sm flex items-center gap-3">
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 border"
-              style={{
-                backgroundColor: topSubject ? `${topSubject.color}20` : '#10B98115',
-                borderColor: topSubject ? `${topSubject.color}40` : '#10B98130',
-              }}
-            >
-              <Sparkles
-                className="w-5 h-5"
-                style={{ color: topSubject ? topSubject.color : '#10B981' }}
-              />
-            </div>
-            <div className="min-w-0">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                Top Subject
-              </div>
-              <div className="text-sm sm:text-base font-bold text-white truncate">
-                {topSubject ? topSubject.name : 'None'}
-              </div>
-              {topSubject && (
-                <div className="text-[9px] text-slate-400 font-mono">
-                  {formatHoursAndMins(topSubject.seconds)} ({topSubject.percentage}%)
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 4. Visual Breakdowns (Below Calendar): Subject Breakdown & Daily Hourly Timeline */}
-      {periodSessionCount === 0 ? (
-        /* Motivating Empty State */
-        <div className="rounded-3xl bg-slate-900/80 border border-slate-800/80 backdrop-blur-xl p-8 sm:p-12 shadow-2xl text-center space-y-4">
-          <div className="w-16 h-16 mx-auto rounded-3xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center shadow-[0_0_24px_rgba(16,185,129,0.2)]">
-            <Clock className="w-8 h-8 text-emerald-400" />
-          </div>
-          <div className="max-w-md mx-auto space-y-1">
-            <h3 className="text-lg sm:text-xl font-extrabold text-white">
-              No focus sessions logged on this {viewMode}
-            </h3>
-            <p className="text-xs sm:text-sm text-slate-400">
-              Consistency builds greatness. Launch a timer session right now to maintain your study streak and earn Scholar rank XP!
-            </p>
-          </div>
-          {onStartSession && (
-            <button
-              onClick={onStartSession}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black text-sm shadow-xl shadow-emerald-500/25 transition-all transform active:scale-95 cursor-pointer"
-            >
-              <Play className="w-4 h-4 fill-slate-950" />
-              <span>Start Focus Session</span>
-            </button>
-          )}
-        </div>
-      ) : (
-        /* Breakdown Cards Grid */
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 items-start">
-          {/* Left Card: Subject Breakdown */}
-          <div className="p-4 sm:p-6 rounded-3xl bg-slate-900/80 border border-slate-800/80 backdrop-blur-xl shadow-2xl space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Layers className="w-4 h-4 text-emerald-400" />
-                <h3 className="font-bold text-sm text-white">Subject Breakdown</h3>
-              </div>
-              <span className="text-xs text-slate-400 font-medium">
-                {subjectBreakdown.length} Subject{subjectBreakdown.length !== 1 ? 's' : ''}
-              </span>
-            </div>
-
-            {/* Subject List with Progress Bars */}
-            <div className="space-y-3.5">
-              {subjectBreakdown.map(item => (
-                <div key={item.name} className="space-y-1.5">
-                  <div className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span
-                        className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: item.color }}
-                      />
-                      <span className="font-bold text-white truncate">{item.name}</span>
-                      <span className="text-[10px] text-slate-400 font-medium">
-                        ({item.sessionCount} {item.sessionCount === 1 ? 'block' : 'blocks'})
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className="font-mono font-bold text-emerald-400">
-                        {formatHoursAndMins(item.seconds)}
-                      </span>
-                      <span className="px-1.5 py-0.5 rounded-md bg-slate-800 text-[10px] font-bold text-slate-300">
-                        {item.percentage}%
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Horizontal Progress Bar */}
-                  <div className="h-2 w-full rounded-full bg-slate-950/80 overflow-hidden border border-slate-800/80">
-                    <div
-                      className="h-full rounded-full transition-all duration-500 shadow-sm"
-                      style={{
-                        width: `${item.percentage}%`,
-                        backgroundColor: item.color,
-                      }}
-                    />
-                  </div>
+          {/* Standard 7-Column Calendar Grid */}
+          <div className="space-y-1.5">
+            {/* Weekday Column Labels */}
+            <div className="grid grid-cols-7 text-center text-[10px] font-bold text-slate-500">
+              {['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map((d, i) => (
+                <div key={d} className={i >= 5 ? 'text-slate-600' : ''}>
+                  {d}
                 </div>
               ))}
             </div>
-          </div>
 
-          {/* Right Card: Daily Hourly Timeline */}
-          <div className="p-4 sm:p-6 rounded-3xl bg-slate-900/80 border border-slate-800/80 backdrop-blur-xl shadow-2xl space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <BarChart3 className="w-4 h-4 text-cyan-400" />
-                <h3 className="font-bold text-sm text-white">Daily Hourly Timeline</h3>
-              </div>
-              <span className="text-xs text-slate-400 font-medium">
-                24-Hour Active Distribution
-              </span>
-            </div>
-
-            <p className="text-xs text-slate-400">
-              Hours of the day when focus sessions occurred during this selection:
-            </p>
-
-            {/* 24-Hour Vertical Bar Chart / Slots Grid */}
-            <div className="pt-2">
-              <div className="h-44 w-full flex items-end gap-1 sm:gap-1.5 pb-2 border-b border-slate-800">
-                {hourlyData.map(h => {
-                  const hasActivity = h.seconds > 0;
-                  const isHovered = activeHourTooltip === h.label;
-
+            {/* Calendar Cells */}
+            <div className="grid grid-cols-7 gap-1">
+              {calDays.map(c => {
+                if (c.isPadding) {
                   return (
                     <div
-                      key={h.hour}
-                      onMouseEnter={() => setActiveHourTooltip(h.label)}
-                      onMouseLeave={() => setActiveHourTooltip(null)}
-                      className="flex-1 flex flex-col items-center justify-end h-full relative group cursor-pointer"
-                    >
-                      {/* Tooltip on Hover */}
-                      {isHovered && (
-                        <div className="absolute -top-10 left-1/2 -translate-x-1/2 z-30 pointer-events-none bg-slate-900 border border-slate-700 px-2 py-1 rounded-lg text-[10px] whitespace-nowrap shadow-xl">
-                          <span className="text-white font-bold">{h.label}</span>:{' '}
-                          <span className="text-cyan-400 font-mono">
-                            {hasActivity ? formatHoursAndMins(h.seconds) : '0m'}
-                          </span>
-                        </div>
-                      )}
-
-                      {/* Bar fill */}
-                      <div
-                        className={`w-full rounded-t-sm transition-all duration-300 ${
-                          hasActivity
-                            ? 'bg-gradient-to-t from-cyan-600 to-emerald-400 group-hover:brightness-125 shadow-[0_0_8px_rgba(6,182,212,0.4)]'
-                            : 'bg-slate-800/40 group-hover:bg-slate-750'
-                        }`}
-                        style={{
-                          height: hasActivity ? `${Math.max(12, h.intensityPct)}%` : '4px',
-                        }}
-                      />
-                    </div>
+                      key={c.dateKey}
+                      className="aspect-square rounded-lg opacity-10 pointer-events-none"
+                    />
                   );
-                })}
-              </div>
+                }
 
-              {/* Hour X-Axis Labels */}
-              <div className="flex items-center justify-between text-[10px] font-mono text-slate-500 pt-1.5 px-0.5">
-                <span>00:00</span>
-                <span>06:00</span>
-                <span>12:00</span>
-                <span>18:00</span>
-                <span>23:00</span>
-              </div>
+                // Styling based on goal attainment
+                let cellClass =
+                  'aspect-square rounded-lg border flex flex-col items-center justify-center relative cursor-pointer text-xs transition-all text-slate-400 border-transparent hover:border-slate-700';
+
+                if (c.isSelected) {
+                  cellClass += ' !ring-2 !ring-emerald-400 !border-emerald-400 bg-slate-800 text-white font-bold';
+                }
+
+                return (
+                  <div
+                    key={c.dateKey}
+                    onClick={() => handleCalSelectDay(c.dateKey)}
+                    onMouseEnter={() =>
+                      setHoveredCalDay({
+                        dateStr: c.dateKey,
+                        totalSeconds: c.totalSeconds,
+                      })
+                    }
+                    onMouseLeave={() => setHoveredCalDay(null)}
+                    className={cellClass}
+                  >
+                    <span
+                      className={`leading-none ${
+                        c.isToday ? 'text-cyan-300 font-extrabold' : ''
+                      }`}
+                    >
+                      {c.dayNumber}
+                    </span>
+
+                    {/* Indicator: Met Goal = glowing emerald circle/ring, Under Goal = subtle orange pip */}
+                    {c.metGoal ? (
+                      <span className="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.9)]" />
+                    ) : c.hasActivity ? (
+                      <span className="absolute bottom-1 w-1 h-1 rounded-full bg-amber-400" />
+                    ) : null}
+
+                    {/* Tooltip on hover */}
+                    {hoveredCalDay && hoveredCalDay.dateStr === c.dateKey && (
+                      <div className="absolute -top-10 left-1/2 -translate-x-1/2 z-50 pointer-events-none bg-slate-900 border border-slate-700 px-2 py-1 rounded-lg text-[10px] whitespace-nowrap shadow-2xl">
+                        <span className="text-white font-bold">
+                          {parseLocalDateString(c.dateKey).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                          })}
+                        </span>
+                        :{' '}
+                        <span className="text-emerald-400 font-mono">
+                          {c.totalSeconds > 0
+                            ? formatHoursAndMins(c.totalSeconds)
+                            : '0m'}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
-      )}
+      </div>
+
+      {/* 3. Bottom Section — 2 Columns (Focus & Task Trends — 50/50 Split) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6 items-stretch">
+        {/* Left Card: Focus Time Chart */}
+        <div className="bg-[#0e1422] border border-slate-800/80 rounded-3xl p-4 sm:p-6 shadow-2xl space-y-3">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-800/70">
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-emerald-400" />
+              <h3 className="text-sm sm:text-base font-bold text-white">Focus Time Chart</h3>
+            </div>
+
+            {/* Controls */}
+            <div className="flex items-center gap-1.5">
+              <div className="flex items-center bg-slate-950/80 border border-slate-800 rounded-xl p-0.5">
+                <button
+                  onClick={() => handleFocusChartStep('prev')}
+                  className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => handleFocusChartStep('next')}
+                  className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                >
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              <div className="flex items-center bg-slate-950/80 border border-slate-800 rounded-xl p-0.5 text-[11px] font-bold">
+                {(['daily', 'weekly', 'monthly', 'yearly'] as Timeframe[]).map(tf => (
+                  <button
+                    key={tf}
+                    onClick={() => setFocusChartTimeframe(tf)}
+                    className={`px-2 py-0.5 rounded-lg capitalize transition-all cursor-pointer ${
+                      focusChartTimeframe === tf
+                        ? 'bg-emerald-500 text-slate-950 font-black shadow-sm'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    {tf}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Top Stat Indicators */}
+          <div className="flex items-center justify-between text-xs text-slate-400 px-0.5">
+            <div>
+              Top : <span className="text-white font-mono font-bold">{focusChartData.topFormatted}</span>
+            </div>
+            <div>
+              Average : <span className="text-emerald-400 font-mono font-bold">{focusChartData.avgFormatted}</span>
+            </div>
+          </div>
+
+          {/* Vertical Bar Chart with Dashed Goal Reference Line */}
+          <div className="w-full h-56 pt-2">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={focusChartData.items}
+                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" vertical={false} />
+                <XAxis
+                  dataKey="label"
+                  stroke="#64748B"
+                  fontSize={11}
+                  tickLine={false}
+                  axisLine={{ stroke: '#334155' }}
+                />
+                <YAxis
+                  stroke="#64748B"
+                  fontSize={11}
+                  tickLine={false}
+                  axisLine={{ stroke: '#334155' }}
+                  tickFormatter={val => `${val}h`}
+                />
+                {focusChartData.items[0]?.goalHours && (
+                  <ReferenceLine
+                    y={focusChartData.items[0].goalHours}
+                    stroke="#10B981"
+                    strokeDasharray="4 4"
+                    strokeWidth={1.5}
+                  />
+                )}
+                <RechartsTooltip
+                  content={({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                      const item = payload[0].payload;
+                      return (
+                        <div className="bg-slate-900 border border-slate-700 p-2 rounded-xl shadow-2xl text-xs">
+                          <div className="font-bold text-white mb-0.5">{item.label}</div>
+                          <div className="text-emerald-400 font-mono font-bold">
+                            {formatHoursAndMins(item.rawSec)}
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <Bar dataKey="hours" fill="#10B981" radius={[4, 4, 0, 0]} maxBarSize={32} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Right Card: Task Chart */}
+        <div className="bg-[#0e1422] border border-slate-800/80 rounded-3xl p-4 sm:p-6 shadow-2xl space-y-3">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-800/70">
+            <div className="flex items-center gap-2">
+              <CheckSquare className="w-4 h-4 text-cyan-400" />
+              <h3 className="text-sm sm:text-base font-bold text-white">Task Chart</h3>
+            </div>
+
+            {/* Controls */}
+            <div className="flex items-center gap-1.5">
+              <div className="flex items-center bg-slate-950/80 border border-slate-800 rounded-xl p-0.5">
+                <button
+                  onClick={() => handleTaskChartStep('prev')}
+                  className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => handleTaskChartStep('next')}
+                  className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                >
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              <div className="flex items-center bg-slate-950/80 border border-slate-800 rounded-xl p-0.5 text-[11px] font-bold">
+                {(['daily', 'weekly', 'monthly', 'yearly'] as Timeframe[]).map(tf => (
+                  <button
+                    key={tf}
+                    onClick={() => setTaskChartTimeframe(tf)}
+                    className={`px-2 py-0.5 rounded-lg capitalize transition-all cursor-pointer ${
+                      taskChartTimeframe === tf
+                        ? 'bg-cyan-500 text-slate-950 font-black shadow-sm'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    {tf}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Top Stat Indicators */}
+          <div className="flex items-center justify-between text-xs text-slate-400 px-0.5">
+            <div>
+              Top : <span className="text-white font-mono font-bold">{taskChartData.topCount} Tasks</span>
+            </div>
+            <div>
+              Average : <span className="text-cyan-400 font-mono font-bold">{taskChartData.avgCount} Tasks</span>
+            </div>
+          </div>
+
+          {/* Vertical Bar Chart */}
+          <div className="w-full h-56 pt-2">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={taskChartData.items}
+                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" vertical={false} />
+                <XAxis
+                  dataKey="label"
+                  stroke="#64748B"
+                  fontSize={11}
+                  tickLine={false}
+                  axisLine={{ stroke: '#334155' }}
+                />
+                <YAxis
+                  stroke="#64748B"
+                  fontSize={11}
+                  tickLine={false}
+                  axisLine={{ stroke: '#334155' }}
+                  allowDecimals={false}
+                />
+                <RechartsTooltip
+                  content={({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                      const item = payload[0].payload;
+                      return (
+                        <div className="bg-slate-900 border border-slate-700 p-2 rounded-xl shadow-2xl text-xs">
+                          <div className="font-bold text-white mb-0.5">{item.label}</div>
+                          <div className="text-cyan-400 font-mono font-bold">
+                            {item.tasks} {item.tasks === 1 ? 'task' : 'tasks'} completed
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <Bar dataKey="tasks" fill="#06B6D4" radius={[4, 4, 0, 0]} maxBarSize={32} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
