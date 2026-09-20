@@ -619,7 +619,7 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-4 sm:space-y-6">
+    <div className="w-full max-w-7xl mx-auto p-4 space-y-4 md:p-6 md:space-y-6 text-slate-100">
       {/* 0. Header & Export Actions */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-[#0e1422] border border-slate-800/80 rounded-2xl p-4 shadow-xl">
         <div>
@@ -691,7 +691,7 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
         <div className="bg-[#0e1422] border border-slate-800/80 rounded-2xl p-3 sm:p-3.5 shadow-lg relative flex flex-col justify-between">
           <div className="h-0.5 w-7 bg-rose-500 rounded-full mb-2" />
           <div className="text-[11px] font-medium text-slate-400 leading-tight">
-            Focus Time This Week
+            Focus Time of This Week
           </div>
           <div className="text-base sm:text-lg font-black text-white font-mono mt-1 truncate">
             {formatHoursAndMins(topMetrics.thisWeekFocusSec)}
@@ -702,7 +702,7 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
         <div className="bg-[#0e1422] border border-slate-800/80 rounded-2xl p-3 sm:p-3.5 shadow-lg relative flex flex-col justify-between">
           <div className="h-0.5 w-7 bg-rose-500 rounded-full mb-2" />
           <div className="text-[11px] font-medium text-slate-400 leading-tight">
-            Focus Time Today
+            Focus Time of Today
           </div>
           <div className="text-base sm:text-lg font-black text-white font-mono mt-1 truncate">
             {formatHoursAndMins(topMetrics.todayFocusSec)}
@@ -713,7 +713,7 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
         <div className="bg-[#0e1422] border border-slate-800/80 rounded-2xl p-3 sm:p-3.5 shadow-lg relative flex flex-col justify-between">
           <div className="h-0.5 w-7 bg-emerald-400 rounded-full mb-2" />
           <div className="text-[11px] font-medium text-slate-400 leading-tight">
-            Total Tasks Done
+            Total Completed Tasks
           </div>
           <div className="text-base sm:text-lg font-black text-white font-mono mt-1 truncate">
             {topMetrics.totalCompletedTasks}
@@ -724,7 +724,7 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
         <div className="bg-[#0e1422] border border-slate-800/80 rounded-2xl p-3 sm:p-3.5 shadow-lg relative flex flex-col justify-between">
           <div className="h-0.5 w-7 bg-emerald-400 rounded-full mb-2" />
           <div className="text-[11px] font-medium text-slate-400 leading-tight">
-            Tasks This Week
+            Tasks Completed This Week
           </div>
           <div className="text-base sm:text-lg font-black text-white font-mono mt-1 truncate">
             {topMetrics.thisWeekCompletedTasks}
@@ -735,7 +735,7 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
         <div className="bg-[#0e1422] border border-slate-800/80 rounded-2xl p-3 sm:p-3.5 shadow-lg relative flex flex-col justify-between">
           <div className="h-0.5 w-7 bg-emerald-400 rounded-full mb-2" />
           <div className="text-[11px] font-medium text-slate-400 leading-tight">
-            Tasks Today
+            Tasks Completed Today
           </div>
           <div className="text-base sm:text-lg font-black text-white font-mono mt-1 truncate">
             {topMetrics.todayCompletedTasks}
@@ -944,17 +944,17 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
             <div>
               <div className="text-slate-400">Focus Days</div>
               <div className="font-black text-white font-mono mt-0.5">
-                {calStats.focusDays} d
+                {calStats.focusDays} days
               </div>
             </div>
             <div className="border-x border-slate-800">
-              <div className="text-slate-400">Goal Met</div>
+              <div className="text-slate-400">Completed Goal Days</div>
               <div className="font-black text-emerald-400 font-mono mt-0.5">
-                {calStats.completedGoalDays} d
+                {calStats.completedGoalDays} days
               </div>
             </div>
             <div>
-              <div className="text-slate-400">Rate</div>
+              <div className="text-slate-400">Completion Rate</div>
               <div className="font-black text-cyan-300 font-mono mt-0.5">
                 {calStats.completionRate}%
               </div>
@@ -1008,12 +1008,22 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
                   );
                 }
 
-                // Styling based on goal attainment
+                // Styling: Glowing emerald ring for goal days, orange pip for under goal, white ring for selected
                 let cellClass =
-                  'aspect-square rounded-lg border flex flex-col items-center justify-center relative cursor-pointer text-xs transition-all text-slate-400 border-transparent hover:border-slate-700';
+                  'aspect-square rounded-lg flex flex-col items-center justify-center relative cursor-pointer text-xs transition-all border ';
 
                 if (c.isSelected) {
-                  cellClass += ' !ring-2 !ring-emerald-400 !border-emerald-400 bg-slate-800 text-white font-bold';
+                  cellClass +=
+                    ' !ring-2 !ring-white !border-white bg-slate-800 text-white font-bold scale-105 z-10 shadow-lg';
+                } else if (c.metGoal) {
+                  cellClass +=
+                    ' border-emerald-500/80 bg-emerald-500/15 text-emerald-300 font-extrabold ring-1 ring-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.35)]';
+                } else if (c.hasActivity) {
+                  cellClass +=
+                    ' border-slate-700/80 bg-slate-900/60 text-slate-200 hover:border-slate-600';
+                } else {
+                  cellClass +=
+                    ' border-transparent text-slate-500 hover:text-slate-300 hover:bg-slate-900/40';
                 }
 
                 return (
@@ -1031,18 +1041,16 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
                   >
                     <span
                       className={`leading-none ${
-                        c.isToday ? 'text-cyan-300 font-extrabold' : ''
+                        c.isToday ? 'text-cyan-300 font-extrabold underline decoration-cyan-400 underline-offset-2' : ''
                       }`}
                     >
                       {c.dayNumber}
                     </span>
 
-                    {/* Indicator: Met Goal = glowing emerald circle/ring, Under Goal = subtle orange pip */}
-                    {c.metGoal ? (
-                      <span className="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.9)]" />
-                    ) : c.hasActivity ? (
-                      <span className="absolute bottom-1 w-1 h-1 rounded-full bg-amber-400" />
-                    ) : null}
+                    {/* Indicator: Under Goal shows a subtle orange pip */}
+                    {c.hasActivity && !c.metGoal && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_4px_rgba(251,191,36,0.6)] mt-0.5" />
+                    )}
 
                     {/* Tooltip on hover */}
                     {hoveredCalDay && hoveredCalDay.dateStr === c.dateKey && (
