@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useStudy } from '../../context/StudyContext';
 import { useAuth } from '../../context/AuthContext';
 import { Subject } from '../../types';
 import { X, Plus, Edit2, Trash2, BookOpen, Check, Palette, AlertTriangle, Loader2 } from 'lucide-react';
 
 interface SubjectManagerModalProps {
-  isOpen: boolean;
+  isOpen?: boolean;
   onClose: () => void;
   subjects?: Subject[];
 }
@@ -25,52 +25,93 @@ const COLOR_PRESETS = [
   '#6366F1', // Indigo
 ];
 
-export function SubjectManagerModal({ isOpen, onClose, subjects: propsSubjects }: SubjectManagerModalProps) {
+export function SubjectManagerModal({ isOpen = true, onClose, subjects: propsSubjects }: SubjectManagerModalProps) {
   const { user } = useAuth();
   const { subjects: contextSubjects = [], addSubject, updateSubject, deleteSubject } = useStudy();
 
-  // 1. Safe Props & Data Handling: Strictly validate subjects list as array
+  // 2. Fallback State & Schema Defense inside SubjectManager
   const rawSubjects = propsSubjects ?? contextSubjects;
-  const safeSubjects = Array.isArray(rawSubjects) ? rawSubjects : [];
-  const activeSubjects = safeSubjects.filter(s => s && !s.is_archived);
+  const subjectsList = Array.isArray(rawSubjects) ? rawSubjects : [];
+  const activeSubjects = subjectsList.filter(s => s && !s.is_archived);
 
-  // 2. Null-Safety for Active & Editing State: Initialize editingSubject to null (never an empty object {})
+  // Null-Safety for Active & Editing State: null initial state (never an empty object {})
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
-
-  // 4. Form Submission & Input State: Clean string state
-  const [newSubjectName, setNewSubjectName] = useState('');
-  const [color, setColor] = useState('#10b981');
-  const [targetMinutes, setTargetMinutes] = useState(60);
+  const [nameInput, setNameInput] = useState('');
+  const [colorInput, setColorInput] = useState('#10b981');
+  const [targetMinutesInput, setTargetMinutesInput] = useState(60);
   const [isCreating, setIsCreating] = useState(false);
   const [deletingSubject, setDeletingSubject] = useState<Subject | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // If component is mounted with isOpen === false, return null
   if (!isOpen) return null;
 
-  useEffect(() => {
-    if (isOpen && activeSubjects.length === 0) {
-      setIsCreating(true);
+  // 3. Fix the "Add New Subject" Handler with fallback defaults
+  const handleCreateSubject = async (name: string, color = '#10b981', targetMinutes = 60) => {
+    const trimmed = (name || '').trim();
+    if (!trimmed) {
+      setErrorMessage('Please enter a subject name.');
+      return;
     }
-  }, [isOpen, activeSubjects.length]);
+
+    // Check duplicate name among active subjects
+    const isDuplicate = activeSubjects.some(
+      s => s && s.id !== editingSubject?.id && ((s.name || (s as any).title || '').trim().toLowerCase() === trimmed.toLowerCase())
+    );
+    if (isDuplicate) {
+      setErrorMessage(`A subject named "${trimmed}" already exists.`);
+      return;
+    }
+    setErrorMessage(null);
+
+    const safeColor = color || '#10b981';
+    const safeTarget = Number(targetMinutes) || 60;
+
+    try {
+      if (editingSubject?.id) {
+        await updateSubject(editingSubject.id, {
+          name: trimmed,
+          color: safeColor,
+          daily_goal_minutes: safeTarget,
+          targetMinutesPerDay: safeTarget,
+        });
+        setEditingSubject(null);
+      } else {
+        const newSubject = {
+          name: trimmed,
+          color: safeColor,
+          daily_goal_minutes: safeTarget,
+          targetMinutesPerDay: safeTarget,
+          userId: user?.id,
+        };
+        await addSubject(newSubject);
+        setIsCreating(false);
+      }
+      setNameInput('');
+    } catch (err: any) {
+      console.error('Failed to create/update subject:', err);
+      setErrorMessage(err?.message || 'Failed to save subject. Please try again.');
+    }
+  };
 
   const handleStartCreate = () => {
     setEditingSubject(null);
-    setNewSubjectName('');
-    setColor(COLOR_PRESETS[Math.floor(Math.random() * COLOR_PRESETS.length)] || '#10b981');
-    setTargetMinutes(60);
+    setNameInput('');
+    setColorInput(COLOR_PRESETS[Math.floor(Math.random() * COLOR_PRESETS.length)] || '#10b981');
+    setTargetMinutesInput(60);
     setErrorMessage(null);
     setDeletingSubject(null);
     setIsCreating(true);
   };
 
   const handleStartEdit = (sub: Subject) => {
-    if (!sub || !sub.id) return;
+    if (!sub || typeof sub !== 'object') return;
     setEditingSubject(sub);
-    setNewSubjectName(sub.name || '');
-    setColor(sub.color || '#10b981');
+    setNameInput(sub.name || (sub as any).title || '');
+    setColorInput(sub.color || '#10b981');
     const mins = sub.daily_goal_minutes ?? sub.targetMinutesPerDay ?? 60;
-    setTargetMinutes(mins);
+    setTargetMinutesInput(mins);
     setErrorMessage(null);
     setDeletingSubject(null);
     setIsCreating(false);
@@ -79,56 +120,8 @@ export function SubjectManagerModal({ isOpen, onClose, subjects: propsSubjects }
   const handleCloseForm = () => {
     setIsCreating(false);
     setEditingSubject(null);
-    setNewSubjectName('');
+    setNameInput('');
     setErrorMessage(null);
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const trimmed = newSubjectName.trim();
-      if (!trimmed) {
-        setErrorMessage('Subject name cannot be empty.');
-        return;
-      }
-
-      // Check duplicate name among active subjects
-      const isDuplicate = activeSubjects.some(
-        s => s && s.id !== editingSubject?.id && (s.name || '').trim().toLowerCase() === trimmed.toLowerCase()
-      );
-      if (isDuplicate) {
-        setErrorMessage(`A subject named "${trimmed}" already exists.`);
-        return;
-      }
-      setErrorMessage(null);
-
-      const targetVal = Number(targetMinutes) || 60;
-      const colorVal = color || '#10b981';
-
-      if (editingSubject?.id) {
-        updateSubject(editingSubject.id, {
-          name: trimmed,
-          color: colorVal,
-          targetMinutesPerDay: targetVal,
-          daily_goal_minutes: targetVal,
-        });
-        setEditingSubject(null);
-      } else {
-        // Generate valid payload with user_id, name, and default color so Supabase does not fail constraints
-        addSubject({
-          userId: user?.id || '',
-          name: trimmed,
-          color: colorVal,
-          targetMinutesPerDay: targetVal,
-          daily_goal_minutes: targetVal,
-        });
-        setIsCreating(false);
-      }
-      setNewSubjectName('');
-    } catch (err: any) {
-      console.error('Failed to save subject:', err);
-      setErrorMessage(err?.message || 'An error occurred while saving the subject.');
-    }
   };
 
   const handleConfirmDelete = async () => {
@@ -160,6 +153,7 @@ export function SubjectManagerModal({ isOpen, onClose, subjects: propsSubjects }
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
             className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
           >
@@ -169,7 +163,13 @@ export function SubjectManagerModal({ isOpen, onClose, subjects: propsSubjects }
 
         {/* Create / Edit Form */}
         {(isCreating || editingSubject) && (
-          <form onSubmit={handleSubmit} className="my-4 p-4 rounded-xl bg-slate-800/80 border border-slate-700/80 space-y-3">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleCreateSubject(nameInput, colorInput, targetMinutesInput);
+            }}
+            className="my-4 p-4 rounded-xl bg-slate-800/80 border border-slate-700/80 space-y-3"
+          >
             <div className="flex items-center justify-between">
               <h4 className="text-xs font-bold text-white uppercase tracking-wider">
                 {editingSubject ? 'Edit Subject' : 'Add New Subject'}
@@ -188,9 +188,9 @@ export function SubjectManagerModal({ isOpen, onClose, subjects: propsSubjects }
               <input
                 type="text"
                 required
-                value={newSubjectName}
+                value={nameInput}
                 onChange={e => {
-                  setNewSubjectName(e.target.value);
+                  setNameInput(e.target.value);
                   if (errorMessage) setErrorMessage(null);
                 }}
                 placeholder="e.g. Organic Chemistry, Linear Algebra..."
@@ -212,17 +212,17 @@ export function SubjectManagerModal({ isOpen, onClose, subjects: propsSubjects }
                   <button
                     type="button"
                     key={c}
-                    onClick={() => setColor(c)}
+                    onClick={() => setColorInput(c)}
                     className={`w-7 h-7 rounded-full border-2 transition-transform cursor-pointer ${
-                      color === c ? 'scale-125 border-white shadow-lg' : 'border-transparent hover:scale-110'
+                      colorInput === c ? 'scale-125 border-white shadow-lg' : 'border-transparent hover:scale-110'
                     }`}
                     style={{ backgroundColor: c }}
                   />
                 ))}
                 <input
                   type="color"
-                  value={color}
-                  onChange={e => setColor(e.target.value)}
+                  value={colorInput}
+                  onChange={e => setColorInput(e.target.value)}
                   className="w-7 h-7 rounded-full cursor-pointer bg-transparent border-0"
                   title="Custom hex color"
                 />
@@ -233,15 +233,15 @@ export function SubjectManagerModal({ isOpen, onClose, subjects: propsSubjects }
             <div>
               <div className="flex justify-between text-xs text-slate-300 mb-1">
                 <span>Daily Target Time:</span>
-                <span className="font-bold text-emerald-400">{Math.floor(targetMinutes / 60)}h {targetMinutes % 60}m</span>
+                <span className="font-bold text-emerald-400">{Math.floor(targetMinutesInput / 60)}h {targetMinutesInput % 60}m</span>
               </div>
               <input
                 type="range"
                 min="15"
                 max="360"
                 step="15"
-                value={targetMinutes}
-                onChange={e => setTargetMinutes(parseInt(e.target.value) || 60)}
+                value={targetMinutesInput}
+                onChange={e => setTargetMinutesInput(parseInt(e.target.value) || 60)}
                 className="w-full accent-emerald-500 bg-slate-900 cursor-pointer"
               />
             </div>
@@ -256,73 +256,44 @@ export function SubjectManagerModal({ isOpen, onClose, subjects: propsSubjects }
           </form>
         )}
 
-        {/* Add button if not form open and active subjects exist */}
-        {!isCreating && !editingSubject && activeSubjects.length > 0 && (
-          <button
-            type="button"
-            onClick={handleStartCreate}
-            className="w-full my-4 py-2.5 px-4 rounded-xl border border-dashed border-emerald-500/50 hover:border-emerald-500 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add New Subject</span>
-          </button>
-        )}
-
-        {/* 1. Safe Props & Data Handling: Clean Empty State View when safeSubjects.length === 0 */}
-        {activeSubjects.length === 0 && (
-          <div className="py-8 px-4 flex flex-col items-center justify-center text-center">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-3 shadow-inner">
-              <BookOpen className="w-6 h-6" />
-            </div>
-            <h4 className="text-sm font-bold text-white mb-1">No subjects added yet</h4>
-            <p className="text-xs text-slate-400 max-w-xs mb-4">
-              Create your first study topic to track your daily focus and progress.
-            </p>
-            {!isCreating && !editingSubject && (
-              <button
-                type="button"
-                onClick={handleStartCreate}
-                className="py-2.5 px-5 rounded-xl border border-dashed border-emerald-500/50 hover:border-emerald-500 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm active:scale-95"
-              >
-                <Plus className="w-4 h-4" />
-                <span>+ Add New Subject</span>
-              </button>
-            )}
+        {/* 2. Fallback State & Schema Defense inside SubjectManager: Zero subjects view */}
+        {activeSubjects.length === 0 ? (
+          <div className="py-8 text-center text-slate-400 text-sm">
+            No subjects yet. Add your first subject below!
           </div>
-        )}
-
-        {/* 1 & 2. Subjects List: Guarded with activeSubjects.length > 0 so .map() NEVER runs if empty */}
-        {activeSubjects.length > 0 && (
+        ) : (
+          /* Card list strictly guarded: maps safely with fallback title, color, and goal */
           <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-            {activeSubjects.map(sub => {
-              if (!sub) return null;
-              // Guard with optional chaining: subject?.daily_goal_minutes ?? 60
-              const targetMins = sub?.daily_goal_minutes ?? sub?.targetMinutesPerDay ?? 60;
-              const targetHours = Math.floor(targetMins / 60);
-              const targetRemMins = targetMins % 60;
+            {activeSubjects.map((subject) => {
+              if (!subject || typeof subject !== 'object') return null;
+              const title = subject.name || (subject as any).title || 'Untitled Subject';
+              const color = subject.color || '#10b981';
+              const goal = subject.daily_goal_minutes 
+                ? `${Math.floor(subject.daily_goal_minutes / 60)}h ${subject.daily_goal_minutes % 60}m`
+                : (subject.targetMinutesPerDay 
+                  ? `${Math.floor(subject.targetMinutesPerDay / 60)}h ${subject.targetMinutesPerDay % 60}m`
+                  : '1h 0m');
 
               return (
                 <div
-                  key={sub.id || Math.random().toString()}
+                  key={subject.id || Math.random()}
                   className="p-3 rounded-xl bg-slate-800/60 border border-slate-700/60 flex items-center justify-between hover:border-slate-600 transition-colors"
                 >
                   <div className="flex items-center gap-3 min-w-0 pr-2">
-                    <div
-                      className="w-4 h-4 rounded-full shadow-sm flex-shrink-0"
-                      style={{ backgroundColor: sub.color || '#10b981' }}
+                    <span
+                      style={{ backgroundColor: color }}
+                      className="w-3 h-3 rounded-full flex-shrink-0 shadow-sm inline-block mr-2"
                     />
                     <div className="truncate">
-                      <div className="font-bold text-sm text-white truncate">{sub.name || 'Untitled Subject'}</div>
-                      <div className="text-[11px] text-slate-400">
-                        Target: {targetHours}h {targetRemMins}m / day
-                      </div>
+                      <div className="font-bold text-sm text-white truncate">{title}</div>
+                      <div className="text-xs text-slate-400">Target: {goal} / day</div>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-1 flex-shrink-0">
                     <button
                       type="button"
-                      onClick={() => handleStartEdit(sub)}
+                      onClick={() => handleStartEdit(subject)}
                       className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 transition-colors cursor-pointer"
                       title="Edit Subject"
                     >
@@ -330,7 +301,7 @@ export function SubjectManagerModal({ isOpen, onClose, subjects: propsSubjects }
                     </button>
                     <button
                       type="button"
-                      onClick={() => setDeletingSubject(sub)}
+                      onClick={() => setDeletingSubject(subject)}
                       className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-700 transition-colors cursor-pointer"
                       title="Delete Subject"
                     >
@@ -341,6 +312,18 @@ export function SubjectManagerModal({ isOpen, onClose, subjects: propsSubjects }
               );
             })}
           </div>
+        )}
+
+        {/* Add button if not currently creating or editing */}
+        {!isCreating && !editingSubject && (
+          <button
+            type="button"
+            onClick={handleStartCreate}
+            className="w-full my-4 py-2.5 px-4 rounded-xl border border-dashed border-emerald-500/50 hover:border-emerald-500 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 shadow-sm"
+          >
+            <Plus className="w-4 h-4" />
+            <span>+ Add New Subject</span>
+          </button>
         )}
 
         <div className="pt-4 mt-4 border-t border-slate-800 flex justify-end">
@@ -365,7 +348,7 @@ export function SubjectManagerModal({ isOpen, onClose, subjects: propsSubjects }
               <div className="space-y-1 min-w-0">
                 <h4 className="text-sm font-bold text-white tracking-tight">Delete Subject?</h4>
                 <p className="text-xs text-neutral-400 leading-relaxed">
-                  Are you sure you want to remove <span className="text-white font-semibold">{deletingSubject?.name || 'this subject'}</span>? It will be removed from your active list, but your past study records will be preserved.
+                  Are you sure you want to remove <span className="text-white font-semibold">{deletingSubject?.name || (deletingSubject as any)?.title || 'this subject'}</span>? It will be removed from your active list, but your past study records will be preserved.
                 </p>
               </div>
             </div>

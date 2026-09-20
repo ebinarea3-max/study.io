@@ -1,13 +1,15 @@
 'use client';
 
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { AlertTriangle, RotateCcw } from 'lucide-react';
+import { AlertTriangle, RotateCcw, X } from 'lucide-react';
 
 interface Props {
   children: ReactNode;
   fallbackTitle?: string;
   fallbackMessage?: string;
+  resetKey?: any;
   onReset?: () => void;
+  onClose?: () => void;
 }
 
 interface State {
@@ -29,10 +31,23 @@ export class ErrorBoundary extends Component<Props, State> {
     console.error('[ErrorBoundary caught error]:', error, errorInfo);
   }
 
+  componentDidUpdate(prevProps: Props) {
+    if (this.state.hasError && this.props.resetKey !== prevProps.resetKey) {
+      this.setState({ hasError: false, error: null });
+    }
+  }
+
   handleReset = () => {
     this.setState({ hasError: false, error: null });
     if (this.props.onReset) {
       this.props.onReset();
+    }
+  };
+
+  handleDismiss = () => {
+    this.handleReset();
+    if (this.props.onClose) {
+      this.props.onClose();
     }
   };
 
@@ -52,7 +67,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 'An unexpected error occurred while rendering this section. Your study data is safe.'}
             </p>
           </div>
-          <div className="flex items-center gap-2 pt-2">
+          <div className="flex items-center gap-2 pt-2 flex-wrap justify-center">
             <button
               type="button"
               onClick={this.handleReset}
@@ -61,6 +76,16 @@ export class ErrorBoundary extends Component<Props, State> {
               <RotateCcw className="w-3.5 h-3.5" />
               <span>Try Again</span>
             </button>
+            {this.props.onClose && (
+              <button
+                type="button"
+                onClick={this.handleDismiss}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-white transition-colors cursor-pointer flex items-center gap-1.5"
+              >
+                <X className="w-3.5 h-3.5" />
+                <span>Dismiss / Close</span>
+              </button>
+            )}
             <button
               type="button"
               onClick={() => window.location.reload()}

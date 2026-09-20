@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { useStudy } from '../../context/StudyContext';
 import { useAuth } from '../../context/AuthContext';
 import { DailyTodoList } from '../todo/DailyTodoList';
-import { SubjectManagerModal } from './SubjectManagerModal';
+import { SubjectManagerModal, SubjectManager } from './SubjectManagerModal';
 import { ErrorBoundary } from '../common/ErrorBoundary';
 import {
   formatSeconds,
@@ -88,7 +88,9 @@ export function StudyTimer() {
   const subjectList = Array.isArray(subjects) ? subjects : [];
   const activeSubjects = useMemo(() => subjectList.filter(sub => sub && !sub.is_archived), [subjectList]);
 
-  const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
+  const [isManageSubjectsOpen, setIsManageSubjectsOpen] = useState(false);
+  const isSubjectModalOpen = isManageSubjectsOpen;
+  const setIsSubjectModalOpen = setIsManageSubjectsOpen;
   const [showDropdown, setShowDropdown] = useState(false);
   const [overviewView, setOverviewView] = useState<'today' | 'yesterday'>('today');
   const [isSaving, setIsSaving] = useState(false);
@@ -102,7 +104,7 @@ export function StudyTimer() {
       e.stopPropagation();
     }
     setShowDropdown(false);
-    setIsSubjectModalOpen(true);
+    setIsManageSubjectsOpen(true);
   }, []);
 
   // Lock the motivation quote in useState on initial load so it NEVER changes while timer is running
@@ -584,13 +586,19 @@ export function StudyTimer() {
 
   return (
     <div className="w-full max-w-6xl mx-auto h-[calc(100dvh-4rem)] md:h-auto flex flex-col md:grid md:grid-cols-1 lg:grid-cols-12 justify-between md:justify-start gap-4 lg:gap-6 overflow-hidden md:overflow-visible p-4 md:p-0">
-      {/* Subject Manager Modal */}
-      <ErrorBoundary fallbackTitle="Subject Manager">
-        <SubjectManagerModal
-          isOpen={isSubjectModalOpen}
-          onClose={() => setIsSubjectModalOpen(false)}
-        />
-      </ErrorBoundary>
+      {/* Subject Manager Modal - Conditionally mounted strictly when open (Stop Background Rendering) */}
+      {isManageSubjectsOpen && (
+        <ErrorBoundary
+          fallbackTitle="Subject Manager"
+          resetKey={isManageSubjectsOpen}
+          onClose={() => setIsManageSubjectsOpen(false)}
+        >
+          <SubjectManager
+            isOpen={isManageSubjectsOpen}
+            onClose={() => setIsManageSubjectsOpen(false)}
+          />
+        </ErrorBoundary>
+      )}
 
       {/* Main Left Column (Timer & Subject Goal Progress) */}
       <div className="lg:col-span-8 flex-1 md:flex-initial flex flex-col justify-between overflow-hidden md:overflow-visible space-y-0 md:space-y-6">
