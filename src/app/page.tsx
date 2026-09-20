@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useStudy } from '../context/StudyContext';
 import { Navbar } from '../components/common/Navbar';
@@ -17,9 +17,11 @@ import { XpFloatingNotification } from '../components/gamification/XpFloatingNot
 import { RankSettlementModal } from '../components/RankSettlementModal';
 import { SeasonRecapBanner } from '../components/gamification/SeasonRecapBanner';
 import { TasksOverview } from '../components/todo/TasksOverview';
+import { DailyBoostModal } from '../components/common/DailyBoostModal';
+import { getLocalDateString } from '../lib/dateUtils';
 
 export default function Home() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const {
     refetchSessions,
     levelUpData,
@@ -37,6 +39,29 @@ export default function Home() {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [showDailyBoost, setShowDailyBoost] = useState(false);
+
+  // Daily Boost Welcome Modal (Once per day)
+  useEffect(() => {
+    if (isLoading || !isAuthenticated) return;
+
+    try {
+      const todayDateString = getLocalDateString();
+      const lastDailyBoostDate = localStorage.getItem('last_daily_boost_date');
+
+      if (lastDailyBoostDate !== todayDateString) {
+        setShowDailyBoost(true);
+        localStorage.setItem('last_daily_boost_date', todayDateString);
+      }
+    } catch {
+      // ignore
+    }
+  }, [isLoading, isAuthenticated]);
+
+  const handleDismissDailyBoost = useCallback(() => {
+    setShowDailyBoost(false);
+    setActiveTab('timer');
+  }, []);
 
   // Re-fetch sessions automatically whenever the user navigates back to Dashboard or switches tabs
   useEffect(() => {
@@ -156,6 +181,15 @@ export default function Home() {
           onClose={dismissLevelUpModal}
         />
       )}
+
+      {/* Daily Boost Welcome Modal (Once per day) */}
+      <DailyBoostModal
+        isOpen={showDailyBoost}
+        onClose={handleDismissDailyBoost}
+        onStartFocusing={handleDismissDailyBoost}
+        streakDays={user?.streakDays ?? 0}
+        dailyGoalHours={user?.dailyGoalHours ?? 3}
+      />
     </div>
   );
 }

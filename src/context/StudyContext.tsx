@@ -107,6 +107,30 @@ export function deduplicateSubjects(list: Subject[]): Subject[] {
   return result;
 }
 
+export const getStoredLastSeenLevel = (userId?: string): number | null => {
+  if (typeof window === 'undefined') return null;
+  try {
+    if (userId) {
+      const userVal = localStorage.getItem(`studypulse_last_seen_level_${userId}`);
+      if (userVal !== null && !isNaN(Number(userVal))) return Number(userVal);
+    }
+    const globalVal = localStorage.getItem('last_seen_level') || localStorage.getItem('studypulse_last_seen_level');
+    if (globalVal !== null && !isNaN(Number(globalVal))) return Number(globalVal);
+  } catch {}
+  return null;
+};
+
+export const setStoredLastSeenLevel = (level: number, userId?: string) => {
+  if (typeof window === 'undefined') return;
+  try {
+    if (userId) {
+      localStorage.setItem(`studypulse_last_seen_level_${userId}`, String(level));
+    }
+    localStorage.setItem('last_seen_level', String(level));
+    localStorage.setItem('studypulse_last_seen_level', String(level));
+  } catch {}
+};
+
 const StudyContext = createContext<StudyContextType | undefined>(undefined);
 
 export function StudyProvider({ children }: { children: ReactNode }) {
@@ -160,7 +184,15 @@ export function StudyProvider({ children }: { children: ReactNode }) {
   const [currentNotes, setCurrentNotes] = useState('');
   const [isFocusModeOpen, setIsFocusModeOpen] = useState(false);
 
-  const [sessions, setSessions] = useState<StudySession[]>([]);
+  const [sessions, setSessions] = useState<StudySession[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('studypulse_sessions');
+        if (saved) return JSON.parse(saved);
+      } catch {}
+    }
+    return [];
+  });
   const [todos, setTodos] = useState<TodoItem[]>(INITIAL_TODOS);
   const [selectedDate, setSelectedDate] = useState<string>(getTodayDateString(0));
 
@@ -193,8 +225,12 @@ export function StudyProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const dismissLevelUpModal = useCallback(() => {
+    if (levelUpData) {
+      setStoredLastSeenLevel(levelUpData.newLevel, user?.id);
+      updateProfile({ last_seen_level: levelUpData.newLevel });
+    }
     setLevelUpData(null);
-  }, []);
+  }, [levelUpData, user?.id, updateProfile]);
 
   const dismissXpNotification = useCallback(() => {
     setLastXpEarned(null);
@@ -304,31 +340,69 @@ export function StudyProvider({ children }: { children: ReactNode }) {
   }, [totalStudySeconds, completedTodosCount, user.streakDays]);
 
   // Monitor level changes to trigger celebratory modal and keep profile state synced
-  const prevLevelRef = useRef<number | null>(null);
+  const hasHydratedLevelRef = useRef(false);
+  const lastUserIdRef = useRef<string | undefined>(user?.id);
+
   useEffect(() => {
-    if (prevLevelRef.current === null) {
-      prevLevelRef.current = gamification.level;
+    if (lastUserIdRef.current !== user?.id) {
+      lastUserIdRef.current = user?.id;
+      hasHydratedLevelRef.current = false;
+    }
+
+    const currentLevel = gamification.level;
+    const storedLastSeen = getStoredLastSeenLevel(user?.id);
+
+    // Initial mount or data hydration check: establish baseline last_seen_level and do NOT trigger modal on mount/login
+    if (!hasHydratedLevelRef.current) {
+      const baselineLevel = Math.max(
+        storedLastSeen ?? 0,
+        user?.last_seen_level ?? 0,
+        user?.level ?? 1,
+        currentLevel
+      );
+      setStoredLastSeenLevel(baselineLevel, user?.id);
+      if (user?.last_seen_level !== baselineLevel) {
+        updateProfile({ last_seen_level: baselineLevel });
+      }
+      hasHydratedLevelRef.current = true;
       return;
     }
 
-    if (gamification.level > prevLevelRef.current) {
+    const effectiveLastSeen = storedLastSeen ?? user?.last_seen_level ?? user?.level ?? currentLevel;
+
+    // Strict Progression Only: ONLY trigger if currentLevel strictly exceeds last_seen_level
+    if (currentLevel > effectiveLastSeen) {
       setLevelUpData({
-        newLevel: gamification.level,
-        oldLevel: prevLevelRef.current,
+        newLevel: currentLevel,
+        oldLevel: effectiveLastSeen,
         title: gamification.title,
       });
+
+      // Update last_seen_level immediately when triggered / viewed
+      setStoredLastSeenLevel(currentLevel, user?.id);
+      updateProfile({
+        last_seen_level: currentLevel,
+      });
     }
-    prevLevelRef.current = gamification.level;
 
     // Synchronize level and XP onto active user profile
-    if (user.level !== gamification.level || user.xp !== gamification.totalXP) {
+    if (user?.level !== gamification.level || user?.xp !== gamification.totalXP) {
       updateProfile({
         level: gamification.level,
         xp: gamification.totalXP,
         levelTitle: gamification.title,
       });
     }
-  }, [gamification.level, gamification.totalXP, gamification.title, user.level, user.xp, updateProfile]);
+  }, [
+    gamification.level,
+    gamification.totalXP,
+    gamification.title,
+    user?.id,
+    user?.level,
+    user?.last_seen_level,
+    user?.xp,
+    updateProfile,
+  ]);
 
   const startTimeRef = useRef<number | null>(null);
   const accumulatedSecondsRef = useRef<number>(0);
@@ -608,11 +682,18 @@ export function StudyProvider({ children }: { children: ReactNode }) {
           const currentRP = Number((userRef.current as any)?.rp ?? userRef.current?.seasonRp ?? 0);
           const finalRP = Math.max(minExpectedRP, currentRP);
 
+          // Baseline sync for Supabase sessions to guarantee no false level-up on login
+          const computedLevel = Math.max(1, Math.floor(Math.sqrt(Math.max(0, finalRP) / 100)) + 1);
+          const storedLevel = getStoredLastSeenLevel(user.id);
+          const updatedBaseline = Math.max(storedLevel ?? 0, computedLevel, user.level || 1);
+          setStoredLastSeenLevel(updatedBaseline, user.id);
+
           updateProfile({
             streakDays: realStreak,
             totalStudySeconds: realTotalSeconds,
             seasonRp: finalRP,
             rp: finalRP,
+            last_seen_level: updatedBaseline,
           });
         }
 

@@ -64,6 +64,7 @@ export type UserProfile = {
   rp?: number;
   last_streak_bonus_date?: string; // YYYY-MM-DD
   lastStreakBonusDate?: string;     // alias for convenience
+  last_seen_level?: number;
   user_metadata?: {
     avatar_url?: string;
     picture?: string;

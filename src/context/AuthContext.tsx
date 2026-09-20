@@ -156,6 +156,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             rp: syncedRP,
             last_streak_bonus_date: streakBonusDate || prev.last_streak_bonus_date,
             lastStreakBonusDate: streakBonusDate || prev.last_streak_bonus_date,
+            last_seen_level: Number((profile as Record<string, unknown>).last_seen_level ?? prev.last_seen_level ?? prev.level ?? 1),
             totalStudySeconds: totalStudySeconds,
             status: prev.status || 'resting',
             createdAt: profile.created_at || prev.createdAt || new Date().toISOString(),
@@ -531,6 +532,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (dateVal) {
               localStorage.setItem('studypulse_last_streak_bonus_date', dateVal);
             }
+          } catch {}
+        }
+        if (updated.last_seen_level !== undefined) {
+          try {
+            localStorage.setItem(`studypulse_last_seen_level_${prev.id}`, String(updated.last_seen_level));
+            localStorage.setItem('last_seen_level', String(updated.last_seen_level));
           } catch {}
         }
 
