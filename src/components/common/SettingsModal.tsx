@@ -14,12 +14,14 @@ import {
   Loader2,
   Trash2,
   Smartphone,
+  CheckCircle2,
 } from 'lucide-react';
 import { soundFx } from '../../lib/audio';
 import { useAuth } from '../../context/AuthContext';
 import { useStudy } from '../../context/StudyContext';
 import { exportDataAsJSON, exportSessionsAsCSV } from '../../lib/exportData';
-import { InstallAppButton } from './InstallAppButton';
+import { usePwaInstall } from '../../hooks/usePwaInstall';
+import { InstallInstructionModal } from './InstallInstructionModal';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -29,13 +31,23 @@ interface SettingsModalProps {
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const { user, deleteAccount } = useAuth();
   const { sessions, subjects, todos } = useStudy();
+  const { canInstall, isInstalled, isPrompting, deferredPrompt, triggerInstall } = usePwaInstall();
 
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [typedEmail, setTypedEmail] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
+  const [showInstallInstructions, setShowInstallInstructions] = useState(false);
 
   if (!isOpen) return null;
+
+  const handleInstallClick = async () => {
+    if (deferredPrompt || canInstall) {
+      await triggerInstall();
+    } else {
+      setShowInstallInstructions(true);
+    }
+  };
 
   const testAudio = () => {
     soundFx.playStartChime();
@@ -130,18 +142,48 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             </button>
           </div>
 
-          {/* Section: Progressive Web App Installation */}
+          {/* Section: Install App / Add to Home Screen */}
           <div className="p-4 rounded-2xl bg-neutral-900/40 border border-white/[0.06] flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 flex-shrink-0">
                 <Smartphone className="w-4 h-4" />
               </div>
               <div>
-                <div className="text-xs font-bold text-white tracking-tight">App Installation (PWA)</div>
+                <div className="text-xs font-bold text-white tracking-tight">Install App / Add to Home Screen</div>
                 <div className="text-[11px] text-neutral-400">Install study.io on your device for standalone distraction-free focus</div>
               </div>
             </div>
-            <InstallAppButton variant="settings" />
+
+            {isInstalled ? (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold flex-shrink-0">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <span>Installed</span>
+              </div>
+            ) : canInstall ? (
+              <button
+                type="button"
+                onClick={handleInstallClick}
+                disabled={isPrompting}
+                className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 text-xs font-bold transition-all active:scale-95 flex items-center gap-1.5 shadow-md shadow-emerald-500/20 cursor-pointer disabled:opacity-50 flex-shrink-0"
+              >
+                {isPrompting ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Download className="w-3.5 h-3.5" />
+                )}
+                <span>Install App</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleInstallClick}
+                className="px-3 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.1] text-xs font-semibold text-emerald-300 hover:text-emerald-200 transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer shadow-sm flex-shrink-0"
+                title="View manual install instructions"
+              >
+                <Smartphone className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Add to Home Screen</span>
+              </button>
+            )}
           </div>
 
           {/* Section 3: Export Lifetime Data (CSV / JSON) */}
@@ -269,6 +311,12 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           </button>
         </div>
       </div>
+
+      {/* Fallback Install / Add to Home Screen Instructions Modal */}
+      <InstallInstructionModal
+        isOpen={showInstallInstructions}
+        onClose={() => setShowInstallInstructions(false)}
+      />
     </div>
   );
 }

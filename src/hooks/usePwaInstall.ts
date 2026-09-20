@@ -94,6 +94,7 @@ export function usePwaInstall() {
     canInstall: canInstall && !isInstalled,
     isInstalled,
     isPrompting,
+    deferredPrompt: globalDeferredPrompt,
     triggerInstall,
   };
 }
