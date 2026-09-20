@@ -10,7 +10,6 @@ import {
   getLocalDateString,
   parseLocalDateString,
 } from '../../lib/utils';
-import { exportDataAsJSON, exportSessionsAsCSV } from '../../lib/exportData';
 import {
   Calendar as CalendarIcon,
   ChevronLeft,
@@ -18,10 +17,6 @@ import {
   Clock,
   PieChart as PieIcon,
   BarChart3,
-  Download,
-  FileSpreadsheet,
-  FileJson,
-  ChevronDown,
   Sparkles,
 } from 'lucide-react';
 import {
@@ -46,10 +41,9 @@ interface AnalyticsDashboardProps {
 
 export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) {
   const { user } = useAuth();
-  const { sessions, subjects, todos, selectedDate, setSelectedDate, refetchSessions } = useStudy();
+  const { sessions, subjects, selectedDate, setSelectedDate, refetchSessions } = useStudy();
 
   const todayStr = getLocalDateString();
-  const [showExportMenu, setShowExportMenu] = useState(false);
 
   // -------------------------------------------------------------
   // 1. Distribution Card State
@@ -503,58 +497,15 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
 
   return (
     <div className="w-full max-w-7xl mx-auto p-4 space-y-4 md:p-6 md:space-y-6 text-slate-100">
-      {/* 0. Header & Export Actions */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-[#0e1422] border border-slate-800/80 rounded-2xl p-4 shadow-xl">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2.5">
-            <BarChart3 className="w-6 h-6 text-emerald-400" />
-            <span>Study Report & Analytics</span>
-          </h1>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Comprehensive Focus To-Do activity, daily goal achievement, and trend distribution
-          </p>
-        </div>
-
-        {/* Export Data Dropdown */}
-        <div className="relative self-end sm:self-auto">
-          <button
-            onClick={() => setShowExportMenu(!showExportMenu)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/90 hover:bg-slate-750 border border-slate-700/80 text-white text-xs font-bold transition-all shadow-md cursor-pointer"
-            title="Backup study data"
-          >
-            <Download className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Export Data</span>
-            <ChevronDown className="w-3 h-3 text-slate-400" />
-          </button>
-
-          {showExportMenu && (
-            <div className="absolute right-0 mt-2 w-52 rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl p-1.5 z-40 animate-in fade-in zoom-in-95 duration-100">
-              <div className="px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-800/80 mb-1">
-                Backup Lifetime Records
-              </div>
-              <button
-                onClick={() => {
-                  exportSessionsAsCSV(sessions, subjects);
-                  setShowExportMenu(false);
-                }}
-                className="w-full text-left px-2.5 py-2 rounded-xl text-xs font-semibold text-slate-200 hover:bg-slate-800 hover:text-white transition-colors flex items-center gap-2 cursor-pointer"
-              >
-                <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
-                <span>Export as CSV</span>
-              </button>
-              <button
-                onClick={() => {
-                  exportDataAsJSON(user, subjects, sessions, todos);
-                  setShowExportMenu(false);
-                }}
-                className="w-full text-left px-2.5 py-2 rounded-xl text-xs font-semibold text-slate-200 hover:bg-slate-800 hover:text-white transition-colors flex items-center gap-2 cursor-pointer"
-              >
-                <FileJson className="w-4 h-4 text-cyan-400" />
-                <span>Export as JSON</span>
-              </button>
-            </div>
-          )}
-        </div>
+      {/* 0. Header Banner */}
+      <div className="bg-[#0e1422] border border-slate-800/80 rounded-2xl p-4 sm:p-6 shadow-xl text-center flex flex-col items-center justify-center">
+        <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center justify-center gap-2.5">
+          <BarChart3 className="w-6 h-6 text-emerald-400" />
+          <span>Study Report & Analytics</span>
+        </h1>
+        <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-2xl text-center">
+          Comprehensive Focus To-Do activity, daily goal achievement, and trend distribution
+        </p>
       </div>
 
       {/* 1. Top Row — 3 Focus Time Metric Cards (Chronological Granularity: Today -> Week -> Month) */}
