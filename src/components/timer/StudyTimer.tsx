@@ -833,7 +833,7 @@ export function StudyTimer() {
                       ? pomodoroPhase === 'work'
                         ? `🔥 Focus Sprint (${pomodoroPreset === '50/10' ? '50m' : '25m'})`
                         : `☕ Recharge Break (${pomodoroPreset === '50/10' ? '10m' : '5m'})`
-                      : selectedSubject?.name || 'Select a subject below'}
+                      : selectedSubject?.name || 'Select a subject above'}
                   </div>
 
                   {/* Big Digital Numbers with Strict Tabular Monospaced Formatting */}
