@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStudy } from '../../context/StudyContext';
 import { Subject } from '../../types';
 import { X, Plus, Edit2, Trash2, BookOpen, Check, Palette, AlertTriangle, Loader2 } from 'lucide-react';
@@ -36,6 +36,12 @@ export function SubjectManagerModal({ isOpen, onClose }: SubjectManagerModalProp
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   if (!isOpen) return null;
+
+  useEffect(() => {
+    if (isOpen && subjects.filter(s => !s.is_archived).length === 0) {
+      setIsCreating(true);
+    }
+  }, [isOpen, subjects]);
 
   const handleStartCreate = () => {
     setName('');
@@ -223,6 +229,14 @@ export function SubjectManagerModal({ isOpen, onClose }: SubjectManagerModalProp
             <Plus className="w-4 h-4" />
             <span>Add New Subject</span>
           </button>
+        )}
+
+        {/* Empty state when no active subjects */}
+        {subjects.filter(s => !s.is_archived).length === 0 && !isCreating && !editingId && (
+          <div className="py-8 text-center text-xs text-neutral-400">
+            <p className="font-semibold text-slate-300">No subjects yet</p>
+            <p className="text-[11px] text-neutral-500 mt-1">Click &quot;Add New Subject&quot; above to create your first study topic.</p>
+          </div>
         )}
 
         {/* Subjects list */}

@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useRef, useCallback, useMemo } from 'react';
 import { Subject, StudySession, TodoItem, TimerMode, PomodoroPhase, PomodoroPreset, PomodoroCompletedPhase, RankSettlementData, SeasonRecapData, UserProfile } from '../types';
-import { INITIAL_SUBJECTS, INITIAL_TODOS, getTodayDateString, calculateStreak, cleanupLegacyDemoData } from '../lib/mockData';
+import { INITIAL_TODOS, getTodayDateString, calculateStreak, cleanupLegacyDemoData } from '../lib/mockData';
 import { getLocalStartOfDay, getLocalEndOfDay, getLocalDateString } from '../lib/dateUtils';
 import { useAuth } from './AuthContext';
 import { getSupabase } from '../lib/supabase';
@@ -155,7 +155,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   // State
-  const [subjects, setSubjects] = useState<Subject[]>(INITIAL_SUBJECTS);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>('');
   const [timerMode, setTimerMode] = useState<TimerMode>('stopwatch');
   
@@ -565,9 +565,20 @@ export function StudyProvider({ children }: { children: ReactNode }) {
           s.name === 'General Focus' && (s.color === '#3B82F6' || !s.color) ? { ...s, color: '#5A6B6A' } : s
         );
         const unique = deduplicateSubjects(parsed);
-        setSubjects(unique.length > 0 ? unique : INITIAL_SUBJECTS);
+        setSubjects(unique);
+        const activeSubs = unique.filter(s => !s.is_archived);
+        if (activeSubs.length > 0) {
+          setSelectedSubjectId(prev => {
+            if (!prev) return activeSubs[0].id;
+            const matched = activeSubs.find(s => s.id === prev || s.name.toLowerCase() === prev.toLowerCase());
+            return matched ? matched.id : activeSubs[0].id;
+          });
+        } else {
+          setSelectedSubjectId('');
+        }
       } else {
-        setSubjects(INITIAL_SUBJECTS);
+        setSubjects([]);
+        setSelectedSubjectId('');
       }
 
       const savedSessions = localStorage.getItem('studypulse_sessions');
@@ -593,13 +604,15 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     const fetchSupabaseData = async () => {
       try {
         // Fetch Subjects
-        const { data: dbSubjects } = await supabase
+        const { data: dbSubjects, error: subError } = await supabase
           .from('subjects')
           .select('*')
           .eq('user_id', user.id)
           .order('created_at', { ascending: true });
 
-        if (dbSubjects && dbSubjects.length > 0) {
+        if (subError) {
+          console.error("Failed to fetch subjects from Supabase:", subError);
+        } else if (dbSubjects && dbSubjects.length > 0) {
           const mappedSubjects: Subject[] = dbSubjects.map(s => ({
             id: s.id,
             name: s.name,
@@ -617,46 +630,15 @@ export function StudyProvider({ children }: { children: ReactNode }) {
               const matched = activeSubs.find(s => s.id === prev || s.name.toLowerCase() === prev.toLowerCase());
               return matched ? matched.id : activeSubs[0].id;
             });
+          } else {
+            setSelectedSubjectId('');
           }
           try { localStorage.setItem('studypulse_subjects', JSON.stringify(uniqueSubjects)); } catch {}
         } else {
-          // Check again if subjects already exist in Supabase for user to prevent duplicate seeding
-          const { data: existingSubjects } = await supabase
-            .from('subjects')
-            .select('id')
-            .eq('user_id', user.id);
-
-          if (!existingSubjects || existingSubjects.length === 0) {
-            // Seed initial subjects into Supabase for new user
-            const seededSubjects: Subject[] = [];
-            for (const initSub of INITIAL_SUBJECTS) {
-              const { data: created } = await supabase
-                .from('subjects')
-                .insert({
-                  user_id: user.id,
-                  name: initSub.name,
-                  color: initSub.color,
-                })
-                .select()
-                .single();
-
-              if (created) {
-                seededSubjects.push({
-                  id: created.id,
-                  name: created.name,
-                  color: created.color,
-                  userId: created.user_id,
-                  createdAt: created.created_at,
-                });
-              }
-            }
-
-            if (seededSubjects.length > 0) {
-              const uniqueSeeded = deduplicateSubjects(seededSubjects);
-              setSubjects(uniqueSeeded);
-              try { localStorage.setItem('studypulse_subjects', JSON.stringify(uniqueSeeded)); } catch {}
-            }
-          }
+          // New user or user with zero subjects: strictly empty collection, do NOT seed sample subjects
+          setSubjects([]);
+          setSelectedSubjectId('');
+          try { localStorage.setItem('studypulse_subjects', JSON.stringify([])); } catch {}
         }
 
         // Fetch Study Sessions with authenticated user
@@ -1557,26 +1539,35 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     setSelectedSubjectId(sub.id);
 
     const supabase = getSupabase();
-    if (supabase && user.id && !user.id.startsWith('user-scholar-')) {
-      supabase
-        .from('subjects')
-        .insert({
-          user_id: user.id,
-          name: trimmedName,
-          color: newSub.color,
-          is_archived: false,
-        })
-        .select()
-        .single()
-        .then(({ data, error }) => {
-          if (data && !error) {
-            setSubjects(prev => {
-              const updated = prev.map(s => s.id === tempId ? { ...s, id: data.id } : s);
-              return deduplicateSubjects(updated);
+    if (supabase) {
+      supabase.auth.getUser().then(({ data: authData }) => {
+        const activeUserId = authData?.user?.id || user.id;
+        if (activeUserId && !activeUserId.startsWith('user-scholar-')) {
+          supabase
+            .from('subjects')
+            .insert({
+              user_id: activeUserId,
+              name: trimmedName,
+              color: newSub.color,
+              is_archived: false,
+            })
+            .select()
+            .single()
+            .then(({ data, error }) => {
+              if (data && !error) {
+                setSubjects(prev => {
+                  const updated = prev.map(s => (s.id === tempId ? { ...s, id: data.id, userId: activeUserId } : s));
+                  const deduped = deduplicateSubjects(updated);
+                  try { localStorage.setItem('studypulse_subjects', JSON.stringify(deduped)); } catch {}
+                  return deduped;
+                });
+                setSelectedSubjectId(data.id);
+              } else if (error) {
+                console.error("Failed to insert subject into Supabase:", error);
+              }
             });
-            setSelectedSubjectId(data.id);
-          }
-        });
+        }
+      });
     }
   };
 
@@ -1610,23 +1601,9 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     const updated = subjects.map(s => (s.id === id ? { ...s, is_archived: true } : s));
     const activeSubjects = updated.filter(s => !s.is_archived);
 
-    if (activeSubjects.length === 0) {
-      const fallback: Subject = {
-        id: `sub-${Date.now()}`,
-        name: 'General Focus',
-        color: '#5A6B6A',
-        userId: user.id,
-        createdAt: new Date().toISOString(),
-        is_archived: false,
-      };
-      const finalSubjects = [...updated, fallback];
-      saveSubjects(finalSubjects);
-      setSelectedSubjectId(fallback.id);
-    } else {
-      saveSubjects(updated);
-      if (selectedSubjectId === id) {
-        setSelectedSubjectId(activeSubjects[0].id);
-      }
+    saveSubjects(updated);
+    if (selectedSubjectId === id) {
+      setSelectedSubjectId(activeSubjects.length > 0 ? activeSubjects[0].id : '');
     }
 
     const supabase = getSupabase();

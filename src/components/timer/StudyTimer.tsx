@@ -84,6 +84,8 @@ export function StudyTimer() {
     activeTaskId,
   } = useStudy();
 
+  const activeSubjects = useMemo(() => subjects.filter(sub => !sub.is_archived), [subjects]);
+
   const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [overviewView, setOverviewView] = useState<'today' | 'yesterday'>('today');
@@ -109,13 +111,17 @@ export function StudyTimer() {
   const handleStartSession = useCallback(() => {
     if (!selectedSubject && !selectedSubjectId) {
       setSubjectWarning(true);
-      setShowDropdown(true);
+      if (activeSubjects.length === 0) {
+        setIsSubjectModalOpen(true);
+      } else {
+        setShowDropdown(true);
+      }
       return;
     }
     setSubjectWarning(false);
     setShowRecoveryBanner(false);
     startTimer();
-  }, [selectedSubject, selectedSubjectId, startTimer]);
+  }, [selectedSubject, selectedSubjectId, startTimer, activeSubjects.length]);
 
   const handlePause = useCallback(() => {
     pauseTimer();
@@ -689,7 +695,9 @@ export function StudyTimer() {
               <div className="mb-2 sm:mb-3 flex items-center justify-between gap-2.5 px-3 py-2 rounded-2xl bg-amber-500/15 border border-amber-500/40 text-amber-200 text-xs font-semibold backdrop-blur-md shadow-lg shadow-amber-500/10 animate-in fade-in slide-in-from-top-2 duration-200">
                 <div className="flex items-center gap-2">
                   <span className="text-amber-400 text-xs">⚠️</span>
-                  <span className="text-[11px] sm:text-xs">Please select a subject before starting.</span>
+                  <span className="text-[11px] sm:text-xs">
+                    {activeSubjects.length === 0 ? 'Please add a subject before starting.' : 'Please select a subject before starting.'}
+                  </span>
                 </div>
                 <button
                   onClick={() => setSubjectWarning(false)}
@@ -705,7 +713,14 @@ export function StudyTimer() {
               {/* Subject Dropdown */}
               <div className="relative flex-1 min-w-0 w-full">
                 <button
-                  onClick={() => setShowDropdown(!showDropdown)}
+                  onClick={() => {
+                    if (activeSubjects.length === 0) {
+                      setIsSubjectModalOpen(true);
+                      setShowDropdown(false);
+                    } else {
+                      setShowDropdown(!showDropdown);
+                    }
+                  }}
                   disabled={isStudying}
                   className={`w-full flex items-center justify-between px-3 sm:px-4 py-2 sm:py-2.5 bg-black/40 hover:bg-black/60 border rounded-2xl text-xs sm:text-sm font-semibold transition-all disabled:opacity-75 disabled:cursor-not-allowed cursor-pointer ${
                     subjectWarning
@@ -716,10 +731,10 @@ export function StudyTimer() {
                   <div className="flex items-center gap-2.5 min-w-0">
                     <span
                       className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full flex-shrink-0 shadow-sm transition-colors"
-                      style={{ backgroundColor: selectedSubject ? subjectColor : '#64748B' }}
+                      style={{ backgroundColor: selectedSubject ? subjectColor : activeSubjects.length === 0 ? '#10B981' : '#64748B' }}
                     />
-                    <span className={`truncate ${selectedSubject ? "text-white font-bold tracking-tight" : "text-neutral-400 font-medium tracking-tight"}`}>
-                      {selectedSubject ? selectedSubject.name : 'Select a Subject'}
+                    <span className={`truncate ${selectedSubject ? "text-white font-bold tracking-tight" : activeSubjects.length === 0 ? "text-emerald-400 font-bold tracking-tight" : "text-neutral-400 font-medium tracking-tight"}`}>
+                      {selectedSubject ? selectedSubject.name : activeSubjects.length === 0 ? 'Add a Subject' : 'Select a Subject'}
                     </span>
                   </div>
                   <ChevronDown className="w-4 h-4 text-neutral-400 flex-shrink-0 ml-1" />
@@ -833,7 +848,7 @@ export function StudyTimer() {
                       ? pomodoroPhase === 'work'
                         ? `🔥 Focus Sprint (${pomodoroPreset === '50/10' ? '50m' : '25m'})`
                         : `☕ Recharge Break (${pomodoroPreset === '50/10' ? '10m' : '5m'})`
-                      : selectedSubject?.name || 'Select a subject above'}
+                      : selectedSubject?.name || (activeSubjects.length === 0 ? 'Add a subject above' : 'Select a subject above')}
                   </div>
 
                   {/* Big Digital Numbers with Strict Tabular Monospaced Formatting */}
