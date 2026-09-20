@@ -127,11 +127,13 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
   };
 
   // -------------------------------------------------------------
-  // Top Row: 6 High-Level Metrics
+  // Top Row: 3 Focus Time Metrics
   // -------------------------------------------------------------
   const topMetrics = useMemo(() => {
-    // Current Week Bounds (Monday - Sunday)
     const now = new Date();
+    const currentMonthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+    // Current Week Bounds (Monday - Sunday)
     const dayOfWeek = now.getDay();
     const diffToMon = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
     const currentWeekMon = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToMon);
@@ -139,8 +141,13 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
     const weekMonStr = getLocalDateString(currentWeekMon);
     const weekSunStr = getLocalDateString(currentWeekSun);
 
-    // 1. Total Focus Time (Lifetime)
-    const totalFocusSec = sessions.reduce((sum, s) => sum + s.durationSeconds, 0);
+    // 1. Focus Time of This Month
+    const thisMonthFocusSec = sessions
+      .filter(s => {
+        const dStr = getLocalDateString(new Date(s.startTime));
+        return dStr.startsWith(currentMonthPrefix);
+      })
+      .reduce((sum, s) => sum + s.durationSeconds, 0);
 
     // 2. Focus Time of This Week
     const thisWeekFocusSec = sessions
@@ -155,28 +162,12 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
       .filter(s => getLocalDateString(new Date(s.startTime)) === todayStr)
       .reduce((sum, s) => sum + s.durationSeconds, 0);
 
-    // 4. Total Completed Tasks
-    const completedTodos = todos.filter(t => t.completed);
-    const totalCompletedTasks = completedTodos.length;
-
-    // 5. Tasks Completed This Week
-    const thisWeekCompletedTasks = completedTodos.filter(t => {
-      const dStr = getTaskDateStr(t);
-      return dStr >= weekMonStr && dStr <= weekSunStr;
-    }).length;
-
-    // 6. Tasks Completed Today
-    const todayCompletedTasks = completedTodos.filter(t => getTaskDateStr(t) === todayStr).length;
-
     return {
-      totalFocusSec,
+      thisMonthFocusSec,
       thisWeekFocusSec,
       todayFocusSec,
-      totalCompletedTasks,
-      thisWeekCompletedTasks,
-      todayCompletedTasks,
     };
-  }, [sessions, todos, todayStr]);
+  }, [sessions, todayStr]);
 
   // -------------------------------------------------------------
   // Distribution Card: Range Calculation & Data Filtering
@@ -674,16 +665,16 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
         </div>
       </div>
 
-      {/* 1. Top Row — 6 High-Level Metric Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
-        {/* Card 1: Total Focus Time */}
+      {/* 1. Top Row — 3 Focus Time Metric Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Card 1: Focus Time of This Month */}
         <div className="bg-[#0e1422] border border-slate-800/80 rounded-2xl p-3 sm:p-3.5 shadow-lg relative flex flex-col justify-between">
           <div className="h-0.5 w-7 bg-rose-500 rounded-full mb-2" />
           <div className="text-[11px] font-medium text-slate-400 leading-tight">
-            Total Focus Time
+            Focus Time of This Month
           </div>
           <div className="text-base sm:text-lg font-black text-white font-mono mt-1 truncate">
-            {formatHoursAndMins(topMetrics.totalFocusSec)}
+            {formatHoursAndMins(topMetrics.thisMonthFocusSec)}
           </div>
         </div>
 
@@ -706,39 +697,6 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
           </div>
           <div className="text-base sm:text-lg font-black text-white font-mono mt-1 truncate">
             {formatHoursAndMins(topMetrics.todayFocusSec)}
-          </div>
-        </div>
-
-        {/* Card 4: Total Completed Tasks */}
-        <div className="bg-[#0e1422] border border-slate-800/80 rounded-2xl p-3 sm:p-3.5 shadow-lg relative flex flex-col justify-between">
-          <div className="h-0.5 w-7 bg-emerald-400 rounded-full mb-2" />
-          <div className="text-[11px] font-medium text-slate-400 leading-tight">
-            Total Completed Tasks
-          </div>
-          <div className="text-base sm:text-lg font-black text-white font-mono mt-1 truncate">
-            {topMetrics.totalCompletedTasks}
-          </div>
-        </div>
-
-        {/* Card 5: Tasks Completed This Week */}
-        <div className="bg-[#0e1422] border border-slate-800/80 rounded-2xl p-3 sm:p-3.5 shadow-lg relative flex flex-col justify-between">
-          <div className="h-0.5 w-7 bg-emerald-400 rounded-full mb-2" />
-          <div className="text-[11px] font-medium text-slate-400 leading-tight">
-            Tasks Completed This Week
-          </div>
-          <div className="text-base sm:text-lg font-black text-white font-mono mt-1 truncate">
-            {topMetrics.thisWeekCompletedTasks}
-          </div>
-        </div>
-
-        {/* Card 6: Tasks Completed Today */}
-        <div className="bg-[#0e1422] border border-slate-800/80 rounded-2xl p-3 sm:p-3.5 shadow-lg relative flex flex-col justify-between">
-          <div className="h-0.5 w-7 bg-emerald-400 rounded-full mb-2" />
-          <div className="text-[11px] font-medium text-slate-400 leading-tight">
-            Tasks Completed Today
-          </div>
-          <div className="text-base sm:text-lg font-black text-white font-mono mt-1 truncate">
-            {topMetrics.todayCompletedTasks}
           </div>
         </div>
       </div>
@@ -926,17 +884,14 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
           )}
         </div>
 
-        {/* Right Card: Focus Time Goal & Interactive Calendar (5 cols) */}
+        {/* Right Card: Calendar (5 cols) */}
         <div className="md:col-span-5 bg-[#0e1422] border border-slate-800/80 rounded-3xl p-4 sm:p-6 shadow-2xl flex flex-col justify-between space-y-3">
-          {/* Header & Goal Pill */}
-          <div className="flex items-center justify-between pb-2 border-b border-slate-800/70">
+          {/* Header */}
+          <div className="flex items-center pb-2 border-b border-slate-800/70">
             <h2 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
-              <Clock className="w-4 h-4 text-emerald-400" />
-              <span>Focus Time Goal</span>
+              <CalendarIcon className="w-4 h-4 text-emerald-400" />
+              <span>Calendar</span>
             </h2>
-            <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-extrabold text-xs">
-              Goal: {dailyGoalHours}H
-            </span>
           </div>
 
           {/* Sub-stats bar */}
