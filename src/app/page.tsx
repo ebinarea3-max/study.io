@@ -18,6 +18,7 @@ import { RankSettlementModal } from '../components/RankSettlementModal';
 import { SeasonRecapBanner } from '../components/gamification/SeasonRecapBanner';
 import { TasksOverview } from '../components/todo/TasksOverview';
 import { DailyBoostModal } from '../components/common/DailyBoostModal';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
 export default function Home() {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -152,18 +153,36 @@ export default function Home() {
             : 'px-3.5 sm:px-6 py-5 sm:py-8 pb-24 md:pb-12'
         }`}
       >
-        {activeTab === 'timer' && <StudyTimer />}
-        {activeTab === 'tasks' && <TasksOverview />}
+        {activeTab === 'timer' && (
+          <ErrorBoundary fallbackTitle="Focus Timer">
+            <StudyTimer />
+          </ErrorBoundary>
+        )}
+        {activeTab === 'tasks' && (
+          <ErrorBoundary fallbackTitle="Tasks Overview">
+            <TasksOverview />
+          </ErrorBoundary>
+        )}
         {activeTab === 'analytics' && (
-          <AnalyticsDashboard onStartSession={() => setActiveTab('timer')} />
+          <ErrorBoundary fallbackTitle="Analytics Dashboard">
+            <AnalyticsDashboard onStartSession={() => setActiveTab('timer')} />
+          </ErrorBoundary>
         )}
       </main>
 
       {/* Modals & Celebrations */}
-      <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
-      <ProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
-      <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
-      <FocusModeModal />
+      <ErrorBoundary fallbackTitle="Authentication">
+        <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
+      </ErrorBoundary>
+      <ErrorBoundary fallbackTitle="Profile">
+        <ProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
+      </ErrorBoundary>
+      <ErrorBoundary fallbackTitle="Settings">
+        <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+      </ErrorBoundary>
+      <ErrorBoundary fallbackTitle="Focus Mode">
+        <FocusModeModal />
+      </ErrorBoundary>
 
       {/* Free Fire Post-Match Rank Settlement Fullscreen Screen */}
       <RankSettlementModal

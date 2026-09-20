@@ -223,22 +223,27 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
   const distSubjectBreakdown = useMemo(() => {
     const map: Record<string, { name: string; seconds: number; color: string; sessionCount: number }> = {};
 
+    const subjectList = Array.isArray(subjects) ? subjects : [];
+
     // 1. Initialize from all subjects in state (both active and archived)
-    subjects.forEach(sub => {
+    subjectList.forEach(sub => {
+      if (!sub) return;
       map[sub.id] = {
-        name: sub.name,
+        name: sub.name || 'Untitled Subject',
         seconds: 0,
-        color: sub.color,
+        color: sub.color || '#10B981',
         sessionCount: 0,
       };
     });
 
     // 2. Aggregate each session into its subject, falling back gracefully to historical metadata
     distSessions.forEach(s => {
-      const matchedSubject = subjects.find(
+      const matchedSubject = subjectList.find(
         sub =>
-          (s.subjectId && sub.id === s.subjectId) ||
-          (s.subjectName && sub.name.trim().toLowerCase() === s.subjectName.trim().toLowerCase())
+          sub && (
+            (s.subjectId && sub.id === s.subjectId) ||
+            (s.subjectName && (sub.name || '').trim().toLowerCase() === s.subjectName.trim().toLowerCase())
+          )
       );
 
       const groupKey = matchedSubject

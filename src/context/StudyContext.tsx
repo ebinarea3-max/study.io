@@ -96,25 +96,28 @@ interface StudyContextType {
 }
 
 export function deduplicateSubjects(list: Subject[]): Subject[] {
+  if (!Array.isArray(list)) return [];
   const seenActiveNames = new Set<string>();
   const seenIds = new Set<string>();
   const result: Subject[] = [];
 
   // 1. Non-archived subjects first (deduplicated by normalized name)
   for (const item of list) {
+    if (!item) continue;
     if (item.is_archived) continue;
     const normalized = (item.name || '').trim().toLowerCase();
-    if (!normalized || seenActiveNames.has(normalized) || seenIds.has(item.id)) continue;
+    if (!normalized || seenActiveNames.has(normalized) || (item.id && seenIds.has(item.id))) continue;
     seenActiveNames.add(normalized);
-    seenIds.add(item.id);
+    if (item.id) seenIds.add(item.id);
     result.push(item);
   }
 
   // 2. Archived subjects preserved by id for session lookups and historical analytics
   for (const item of list) {
+    if (!item) continue;
     if (!item.is_archived) continue;
-    if (seenIds.has(item.id)) continue;
-    seenIds.add(item.id);
+    if (item.id && seenIds.has(item.id)) continue;
+    if (item.id) seenIds.add(item.id);
     result.push(item);
   }
 
@@ -655,7 +658,8 @@ export function StudyProvider({ children }: { children: ReactNode }) {
           console.error("Failed to fetch initial study sessions:", sessError);
         } else if (dbSessions) {
           const mappedSessions: StudySession[] = dbSessions.map(s => {
-            const localSub = subjects.find(sub => sub.id === s.subject_id);
+            const subjectList = Array.isArray(subjects) ? subjects : [];
+            const localSub = subjectList.find(sub => sub && sub.id === s.subject_id);
             return {
               id: s.id,
               userId: s.user_id,
@@ -763,7 +767,8 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
   const selectedSubject = useMemo(() => {
     if (!selectedSubjectId) return null;
-    const found = subjects.find(s => s.id === selectedSubjectId);
+    const subjectList = Array.isArray(subjects) ? subjects : [];
+    const found = subjectList.find(s => s && s.id === selectedSubjectId);
     if (!found || found.is_archived) return null;
     return found;
   }, [selectedSubjectId, subjects]);
@@ -839,7 +844,8 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
       if (dbSessions) {
         const mappedSessions: StudySession[] = dbSessions.map(s => {
-          const localSub = subjects.find(sub => sub.id === s.subject_id);
+          const subjectList = Array.isArray(subjects) ? subjects : [];
+          const localSub = subjectList.find(sub => sub && sub.id === s.subject_id);
           return {
             id: s.id,
             userId: s.user_id,
@@ -915,7 +921,8 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     if (durationInt <= 0) return false;
 
     const supabase = getSupabase();
-    const targetSub = subjects.find(s => s.id === sessionData.subjectId) || selectedSubject;
+    const subjectList = Array.isArray(subjects) ? subjects : [];
+    const targetSub = subjectList.find(s => s && s.id === sessionData.subjectId) || selectedSubject;
 
     const isValidUuid = (val?: string | null): boolean => {
       if (!val || typeof val !== 'string') return false;
@@ -1033,7 +1040,8 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
           if (!error && dbSessions) {
             return dbSessions.map(s => {
-              const localSub = subjects.find(sub => sub.id === s.subject_id);
+              const subjectList = Array.isArray(subjects) ? subjects : [];
+              const localSub = subjectList.find(sub => sub && sub.id === s.subject_id);
               return {
                 id: s.id,
                 userId: s.user_id,
@@ -1079,7 +1087,8 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     setIsStudying(true);
     setIsPaused(false);
     soundFx.playStartChime();
-    const targetSub = subjects.find(s => s.id === (subjectId || selectedSubjectId)) || selectedSubject;
+    const subjectList = Array.isArray(subjects) ? subjects : [];
+    const targetSub = subjectList.find(s => s && s.id === (subjectId || selectedSubjectId)) || selectedSubject;
     updateProfile({
       status: timerMode === 'pomodoro' && pomodoroPhase === 'shortBreak' ? 'resting' : 'studying',
       activeSessionStartTime: new Date().toISOString(),
@@ -1152,8 +1161,9 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       setTimerMode(mode);
     }
     if (subjectIdOrName) {
-      const match = subjects.find(
-        s => s.id === subjectIdOrName || s.name.toLowerCase() === subjectIdOrName.toLowerCase()
+      const subjectList = Array.isArray(subjects) ? subjects : [];
+      const match = subjectList.find(
+        s => s && (s.id === subjectIdOrName || (s.name || '').toLowerCase() === subjectIdOrName.toLowerCase())
       );
       if (match) {
         setSelectedSubjectId(match.id);
@@ -1505,19 +1515,22 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
   // Subjects Management
   const addSubject = (newSub: Omit<Subject, 'id' | 'createdAt'>) => {
+    if (!newSub) return;
     const trimmedName = (newSub.name || '').trim();
     if (!trimmedName) return;
 
+    const subjectList = Array.isArray(subjects) ? subjects : [];
+
     // Prevent duplicate subjects (case-insensitive)
-    const existing = subjects.find(
-      s => s.name.trim().toLowerCase() === trimmedName.toLowerCase()
+    const existing = subjectList.find(
+      s => s && (s.name || '').trim().toLowerCase() === trimmedName.toLowerCase()
     );
     if (existing) {
       if (existing.is_archived) {
         updateSubject(existing.id, {
           is_archived: false,
-          color: newSub.color,
-          targetMinutesPerDay: newSub.targetMinutesPerDay,
+          color: newSub.color || '#10B981',
+          targetMinutesPerDay: newSub.targetMinutesPerDay || 60,
         });
         setSelectedSubjectId(existing.id);
         return;
@@ -1530,12 +1543,14 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     const sub: Subject = {
       ...newSub,
       name: trimmedName,
+      color: newSub.color || '#10B981',
+      targetMinutesPerDay: newSub.targetMinutesPerDay || 60,
       id: tempId,
-      userId: user.id,
+      userId: user?.id || '',
       createdAt: new Date().toISOString(),
       is_archived: false,
     };
-    saveSubjects([...subjects, sub]);
+    saveSubjects([...subjectList, sub]);
     setSelectedSubjectId(sub.id);
 
     const supabase = getSupabase();
@@ -1548,7 +1563,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
             .insert({
               user_id: activeUserId,
               name: trimmedName,
-              color: newSub.color,
+              color: newSub.color || '#10B981',
               is_archived: false,
             })
             .select()
@@ -1556,7 +1571,8 @@ export function StudyProvider({ children }: { children: ReactNode }) {
             .then(({ data, error }) => {
               if (data && !error) {
                 setSubjects(prev => {
-                  const updated = prev.map(s => (s.id === tempId ? { ...s, id: data.id, userId: activeUserId } : s));
+                  const prevList = Array.isArray(prev) ? prev : [];
+                  const updated = prevList.map(s => (s && s.id === tempId ? { ...s, id: data.id, userId: activeUserId } : s));
                   const deduped = deduplicateSubjects(updated);
                   try { localStorage.setItem('studypulse_subjects', JSON.stringify(deduped)); } catch {}
                   return deduped;
@@ -1572,16 +1588,18 @@ export function StudyProvider({ children }: { children: ReactNode }) {
   };
 
   const updateSubject = (id: string, updates: Partial<Subject>) => {
+    if (!id) return;
+    const subjectList = Array.isArray(subjects) ? subjects : [];
     const trimmedUpdates = {
       ...updates,
-      ...(updates.name !== undefined ? { name: updates.name.trim() } : {}),
+      ...(updates.name !== undefined ? { name: (updates.name || '').trim() } : {}),
     };
-    const updated = subjects.map(s => s.id === id ? { ...s, ...trimmedUpdates } : s);
+    const updated = subjectList.map(s => s && s.id === id ? { ...s, ...trimmedUpdates } : s);
     saveSubjects(updated);
 
     const supabase = getSupabase();
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-    if (supabase && user.id && isUuid) {
+    if (supabase && user?.id && isUuid) {
       const dbUpdates: Record<string, any> = {};
       if (trimmedUpdates.name !== undefined) dbUpdates.name = trimmedUpdates.name;
       if (trimmedUpdates.color !== undefined) dbUpdates.color = trimmedUpdates.color;
@@ -1597,9 +1615,11 @@ export function StudyProvider({ children }: { children: ReactNode }) {
   };
 
   const deleteSubject = async (id: string): Promise<void> => {
+    if (!id) return;
     // Soft-delete / archive: Keep the subject record and past sessions intact
-    const updated = subjects.map(s => (s.id === id ? { ...s, is_archived: true } : s));
-    const activeSubjects = updated.filter(s => !s.is_archived);
+    const subjectList = Array.isArray(subjects) ? subjects : [];
+    const updated = subjectList.map(s => (s && s.id === id ? { ...s, is_archived: true } : s));
+    const activeSubjects = updated.filter(s => s && !s.is_archived);
 
     saveSubjects(updated);
     if (selectedSubjectId === id) {
@@ -1608,7 +1628,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
     const supabase = getSupabase();
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-    if (supabase && user.id && isUuid) {
+    if (supabase && user?.id && isUuid) {
       try {
         const { error } = await supabase
           .from('subjects')
@@ -1626,11 +1646,12 @@ export function StudyProvider({ children }: { children: ReactNode }) {
   // To-Dos Management
   const addTodo = (newTodo: Omit<TodoItem, 'id' | 'userId' | 'createdAt'>) => {
     const tempId = `todo-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
-    const targetSub = subjects.find(s => s.id === newTodo.subjectId);
+    const subjectList = Array.isArray(subjects) ? subjects : [];
+    const targetSub = subjectList.find(s => s && s.id === newTodo.subjectId);
     const item: TodoItem = {
       ...newTodo,
       id: tempId,
-      userId: user.id,
+      userId: user?.id || '',
       subjectName: targetSub?.name,
       subjectColor: targetSub?.color,
       createdAt: new Date().toISOString(),

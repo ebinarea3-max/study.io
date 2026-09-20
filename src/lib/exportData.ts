@@ -42,7 +42,8 @@ export function exportDataAsJSON(
  * Downloads lifetime study sessions as a standard CSV spreadsheet.
  */
 export function exportSessionsAsCSV(sessions: StudySession[], subjects: Subject[]) {
-  const subjectColorMap = new Map(subjects.map(s => [s.id, s.color]));
+  const subjectList = Array.isArray(subjects) ? subjects : [];
+  const subjectColorMap = new Map(subjectList.map(s => [s?.id, s?.color || '#10B981']));
 
   const headers = [
     'Session ID',

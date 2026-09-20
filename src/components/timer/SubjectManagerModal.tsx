@@ -11,8 +11,8 @@ interface SubjectManagerModalProps {
 }
 
 const COLOR_PRESETS = [
-  '#5A6B6A', // Muted Teal-Gray
   '#10B981', // Emerald
+  '#5A6B6A', // Muted Teal-Gray
   '#8B5CF6', // Purple
   '#EC4899', // Pink
   '#F59E0B', // Amber
@@ -24,12 +24,15 @@ const COLOR_PRESETS = [
 ];
 
 export function SubjectManagerModal({ isOpen, onClose }: SubjectManagerModalProps) {
-  const { subjects, addSubject, updateSubject, deleteSubject } = useStudy();
+  const { subjects = [], addSubject, updateSubject, deleteSubject } = useStudy();
+
+  const subjectList = Array.isArray(subjects) ? subjects : [];
+  const activeSubjects = subjectList.filter(s => s && !s.is_archived);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState('');
-  const [color, setColor] = useState(COLOR_PRESETS[0]);
-  const [targetMinutes, setTargetMinutes] = useState(90);
+  const [color, setColor] = useState('#10b981');
+  const [targetMinutes, setTargetMinutes] = useState(60);
   const [isCreating, setIsCreating] = useState(false);
   const [deletingSubject, setDeletingSubject] = useState<Subject | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -38,15 +41,15 @@ export function SubjectManagerModal({ isOpen, onClose }: SubjectManagerModalProp
   if (!isOpen) return null;
 
   useEffect(() => {
-    if (isOpen && subjects.filter(s => !s.is_archived).length === 0) {
+    if (isOpen && activeSubjects.length === 0) {
       setIsCreating(true);
     }
-  }, [isOpen, subjects]);
+  }, [isOpen, activeSubjects.length]);
 
   const handleStartCreate = () => {
     setName('');
-    setColor(COLOR_PRESETS[Math.floor(Math.random() * COLOR_PRESETS.length)]);
-    setTargetMinutes(90);
+    setColor(COLOR_PRESETS[Math.floor(Math.random() * COLOR_PRESETS.length)] || '#10b981');
+    setTargetMinutes(60);
     setEditingId(null);
     setErrorMessage(null);
     setDeletingSubject(null);
@@ -54,9 +57,10 @@ export function SubjectManagerModal({ isOpen, onClose }: SubjectManagerModalProp
   };
 
   const handleStartEdit = (sub: Subject) => {
-    setName(sub.name);
-    setColor(sub.color);
-    setTargetMinutes(sub.targetMinutesPerDay || 90);
+    if (!sub) return;
+    setName(sub.name || '');
+    setColor(sub.color || '#10b981');
+    setTargetMinutes(sub.targetMinutesPerDay || 60);
     setEditingId(sub.id);
     setErrorMessage(null);
     setDeletingSubject(null);
@@ -65,44 +69,56 @@ export function SubjectManagerModal({ isOpen, onClose }: SubjectManagerModalProp
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const trimmed = name.trim();
-    if (!trimmed) return;
+    try {
+      const trimmed = (name || '').trim();
+      if (!trimmed) {
+        setErrorMessage('Subject name cannot be empty.');
+        return;
+      }
 
-    // Check duplicate name among active subjects
-    const isDuplicate = subjects.some(
-      s => !s.is_archived && s.id !== editingId && s.name.trim().toLowerCase() === trimmed.toLowerCase()
-    );
-    if (isDuplicate) {
-      setErrorMessage(`A subject named "${trimmed}" already exists.`);
-      return;
-    }
-    setErrorMessage(null);
+      // Check duplicate name among active subjects
+      const isDuplicate = activeSubjects.some(
+        s => s && s.id !== editingId && (s.name || '').trim().toLowerCase() === trimmed.toLowerCase()
+      );
+      if (isDuplicate) {
+        setErrorMessage(`A subject named "${trimmed}" already exists.`);
+        return;
+      }
+      setErrorMessage(null);
 
-    if (editingId) {
-      updateSubject(editingId, {
-        name: trimmed,
-        color,
-        targetMinutesPerDay: Number(targetMinutes),
-      });
-      setEditingId(null);
-    } else {
-      addSubject({
-        name: trimmed,
-        color,
-        targetMinutesPerDay: Number(targetMinutes),
-      });
-      setIsCreating(false);
+      const targetVal = Number(targetMinutes) || 60;
+      const colorVal = color || '#10b981';
+
+      if (editingId) {
+        updateSubject(editingId, {
+          name: trimmed,
+          color: colorVal,
+          targetMinutesPerDay: targetVal,
+        });
+        setEditingId(null);
+      } else {
+        addSubject({
+          name: trimmed,
+          color: colorVal,
+          targetMinutesPerDay: targetVal,
+        });
+        setIsCreating(false);
+      }
+    } catch (err: any) {
+      console.error('Failed to save subject:', err);
+      setErrorMessage(err?.message || 'An error occurred while saving the subject.');
     }
   };
 
   const handleConfirmDelete = async () => {
-    if (!deletingSubject) return;
+    if (!deletingSubject?.id) return;
     setIsDeleting(true);
     try {
       await deleteSubject(deletingSubject.id);
       setDeletingSubject(null);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to delete subject:', err);
+      setErrorMessage(err?.message || 'Failed to delete subject.');
     } finally {
       setIsDeleting(false);
     }
@@ -204,7 +220,7 @@ export function SubjectManagerModal({ isOpen, onClose }: SubjectManagerModalProp
                 max="360"
                 step="15"
                 value={targetMinutes}
-                onChange={e => setTargetMinutes(parseInt(e.target.value))}
+                onChange={e => setTargetMinutes(parseInt(e.target.value) || 60)}
                 className="w-full accent-emerald-500 bg-slate-900 cursor-pointer"
               />
             </div>
@@ -232,7 +248,7 @@ export function SubjectManagerModal({ isOpen, onClose }: SubjectManagerModalProp
         )}
 
         {/* Empty state when no active subjects */}
-        {subjects.filter(s => !s.is_archived).length === 0 && !isCreating && !editingId && (
+        {activeSubjects.length === 0 && !isCreating && !editingId && (
           <div className="py-8 text-center text-xs text-neutral-400">
             <p className="font-semibold text-slate-300">No subjects yet</p>
             <p className="text-[11px] text-neutral-500 mt-1">Click &quot;Add New Subject&quot; above to create your first study topic.</p>
@@ -241,20 +257,20 @@ export function SubjectManagerModal({ isOpen, onClose }: SubjectManagerModalProp
 
         {/* Subjects list */}
         <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-          {subjects.filter(s => !s.is_archived).map(sub => (
+          {activeSubjects.map(sub => (
             <div
-              key={sub.id}
+              key={sub?.id || Math.random().toString()}
               className="p-3 rounded-xl bg-slate-800/60 border border-slate-700/60 flex items-center justify-between hover:border-slate-600 transition-colors"
             >
               <div className="flex items-center gap-3 min-w-0 pr-2">
                 <div
                   className="w-4 h-4 rounded-full shadow-sm flex-shrink-0"
-                  style={{ backgroundColor: sub.color }}
+                  style={{ backgroundColor: sub?.color || '#10b981' }}
                 />
                 <div className="truncate">
-                  <div className="font-bold text-sm text-white truncate">{sub.name}</div>
+                  <div className="font-bold text-sm text-white truncate">{sub?.name || 'Untitled Subject'}</div>
                   <div className="text-[11px] text-slate-400">
-                    Target: {Math.floor((sub.targetMinutesPerDay || 60) / 60)}h {(sub.targetMinutesPerDay || 60) % 60}m / day
+                    Target: {Math.floor((sub?.targetMinutesPerDay || 60) / 60)}h {(sub?.targetMinutesPerDay || 60) % 60}m / day
                   </div>
                 </div>
               </div>
@@ -303,7 +319,7 @@ export function SubjectManagerModal({ isOpen, onClose }: SubjectManagerModalProp
               <div className="space-y-1 min-w-0">
                 <h4 className="text-sm font-bold text-white tracking-tight">Delete Subject?</h4>
                 <p className="text-xs text-neutral-400 leading-relaxed">
-                  Are you sure you want to remove <span className="text-white font-semibold">{deletingSubject.name}</span>? It will be removed from your active list, but your past study records will be preserved.
+                  Are you sure you want to remove <span className="text-white font-semibold">{deletingSubject?.name || 'this subject'}</span>? It will be removed from your active list, but your past study records will be preserved.
                 </p>
               </div>
             </div>

@@ -5,6 +5,7 @@ import { useStudy } from '../../context/StudyContext';
 import { useAuth } from '../../context/AuthContext';
 import { DailyTodoList } from '../todo/DailyTodoList';
 import { SubjectManagerModal } from './SubjectManagerModal';
+import { ErrorBoundary } from '../common/ErrorBoundary';
 import {
   formatSeconds,
   formatHoursAndMins,
@@ -46,7 +47,7 @@ const EMPTY_STATE_QUOTES = [
 export function StudyTimer() {
   const { user, isLoading, updateProfile } = useAuth();
   const {
-    subjects,
+    subjects = [],
     selectedSubject,
     selectedSubjectId,
     setSelectedSubjectId,
@@ -84,7 +85,8 @@ export function StudyTimer() {
     activeTaskId,
   } = useStudy();
 
-  const activeSubjects = useMemo(() => subjects.filter(sub => !sub.is_archived), [subjects]);
+  const subjectList = Array.isArray(subjects) ? subjects : [];
+  const activeSubjects = useMemo(() => subjectList.filter(sub => sub && !sub.is_archived), [subjectList]);
 
   const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -92,6 +94,16 @@ export function StudyTimer() {
   const [isSaving, setIsSaving] = useState(false);
   const [showRecoveryBanner, setShowRecoveryBanner] = useState(false);
   const [subjectWarning, setSubjectWarning] = useState(false);
+
+  // Safe handler to open Subject Manager / Add Subject
+  const handleOpenSubjectManager = useCallback((e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    setShowDropdown(false);
+    setIsSubjectModalOpen(true);
+  }, []);
 
   // Lock the motivation quote in useState on initial load so it NEVER changes while timer is running
   const [lockedEmptyQuote] = useState(() => {
@@ -109,10 +121,10 @@ export function StudyTimer() {
 
   // Streamlined control handlers cleanly controlling synchronized StudyContext timer engine
   const handleStartSession = useCallback(() => {
-    if (!selectedSubject && !selectedSubjectId) {
+    if (!selectedSubject?.id && !selectedSubjectId) {
       setSubjectWarning(true);
       if (activeSubjects.length === 0) {
-        setIsSubjectModalOpen(true);
+        handleOpenSubjectManager();
       } else {
         setShowDropdown(true);
       }
@@ -121,7 +133,7 @@ export function StudyTimer() {
     setSubjectWarning(false);
     setShowRecoveryBanner(false);
     startTimer();
-  }, [selectedSubject, selectedSubjectId, startTimer, activeSubjects.length]);
+  }, [selectedSubject?.id, selectedSubjectId, startTimer, activeSubjects.length, handleOpenSubjectManager]);
 
   const handlePause = useCallback(() => {
     pauseTimer();
@@ -475,9 +487,10 @@ export function StudyTimer() {
 
   // Calculate today's subject study time (completed sessions only to avoid active ticking re-evaluations)
   const todaySubjectSeconds = useMemo(() => {
+    if (!selectedSubject?.id) return 0;
     return todaySessions
-      .filter(s => s.subjectId === selectedSubject?.id)
-      .reduce((sum, s) => sum + s.durationSeconds, 0);
+      .filter(s => s && s.subjectId === selectedSubject.id)
+      .reduce((sum, s) => sum + (s?.durationSeconds || 0), 0);
   }, [todaySessions, selectedSubject?.id]);
 
   // Time calculations strictly for display
@@ -490,9 +503,9 @@ export function StudyTimer() {
     displayTime = formatSeconds(remaining);
     progressPercent = Math.min(100, (elapsedSeconds / target) * 100);
   } else {
-    const subjectTargetSeconds = (selectedSubject?.targetMinutesPerDay || 120) * 60;
-    progressPercent = selectedSubject
-      ? Math.min(100, ((todaySubjectSeconds + elapsedSeconds) / subjectTargetSeconds) * 100)
+    const subjectTargetSeconds = ((selectedSubject?.targetMinutesPerDay || 120) * 60);
+    progressPercent = selectedSubject?.id
+      ? Math.min(100, ((todaySubjectSeconds + elapsedSeconds) / Math.max(1, subjectTargetSeconds)) * 100)
       : 0;
   }
 
@@ -501,7 +514,7 @@ export function StudyTimer() {
     ? '#64748B'
     : selectedSubject?.name === 'General Focus' && (selectedSubject?.color === '#3B82F6' || !selectedSubject?.color)
     ? '#5A6B6A'
-    : selectedSubject?.color || '#5A6B6A';
+    : selectedSubject?.color || '#10B981';
 
   // Recent 4 sessions
   const recentSessions = [...sessions]
@@ -572,10 +585,12 @@ export function StudyTimer() {
   return (
     <div className="w-full max-w-6xl mx-auto h-[calc(100dvh-4rem)] md:h-auto flex flex-col md:grid md:grid-cols-1 lg:grid-cols-12 justify-between md:justify-start gap-4 lg:gap-6 overflow-hidden md:overflow-visible p-4 md:p-0">
       {/* Subject Manager Modal */}
-      <SubjectManagerModal
-        isOpen={isSubjectModalOpen}
-        onClose={() => setIsSubjectModalOpen(false)}
-      />
+      <ErrorBoundary fallbackTitle="Subject Manager">
+        <SubjectManagerModal
+          isOpen={isSubjectModalOpen}
+          onClose={() => setIsSubjectModalOpen(false)}
+        />
+      </ErrorBoundary>
 
       {/* Main Left Column (Timer & Subject Goal Progress) */}
       <div className="lg:col-span-8 flex-1 md:flex-initial flex flex-col justify-between overflow-hidden md:overflow-visible space-y-0 md:space-y-6">
@@ -713,10 +728,10 @@ export function StudyTimer() {
               {/* Subject Dropdown */}
               <div className="relative flex-1 min-w-0 w-full">
                 <button
-                  onClick={() => {
+                  type="button"
+                  onClick={(e) => {
                     if (activeSubjects.length === 0) {
-                      setIsSubjectModalOpen(true);
-                      setShowDropdown(false);
+                      handleOpenSubjectManager(e);
                     } else {
                       setShowDropdown(!showDropdown);
                     }
@@ -731,10 +746,10 @@ export function StudyTimer() {
                   <div className="flex items-center gap-2.5 min-w-0">
                     <span
                       className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full flex-shrink-0 shadow-sm transition-colors"
-                      style={{ backgroundColor: selectedSubject ? subjectColor : activeSubjects.length === 0 ? '#10B981' : '#64748B' }}
+                      style={{ backgroundColor: selectedSubject ? (selectedSubject?.color || subjectColor) : activeSubjects.length === 0 ? '#10B981' : '#64748B' }}
                     />
-                    <span className={`truncate ${selectedSubject ? "text-white font-bold tracking-tight" : activeSubjects.length === 0 ? "text-emerald-400 font-bold tracking-tight" : "text-neutral-400 font-medium tracking-tight"}`}>
-                      {selectedSubject ? selectedSubject.name : activeSubjects.length === 0 ? 'Add a Subject' : 'Select a Subject'}
+                    <span className={`truncate ${selectedSubject?.name ? "text-white font-bold tracking-tight" : activeSubjects.length === 0 ? "text-emerald-400 font-bold tracking-tight" : "text-neutral-400 font-medium tracking-tight"}`}>
+                      {selectedSubject?.name || (activeSubjects.length === 0 ? 'Add a Subject' : 'Select a Subject')}
                     </span>
                   </div>
                   <ChevronDown className="w-4 h-4 text-neutral-400 flex-shrink-0 ml-1" />
@@ -746,22 +761,25 @@ export function StudyTimer() {
                       Select a subject to focus on
                     </div>
                     <div className="max-h-60 overflow-y-auto space-y-1">
-                      {subjects.filter(sub => !sub.is_archived).map(sub => {
+                      {activeSubjects.map(sub => {
                         const itemColor =
-                          sub.name === 'General Focus' && (sub.color === '#3B82F6' || !sub.color)
+                          sub?.name === 'General Focus' && (sub?.color === '#3B82F6' || !sub?.color)
                             ? '#5A6B6A'
-                            : sub.color || '#5A6B6A';
+                            : sub?.color || '#10B981';
 
                         return (
                           <button
-                            key={sub.id}
+                            type="button"
+                            key={sub?.id || Math.random().toString()}
                             onClick={() => {
-                              setSelectedSubjectId(sub.id);
+                              if (sub?.id) {
+                                setSelectedSubjectId(sub.id);
+                              }
                               setShowDropdown(false);
                               setSubjectWarning(false);
                             }}
                             className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                              sub.id === selectedSubjectId
+                              sub?.id && sub.id === selectedSubjectId
                                 ? 'bg-white/[0.08] text-white'
                                 : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
                             }`}
@@ -771,10 +789,10 @@ export function StudyTimer() {
                                 className="w-2.5 h-2.5 rounded-full flex-shrink-0"
                                 style={{ backgroundColor: itemColor }}
                               />
-                              <span className="truncate">{sub.name}</span>
+                              <span className="truncate">{sub?.name || 'Untitled Subject'}</span>
                             </div>
                             <span className="text-[10px] text-neutral-400 font-mono flex-shrink-0 ml-2">
-                              {Math.floor((sub.targetMinutesPerDay || 60) / 60)}h goal
+                              {Math.floor((sub?.targetMinutesPerDay || 60) / 60)}h goal
                             </span>
                           </button>
                         );
@@ -783,10 +801,8 @@ export function StudyTimer() {
 
                     <div className="pt-2 mt-2 border-t border-white/[0.08]">
                       <button
-                        onClick={() => {
-                          setIsSubjectModalOpen(true);
-                          setShowDropdown(false);
-                        }}
+                        type="button"
+                        onClick={handleOpenSubjectManager}
                         className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold text-[#8FA3A1] hover:bg-white/[0.06] transition-colors cursor-pointer"
                       >
                         <FolderPlus className="w-3.5 h-3.5 text-[#8FA3A1]" />
@@ -799,7 +815,8 @@ export function StudyTimer() {
 
               {/* Manage Subjects Button - Hidden on mobile to keep top compact, accessible inside dropdown */}
               <button
-                onClick={() => setIsSubjectModalOpen(true)}
+                type="button"
+                onClick={handleOpenSubjectManager}
                 className="hidden sm:flex p-2.5 sm:py-2.5 sm:px-3.5 rounded-2xl bg-neutral-900/70 hover:bg-neutral-800 border border-white/[0.08] text-neutral-300 hover:text-white transition-colors items-center justify-center gap-2 text-xs font-semibold active:scale-95 cursor-pointer shadow-sm flex-shrink-0"
                 title="Edit Subjects"
               >
@@ -1036,11 +1053,11 @@ export function StudyTimer() {
                 <button
                   onClick={handleStartSession}
                   className={`px-6 sm:px-8 py-3.5 sm:py-3.5 rounded-2xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-2 sm:gap-2.5 w-full xs:w-auto ${
-                    !selectedSubject
+                    !selectedSubject?.id
                       ? 'bg-neutral-800/80 text-neutral-500 border border-white/[0.08] opacity-50 cursor-not-allowed shadow-none'
                       : 'bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 shadow-xl shadow-emerald-500/25 active:scale-95 hover:scale-[1.02] cursor-pointer'
                   }`}
-                  title={!selectedSubject ? 'Please select a subject before starting the timer' : 'Start Focus Session'}
+                  title={!selectedSubject?.id ? 'Please select a subject before starting the timer' : 'Start Focus Session'}
                 >
                   <Play className="w-4 sm:w-5 h-4 sm:h-5 fill-current" />
                   <span>Start Session</span>
@@ -1130,11 +1147,11 @@ export function StudyTimer() {
             </div>
             <div>
               <div className="text-xs text-neutral-400">
-                {selectedSubject ? `Today on ${selectedSubject.name}` : 'Today on Subject'}
+                {selectedSubject?.name ? `Today on ${selectedSubject.name}` : 'Today on Subject'}
               </div>
               <div className="text-base font-bold text-white flex items-center gap-2">
                 <span className="font-mono tabular-nums">{formatHoursAndMins(todaySubjectSeconds)}</span>
-                {selectedSubject && (
+                {selectedSubject?.name && (
                   <span className="text-xs text-neutral-500 font-normal font-mono">
                     / {Math.floor((selectedSubject?.targetMinutesPerDay || 120) / 60)}h target
                   </span>

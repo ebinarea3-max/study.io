@@ -391,8 +391,9 @@ export function FocusModeModal() {
               onClick={() => {
                 setPomodoroCompletedPhase(null);
                 if (!selectedSubject) {
-                  const general = subjects.find(s => s.name.toLowerCase() === 'general focus') || subjects[0];
-                  if (general) {
+                  const subjectList = Array.isArray(subjects) ? subjects : [];
+                  const general = subjectList.find(s => s && (s.name || '').toLowerCase() === 'general focus') || subjectList[0];
+                  if (general?.id) {
                     setSelectedSubjectId(general.id);
                     startTimer(general.id);
                   } else {
@@ -412,8 +413,9 @@ export function FocusModeModal() {
             <button
               onClick={() => {
                 if (!selectedSubject) {
-                  const general = subjects.find(s => s.name.toLowerCase() === 'general focus') || subjects[0];
-                  if (general) {
+                  const subjectList = Array.isArray(subjects) ? subjects : [];
+                  const general = subjectList.find(s => s && (s.name || '').toLowerCase() === 'general focus') || subjectList[0];
+                  if (general?.id) {
                     setSelectedSubjectId(general.id);
                     startTimer(general.id);
                   } else {
