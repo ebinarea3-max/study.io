@@ -4,6 +4,7 @@ export type Subject = {
   color: string;
   icon?: string;
   targetMinutesPerDay?: number;
+  daily_goal_minutes?: number;
   userId?: string;
   createdAt: string;
   is_archived?: boolean;

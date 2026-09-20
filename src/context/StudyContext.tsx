@@ -613,16 +613,20 @@ export function StudyProvider({ children }: { children: ReactNode }) {
           .eq('user_id', user.id)
           .order('created_at', { ascending: true });
 
-        if (subError) {
+        if (subError || !dbSubjects) {
           console.error("Failed to fetch subjects from Supabase:", subError);
-        } else if (dbSubjects && dbSubjects.length > 0) {
+          setSubjects([]);
+          setSelectedSubjectId('');
+        } else if (Array.isArray(dbSubjects) && dbSubjects.length > 0) {
           const mappedSubjects: Subject[] = dbSubjects.map(s => ({
             id: s.id,
-            name: s.name,
-            color: s.color,
+            name: s.name || '',
+            color: s.color || '#10B981',
             userId: s.user_id,
             createdAt: s.created_at,
             is_archived: Boolean(s.is_archived),
+            daily_goal_minutes: s.daily_goal_minutes ?? s.target_minutes ?? 60,
+            targetMinutesPerDay: s.daily_goal_minutes ?? s.target_minutes ?? 60,
           }));
           const uniqueSubjects = deduplicateSubjects(mappedSubjects);
           setSubjects(uniqueSubjects);
@@ -630,7 +634,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
           if (activeSubs.length > 0) {
             setSelectedSubjectId(prev => {
               if (!prev) return activeSubs[0].id;
-              const matched = activeSubs.find(s => s.id === prev || s.name.toLowerCase() === prev.toLowerCase());
+              const matched = activeSubs.find(s => s.id === prev || (s.name && s.name.toLowerCase() === prev.toLowerCase()));
               return matched ? matched.id : activeSubs[0].id;
             });
           } else {
@@ -1540,13 +1544,16 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     }
 
     const tempId = `sub-${Date.now()}`;
+    const targetUserId = user?.id || newSub.userId || '';
+    const targetDailyMins = newSub.daily_goal_minutes || newSub.targetMinutesPerDay || 60;
     const sub: Subject = {
       ...newSub,
       name: trimmedName,
       color: newSub.color || '#10B981',
-      targetMinutesPerDay: newSub.targetMinutesPerDay || 60,
+      targetMinutesPerDay: targetDailyMins,
+      daily_goal_minutes: targetDailyMins,
       id: tempId,
-      userId: user?.id || '',
+      userId: targetUserId,
       createdAt: new Date().toISOString(),
       is_archived: false,
     };
@@ -1556,7 +1563,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     const supabase = getSupabase();
     if (supabase) {
       supabase.auth.getUser().then(({ data: authData }) => {
-        const activeUserId = authData?.user?.id || user.id;
+        const activeUserId = authData?.user?.id || targetUserId;
         if (activeUserId && !activeUserId.startsWith('user-scholar-')) {
           supabase
             .from('subjects')
@@ -1564,6 +1571,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
               user_id: activeUserId,
               name: trimmedName,
               color: newSub.color || '#10B981',
+              daily_goal_minutes: targetDailyMins,
               is_archived: false,
             })
             .select()
