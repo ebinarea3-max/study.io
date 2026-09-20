@@ -7,8 +7,6 @@ import {
   ShieldCheck,
   Sparkles,
   Download,
-  FileSpreadsheet,
-  FileJson,
   User,
   AlertTriangle,
   Loader2,
@@ -18,8 +16,6 @@ import {
 } from 'lucide-react';
 import { soundFx } from '../../lib/audio';
 import { useAuth } from '../../context/AuthContext';
-import { useStudy } from '../../context/StudyContext';
-import { exportDataAsJSON, exportSessionsAsCSV } from '../../lib/exportData';
 import { usePwaInstall } from '../../hooks/usePwaInstall';
 import { InstallInstructionModal } from './InstallInstructionModal';
 
@@ -30,7 +26,6 @@ interface SettingsModalProps {
 
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const { user, deleteAccount } = useAuth();
-  const { sessions, subjects, todos } = useStudy();
   const { canInstall, isInstalled, isPrompting, deferredPrompt, triggerInstall } = usePwaInstall();
 
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
@@ -89,7 +84,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             </div>
             <div>
               <h3 className="font-bold text-base text-white tracking-tight">Settings & Preferences</h3>
-              <p className="text-xs text-neutral-400">Audio synthesizer, data exports, and account management</p>
+              <p className="text-xs text-neutral-400">Audio synthesizer, preferences, and account management</p>
             </div>
           </div>
           <button
@@ -186,36 +181,6 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             )}
           </div>
 
-          {/* Section 3: Export Lifetime Data (CSV / JSON) */}
-          <div className="p-4 rounded-2xl bg-neutral-900/40 border border-white/[0.06] space-y-2.5">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 flex-shrink-0">
-                <Download className="w-4 h-4" />
-              </div>
-              <div>
-                <div className="text-xs font-bold text-white tracking-tight">Export Lifetime Study Data</div>
-                <div className="text-[11px] text-neutral-400">Backup your complete study history, timeline logs, and subject stats</div>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-2.5 pt-1">
-              <button
-                type="button"
-                onClick={() => exportSessionsAsCSV(sessions, subjects)}
-                className="py-2.5 px-3 rounded-xl bg-neutral-900/70 hover:bg-neutral-850 border border-white/[0.08] hover:border-emerald-500/40 text-emerald-300 text-xs font-bold transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
-              >
-                <FileSpreadsheet className="w-3.5 h-3.5" />
-                <span>Export CSV</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => exportDataAsJSON(user, subjects, sessions, todos)}
-                className="py-2.5 px-3 rounded-xl bg-neutral-900/70 hover:bg-neutral-850 border border-white/[0.08] hover:border-cyan-500/40 text-cyan-300 text-xs font-bold transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
-              >
-                <FileJson className="w-3.5 h-3.5" />
-                <span>Export JSON</span>
-              </button>
-            </div>
-          </div>
 
           {/* Section 4: High-Security Danger Zone (Delete Account) */}
           <div className="p-4 rounded-2xl bg-rose-500/[0.04] border border-rose-500/20 space-y-3">
