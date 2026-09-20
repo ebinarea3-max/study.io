@@ -22,6 +22,7 @@ create table if not exists public.profiles (
 alter table public.profiles add column if not exists current_season_id text default to_char(now(), 'YYYY-MM');
 alter table public.profiles add column if not exists season_rp integer default 0;
 alter table public.profiles add column if not exists last_streak_bonus_date text default null;
+alter table public.subjects add column if not exists is_archived boolean default false;
 
 -- 2. Subjects Table
 create table if not exists public.subjects (
@@ -29,6 +30,7 @@ create table if not exists public.subjects (
   user_id uuid references auth.users on delete cascade not null,
   name text not null,
   color text not null default '#10B981',
+  is_archived boolean default false,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 

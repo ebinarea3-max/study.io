@@ -731,7 +731,7 @@ export function StudyTimer() {
                       Select a subject to focus on
                     </div>
                     <div className="max-h-60 overflow-y-auto space-y-1">
-                      {subjects.map(sub => {
+                      {subjects.filter(sub => !sub.is_archived).map(sub => {
                         const itemColor =
                           sub.name === 'General Focus' && (sub.color === '#3B82F6' || !sub.color)
                             ? '#5A6B6A'

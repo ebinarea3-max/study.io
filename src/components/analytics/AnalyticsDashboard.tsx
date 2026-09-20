@@ -223,6 +223,7 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
   const distSubjectBreakdown = useMemo(() => {
     const map: Record<string, { name: string; seconds: number; color: string; sessionCount: number }> = {};
 
+    // 1. Initialize from all subjects in state (both active and archived)
     subjects.forEach(sub => {
       map[sub.id] = {
         name: sub.name,
@@ -232,15 +233,31 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
       };
     });
 
+    // 2. Aggregate each session into its subject, falling back gracefully to historical metadata
     distSessions.forEach(s => {
-      if (map[s.subjectId]) {
-        map[s.subjectId].seconds += s.durationSeconds;
-        map[s.subjectId].sessionCount += 1;
+      const matchedSubject = subjects.find(
+        sub =>
+          (s.subjectId && sub.id === s.subjectId) ||
+          (s.subjectName && sub.name.trim().toLowerCase() === s.subjectName.trim().toLowerCase())
+      );
+
+      const groupKey = matchedSubject
+        ? matchedSubject.id
+        : s.subjectId && s.subjectId.trim() !== ''
+        ? s.subjectId
+        : `name-${(s.subjectName || 'General Focus').trim().toLowerCase()}`;
+
+      const historicalName = matchedSubject?.name || s.subjectName || 'General Focus';
+      const historicalColor = matchedSubject?.color || s.subjectColor || '#5A6B6A';
+
+      if (map[groupKey]) {
+        map[groupKey].seconds += s.durationSeconds;
+        map[groupKey].sessionCount += 1;
       } else {
-        map[s.subjectId] = {
-          name: s.subjectName || 'Other',
+        map[groupKey] = {
+          name: historicalName,
           seconds: s.durationSeconds,
-          color: s.subjectColor || '#10B981',
+          color: historicalColor,
           sessionCount: 1,
         };
       }

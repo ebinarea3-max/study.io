@@ -62,9 +62,9 @@ export function SubjectManagerModal({ isOpen, onClose }: SubjectManagerModalProp
     const trimmed = name.trim();
     if (!trimmed) return;
 
-    // Check duplicate name
+    // Check duplicate name among active subjects
     const isDuplicate = subjects.some(
-      s => s.id !== editingId && s.name.trim().toLowerCase() === trimmed.toLowerCase()
+      s => !s.is_archived && s.id !== editingId && s.name.trim().toLowerCase() === trimmed.toLowerCase()
     );
     if (isDuplicate) {
       setErrorMessage(`A subject named "${trimmed}" already exists.`);
@@ -224,7 +224,7 @@ export function SubjectManagerModal({ isOpen, onClose }: SubjectManagerModalProp
 
         {/* Subjects list */}
         <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-          {subjects.map(sub => (
+          {subjects.filter(s => !s.is_archived).map(sub => (
             <div
               key={sub.id}
               className="p-3 rounded-xl bg-slate-800/60 border border-slate-700/60 flex items-center justify-between hover:border-slate-600 transition-colors"

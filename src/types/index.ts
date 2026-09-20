@@ -6,6 +6,7 @@ export type Subject = {
   targetMinutesPerDay?: number;
   userId?: string;
   createdAt: string;
+  is_archived?: boolean;
 };
 
 export type StudySession = {

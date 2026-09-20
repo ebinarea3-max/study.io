@@ -96,14 +96,28 @@ interface StudyContextType {
 }
 
 export function deduplicateSubjects(list: Subject[]): Subject[] {
-  const seen = new Set<string>();
+  const seenActiveNames = new Set<string>();
+  const seenIds = new Set<string>();
   const result: Subject[] = [];
+
+  // 1. Non-archived subjects first (deduplicated by normalized name)
   for (const item of list) {
+    if (item.is_archived) continue;
     const normalized = (item.name || '').trim().toLowerCase();
-    if (!normalized || seen.has(normalized)) continue;
-    seen.add(normalized);
+    if (!normalized || seenActiveNames.has(normalized) || seenIds.has(item.id)) continue;
+    seenActiveNames.add(normalized);
+    seenIds.add(item.id);
     result.push(item);
   }
+
+  // 2. Archived subjects preserved by id for session lookups and historical analytics
+  for (const item of list) {
+    if (!item.is_archived) continue;
+    if (seenIds.has(item.id)) continue;
+    seenIds.add(item.id);
+    result.push(item);
+  }
+
   return result;
 }
 
@@ -592,14 +606,16 @@ export function StudyProvider({ children }: { children: ReactNode }) {
             color: s.color,
             userId: s.user_id,
             createdAt: s.created_at,
+            is_archived: Boolean(s.is_archived),
           }));
           const uniqueSubjects = deduplicateSubjects(mappedSubjects);
           setSubjects(uniqueSubjects);
-          if (uniqueSubjects.length > 0) {
+          const activeSubs = uniqueSubjects.filter(s => !s.is_archived);
+          if (activeSubs.length > 0) {
             setSelectedSubjectId(prev => {
-              if (!prev) return '';
-              const matched = uniqueSubjects.find(s => s.id === prev || s.name.toLowerCase() === prev.toLowerCase());
-              return matched ? matched.id : '';
+              if (!prev) return activeSubs[0].id;
+              const matched = activeSubs.find(s => s.id === prev || s.name.toLowerCase() === prev.toLowerCase());
+              return matched ? matched.id : activeSubs[0].id;
             });
           }
           try { localStorage.setItem('studypulse_subjects', JSON.stringify(uniqueSubjects)); } catch {}
@@ -656,21 +672,24 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         if (sessError) {
           console.error("Failed to fetch initial study sessions:", sessError);
         } else if (dbSessions) {
-          const mappedSessions: StudySession[] = dbSessions.map(s => ({
-            id: s.id,
-            userId: s.user_id,
-            userName: user.displayName,
-            userAvatar: user.avatarUrl,
-            subjectId: s.subject_id || '',
-            subjectName: s.subjects?.name || 'General Focus',
-            subjectColor: s.subjects?.color || '#10B981',
-            startTime: s.started_at,
-            endTime: s.ended_at,
-            durationSeconds: s.duration_seconds,
-            notes: s.notes || '',
-            mode: (s.mode as TimerMode) || 'stopwatch',
-            createdAt: s.created_at,
-          }));
+          const mappedSessions: StudySession[] = dbSessions.map(s => {
+            const localSub = subjects.find(sub => sub.id === s.subject_id);
+            return {
+              id: s.id,
+              userId: s.user_id,
+              userName: user.displayName,
+              userAvatar: user.avatarUrl,
+              subjectId: s.subject_id || '',
+              subjectName: s.subjects?.name || s.subject || localSub?.name || 'General Focus',
+              subjectColor: s.subjects?.color || localSub?.color || '#10B981',
+              startTime: s.started_at,
+              endTime: s.ended_at,
+              durationSeconds: s.duration_seconds,
+              notes: s.notes || '',
+              mode: (s.mode as TimerMode) || 'stopwatch',
+              createdAt: s.created_at,
+            };
+          });
           setSessions(mappedSessions);
           try { localStorage.setItem('studypulse_sessions', JSON.stringify(mappedSessions)); } catch {}
 
@@ -760,7 +779,12 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const selectedSubject = selectedSubjectId ? (subjects.find(s => s.id === selectedSubjectId) || null) : null;
+  const selectedSubject = useMemo(() => {
+    if (!selectedSubjectId) return null;
+    const found = subjects.find(s => s.id === selectedSubjectId);
+    if (!found || found.is_archived) return null;
+    return found;
+  }, [selectedSubjectId, subjects]);
 
   // Synchronize pending sessions from localStorage fallback to Supabase
   const syncPendingSessions = useCallback(async () => {
@@ -832,21 +856,24 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       }
 
       if (dbSessions) {
-        const mappedSessions: StudySession[] = dbSessions.map(s => ({
-          id: s.id,
-          userId: s.user_id,
-          userName: currentUser.displayName,
-          userAvatar: currentUser.avatarUrl,
-          subjectId: s.subject_id || '',
-          subjectName: s.subjects?.name || s.subject || 'General Focus',
-          subjectColor: s.subjects?.color || '#10B981',
-          startTime: s.started_at,
-          endTime: s.ended_at,
-          durationSeconds: s.duration_seconds ?? s.duration ?? s.seconds ?? 0,
-          notes: s.notes || '',
-          mode: (s.mode as TimerMode) || 'stopwatch',
-          createdAt: s.created_at,
-        }));
+        const mappedSessions: StudySession[] = dbSessions.map(s => {
+          const localSub = subjects.find(sub => sub.id === s.subject_id);
+          return {
+            id: s.id,
+            userId: s.user_id,
+            userName: currentUser.displayName,
+            userAvatar: currentUser.avatarUrl,
+            subjectId: s.subject_id || '',
+            subjectName: s.subjects?.name || s.subject || localSub?.name || 'General Focus',
+            subjectColor: s.subjects?.color || localSub?.color || '#10B981',
+            startTime: s.started_at,
+            endTime: s.ended_at,
+            durationSeconds: s.duration_seconds ?? s.duration ?? s.seconds ?? 0,
+            notes: s.notes || '',
+            mode: (s.mode as TimerMode) || 'stopwatch',
+            createdAt: s.created_at,
+          };
+        });
 
         setSessions(mappedSessions);
         try {
@@ -1023,21 +1050,24 @@ export function StudyProvider({ children }: { children: ReactNode }) {
             .order('started_at', { ascending: false });
 
           if (!error && dbSessions) {
-            return dbSessions.map(s => ({
-              id: s.id,
-              userId: s.user_id,
-              userName: user.displayName,
-              userAvatar: user.avatarUrl,
-              subjectId: s.subject_id || '',
-              subjectName: s.subjects?.name || 'General Focus',
-              subjectColor: s.subjects?.color || '#10B981',
-              startTime: s.started_at,
-              endTime: s.ended_at,
-              durationSeconds: s.duration_seconds,
-              notes: s.notes || '',
-              mode: (s.mode as TimerMode) || 'stopwatch',
-              createdAt: s.created_at,
-            }));
+            return dbSessions.map(s => {
+              const localSub = subjects.find(sub => sub.id === s.subject_id);
+              return {
+                id: s.id,
+                userId: s.user_id,
+                userName: user.displayName,
+                userAvatar: user.avatarUrl,
+                subjectId: s.subject_id || '',
+                subjectName: s.subjects?.name || s.subject || localSub?.name || 'General Focus',
+                subjectColor: s.subjects?.color || localSub?.color || '#10B981',
+                startTime: s.started_at,
+                endTime: s.ended_at,
+                durationSeconds: s.duration_seconds,
+                notes: s.notes || '',
+                mode: (s.mode as TimerMode) || 'stopwatch',
+                createdAt: s.created_at,
+              };
+            });
           }
         }
       } catch (err) {
@@ -1501,6 +1531,15 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       s => s.name.trim().toLowerCase() === trimmedName.toLowerCase()
     );
     if (existing) {
+      if (existing.is_archived) {
+        updateSubject(existing.id, {
+          is_archived: false,
+          color: newSub.color,
+          targetMinutesPerDay: newSub.targetMinutesPerDay,
+        });
+        setSelectedSubjectId(existing.id);
+        return;
+      }
       setSelectedSubjectId(existing.id);
       return;
     }
@@ -1512,6 +1551,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       id: tempId,
       userId: user.id,
       createdAt: new Date().toISOString(),
+      is_archived: false,
     };
     saveSubjects([...subjects, sub]);
     setSelectedSubjectId(sub.id);
@@ -1524,6 +1564,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
           user_id: user.id,
           name: trimmedName,
           color: newSub.color,
+          is_archived: false,
         })
         .select()
         .single()
@@ -1553,6 +1594,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       const dbUpdates: Record<string, any> = {};
       if (trimmedUpdates.name !== undefined) dbUpdates.name = trimmedUpdates.name;
       if (trimmedUpdates.color !== undefined) dbUpdates.color = trimmedUpdates.color;
+      if (trimmedUpdates.is_archived !== undefined) dbUpdates.is_archived = trimmedUpdates.is_archived;
       if (Object.keys(dbUpdates).length > 0) {
         supabase
           .from('subjects')
@@ -1564,21 +1606,26 @@ export function StudyProvider({ children }: { children: ReactNode }) {
   };
 
   const deleteSubject = async (id: string): Promise<void> => {
-    const filtered = subjects.filter(s => s.id !== id);
-    if (filtered.length === 0) {
+    // Soft-delete / archive: Keep the subject record and past sessions intact
+    const updated = subjects.map(s => (s.id === id ? { ...s, is_archived: true } : s));
+    const activeSubjects = updated.filter(s => !s.is_archived);
+
+    if (activeSubjects.length === 0) {
       const fallback: Subject = {
         id: `sub-${Date.now()}`,
         name: 'General Focus',
         color: '#5A6B6A',
         userId: user.id,
         createdAt: new Date().toISOString(),
+        is_archived: false,
       };
-      saveSubjects([fallback]);
+      const finalSubjects = [...updated, fallback];
+      saveSubjects(finalSubjects);
       setSelectedSubjectId(fallback.id);
     } else {
-      saveSubjects(filtered);
+      saveSubjects(updated);
       if (selectedSubjectId === id) {
-        setSelectedSubjectId(filtered[0].id);
+        setSelectedSubjectId(activeSubjects[0].id);
       }
     }
 
@@ -1586,9 +1633,15 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
     if (supabase && user.id && isUuid) {
       try {
-        await supabase.from('subjects').delete().eq('id', id);
+        const { error } = await supabase
+          .from('subjects')
+          .update({ is_archived: true })
+          .eq('id', id);
+        if (error) {
+          console.warn("Failed to soft-delete subject in Supabase:", error);
+        }
       } catch (err) {
-        console.error("Failed to delete subject from Supabase:", err);
+        console.error("Failed to archive subject in Supabase:", err);
       }
     }
   };
