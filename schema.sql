@@ -72,6 +72,19 @@ create table if not exists public.room_presence (
   unique (user_id, room_id)
 );
 
+-- 6. Active Sessions Table (Live Multi-Device Timer Sync)
+create table if not exists public.active_sessions (
+  user_id uuid references auth.users on delete cascade primary key,
+  subject_id uuid references public.subjects(id) on delete set null,
+  subject_name text,
+  status text not null check (status in ('running', 'paused', 'stopped')),
+  started_at timestamp with time zone,
+  elapsed_before_pause integer default 0,
+  timer_mode text not null check (timer_mode in ('stopwatch', 'pomodoro')),
+  target_duration integer,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
 -- ====================================================================
 -- Row-Level Security (RLS) Policies
 -- ====================================================================
@@ -81,6 +94,7 @@ alter table public.subjects enable row level security;
 alter table public.study_sessions enable row level security;
 alter table public.todos enable row level security;
 alter table public.room_presence enable row level security;
+alter table public.active_sessions enable row level security;
 
 -- Profiles: Public can read, users can update own profile
 create policy "Public profiles are viewable by everyone"
@@ -141,12 +155,26 @@ create policy "Users can update own room presence"
 create policy "Users can delete own room presence"
   on public.room_presence for delete using (auth.uid() = user_id);
 
+-- Active Sessions: Users only manage their own active live timer session
+create policy "Users can view own active session"
+  on public.active_sessions for select using (auth.uid() = user_id);
+
+create policy "Users can insert own active session"
+  on public.active_sessions for insert with check (auth.uid() = user_id);
+
+create policy "Users can update own active session"
+  on public.active_sessions for update using (auth.uid() = user_id);
+
+create policy "Users can delete own active session"
+  on public.active_sessions for delete using (auth.uid() = user_id);
+
 -- ====================================================================
 -- Realtime Publication & User Trigger
 -- ====================================================================
 
--- Add room_presence to Supabase Realtime publication
+-- Add room_presence and active_sessions to Supabase Realtime publication
 alter publication supabase_realtime add table public.room_presence;
+alter publication supabase_realtime add table public.active_sessions;
 
 -- Automatically create profile row when new user signs up
 create or replace function public.handle_new_user()

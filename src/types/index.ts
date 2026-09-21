@@ -168,3 +168,15 @@ export type PomodoroPhase = 'work' | 'shortBreak' | 'longBreak';
 export type PomodoroPreset = '25/5' | '50/10';
 
 export type PomodoroCompletedPhase = 'work' | 'break' | null;
+
+export type ActiveSession = {
+  user_id: string;
+  subject_id: string | null;
+  subject_name: string | null;
+  status: 'running' | 'paused' | 'stopped';
+  started_at: string | null;
+  elapsed_before_pause: number;
+  timer_mode: 'stopwatch' | 'pomodoro';
+  target_duration: number | null;
+  updated_at: string;
+};

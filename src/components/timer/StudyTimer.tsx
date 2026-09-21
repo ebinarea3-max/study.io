@@ -437,10 +437,19 @@ export function StudyTimer() {
         subjectColor: selectedSub.color || '#10b981',
       });
 
-      // Reset and stop active timer engine
+      // Reset and stop active timer engine (syncs stopped to all devices)
       resetTimer();
       clearPersistedTimer();
       setShowRecoveryBanner(false);
+
+      // Explicitly ensure active_sessions is cleared from Supabase
+      if (activeUser?.id && supabase) {
+        try {
+          await supabase.from('active_sessions').delete().eq('user_id', activeUser.id);
+        } catch (delErr) {
+          console.warn('StudyTimer: Failed to clear active_session on save:', delErr);
+        }
+      }
 
       // Invalidate and refetch analytics queries
       if (activeUser?.id) {
