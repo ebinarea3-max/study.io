@@ -13,11 +13,13 @@ import {
   Trash2,
   Smartphone,
   CheckCircle2,
+  Moon,
 } from 'lucide-react';
 import { soundFx } from '../../lib/audio';
 import { useAuth } from '../../context/AuthContext';
 import { usePwaInstall } from '../../hooks/usePwaInstall';
 import { InstallInstructionModal } from './InstallInstructionModal';
+import { ThemeSwitch } from './ThemeSwitch';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -114,6 +116,20 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 <span>Cloud Synced</span>
               </span>
             </div>
+          </div>
+
+          {/* Section: Theme & Appearance */}
+          <div className="p-4 rounded-2xl bg-neutral-900/40 border border-white/[0.06] flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 flex-shrink-0">
+                <Moon className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="text-xs font-bold text-white tracking-tight">Theme & Appearance</div>
+                <div className="text-[11px] text-neutral-400">Toggle between Obsidian Dark and Crisp Light modes</div>
+              </div>
+            </div>
+            <ThemeSwitch showLabels />
           </div>
 
           {/* Section 2: Audio & Focus Synthesizer */}

@@ -23,6 +23,7 @@ import {
 import { UserAvatar } from './UserAvatar';
 import { getRankTier } from '../../lib/rankedSystem';
 import { InstallAppButton } from './InstallAppButton';
+import { ThemeSwitch } from './ThemeSwitch';
 
 interface NavbarProps {
   activeTab: 'timer' | 'tasks' | 'analytics';
@@ -266,6 +267,9 @@ export function Navbar({
             </>
           )}
 
+          {/* Dark / Light Mode Switch */}
+          <ThemeSwitch />
+
           {/* Native Fullscreen Toggle Button */}
           <button
             onClick={toggleFullscreen}
@@ -439,6 +443,12 @@ export function Navbar({
                     <Settings className="w-3.5 h-3.5 text-slate-400" />
                     <span>Settings & Preferences</span>
                   </button>
+
+                  {/* Theme Switch Row in Dropdown */}
+                  <div className="px-2.5 py-2 rounded-xl bg-slate-950/70 border border-slate-800/80 flex items-center justify-between">
+                    <span className="text-xs text-slate-300 font-medium">Appearance</span>
+                    <ThemeSwitch />
+                  </div>
 
                   {!isAuthenticated ? (
                     <button
