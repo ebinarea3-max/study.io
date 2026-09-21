@@ -353,21 +353,23 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     return [];
   });
 
-  const [selectedSubjectId, setSelectedSubjectIdState] = useState<string>(() => {
+  const [selectedSubjectId, setSelectedSubjectIdState] = useState<string>('');
+
+  const activeSubjectRef = useRef<Subject | null>(null);
+
+  // When user logs in or user changes, ensure no subject is auto-selected
+  useEffect(() => {
+    setSelectedSubjectIdState('');
+    activeSubjectRef.current = null;
     if (typeof window !== 'undefined') {
       try {
         const uid = user?.id || 'guest';
-        const saved =
-          localStorage.getItem(getSelectedSubjectStorageKey(uid)) ||
-          localStorage.getItem('study_io_selected_subject_guest') ||
-          localStorage.getItem('studypulse_selected_subject_id');
-        if (saved) return saved;
+        localStorage.removeItem(getSelectedSubjectStorageKey(uid));
+        localStorage.removeItem('study_io_selected_subject_guest');
+        localStorage.removeItem('studypulse_selected_subject_id');
       } catch {}
     }
-    return '';
-  });
-
-  const activeSubjectRef = useRef<Subject | null>(null);
+  }, [user?.id]);
 
   const setSelectedSubjectId = useCallback((id: string) => {
     setSelectedSubjectIdState(id);
@@ -1021,16 +1023,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         if (currentLoadedSubjects.length > 0) {
           setSubjectsState(currentLoadedSubjects);
           const activeSubs = currentLoadedSubjects.filter(s => !s.is_archived);
-          if (activeSubs.length > 0) {
-            const storedSelected =
-              localStorage.getItem(getSelectedSubjectStorageKey(uid)) ||
-              localStorage.getItem('study_io_selected_subject_guest') ||
-              localStorage.getItem('studypulse_selected_subject_id');
-            const matched = activeSubs.find(s => s.id === storedSelected || s.name.toLowerCase() === (storedSelected || '').toLowerCase());
-            if (matched) {
-              setSelectedSubjectId(matched.id);
-            }
-          }
+          // Subjects loaded; keep selectedSubjectId empty so user is prompted to select a subject
         }
       }
 
@@ -1092,15 +1085,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
           saveSubjects(merged);
 
           const activeSubs = merged.filter(s => !s.is_archived);
-          if (activeSubs.length > 0) {
-            const storedId =
-              localStorage.getItem(getSelectedSubjectStorageKey(uid)) ||
-              localStorage.getItem('studypulse_selected_subject_id');
-            const matched = activeSubs.find(s => s.id === storedId || (s.name && storedId && s.name.toLowerCase() === storedId.toLowerCase()));
-            if (matched) {
-              setSelectedSubjectId(matched.id);
-            }
-          }
+          // Subjects loaded; keep selectedSubjectId empty so user is prompted to select a subject
         } else if (subError) {
           console.warn("Supabase subjects fetch error, retaining local cached subjects:", subError);
           // Retain cached subjects! Do NOT reset to []

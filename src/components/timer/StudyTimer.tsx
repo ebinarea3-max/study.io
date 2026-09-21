@@ -185,25 +185,6 @@ export function StudyTimer() {
       subjectList.find(s => s && s.id === selectedSubjectId) ||
       null;
 
-    if (!activeSubject && typeof window !== 'undefined') {
-      try {
-        const uid = user?.id || 'guest';
-        const storedSubId =
-          localStorage.getItem(`study_io_selected_subject_${uid}`) ||
-          localStorage.getItem('study_io_selected_subject_guest') ||
-          localStorage.getItem('studypulse_selected_subject_id');
-        const storedSubs =
-          localStorage.getItem(`study_io_subjects_${uid}`) ||
-          localStorage.getItem('study_io_subjects_guest') ||
-          localStorage.getItem('studypulse_subjects');
-        if (storedSubs) {
-          const parsed = JSON.parse(storedSubs);
-          if (Array.isArray(parsed)) {
-            activeSubject = parsed.find((s: any) => s && s.id === (selectedSubjectId || storedSubId));
-          }
-        }
-      } catch {}
-    }
 
     if (!activeSubject || !activeSubject.id || (activeSubject.name || '').trim().toLowerCase() === 'unassigned') {
       alert("Please choose a subject before recording focus time.");

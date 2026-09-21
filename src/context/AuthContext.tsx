@@ -236,7 +236,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!isSubscribed) return;
       if (session?.user) {
         setIsAuthenticated(true);
-        try { localStorage.setItem('studypulse_is_authenticated', 'true'); } catch {}
+        try {
+          localStorage.setItem('studypulse_is_authenticated', 'true');
+          localStorage.removeItem(`study_io_selected_subject_${session.user.id}`);
+          localStorage.removeItem('study_io_selected_subject_guest');
+          localStorage.removeItem('studypulse_selected_subject_id');
+        } catch {}
         await syncSupabaseProfile(supabase, session.user);
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('studypulse:auth-changed', { detail: { session } }));
@@ -247,6 +252,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
           localStorage.removeItem('studypulse_is_authenticated');
           localStorage.removeItem('studypulse_active_user');
+          localStorage.removeItem('study_io_selected_subject_guest');
+          localStorage.removeItem('studypulse_selected_subject_id');
         } catch {}
       }
       if (isSubscribed) {
