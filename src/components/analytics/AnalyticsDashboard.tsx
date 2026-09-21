@@ -149,8 +149,14 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
       .reduce((sum, s) => sum + s.durationSeconds, 0);
 
     // 3. Focus Time of Today
+    const todayLocalDate = new Date().toLocaleDateString();
     const todayFocusSec = validSessions
-      .filter(s => getLocalDateString(new Date(s.startTime)) === todayStr)
+      .filter(s => {
+        const sessionDate = s.startTime || (s as any).started_at || s.createdAt;
+        if (!sessionDate) return false;
+        const d = new Date(sessionDate);
+        return d.toLocaleDateString() === todayLocalDate || getLocalDateString(d) === todayStr;
+      })
       .reduce((sum, s) => sum + s.durationSeconds, 0);
 
     return {
@@ -222,6 +228,8 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
   const distSessions = useMemo(() => {
     const startTime = distRange.start.getTime();
     const endTime = distRange.end.getTime();
+    const anchorDate = parseLocalDateString(distAnchorDate);
+    const anchorLocalDate = anchorDate.toLocaleDateString();
 
     return sessions.filter(s => {
       // Exclude stray unassigned/dummy test sessions so donut chart resets cleanly
@@ -230,10 +238,18 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
       if (!rawName || rawName === 'unassigned' || !rawId || s.durationSeconds <= 0) {
         return false;
       }
-      const t = new Date(s.startTime).getTime();
+      const sessionDateStr = s.startTime || (s as any).started_at || s.createdAt;
+      if (!sessionDateStr) return false;
+      const d = new Date(sessionDateStr);
+      const t = d.getTime();
+
+      if (distTimeframe === 'daily') {
+        return d.toLocaleDateString() === anchorLocalDate || getLocalDateString(d) === distAnchorDate || (t >= startTime && t <= endTime);
+      }
+
       return t >= startTime && t <= endTime;
     });
-  }, [sessions, distRange]);
+  }, [sessions, distRange, distTimeframe, distAnchorDate]);
 
   const distTotalSeconds = useMemo(() => {
     return distSessions.reduce((sum, s) => sum + s.durationSeconds, 0);

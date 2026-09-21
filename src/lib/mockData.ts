@@ -149,8 +149,8 @@ export function calculateStreak(sessions: StudySession[]): number {
 
   const studyDates = new Set<string>();
   sessions.forEach(s => {
-    // Only count meaningful sessions (at least 30 seconds)
-    if (s.startTime && s.durationSeconds >= 30) {
+    // Count any valid completed focus session
+    if (s.startTime && s.durationSeconds > 0) {
       const localDate = new Date(s.startTime);
       const year = localDate.getFullYear();
       const month = String(localDate.getMonth() + 1).padStart(2, '0');
@@ -217,7 +217,7 @@ export function cleanupLegacyDemoData(): boolean {
           if (s.id?.startsWith('sess-2') || s.userName === 'Alex Rivers' || s.userId === 'user-demo-1') return false;
           const name = (s.subject_name || s.subjectName || s.subject?.name || s.subject || '').trim().toLowerCase();
           const hasValidSubjectId = Boolean(s.subjectId || s.subject_id);
-          return name !== 'unassigned' && name !== 'general focus' && name !== '' && hasValidSubjectId;
+          return name !== 'unassigned' && name !== '' && hasValidSubjectId;
         });
         if (filtered.length !== parsed.length) {
           localStorage.setItem('studypulse_sessions', JSON.stringify(filtered));
@@ -233,7 +233,7 @@ export function cleanupLegacyDemoData(): boolean {
         const filtered = parsed.filter((s: any) => {
           const name = (s.subject_name || s.subjectName || s.subject?.name || s.subject || '').trim().toLowerCase();
           const hasValidSubjectId = Boolean(s.subjectId || s.subject_id);
-          return name !== 'unassigned' && name !== 'general focus' && name !== '' && hasValidSubjectId;
+          return name !== 'unassigned' && name !== '' && hasValidSubjectId;
         });
         if (filtered.length !== parsed.length) {
           localStorage.setItem('studypulse_pending_sessions', JSON.stringify(filtered));

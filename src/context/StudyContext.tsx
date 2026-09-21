@@ -274,11 +274,11 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         if (saved) {
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed)) {
-            // Delete / purge stray 'Unassigned' or 'General Focus' dummy test sessions so the donut chart resets cleanly
+            // Delete / purge stray 'Unassigned' dummy test sessions so the donut chart resets cleanly
             const cleaned = parsed.filter((s: any) => {
               const name = (s.subject_name || s.subjectName || s.subject?.name || s.subject || '').trim().toLowerCase();
               const hasValidSubjectId = Boolean((s.subjectId && s.subjectId !== '') || (s.subject_id && s.subject_id !== ''));
-              return name !== 'unassigned' && name !== 'general focus' && name !== '' && hasValidSubjectId;
+              return name !== 'unassigned' && name !== '' && hasValidSubjectId;
             });
             localStorage.setItem('studypulse_sessions', JSON.stringify(cleaned));
             return cleaned;
@@ -670,11 +670,11 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       if (savedSessions) {
         const parsedSessions: StudySession[] = JSON.parse(savedSessions);
         if (Array.isArray(parsedSessions)) {
-          // Delete / purge stray 'Unassigned' or 'General Focus' dummy test sessions so the donut chart resets cleanly
+          // Delete / purge stray 'Unassigned' dummy test sessions so the donut chart resets cleanly
           const cleanedSessions = parsedSessions.filter((s: any) => {
             const name = (s.subject_name || s.subjectName || s.subject?.name || s.subject || '').trim().toLowerCase();
             const hasValidSubjectId = Boolean((s.subjectId && s.subjectId !== '') || (s.subject_id && s.subject_id !== ''));
-            return name !== 'unassigned' && name !== 'general focus' && name !== '' && hasValidSubjectId;
+            return name !== 'unassigned' && name !== '' && hasValidSubjectId;
           });
           setSessions(cleanedSessions);
           localStorage.setItem('studypulse_sessions', JSON.stringify(cleanedSessions));
@@ -1078,10 +1078,26 @@ export function StudyProvider({ children }: { children: ReactNode }) {
           })
           .filter((s): s is StudySession => s !== null);
 
-        setSessions(mappedSessions);
-        try {
-          localStorage.setItem('studypulse_sessions', JSON.stringify(mappedSessions));
-        } catch {}
+        setSessions(prev => {
+          const map = new Map<string, StudySession>();
+          mappedSessions.forEach(s => map.set(s.id, s));
+          prev.forEach(s => {
+            if (!map.has(s.id)) {
+              // Keep fresh local sessions created in the last 10 minutes
+              const age = Date.now() - new Date(s.startTime || s.createdAt).getTime();
+              if (age < 10 * 60 * 1000) {
+                map.set(s.id, s);
+              }
+            }
+          });
+          const merged = Array.from(map.values()).sort(
+            (a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
+          );
+          try {
+            localStorage.setItem('studypulse_sessions', JSON.stringify(merged));
+          } catch {}
+          return merged;
+        });
 
         const realStreak = calculateStreak(mappedSessions);
         const realTotalSeconds = mappedSessions.reduce((sum, s) => sum + s.durationSeconds, 0);
@@ -1140,7 +1156,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     const targetSub = subjectList.find(s => s && s.id === sessionData.subjectId) || activeSubjectRef.current || selectedSubject;
 
     const subjectNameToSave = sessionData.subjectName || targetSub?.name;
-    if (!subjectNameToSave || subjectNameToSave.trim().toLowerCase() === 'unassigned' || subjectNameToSave.trim().toLowerCase() === 'general focus') {
+    if (!subjectNameToSave || subjectNameToSave.trim().toLowerCase() === 'unassigned') {
       if (typeof window !== 'undefined') {
         alert("Please choose a subject before recording focus time.");
       }
@@ -1436,7 +1452,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       const filtered = prev.filter(s => {
         if (s.id === newSession.id) return false;
         const name = (s.subjectName || (s as any).subject_name || (s as any).subject?.name || (s as any).subject || '').trim().toLowerCase();
-        return name !== 'unassigned' && name !== 'general focus' && name !== '' && s.subjectId && s.subjectId !== '';
+        return name !== 'unassigned' && name !== '' && s.subjectId && s.subjectId !== '';
       });
       const updated = [newSession, ...filtered];
       try {
@@ -1564,94 +1580,73 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    const sessionData = {
+    const sessionPayload = {
       user_id: activeUser?.id || currentUser.id,
-      subject_id: subjectId || activeSubject.id,
-      subject_name: activeSubject.name,
-      subject_color: activeSubject.color || '#10b981',
+      subject_id: subjectId || activeSubject?.id || null,
+      subject_name: activeSubject?.name || 'General Study',
       duration_seconds: duration,
       created_at: new Date().toISOString(),
+      date: new Date().toISOString().split('T')[0],
+      started_at: startedAt,
+      ended_at: endedAt,
+      mode: currentMode,
+      notes: notesToSave && notesToSave.trim().length > 0 ? notesToSave.trim() : null,
     };
 
-    let insertSuccess = false;
+    console.log("Saving focus session payload:", sessionPayload);
+
     let insertedRecordId: string | null = null;
 
     if (supabase && activeUser?.id) {
-      const insertPayload: Record<string, any> = {
-        user_id: sessionData.user_id,
-        subject_id: subjectId,
-        subject_name: sessionData.subject_name,
-        subject_color: sessionData.subject_color,
-        subject: sessionData.subject_name,
-        duration_seconds: sessionData.duration_seconds,
-        completed_at: endedAt,
-        mode: currentMode,
-        created_at: sessionData.created_at,
-        started_at: startedAt,
-        ended_at: endedAt,
-        notes: notesToSave && notesToSave.trim().length > 0 ? notesToSave.trim() : null,
-      };
-
       try {
-        let insertResponse = await supabase.from('study_sessions').insert(insertPayload).select();
-
-        // Graceful fallback for schema variations
-        if (insertResponse.error) {
-          console.warn('StudyContext: Initial session insert failed, trying schema fallbacks:', insertResponse.error);
-          const fallbackPayload: Record<string, any> = { ...insertPayload };
-          if (insertResponse.error.code === 'PGRST204' || insertResponse.error.message?.includes('subject_name')) {
-            delete fallbackPayload.subject_name;
+        const { data, error } = await supabase.from('study_sessions').insert([sessionPayload]).select();
+        if (error) {
+          console.error("Supabase session insert error:", error);
+          if (error.code === 'PGRST204' || error.message?.includes('column')) {
+            const cleanPayload = {
+              user_id: sessionPayload.user_id,
+              subject_id: sessionPayload.subject_id,
+              duration_seconds: sessionPayload.duration_seconds,
+              started_at: sessionPayload.started_at,
+              ended_at: sessionPayload.ended_at,
+              notes: sessionPayload.notes,
+              mode: sessionPayload.mode,
+              created_at: sessionPayload.created_at,
+            };
+            const retryRes = await supabase.from('study_sessions').insert([cleanPayload]).select();
+            if (retryRes.error) {
+              console.error("Supabase session insert retry error:", retryRes.error);
+            } else {
+              insertedRecordId = retryRes.data?.[0]?.id || null;
+            }
           }
-          if (insertResponse.error.code === 'PGRST204' || insertResponse.error.message?.includes('subject_color')) {
-            delete fallbackPayload.subject_color;
-          }
-          if (insertResponse.error.code === 'PGRST204' || insertResponse.error.message?.includes('completed_at')) {
-            delete fallbackPayload.completed_at;
-          }
-          if (insertResponse.error.code === 'PGRST204' || (insertResponse.error.message?.includes('subject') && !insertResponse.error.message?.includes('subject_id'))) {
-            delete fallbackPayload.subject;
-          }
-          insertResponse = await supabase.from('study_sessions').insert(fallbackPayload).select();
-
-          if (insertResponse.error && (insertResponse.error.code === 'PGRST204' || insertResponse.error.message?.includes('duration_seconds'))) {
-            delete fallbackPayload.duration_seconds;
-            fallbackPayload.duration = sessionData.duration_seconds;
-            insertResponse = await supabase.from('study_sessions').insert(fallbackPayload).select();
-          }
-        }
-
-        if (insertResponse.error) {
-          console.error('StudyContext: Supabase insert error:', insertResponse.error);
         } else {
-          insertSuccess = true;
-          insertedRecordId = insertResponse.data?.[0]?.id || null;
+          insertedRecordId = data?.[0]?.id || null;
         }
       } catch (err) {
         console.error('StudyContext: Exception inserting session:', err);
       }
-    } else {
-      insertSuccess = true;
     }
 
-    if (insertSuccess) {
-      const newSession: StudySession = {
-        id: insertedRecordId || `sess-${Date.now()}`,
-        userId: sessionData.user_id || 'guest',
-        userName: currentUser.displayName,
-        userAvatar: currentUser.avatarUrl,
-        subjectId: sessionData.subject_id,
-        subjectName: sessionData.subject_name,
-        subjectColor: sessionData.subject_color,
-        subject_name: sessionData.subject_name,
-        startTime: startedAt,
-        endTime: endedAt,
-        durationSeconds: sessionData.duration_seconds,
-        notes: notesToSave,
-        mode: currentMode as TimerMode,
-        createdAt: sessionData.created_at,
-      };
+    const newSession: StudySession = {
+      id: insertedRecordId || `sess-${Date.now()}`,
+      userId: sessionPayload.user_id || 'guest',
+      userName: currentUser.displayName,
+      userAvatar: currentUser.avatarUrl,
+      subjectId: sessionPayload.subject_id || activeSubject.id,
+      subjectName: sessionPayload.subject_name,
+      subjectColor: activeSubject.color || '#10b981',
+      subject_name: sessionPayload.subject_name,
+      startTime: startedAt,
+      endTime: endedAt,
+      durationSeconds: sessionPayload.duration_seconds,
+      notes: notesToSave,
+      mode: currentMode as TimerMode,
+      createdAt: sessionPayload.created_at,
+    };
 
-      addSession(newSession);
+    // Immediately append the new session to the current day's session array
+    addSession(newSession);
 
       const earnedXP = calculateFocusXP(secondsToSave);
       if (earnedXP > 0) {
@@ -1720,13 +1715,14 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       });
 
       if (activeUser?.id) {
-        await refetchSessions();
+        try {
+          await refetchSessions();
+        } catch (refetchErr) {
+          console.warn('StudyContext: Background refetch failed:', refetchErr);
+        }
       }
 
       return true;
-    }
-
-    return false;
   }, [
     selectedSubject,
     selectedSubjectId,

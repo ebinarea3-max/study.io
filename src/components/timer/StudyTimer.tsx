@@ -221,15 +221,12 @@ export function StudyTimer() {
     const endedAt = now.toISOString();
     const startedAt = new Date(now.getTime() - seconds * 1000).toISOString();
 
-    // Handle sessions under 5 seconds gracefully
+    // Handle non-positive durations (allow any duration > 0 including short test sessions)
     if (seconds <= 0) {
       resetTimer();
       clearPersistedTimer();
       setShowRecoveryBanner(false);
       return;
-    }
-    if (seconds < 5) {
-      console.info(`Session duration was under 5 seconds (${seconds}s). Proceeding with graceful save.`);
     }
 
     setIsSaving(true);
@@ -282,196 +279,162 @@ export function StudyTimer() {
         }
       }
 
-      const sessionData = {
+      const sessionPayload = {
         user_id: activeUser?.id || user?.id,
-        subject_id: subjectId || selectedSub.id,
-        subject_name: selectedSub.name,
-        subject_color: selectedSub.color || '#10b981',
+        subject_id: subjectId || selectedSub?.id || null,
+        subject_name: selectedSub?.name || 'General Study',
         duration_seconds: seconds,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        date: new Date().toISOString().split('T')[0],
+        started_at: startedAt,
+        ended_at: endedAt,
+        mode: currentMode,
+        notes: notesToSave,
       };
 
-      if (!activeUser) {
-        console.warn('No active user logged in. Session will be recorded in local overview mode.');
-      }
+      console.log("Saving focus session payload:", sessionPayload);
 
       // 3. Insert the record into study_sessions
-      let insertSuccess = false;
       let insertedRecordId: string | null = null;
 
       if (supabase && activeUser?.id) {
-        const sessionPayload: Record<string, any> = {
-          user_id: sessionData.user_id,
-          subject_id: subjectId,
-          subject_name: sessionData.subject_name,
-          subject_color: sessionData.subject_color,
-          subject: sessionData.subject_name,
-          duration_seconds: sessionData.duration_seconds,
-          completed_at: endedAt,
-          mode: currentMode,
-          created_at: sessionData.created_at,
-          started_at: startedAt,
-          ended_at: endedAt,
-          notes: notesToSave,
-        };
-
         try {
-          let res = await supabase.from('study_sessions').insert(sessionPayload).select();
-
-          // Graceful fallback for schema variations
-          if (res.error) {
-            console.warn('Initial session insert failed, attempting fallback schema payload:', res.error);
-            const fallbackPayload: Record<string, any> = { ...sessionPayload };
-
-            if (res.error.code === 'PGRST204' || res.error.message?.includes('subject_name')) {
-              delete fallbackPayload.subject_name;
+          const { data, error } = await supabase.from('study_sessions').insert([sessionPayload]).select();
+          if (error) {
+            console.error("Supabase session insert error:", error);
+            // Schema fallback: if Postgres table does not have subject_name / date client columns, retry with DB-exact columns
+            if (error.code === 'PGRST204' || error.message?.includes('column')) {
+              const cleanPayload = {
+                user_id: sessionPayload.user_id,
+                subject_id: sessionPayload.subject_id,
+                duration_seconds: sessionPayload.duration_seconds,
+                started_at: sessionPayload.started_at,
+                ended_at: sessionPayload.ended_at,
+                notes: sessionPayload.notes,
+                mode: sessionPayload.mode,
+                created_at: sessionPayload.created_at,
+              };
+              const retryRes = await supabase.from('study_sessions').insert([cleanPayload]).select();
+              if (retryRes.error) {
+                console.error("Supabase session insert retry error:", retryRes.error);
+              } else {
+                insertedRecordId = retryRes.data?.[0]?.id || null;
+                console.log('Session successfully persisted to Supabase:', retryRes.data);
+              }
             }
-            if (res.error.code === 'PGRST204' || res.error.message?.includes('subject_color')) {
-              delete fallbackPayload.subject_color;
-            }
-            if (res.error.code === 'PGRST204' || res.error.message?.includes('completed_at')) {
-              delete fallbackPayload.completed_at;
-            }
-            if (res.error.code === 'PGRST204' || (res.error.message?.includes('subject') && !res.error.message?.includes('subject_id'))) {
-              delete fallbackPayload.subject;
-            }
-
-            res = await supabase.from('study_sessions').insert(fallbackPayload).select();
-
-            // Schema fallback 2: If 'duration_seconds' is missing, retry with 'duration'
-            if (res.error && (res.error.code === 'PGRST204' || res.error.message?.includes('duration_seconds'))) {
-              delete fallbackPayload.duration_seconds;
-              fallbackPayload.duration = seconds;
-              res = await supabase.from('study_sessions').insert(fallbackPayload).select();
-            }
-
-            // Schema fallback 3: If 'duration' is missing, retry with 'seconds'
-            if (res.error && (res.error.code === 'PGRST204' || res.error.message?.includes('duration'))) {
-              delete fallbackPayload.duration;
-              fallbackPayload.seconds = seconds;
-              res = await supabase.from('study_sessions').insert(fallbackPayload).select();
-            }
-          }
-
-          if (res.error) {
-            console.error('Supabase study_sessions insert error:', res.error);
           } else {
-            insertSuccess = true;
-            insertedRecordId = res.data?.[0]?.id || null;
-            console.log('Session successfully persisted to Supabase:', res.data);
+            insertedRecordId = data?.[0]?.id || null;
+            console.log('Session successfully persisted to Supabase:', data);
           }
         } catch (err) {
           console.error('Exception during Supabase study_sessions insert:', err);
         }
-      } else {
-        // Guest or unauthenticated local session
-        insertSuccess = true;
       }
 
-      // 4. Only reset the timer and update the local Daily Overview stats AFTER Supabase insert returns successfully
-      if (insertSuccess) {
-        const newSession: StudySession = {
-          id: insertedRecordId || `sess-${Date.now()}`,
-          userId: sessionData.user_id || 'guest',
-          userName: user?.displayName || 'Scholar',
-          userAvatar: user?.avatarUrl,
-          subjectId: sessionData.subject_id,
-          subjectName: sessionData.subject_name,
-          subjectColor: sessionData.subject_color,
-          subject_name: sessionData.subject_name,
-          startTime: startedAt,
-          endTime: endedAt,
-          durationSeconds: sessionData.duration_seconds,
-          notes: notesToSave || '',
-          mode: currentMode,
-          createdAt: sessionData.created_at,
-        };
+      // 4. Immediately append the new session to local state so Project Time Distribution and stats update in real time
+      const newSession: StudySession = {
+        id: insertedRecordId || `sess-${Date.now()}`,
+        userId: sessionPayload.user_id || 'guest',
+        userName: user?.displayName || 'Scholar',
+        userAvatar: user?.avatarUrl,
+        subjectId: sessionPayload.subject_id || selectedSub.id,
+        subjectName: sessionPayload.subject_name,
+        subjectColor: selectedSub.color || '#10b981',
+        subject_name: sessionPayload.subject_name,
+        startTime: startedAt,
+        endTime: endedAt,
+        durationSeconds: sessionPayload.duration_seconds,
+        notes: notesToSave || '',
+        mode: currentMode,
+        createdAt: sessionPayload.created_at,
+      };
 
-        // Immediately update local Daily Overview and Analytics stats state
-        addSession(newSession);
+      // Immediately update local Daily Overview and Analytics stats state
+      addSession(newSession);
 
-        // Trigger celebratory XP gain notification
-        const earnedXP = calculateFocusXP(seconds);
-        if (earnedXP > 0) {
-          triggerXpEarned(earnedXP, `${Math.max(1, Math.round(seconds / 60))} min Focus Session`, 'focus');
-        }
+      // Trigger celebratory XP gain notification
+      const earnedXP = calculateFocusXP(seconds);
+      if (earnedXP > 0) {
+        triggerXpEarned(earnedXP, `${Math.max(1, Math.round(seconds / 60))} min Focus Session`, 'focus');
+      }
 
-        soundFx.playStopChime();
-        const todayStart = getLocalStartOfDay(new Date());
-        const todayEnd = getLocalEndOfDay(new Date());
-        const allSessionsWithNew = [newSession, ...sessions.filter(s => s.id !== newSession.id)];
-        const totalToday = allSessionsWithNew
-          .filter(s => {
-            const t = new Date(s.startTime).getTime();
-            return t >= todayStart.getTime() && t <= todayEnd.getTime();
-          })
-          .reduce((sum, s) => sum + s.durationSeconds, 0);
+      soundFx.playStopChime();
+      const todayStart = getLocalStartOfDay(new Date());
+      const todayEnd = getLocalEndOfDay(new Date());
+      const allSessionsWithNew = [newSession, ...sessions.filter(s => s.id !== newSession.id)];
+      const totalToday = allSessionsWithNew
+        .filter(s => {
+          const t = new Date(s.startTime).getTime();
+          return t >= todayStart.getTime() && t <= todayEnd.getTime();
+        })
+        .reduce((sum, s) => sum + s.durationSeconds, 0);
 
-        const dailyGoalSeconds = (user?.dailyGoalHours || 2) * 3600;
-        if (totalToday >= dailyGoalSeconds && totalToday - seconds < dailyGoalSeconds) {
-          confetti({
-            particleCount: 120,
-            spread: 80,
-            origin: { y: 0.5 },
-          });
-          soundFx.playMilestoneBell();
-        }
+      const dailyGoalSeconds = (user?.dailyGoalHours || 2) * 3600;
+      if (totalToday >= dailyGoalSeconds && totalToday - seconds < dailyGoalSeconds) {
+        confetti({
+          particleCount: 120,
+          spread: 80,
+          origin: { y: 0.5 },
+        });
+        soundFx.playMilestoneBell();
+      }
 
-        // Free Fire RP Calculation & Post-Match Rank Settlement Trigger
-        const todayString = getLocalDateString(new Date());
-        let localStreakBonusDate: string | null = null;
+      // Free Fire RP Calculation & Post-Match Rank Settlement Trigger
+      const todayString = getLocalDateString(new Date());
+      let localStreakBonusDate: string | null = null;
+      try {
+        localStreakBonusDate = localStorage.getItem('studypulse_last_streak_bonus_date');
+      } catch {}
+      const lastStreakBonusDate = user?.last_streak_bonus_date || user?.lastStreakBonusDate || localStreakBonusDate;
+      const hasStreakOrGoal = (user?.streakDays || 0) > 0 || totalToday >= dailyGoalSeconds;
+      const hasCompletedTask = Boolean(activeTaskId);
+      const rpBreakdown = calculateSessionRP(seconds, {
+        hasStreakOrGoal,
+        hasCompletedTask,
+        lastStreakBonusDate,
+        todayString,
+      });
+
+      const prevRP = Number((user as any)?.rp ?? user?.seasonRp ?? 0);
+      const newRP = prevRP + rpBreakdown.totalGained;
+
+      // Persist new RP and streak bonus date in profile
+      const profileUpdates: Partial<UserProfile> = {
+        seasonRp: newRP,
+        rp: newRP,
+      };
+
+      if (rpBreakdown.goalStreakBonus > 0) {
+        profileUpdates.last_streak_bonus_date = todayString;
+        profileUpdates.lastStreakBonusDate = todayString;
         try {
-          localStreakBonusDate = localStorage.getItem('studypulse_last_streak_bonus_date');
+          localStorage.setItem('studypulse_last_streak_bonus_date', todayString);
         } catch {}
-        const lastStreakBonusDate = user?.last_streak_bonus_date || user?.lastStreakBonusDate || localStreakBonusDate;
-        const hasStreakOrGoal = (user?.streakDays || 0) > 0 || totalToday >= dailyGoalSeconds;
-        const hasCompletedTask = Boolean(activeTaskId);
-        const rpBreakdown = calculateSessionRP(seconds, {
-          hasStreakOrGoal,
-          hasCompletedTask,
-          lastStreakBonusDate,
-          todayString,
-        });
+      }
 
-        const prevRP = Number((user as any)?.rp ?? user?.seasonRp ?? 0);
-        const newRP = prevRP + rpBreakdown.totalGained;
+      updateProfile(profileUpdates);
 
-        // Persist new RP and streak bonus date in profile
-        const profileUpdates: Partial<UserProfile> = {
-          seasonRp: newRP,
-          rp: newRP,
-        };
+      // Trigger Free Fire Post-Match Settlement Modal immediately
+      showRankSettlement({
+        prevRP,
+        newRP,
+        breakdown: rpBreakdown,
+        subjectName: sessionPayload.subject_name,
+        subjectColor: selectedSub.color || '#10b981',
+      });
 
-        if (rpBreakdown.goalStreakBonus > 0) {
-          profileUpdates.last_streak_bonus_date = todayString;
-          profileUpdates.lastStreakBonusDate = todayString;
-          try {
-            localStorage.setItem('studypulse_last_streak_bonus_date', todayString);
-          } catch {}
-        }
+      // Reset and stop active timer engine
+      resetTimer();
+      clearPersistedTimer();
+      setShowRecoveryBanner(false);
 
-        updateProfile(profileUpdates);
-
-        // Trigger Free Fire Post-Match Settlement Modal immediately
-        showRankSettlement({
-          prevRP,
-          newRP,
-          breakdown: rpBreakdown,
-          subjectName: sessionData.subject_name,
-          subjectColor: sessionData.subject_color,
-        });
-
-        // Reset and stop active timer engine
-        resetTimer();
-        clearPersistedTimer();
-        setShowRecoveryBanner(false);
-
-        // Trigger immediate refresh of Daily Overview and Analytics data so stats update instantly
-        if (activeUser?.id) {
+      // Invalidate and refetch analytics queries
+      if (activeUser?.id) {
+        try {
           await refetchSessions();
+        } catch (refetchErr) {
+          console.warn('StudyTimer: Background refetch failed:', refetchErr);
         }
-      } else {
-        console.error('Stop & Save failed to persist session to database. Timer state preserved to prevent data loss.');
       }
     } finally {
       setIsSaving(false);
@@ -570,11 +533,15 @@ export function StudyTimer() {
 
   // Filtered sessions for Today (browser-local timezone)
   const todaySessions = useMemo(() => {
+    const todayLocalDate = new Date().toLocaleDateString();
     return sessions.filter(s => {
       const name = (s.subject_name || s.subjectName || (s as any).subject?.name || (s as any).subject || '').trim().toLowerCase();
-      if (!name || name === 'unassigned' || (!s.subjectId && !(s as any).subject_id)) return false;
-      const t = new Date(s.startTime).getTime();
-      return t >= startOfToday.getTime() && t <= endOfToday.getTime();
+      if (!name || name === 'unassigned' || (!s.subjectId && !(s as any).subject_id) || s.durationSeconds <= 0) return false;
+      const sessionDateStr = s.startTime || (s as any).started_at || s.createdAt;
+      if (!sessionDateStr) return false;
+      const d = new Date(sessionDateStr);
+      const t = d.getTime();
+      return d.toLocaleDateString() === todayLocalDate || (t >= startOfToday.getTime() && t <= endOfToday.getTime());
     });
   }, [sessions, startOfToday, endOfToday]);
 
