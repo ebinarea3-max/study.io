@@ -96,7 +96,7 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
     sessions.forEach(s => {
       const rawName = ((s as any).subject_name || s.subjectName || (s as any).subject?.name || (s as any).subject || '').trim().toLowerCase();
       const duration = Number(s.durationSeconds ?? (s as any).duration_seconds ?? (s as any).duration ?? (s as any).seconds ?? 0);
-      if (!rawName || rawName === 'unassigned' || duration <= 0) {
+      if (rawName === 'unassigned' || duration <= 0) {
         return;
       }
       const sessionDateStr = s.startTime || (s as any).started_at || s.createdAt || (s as any).created_at;
@@ -239,7 +239,7 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
       // Exclude stray unassigned/dummy test sessions so donut chart resets cleanly
       const rawName = ((s as any).subject_name || s.subjectName || (s as any).subject?.name || (s as any).subject || '').trim().toLowerCase();
       const duration = Number(s.durationSeconds ?? (s as any).duration_seconds ?? (s as any).duration ?? (s as any).seconds ?? 0);
-      if (!rawName || rawName === 'unassigned' || duration <= 0) {
+      if (rawName === 'unassigned' || duration <= 0) {
         return false;
       }
       const sessionDateStr = s.startTime || (s as any).started_at || s.createdAt || (s as any).created_at;
@@ -300,7 +300,10 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
       const sessionSubjectName = ((s as any).subject_name || s.subjectName || (s as any).subject?.name || (s as any).subject || '').trim();
       const sessionSubjectId = (s.subjectId || (s as any).subject_id || '').trim();
 
-      if (!sessionSubjectName || sessionSubjectName.toLowerCase() === 'unassigned' || !sessionSubjectId) {
+      if (sessionSubjectName.toLowerCase() === 'unassigned') {
+        return;
+      }
+      if (!sessionSubjectName && !sessionSubjectId) {
         return;
       }
 
@@ -309,15 +312,15 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
         (sub) =>
           sub && (
             (sessionSubjectId && sub.id === sessionSubjectId) ||
-            (sub.name && sub.name.trim().toLowerCase() === sessionSubjectName.toLowerCase())
+            (sessionSubjectName && sub.name && sub.name.trim().toLowerCase() === sessionSubjectName.toLowerCase())
           )
       );
 
-      const subjectLabel = matchedSubject?.name || sessionSubjectName;
+      const subjectLabel = matchedSubject?.name || sessionSubjectName || 'General Focus';
       const rawSessionColor = (s.subjectColor && s.subjectColor !== '#5A6B6A' ? s.subjectColor : null) || (s as any).subject_color;
       const displayColor = matchedSubject?.color || rawSessionColor || '#10b981';
 
-      const groupKey = subjectLabel.toLowerCase();
+      const groupKey = (matchedSubject?.id || subjectLabel).toLowerCase();
 
       if (map[groupKey]) {
         map[groupKey].seconds += s.durationSeconds;

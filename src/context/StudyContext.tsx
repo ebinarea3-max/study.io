@@ -112,6 +112,10 @@ interface StudyContextType {
   }) => Promise<boolean>;
 }
 
+export const getSubjectStorageKey = (uid?: string) => `study_io_subjects_${uid || 'guest'}`;
+export const getSelectedSubjectStorageKey = (uid?: string) => `study_io_selected_subject_${uid || 'guest'}`;
+export const getSessionStorageKey = (uid?: string) => `study_io_sessions_${uid || 'guest'}`;
+
 export function normalizeStudySessions(
   list: any[],
   subjectList: Subject[] = [],
@@ -123,9 +127,16 @@ export function normalizeStudySessions(
   return list
     .filter(s => {
       if (!s || typeof s !== 'object') return false;
-      const rawName = ((s as any).subject_name || s.subjectName || (s as any).subject?.name || (s as any).subject || '').trim().toLowerCase();
       const duration = Number(s.durationSeconds ?? (s as any).duration_seconds ?? (s as any).duration ?? (s as any).seconds ?? 0);
-      return rawName !== 'unassigned' && rawName !== '' && duration > 0;
+      if (duration <= 0) return false;
+      const rawName = ((s as any).subject_name || s.subjectName || (s as any).subject?.name || (s as any).subject || '').trim().toLowerCase();
+      // Only filter out legacy dummy unassigned sessions with no matched subject
+      if (rawName === 'unassigned') {
+        const subId = (s.subjectId || (s as any).subject_id || '').trim();
+        const hasMatchedSub = validSubjects.some(sub => sub && sub.id === subId && sub.name.toLowerCase() !== 'unassigned');
+        if (!hasMatchedSub) return false;
+      }
+      return true;
     })
     .map((s, idx): StudySession => {
       const subjectId = (s.subjectId || (s as any).subject_id || '').trim();
@@ -134,11 +145,11 @@ export function normalizeStudySessions(
       const matchedSub = validSubjects.find(
         sub => sub && (
           (subjectId && sub.id === subjectId) ||
-          (sub.name && sub.name.trim().toLowerCase() === rawSubjectName.toLowerCase())
+          (rawSubjectName && sub.name && sub.name.trim().toLowerCase() === rawSubjectName.toLowerCase())
         )
       );
 
-      const resolvedName = matchedSub?.name || rawSubjectName || 'General Focus';
+      const resolvedName = matchedSub?.name || (rawSubjectName && rawSubjectName.toLowerCase() !== 'unassigned' ? rawSubjectName : 'General Focus');
       const resolvedColor =
         matchedSub?.color ||
         (s.subjectColor && s.subjectColor !== '#5A6B6A' ? s.subjectColor : null) ||
@@ -177,6 +188,85 @@ export function normalizeStudySessions(
         createdAt: s.createdAt || (s as any).created_at || startTime,
       };
     });
+}
+
+export function mergeAndDeduplicateSessions(existing: StudySession[], incoming: StudySession[]): StudySession[] {
+  const map = new Map<string, StudySession>();
+
+  const getDedupKey = (s: StudySession) => {
+    const rawTime = s.startTime || (s as any).started_at || s.createdAt;
+    const dur = s.durationSeconds ?? (s as any).duration_seconds ?? 0;
+    return `${s.id || ''}__${rawTime}__${dur}`;
+  };
+
+  for (const s of existing) {
+    if (!s) continue;
+    map.set(getDedupKey(s), s);
+  }
+
+  for (const s of incoming) {
+    if (!s) continue;
+    const incomingDedup = getDedupKey(s);
+    const timeKey = `${s.startTime || (s as any).started_at || s.createdAt}__${s.durationSeconds ?? (s as any).duration_seconds ?? 0}`;
+    
+    for (const [k, existingSess] of Array.from(map.entries())) {
+      const existingTimeKey = `${existingSess.startTime || (existingSess as any).started_at || existingSess.createdAt}__${existingSess.durationSeconds ?? (existingSess as any).duration_seconds ?? 0}`;
+      if (existingTimeKey === timeKey && k !== incomingDedup) {
+        map.delete(k);
+      }
+    }
+    map.set(incomingDedup, s);
+  }
+
+  return Array.from(map.values()).sort(
+    (a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
+  );
+}
+
+export function getStoredSessions(uid?: string, subjectList: Subject[] = [], currentUser?: UserProfile): StudySession[] {
+  if (typeof window === 'undefined') return [];
+  const map = new Map<string, StudySession>();
+
+  const keys = [
+    uid ? getSessionStorageKey(uid) : null,
+    'study_io_sessions_guest',
+    'studypulse_sessions',
+    'studypulse_pending_sessions',
+  ].filter(Boolean) as string[];
+
+  for (const key of keys) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        const normalized = normalizeStudySessions(parsed, subjectList, currentUser);
+        for (const s of normalized) {
+          const timeKey = `${s.startTime || (s as any).started_at || s.createdAt}__${s.durationSeconds}`;
+          const idKey = s.id || timeKey;
+          if (!map.has(idKey)) {
+            map.set(idKey, s);
+          }
+        }
+      }
+    } catch {}
+  }
+
+  return Array.from(map.values()).sort(
+    (a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
+  );
+}
+
+export function persistSessionsToLocalStorage(sessions: StudySession[], uid?: string) {
+  if (typeof window === 'undefined') return;
+  try {
+    const serialized = JSON.stringify(sessions);
+    if (uid) {
+      localStorage.setItem(getSessionStorageKey(uid), serialized);
+    }
+    localStorage.setItem('study_io_sessions_guest', serialized);
+    localStorage.setItem('studypulse_sessions', serialized);
+  } catch {}
 }
 
 export function deduplicateSubjects(list: Subject[]): Subject[] {
@@ -241,10 +331,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     userRef.current = user;
   }, [user]);
 
-  // Helper keys for user-scoped and local storage
-  const getSubjectStorageKey = (uid?: string) => `study_io_subjects_${uid || 'guest'}`;
-  const getSelectedSubjectStorageKey = (uid?: string) => `study_io_selected_subject_${uid || 'guest'}`;
-  const getSessionStorageKey = (uid?: string) => `study_io_sessions_${uid || 'guest'}`;
+  // Helper keys for user-scoped and local storage (module-level functions used)
 
   // State with immediate storage initialization
   const [subjects, setSubjectsState] = useState<Subject[]>(() => {
@@ -337,28 +424,14 @@ export function StudyProvider({ children }: { children: ReactNode }) {
   const [isFocusModeOpen, setIsFocusModeOpen] = useState(false);
 
   const [sessions, setSessions] = useState<StudySession[]>(() => {
-    if (typeof window !== 'undefined') {
+    let uid = user?.id;
+    if (!uid && typeof window !== 'undefined') {
       try {
-        let uid = user?.id;
-        if (!uid) {
-          const storedUser = localStorage.getItem('studypulse_active_user');
-          if (storedUser) {
-            try { uid = JSON.parse(storedUser)?.id; } catch {}
-          }
-        }
-        const saved =
-          (uid ? localStorage.getItem(getSessionStorageKey(uid)) : null) ||
-          localStorage.getItem('study_io_sessions_guest') ||
-          localStorage.getItem('studypulse_sessions');
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed)) {
-            return normalizeStudySessions(parsed);
-          }
-        }
+        const storedUser = localStorage.getItem('studypulse_active_user');
+        if (storedUser) uid = JSON.parse(storedUser)?.id;
       } catch {}
     }
-    return [];
+    return getStoredSessions(uid);
   });
   const [todos, setTodos] = useState<TodoItem[]>(INITIAL_TODOS);
   const [selectedDate, setSelectedDate] = useState<string>(getTodayDateString(0));
@@ -738,24 +811,9 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      const savedSessions =
-        (uid ? localStorage.getItem(getSessionStorageKey(uid)) : null) ||
-        localStorage.getItem('study_io_sessions_guest') ||
-        localStorage.getItem('studypulse_sessions');
-      if (savedSessions) {
-        const parsedSessions = JSON.parse(savedSessions);
-        if (Array.isArray(parsedSessions)) {
-          const cleanedSessions = normalizeStudySessions(parsedSessions);
-          setSessions(cleanedSessions);
-          if (uid) {
-            try {
-              localStorage.setItem(getSessionStorageKey(uid), JSON.stringify(cleanedSessions));
-            } catch {}
-          }
-          try {
-            localStorage.setItem('studypulse_sessions', JSON.stringify(cleanedSessions));
-          } catch {}
-        }
+      const localSessions = getStoredSessions(uid, subjects, user);
+      if (localSessions.length > 0) {
+        setSessions(localSessions);
       }
 
       const savedTodos = localStorage.getItem('studypulse_todos');
@@ -854,104 +912,47 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         const { data: { user: authUser } } = await supabase.auth.getUser();
         const activeUserId = authUser?.id || user.id;
 
-        // Clean up stray 'Unassigned' test sessions from Supabase for this user
-        try {
-          await supabase
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(activeUserId);
+        if (isUuid) {
+          const { data: dbSessions, error: sessError } = await supabase
             .from('study_sessions')
-            .delete()
+            .select('*, subjects(name, color)')
             .eq('user_id', activeUserId)
-            .is('subject_id', null);
-        } catch (delErr) {
-          console.warn("Note: delete stray unassigned sessions query (subject_id null):", delErr);
-        }
-        try {
-          await supabase
-            .from('study_sessions')
-            .delete()
-            .eq('user_id', activeUserId)
-            .ilike('subject_name', 'unassigned');
-        } catch {}
-        try {
-          await supabase
-            .from('study_sessions')
-            .delete()
-            .eq('user_id', activeUserId)
-            .ilike('subject', 'unassigned');
-        } catch {}
+            .order('started_at', { ascending: false });
 
-        const { data: dbSessions, error: sessError } = await supabase
-          .from('study_sessions')
-          .select('*, subjects(name, color)')
-          .eq('user_id', activeUserId)
-          .order('started_at', { ascending: false });
+          if (sessError) {
+            console.error("Failed to fetch initial study sessions:", sessError);
+          } else if (dbSessions) {
+            const subjectList = Array.isArray(subjects) ? subjects : [];
+            const mappedSessions = normalizeStudySessions(dbSessions, subjectList, user);
+            const localStored = getStoredSessions(activeUserId, subjectList, user);
+            const merged = mergeAndDeduplicateSessions(localStored, mappedSessions);
 
-        if (sessError) {
-          console.error("Failed to fetch initial study sessions:", sessError);
-        } else if (dbSessions) {
-          // Exclude stray unassigned sessions
-          const subjectList = Array.isArray(subjects) ? subjects : [];
-          const validDbSessions = dbSessions.filter(s => {
-            if (!s.subject_id) return false;
-            const localSub = subjectList.find(sub => sub && sub.id === s.subject_id);
-            const rawName = (localSub?.name || s.subject_name || s.subject || s.subjects?.name || '').trim().toLowerCase();
-            return rawName !== 'unassigned' && rawName !== '';
-          });
-          const mappedSessions: StudySession[] = validDbSessions
-            .map((s): StudySession | null => {
-              const localSub = subjectList.find(sub => sub && sub.id === s.subject_id);
-              const resolvedName = localSub?.name || s.subject_name || s.subjects?.name || (s.subject ? s.subject : null);
-              if (!resolvedName || resolvedName.trim().toLowerCase() === 'unassigned') {
-                return null;
-              }
-              const resolvedColor = localSub?.color || s.subjects?.color || (s as any).subject_color || '#10B981';
-              return {
-                id: s.id,
-                userId: s.user_id,
-                userName: user.displayName,
-                userAvatar: user.avatarUrl,
-                subjectId: s.subject_id,
-                subjectName: resolvedName,
-                subjectColor: resolvedColor,
-                subject_name: resolvedName,
-                subject: s.subjects || s.subject,
-                startTime: s.started_at,
-                endTime: s.ended_at,
-                durationSeconds: s.duration_seconds ?? s.duration ?? s.seconds ?? 0,
-                notes: s.notes || '',
-                mode: (s.mode as TimerMode) || 'stopwatch',
-                createdAt: s.created_at,
-              };
-            })
-            .filter((s): s is StudySession => s !== null);
-          setSessions(mappedSessions);
-          try {
-            if (activeUserId) {
-              localStorage.setItem(getSessionStorageKey(activeUserId), JSON.stringify(mappedSessions));
-            }
-            localStorage.setItem('studypulse_sessions', JSON.stringify(mappedSessions));
-          } catch {}
+            setSessions(merged);
+            persistSessionsToLocalStorage(merged, activeUserId);
 
-          // Update real streak, total study seconds, and ensure RP matches minimum expected from total study time
-          const realStreak = calculateStreak(mappedSessions);
-          const realTotalSeconds = mappedSessions.reduce((sum, s) => sum + s.durationSeconds, 0);
-          const totalStudyMinutes = Math.floor(realTotalSeconds / 60);
-          const minExpectedRP = totalStudyMinutes * 10;
-          const currentRP = Number((userRef.current as any)?.rp ?? userRef.current?.seasonRp ?? 0);
-          const finalRP = Math.max(minExpectedRP, currentRP);
+            // Update real streak, total study seconds, and ensure RP matches minimum expected from total study time
+            const realStreak = calculateStreak(merged);
+            const realTotalSeconds = merged.reduce((sum, s) => sum + s.durationSeconds, 0);
+            const totalStudyMinutes = Math.floor(realTotalSeconds / 60);
+            const minExpectedRP = totalStudyMinutes * 10;
+            const currentRP = Number((userRef.current as any)?.rp ?? userRef.current?.seasonRp ?? 0);
+            const finalRP = Math.max(minExpectedRP, currentRP);
 
-          // Baseline sync for Supabase sessions to guarantee no false level-up on login
-          const computedLevel = Math.max(1, Math.floor(Math.sqrt(Math.max(0, finalRP) / 100)) + 1);
-          const storedLevel = getStoredLastSeenLevel(user.id);
-          const updatedBaseline = Math.max(storedLevel ?? 0, computedLevel, user.level || 1);
-          setStoredLastSeenLevel(updatedBaseline, user.id);
+            // Baseline sync for Supabase sessions to guarantee no false level-up on login
+            const computedLevel = Math.max(1, Math.floor(Math.sqrt(Math.max(0, finalRP) / 100)) + 1);
+            const storedLevel = getStoredLastSeenLevel(user.id);
+            const updatedBaseline = Math.max(storedLevel ?? 0, computedLevel, user.level || 1);
+            setStoredLastSeenLevel(updatedBaseline, user.id);
 
-          updateProfile({
-            streakDays: realStreak,
-            totalStudySeconds: realTotalSeconds,
-            seasonRp: finalRP,
-            rp: finalRP,
-            last_seen_level: updatedBaseline,
-          });
+            updateProfile({
+              streakDays: realStreak,
+              totalStudySeconds: realTotalSeconds,
+              seasonRp: finalRP,
+              rp: finalRP,
+              last_seen_level: updatedBaseline,
+            });
+          }
         }
 
         // Fetch Todos
@@ -1006,18 +1007,8 @@ export function StudyProvider({ children }: { children: ReactNode }) {
   const saveSessions = (newSessions: StudySession[]) => {
     const normalized = normalizeStudySessions(newSessions, subjects, userRef.current);
     setSessions(normalized);
-    if (typeof window !== 'undefined') {
-      try {
-        const uid = userRef.current?.id || user?.id;
-        if (uid) {
-          localStorage.setItem(getSessionStorageKey(uid), JSON.stringify(normalized));
-        }
-        localStorage.setItem('study_io_sessions_guest', JSON.stringify(normalized));
-        localStorage.setItem('studypulse_sessions', JSON.stringify(normalized));
-      } catch {
-        // ignore
-      }
-    }
+    const uid = userRef.current?.id || user?.id;
+    persistSessionsToLocalStorage(normalized, uid);
   };
 
   // Persist local todos
@@ -1089,19 +1080,9 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     const targetUserId = currentUser?.id;
 
     // Load from local storage cache first to prevent any UI flashing
-    if (typeof window !== 'undefined' && targetUserId) {
-      try {
-        const localData =
-          localStorage.getItem(getSessionStorageKey(targetUserId)) ||
-          localStorage.getItem('study_io_sessions_guest') ||
-          localStorage.getItem('studypulse_sessions');
-        if (localData) {
-          const parsed = JSON.parse(localData);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setSessions(normalizeStudySessions(parsed, subjects, currentUser));
-          }
-        }
-      } catch {}
+    const initialLocal = getStoredSessions(targetUserId, subjects, currentUser);
+    if (initialLocal.length > 0) {
+      setSessions(initialLocal);
     }
 
     const supabase = getSupabase();
@@ -1114,28 +1095,21 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       const activeUserId = authUser?.id || targetUserId;
       if (!activeUserId) return;
 
-      // Clean up stray 'Unassigned' test sessions from Supabase for this user
-      try {
-        await supabase
-          .from('study_sessions')
-          .delete()
-          .eq('user_id', activeUserId)
-          .is('subject_id', null);
-      } catch {}
-      try {
-        await supabase
-          .from('study_sessions')
-          .delete()
-          .eq('user_id', activeUserId)
-          .ilike('subject_name', 'unassigned');
-      } catch {}
-      try {
-        await supabase
-          .from('study_sessions')
-          .delete()
-          .eq('user_id', activeUserId)
-          .ilike('subject', 'unassigned');
-      } catch {}
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(activeUserId);
+      if (!isUuid) {
+        // Guest user - don't query Supabase UUID columns with guest IDs
+        if (initialLocal.length > 0) {
+          const realStreak = calculateStreak(initialLocal);
+          const realTotalSeconds = initialLocal.reduce((sum, s) => sum + s.durationSeconds, 0);
+          if (currentUser.streakDays !== realStreak || currentUser.totalStudySeconds !== realTotalSeconds) {
+            updateProfile({
+              streakDays: realStreak,
+              totalStudySeconds: realTotalSeconds,
+            });
+          }
+        }
+        return;
+      }
 
       const { data: dbSessions, error } = await supabase
         .from('study_sessions')
@@ -1147,84 +1121,53 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         const mappedSessions = normalizeStudySessions(dbSessions, subjects, currentUser);
 
         setSessions(prev => {
-          const map = new Map<string, StudySession>();
-          mappedSessions.forEach(s => map.set(s.id, s));
-          prev.forEach(s => {
-            if (!map.has(s.id)) {
-              // Keep fresh local sessions created in the last 10 minutes
-              const sessionTime = s.startTime || (s as any).started_at || s.createdAt;
-              const age = Date.now() - new Date(sessionTime).getTime();
-              if (age < 10 * 60 * 1000) {
-                map.set(s.id, s);
-              }
-            }
-          });
-          const merged = Array.from(map.values()).sort(
-            (a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
-          );
+          const localFromStorage = getStoredSessions(activeUserId, subjects, currentUser);
+          const allLocal = mergeAndDeduplicateSessions(localFromStorage, prev);
+          const merged = mergeAndDeduplicateSessions(allLocal, mappedSessions);
 
-          if (typeof window !== 'undefined') {
-            try {
-              if (activeUserId) {
-                localStorage.setItem(getSessionStorageKey(activeUserId), JSON.stringify(merged));
-              }
-              localStorage.setItem('studypulse_sessions', JSON.stringify(merged));
-            } catch {}
-          }
+          persistSessionsToLocalStorage(merged, activeUserId);
           return merged;
         });
 
-        const realStreak = calculateStreak(mappedSessions);
-        const realTotalSeconds = mappedSessions.reduce((sum, s) => sum + s.durationSeconds, 0);
-        const totalStudyMinutes = Math.floor(realTotalSeconds / 60);
-        const minExpectedRP = totalStudyMinutes * 10;
-        const currentRP = Number((currentUser as any)?.rp ?? currentUser.seasonRp ?? 0);
-        const finalRP = Math.max(minExpectedRP, currentRP);
+        setSessions(currentMerged => {
+          const realStreak = calculateStreak(currentMerged);
+          const realTotalSeconds = currentMerged.reduce((sum, s) => sum + s.durationSeconds, 0);
+          const totalStudyMinutes = Math.floor(realTotalSeconds / 60);
+          const minExpectedRP = totalStudyMinutes * 10;
+          const currentRP = Number((currentUser as any)?.rp ?? currentUser.seasonRp ?? 0);
+          const finalRP = Math.max(minExpectedRP, currentRP);
 
-        if (
-          currentUser.streakDays !== realStreak ||
-          currentUser.totalStudySeconds !== realTotalSeconds ||
-          currentRP < minExpectedRP
-        ) {
+          if (
+            currentUser.streakDays !== realStreak ||
+            currentUser.totalStudySeconds !== realTotalSeconds ||
+            currentRP < minExpectedRP
+          ) {
+            updateProfile({
+              streakDays: realStreak,
+              totalStudySeconds: realTotalSeconds,
+              seasonRp: finalRP,
+              rp: finalRP,
+            });
+          }
+          return currentMerged;
+        });
+      } else {
+        const localData = getStoredSessions(targetUserId, subjects, currentUser);
+        if (localData.length > 0) {
+          setSessions(localData);
+          const realStreak = calculateStreak(localData);
+          const realTotalSeconds = localData.reduce((sum, s) => sum + s.durationSeconds, 0);
           updateProfile({
             streakDays: realStreak,
             totalStudySeconds: realTotalSeconds,
-            seasonRp: finalRP,
-            rp: finalRP,
           });
-        }
-      } else {
-        // Fallback to local storage cache if query fails or offline
-        if (typeof window !== 'undefined' && targetUserId) {
-          const localData =
-            localStorage.getItem(getSessionStorageKey(targetUserId)) ||
-            localStorage.getItem('study_io_sessions_guest') ||
-            localStorage.getItem('studypulse_sessions');
-          if (localData) {
-            try {
-              const parsed = JSON.parse(localData);
-              if (Array.isArray(parsed)) {
-                setSessions(normalizeStudySessions(parsed, subjects, currentUser));
-              }
-            } catch {}
-          }
         }
       }
     } catch (err) {
       console.error("Failed to refetch sessions:", err);
-      if (typeof window !== 'undefined' && targetUserId) {
-        const localData =
-          localStorage.getItem(getSessionStorageKey(targetUserId)) ||
-          localStorage.getItem('study_io_sessions_guest') ||
-          localStorage.getItem('studypulse_sessions');
-        if (localData) {
-          try {
-            const parsed = JSON.parse(localData);
-            if (Array.isArray(parsed)) {
-              setSessions(normalizeStudySessions(parsed, subjects, currentUser));
-            }
-          } catch {}
-        }
+      const localData = getStoredSessions(targetUserId, subjects, currentUser);
+      if (localData.length > 0) {
+        setSessions(localData);
       }
     }
   }, [updateProfile, syncPendingSessions, subjects, user?.id]);
@@ -1562,22 +1505,9 @@ export function StudyProvider({ children }: { children: ReactNode }) {
   // Instantly add a session and sync metrics, Daily Overview, and Analytics
   const addSession = useCallback((newSession: StudySession) => {
     setSessions(prev => {
-      const filtered = prev.filter(s => {
-        if (s.id === newSession.id) return false;
-        const name = (s.subjectName || (s as any).subject_name || (s as any).subject?.name || (s as any).subject || '').trim().toLowerCase();
-        return name !== 'unassigned' && name !== '';
-      });
-      const updated = [newSession, ...filtered];
-      if (typeof window !== 'undefined') {
-        try {
-          const uid = userRef.current?.id || user?.id;
-          if (uid) {
-            localStorage.setItem(getSessionStorageKey(uid), JSON.stringify(updated));
-          }
-          localStorage.setItem('study_io_sessions_guest', JSON.stringify(updated));
-          localStorage.setItem('studypulse_sessions', JSON.stringify(updated));
-        } catch {}
-      }
+      const updated = mergeAndDeduplicateSessions(prev, [newSession]);
+      const uid = userRef.current?.id || user?.id;
+      persistSessionsToLocalStorage(updated, uid);
 
       const realStreak = calculateStreak(updated);
       const realTotalSeconds = updated.reduce((sum, s) => sum + s.durationSeconds, 0);
