@@ -74,27 +74,27 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-lg bg-[#0c0d10] border border-white/[0.08] rounded-3xl shadow-2xl p-6 sm:p-7 overflow-hidden max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 dark:bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="relative w-full max-w-lg bg-white dark:bg-[#0c0d10] border border-slate-200 dark:border-white/[0.08] rounded-3xl shadow-2xl p-6 sm:p-7 overflow-hidden max-h-[90vh] overflow-y-auto">
         {/* Ambient background lighting */}
         <div className="absolute -top-24 -right-24 w-52 h-52 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-24 -left-24 w-52 h-52 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400" />
 
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-white/[0.08]">
+        <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-white/[0.08]">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-white/[0.05] border border-white/[0.08] flex items-center justify-center text-emerald-400 shadow-sm">
+            <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/[0.05] border border-slate-200 dark:border-white/[0.08] flex items-center justify-center text-emerald-500 dark:text-emerald-400 shadow-sm">
               <ShieldCheck className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="font-bold text-base text-white tracking-tight">Settings & Preferences</h3>
-              <p className="text-xs text-neutral-400">Audio synthesizer, preferences, and account management</p>
+              <h3 className="font-bold text-base text-slate-900 dark:text-white tracking-tight">Settings &amp; Preferences</h3>
+              <p className="text-xs text-slate-500 dark:text-neutral-400">Audio synthesizer, preferences, and account management</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-neutral-400 hover:text-white rounded-xl hover:bg-white/[0.06] transition-colors cursor-pointer"
+            className="p-1.5 text-slate-500 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white rounded-xl hover:bg-slate-100 dark:hover:bg-white/[0.06] transition-colors cursor-pointer"
             aria-label="Close settings"
           >
             <X className="w-5 h-5" />
@@ -103,14 +103,14 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
         <div className="py-4 space-y-4">
           {/* Section 1: Account & Profile Status */}
-          <div className="p-4 rounded-2xl bg-neutral-900/40 border border-white/[0.06] flex items-center justify-between gap-3">
+          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-neutral-900/40 border border-slate-200 dark:border-white/[0.06] flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
               <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-500 to-cyan-400 flex items-center justify-center font-bold text-slate-950 text-sm flex-shrink-0 shadow-md">
                 {user.displayName ? user.displayName.slice(0, 2).toUpperCase() : <User className="w-5 h-5" />}
               </div>
               <div className="min-w-0">
-                <div className="text-sm font-bold text-white truncate tracking-tight">{user.displayName}</div>
-                <div className="text-xs text-neutral-400 font-mono truncate">{user.email}</div>
+                <div className="text-sm font-bold text-slate-900 dark:text-white truncate tracking-tight">{user.displayName}</div>
+                <div className="text-xs text-slate-500 dark:text-neutral-400 font-mono truncate">{user.email}</div>
               </div>
             </div>
             <div className="flex-shrink-0">
@@ -122,19 +122,19 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           </div>
 
           {/* Section: Theme & Appearance */}
-          <div className="p-4 rounded-2xl bg-neutral-900/40 border border-white/[0.06] space-y-3">
+          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-neutral-900/40 border border-slate-200 dark:border-white/[0.06] space-y-3">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 flex-shrink-0">
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 dark:text-emerald-400 flex-shrink-0">
                 <Sun className="w-4 h-4" />
               </div>
               <div>
-                <div className="text-xs font-bold text-white tracking-tight">Theme & Appearance</div>
-                <div className="text-[11px] text-neutral-400">Choose between Light, Dark, or automatic System sync</div>
+                <div className="text-xs font-bold text-slate-900 dark:text-white tracking-tight">Theme &amp; Appearance</div>
+                <div className="text-[11px] text-slate-500 dark:text-neutral-400">Choose between Light, Dark, or automatic System sync</div>
               </div>
             </div>
 
             {/* 3-Button Segmented Control: [ Light ] [ Dark ] [ System ] */}
-            <div className="grid grid-cols-3 gap-2 p-1 rounded-2xl bg-black/40 border border-white/[0.06]">
+            <div className="grid grid-cols-3 gap-2 p-1 rounded-2xl bg-slate-100 dark:bg-black/40 border border-slate-200 dark:border-white/[0.06]">
               {/* Light Option */}
               <button
                 type="button"
@@ -144,11 +144,11 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 }}
                 className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   theme === 'light'
-                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/60 shadow-sm shadow-amber-500/20'
-                    : 'text-neutral-400 hover:text-white hover:bg-white/[0.04] border border-transparent'
+                    ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/60 shadow-sm shadow-amber-500/20'
+                    : 'text-slate-500 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-white/[0.04] border border-transparent'
                 }`}
               >
-                <Sun className="w-3.5 h-3.5 text-amber-400" />
+                <Sun className="w-3.5 h-3.5 text-amber-500" />
                 <span>Light</span>
               </button>
 
@@ -161,11 +161,11 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 }}
                 className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   theme === 'dark'
-                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/60 shadow-sm shadow-emerald-500/20'
-                    : 'text-neutral-400 hover:text-white hover:bg-white/[0.04] border border-transparent'
+                    ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/60 shadow-sm shadow-emerald-500/20'
+                    : 'text-slate-500 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-white/[0.04] border border-transparent'
                 }`}
               >
-                <Moon className="w-3.5 h-3.5 text-cyan-400" />
+                <Moon className="w-3.5 h-3.5 text-cyan-500 dark:text-cyan-400" />
                 <span>Dark</span>
               </button>
 
@@ -178,52 +178,52 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 }}
                 className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   theme === 'system'
-                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/60 shadow-sm shadow-cyan-500/20'
-                    : 'text-neutral-400 hover:text-white hover:bg-white/[0.04] border border-transparent'
+                    ? 'bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 border border-cyan-500/60 shadow-sm shadow-cyan-500/20'
+                    : 'text-slate-500 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-white/[0.04] border border-transparent'
                 }`}
               >
-                <Laptop className="w-3.5 h-3.5 text-cyan-400" />
+                <Laptop className="w-3.5 h-3.5 text-cyan-500 dark:text-cyan-400" />
                 <span>System</span>
               </button>
             </div>
           </div>
 
           {/* Section 2: Audio & Focus Synthesizer */}
-          <div className="p-4 rounded-2xl bg-neutral-900/40 border border-white/[0.06] flex items-center justify-between gap-3">
+          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-neutral-900/40 border border-slate-200 dark:border-white/[0.06] flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 flex-shrink-0">
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 dark:text-emerald-400 flex-shrink-0">
                 <Volume2 className="w-4 h-4" />
               </div>
               <div>
-                <div className="text-xs font-bold text-white tracking-tight">Audio & Focus Synthesizer</div>
-                <div className="text-[11px] text-neutral-400">Zero-latency Web Audio soundscapes & session bells</div>
+                <div className="text-xs font-bold text-slate-900 dark:text-white tracking-tight">Audio &amp; Focus Synthesizer</div>
+                <div className="text-[11px] text-slate-500 dark:text-neutral-400">Zero-latency Web Audio soundscapes &amp; session bells</div>
               </div>
             </div>
             <button
               type="button"
               onClick={testAudio}
-              className="px-3 py-1.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] text-xs font-semibold text-white transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer shadow-sm"
+              className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-white/[0.05] hover:bg-slate-200 dark:hover:bg-white/[0.1] border border-slate-200 dark:border-white/[0.08] text-xs font-semibold text-slate-700 dark:text-white transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer shadow-sm"
             >
-              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+              <Sparkles className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
               <span>Test Chimes</span>
             </button>
           </div>
 
           {/* Section: Install App / Add to Home Screen */}
-          <div className="p-4 rounded-2xl bg-neutral-900/40 border border-white/[0.06] flex items-center justify-between gap-3">
+          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-neutral-900/40 border border-slate-200 dark:border-white/[0.06] flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 flex-shrink-0">
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 dark:text-emerald-400 flex-shrink-0">
                 <Smartphone className="w-4 h-4" />
               </div>
               <div>
-                <div className="text-xs font-bold text-white tracking-tight">Install App / Add to Home Screen</div>
-                <div className="text-[11px] text-neutral-400">Install study.io on your device for standalone distraction-free focus</div>
+                <div className="text-xs font-bold text-slate-900 dark:text-white tracking-tight">Install App / Add to Home Screen</div>
+                <div className="text-[11px] text-slate-500 dark:text-neutral-400">Install study.io on your device for standalone distraction-free focus</div>
               </div>
             </div>
 
             {isInstalled ? (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold flex-shrink-0">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-xs font-semibold flex-shrink-0">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                 <span>Installed</span>
               </div>
             ) : canInstall ? (
@@ -244,10 +244,10 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               <button
                 type="button"
                 onClick={handleInstallClick}
-                className="px-3 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.1] text-xs font-semibold text-emerald-300 hover:text-emerald-200 transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer shadow-sm flex-shrink-0"
+                className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.12] border border-slate-200 dark:border-white/[0.1] text-xs font-semibold text-emerald-700 dark:text-emerald-300 hover:text-emerald-800 dark:hover:text-emerald-200 transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer shadow-sm flex-shrink-0"
                 title="View manual install instructions"
               >
-                <Smartphone className="w-3.5 h-3.5 text-emerald-400" />
+                <Smartphone className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                 <span>Add to Home Screen</span>
               </button>
             )}
@@ -258,10 +258,10 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           <div className="p-4 rounded-2xl bg-rose-500/[0.04] border border-rose-500/20 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <AlertTriangle className="w-4 h-4 text-rose-400 flex-shrink-0" />
+                <AlertTriangle className="w-4 h-4 text-rose-500 dark:text-rose-400 flex-shrink-0" />
                 <div>
-                  <div className="text-xs font-bold text-rose-300 tracking-tight">Danger Zone</div>
-                  <div className="text-[11px] text-neutral-400">Permanent account and data removal</div>
+                  <div className="text-xs font-bold text-rose-600 dark:text-rose-300 tracking-tight">Danger Zone</div>
+                  <div className="text-[11px] text-slate-500 dark:text-neutral-400">Permanent account and data removal</div>
                 </div>
               </div>
 
@@ -338,11 +338,11 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         </div>
 
         {/* Bottom Action: Single Clean 'Done' Button */}
-        <div className="pt-3 border-t border-white/[0.08]">
+        <div className="pt-3 border-t border-slate-200 dark:border-white/[0.08]">
           <button
             type="button"
             onClick={onClose}
-            className="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-neutral-200 text-slate-950 font-bold text-sm transition-all active:scale-[0.99] shadow-lg shadow-white/5 cursor-pointer"
+            className="w-full py-2.5 px-4 rounded-xl bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-neutral-200 text-white dark:text-slate-950 font-bold text-sm transition-all active:scale-[0.99] shadow-lg shadow-black/10 cursor-pointer"
           >
             Done
           </button>

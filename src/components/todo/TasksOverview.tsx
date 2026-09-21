@@ -107,15 +107,15 @@ export function TasksOverview() {
           <div className="w-7 h-7 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-500 dark:text-amber-400 flex-shrink-0">
             <MessageCircle className="w-3.5 h-3.5" />
           </div>
-          <span className="text-xs font-bold text-amber-800 dark:text-amber-300 tracking-tight uppercase">Today&apos;s Boost</span>
+          <span className="text-xs font-bold text-slate-800 dark:text-amber-300 tracking-tight uppercase">Today&apos;s Boost</span>
         </div>
 
         <div className="min-h-[36px] flex flex-col justify-center relative z-10">
-          <p className="text-sm sm:text-[15px] font-semibold text-slate-900 dark:text-amber-100/95 leading-snug tracking-tight">
+          <p className="text-sm sm:text-[15px] font-semibold text-slate-800 dark:text-amber-100/95 leading-snug tracking-tight">
             {primaryBoostMessage}
           </p>
           {secondaryBoostMessage && (
-            <p className="text-xs text-amber-800 dark:text-amber-300/80 mt-1 leading-normal font-medium">
+            <p className="text-xs text-slate-700 dark:text-amber-300/80 mt-1 leading-normal font-medium">
               {secondaryBoostMessage}
             </p>
           )}
@@ -175,14 +175,14 @@ export function TasksOverview() {
 
         <div className="grid grid-cols-2 gap-2.5 sm:gap-3 relative z-10">
           <div className="p-3 rounded-2xl bg-slate-100 dark:bg-violet-950/20 border border-slate-200 dark:border-violet-800/30 hover:border-violet-500/30 transition-colors space-y-1">
-            <div className="text-[10px] uppercase font-bold tracking-wider text-slate-600 dark:text-violet-300/70">Total Focus</div>
-            <div className="text-lg font-black text-slate-900 dark:text-violet-100 font-mono tabular-nums tracking-tight">
+            <div className="text-[10px] uppercase font-semibold tracking-wider text-slate-500 dark:text-violet-300/70">Total Focus</div>
+            <div className="text-lg font-bold text-slate-900 dark:text-violet-100 font-mono tabular-nums tracking-tight">
               {formatHoursAndMins(overviewView === 'today' ? overviewTodaySeconds : yesterdayTotalSeconds)}
             </div>
           </div>
           <div className="p-3 rounded-2xl bg-slate-100 dark:bg-violet-950/20 border border-slate-200 dark:border-violet-800/30 hover:border-violet-500/30 transition-colors space-y-1">
-            <div className="text-[10px] uppercase font-bold tracking-wider text-slate-600 dark:text-violet-300/70">Sessions</div>
-            <div className="text-lg font-black text-slate-900 dark:text-violet-100 font-mono tabular-nums tracking-tight">
+            <div className="text-[10px] uppercase font-semibold tracking-wider text-slate-500 dark:text-violet-300/70">Sessions</div>
+            <div className="text-lg font-bold text-slate-900 dark:text-violet-100 font-mono tabular-nums tracking-tight">
               {overviewView === 'today' ? overviewTodaySessionsCount : yesterdaySessionsCount}
             </div>
           </div>

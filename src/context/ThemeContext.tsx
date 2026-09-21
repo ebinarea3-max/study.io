@@ -65,7 +65,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>('dark');
   const [mounted, setMounted] = useState(false);
 
-  // Initialize theme from localStorage ('study_io_theme')
+  // Initialize theme from localStorage ('study_io_theme') defaulting strictly to 'system'
   useEffect(() => {
     let savedTheme: Theme = 'system';
 

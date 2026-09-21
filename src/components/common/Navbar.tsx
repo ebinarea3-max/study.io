@@ -14,16 +14,11 @@ import {
   User,
   LogIn,
   LogOut,
-  Zap,
-  CheckCircle2,
   Trophy,
-  Shield,
   CheckSquare,
 } from 'lucide-react';
 import { UserAvatar } from './UserAvatar';
 import { getRankTier } from '../../lib/rankedSystem';
-import { InstallAppButton } from './InstallAppButton';
-import { ThemeSwitch } from './ThemeSwitch';
 
 interface NavbarProps {
   activeTab: 'timer' | 'tasks' | 'analytics';
@@ -170,11 +165,11 @@ export function Navbar({
             <div>
               <div className="text-sm sm:text-base font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-1 sm:gap-1.5">
                 <span>study.io</span>
-                <span className="hidden sm:inline-block text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/25">
+                <span className="hidden sm:inline-block text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.2 rounded bg-amber-500/15 text-slate-900 dark:text-amber-300 border border-amber-500/30">
                   Focus
                 </span>
               </div>
-              <div className="hidden sm:block text-[10px] text-slate-500 dark:text-slate-400 -mt-0.5">Focus & Habit Tracking</div>
+              <div className="hidden sm:block text-[10px] text-slate-600 dark:text-slate-400 font-medium -mt-0.5">Focus & Habit Tracking</div>
             </div>
           </div>
 
@@ -185,7 +180,7 @@ export function Navbar({
               className={`flex items-center gap-1 sm:gap-2 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === 'timer'
                   ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-800/60'
+                  : 'text-slate-700 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white hover:bg-slate-200/80 dark:hover:bg-slate-800/60'
               }`}
             >
               <Timer className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -197,7 +192,7 @@ export function Navbar({
               className={`flex items-center gap-1 sm:gap-2 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === 'tasks'
                   ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-800/60'
+                  : 'text-slate-700 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white hover:bg-slate-200/80 dark:hover:bg-slate-800/60'
               }`}
             >
               <CheckSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -209,7 +204,7 @@ export function Navbar({
               className={`flex items-center gap-1 sm:gap-2 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === 'analytics'
                   ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-800/60'
+                  : 'text-slate-700 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white hover:bg-slate-200/80 dark:hover:bg-slate-800/60'
               }`}
             >
               <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -220,8 +215,6 @@ export function Navbar({
 
         {/* Right Action Bar */}
         <div className="flex items-center gap-1.5 sm:gap-3">
-          {/* Subtle PWA Install Action */}
-          <InstallAppButton variant="nav" />
 
           {/* Sign In Button (if not authenticated) */}
           {!isAuthenticated ? (
@@ -236,7 +229,7 @@ export function Navbar({
             <>
               {/* Free Fire Rank Badge Pill - Visible on mobile & desktop */}
               <div
-                className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-slate-100 dark:bg-slate-900/90 border border-slate-200 dark:border-white/[0.08] text-slate-800 dark:text-slate-200 cursor-default select-none shadow-sm"
+                className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-slate-100 dark:bg-slate-900/90 border border-slate-300 dark:border-white/[0.08] text-slate-800 dark:text-slate-200 cursor-default select-none shadow-sm"
                 title={`Ranked Season RP: ${userRank.rp.toLocaleString()} RP (${userRank.fullTitle})`}
               >
                 <div
@@ -244,8 +237,7 @@ export function Navbar({
                   style={{ backgroundColor: userRank.config.badgeAccent }}
                 />
                 <span
-                  className="text-[10px] sm:text-xs font-black italic tracking-wider uppercase truncate max-w-[75px] sm:max-w-none"
-                  style={{ color: userRank.config.badgeAccent }}
+                  className="text-[10px] sm:text-xs font-black italic tracking-wider uppercase truncate max-w-[75px] sm:max-w-none text-amber-800 dark:text-amber-400"
                 >
                   {userRank.fullTitle}
                 </span>
@@ -257,18 +249,15 @@ export function Navbar({
               {/* Streak Badge - Rendered only if streak > 0 */}
               {user.streakDays > 0 && (
                 <div
-                  className="flex items-center gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-slate-100 dark:bg-neutral-900/60 border border-slate-200 dark:border-white/[0.08] text-slate-800 dark:text-neutral-300 cursor-default select-none shadow-sm"
+                  className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-orange-50 dark:bg-neutral-900/60 border border-orange-200 dark:border-white/[0.08] text-slate-800 dark:text-neutral-300 cursor-default select-none shadow-sm"
                   title={`${user.streakDays} Day Study Streak (+${user.streakDays * 50} XP bonus)`}
                 >
                   <Flame className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#f97316] fill-[#f97316]" />
-                  <span className="text-[11px] sm:text-xs font-bold font-mono tabular-nums text-orange-600 dark:text-orange-400">{user.streakDays}d</span>
+                  <span className="text-[11px] sm:text-xs font-bold font-mono tabular-nums text-orange-700 dark:text-orange-400">{user.streakDays}d</span>
                 </div>
               )}
             </>
           )}
-
-          {/* Dark / Light Mode Switch */}
-          <ThemeSwitch />
 
           {/* Native Fullscreen Toggle Button */}
           <button
@@ -346,10 +335,10 @@ export function Navbar({
                   {displayName}
                 </div>
                 <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400 font-mono leading-none">
+                  <span className="text-[10px] font-extrabold text-emerald-700 dark:text-emerald-400 font-mono leading-none">
                     Lv. {gamification.level}
                   </span>
-                  <span className="text-[9px] px-1.5 py-0.2 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium leading-tight">
+                  <span className="text-[9px] px-1.5 py-0.2 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium leading-tight border border-slate-200 dark:border-transparent">
                     {gamification.tierBadge.icon} {gamification.title}
                   </span>
                 </div>
@@ -444,12 +433,6 @@ export function Navbar({
                     <span>Settings & Preferences</span>
                   </button>
 
-                  {/* Theme Switch Row in Dropdown */}
-                  <div className="px-2.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800/80 flex items-center justify-between">
-                    <span className="text-xs text-slate-700 dark:text-slate-300 font-medium">Appearance</span>
-                    <ThemeSwitch />
-                  </div>
-
                   {!isAuthenticated ? (
                     <button
                       onClick={() => { onOpenAuth(); setShowPersonaMenu(false); }}
@@ -478,7 +461,7 @@ export function Navbar({
     {/* Mobile Sticky Bottom Navigation Bar: 4 Dedicated Tabs */}
     <nav
       aria-label="Mobile Bottom Navigation"
-      className="fixed bottom-0 left-0 right-0 z-40 bg-[#0d1117]/95 backdrop-blur-xl border-t border-white/10 md:hidden flex justify-around items-center py-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] px-3 shadow-2xl"
+      className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#0d1117]/95 backdrop-blur-xl border-t border-slate-200 dark:border-white/10 md:hidden flex justify-around items-center py-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] px-3 shadow-2xl"
     >
       {/* Tab 1: Timer */}
       <button
@@ -486,14 +469,14 @@ export function Navbar({
         className={`flex flex-col items-center justify-center gap-1 py-1 px-3 rounded-xl transition-all active:scale-95 cursor-pointer ${
           activeTab === 'timer'
             ? 'text-emerald-400 font-bold'
-            : 'text-slate-400 hover:text-white'
+            : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
         }`}
       >
         <div
           className={`p-1.5 rounded-xl transition-all ${
             activeTab === 'timer'
-              ? 'bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/40'
-              : 'text-slate-400'
+              ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-500/40'
+              : 'text-slate-500 dark:text-slate-400'
           }`}
         >
           <Timer className="w-5 h-5" />
@@ -507,14 +490,14 @@ export function Navbar({
         className={`flex flex-col items-center justify-center gap-1 py-1 px-3 rounded-xl transition-all active:scale-95 cursor-pointer ${
           activeTab === 'tasks'
             ? 'text-emerald-400 font-bold'
-            : 'text-slate-400 hover:text-white'
+            : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
         }`}
       >
         <div
           className={`p-1.5 rounded-xl transition-all ${
             activeTab === 'tasks'
-              ? 'bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/40'
-              : 'text-slate-400'
+              ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-500/40'
+              : 'text-slate-500 dark:text-slate-400'
           }`}
         >
           <CheckSquare className="w-5 h-5" />
@@ -528,14 +511,14 @@ export function Navbar({
         className={`flex flex-col items-center justify-center gap-1 py-1 px-3 rounded-xl transition-all active:scale-95 cursor-pointer ${
           activeTab === 'analytics'
             ? 'text-emerald-400 font-bold'
-            : 'text-slate-400 hover:text-white'
+            : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
         }`}
       >
         <div
           className={`p-1.5 rounded-xl transition-all ${
             activeTab === 'analytics'
-              ? 'bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/40'
-              : 'text-slate-400'
+              ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-500/40'
+              : 'text-slate-500 dark:text-slate-400'
           }`}
         >
           <BarChart3 className="w-5 h-5" />
@@ -546,9 +529,9 @@ export function Navbar({
       {/* Tab 4: Settings */}
       <button
         onClick={onOpenSettings}
-        className="flex flex-col items-center justify-center gap-1 py-1 px-3 rounded-xl text-slate-400 hover:text-white transition-all active:scale-95 cursor-pointer"
+        className="flex flex-col items-center justify-center gap-1 py-1 px-3 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all active:scale-95 cursor-pointer"
       >
-        <div className="p-1.5 rounded-xl bg-slate-900/60 border border-slate-800 text-slate-400 hover:text-white">
+        <div className="p-1.5 rounded-xl bg-slate-100 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400">
           <Settings className="w-5 h-5" />
         </div>
         <span className="text-[10px] tracking-tight">Settings</span>

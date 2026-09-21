@@ -959,11 +959,11 @@ export function StudyTimer() {
                 >
                   {/* Pomodoro Phase / Subject Pill */}
                   <div
-                    className="mb-1 sm:mb-2 text-[10px] sm:text-[11px] font-bold px-2 sm:px-3 py-0.5 rounded-full border transition-colors max-w-[90%] truncate"
+                    className="mb-1 sm:mb-2 text-[10px] sm:text-[11px] font-bold px-2.5 sm:px-3 py-0.5 rounded-full border transition-colors max-w-[90%] truncate shadow-sm"
                     style={{
-                      backgroundColor: selectedSubject ? `${subjectColor}15` : 'rgba(100, 116, 139, 0.12)',
-                      borderColor: selectedSubject ? `${subjectColor}40` : 'rgba(100, 116, 139, 0.25)',
-                      color: selectedSubject ? subjectColor : '#94A3B8',
+                      backgroundColor: selectedSubject ? `${subjectColor}18` : 'rgba(241, 245, 249, 0.95)',
+                      borderColor: selectedSubject ? `${subjectColor}50` : 'rgba(203, 213, 225, 0.9)',
+                      color: selectedSubject ? subjectColor : '#334155',
                     }}
                   >
                     {timerMode === 'pomodoro'
@@ -985,21 +985,21 @@ export function StudyTimer() {
                   </div>
 
                   {/* Status Indicator: Warm Neutral Pulsing Waiting Dot */}
-                  <div className="mt-1.5 sm:mt-2 flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-neutral-400">
+                  <div className="mt-1.5 sm:mt-2 flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-semibold text-slate-700 dark:text-neutral-300">
                     <span
                       className={`w-2 h-2 rounded-full transition-all ${
                         pomodoroCompletedPhase === 'work'
-                          ? 'bg-emerald-400 animate-ping'
+                          ? 'bg-emerald-500 animate-ping'
                           : pomodoroCompletedPhase === 'break'
-                          ? 'bg-amber-400 animate-bounce'
+                          ? 'bg-amber-500 animate-bounce'
                           : isStudying
                           ? isPaused
-                            ? 'bg-amber-400'
-                            : 'bg-emerald-400 animate-pulse'
-                          : 'bg-amber-200/90 shadow-[0_0_8px_rgba(251,191,36,0.3)] animate-[pulse_2s_ease-in-out_infinite]'
+                            ? 'bg-amber-500'
+                            : 'bg-emerald-500 animate-pulse'
+                          : 'bg-amber-500 dark:bg-amber-200/90 shadow-[0_0_8px_rgba(245,158,11,0.35)] animate-[pulse_2s_ease-in-out_infinite]'
                       }`}
                     />
-                    <span>
+                    <span className="text-slate-700 dark:text-neutral-300 font-semibold">
                       {pomodoroCompletedPhase === 'work'
                         ? 'Focus Complete!'
                         : pomodoroCompletedPhase === 'break'
@@ -1337,14 +1337,14 @@ export function StudyTimer() {
 
           <div className="grid grid-cols-2 gap-3 relative z-10">
             <div className="p-3 rounded-2xl bg-slate-100 dark:bg-violet-950/20 border border-slate-200 dark:border-violet-800/30 hover:border-violet-500/30 transition-colors space-y-1">
-              <div className="text-[10px] uppercase font-bold tracking-wider text-slate-600 dark:text-violet-300/70">Total Focus</div>
-              <div className="text-lg font-black text-slate-900 dark:text-violet-100 font-mono tabular-nums tracking-tight">
+              <div className="text-[10px] uppercase font-semibold tracking-wider text-slate-500 dark:text-violet-300/70">Total Focus</div>
+              <div className="text-lg font-bold text-slate-900 dark:text-violet-100 font-mono tabular-nums tracking-tight">
                 {formatHoursAndMins(overviewView === 'today' ? overviewTodaySeconds : yesterdayTotalSeconds)}
               </div>
             </div>
             <div className="p-3 rounded-2xl bg-slate-100 dark:bg-violet-950/20 border border-slate-200 dark:border-violet-800/30 hover:border-violet-500/30 transition-colors space-y-1">
-              <div className="text-[10px] uppercase font-bold tracking-wider text-slate-600 dark:text-violet-300/70">Sessions</div>
-              <div className="text-lg font-black text-slate-900 dark:text-violet-100 font-mono tabular-nums tracking-tight">
+              <div className="text-[10px] uppercase font-semibold tracking-wider text-slate-500 dark:text-violet-300/70">Sessions</div>
+              <div className="text-lg font-bold text-slate-900 dark:text-violet-100 font-mono tabular-nums tracking-tight">
                 {overviewView === 'today' ? overviewTodaySessionsCount : yesterdaySessionsCount}
               </div>
             </div>
@@ -1372,15 +1372,15 @@ export function StudyTimer() {
 
           <div className="flex items-center gap-2 pb-2.5 border-b border-amber-500/15 relative z-10">
             <MessageCircle className="w-4 h-4 text-amber-500 dark:text-amber-400" />
-            <span className="text-xs font-bold text-amber-800 dark:text-amber-300 tracking-tight uppercase">Today's Boost</span>
+            <span className="text-xs font-bold text-slate-800 dark:text-amber-300 tracking-tight uppercase">Today's Boost</span>
           </div>
 
           <div className="min-h-[40px] flex flex-col justify-center relative z-10">
-            <p className="text-[15px] font-semibold text-slate-900 dark:text-amber-100/95 leading-snug tracking-tight drop-shadow-sm">
+            <p className="text-[15px] font-semibold text-slate-800 dark:text-amber-100/95 leading-snug tracking-tight drop-shadow-sm">
               {primaryBoostMessage}
             </p>
             {secondaryBoostMessage && (
-              <p className="text-xs text-amber-800 dark:text-amber-300/80 mt-1.5 leading-normal font-medium">
+              <p className="text-xs text-slate-700 dark:text-amber-300/80 mt-1.5 leading-normal font-medium">
                 {secondaryBoostMessage}
               </p>
             )}
