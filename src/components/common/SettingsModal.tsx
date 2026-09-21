@@ -13,15 +13,11 @@ import {
   Trash2,
   Smartphone,
   CheckCircle2,
-  Moon,
-  Sun,
-  Laptop,
 } from 'lucide-react';
 import { soundFx } from '../../lib/audio';
 import { useAuth } from '../../context/AuthContext';
 import { usePwaInstall } from '../../hooks/usePwaInstall';
 import { InstallInstructionModal } from './InstallInstructionModal';
-import { useTheme } from '../../context/ThemeContext';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -30,7 +26,6 @@ interface SettingsModalProps {
 
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const { user, deleteAccount } = useAuth();
-  const { theme, setTheme } = useTheme();
   const { canInstall, isInstalled, isPrompting, deferredPrompt, triggerInstall } = usePwaInstall();
 
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
@@ -121,72 +116,6 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             </div>
           </div>
 
-          {/* Section: Theme & Appearance */}
-          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-neutral-900/40 border border-slate-200 dark:border-white/[0.06] space-y-3">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 dark:text-emerald-400 flex-shrink-0">
-                <Sun className="w-4 h-4" />
-              </div>
-              <div>
-                <div className="text-xs font-bold text-slate-900 dark:text-white tracking-tight">Theme &amp; Appearance</div>
-                <div className="text-[11px] text-slate-500 dark:text-neutral-400">Choose between Light, Dark, or automatic System sync</div>
-              </div>
-            </div>
-
-            {/* 3-Button Segmented Control: [ Light ] [ Dark ] [ System ] */}
-            <div className="grid grid-cols-3 gap-2 p-1 rounded-2xl bg-slate-100 dark:bg-black/40 border border-slate-200 dark:border-white/[0.06]">
-              {/* Light Option */}
-              <button
-                type="button"
-                onClick={() => {
-                  try { soundFx.playReactionPop(); } catch {}
-                  setTheme('light');
-                }}
-                className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  theme === 'light'
-                    ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/60 shadow-sm shadow-amber-500/20'
-                    : 'text-slate-500 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-white/[0.04] border border-transparent'
-                }`}
-              >
-                <Sun className="w-3.5 h-3.5 text-amber-500" />
-                <span>Light</span>
-              </button>
-
-              {/* Dark Option */}
-              <button
-                type="button"
-                onClick={() => {
-                  try { soundFx.playReactionPop(); } catch {}
-                  setTheme('dark');
-                }}
-                className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  theme === 'dark'
-                    ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/60 shadow-sm shadow-emerald-500/20'
-                    : 'text-slate-500 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-white/[0.04] border border-transparent'
-                }`}
-              >
-                <Moon className="w-3.5 h-3.5 text-cyan-500 dark:text-cyan-400" />
-                <span>Dark</span>
-              </button>
-
-              {/* System Option */}
-              <button
-                type="button"
-                onClick={() => {
-                  try { soundFx.playReactionPop(); } catch {}
-                  setTheme('system');
-                }}
-                className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  theme === 'system'
-                    ? 'bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 border border-cyan-500/60 shadow-sm shadow-cyan-500/20'
-                    : 'text-slate-500 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-white/[0.04] border border-transparent'
-                }`}
-              >
-                <Laptop className="w-3.5 h-3.5 text-cyan-500 dark:text-cyan-400" />
-                <span>System</span>
-              </button>
-            </div>
-          </div>
 
           {/* Section 2: Audio & Focus Synthesizer */}
           <div className="p-4 rounded-2xl bg-slate-50 dark:bg-neutral-900/40 border border-slate-200 dark:border-white/[0.06] flex items-center justify-between gap-3">

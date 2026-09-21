@@ -863,7 +863,7 @@ export function StudyTimer() {
                       style={{ backgroundColor: selectedSubject ? (selectedSubject?.color || subjectColor) : activeSubjects.length === 0 ? '#10B981' : '#64748B' }}
                     />
                     <span className={`truncate ${selectedSubject?.name ? "text-white font-bold tracking-tight" : activeSubjects.length === 0 ? "text-emerald-400 font-bold tracking-tight" : "text-neutral-400 font-medium tracking-tight"}`}>
-                      {selectedSubject?.name || (activeSubjects.length === 0 ? 'Add a Subject' : 'Select a Subject')}
+                      {selectedSubject?.name || (activeSubjects.length === 0 ? '[ + Add a Subject ]' : '[ Select a Subject ]')}
                     </span>
                   </div>
                   <ChevronDown className="w-4 h-4 text-neutral-400 flex-shrink-0 ml-1" />
@@ -970,16 +970,18 @@ export function StudyTimer() {
                   <div
                     className="mb-1 sm:mb-2 text-[10px] sm:text-[11px] font-bold px-2.5 sm:px-3 py-0.5 rounded-full border transition-colors max-w-[90%] truncate shadow-sm"
                     style={{
-                      backgroundColor: selectedSubject ? `${subjectColor}18` : 'rgba(241, 245, 249, 0.95)',
-                      borderColor: selectedSubject ? `${subjectColor}50` : 'rgba(203, 213, 225, 0.9)',
-                      color: selectedSubject ? subjectColor : '#334155',
+                      backgroundColor: selectedSubject ? `${subjectColor}18` : 'rgba(255, 255, 255, 0.05)',
+                      borderColor: selectedSubject ? `${subjectColor}50` : 'rgba(255, 255, 255, 0.1)',
+                      color: selectedSubject ? subjectColor : '#94a3b8',
                     }}
                   >
-                    {timerMode === 'pomodoro'
+                    {!selectedSubject
+                      ? 'Select a subject above'
+                      : timerMode === 'pomodoro'
                       ? pomodoroPhase === 'work'
-                        ? `🔥 Focus Sprint (${pomodoroPreset === '50/10' ? '50m' : '25m'})`
+                        ? `🔥 ${selectedSubject.name} (${pomodoroPreset === '50/10' ? '50m' : '25m'})`
                         : `☕ Recharge Break (${pomodoroPreset === '50/10' ? '10m' : '5m'})`
-                      : selectedSubject?.name || (activeSubjects.length === 0 ? 'Add a subject above' : 'Select a subject above')}
+                      : selectedSubject.name}
                   </div>
 
                   {/* Big Digital Numbers with Strict Tabular Monospaced Formatting */}

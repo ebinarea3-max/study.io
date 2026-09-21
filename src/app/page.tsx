@@ -96,13 +96,13 @@ export default function Home() {
   // Loading state while verifying stored session
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#f8fafc] dark:bg-[#090A0C] flex flex-col items-center justify-center text-slate-900 dark:text-slate-100 relative">
-        <div className="fixed inset-0 pointer-events-none bg-[radial-gradient(#0000000d_1px,transparent_1px)] dark:bg-[radial-gradient(#ffffff0a_1px,transparent_1px)] [background-size:16px_16px] z-0" />
+      <div className="min-h-screen bg-[#090A0C] flex flex-col items-center justify-center text-slate-100 relative">
+        <div className="fixed inset-0 pointer-events-none bg-[radial-gradient(#ffffff0a_1px,transparent_1px)] [background-size:16px_16px] z-0" />
         <div className="relative z-10 flex flex-col items-center">
           <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-500 via-teal-400 to-cyan-400 flex items-center justify-center font-black text-2xl text-slate-950 shadow-xl shadow-emerald-500/25 animate-pulse mb-4">
             ⚡
           </div>
-          <div className="text-sm font-bold text-slate-600 dark:text-slate-400 tracking-wide">Loading study.io...</div>
+          <div className="text-sm font-bold text-slate-400 tracking-wide">Loading study.io...</div>
         </div>
       </div>
     );
@@ -115,9 +115,9 @@ export default function Home() {
 
   // Authenticated: Full StudyPulse focus dashboard
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[#f8fafc] dark:bg-[#090A0C] text-slate-900 dark:text-slate-100 flex flex-col relative selection:bg-emerald-500/30 selection:text-emerald-200">
+    <div className="min-h-screen overflow-x-hidden bg-[#090A0C] text-slate-100 flex flex-col relative selection:bg-emerald-500/30 selection:text-emerald-200">
       {/* Subtle Developer-grade Dot Grid Overlay */}
-      <div className="fixed inset-0 pointer-events-none bg-[radial-gradient(#0000000d_1px,transparent_1px)] dark:bg-[radial-gradient(#ffffff0a_1px,transparent_1px)] [background-size:16px_16px] z-0" />
+      <div className="fixed inset-0 pointer-events-none bg-[radial-gradient(#ffffff0a_1px,transparent_1px)] [background-size:16px_16px] z-0" />
 
       {/* Floating Animated Cheers */}
       <FloatingReactions />

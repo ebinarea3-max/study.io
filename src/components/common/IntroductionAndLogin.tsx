@@ -9,7 +9,6 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { AuthCard } from './AuthCard';
-import { ThemeSwitch } from './ThemeSwitch';
 
 export function IntroductionAndLogin() {
   return (
@@ -39,7 +38,6 @@ export function IntroductionAndLogin() {
         </div>
 
         <div className="flex items-center gap-3">
-          <ThemeSwitch />
           <div className="flex items-center gap-2 text-xs font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-full">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             <span>Login Required</span>

@@ -40,31 +40,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} dark h-full antialiased`}
     >
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                try {
-                  var saved = localStorage.getItem('study_io_theme') || localStorage.getItem('studyio_theme');
-                  var isSystem = !saved || saved === 'system';
-                  var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-                  var resolved = isSystem ? (prefersDark ? 'dark' : 'light') : saved;
-                  var isDark = resolved === 'dark';
-                  document.documentElement.classList.toggle('dark', isDark);
-                  document.documentElement.classList.toggle('light', !isDark);
-                  document.documentElement.setAttribute('data-theme', resolved);
-                  document.documentElement.style.colorScheme = resolved;
-                } catch (e) {}
-              })();
-            `,
-          }}
-        />
-      </head>
-      <body className="min-h-screen overflow-x-hidden flex flex-col text-slate-900 dark:text-slate-100 bg-[#f8fafc] dark:bg-[#090a0c] antialiased selection:bg-emerald-500/30 selection:text-emerald-200">
+      <body className="min-h-screen overflow-x-hidden flex flex-col text-slate-100 bg-[#090a0c] dark antialiased selection:bg-emerald-500/30 selection:text-emerald-200">
         <Providers>{children}</Providers>
       </body>
     </html>

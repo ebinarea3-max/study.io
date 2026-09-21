@@ -1027,7 +1027,9 @@ export function StudyProvider({ children }: { children: ReactNode }) {
               localStorage.getItem('study_io_selected_subject_guest') ||
               localStorage.getItem('studypulse_selected_subject_id');
             const matched = activeSubs.find(s => s.id === storedSelected || s.name.toLowerCase() === (storedSelected || '').toLowerCase());
-            setSelectedSubjectId(matched ? matched.id : activeSubs[0].id);
+            if (matched) {
+              setSelectedSubjectId(matched.id);
+            }
           }
         }
       }
@@ -1095,7 +1097,9 @@ export function StudyProvider({ children }: { children: ReactNode }) {
               localStorage.getItem(getSelectedSubjectStorageKey(uid)) ||
               localStorage.getItem('studypulse_selected_subject_id');
             const matched = activeSubs.find(s => s.id === storedId || (s.name && storedId && s.name.toLowerCase() === storedId.toLowerCase()));
-            setSelectedSubjectId(matched ? matched.id : activeSubs[0].id);
+            if (matched) {
+              setSelectedSubjectId(matched.id);
+            }
           }
         } else if (subError) {
           console.warn("Supabase subjects fetch error, retaining local cached subjects:", subError);
@@ -2389,7 +2393,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
     saveSubjects(updated);
     if (selectedSubjectId === id) {
-      setSelectedSubjectId(activeSubjects.length > 0 ? activeSubjects[0].id : '');
+      setSelectedSubjectId('');
     }
 
     const supabase = getSupabase();
