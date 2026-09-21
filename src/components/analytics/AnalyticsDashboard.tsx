@@ -94,6 +94,11 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
   const sessionsByDateMap = useMemo(() => {
     const map: Record<string, { totalSeconds: number; count: number; sessions: typeof sessions }> = {};
     sessions.forEach(s => {
+      const rawName = ((s as any).subject_name || s.subjectName || (s as any).subject?.name || (s as any).subject || '').trim().toLowerCase();
+      const rawId = s.subjectId || (s as any).subject_id;
+      if (!rawName || rawName === 'unassigned' || !rawId || s.durationSeconds <= 0) {
+        return;
+      }
       const dateKey = getLocalDateString(new Date(s.startTime));
       if (!map[dateKey]) {
         map[dateKey] = { totalSeconds: 0, count: 0, sessions: [] };
@@ -121,8 +126,14 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
     const weekMonStr = getLocalDateString(currentWeekMon);
     const weekSunStr = getLocalDateString(currentWeekSun);
 
+    const validSessions = sessions.filter(s => {
+      const rawName = ((s as any).subject_name || s.subjectName || (s as any).subject?.name || (s as any).subject || '').trim().toLowerCase();
+      const rawId = s.subjectId || (s as any).subject_id;
+      return rawName && rawName !== 'unassigned' && rawId && s.durationSeconds > 0;
+    });
+
     // 1. Focus Time of This Month
-    const thisMonthFocusSec = sessions
+    const thisMonthFocusSec = validSessions
       .filter(s => {
         const dStr = getLocalDateString(new Date(s.startTime));
         return dStr.startsWith(currentMonthPrefix);
@@ -130,7 +141,7 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
       .reduce((sum, s) => sum + s.durationSeconds, 0);
 
     // 2. Focus Time of This Week
-    const thisWeekFocusSec = sessions
+    const thisWeekFocusSec = validSessions
       .filter(s => {
         const dStr = getLocalDateString(new Date(s.startTime));
         return dStr >= weekMonStr && dStr <= weekSunStr;
@@ -138,7 +149,7 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
       .reduce((sum, s) => sum + s.durationSeconds, 0);
 
     // 3. Focus Time of Today
-    const todayFocusSec = sessions
+    const todayFocusSec = validSessions
       .filter(s => getLocalDateString(new Date(s.startTime)) === todayStr)
       .reduce((sum, s) => sum + s.durationSeconds, 0);
 
@@ -214,8 +225,9 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
 
     return sessions.filter(s => {
       // Exclude stray unassigned/dummy test sessions so donut chart resets cleanly
-      const rawName = (s.subjectName || (s as any).subject_name || (s as any).subject?.name || (s as any).subject || '').trim().toLowerCase();
-      if (rawName === 'unassigned' || rawName === 'general focus' || rawName === '' || (!s.subjectId && !rawName)) {
+      const rawName = ((s as any).subject_name || s.subjectName || (s as any).subject?.name || (s as any).subject || '').trim().toLowerCase();
+      const rawId = s.subjectId || (s as any).subject_id;
+      if (!rawName || rawName === 'unassigned' || !rawId || s.durationSeconds <= 0) {
         return false;
       }
       const t = new Date(s.startTime).getTime();
@@ -260,7 +272,7 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
       const sessionSubjectName = ((s as any).subject_name || s.subjectName || (s as any).subject?.name || (s as any).subject || '').trim();
       const sessionSubjectId = (s.subjectId || (s as any).subject_id || '').trim();
 
-      if (!sessionSubjectName || sessionSubjectName.toLowerCase() === 'unassigned' || sessionSubjectName.toLowerCase() === 'general focus') {
+      if (!sessionSubjectName || sessionSubjectName.toLowerCase() === 'unassigned' || !sessionSubjectId) {
         return;
       }
 
@@ -272,7 +284,7 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
           )
       );
 
-      const subjectLabel = sessionSubjectName || matchedSubject?.name;
+      const subjectLabel = matchedSubject?.name || sessionSubjectName;
       const subjectColor =
         (s.subjectColor && s.subjectColor !== '#5A6B6A' ? s.subjectColor : null) ||
         (s as any).subject_color ||

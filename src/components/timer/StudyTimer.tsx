@@ -135,11 +135,11 @@ export function StudyTimer() {
   const handleStartSession = useCallback(() => {
     const activeSub =
       activeSubjectRef.current ||
-      activeSubjects.find(s => s && s.id === selectedSubjectId) ||
       selectedSubject ||
+      activeSubjects.find(s => s && s.id === selectedSubjectId) ||
       null;
 
-    if (!activeSub?.id) {
+    if (!activeSub?.id || (activeSub.name || '').trim().toLowerCase() === 'unassigned') {
       alert("Please choose a subject before recording focus time.");
       setSubjectWarning(true);
       if (activeSubjects.length === 0) {
@@ -180,9 +180,9 @@ export function StudyTimer() {
     // Direct, fresh capture of active subject via ref and state/storage
     let activeSubject =
       activeSubjectRef.current ||
+      selectedSubject ||
       activeSubjects.find(s => s && s.id === selectedSubjectId) ||
       subjectList.find(s => s && s.id === selectedSubjectId) ||
-      selectedSubject ||
       null;
 
     if (!activeSubject && typeof window !== 'undefined') {
@@ -205,18 +205,16 @@ export function StudyTimer() {
       } catch {}
     }
 
-    if (!activeSubject || !activeSubject.id) {
+    if (!activeSubject || !activeSubject.id || (activeSubject.name || '').trim().toLowerCase() === 'unassigned') {
       alert("Please choose a subject before recording focus time.");
       setSubjectWarning(true);
       setShowDropdown(true);
       return;
     }
 
-    const subjectName = activeSubject.name;
-    const rawSubjectId = activeSubject.id;
+    const selectedSub = activeSubject;
     const isUuid = (id?: string | null) => typeof id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-    const subjectId = isUuid(rawSubjectId) ? rawSubjectId : null;
-    const subjectColor = activeSubject.color || '#10B981';
+    let subjectId = isUuid(selectedSub.id) ? selectedSub.id : null;
     const currentMode = timerMode || 'stopwatch';
     const notesToSave = currentNotes?.trim() || null;
     const now = new Date();
@@ -252,6 +250,47 @@ export function StudyTimer() {
         }
       }
 
+      // If logged in but subjectId is not a UUID (e.g. local subject), resolve UUID from Supabase subjects table
+      if (supabase && activeUser?.id && !subjectId && selectedSub.name) {
+        try {
+          const { data: matchedSub } = await supabase
+            .from('subjects')
+            .select('id')
+            .eq('user_id', activeUser.id)
+            .ilike('name', selectedSub.name.trim())
+            .maybeSingle();
+
+          if (matchedSub?.id) {
+            subjectId = matchedSub.id;
+          } else {
+            const { data: createdSub } = await supabase
+              .from('subjects')
+              .insert({
+                user_id: activeUser.id,
+                name: selectedSub.name.trim(),
+                color: selectedSub.color || '#10B981',
+                daily_goal_minutes: selectedSub.daily_goal_minutes || 60,
+              })
+              .select('id')
+              .single();
+            if (createdSub?.id) {
+              subjectId = createdSub.id;
+            }
+          }
+        } catch (err) {
+          console.warn('Could not resolve or create subject in Supabase:', err);
+        }
+      }
+
+      const sessionData = {
+        user_id: activeUser?.id || user?.id,
+        subject_id: subjectId || selectedSub.id,
+        subject_name: selectedSub.name,
+        subject_color: selectedSub.color || '#10b981',
+        duration_seconds: seconds,
+        created_at: new Date().toISOString()
+      };
+
       if (!activeUser) {
         console.warn('No active user logged in. Session will be recorded in local overview mode.');
       }
@@ -262,15 +301,15 @@ export function StudyTimer() {
 
       if (supabase && activeUser?.id) {
         const sessionPayload: Record<string, any> = {
-          user_id: activeUser.id,
+          user_id: sessionData.user_id,
           subject_id: subjectId,
-          subject_name: subjectName,
-          subject_color: subjectColor,
-          subject: subjectName,
-          duration_seconds: seconds,
+          subject_name: sessionData.subject_name,
+          subject_color: sessionData.subject_color,
+          subject: sessionData.subject_name,
+          duration_seconds: sessionData.duration_seconds,
           completed_at: endedAt,
           mode: currentMode,
-          created_at: endedAt,
+          created_at: sessionData.created_at,
           started_at: startedAt,
           ended_at: endedAt,
           notes: notesToSave,
@@ -333,19 +372,19 @@ export function StudyTimer() {
       if (insertSuccess) {
         const newSession: StudySession = {
           id: insertedRecordId || `sess-${Date.now()}`,
-          userId: activeUser?.id || user?.id || 'guest',
+          userId: sessionData.user_id || 'guest',
           userName: user?.displayName || 'Scholar',
           userAvatar: user?.avatarUrl,
-          subjectId: rawSubjectId || '',
-          subjectName: subjectName,
-          subjectColor: subjectColor,
-          subject_name: subjectName,
+          subjectId: sessionData.subject_id,
+          subjectName: sessionData.subject_name,
+          subjectColor: sessionData.subject_color,
+          subject_name: sessionData.subject_name,
           startTime: startedAt,
           endTime: endedAt,
-          durationSeconds: seconds,
+          durationSeconds: sessionData.duration_seconds,
           notes: notesToSave || '',
           mode: currentMode,
-          createdAt: endedAt,
+          createdAt: sessionData.created_at,
         };
 
         // Immediately update local Daily Overview and Analytics stats state
@@ -418,8 +457,8 @@ export function StudyTimer() {
           prevRP,
           newRP,
           breakdown: rpBreakdown,
-          subjectName,
-          subjectColor,
+          subjectName: sessionData.subject_name,
+          subjectColor: sessionData.subject_color,
         });
 
         // Reset and stop active timer engine
@@ -532,6 +571,8 @@ export function StudyTimer() {
   // Filtered sessions for Today (browser-local timezone)
   const todaySessions = useMemo(() => {
     return sessions.filter(s => {
+      const name = (s.subject_name || s.subjectName || (s as any).subject?.name || (s as any).subject || '').trim().toLowerCase();
+      if (!name || name === 'unassigned' || (!s.subjectId && !(s as any).subject_id)) return false;
       const t = new Date(s.startTime).getTime();
       return t >= startOfToday.getTime() && t <= endOfToday.getTime();
     });
@@ -540,6 +581,8 @@ export function StudyTimer() {
   // Filtered sessions for Yesterday (browser-local timezone)
   const yesterdaySessions = useMemo(() => {
     return sessions.filter(s => {
+      const name = (s.subject_name || s.subjectName || (s as any).subject?.name || (s as any).subject || '').trim().toLowerCase();
+      if (!name || name === 'unassigned' || (!s.subjectId && !(s as any).subject_id)) return false;
       const t = new Date(s.startTime).getTime();
       return t >= startOfYesterday.getTime() && t <= endOfYesterday.getTime();
     });
@@ -587,8 +630,12 @@ export function StudyTimer() {
     ? '#5A6B6A'
     : selectedSubject?.color || '#10B981';
 
-  // Recent 4 sessions
+  // Recent 4 sessions (filtering unassigned / null-subject sessions)
   const recentSessions = [...sessions]
+    .filter(s => {
+      const name = (s.subject_name || s.subjectName || (s as any).subject?.name || (s as any).subject || '').trim().toLowerCase();
+      return name && name !== 'unassigned' && (s.subjectId || (s as any).subject_id);
+    })
     .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
     .slice(0, 4);
 

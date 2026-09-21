@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useStudy } from '../../context/StudyContext';
 import { useAuth } from '../../context/AuthContext';
 import { formatSeconds } from '../../lib/utils';
@@ -72,15 +72,22 @@ export function FocusModeModal() {
   const [showNotes, setShowNotes] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
+  // Maintain activeSubjectRef to prevent stale closures in callbacks
+  const activeSubjectRef = useRef(selectedSubject);
+  useEffect(() => {
+    activeSubjectRef.current = selectedSubject;
+  }, [selectedSubject]);
+
   const handleStopAndSave = async () => {
     if (isSaving) return;
-    if (!selectedSubject) {
+    const activeSub = activeSubjectRef.current || selectedSubject;
+    if (!activeSub || !activeSub.id || (activeSub.name || '').trim().toLowerCase() === 'unassigned') {
       alert("Please choose a subject before recording focus time.");
       return;
     }
     setIsSaving(true);
     try {
-      await stopTimer();
+      await stopTimer(undefined, undefined, activeSub);
     } finally {
       setIsSaving(false);
     }
@@ -394,18 +401,12 @@ export function FocusModeModal() {
             <button
               onClick={() => {
                 setPomodoroCompletedPhase(null);
-                if (!selectedSubject) {
-                  const subjectList = Array.isArray(subjects) ? subjects : [];
-                  const general = subjectList.find(s => s && (s.name || '').toLowerCase() === 'general focus') || subjectList[0];
-                  if (general?.id) {
-                    setSelectedSubjectId(general.id);
-                    startTimer(general.id);
-                  } else {
-                    startTimer();
-                  }
-                } else {
-                  startTimer();
+                const activeSub = activeSubjectRef.current || selectedSubject;
+                if (!activeSub || !activeSub.id || (activeSub.name || '').trim().toLowerCase() === 'unassigned') {
+                  alert("Please choose a subject before recording focus time.");
+                  return;
                 }
+                startTimer(activeSub.id);
               }}
               className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black text-sm transition-all shadow-xl shadow-emerald-500/25 flex items-center gap-2 active:scale-95 hover:scale-[1.02] cursor-pointer"
             >
@@ -416,18 +417,12 @@ export function FocusModeModal() {
             /* IDLE State: One primary button */
             <button
               onClick={() => {
-                if (!selectedSubject) {
-                  const subjectList = Array.isArray(subjects) ? subjects : [];
-                  const general = subjectList.find(s => s && (s.name || '').toLowerCase() === 'general focus') || subjectList[0];
-                  if (general?.id) {
-                    setSelectedSubjectId(general.id);
-                    startTimer(general.id);
-                  } else {
-                    startTimer();
-                  }
-                } else {
-                  startTimer();
+                const activeSub = activeSubjectRef.current || selectedSubject;
+                if (!activeSub || !activeSub.id || (activeSub.name || '').trim().toLowerCase() === 'unassigned') {
+                  alert("Please choose a subject before recording focus time.");
+                  return;
                 }
+                startTimer(activeSub.id);
               }}
               className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black text-sm transition-all shadow-xl shadow-emerald-500/25 flex items-center gap-2.5 active:scale-95 hover:scale-[1.02] cursor-pointer"
             >

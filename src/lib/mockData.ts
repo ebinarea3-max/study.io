@@ -212,12 +212,33 @@ export function cleanupLegacyDemoData(): boolean {
     const savedSessions = localStorage.getItem('studypulse_sessions');
     if (savedSessions) {
       const parsed = JSON.parse(savedSessions);
-      if (
-        Array.isArray(parsed) &&
-        parsed.some((s: StudySession) => s.id?.startsWith('sess-2') || s.userName === 'Alex Rivers' || s.userId === 'user-demo-1')
-      ) {
-        localStorage.removeItem('studypulse_sessions');
-        cleaned = true;
+      if (Array.isArray(parsed)) {
+        const filtered = parsed.filter((s: any) => {
+          if (s.id?.startsWith('sess-2') || s.userName === 'Alex Rivers' || s.userId === 'user-demo-1') return false;
+          const name = (s.subject_name || s.subjectName || s.subject?.name || s.subject || '').trim().toLowerCase();
+          const hasValidSubjectId = Boolean(s.subjectId || s.subject_id);
+          return name !== 'unassigned' && name !== 'general focus' && name !== '' && hasValidSubjectId;
+        });
+        if (filtered.length !== parsed.length) {
+          localStorage.setItem('studypulse_sessions', JSON.stringify(filtered));
+          cleaned = true;
+        }
+      }
+    }
+
+    const pendingSessions = localStorage.getItem('studypulse_pending_sessions');
+    if (pendingSessions) {
+      const parsed = JSON.parse(pendingSessions);
+      if (Array.isArray(parsed)) {
+        const filtered = parsed.filter((s: any) => {
+          const name = (s.subject_name || s.subjectName || s.subject?.name || s.subject || '').trim().toLowerCase();
+          const hasValidSubjectId = Boolean(s.subjectId || s.subject_id);
+          return name !== 'unassigned' && name !== 'general focus' && name !== '' && hasValidSubjectId;
+        });
+        if (filtered.length !== parsed.length) {
+          localStorage.setItem('studypulse_pending_sessions', JSON.stringify(filtered));
+          cleaned = true;
+        }
       }
     }
 
