@@ -261,7 +261,15 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
       return [];
     }
 
-    const map: Record<string, { name: string; seconds: number; color: string; sessionCount: number }> = {};
+    const map: Record<string, {
+      name: string;
+      subject_id: string;
+      subject_name: string;
+      subject_color?: string;
+      seconds: number;
+      color: string;
+      sessionCount: number;
+    }> = {};
 
     // Get subjects list with local storage fallback if state hasn't populated yet
     const subjectList: Subject[] = (() => {
@@ -283,7 +291,7 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
       return [];
     })();
 
-    // Aggregate each session strictly by session.subject_name
+    // Aggregate each session strictly by session.subject_name / subject_id
     distSessions.forEach(s => {
       const sessionSubjectName = ((s as any).subject_name || s.subjectName || (s as any).subject?.name || (s as any).subject || '').trim();
       const sessionSubjectId = (s.subjectId || (s as any).subject_id || '').trim();
@@ -292,8 +300,9 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
         return;
       }
 
+      // Dynamic subject color lookup: Map each session to current active color from user's subjects list
       const matchedSubject = subjectList.find(
-        sub =>
+        (sub) =>
           sub && (
             (sessionSubjectId && sub.id === sessionSubjectId) ||
             (sub.name && sub.name.trim().toLowerCase() === sessionSubjectName.toLowerCase())
@@ -301,11 +310,8 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
       );
 
       const subjectLabel = matchedSubject?.name || sessionSubjectName;
-      const subjectColor =
-        (s.subjectColor && s.subjectColor !== '#5A6B6A' ? s.subjectColor : null) ||
-        (s as any).subject_color ||
-        matchedSubject?.color ||
-        '#10B981';
+      const rawSessionColor = (s.subjectColor && s.subjectColor !== '#5A6B6A' ? s.subjectColor : null) || (s as any).subject_color;
+      const displayColor = matchedSubject?.color || rawSessionColor || '#10b981';
 
       const groupKey = subjectLabel.toLowerCase();
 
@@ -315,28 +321,47 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
         if (matchedSubject?.name) {
           map[groupKey].name = matchedSubject.name;
         }
-        if (matchedSubject?.color) {
-          map[groupKey].color = matchedSubject.color;
+        if (matchedSubject?.id) {
+          map[groupKey].subject_id = matchedSubject.id;
         }
+        // Active subject color takes precedence
+        map[groupKey].color = displayColor;
       } else {
         map[groupKey] = {
           name: matchedSubject?.name || subjectLabel,
+          subject_id: matchedSubject?.id || sessionSubjectId,
+          subject_name: matchedSubject?.name || sessionSubjectName,
+          subject_color: rawSessionColor,
           seconds: s.durationSeconds,
-          color: subjectColor,
+          color: displayColor,
           sessionCount: 1,
         };
       }
     });
 
+    // Map each grouped subject to its current active color from user's subjects list
     return Object.values(map)
       .filter(item => item.seconds > 0)
-      .map(item => ({
-        ...item,
-        percentage:
-          distTotalSeconds > 0
-            ? Math.round((item.seconds / distTotalSeconds) * 100)
-            : 0,
-      }))
+      .map(item => {
+        const matchedSubject = subjectList.find(
+          (s) =>
+            s && (
+              (item.subject_id && s.id === item.subject_id) ||
+              (s.name && s.name.trim().toLowerCase() === (item.subject_name || item.name || '').trim().toLowerCase())
+            )
+        );
+        const displayColor = matchedSubject?.color || item.subject_color || item.color || '#10b981';
+
+        return {
+          ...item,
+          name: matchedSubject?.name || item.name,
+          color: displayColor,
+          percentage:
+            distTotalSeconds > 0
+              ? Math.round((item.seconds / distTotalSeconds) * 100)
+              : 0,
+        };
+      })
       .sort((a, b) => b.seconds - a.seconds);
   }, [distSessions, distTotalSeconds, subjects, user?.id]);
 
@@ -724,7 +749,7 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
                     >
                       {distSubjectBreakdown.map((entry, index) => (
                         <Cell
-                          key={`cell-${index}`}
+                          key={`cell-${entry.name}-${entry.color}-${index}`}
                           fill={entry.color}
                           stroke="#0e1422"
                           strokeWidth={2}

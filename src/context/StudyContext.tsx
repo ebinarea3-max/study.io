@@ -2032,8 +2032,37 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       ...updates,
       ...(updates.name !== undefined ? { name: (updates.name || '').trim() } : {}),
     };
+    const targetSubject = subjectList.find(s => s && s.id === id);
+    const oldName = targetSubject?.name;
     const updated = subjectList.map(s => s && s.id === id ? { ...s, ...trimmedUpdates } : s);
     saveSubjects(updated);
+
+    // Synchronize sessions in local state and localStorage if subject color or name changed
+    if (trimmedUpdates.color || trimmedUpdates.name) {
+      setSessions(prev => {
+        const updatedSessions = prev.map(sess => {
+          const sessSubId = sess.subjectId || (sess as any).subject_id;
+          const sessSubName = (sess.subjectName || (sess as any).subject_name || '').trim().toLowerCase();
+          const isMatch =
+            (sessSubId && sessSubId === id) ||
+            (oldName && sessSubName === oldName.trim().toLowerCase());
+
+          if (isMatch) {
+            return {
+              ...sess,
+              ...(trimmedUpdates.color ? { subjectColor: trimmedUpdates.color, subject_color: trimmedUpdates.color } : {}),
+              ...(trimmedUpdates.name ? { subjectName: trimmedUpdates.name, subject_name: trimmedUpdates.name } : {}),
+            };
+          }
+          return sess;
+        });
+
+        try {
+          localStorage.setItem('studypulse_sessions', JSON.stringify(updatedSessions));
+        } catch {}
+        return updatedSessions;
+      });
+    }
 
     const supabase = getSupabase();
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);

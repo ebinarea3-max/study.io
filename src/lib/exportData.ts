@@ -60,8 +60,13 @@ export function exportSessionsAsCSV(sessions: StudySession[], subjects: Subject[
   ];
 
   const rows = sessions.map(s => {
-    const dateStr = s.startTime ? getLocalDateString(new Date(s.startTime)) : '';
-    const color = subjectColorMap.get(s.subjectId) || s.subjectColor || '#10B981';
+    const matchedSubject = subjectList.find(
+      sub => sub && (
+        (s.subjectId && sub.id === s.subjectId) ||
+        (sub.name && sub.name.trim().toLowerCase() === (s.subjectName || '').trim().toLowerCase())
+      )
+    );
+    const color = matchedSubject?.color || subjectColorMap.get(s.subjectId) || s.subjectColor || '#10B981';
     const durationMins = (s.durationSeconds / 60).toFixed(1);
     const formattedDuration = formatSeconds(s.durationSeconds);
     const cleanNotes = (s.notes || '').replace(/"/g, '""');
