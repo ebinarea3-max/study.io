@@ -30,24 +30,15 @@ function applyThemeToDocument(resolved: ResolvedTheme) {
   const root = document.documentElement;
   const body = document.body;
 
-  if (resolved === 'light') {
-    root.classList.remove('dark');
-    root.classList.add('light');
-    root.setAttribute('data-theme', 'light');
-    root.style.colorScheme = 'light';
-    if (body) {
-      body.classList.remove('dark');
-      body.classList.add('light');
-    }
-  } else {
-    root.classList.remove('light');
-    root.classList.add('dark');
-    root.setAttribute('data-theme', 'dark');
-    root.style.colorScheme = 'dark';
-    if (body) {
-      body.classList.remove('light');
-      body.classList.add('dark');
-    }
+  const isDark = resolved === 'dark';
+  root.classList.toggle('dark', isDark);
+  root.classList.toggle('light', !isDark);
+  root.setAttribute('data-theme', resolved);
+  root.style.colorScheme = resolved;
+
+  if (body) {
+    body.classList.toggle('dark', isDark);
+    body.classList.toggle('light', !isDark);
   }
 
   // Sync meta theme-color tag for mobile status bar
@@ -62,7 +53,16 @@ function applyThemeToDocument(resolved: ResolvedTheme) {
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>('system');
-  const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>('dark');
+  const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = (localStorage.getItem(THEME_STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY)) as Theme | null;
+        if (stored === 'light' || stored === 'dark') return stored;
+        return getSystemTheme();
+      } catch {}
+    }
+    return 'dark';
+  });
   const [mounted, setMounted] = useState(false);
 
   // Initialize theme from localStorage ('study_io_theme') defaulting strictly to 'system'
@@ -91,11 +91,20 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
     const handleSystemChange = (e: MediaQueryListEvent | MediaQueryList) => {
-      // Only alter applied theme when theme is 'system'
-      if (theme === 'system') {
-        const nextResolved: ResolvedTheme = e.matches ? 'dark' : 'light';
-        setResolvedTheme(nextResolved);
-        applyThemeToDocument(nextResolved);
+      try {
+        const stored = (localStorage.getItem(THEME_STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY)) as Theme | null;
+        const currentMode = stored || theme || 'system';
+        if (currentMode === 'system') {
+          const nextResolved: ResolvedTheme = e.matches ? 'dark' : 'light';
+          setResolvedTheme(nextResolved);
+          applyThemeToDocument(nextResolved);
+        }
+      } catch {
+        if (theme === 'system') {
+          const nextResolved: ResolvedTheme = e.matches ? 'dark' : 'light';
+          setResolvedTheme(nextResolved);
+          applyThemeToDocument(nextResolved);
+        }
       }
     };
 
