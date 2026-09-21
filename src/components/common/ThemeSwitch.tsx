@@ -29,19 +29,30 @@ export function ThemeSwitch({ className = '', showLabels = false }: ThemeSwitchP
     }
   };
 
+  const title =
+    theme === 'system'
+      ? `Theme: System (${isDark ? 'Dark' : 'Light'}) · Click to switch`
+      : isDark
+      ? 'Switch to Light Mode'
+      : 'Switch to Dark Mode';
+
   return (
     <div className={`inline-flex items-center gap-2 select-none ${className}`}>
       {showLabels && (
-        <span className="text-xs font-semibold text-slate-400 dark:text-slate-400">
-          {isDark ? 'Dark Mode' : 'Light Mode'}
+        <span className="text-xs font-semibold text-slate-400">
+          {theme === 'system'
+            ? `System (${isDark ? 'Dark' : 'Light'})`
+            : isDark
+            ? 'Dark Mode'
+            : 'Light Mode'}
         </span>
       )}
       <button
         type="button"
         role="switch"
         aria-checked={isDark}
-        aria-label={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-        title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+        aria-label={title}
+        title={title}
         onClick={handleToggle}
         onKeyDown={handleKeyDown}
         className={`relative inline-flex h-7 w-14 flex-shrink-0 cursor-pointer items-center rounded-full p-0.5 border transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 ${

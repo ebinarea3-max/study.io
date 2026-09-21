@@ -49,9 +49,11 @@ export default function RootLayout({
             __html: `
               (function() {
                 try {
-                  var saved = localStorage.getItem('studyio_theme');
-                  var theme = saved || (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
-                  if (theme === 'light') {
+                  var saved = localStorage.getItem('study_io_theme') || localStorage.getItem('studyio_theme');
+                  var isSystem = !saved || saved === 'system';
+                  var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                  var resolved = isSystem ? (prefersDark ? 'dark' : 'light') : saved;
+                  if (resolved === 'light') {
                     document.documentElement.classList.remove('dark');
                     document.documentElement.classList.add('light');
                     document.documentElement.setAttribute('data-theme', 'light');

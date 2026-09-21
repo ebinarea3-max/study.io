@@ -371,7 +371,7 @@ export function DailyTodoList() {
           value={taskInput}
           onChange={e => setTaskInput(e.target.value)}
           placeholder="+ Take a note / Add an item..."
-          className="w-full bg-transparent text-xs text-neutral-200 placeholder-neutral-500 focus:outline-none font-sans py-0.5"
+          className="w-full bg-transparent text-xs text-slate-800 dark:text-neutral-200 placeholder:text-slate-500 dark:placeholder:text-neutral-500 focus:outline-none font-sans py-0.5"
         />
         {taskInput.trim() && (
           <button
@@ -390,16 +390,16 @@ export function DailyTodoList() {
         {activeTodos.map(item => (
           <div
             key={item.id}
-            className="group flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-neutral-800/40 transition-colors"
+            className="group flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-neutral-800/40 transition-colors"
           >
-            <GripVertical className="w-3.5 h-3.5 text-neutral-600 opacity-0 group-hover:opacity-40 transition-opacity flex-shrink-0 cursor-grab" />
+            <GripVertical className="w-3.5 h-3.5 text-neutral-400 dark:text-neutral-600 opacity-0 group-hover:opacity-40 transition-opacity flex-shrink-0 cursor-grab" />
 
             {/* Google Keep Square Checkbox */}
             <button
               type="button"
               onClick={() => handleToggleTask(item.id, item.is_completed)}
               aria-label="Mark task complete"
-              className="w-[18px] h-[18px] rounded-[4px] border-[1.5px] border-neutral-600 hover:border-cyan-400 bg-black/40 hover:bg-cyan-500/10 transition-all flex items-center justify-center flex-shrink-0 cursor-pointer group-hover:border-neutral-400 active:scale-95"
+              className="w-[18px] h-[18px] rounded-[4px] border-[1.5px] border-slate-400 dark:border-neutral-600 hover:border-cyan-500 bg-slate-50 dark:bg-black/40 hover:bg-cyan-500/10 transition-all flex items-center justify-center flex-shrink-0 cursor-pointer group-hover:border-slate-500 dark:group-hover:border-neutral-400 active:scale-95"
             />
 
             {/* Inline Editable Task Title */}
@@ -407,7 +407,7 @@ export function DailyTodoList() {
               type="text"
               value={item.task}
               onChange={e => handleUpdateTaskText(item.id, e.target.value)}
-              className="w-full bg-transparent text-xs text-neutral-200 focus:text-white focus:outline-none py-0.5 tracking-wide leading-relaxed font-sans"
+              className="w-full bg-transparent text-xs text-slate-800 dark:text-neutral-200 focus:text-slate-950 dark:focus:text-white focus:outline-none py-0.5 tracking-wide leading-relaxed font-sans"
             />
 
             {/* Delete button on hover */}
@@ -415,7 +415,7 @@ export function DailyTodoList() {
               type="button"
               onClick={() => handleDeleteTask(item.id)}
               title="Delete item"
-              className="opacity-0 group-hover:opacity-100 text-neutral-500 hover:text-rose-400 p-1 transition-opacity cursor-pointer flex-shrink-0"
+              className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-rose-500 p-1 transition-opacity cursor-pointer flex-shrink-0"
             >
               <Trash2 className="w-3.5 h-3.5" />
             </button>
@@ -424,10 +424,10 @@ export function DailyTodoList() {
 
         {/* Empty State message if 0 todos */}
         {todos.length === 0 && (
-          <div className="py-5 text-center text-xs text-neutral-500 space-y-1">
-            <CheckCircle2 className="w-7 h-7 text-neutral-600 mx-auto mb-1 opacity-70" />
-            <p className="text-neutral-400 font-medium">Your checklist is empty</p>
-            <p className="text-[11px] text-neutral-600 mt-0.5">Type above in &quot;+ Take a note / Add an item...&quot; and press Enter</p>
+          <div className="py-5 text-center text-xs text-slate-500 dark:text-neutral-500 space-y-1">
+            <CheckCircle2 className="w-7 h-7 text-slate-400 dark:text-neutral-600 mx-auto mb-1 opacity-70" />
+            <p className="text-slate-600 dark:text-neutral-400 font-semibold">Your checklist is empty</p>
+            <p className="text-[11px] text-slate-500 dark:text-neutral-400 mt-0.5 font-medium">Type above in &quot;+ Take a note / Add an item...&quot; and press Enter</p>
           </div>
         )}
 

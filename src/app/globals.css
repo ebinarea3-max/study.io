@@ -294,29 +294,36 @@ html.light .glass-panel-glow,
 }
 
 /* Card surfaces: convert dark obsidian/neutral/slate surfaces to clean white cards */
-html.light div[class*="bg-neutral-900/50"],
-html.light div[class*="bg-neutral-900/40"],
-html.light div[class*="bg-neutral-900/60"],
-html.light div[class*="bg-neutral-900/70"],
-html.light div[class*="bg-slate-900/60"],
-html.light div[class*="bg-slate-900/80"],
-html.light div[class*="bg-slate-900/90"],
+html.light div[class*="bg-neutral-900"],
+html.light div[class*="bg-slate-900"],
 html.light div[class*="bg-[#0c0d10]"],
 html.light div[class*="bg-[#0c0d12]"],
 html.light div[class*="bg-[#090a0c]"],
-[data-theme="light"] div[class*="bg-neutral-900/50"],
-[data-theme="light"] div[class*="bg-neutral-900/40"],
-[data-theme="light"] div[class*="bg-neutral-900/60"],
-[data-theme="light"] div[class*="bg-neutral-900/70"],
-[data-theme="light"] div[class*="bg-slate-900/60"],
-[data-theme="light"] div[class*="bg-slate-900/80"],
-[data-theme="light"] div[class*="bg-slate-900/90"],
+html.light div[class*="bg-[#0e1422]"],
+html.light div[class*="bg-[#080C15]"],
+[data-theme="light"] div[class*="bg-neutral-900"],
+[data-theme="light"] div[class*="bg-slate-900"],
 [data-theme="light"] div[class*="bg-[#0c0d10]"],
 [data-theme="light"] div[class*="bg-[#0c0d12]"],
-[data-theme="light"] div[class*="bg-[#090a0c]"] {
+[data-theme="light"] div[class*="bg-[#090a0c]"],
+[data-theme="light"] div[class*="bg-[#0e1422]"],
+[data-theme="light"] div[class*="bg-[#080C15]"] {
   background-color: #ffffff !important;
   border-color: #e2e8f0 !important;
-  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04) !important;
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.05), 0 1px 2px -1px rgba(15, 23, 42, 0.05) !important;
+}
+
+/* Stat cards (Daily Overview inner tiles) & sub-boxes in light mode */
+html.light div[class*="bg-violet-950"],
+[data-theme="light"] div[class*="bg-violet-950"] {
+  background-color: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+}
+
+html.light div[class*="bg-amber-950"],
+[data-theme="light"] div[class*="bg-amber-950"] {
+  background-color: #fffbeb !important;
+  border-color: #fde68a !important;
 }
 
 /* Inner sub-boxes, inputs, and action buttons in light mode */
@@ -345,14 +352,20 @@ html.light .rounded-full.bg-black\/60,
 
 /* Typography transformation in light mode */
 html.light .text-white,
-[data-theme="light"] .text-white {
+html.light [class*="text-violet-100"],
+html.light [class*="text-amber-100"],
+[data-theme="light"] .text-white,
+[data-theme="light"] [class*="text-violet-100"],
+[data-theme="light"] [class*="text-amber-100"] {
   color: #0f172a !important;
 }
 
 html.light .text-slate-100,
 html.light .text-slate-200,
+html.light [class*="text-violet-200"],
 [data-theme="light"] .text-slate-100,
-[data-theme="light"] .text-slate-200 {
+[data-theme="light"] .text-slate-200,
+[data-theme="light"] [class*="text-violet-200"] {
   color: #1e293b !important;
 }
 
@@ -363,18 +376,35 @@ html.light .text-neutral-300,
   color: #334155 !important;
 }
 
+/* Subtitles, labels, dates and secondary text */
 html.light .text-slate-400,
 html.light .text-neutral-400,
+html.light [class*="text-violet-300"],
 [data-theme="light"] .text-slate-400,
-[data-theme="light"] .text-neutral-400 {
-  color: #64748b !important;
+[data-theme="light"] .text-neutral-400,
+[data-theme="light"] [class*="text-violet-300"] {
+  color: #475569 !important;
 }
 
 html.light .text-slate-500,
 html.light .text-neutral-500,
 [data-theme="light"] .text-slate-500,
 [data-theme="light"] .text-neutral-500 {
-  color: #94a3b8 !important;
+  color: #64748b !important;
+}
+
+/* Checklist placeholder & empty hints in light mode */
+html.light input::placeholder,
+html.light textarea::placeholder,
+[data-theme="light"] input::placeholder,
+[data-theme="light"] textarea::placeholder {
+  color: #64748b !important;
+}
+
+/* Ensure amber message / subtext readability */
+html.light [class*="text-amber-300"],
+[data-theme="light"] [class*="text-amber-300"] {
+  color: #92400e !important;
 }
 
 /* Ensure emerald/amber/cyan badge text remains highly readable on white */

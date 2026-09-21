@@ -1298,17 +1298,17 @@ export function StudyTimer() {
 
           <div className="flex items-center justify-between pb-3 border-b border-violet-500/15 relative z-10">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-violet-400" />
-              <span className="text-xs font-bold text-violet-200 tracking-tight uppercase">Daily Overview</span>
+              <Sparkles className="w-4 h-4 text-violet-500 dark:text-violet-400" />
+              <span className="text-xs font-bold text-slate-900 dark:text-violet-200 tracking-tight uppercase">Daily Overview</span>
             </div>
             {/* Today vs Yesterday Toggle */}
-            <div className="flex items-center gap-1 p-0.5 rounded-xl bg-violet-950/50 border border-violet-800/40 text-[10px]">
+            <div className="flex items-center gap-1 p-0.5 rounded-xl bg-slate-100 dark:bg-violet-950/50 border border-slate-200 dark:border-violet-800/40 text-[10px]">
               <button
                 onClick={() => setOverviewView('today')}
                 className={`px-2 py-0.5 rounded-lg font-bold transition-all cursor-pointer ${
                   overviewView === 'today'
-                    ? 'bg-violet-500 text-slate-950 shadow-sm'
-                    : 'text-violet-300/70 hover:text-white'
+                    ? 'bg-violet-600 text-white shadow-sm'
+                    : 'text-slate-600 dark:text-violet-300/70 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 Today
@@ -1317,8 +1317,8 @@ export function StudyTimer() {
                 onClick={() => setOverviewView('yesterday')}
                 className={`px-2 py-0.5 rounded-lg font-bold transition-all cursor-pointer ${
                   overviewView === 'yesterday'
-                    ? 'bg-violet-500 text-slate-950 shadow-sm'
-                    : 'text-violet-300/70 hover:text-white'
+                    ? 'bg-violet-600 text-white shadow-sm'
+                    : 'text-slate-600 dark:text-violet-300/70 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 Yesterday
@@ -1326,7 +1326,7 @@ export function StudyTimer() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between text-[11px] text-violet-300/70 font-medium font-mono relative z-10">
+          <div className="flex items-center justify-between text-[11px] text-slate-600 dark:text-violet-300/70 font-semibold font-mono relative z-10">
             <span>{overviewView === 'today' ? "Today's Activity" : "Yesterday's Activity"}</span>
             <span>
               {overviewView === 'today'
@@ -1336,31 +1336,31 @@ export function StudyTimer() {
           </div>
 
           <div className="grid grid-cols-2 gap-3 relative z-10">
-            <div className="p-3 rounded-2xl bg-violet-950/20 border border-violet-800/30 hover:border-violet-700/40 transition-colors space-y-1">
-              <div className="text-[10px] uppercase font-bold tracking-wider text-violet-300/70">Total Focus</div>
-              <div className="text-lg font-black text-violet-100 font-mono tabular-nums tracking-tight">
+            <div className="p-3 rounded-2xl bg-slate-100 dark:bg-violet-950/20 border border-slate-200 dark:border-violet-800/30 hover:border-violet-500/30 transition-colors space-y-1">
+              <div className="text-[10px] uppercase font-bold tracking-wider text-slate-600 dark:text-violet-300/70">Total Focus</div>
+              <div className="text-lg font-black text-slate-900 dark:text-violet-100 font-mono tabular-nums tracking-tight">
                 {formatHoursAndMins(overviewView === 'today' ? overviewTodaySeconds : yesterdayTotalSeconds)}
               </div>
             </div>
-            <div className="p-3 rounded-2xl bg-violet-950/20 border border-violet-800/30 hover:border-violet-700/40 transition-colors space-y-1">
-              <div className="text-[10px] uppercase font-bold tracking-wider text-violet-300/70">Sessions</div>
-              <div className="text-lg font-black text-violet-100 font-mono tabular-nums tracking-tight">
+            <div className="p-3 rounded-2xl bg-slate-100 dark:bg-violet-950/20 border border-slate-200 dark:border-violet-800/30 hover:border-violet-500/30 transition-colors space-y-1">
+              <div className="text-[10px] uppercase font-bold tracking-wider text-slate-600 dark:text-violet-300/70">Sessions</div>
+              <div className="text-lg font-black text-slate-900 dark:text-violet-100 font-mono tabular-nums tracking-tight">
                 {overviewView === 'today' ? overviewTodaySessionsCount : yesterdaySessionsCount}
               </div>
             </div>
           </div>
 
           <div className="pt-1 flex items-center justify-between text-xs relative z-10">
-            <span className="flex items-center gap-1.5 text-neutral-400">
+            <span className="flex items-center gap-1.5 text-slate-600 dark:text-neutral-400">
               <Flame className="w-3.5 h-3.5 text-[#f97316] fill-[#f97316]" />
               <span className="font-medium">Streak</span>
             </span>
             {(user?.streakDays ?? 0) > 0 ? (
-              <span className="px-2 py-0.5 rounded-full bg-orange-950/40 border border-orange-700/40 text-[#f97316] font-mono font-bold text-xs tabular-nums shadow-sm shadow-orange-950/30">
+              <span className="px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-700/40 text-orange-700 dark:text-[#f97316] font-mono font-bold text-xs tabular-nums shadow-sm shadow-orange-950/30">
                 {user?.streakDays ?? 0} {(user?.streakDays ?? 0) === 1 ? 'day' : 'days'}
               </span>
             ) : (
-              <span className="font-mono font-bold text-neutral-400 tabular-nums">Start today</span>
+              <span className="font-mono font-bold text-slate-500 dark:text-neutral-400 tabular-nums">Start today</span>
             )}
           </div>
         </div>
@@ -1371,16 +1371,16 @@ export function StudyTimer() {
           <div className="absolute -bottom-10 -right-10 w-32 h-32 rounded-full bg-amber-500/10 blur-2xl pointer-events-none" />
 
           <div className="flex items-center gap-2 pb-2.5 border-b border-amber-500/15 relative z-10">
-            <MessageCircle className="w-4 h-4 text-amber-400" />
-            <span className="text-xs font-bold text-amber-300 tracking-tight uppercase">Today's Boost</span>
+            <MessageCircle className="w-4 h-4 text-amber-500 dark:text-amber-400" />
+            <span className="text-xs font-bold text-amber-800 dark:text-amber-300 tracking-tight uppercase">Today's Boost</span>
           </div>
 
           <div className="min-h-[40px] flex flex-col justify-center relative z-10">
-            <p className="text-[15px] font-semibold text-amber-100/95 leading-snug tracking-tight drop-shadow-sm">
+            <p className="text-[15px] font-semibold text-slate-900 dark:text-amber-100/95 leading-snug tracking-tight drop-shadow-sm">
               {primaryBoostMessage}
             </p>
             {secondaryBoostMessage && (
-              <p className="text-xs text-amber-300/80 mt-1.5 leading-normal font-medium">
+              <p className="text-xs text-amber-800 dark:text-amber-300/80 mt-1.5 leading-normal font-medium">
                 {secondaryBoostMessage}
               </p>
             )}
