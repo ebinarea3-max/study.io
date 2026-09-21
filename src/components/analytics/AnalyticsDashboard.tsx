@@ -72,7 +72,7 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
 
   useEffect(() => {
     refetchSessions();
-  }, [refetchSessions]);
+  }, [refetchSessions, user?.id]);
 
   // Keep calendar selection synced with external selectedDate
   useEffect(() => {
@@ -95,21 +95,22 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
     const map: Record<string, { totalSeconds: number; count: number; sessions: typeof sessions }> = {};
     sessions.forEach(s => {
       const rawName = ((s as any).subject_name || s.subjectName || (s as any).subject?.name || (s as any).subject || '').trim().toLowerCase();
-      const rawId = s.subjectId || (s as any).subject_id;
-      if (!rawName || rawName === 'unassigned' || !rawId || s.durationSeconds <= 0) {
+      const duration = Number(s.durationSeconds ?? (s as any).duration_seconds ?? (s as any).duration ?? (s as any).seconds ?? 0);
+      if (!rawName || rawName === 'unassigned' || duration <= 0) {
         return;
       }
-      const dateKey = getLocalDateString(new Date(s.startTime));
+      const sessionDateStr = s.startTime || (s as any).started_at || s.createdAt || (s as any).created_at;
+      if (!sessionDateStr) return;
+      const dateKey = getLocalDateString(new Date(sessionDateStr));
       if (!map[dateKey]) {
         map[dateKey] = { totalSeconds: 0, count: 0, sessions: [] };
       }
-      map[dateKey].totalSeconds += s.durationSeconds;
+      map[dateKey].totalSeconds += duration;
       map[dateKey].count += 1;
       map[dateKey].sessions.push(s);
     });
     return map;
   }, [sessions]);
-
 
   // -------------------------------------------------------------
   // Top Row: 3 Focus Time Metrics
@@ -128,36 +129,39 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
 
     const validSessions = sessions.filter(s => {
       const rawName = ((s as any).subject_name || s.subjectName || (s as any).subject?.name || (s as any).subject || '').trim().toLowerCase();
-      const rawId = s.subjectId || (s as any).subject_id;
-      return rawName && rawName !== 'unassigned' && rawId && s.durationSeconds > 0;
+      const duration = Number(s.durationSeconds ?? (s as any).duration_seconds ?? (s as any).duration ?? (s as any).seconds ?? 0);
+      const sessionDateStr = s.startTime || (s as any).started_at || s.createdAt || (s as any).created_at;
+      return rawName && rawName !== 'unassigned' && duration > 0 && Boolean(sessionDateStr);
     });
 
     // 1. Focus Time of This Month
     const thisMonthFocusSec = validSessions
       .filter(s => {
-        const dStr = getLocalDateString(new Date(s.startTime));
+        const sessionDateStr = s.startTime || (s as any).started_at || s.createdAt || (s as any).created_at;
+        const dStr = getLocalDateString(new Date(sessionDateStr));
         return dStr.startsWith(currentMonthPrefix);
       })
-      .reduce((sum, s) => sum + s.durationSeconds, 0);
+      .reduce((sum, s) => sum + Number(s.durationSeconds ?? (s as any).duration_seconds ?? 0), 0);
 
     // 2. Focus Time of This Week
     const thisWeekFocusSec = validSessions
       .filter(s => {
-        const dStr = getLocalDateString(new Date(s.startTime));
+        const sessionDateStr = s.startTime || (s as any).started_at || s.createdAt || (s as any).created_at;
+        const dStr = getLocalDateString(new Date(sessionDateStr));
         return dStr >= weekMonStr && dStr <= weekSunStr;
       })
-      .reduce((sum, s) => sum + s.durationSeconds, 0);
+      .reduce((sum, s) => sum + Number(s.durationSeconds ?? (s as any).duration_seconds ?? 0), 0);
 
     // 3. Focus Time of Today
     const todayLocalDate = new Date().toLocaleDateString();
     const todayFocusSec = validSessions
       .filter(s => {
-        const sessionDate = s.startTime || (s as any).started_at || s.createdAt;
+        const sessionDate = s.startTime || (s as any).started_at || s.createdAt || (s as any).created_at;
         if (!sessionDate) return false;
         const d = new Date(sessionDate);
         return d.toLocaleDateString() === todayLocalDate || getLocalDateString(d) === todayStr;
       })
-      .reduce((sum, s) => sum + s.durationSeconds, 0);
+      .reduce((sum, s) => sum + Number(s.durationSeconds ?? (s as any).duration_seconds ?? 0), 0);
 
     return {
       thisMonthFocusSec,
@@ -234,11 +238,11 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
     return sessions.filter(s => {
       // Exclude stray unassigned/dummy test sessions so donut chart resets cleanly
       const rawName = ((s as any).subject_name || s.subjectName || (s as any).subject?.name || (s as any).subject || '').trim().toLowerCase();
-      const rawId = s.subjectId || (s as any).subject_id;
-      if (!rawName || rawName === 'unassigned' || !rawId || s.durationSeconds <= 0) {
+      const duration = Number(s.durationSeconds ?? (s as any).duration_seconds ?? (s as any).duration ?? (s as any).seconds ?? 0);
+      if (!rawName || rawName === 'unassigned' || duration <= 0) {
         return false;
       }
-      const sessionDateStr = s.startTime || (s as any).started_at || s.createdAt;
+      const sessionDateStr = s.startTime || (s as any).started_at || s.createdAt || (s as any).created_at;
       if (!sessionDateStr) return false;
       const d = new Date(sessionDateStr);
       const t = d.getTime();
@@ -252,7 +256,7 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
   }, [sessions, distRange, distTimeframe, distAnchorDate]);
 
   const distTotalSeconds = useMemo(() => {
-    return distSessions.reduce((sum, s) => sum + s.durationSeconds, 0);
+    return distSessions.reduce((sum, s) => sum + Number(s.durationSeconds ?? (s as any).duration_seconds ?? 0), 0);
   }, [distSessions]);
 
   const distSubjectBreakdown = useMemo(() => {
@@ -531,8 +535,11 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
 
         let sec = 0;
         sessions.forEach(s => {
-          const dStr = getLocalDateString(new Date(s.startTime));
-          if (dStr >= startStr && dStr <= endStr) sec += s.durationSeconds;
+          const sessionDateStr = s.startTime || (s as any).started_at || s.createdAt || (s as any).created_at;
+          if (!sessionDateStr) return;
+          const dStr = getLocalDateString(new Date(sessionDateStr));
+          const duration = Number(s.durationSeconds ?? (s as any).duration_seconds ?? 0);
+          if (dStr >= startStr && dStr <= endStr) sec += duration;
         });
 
         data.push({
@@ -550,9 +557,12 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
         const monthShort = mDate.toLocaleDateString('en-US', { month: 'short' });
         let sec = 0;
         sessions.forEach(s => {
-          const d = new Date(s.startTime);
+          const sessionDateStr = s.startTime || (s as any).started_at || s.createdAt || (s as any).created_at;
+          if (!sessionDateStr) return;
+          const d = new Date(sessionDateStr);
+          const duration = Number(s.durationSeconds ?? (s as any).duration_seconds ?? 0);
           if (d.getFullYear() === year && d.getMonth() === m) {
-            sec += s.durationSeconds;
+            sec += duration;
           }
         });
         data.push({
@@ -568,8 +578,12 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
       for (let y = curYear - 4; y <= curYear; y++) {
         let sec = 0;
         sessions.forEach(s => {
-          if (new Date(s.startTime).getFullYear() === y) {
-            sec += s.durationSeconds;
+          const sessionDateStr = s.startTime || (s as any).started_at || s.createdAt || (s as any).created_at;
+          if (!sessionDateStr) return;
+          const d = new Date(sessionDateStr);
+          const duration = Number(s.durationSeconds ?? (s as any).duration_seconds ?? 0);
+          if (d.getFullYear() === y) {
+            sec += duration;
           }
         });
         data.push({

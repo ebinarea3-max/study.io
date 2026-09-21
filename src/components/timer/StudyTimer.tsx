@@ -349,6 +349,20 @@ export function StudyTimer() {
         createdAt: sessionPayload.created_at,
       };
 
+      // 4. Immediately backup to localStorage cache and append to local state
+      if (typeof window !== 'undefined') {
+        try {
+          const uid = sessionPayload.user_id || activeUser?.id || user?.id;
+          if (uid) {
+            const rawStored = localStorage.getItem(`study_io_sessions_${uid}`) || localStorage.getItem('studypulse_sessions');
+            const parsedStored: StudySession[] = rawStored ? JSON.parse(rawStored) : [];
+            const updated = [newSession, ...parsedStored.filter(s => s.id !== newSession.id)];
+            localStorage.setItem(`study_io_sessions_${uid}`, JSON.stringify(updated));
+            localStorage.setItem('studypulse_sessions', JSON.stringify(updated));
+          }
+        } catch {}
+      }
+
       // Immediately update local Daily Overview and Analytics stats state
       addSession(newSession);
 
