@@ -1301,29 +1301,62 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
     let isMounted = true;
     let reconnectTimer: NodeJS.Timeout | null = null;
-    let currentChannel: any = null;
-    let channelStatus = 'INITIALIZING';
+    let currentBroadcastChannel: any = null;
+    let currentDbChannel: any = null;
     const backoffDelays = [1000, 2000, 4000, 8000, 16000, 30000];
     let reconnectAttempt = 0;
 
-    const channelName = `active-session-${realtimeUserId}`;
-
-    const setupChannel = () => {
-      if (currentChannel) {
-        try {
-          supabase.removeChannel(currentChannel);
-        } catch (e) {
-          console.warn('[Realtime] removeChannel error:', e);
+    // 1. Log Supabase client's realtime connection state directly (Section 3 of requirements)
+    const rt = (supabase as any)?.realtime;
+    if (rt) {
+      try {
+        if (typeof rt.onOpen === 'function') {
+          rt.onOpen(() => console.log('[Realtime socket] OPENED'));
         }
-        currentChannel = null;
-        activeChannelRef.current = null;
+        if (typeof rt.onError === 'function') {
+          rt.onError((err: any) => console.warn('[Realtime socket] ERROR', err));
+        }
+        if (typeof rt.onClose === 'function') {
+          rt.onClose(() => console.log('[Realtime socket] CLOSED'));
+        }
+      } catch (rtErr) {
+        console.warn('[Realtime socket listener error]:', rtErr);
+      }
+    }
+
+    const broadcastChannelName = `broadcast-session-${realtimeUserId}`;
+    const dbChannelName = `active-session-${realtimeUserId}`;
+
+    const setupChannels = async () => {
+      // Clean up previous channels
+      if (currentBroadcastChannel) {
+        try { supabase.removeChannel(currentBroadcastChannel); } catch {}
+        currentBroadcastChannel = null;
+      }
+      if (currentDbChannel) {
+        try { supabase.removeChannel(currentDbChannel); } catch {}
+        currentDbChannel = null;
+      }
+      activeChannelRef.current = null;
+
+      // Pass user JWT to Realtime socket so RLS policies evaluating auth.uid() succeed
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token && supabase.realtime) {
+          console.log('[Realtime socket] Setting auth token on socket');
+          await supabase.realtime.setAuth(session.access_token);
+        }
+      } catch (authErr) {
+        console.warn('[Realtime socket] setAuth failed:', authErr);
       }
 
-      console.log('[Realtime] Setting up subscription on channel:', channelName, 'for userId:', realtimeUserId);
+      console.log('[Realtime] Setting up channels for userId:', realtimeUserId);
       setRealtimeStatus('CONNECTING...');
 
-      const channel = supabase
-        .channel(channelName, {
+      // 1. Peer WebSocket Broadcast Channel:
+      // Immune to database publication errors; delivers sub-50ms peer updates between phone and PC
+      const bChannel = supabase
+        .channel(broadcastChannelName, {
           config: {
             broadcast: { self: true },
           },
@@ -1341,6 +1374,22 @@ export function StudyProvider({ children }: { children: ReactNode }) {
             }
           }
         )
+        .subscribe((status: string, err?: any) => {
+          if (!isMounted) return;
+          console.log('[Realtime Broadcast status]', status, err || '');
+          if (status === 'SUBSCRIBED') {
+            setIsSyncConnected(true);
+            setRealtimeStatus(prev => prev.includes('Live + DB') ? 'SUBSCRIBED' : 'SUBSCRIBED');
+          }
+        });
+
+      currentBroadcastChannel = bChannel;
+      activeChannelRef.current = bChannel;
+
+      // 2. Database Postgres Changes Channel:
+      // Listens for active_sessions table updates; requires table in supabase_realtime publication
+      const dChannel = supabase
+        .channel(dbChannelName)
         .on(
           'postgres_changes' as never,
           {
@@ -1369,43 +1418,37 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         )
         .subscribe((status: string, err?: any) => {
           if (!isMounted) return;
-          channelStatus = status;
-          console.log('[Realtime status]', status, err || '');
-          setRealtimeStatus(status);
-
+          console.log('[Realtime DB status]', status, err || '');
           if (status === 'SUBSCRIBED') {
             setIsSyncConnected(true);
+            setRealtimeStatus('SUBSCRIBED');
             reconnectAttempt = 0;
-            // Immediate catch-up on connect or reconnect
             refetchActiveSession();
-          } else if (status === 'TIMED_OUT' || status === 'CHANNEL_ERROR' || status === 'CLOSED') {
-            setIsSyncConnected(false);
+          } else if (status === 'CHANNEL_ERROR') {
+            console.warn('[Realtime DB CHANNEL_ERROR]: active_sessions is not in supabase_realtime publication. Run in Supabase SQL editor: alter publication supabase_realtime add table active_sessions;');
+            // If peer broadcast channel connected, timer still syncs live over WebSockets
+            setRealtimeStatus(prev => prev.startsWith('SUBSCRIBED') ? 'SUBSCRIBED (Peer WS)' : 'CHANNEL_ERROR');
+          } else if (status === 'TIMED_OUT' || status === 'CLOSED') {
             const delay = backoffDelays[Math.min(reconnectAttempt, backoffDelays.length - 1)];
             reconnectAttempt++;
             if (reconnectTimer) clearTimeout(reconnectTimer);
             reconnectTimer = setTimeout(() => {
-              if (isMounted) {
-                setupChannel();
-              }
+              if (isMounted) setupChannels();
             }, delay);
           }
         });
 
-      currentChannel = channel;
-      activeChannelRef.current = channel;
+      currentDbChannel = dChannel;
     };
 
-    setupChannel();
+    setupChannels();
 
     // Mobile backgrounding safeguard (Section 3 of prompt): plain SELECT on visibilitychange/focus
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         console.log('[Realtime] App resumed/visible -> re-fetching active session via SELECT & checking subscription');
         refetchActiveSession();
-        if (!currentChannel || channelStatus !== 'SUBSCRIBED') {
-          console.log('[Realtime] Reconnecting dropped subscription after background resume');
-          setupChannel();
-        }
+        setupChannels();
       }
     };
 
@@ -1417,13 +1460,15 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', handleVisibilityChange);
       if (reconnectTimer) clearTimeout(reconnectTimer);
-      if (currentChannel) {
-        try {
-          supabase.removeChannel(currentChannel);
-        } catch {}
-        currentChannel = null;
-        activeChannelRef.current = null;
+      if (currentBroadcastChannel) {
+        try { supabase.removeChannel(currentBroadcastChannel); } catch {}
+        currentBroadcastChannel = null;
       }
+      if (currentDbChannel) {
+        try { supabase.removeChannel(currentDbChannel); } catch {}
+        currentDbChannel = null;
+      }
+      activeChannelRef.current = null;
     };
   }, [realtimeUserId, refetchActiveSession]);
 
