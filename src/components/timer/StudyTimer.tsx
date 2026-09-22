@@ -949,13 +949,14 @@ export function StudyTimer() {
                   </linearGradient>
                 </defs>
 
-                {/* Outer Graduation Tick Marks (60 radial ticks) */}
+                {/* Outer Graduation Tick Marks (12 radial ticks) */}
                 <g opacity="0.85">
-                  {Array.from({ length: 60 }).map((_, i) => {
-                    const angle = (i * 6 - 90) * (Math.PI / 180);
-                    const isMajor = i % 5 === 0;
+                  {Array.from({ length: 12 }).map((_, i) => {
+                    const angle = (i * 30 - 90) * (Math.PI / 180);
+                    // Light up ticks progressively based on session progress
+                    const isActiveTick = (i / 12) * 100 <= progressPercent && progressPercent > 0;
                     const rOuter = 144;
-                    const rInner = isMajor ? 133 : 139;
+                    const rInner = isActiveTick ? 133 : 137;
                     const x1 = 150 + rOuter * Math.cos(angle);
                     const y1 = 150 + rOuter * Math.sin(angle);
                     const x2 = 150 + rInner * Math.cos(angle);
@@ -967,9 +968,10 @@ export function StudyTimer() {
                         y1={y1}
                         x2={x2}
                         y2={y2}
-                        stroke={isMajor ? theme.accent : 'rgba(255,255,255,0.18)'}
-                        strokeWidth={isMajor ? 2 : 1}
+                        stroke={isActiveTick ? theme.accent : 'rgba(255,255,255,0.1)'}
+                        strokeWidth={isActiveTick ? 2 : 1}
                         strokeLinecap="round"
+                        className="transition-all duration-500"
                       />
                     );
                   })}
@@ -992,13 +994,13 @@ export function StudyTimer() {
                   r="124"
                   fill="none"
                   stroke="url(#timerTierGrad)"
-                  strokeWidth="4.5"
+                  strokeWidth="3.5"
                   strokeLinecap="round"
                   strokeDasharray={2 * Math.PI * 124}
                   strokeDashoffset={2 * Math.PI * 124 - (progressPercent / 100) * (2 * Math.PI * 124)}
                   className="transition-all duration-500 ease-out"
                   style={{
-                    filter: `drop-shadow(0 0 8px ${theme.glow})`,
+                    filter: `drop-shadow(0 0 6px ${theme.glow})`,
                   }}
                   transform="rotate(-90 150 150)"
                 />

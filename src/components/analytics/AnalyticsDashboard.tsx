@@ -776,15 +776,23 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
           ) : (
             <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 min-h-56">
               {/* Donut Chart */}
-              <div className="w-full sm:w-1/2 h-52 relative">
-                <ResponsiveContainer width="100%" height="100%">
+              <div className="w-full sm:w-1/2 h-52 relative flex items-center justify-center">
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10 pt-1">
+                  <div className="font-hud font-bold text-white text-2xl tracking-tight">
+                    {formatHoursAndMins(distTotalSeconds)}
+                  </div>
+                  <div className="font-hud-mono text-[10px] uppercase font-bold tracking-wider text-neutral-500">
+                    Total
+                  </div>
+                </div>
+                <ResponsiveContainer width="100%" height="100%" className="relative z-0">
                   <PieChart>
                     <Pie
                       data={distSubjectBreakdown}
                       cx="50%"
                       cy="50%"
-                      innerRadius={50}
-                      outerRadius={75}
+                      innerRadius={65}
+                      outerRadius={95}
                       paddingAngle={3}
                       dataKey="seconds"
                     >
@@ -824,30 +832,30 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
               </div>
 
               {/* Subject Breakdown Progress Bars List */}
-              <div className="w-full sm:w-1/2 space-y-2.5 overflow-y-auto max-h-52 pr-1">
+              <div className="w-full sm:w-1/2 space-y-3.5 overflow-y-auto max-h-52 pr-1">
                 {distSubjectBreakdown.map(sub => (
-                  <div key={sub.name} className="space-y-1">
-                    <div className="flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-1.5 min-w-0">
+                  <div key={sub.name} className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 min-w-0">
                         <span
-                          className="w-2 h-2 rounded-full flex-shrink-0"
+                          className="w-2.5 h-2.5 rounded-full flex-shrink-0 shadow-sm"
                           style={{ backgroundColor: sub.color }}
                         />
-                        <span className="font-semibold text-neutral-200 truncate">
+                        <span className="font-bold text-white text-sm truncate">
                           {sub.name}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <span className="font-hud-mono text-neutral-300 font-bold text-[11px]">
+                      <div className="flex items-center gap-2.5 flex-shrink-0">
+                        <span className="font-hud-mono text-white font-bold text-sm tabular-nums">
                           {formatHoursAndMins(sub.seconds)}
                         </span>
-                        <span className="font-hud-mono text-[10px] text-neutral-500 font-medium">
+                        <span className="font-hud-mono text-xs text-neutral-400 font-bold tabular-nums">
                           {sub.percentage}%
                         </span>
                       </div>
                     </div>
                     {/* Progress Bar */}
-                    <div className="h-1.5 w-full rounded-full bg-black/60 overflow-hidden border border-white/[0.05]">
+                    <div className="h-2 w-full rounded-full bg-black/60 overflow-hidden border border-white/[0.05]">
                       <div
                         className="h-full rounded-full transition-all duration-300"
                         style={{
@@ -874,22 +882,22 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
           </div>
 
           {/* Sub-stats bar */}
-          <div className="grid grid-cols-3 gap-1 text-center bg-black/60 border border-white/[0.06] rounded-xl p-2 text-[10px] sm:text-[11px]">
+          <div className="grid grid-cols-3 gap-2 text-center bg-black/60 border border-white/[0.06] rounded-2xl p-3 sm:p-4 text-xs">
             <div>
-              <div className="font-hud-mono text-neutral-500 uppercase text-[9px] tracking-wider">Active Days</div>
-              <div className="font-hud font-bold text-base text-white tabular-nums mt-0.5">
+              <div className="font-hud-mono text-neutral-500 uppercase text-[10px] sm:text-xs tracking-widest font-bold">Active Days</div>
+              <div className="font-hud font-bold text-2xl sm:text-3xl text-white tabular-nums mt-1 sm:mt-1.5">
                 {calStats.focusDays}
               </div>
             </div>
             <div className="border-x border-white/[0.06]">
-              <div className="font-hud-mono text-neutral-500 uppercase text-[9px] tracking-wider">Target Met</div>
-              <div className="font-hud font-bold text-base tabular-nums mt-0.5" style={{ color: theme.accent }}>
+              <div className="font-hud-mono text-neutral-500 uppercase text-[10px] sm:text-xs tracking-widest font-bold">Target Met</div>
+              <div className="font-hud font-bold text-2xl sm:text-3xl tabular-nums mt-1 sm:mt-1.5" style={{ color: theme.accent }}>
                 {calStats.completedGoalDays}
               </div>
             </div>
             <div>
-              <div className="font-hud-mono text-neutral-500 uppercase text-[9px] tracking-wider">Clearance Rate</div>
-              <div className="font-hud font-bold text-base text-white tabular-nums mt-0.5">
+              <div className="font-hud-mono text-neutral-500 uppercase text-[10px] sm:text-xs tracking-widest font-bold">Clearance Rate</div>
+              <div className="font-hud font-bold text-2xl sm:text-3xl text-white tabular-nums mt-1 sm:mt-1.5">
                 {calStats.completionRate}%
               </div>
             </div>
@@ -943,7 +951,7 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
                 }
 
                 let cellClass =
-                  'aspect-square rounded-lg flex flex-col items-center justify-center relative cursor-pointer text-xs font-hud-mono transition-all border ';
+                  'aspect-square rounded-xl flex flex-col items-center justify-center relative cursor-pointer text-sm sm:text-base font-hud-mono transition-all border ';
 
                 let customStyle: React.CSSProperties = {};
 
@@ -979,7 +987,7 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
                   >
                     <span
                       className={`leading-none ${
-                        c.isToday ? 'font-bold underline decoration-white underline-offset-2' : ''
+                        c.isToday ? 'font-bold underline decoration-white underline-offset-4' : ''
                       }`}
                     >
                       {c.dayNumber}
@@ -987,7 +995,7 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
 
                     {/* Indicator: Under Goal shows a subtle orange pip */}
                     {c.hasActivity && !c.metGoal && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_4px_rgba(251,191,36,0.6)] mt-0.5" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.8)] mt-1.5" />
                     )}
 
                     {/* Tooltip on hover */}

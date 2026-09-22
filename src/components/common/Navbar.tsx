@@ -257,64 +257,72 @@ export function Navbar({
             </Link>
           ) : (
             <>
-              {/* Angular Esports Rank Badge with Built-in Micro Progress Segment */}
+              {/* Unified Status Readout Panel (Rank + Streak) */}
               <div
-                className="relative flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 bg-[#14171D] border text-slate-100 cursor-default select-none shadow-md overflow-hidden"
+                className="relative flex bg-[#14171D] border text-slate-100 cursor-default select-none shadow-md overflow-hidden"
                 style={{
-                  clipPath: 'polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px)',
+                  clipPath: 'polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px)',
                   borderColor: `${theme.accent}55`,
                   boxShadow: `0 0 14px ${theme.glow}`,
                 }}
-                title={`Ranked Season RP: ${userRank.rp.toLocaleString()} RP (${userRank.fullTitle})`}
               >
-                {/* Micro Progress Bar along bottom edge */}
-                <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-white/[0.08]">
-                  <div
-                    className="h-full transition-all duration-500"
-                    style={{
-                      width: `${userRank.progressPercent}%`,
-                      background: theme.gradient,
-                      boxShadow: `0 0 6px ${theme.accent}`,
-                    }}
-                  />
-                </div>
-
-                <div
-                  className="w-2 h-2 rounded-full animate-pulse flex-shrink-0"
-                  style={{ backgroundColor: theme.accent, boxShadow: `0 0 6px ${theme.accent}` }}
-                />
-                <span
-                  className="text-[10px] sm:text-xs font-hud font-bold tracking-widest uppercase truncate max-w-[80px] sm:max-w-none"
-                  style={{ color: theme.textAccent }}
+                {/* Rank Section */}
+                <div 
+                  className="relative flex flex-col justify-center px-2.5 sm:px-3.5 py-1.5"
+                  title={`Ranked Season RP: ${userRank.rp.toLocaleString()} RP (${userRank.fullTitle})`}
                 >
-                  {userRank.fullTitle}
-                </span>
-                <span className="hidden sm:inline text-[11px] font-hud-mono font-bold text-slate-400">
-                  {userRank.rp.toLocaleString()} RP
-                </span>
-              </div>
-
-              {/* Glowing Ember Streak Badge */}
-              {user.streakDays > 0 && (
-                <div
-                  className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-[#14171D] border text-slate-200 cursor-default select-none shadow-sm"
-                  style={{
-                    borderColor: `${theme.accent}40`,
-                    boxShadow: `0 0 10px ${theme.glow}`,
-                  }}
-                  title={`${user.streakDays} Day Study Streak (+${user.streakDays * 50} XP bonus)`}
-                >
-                  <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex items-center justify-center animate-ember-glow">
-                    <Flame className="w-full h-full fill-current" style={{ color: theme.accent }} />
+                  {/* Integrated Progress Bar along bottom edge of rank section */}
+                  <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-white/[0.08]">
+                    <div
+                      className="h-full transition-all duration-500"
+                      style={{
+                        width: `${userRank.progressPercent}%`,
+                        background: theme.gradient,
+                        boxShadow: `0 0 6px ${theme.accent}`,
+                      }}
+                    />
                   </div>
-                  <span
-                    className="text-[11px] sm:text-xs font-hud font-bold tracking-wider"
-                    style={{ color: theme.textAccent }}
-                  >
-                    {user.streakDays}D
-                  </span>
+
+                  <div className="flex items-center gap-1.5 sm:gap-2 pb-[3px]">
+                    <div
+                      className="w-2 h-2 rounded-full animate-pulse flex-shrink-0"
+                      style={{ backgroundColor: theme.accent, boxShadow: `0 0 6px ${theme.accent}` }}
+                    />
+                    <span
+                      className="text-[10px] sm:text-xs font-hud font-bold tracking-widest uppercase truncate max-w-[80px] sm:max-w-none"
+                      style={{ color: theme.textAccent }}
+                    >
+                      {userRank.fullTitle}
+                    </span>
+                    <span className="hidden sm:inline text-[11px] font-hud-mono font-bold text-slate-400">
+                      {userRank.rp.toLocaleString()} RP
+                    </span>
+                  </div>
                 </div>
-              )}
+
+                {/* Vertical Divider */}
+                {user.streakDays > 0 && (
+                  <div className="w-[1px] bg-white/[0.12]" />
+                )}
+
+                {/* Streak Section */}
+                {user.streakDays > 0 && (
+                  <div
+                    className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5"
+                    title={`${user.streakDays} Day Study Streak (+${user.streakDays * 50} XP bonus)`}
+                  >
+                    <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex items-center justify-center animate-ember-glow">
+                      <Flame className="w-full h-full fill-current" style={{ color: theme.accent }} />
+                    </div>
+                    <span
+                      className="text-[11px] sm:text-xs font-hud font-bold tracking-wider"
+                      style={{ color: theme.textAccent }}
+                    >
+                      {user.streakDays}D
+                    </span>
+                  </div>
+                )}
+              </div>
             </>
           )}
 
