@@ -36,7 +36,8 @@ import { getSupabase } from '../../lib/supabase';
 import { StudySession, Subject, TimerMode, UserProfile } from '../../types';
 import { calculateFocusXP } from '../../lib/gamification';
 import { calculateSessionRP } from '../../lib/rankedSystem';
-import { getLocalDateString } from '../../lib/dateUtils';
+import { getLocalDateString, isSessionToday, isSessionYesterday } from '../../lib/dateUtils';
+import { Skeleton } from '../common/Skeleton';
 
 const EMPTY_STATE_QUOTES = [
   'Every long streak starts with one session.',
@@ -83,6 +84,8 @@ export function StudyTimer() {
     triggerXpEarned,
     showRankSettlement,
     activeTaskId,
+    hasHydrated,
+    isLoadingSessions,
   } = useStudy();
 
   const subjectList = Array.isArray(subjects) ? subjects : [];
@@ -530,34 +533,27 @@ export function StudyTimer() {
     };
   }, [isRunning, isStudying, elapsedSeconds]);
 
-  // Local browser timezone day bounds
-  const startOfToday = useMemo(() => getLocalStartOfDay(new Date()), []);
-  const endOfToday = useMemo(() => getLocalEndOfDay(new Date()), []);
-  const { startOfDay: startOfYesterday, endOfDay: endOfYesterday } = useMemo(() => getYesterdayRange(), []);
-
   // Filtered sessions for Today (browser-local timezone)
   const todaySessions = useMemo(() => {
-    const todayLocalDate = new Date().toLocaleDateString();
     return sessions.filter(s => {
-      const name = (s.subject_name || s.subjectName || (s as any).subject?.name || (s as any).subject || '').trim().toLowerCase();
-      if (!name || name === 'unassigned' || (!s.subjectId && !(s as any).subject_id) || s.durationSeconds <= 0) return false;
-      const sessionDateStr = s.startTime || (s as any).started_at || s.createdAt;
-      if (!sessionDateStr) return false;
-      const d = new Date(sessionDateStr);
-      const t = d.getTime();
-      return d.toLocaleDateString() === todayLocalDate || (t >= startOfToday.getTime() && t <= endOfToday.getTime());
+      const duration = Number(s.durationSeconds ?? (s as any).duration_seconds ?? (s as any).duration ?? 0);
+      if (duration <= 0) return false;
+      const rawName = (s.subject_name || s.subjectName || (s as any).subject?.name || (s as any).subject || '').trim().toLowerCase();
+      if (rawName === 'unassigned') return false;
+      return isSessionToday(s);
     });
-  }, [sessions, startOfToday, endOfToday]);
+  }, [sessions]);
 
   // Filtered sessions for Yesterday (browser-local timezone)
   const yesterdaySessions = useMemo(() => {
     return sessions.filter(s => {
-      const name = (s.subject_name || s.subjectName || (s as any).subject?.name || (s as any).subject || '').trim().toLowerCase();
-      if (!name || name === 'unassigned' || (!s.subjectId && !(s as any).subject_id)) return false;
-      const t = new Date(s.startTime).getTime();
-      return t >= startOfYesterday.getTime() && t <= endOfYesterday.getTime();
+      const duration = Number(s.durationSeconds ?? (s as any).duration_seconds ?? (s as any).duration ?? 0);
+      if (duration <= 0) return false;
+      const rawName = (s.subject_name || s.subjectName || (s as any).subject?.name || (s as any).subject || '').trim().toLowerCase();
+      if (rawName === 'unassigned') return false;
+      return isSessionYesterday(s);
     });
-  }, [sessions, startOfYesterday, endOfYesterday]);
+  }, [sessions]);
 
   // Overview metrics (Today & Yesterday) - calculated strictly from saved sessions, never recalculates during active ticks
   const overviewTodaySeconds = useMemo(() => {
@@ -1331,13 +1327,21 @@ export function StudyTimer() {
             <div className="p-3 rounded-2xl bg-slate-100 dark:bg-violet-950/20 border border-slate-200 dark:border-violet-800/30 hover:border-violet-500/30 transition-colors space-y-1">
               <div className="text-[10px] uppercase font-semibold tracking-wider text-slate-500 dark:text-violet-300/70">Total Focus</div>
               <div className="text-lg font-bold text-slate-900 dark:text-violet-100 font-mono tabular-nums tracking-tight">
-                {formatHoursAndMins(overviewView === 'today' ? overviewTodaySeconds : yesterdayTotalSeconds)}
+                {(isLoading || isLoadingSessions) && !hasHydrated ? (
+                  <Skeleton className="h-6 w-20 my-0.5 bg-slate-200 dark:bg-violet-900/50" />
+                ) : (
+                  formatHoursAndMins(overviewView === 'today' ? overviewTodaySeconds : yesterdayTotalSeconds)
+                )}
               </div>
             </div>
             <div className="p-3 rounded-2xl bg-slate-100 dark:bg-violet-950/20 border border-slate-200 dark:border-violet-800/30 hover:border-violet-500/30 transition-colors space-y-1">
               <div className="text-[10px] uppercase font-semibold tracking-wider text-slate-500 dark:text-violet-300/70">Sessions</div>
               <div className="text-lg font-bold text-slate-900 dark:text-violet-100 font-mono tabular-nums tracking-tight">
-                {overviewView === 'today' ? overviewTodaySessionsCount : yesterdaySessionsCount}
+                {(isLoading || isLoadingSessions) && !hasHydrated ? (
+                  <Skeleton className="h-6 w-12 my-0.5 bg-slate-200 dark:bg-violet-900/50" />
+                ) : (
+                  overviewView === 'today' ? overviewTodaySessionsCount : yesterdaySessionsCount
+                )}
               </div>
             </div>
           </div>

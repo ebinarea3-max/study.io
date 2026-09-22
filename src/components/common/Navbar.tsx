@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { UserAvatar } from './UserAvatar';
 import { getRankTier } from '../../lib/rankedSystem';
+import { getTierBadge, getLevelTitle } from '../../lib/gamification';
 
 interface NavbarProps {
   activeTab: 'timer' | 'tasks' | 'analytics';
@@ -36,7 +37,7 @@ export function Navbar({
   onOpenSettings,
 }: NavbarProps) {
   const { user, isAuthenticated, logout } = useAuth();
-  const { isStudying, setIsFocusModeOpen, gamification } = useStudy();
+  const { isStudying, setIsFocusModeOpen, gamification, sessions } = useStudy();
 
   const [showPersonaMenu, setShowPersonaMenu] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -142,10 +143,29 @@ export function Navbar({
     user?.displayName,
   ]);
 
+  // Derive total RP and Level directly from the single source of truth for total study seconds
+  const totalSeconds = useMemo(() => {
+    return (sessions || []).reduce(
+      (sum, s) => sum + Number(s.durationSeconds ?? (s as any).duration_seconds ?? (s as any).duration ?? 0),
+      0
+    );
+  }, [sessions]);
+
+  const totalRP = useMemo(() => {
+    const focusRP = Math.floor(totalSeconds / 60) * 10;
+    const profileRP = Number((user as any)?.rp ?? user?.seasonRp ?? 0);
+    return Math.max(focusRP, profileRP);
+  }, [totalSeconds, (user as any)?.rp, user?.seasonRp]);
+
   const userRank = useMemo(
-    () => getRankTier((user as any)?.rp ?? user?.seasonRp ?? 0),
-    [(user as any)?.rp, user?.seasonRp]
+    () => getRankTier(totalRP),
+    [totalRP]
   );
+
+  // Prevent level/title flicker by falling back to stored user_metadata / user profile
+  const effectiveLevel = gamification.level || (user?.user_metadata as any)?.level || user?.level || 1;
+  const effectiveTitle = gamification.title || (user?.user_metadata as any)?.levelTitle || user?.levelTitle || getLevelTitle(effectiveLevel);
+  const effectiveTierBadge = gamification.tierBadge || getTierBadge(effectiveLevel);
 
   // SVG Progress Ring calculations (radius 18, circumference 113.1)
   const radius = 17;
@@ -287,7 +307,7 @@ export function Navbar({
             <button
               onClick={() => setShowPersonaMenu(!showPersonaMenu)}
               className="flex items-center gap-2.5 p-1 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-900 border border-transparent hover:border-slate-200 dark:hover:border-slate-800 transition-all active:scale-[0.98]"
-              title={`Level ${gamification.level} (${gamification.title}) · ${gamification.totalXP} Total XP`}
+              title={`Level ${effectiveLevel} (${effectiveTitle}) · ${gamification.totalXP} Total XP`}
             >
               {/* Avatar with SVG Circular XP Progress Ring */}
               <div className="relative flex items-center justify-center w-10 h-10">
@@ -336,10 +356,10 @@ export function Navbar({
                 </div>
                 <div className="flex items-center gap-1.5 mt-0.5">
                   <span className="text-[10px] font-extrabold text-emerald-700 dark:text-emerald-400 font-mono leading-none">
-                    Lv. {gamification.level}
+                    Lv. {effectiveLevel}
                   </span>
                   <span className="text-[9px] px-1.5 py-0.2 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium leading-tight border border-slate-200 dark:border-transparent">
-                    {gamification.tierBadge.icon} {gamification.title}
+                    {effectiveTierBadge.icon} {effectiveTitle}
                   </span>
                 </div>
               </div>
@@ -355,13 +375,13 @@ export function Navbar({
                       <div className="font-bold text-sm text-slate-900 dark:text-white truncate max-w-[180px]">{displayName}</div>
                       <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate max-w-[180px]">{user.email}</div>
                     </div>
-                    <span className="text-base">{gamification.tierBadge.icon}</span>
+                    <span className="text-base">{effectiveTierBadge.icon}</span>
                   </div>
 
                   {/* Level & Title Pill */}
                   <div className="mt-2.5 flex items-center justify-between">
-                    <span className={`text-xs font-black px-2 py-0.5 rounded-full border ${gamification.tierBadge.badgeClass}`}>
-                      Lv. {gamification.level} · {gamification.title}
+                    <span className={`text-xs font-black px-2 py-0.5 rounded-full border ${effectiveTierBadge.badgeClass}`}>
+                      Lv. {effectiveLevel} · {effectiveTitle}
                     </span>
                     <span className="text-amber-500 dark:text-amber-400 font-bold text-xs flex items-center gap-1">
                       <Flame className="w-3.5 h-3.5 fill-amber-500 dark:fill-amber-400" />

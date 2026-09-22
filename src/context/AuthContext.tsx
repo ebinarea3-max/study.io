@@ -82,17 +82,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Also check local storage sessions in case offline / pending sessions exist
       let localSessionSeconds = 0;
-      let localRankedSeconds = 0;
       try {
-        const rawSess = localStorage.getItem('studypulse_sessions');
+        const rawSess = localStorage.getItem(`study_io_sessions_${authUser.id}`) || localStorage.getItem('studypulse_sessions');
         if (rawSess) {
           const parsed = JSON.parse(rawSess);
           if (Array.isArray(parsed)) {
-            localSessionSeconds = parsed.reduce((acc: number, s: any) => acc + (Number(s.durationSeconds ?? s.duration_seconds ?? 0)), 0);
-            localRankedSeconds = parsed.reduce((acc: number, s: any) => {
-              const sec = Number(s.durationSeconds ?? s.duration_seconds ?? 0);
-              return sec >= 300 ? acc + sec : acc;
-            }, 0);
+            localSessionSeconds = parsed.reduce((acc: number, s: any) => acc + (Number(s.durationSeconds ?? s.duration_seconds ?? s.duration ?? 0)), 0);
           }
         }
       } catch {}
@@ -100,19 +95,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const dbSessionSeconds = dbSessions
         ? dbSessions.reduce((acc, s: any) => acc + (Number(s.duration_seconds ?? s.duration ?? s.seconds ?? 0)), 0)
         : 0;
-      const dbRankedSeconds = dbSessions
-        ? dbSessions.reduce((acc, s: any) => {
-            const sec = Number(s.duration_seconds ?? s.duration ?? s.seconds ?? 0);
-            return sec >= 300 ? acc + sec : acc;
-          }, 0)
-        : 0;
 
       const totalStudySeconds = Math.max(dbSessionSeconds, localSessionSeconds, Number(profile?.total_study_seconds ?? 0));
-      const totalRankedSeconds = Math.max(dbRankedSeconds, localRankedSeconds);
-      const totalRankedMinutes = Math.floor(totalRankedSeconds / 60);
+      const totalRankedMinutes = Math.floor(totalStudySeconds / 60);
       const calculatedRP = totalRankedMinutes * 10;
       const currentProfileRP = Number(profile?.rp ?? profile?.season_rp ?? 0);
       const syncedRP = Math.max(calculatedRP, currentProfileRP);
+      const calculatedLevel = Math.max(1, Math.floor(Math.sqrt(Math.max(0, syncedRP) / 100)) + 1);
 
       // Auto-Sync Fix: Only update if calculatedRP from eligible (>= 5min) sessions exceeds profile.rp
       if (calculatedRP > currentProfileRP && authUser.id && !authUser.id.startsWith('user-scholar')) {
@@ -160,7 +149,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             totalStudySeconds: totalStudySeconds,
             status: prev.status || 'resting',
             createdAt: profile.created_at || prev.createdAt || new Date().toISOString(),
-            user_metadata: authUser.user_metadata,
+            user_metadata: {
+              ...(authUser.user_metadata || {}),
+              level: Number(profile.level ?? calculatedLevel),
+              levelTitle: profile.level_title || prev.levelTitle,
+            },
           };
           try { localStorage.setItem('studypulse_active_user', JSON.stringify(synced)); } catch {}
           return synced;
@@ -193,7 +186,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       const saved = localStorage.getItem('studypulse_active_user');
       if (saved) {
-        setUser(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object') {
+          if (!parsed.user_metadata) parsed.user_metadata = {};
+          if (parsed.level && !parsed.user_metadata.level) {
+            parsed.user_metadata.level = parsed.level;
+          }
+          if (parsed.levelTitle && !parsed.user_metadata.levelTitle) {
+            parsed.user_metadata.levelTitle = parsed.levelTitle;
+          }
+        }
+        setUser(parsed);
       } else {
         setUser(INITIAL_USER);
       }
@@ -506,6 +509,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else if (updates.xp !== undefined) {
         updated.level = Math.max(1, Math.floor(Math.sqrt(Math.max(0, updates.xp) / 100)) + 1);
       }
+
+      updated.user_metadata = {
+        ...(prev.user_metadata || {}),
+        ...(updates.user_metadata || {}),
+        level: updated.level,
+        levelTitle: updated.levelTitle || (prev.user_metadata as any)?.levelTitle,
+      };
 
       try {
         localStorage.setItem('studypulse_active_user', JSON.stringify(updated));

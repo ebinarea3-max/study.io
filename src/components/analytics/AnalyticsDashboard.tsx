@@ -4,6 +4,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useStudy } from '../../context/StudyContext';
 import { useAuth } from '../../context/AuthContext';
 import { Subject } from '../../types';
+import { Skeleton } from '../common/Skeleton';
 import {
   formatHoursAndMins,
   getLocalStartOfDay,
@@ -40,8 +41,8 @@ interface AnalyticsDashboardProps {
 }
 
 export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) {
-  const { user } = useAuth();
-  const { sessions, subjects, selectedDate, setSelectedDate, refetchSessions } = useStudy();
+  const { user, isLoading } = useAuth();
+  const { sessions, subjects, selectedDate, setSelectedDate, refetchSessions, hasHydrated, isLoadingSessions } = useStudy();
 
   const todayStr = getLocalDateString();
 
@@ -629,7 +630,11 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
             Focus Time of Today
           </div>
           <div className="text-base sm:text-lg font-black text-white font-mono mt-1 truncate">
-            {formatHoursAndMins(topMetrics.todayFocusSec)}
+            {(isLoading || isLoadingSessions) && !hasHydrated ? (
+              <Skeleton className="h-6 w-24 my-0.5 bg-slate-800" />
+            ) : (
+              formatHoursAndMins(topMetrics.todayFocusSec)
+            )}
           </div>
         </div>
 
@@ -640,7 +645,11 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
             Focus Time of This Week
           </div>
           <div className="text-base sm:text-lg font-black text-white font-mono mt-1 truncate">
-            {formatHoursAndMins(topMetrics.thisWeekFocusSec)}
+            {(isLoading || isLoadingSessions) && !hasHydrated ? (
+              <Skeleton className="h-6 w-24 my-0.5 bg-slate-800" />
+            ) : (
+              formatHoursAndMins(topMetrics.thisWeekFocusSec)
+            )}
           </div>
         </div>
 
@@ -651,7 +660,11 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
             Focus Time of This Month
           </div>
           <div className="text-base sm:text-lg font-black text-white font-mono mt-1 truncate">
-            {formatHoursAndMins(topMetrics.thisMonthFocusSec)}
+            {(isLoading || isLoadingSessions) && !hasHydrated ? (
+              <Skeleton className="h-6 w-24 my-0.5 bg-slate-800" />
+            ) : (
+              formatHoursAndMins(topMetrics.thisMonthFocusSec)
+            )}
           </div>
         </div>
       </div>

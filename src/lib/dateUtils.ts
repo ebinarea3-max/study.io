@@ -105,3 +105,40 @@ export function getTodayRange(): { startOfDay: Date; endOfDay: Date } {
     endOfDay: getLocalEndOfDay(today),
   };
 }
+
+/**
+ * Safely extracts milliseconds timestamp from a session's date fields.
+ */
+export function getSessionTimestamp(session: any): number | null {
+  if (!session) return null;
+  const raw = session.startTime || session.started_at || session.createdAt || session.created_at;
+  if (!raw) return null;
+  const time = new Date(raw).getTime();
+  return isNaN(time) ? null : time;
+}
+
+/**
+ * Checks if a session falls within local "Today" boundaries (using local timezone midnight).
+ */
+export function isSessionToday(session: any): boolean {
+  const time = getSessionTimestamp(session);
+  if (!time) return false;
+  const { startOfDay, endOfDay } = getTodayRange();
+  return (
+    (time >= startOfDay.getTime() && time <= endOfDay.getTime()) ||
+    getLocalDateString(new Date(time)) === getLocalDateString(new Date(), 0)
+  );
+}
+
+/**
+ * Checks if a session falls within local "Yesterday" boundaries (using local timezone midnight).
+ */
+export function isSessionYesterday(session: any): boolean {
+  const time = getSessionTimestamp(session);
+  if (!time) return false;
+  const { startOfDay, endOfDay } = getYesterdayRange();
+  return (
+    (time >= startOfDay.getTime() && time <= endOfDay.getTime()) ||
+    getLocalDateString(new Date(time)) === getLocalDateString(new Date(), -1)
+  );
+}

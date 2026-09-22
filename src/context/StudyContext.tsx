@@ -11,6 +11,7 @@ import confetti from 'canvas-confetti';
 import {
   getLevelProgress,
   calculateFocusXP,
+  getLevelTitle,
   LevelProgress,
 } from '../lib/gamification';
 import {
@@ -20,6 +21,8 @@ import {
 } from '../lib/rankedSystem';
 
 interface StudyContextType {
+  hasHydrated: boolean;
+  isLoadingSessions: boolean;
   gamification: LevelProgress;
   settlementData: RankSettlementData | null;
   showRankSettlement: (data: RankSettlementData) => void;
@@ -227,12 +230,15 @@ export function getStoredSessions(uid?: string, subjectList: Subject[] = [], cur
   if (typeof window === 'undefined') return [];
   const map = new Map<string, StudySession>();
 
-  const keys = [
-    uid ? getSessionStorageKey(uid) : null,
-    'study_io_sessions_guest',
-    'studypulse_sessions',
-    'studypulse_pending_sessions',
-  ].filter(Boolean) as string[];
+  const isRealUser = Boolean(uid && !uid.startsWith('guest') && !uid.startsWith('user-scholar'));
+  const keys = isRealUser
+    ? [getSessionStorageKey(uid), 'studypulse_pending_sessions'].filter(Boolean) as string[]
+    : [
+        uid ? getSessionStorageKey(uid) : null,
+        'study_io_sessions_guest',
+        'studypulse_sessions',
+        'studypulse_pending_sessions',
+      ].filter(Boolean) as string[];
 
   for (const key of keys) {
     try {
@@ -261,10 +267,13 @@ export function persistSessionsToLocalStorage(sessions: StudySession[], uid?: st
   if (typeof window === 'undefined') return;
   try {
     const serialized = JSON.stringify(sessions);
+    const isRealUser = Boolean(uid && !uid.startsWith('guest') && !uid.startsWith('user-scholar'));
     if (uid) {
       localStorage.setItem(getSessionStorageKey(uid), serialized);
     }
-    localStorage.setItem('study_io_sessions_guest', serialized);
+    if (!isRealUser) {
+      localStorage.setItem('study_io_sessions_guest', serialized);
+    }
     localStorage.setItem('studypulse_sessions', serialized);
   } catch {}
 }
@@ -424,6 +433,8 @@ export function StudyProvider({ children }: { children: ReactNode }) {
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [currentNotes, setCurrentNotes] = useState('');
   const [isFocusModeOpen, setIsFocusModeOpen] = useState(false);
+  const [hasHydrated, setHasHydrated] = useState(false);
+  const [isLoadingSessions, setIsLoadingSessions] = useState(true);
 
   const [sessions, setSessions] = useState<StudySession[]>(() => {
     let uid = user?.id;
@@ -1029,7 +1040,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
       const localSessions = getStoredSessions(uid, subjects, user);
       if (localSessions.length > 0) {
-        setSessions(localSessions);
+        setSessions(prev => (prev.length === 0 ? localSessions : prev));
       }
 
       const savedTodos = localStorage.getItem('studypulse_todos');
@@ -1043,6 +1054,8 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     // 2. If Supabase is available and user is authenticated, query Supabase cloud tables
     const supabase = getSupabase();
     if (!supabase || !isAuthenticated || !user.id || user.id.startsWith('user-scholar-')) {
+      setHasHydrated(true);
+      setIsLoadingSessions(false);
       return;
     }
 
@@ -1151,6 +1164,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
             // Baseline sync for Supabase sessions to guarantee no false level-up on login
             const computedLevel = Math.max(1, Math.floor(Math.sqrt(Math.max(0, finalRP) / 100)) + 1);
+            const levelTitle = getLevelTitle(computedLevel);
             const storedLevel = getStoredLastSeenLevel(user.id);
             const updatedBaseline = Math.max(storedLevel ?? 0, computedLevel, user.level || 1);
             setStoredLastSeenLevel(updatedBaseline, user.id);
@@ -1160,7 +1174,14 @@ export function StudyProvider({ children }: { children: ReactNode }) {
               totalStudySeconds: realTotalSeconds,
               seasonRp: finalRP,
               rp: finalRP,
+              level: computedLevel,
+              levelTitle: levelTitle,
               last_seen_level: updatedBaseline,
+              user_metadata: {
+                ...(userRef.current?.user_metadata || {}),
+                level: computedLevel,
+                levelTitle: levelTitle,
+              },
             });
           }
         }
@@ -1191,6 +1212,9 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         }
       } catch {
         // fallback to local data
+      } finally {
+        setHasHydrated(true);
+        setIsLoadingSessions(false);
       }
     };
 
@@ -1289,16 +1313,22 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     const currentUser = userRef.current || user;
     const targetUserId = currentUser?.id;
 
-    // Load from local storage cache first to prevent any UI flashing
-    const initialLocal = getStoredSessions(targetUserId, subjects, currentUser);
-    if (initialLocal.length > 0) {
-      setSessions(initialLocal);
-    }
+    // Load from local storage cache first to prevent any UI flashing, but NEVER overwrite fresh sessions
+    setSessions(prev => {
+      if (prev.length > 0) return prev;
+      const initialLocal = getStoredSessions(targetUserId, subjects, currentUser);
+      return initialLocal.length > 0 ? initialLocal : prev;
+    });
 
     const supabase = getSupabase();
-    if (!supabase || !targetUserId) return;
+    if (!supabase || !targetUserId) {
+      setHasHydrated(true);
+      setIsLoadingSessions(false);
+      return;
+    }
 
     try {
+      setIsLoadingSessions(true);
       await syncPendingSessions();
 
       const { data: { user: authUser } } = await supabase.auth.getUser();
@@ -1308,6 +1338,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(activeUserId);
       if (!isUuid) {
         // Guest user - don't query Supabase UUID columns with guest IDs
+        const initialLocal = getStoredSessions(activeUserId, subjects, currentUser);
         if (initialLocal.length > 0) {
           const realStreak = calculateStreak(initialLocal);
           const realTotalSeconds = initialLocal.reduce((sum, s) => sum + s.durationSeconds, 0);
@@ -1330,41 +1361,44 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       if (!error && dbSessions) {
         const mappedSessions = normalizeStudySessions(dbSessions, subjects, currentUser);
 
+        let finalMergedSessions: StudySession[] = [];
         setSessions(prev => {
           const localFromStorage = getStoredSessions(activeUserId, subjects, currentUser);
           const allLocal = mergeAndDeduplicateSessions(localFromStorage, prev);
           const merged = mergeAndDeduplicateSessions(allLocal, mappedSessions);
+          finalMergedSessions = merged;
 
           persistSessionsToLocalStorage(merged, activeUserId);
           return merged;
         });
 
-        setSessions(currentMerged => {
-          const realStreak = calculateStreak(currentMerged);
-          const realTotalSeconds = currentMerged.reduce((sum, s) => sum + s.durationSeconds, 0);
-          const totalStudyMinutes = Math.floor(realTotalSeconds / 60);
-          const minExpectedRP = totalStudyMinutes * 10;
-          const currentRP = Number((currentUser as any)?.rp ?? currentUser.seasonRp ?? 0);
-          const finalRP = Math.max(minExpectedRP, currentRP);
+        const sessionsToUse = finalMergedSessions.length > 0 ? finalMergedSessions : mappedSessions;
+        const realStreak = calculateStreak(sessionsToUse);
+        const realTotalSeconds = sessionsToUse.reduce((sum, s) => sum + (s.durationSeconds || (s as any).duration_seconds || 0), 0);
+        const totalStudyMinutes = Math.floor(realTotalSeconds / 60);
+        const minExpectedRP = totalStudyMinutes * 10;
+        const currentRP = Number((currentUser as any)?.rp ?? currentUser.seasonRp ?? 0);
+        const finalRP = Math.max(minExpectedRP, currentRP);
+        const computedLevel = Math.max(1, Math.floor(Math.sqrt(Math.max(0, finalRP) / 100)) + 1);
+        const levelTitle = getLevelTitle(computedLevel);
 
-          if (
-            currentUser.streakDays !== realStreak ||
-            currentUser.totalStudySeconds !== realTotalSeconds ||
-            currentRP < minExpectedRP
-          ) {
-            updateProfile({
-              streakDays: realStreak,
-              totalStudySeconds: realTotalSeconds,
-              seasonRp: finalRP,
-              rp: finalRP,
-            });
-          }
-          return currentMerged;
+        updateProfile({
+          streakDays: realStreak,
+          totalStudySeconds: realTotalSeconds,
+          seasonRp: finalRP,
+          rp: finalRP,
+          level: computedLevel,
+          levelTitle: levelTitle,
+          user_metadata: {
+            ...(currentUser.user_metadata || {}),
+            level: computedLevel,
+            levelTitle: levelTitle,
+          },
         });
       } else {
         const localData = getStoredSessions(targetUserId, subjects, currentUser);
         if (localData.length > 0) {
-          setSessions(localData);
+          setSessions(prev => (prev.length === 0 ? localData : prev));
           const realStreak = calculateStreak(localData);
           const realTotalSeconds = localData.reduce((sum, s) => sum + s.durationSeconds, 0);
           updateProfile({
@@ -1377,8 +1411,11 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       console.error("Failed to refetch sessions:", err);
       const localData = getStoredSessions(targetUserId, subjects, currentUser);
       if (localData.length > 0) {
-        setSessions(localData);
+        setSessions(prev => (prev.length === 0 ? localData : prev));
       }
+    } finally {
+      setIsLoadingSessions(false);
+      setHasHydrated(true);
     }
   }, [updateProfile, syncPendingSessions, subjects, user?.id]);
 
@@ -2576,6 +2613,8 @@ export function StudyProvider({ children }: { children: ReactNode }) {
   return (
     <StudyContext.Provider
       value={{
+        hasHydrated,
+        isLoadingSessions,
         gamification,
         settlementData,
         showRankSettlement,
