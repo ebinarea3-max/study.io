@@ -23,6 +23,10 @@ import {
 
 interface StudyContextType {
   isSyncConnected: boolean;
+  realtimeStatus: string;
+  realtimeUserId: string | null;
+  realtimeEventsCount: number;
+  refetchActiveSession: () => Promise<void>;
   isRemoteTransitioning: boolean;
   lastRemoteSyncTime: number | null;
   hasHydrated: boolean;
@@ -681,10 +685,70 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     updateProfile,
   ]);
 
-  const [isSyncConnected, setIsSyncConnected] = useState<boolean>(true);
+  const [isSyncConnected, setIsSyncConnected] = useState<boolean>(false);
+  const [realtimeStatus, setRealtimeStatus] = useState<string>('INITIALIZING');
+  const [realtimeUserId, setRealtimeUserId] = useState<string | null>(() => {
+    if (user?.id && !user.id.startsWith('user-scholar') && !user.id.startsWith('guest')) {
+      return user.id;
+    }
+    return null;
+  });
+  const [realtimeEventsCount, setRealtimeEventsCount] = useState<number>(0);
   const [isRemoteTransitioning, setIsRemoteTransitioning] = useState<boolean>(false);
   const [lastRemoteSyncTime, setLastRemoteSyncTime] = useState<number | null>(null);
   const lastClickTimeRef = useRef<number>(0);
+
+  const subjectsRef = useRef(subjects);
+  useEffect(() => {
+    subjectsRef.current = subjects;
+  }, [subjects]);
+
+  // Auth Timing Gate: Always verify active Supabase user directly from auth session
+  useEffect(() => {
+    const supabase = getSupabase();
+    if (!supabase) {
+      setRealtimeStatus('NO_SUPABASE');
+      return;
+    }
+
+    let isMounted = true;
+    const checkAuth = async () => {
+      try {
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (!isMounted) return;
+        if (authUser?.id) {
+          console.log('[Realtime Auth] Confirmed authUser.id:', authUser.id);
+          setRealtimeUserId(authUser.id);
+        } else if (user?.id && !user.id.startsWith('user-scholar') && !user.id.startsWith('guest')) {
+          setRealtimeUserId(user.id);
+        } else {
+          console.log('[Realtime Auth] No authenticated user found (Sign in needed to sync)');
+          setRealtimeUserId(null);
+          setRealtimeStatus('WAITING_AUTH');
+        }
+      } catch (err) {
+        console.warn('[Realtime Auth] Error checking auth:', err);
+      }
+    };
+
+    checkAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!isMounted) return;
+      if (session?.user?.id) {
+        console.log('[Realtime Auth] onAuthStateChange user.id:', session.user.id);
+        setRealtimeUserId(session.user.id);
+      } else {
+        setRealtimeUserId(null);
+        setRealtimeStatus('WAITING_AUTH');
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, [user?.id]);
 
   const checkDebounce = useCallback(() => {
     const now = Date.now();
@@ -859,8 +923,8 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     }
   ) => {
     const supabase = getSupabase();
-    const uid = userRef.current?.id || user?.id;
-    if (!supabase || !uid || uid.startsWith('user-scholar')) return;
+    const uid = realtimeUserId || userRef.current?.id || user?.id;
+    if (!supabase || !uid || uid.startsWith('user-scholar') || uid.startsWith('guest')) return;
 
     const deviceId = getDeviceId();
     lastLocalActionRef.current = { timestamp: Date.now(), status };
@@ -1141,7 +1205,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     if (subject_id) {
       setSelectedSubjectId(subject_id);
     } else if (subject_name) {
-      const found = (Array.isArray(subjects) ? subjects : []).find(
+      const found = (Array.isArray(subjectsRef.current) ? subjectsRef.current : []).find(
         s => (s.name || '').toLowerCase() === subject_name.toLowerCase()
       );
       if (found) setSelectedSubjectId(found.id);
@@ -1186,60 +1250,95 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       setIsStudying(true);
       setIsPaused(true);
     }
-  }, [subjects, clearPersistedTimer, setSelectedSubjectId]);
+  }, [clearPersistedTimer, setSelectedSubjectId]);
 
-  // Supabase Realtime Subscription with Reconnection & Catch-Up Hydration
+  const handleRemoteSyncRef = useRef<any>(null);
+  useEffect(() => {
+    handleRemoteSyncRef.current = handleRemoteSync;
+  }, [handleRemoteSync]);
+
+  // Direct active_sessions query for instant catch-up & visibilitychange resync
+  const refetchActiveSession = useCallback(async () => {
+    const supabase = getSupabase();
+    const uid = realtimeUserId || userRef.current?.id || user?.id;
+    if (!supabase || !uid || uid.startsWith('user-scholar') || uid.startsWith('guest')) {
+      console.log('[Realtime refetchActiveSession] Skipped: unauthenticated user');
+      return;
+    }
+
+    try {
+      console.log('[Realtime refetchActiveSession] Plain SELECT query for user:', uid);
+      const { data, error } = await supabase
+        .from('active_sessions')
+        .select('*')
+        .eq('user_id', uid)
+        .maybeSingle();
+
+      if (error) {
+        console.warn('[Realtime refetchActiveSession] Error:', error);
+        return;
+      }
+      console.log('[Realtime refetchActiveSession] Data received:', data);
+      if (handleRemoteSyncRef.current) {
+        handleRemoteSyncRef.current(data);
+      }
+    } catch (err) {
+      console.warn('[Realtime refetchActiveSession] Exception:', err);
+    }
+  }, [realtimeUserId, user?.id]);
+
+  // Supabase Realtime Subscription with Gated Auth, Visibilitychange Resync, and Mobile Background Resilience
   useEffect(() => {
     const supabase = getSupabase();
-    const uid = user?.id;
-    if (!supabase || !uid || uid.startsWith('user-scholar')) return;
+    if (!supabase) return;
+
+    if (!realtimeUserId) {
+      console.log('[Realtime] Gated: waiting for active non-null Supabase auth session');
+      setRealtimeStatus('WAITING_AUTH');
+      setIsSyncConnected(false);
+      return;
+    }
 
     let isMounted = true;
     let reconnectTimer: NodeJS.Timeout | null = null;
     let currentChannel: any = null;
+    let channelStatus = 'INITIALIZING';
     const backoffDelays = [1000, 2000, 4000, 8000, 16000, 30000];
     let reconnectAttempt = 0;
 
-    const fetchActiveSession = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('active_sessions')
-          .select('*')
-          .eq('user_id', uid)
-          .maybeSingle();
-
-        if (!isMounted) return;
-        if (error) {
-          console.warn('Error fetching active_sessions:', error);
-          return;
-        }
-        if (data) {
-          handleRemoteSync(data);
-        }
-      } catch (err) {
-        console.warn('Failed to fetch active session:', err);
-      }
-    };
+    const channelName = `active-session-${realtimeUserId}`;
 
     const setupChannel = () => {
       if (currentChannel) {
-        supabase.removeChannel(currentChannel);
+        try {
+          supabase.removeChannel(currentChannel);
+        } catch (e) {
+          console.warn('[Realtime] removeChannel error:', e);
+        }
         currentChannel = null;
         activeChannelRef.current = null;
       }
 
-      console.log('[Realtime] Setting up active_session channel for user_id:', uid);
+      console.log('[Realtime] Setting up subscription on channel:', channelName, 'for userId:', realtimeUserId);
+      setRealtimeStatus('CONNECTING...');
 
       const channel = supabase
-        .channel(`realtime:active_session:${uid}`)
+        .channel(channelName, {
+          config: {
+            broadcast: { self: true },
+          },
+        })
         .on(
           'broadcast',
           { event: 'active_session_sync' },
           (payload: any) => {
             if (!isMounted) return;
             realtimeEventCountRef.current++;
+            setRealtimeEventsCount(realtimeEventCountRef.current);
             console.log(`[Realtime Event #${realtimeEventCountRef.current} Broadcast]`, payload);
-            handleRemoteSync(payload?.payload);
+            if (handleRemoteSyncRef.current) {
+              handleRemoteSyncRef.current(payload?.payload);
+            }
           }
         )
         .on(
@@ -1248,31 +1347,37 @@ export function StudyProvider({ children }: { children: ReactNode }) {
             event: '*',
             schema: 'public',
             table: 'active_sessions',
-            filter: `user_id=eq.${uid}`,
+            filter: `user_id=eq.${realtimeUserId}`,
           },
           (payload: any) => {
             if (!isMounted) return;
             realtimeEventCountRef.current++;
+            setRealtimeEventsCount(realtimeEventCountRef.current);
             console.log(`[Realtime Event #${realtimeEventCountRef.current} postgres_changes]`, {
               eventType: payload.eventType,
               timestamp: new Date().toISOString(),
               payload,
             });
-            if (payload.eventType === 'DELETE') {
-              handleRemoteSync(null);
-            } else {
-              handleRemoteSync(payload.new);
+            if (handleRemoteSyncRef.current) {
+              if (payload.eventType === 'DELETE') {
+                handleRemoteSyncRef.current(null);
+              } else {
+                handleRemoteSyncRef.current(payload.new);
+              }
             }
           }
         )
-        .subscribe((status: string) => {
+        .subscribe((status: string, err?: any) => {
           if (!isMounted) return;
-          console.log('[Realtime status]:', status, 'for user_id:', uid);
+          channelStatus = status;
+          console.log('[Realtime status]', status, err || '');
+          setRealtimeStatus(status);
+
           if (status === 'SUBSCRIBED') {
             setIsSyncConnected(true);
             reconnectAttempt = 0;
             // Immediate catch-up on connect or reconnect
-            fetchActiveSession();
+            refetchActiveSession();
           } else if (status === 'TIMED_OUT' || status === 'CHANNEL_ERROR' || status === 'CLOSED') {
             setIsSyncConnected(false);
             const delay = backoffDelays[Math.min(reconnectAttempt, backoffDelays.length - 1)];
@@ -1292,16 +1397,35 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
     setupChannel();
 
+    // Mobile backgrounding safeguard (Section 3 of prompt): plain SELECT on visibilitychange/focus
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('[Realtime] App resumed/visible -> re-fetching active session via SELECT & checking subscription');
+        refetchActiveSession();
+        if (!currentChannel || channelStatus !== 'SUBSCRIBED') {
+          console.log('[Realtime] Reconnecting dropped subscription after background resume');
+          setupChannel();
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleVisibilityChange);
+
     return () => {
       isMounted = false;
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleVisibilityChange);
       if (reconnectTimer) clearTimeout(reconnectTimer);
       if (currentChannel) {
-        supabase.removeChannel(currentChannel);
+        try {
+          supabase.removeChannel(currentChannel);
+        } catch {}
         currentChannel = null;
         activeChannelRef.current = null;
       }
     };
-  }, [user?.id, handleRemoteSync]);
+  }, [realtimeUserId, refetchActiveSession]);
 
   // Load from Supabase or localStorage fallback
   useEffect(() => {
@@ -2961,6 +3085,10 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     <StudyContext.Provider
       value={{
         isSyncConnected,
+        realtimeStatus,
+        realtimeUserId,
+        realtimeEventsCount,
+        refetchActiveSession,
         isRemoteTransitioning,
         lastRemoteSyncTime,
         hasHydrated,
