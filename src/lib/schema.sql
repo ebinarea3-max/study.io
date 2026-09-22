@@ -112,6 +112,7 @@ create trigger trigger_active_sessions_updated_at
   before update on public.active_sessions
   for each row execute function public.set_active_sessions_updated_at();
 
+-- single source of truth: only RPCs write accumulated_seconds; realtime handler is read-only
 -- RPC: pause_session (Atomic, server-calculated accumulated time)
 create or replace function public.pause_session(p_user_id uuid, p_device_id text)
 returns void as $$
@@ -136,56 +137,23 @@ returns void as $$
   where user_id = p_user_id and status = 'paused';
 $$ language sql security definer;
 
--- RPC: stop_session (Finalizes elapsed, writes study_sessions history, resets active_sessions)
+-- RPC: stop_session (Resets active_sessions state; single source of truth - does NOT duplicate study_sessions insert)
 create or replace function public.stop_session(
   p_user_id uuid,
   p_device_id text,
   p_notes text default null
 )
 returns void as $$
-declare
-  v_session record;
-  v_final_seconds int;
 begin
-  select * into v_session from public.active_sessions where user_id = p_user_id and status in ('running', 'paused');
-  if found then
-    if v_session.status = 'running' and v_session.started_at is not null then
-      v_final_seconds := coalesce(v_session.accumulated_seconds, 0) + greatest(0, extract(epoch from (now() - v_session.started_at))::int);
-    else
-      v_final_seconds := coalesce(v_session.accumulated_seconds, 0);
-    end if;
-
-    if v_final_seconds > 0 then
-      insert into public.study_sessions (
-        user_id,
-        subject_id,
-        duration_seconds,
-        started_at,
-        ended_at,
-        notes,
-        mode,
-        created_at
-      ) values (
-        p_user_id,
-        v_session.subject_id,
-        v_final_seconds,
-        coalesce(v_session.started_at, now() - (v_final_seconds || ' seconds')::interval),
-        now(),
-        coalesce(p_notes, ''),
-        coalesce(v_session.mode, 'stopwatch'),
-        now()
-      );
-    end if;
-
-    update public.active_sessions
-    set status = 'stopped',
-        started_at = null,
-        paused_at = null,
-        accumulated_seconds = 0,
-        subject_id = null,
-        device_id = p_device_id
-    where user_id = p_user_id;
-  end if;
+  update public.active_sessions
+  set status = 'stopped',
+      started_at = null,
+      paused_at = null,
+      accumulated_seconds = 0,
+      subject_id = null,
+      device_id = p_device_id,
+      updated_at = now()
+  where user_id = p_user_id;
 end;
 $$ language plpgsql security definer;
 
@@ -277,6 +245,7 @@ create policy "Users can delete own active session"
 -- ====================================================================
 
 -- Add room_presence and active_sessions to Supabase Realtime publication
+alter table public.active_sessions replica identity full;
 alter publication supabase_realtime add table public.room_presence;
 alter publication supabase_realtime add table public.active_sessions;
 

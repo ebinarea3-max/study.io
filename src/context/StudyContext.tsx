@@ -225,9 +225,29 @@ export function mergeAndDeduplicateSessions(existing: StudySession[], incoming: 
     map.set(incomingDedup, s);
   }
 
-  return Array.from(map.values()).sort(
+  const all = Array.from(map.values()).sort(
     (a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
   );
+
+  // Secondary pass: eliminate duplicate sessions logged within 10 seconds for same user and subject
+  const deduped: StudySession[] = [];
+  for (const s of all) {
+    const sTime = new Date(s.startTime || (s as any).started_at || s.createdAt).getTime();
+    const isDuplicate = deduped.some(existing => {
+      const existingTime = new Date(existing.startTime || (existing as any).started_at || existing.createdAt).getTime();
+      const timeDiff = Math.abs(sTime - existingTime);
+      const sameUser = !s.userId || !existing.userId || s.userId === existing.userId;
+      const sameSub = (s.subjectId && existing.subjectId && s.subjectId === existing.subjectId) ||
+                      (s.subjectName && existing.subjectName && s.subjectName.toLowerCase() === existing.subjectName.toLowerCase());
+      return timeDiff < 10000 && sameUser && sameSub;
+    });
+
+    if (!isDuplicate) {
+      deduped.push(s);
+    }
+  }
+
+  return deduped;
 }
 
 export function getStoredSessions(uid?: string, subjectList: Subject[] = [], currentUser?: UserProfile): StudySession[] {
@@ -680,6 +700,8 @@ export function StudyProvider({ children }: { children: ReactNode }) {
   const sessionStartTimeRef = useRef<Date | null>(null);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastLocalActionRef = useRef<{ timestamp: number; status: string } | null>(null);
+  const activeChannelRef = useRef<any>(null);
+  const realtimeEventCountRef = useRef<number>(0);
 
   const isRunning = isStudying && !isPaused;
 
@@ -845,18 +867,67 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
     const executeSync = async () => {
       if (status === 'stopped') {
-        // 1. Try stop_session RPC first
+        console.log('[Timer Write: syncActiveSessionToDb (stopped)]', {
+          timestamp: new Date().toISOString(),
+          userId: uid,
+          deviceId,
+          accumulated_seconds_before: accumulatedSecondsRef.current,
+        });
+
+        // 1. Direct update to reset active_sessions row immediately.
+        // This ensures status is no longer 'running' or 'paused', preventing duplicate study_sessions
+        // insertion even if the remote database is running an older version of stop_session RPC.
+        try {
+          await supabase.from('active_sessions').update({
+            status: 'stopped',
+            accumulated_seconds: 0,
+            started_at: null,
+            paused_at: null,
+            subject_id: null,
+            device_id: deviceId,
+            updated_at: new Date().toISOString(),
+          }).eq('user_id', uid);
+        } catch (updErr) {
+          console.warn('[Timer Write: active_sessions direct reset]', updErr);
+        }
+
+        // 2. Call stop_session RPC to reset active_sessions state
         const { error: rpcError } = await supabase.rpc('stop_session', {
           p_user_id: uid,
           p_device_id: deviceId,
         });
         if (rpcError) {
-          // Fallback direct delete
+          console.warn('[Timer Write: stop_session RPC error fallback to delete]', rpcError);
           await supabase.from('active_sessions').delete().eq('user_id', uid);
+        }
+
+        // 3. Instant peer broadcast over WebSocket (<50ms latency across windows/devices)
+        try {
+          activeChannelRef.current?.send({
+            type: 'broadcast',
+            event: 'active_session_sync',
+            payload: {
+              status: 'stopped',
+              device_id: deviceId,
+              user_id: uid,
+              accumulated_seconds: 0,
+            },
+          });
+        } catch (bErr) {
+          console.warn('[Realtime Broadcast error]:', bErr);
         }
       } else if (status === 'paused') {
         const effectiveAccumulated = extra?.accumulatedSeconds ?? extra?.elapsedBeforePause ?? accumulatedSecondsRef.current;
         const effectiveMode = extra?.mode || timerMode || 'stopwatch';
+
+        console.log('[Timer Write: syncActiveSessionToDb (paused)]', {
+          timestamp: new Date().toISOString(),
+          userId: uid,
+          deviceId,
+          accumulated_seconds_before: accumulatedSecondsRef.current,
+          accumulated_seconds_after: effectiveAccumulated,
+        });
+
         // 1. Try pause_session RPC first
         const { error: rpcError } = await supabase.rpc('pause_session', {
           p_user_id: uid,
@@ -876,6 +947,25 @@ export function StudyProvider({ children }: { children: ReactNode }) {
             updated_at: new Date().toISOString(),
           }, { onConflict: 'user_id' });
         }
+
+        // 2. Peer broadcast
+        try {
+          activeChannelRef.current?.send({
+            type: 'broadcast',
+            event: 'active_session_sync',
+            payload: {
+              status: 'paused',
+              device_id: deviceId,
+              user_id: uid,
+              accumulated_seconds: effectiveAccumulated,
+              mode: effectiveMode,
+              timer_mode: effectiveMode,
+              pomodoro_phase: extra?.pomodoroPhase || pomodoroPhase,
+            },
+          });
+        } catch (bErr) {
+          console.warn('[Realtime Broadcast error]:', bErr);
+        }
       } else if (status === 'running') {
         const sub = activeSubjectRef.current || (Array.isArray(subjects) ? subjects : []).find(s => s && s.id === selectedSubjectId);
         const isUuid = (id?: string | null) => typeof id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
@@ -889,6 +979,15 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         );
         const effectiveAccumulated = extra?.accumulatedSeconds ?? extra?.elapsedBeforePause ?? accumulatedSecondsRef.current;
         const startedAtIso = extra?.startedAt !== undefined ? extra.startedAt : new Date().toISOString();
+
+        console.log('[Timer Write: syncActiveSessionToDb (running)]', {
+          timestamp: new Date().toISOString(),
+          userId: uid,
+          deviceId,
+          accumulated_seconds: effectiveAccumulated,
+          startedAt: startedAtIso,
+          mode: effectiveMode,
+        });
 
         // If continuing an active pause, attempt resume_session RPC first
         let rpcSuccess = false;
@@ -922,6 +1021,30 @@ export function StudyProvider({ children }: { children: ReactNode }) {
             updated_at: new Date().toISOString(),
           }, { onConflict: 'user_id' });
         }
+
+        // 2. Peer broadcast
+        try {
+          activeChannelRef.current?.send({
+            type: 'broadcast',
+            event: 'active_session_sync',
+            payload: {
+              status: 'running',
+              device_id: deviceId,
+              user_id: uid,
+              started_at: startedAtIso,
+              accumulated_seconds: effectiveAccumulated,
+              mode: effectiveMode,
+              timer_mode: effectiveMode,
+              pomodoro_phase: extra?.pomodoroPhase || pomodoroPhase,
+              pomodoro_duration_seconds: targetDuration,
+              target_duration: targetDuration,
+              subject_id: activeSubId,
+              subject_name: activeSubName,
+            },
+          });
+        } catch (bErr) {
+          console.warn('[Realtime Broadcast error]:', bErr);
+        }
       }
     };
 
@@ -939,6 +1062,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     }
   }, [user?.id, selectedSubjectId, subjects, timerMode, pomodoroPhase, pomodoroWorkDuration, pomodoroBreakDuration]);
 
+  // single source of truth: only RPCs write accumulated_seconds; realtime handler is read-only
   // Multi-Device Realtime Sync: Server-Authoritative synchronized payload handler
   const handleRemoteSync = useCallback((remoteSession: any) => {
     const myDeviceId = getDeviceId();
@@ -1101,10 +1225,23 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       if (currentChannel) {
         supabase.removeChannel(currentChannel);
         currentChannel = null;
+        activeChannelRef.current = null;
       }
 
-      currentChannel = supabase
+      console.log('[Realtime] Setting up active_session channel for user_id:', uid);
+
+      const channel = supabase
         .channel(`realtime:active_session:${uid}`)
+        .on(
+          'broadcast',
+          { event: 'active_session_sync' },
+          (payload: any) => {
+            if (!isMounted) return;
+            realtimeEventCountRef.current++;
+            console.log(`[Realtime Event #${realtimeEventCountRef.current} Broadcast]`, payload);
+            handleRemoteSync(payload?.payload);
+          }
+        )
         .on(
           'postgres_changes' as never,
           {
@@ -1115,6 +1252,12 @@ export function StudyProvider({ children }: { children: ReactNode }) {
           },
           (payload: any) => {
             if (!isMounted) return;
+            realtimeEventCountRef.current++;
+            console.log(`[Realtime Event #${realtimeEventCountRef.current} postgres_changes]`, {
+              eventType: payload.eventType,
+              timestamp: new Date().toISOString(),
+              payload,
+            });
             if (payload.eventType === 'DELETE') {
               handleRemoteSync(null);
             } else {
@@ -1124,6 +1267,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         )
         .subscribe((status: string) => {
           if (!isMounted) return;
+          console.log('[Realtime status]:', status, 'for user_id:', uid);
           if (status === 'SUBSCRIBED') {
             setIsSyncConnected(true);
             reconnectAttempt = 0;
@@ -1141,6 +1285,9 @@ export function StudyProvider({ children }: { children: ReactNode }) {
             }, delay);
           }
         });
+
+      currentChannel = channel;
+      activeChannelRef.current = channel;
     };
 
     setupChannel();
@@ -1150,6 +1297,8 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       if (reconnectTimer) clearTimeout(reconnectTimer);
       if (currentChannel) {
         supabase.removeChannel(currentChannel);
+        currentChannel = null;
+        activeChannelRef.current = null;
       }
     };
   }, [user?.id, handleRemoteSync]);
@@ -1807,6 +1956,12 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     setIsStudying(true);
     setIsPaused(false);
     soundFx.playStartChime();
+    console.log('[Timer Write: startTimer]', {
+      timestamp: new Date().toISOString(),
+      accumulated_seconds_before: accumulatedSecondsRef.current,
+      subjectId: targetSub.id,
+      mode: timerMode,
+    });
     updateProfile({
       status: timerMode === 'pomodoro' && pomodoroPhase === 'shortBreak' ? 'resting' : 'studying',
       activeSessionStartTime: new Date().toISOString(),
@@ -1837,6 +1992,12 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       accumulatedSecondsRef.current = actualElapsed;
       setElapsedSeconds(actualElapsed);
     }
+    console.log('[Timer Write: pauseTimer]', {
+      timestamp: new Date().toISOString(),
+      accumulated_seconds_before: accumulatedSecondsRef.current,
+      accumulated_seconds_after: actualElapsed,
+      mode: timerMode,
+    });
     startTimeRef.current = null;
     if (timerIntervalRef.current) {
       clearInterval(timerIntervalRef.current);
@@ -1863,6 +2024,11 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     setIsPaused(false);
     setPomodoroCompletedPhase(null);
     soundFx.playStartChime();
+    console.log('[Timer Write: resumeTimer]', {
+      timestamp: new Date().toISOString(),
+      accumulated_seconds: accumulatedSecondsRef.current,
+      mode: timerMode,
+    });
     if (timerMode === 'pomodoro' && pomodoroPhase === 'shortBreak') {
       updateProfile({ status: 'resting' });
     } else {
@@ -2054,6 +2220,13 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     };
 
     console.log("Saving focus session payload:", sessionPayload);
+    console.log('[Session Persist: study_sessions history table]', {
+      timestamp: new Date().toISOString(),
+      final_duration_saved: sessionPayload.duration_seconds,
+      started_at: sessionPayload.started_at,
+      ended_at: sessionPayload.ended_at,
+      payload: sessionPayload,
+    });
 
     let insertedRecordId: string | null = null;
 
@@ -2210,6 +2383,12 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       : accumulatedSecondsRef.current;
     const seconds = durationOverride !== undefined ? durationOverride : Math.max(elapsedSeconds, currentActual);
     if (!isStudying && seconds === 0) return;
+
+    console.log('[Timer Write: stopTimer]', {
+      timestamp: new Date().toISOString(),
+      duration_seconds: seconds,
+      accumulated_seconds: accumulatedSecondsRef.current,
+    });
 
     if (timerIntervalRef.current) {
       clearInterval(timerIntervalRef.current);

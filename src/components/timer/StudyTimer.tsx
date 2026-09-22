@@ -280,6 +280,11 @@ export function StudyTimer() {
       };
 
       console.log("Saving focus session payload:", sessionPayload);
+      console.log('[Timer Write: StudyTimer handleStopAndSave]', {
+        timestamp: new Date().toISOString(),
+        final_duration_saved: seconds,
+        sessionPayload,
+      });
 
       // 3. Insert the record into study_sessions
       let insertedRecordId: string | null = null;
