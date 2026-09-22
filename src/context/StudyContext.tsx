@@ -24,6 +24,7 @@ import {
 interface StudyContextType {
   isSyncConnected: boolean;
   realtimeStatus: string;
+  isUsingPollingFallback: boolean;
   realtimeUserId: string | null;
   realtimeEventsCount: number;
   refetchActiveSession: () => Promise<void>;
@@ -687,6 +688,8 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
   const [isSyncConnected, setIsSyncConnected] = useState<boolean>(false);
   const [realtimeStatus, setRealtimeStatus] = useState<string>('INITIALIZING');
+  const [isUsingPollingFallback, setIsUsingPollingFallback] = useState<boolean>(false);
+  const isUsingPollingFallbackRef = useRef<boolean>(false);
   const [realtimeUserId, setRealtimeUserId] = useState<string | null>(() => {
     if (user?.id && !user.id.startsWith('user-scholar') && !user.id.startsWith('guest')) {
       return user.id;
@@ -1281,7 +1284,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     }
   }, [realtimeUserId, user?.id]);
 
-  // Supabase Realtime Subscription with Gated Auth, Visibilitychange Resync, and Mobile Background Resilience
+  // Supabase Realtime Subscription with Gated Auth, Resilient HTTP Polling Fallback, and Mobile Window Resync
   useEffect(() => {
     const supabase = getSupabase();
     if (!supabase) return;
@@ -1291,10 +1294,61 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     if (!userId || userId.startsWith('user-scholar') || userId.startsWith('guest')) {
       setRealtimeStatus('WAITING_AUTH');
       setIsSyncConnected(false);
+      setIsUsingPollingFallback(false);
+      isUsingPollingFallbackRef.current = false;
       return;
     }
 
     setRealtimeStatus('CONNECTING...');
+
+    let pollingTimer: NodeJS.Timeout | null = null;
+    let isSubscribed = false;
+
+    const stopPolling = () => {
+      if (pollingTimer) {
+        clearTimeout(pollingTimer);
+        pollingTimer = null;
+      }
+    };
+
+    const runPoll = async () => {
+      // If WebSocket is active and subscribed, do not run fallback polling
+      if (isSubscribed) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('active_sessions')
+          .select('*')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+        if (!error && handleRemoteSyncRef.current) {
+          realtimeEventCountRef.current++;
+          setRealtimeEventsCount(realtimeEventCountRef.current);
+          handleRemoteSyncRef.current(data || null);
+        }
+      } catch (err) {
+        console.warn('[HTTP Fallback Polling] Error:', err);
+      } finally {
+        scheduleNextPoll();
+      }
+    };
+
+    const scheduleNextPoll = () => {
+      stopPolling();
+      if (isSubscribed) return;
+      // 3.5s while tab is active/visible, 12s if document is hidden (battery/data conservation)
+      const delay = (typeof document !== 'undefined' && document.hidden) ? 12000 : 3500;
+      pollingTimer = setTimeout(runPoll, delay);
+    };
+
+    const startPolling = () => {
+      setIsUsingPollingFallback(true);
+      isUsingPollingFallbackRef.current = true;
+      setIsSyncConnected(true);
+      // Run an immediate fetch, then schedule the loop
+      runPoll();
+    };
 
     const handleSessionChange = (payload: any) => {
       realtimeEventCountRef.current++;
@@ -1323,28 +1377,39 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       .subscribe((status: string) => {
         setRealtimeStatus(status);
         if (status === 'SUBSCRIBED') {
+          isSubscribed = true;
+          setIsUsingPollingFallback(false);
+          isUsingPollingFallbackRef.current = false;
           setIsSyncConnected(true);
+          stopPolling();
           refetchActiveSession();
         } else if (status === 'CHANNEL_ERROR' || status === 'CLOSED' || status === 'TIMED_OUT') {
-          setIsSyncConnected(false);
+          isSubscribed = false;
+          console.log(`[Realtime Status: ${status}] Network/Firewall blocks WebSockets. Activating HTTP fallback polling...`);
+          startPolling();
         }
       });
 
     activeChannelRef.current = channel;
 
-    // Mobile backgrounding safeguard: plain SELECT on visibilitychange/focus
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
+    // Mobile backgrounding & Window focus safeguard:
+    // When user focuses or tabs back into the window, immediately fire one fetch for instant resync after device wake
+    const handleVisibilityOrFocus = () => {
+      if (typeof document !== 'undefined' && !document.hidden) {
         refetchActiveSession();
+        if (isUsingPollingFallbackRef.current) {
+          scheduleNextPoll();
+        }
       }
     };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('focus', handleVisibilityChange);
+    document.addEventListener('visibilitychange', handleVisibilityOrFocus);
+    window.addEventListener('focus', handleVisibilityOrFocus);
 
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', handleVisibilityChange);
+      stopPolling();
+      document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
+      window.removeEventListener('focus', handleVisibilityOrFocus);
       supabase.removeChannel(channel);
       activeChannelRef.current = null;
     };
@@ -2981,6 +3046,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       value={{
         isSyncConnected,
         realtimeStatus,
+        isUsingPollingFallback,
         realtimeUserId,
         realtimeEventsCount,
         refetchActiveSession,

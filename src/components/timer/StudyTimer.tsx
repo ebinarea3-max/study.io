@@ -88,6 +88,7 @@ export function StudyTimer() {
     isLoadingSessions,
     isSyncConnected,
     realtimeStatus,
+    isUsingPollingFallback,
     realtimeUserId,
     realtimeEventsCount,
     refetchActiveSession,
@@ -777,19 +778,31 @@ export function StudyTimer() {
               {/* Live Cross-Device Sync Status Indicator */}
               <div
                 className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold backdrop-blur-md transition-all ${
-                  realtimeStatus === 'SUBSCRIBED'
+                  realtimeStatus === 'SUBSCRIBED' || isUsingPollingFallback
                     ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
                     : 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
                 }`}
-                title={realtimeStatus === 'SUBSCRIBED' ? "Timer synced in real-time across devices" : `Realtime Status: ${realtimeStatus}`}
+                title={
+                  realtimeStatus === 'SUBSCRIBED'
+                    ? "Timer synced in real-time across devices (WebSocket)"
+                    : isUsingPollingFallback
+                    ? "Timer synced via HTTP Fallback (Active)"
+                    : `Realtime Status: ${realtimeStatus}`
+                }
               >
                 <span
                   className={`w-2 h-2 rounded-full transition-transform duration-300 ${
-                    realtimeStatus === 'SUBSCRIBED' ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'
+                    realtimeStatus === 'SUBSCRIBED' || isUsingPollingFallback
+                      ? 'bg-emerald-400'
+                      : 'bg-amber-400 animate-pulse'
                   } ${isRemoteTransitioning ? 'scale-150 ring-4 ring-emerald-400/40 animate-ping' : ''}`}
                 />
                 <span className="text-[11px] font-bold">
-                  {realtimeStatus === 'SUBSCRIBED' ? 'Live Sync' : realtimeStatus}
+                  {realtimeStatus === 'SUBSCRIBED'
+                    ? 'Live Sync'
+                    : isUsingPollingFallback
+                    ? 'Sync: Active (HTTP Fallback)'
+                    : realtimeStatus}
                 </span>
               </div>
 
@@ -808,15 +821,23 @@ export function StudyTimer() {
           <div className="w-full my-2 px-3 py-2 rounded-xl bg-slate-900/90 border border-slate-700/60 text-[11px] font-mono flex items-center justify-between gap-2 shadow-inner">
             <div className="flex items-center gap-1.5 overflow-hidden text-ellipsis whitespace-nowrap">
               <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                realtimeStatus === 'SUBSCRIBED' ? 'bg-emerald-400 shadow-sm shadow-emerald-400/50' :
-                realtimeStatus === 'CHANNEL_ERROR' || realtimeStatus === 'CLOSED' ? 'bg-rose-500' :
-                'bg-amber-400 animate-pulse'
+                realtimeStatus === 'SUBSCRIBED' || isUsingPollingFallback
+                  ? 'bg-emerald-400 shadow-sm shadow-emerald-400/50'
+                  : 'bg-amber-400 animate-pulse'
               }`} />
               <span className="font-bold text-slate-200">
-                Realtime: <span className={
-                  realtimeStatus === 'SUBSCRIBED' ? 'text-emerald-400 font-bold' :
-                  realtimeStatus === 'CHANNEL_ERROR' ? 'text-rose-400 font-bold' : 'text-amber-400 font-bold'
-                }>{realtimeStatus}</span>
+                Sync:{' '}
+                <span className={
+                  realtimeStatus === 'SUBSCRIBED' || isUsingPollingFallback
+                    ? 'text-emerald-400 font-bold'
+                    : 'text-amber-400 font-bold'
+                }>
+                  {realtimeStatus === 'SUBSCRIBED'
+                    ? 'Live Sync'
+                    : isUsingPollingFallback
+                    ? 'Sync: Active (HTTP Fallback)'
+                    : realtimeStatus}
+                </span>
               </span>
               <span className="text-slate-600">|</span>
               <span className="text-slate-400 text-[10px] truncate max-w-[120px] sm:max-w-[180px]" title={realtimeUserId || 'None'}>
