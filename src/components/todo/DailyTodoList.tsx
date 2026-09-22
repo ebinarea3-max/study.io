@@ -336,7 +336,7 @@ export function DailyTodoList() {
   const progressPercent = todos.length > 0 ? Math.round((completedTodos.length / todos.length) * 100) : 0;
 
   return (
-    <div className="hud-surface hud-corner-bracket border border-white/[0.08] rounded-2xl p-4 sm:p-5 space-y-3 relative overflow-hidden group">
+    <div className="hud-surface hud-corner-frame border border-white/[0.08] rounded-2xl p-4 sm:p-5 space-y-3 relative overflow-hidden group">
       {/* Header Row */}
       <div className="flex items-center justify-between pb-2.5 border-b border-white/[0.06] relative z-10">
         <div className="flex items-center gap-2">
