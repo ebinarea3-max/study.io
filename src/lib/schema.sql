@@ -74,86 +74,75 @@ create table if not exists public.room_presence (
 
 -- 6. Active Sessions Table (Live Multi-Device Timer Sync)
 create table if not exists public.active_sessions (
-  id uuid default gen_random_uuid() primary key,
-  user_id uuid references auth.users on delete cascade not null unique,
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade unique,
+  status text not null default 'idle' 
+    check (status in ('idle', 'running', 'paused', 'stopped')),
+  mode text check (mode in ('stopwatch', 'pomodoro')),
   subject_id uuid references public.subjects(id) on delete set null,
-  subject_name text,
-  status text not null default 'idle' check (status in ('idle', 'running', 'paused', 'stopped')),
-  started_at timestamp with time zone,
-  paused_at timestamp with time zone,
-  accumulated_seconds integer not null default 0,
-  mode text not null default 'stopwatch' check (mode in ('stopwatch', 'pomodoro')),
-  pomodoro_phase text check (pomodoro_phase in ('focus', 'work', 'break', 'shortBreak')),
-  pomodoro_duration_seconds integer,
-  updated_at timestamp with time zone default timezone('utc'::text, now()) not null,
-  device_id text
+  started_at timestamptz,
+  accumulated_seconds int not null default 0,
+  pomodoro_phase text check (pomodoro_phase in ('focus', 'break')),
+  pomodoro_duration_seconds int,
+  device_id text,
+  updated_at timestamptz not null default now()
 );
 
--- Migration safety for existing instances
-alter table public.active_sessions add column if not exists id uuid default gen_random_uuid();
-alter table public.active_sessions add column if not exists mode text default 'stopwatch';
-alter table public.active_sessions add column if not exists paused_at timestamp with time zone;
-alter table public.active_sessions add column if not exists accumulated_seconds integer default 0;
-alter table public.active_sessions add column if not exists pomodoro_phase text default null;
-alter table public.active_sessions add column if not exists pomodoro_duration_seconds integer default null;
-alter table public.active_sessions add column if not exists device_id text default null;
-
--- Auto-update updated_at trigger
-create or replace function public.set_active_sessions_updated_at()
+-- Auto-update updated_at on every change
+create or replace function public.set_updated_at()
 returns trigger as $$
 begin
-  new.updated_at = timezone('utc'::text, now());
+  new.updated_at = now();
   return new;
 end;
 $$ language plpgsql;
 
-drop trigger if exists trigger_active_sessions_updated_at on public.active_sessions;
-create trigger trigger_active_sessions_updated_at
-  before update on public.active_sessions
-  for each row execute function public.set_active_sessions_updated_at();
+drop trigger if exists trg_active_sessions_updated_at on public.active_sessions;
+create trigger trg_active_sessions_updated_at
+before update on public.active_sessions
+for each row execute function public.set_updated_at();
 
--- single source of truth: only RPCs write accumulated_seconds; realtime handler is read-only
--- RPC: pause_session (Atomic, server-calculated accumulated time)
-create or replace function public.pause_session(p_user_id uuid, p_device_id text)
-returns void as $$
-  update public.active_sessions
-  set accumulated_seconds = accumulated_seconds + 
-      coalesce(greatest(0, extract(epoch from (now() - started_at))::int), 0),
-      status = 'paused',
-      paused_at = now(),
-      started_at = null,
-      device_id = p_device_id
-  where user_id = p_user_id and status = 'running';
-$$ language sql security definer;
+-- Drop obsolete overloaded functions if any exist
+drop function if exists public.pause_session(uuid, text);
+drop function if exists public.stop_session(uuid, text, text);
+drop function if exists public.stop_session(uuid, text);
+drop function if exists public.resume_session(uuid, text);
 
--- RPC: resume_session (Guarded transition from paused to running)
-create or replace function public.resume_session(p_user_id uuid, p_device_id text)
-returns void as $$
-  update public.active_sessions
-  set status = 'running',
-      started_at = now(),
-      paused_at = null,
-      device_id = p_device_id
-  where user_id = p_user_id and status = 'paused';
-$$ language sql security definer;
-
--- RPC: stop_session (Resets active_sessions state; single source of truth - does NOT duplicate study_sessions insert)
-create or replace function public.stop_session(
-  p_user_id uuid,
-  p_device_id text,
-  p_notes text default null
-)
+-- RPC: pause_session (Server-authoritative pause)
+create or replace function public.pause_session(p_device_id text)
 returns void as $$
 begin
   update public.active_sessions
-  set status = 'stopped',
+  set accumulated_seconds = accumulated_seconds + 
+        extract(epoch from (now() - started_at))::int,
+      status = 'paused',
       started_at = null,
-      paused_at = null,
-      accumulated_seconds = 0,
-      subject_id = null,
-      device_id = p_device_id,
-      updated_at = now()
-  where user_id = p_user_id;
+      device_id = p_device_id
+  where user_id = auth.uid() and status = 'running';
+end;
+$$ language plpgsql security definer;
+
+-- RPC: stop_session (Server-authoritative stop returning final accumulated seconds)
+create or replace function public.stop_session(p_device_id text)
+returns int as $$
+declare
+  final_seconds int;
+begin
+  update public.active_sessions
+  set accumulated_seconds = accumulated_seconds + 
+        coalesce(extract(epoch from (now() - started_at))::int, 0),
+      status = 'stopped',
+      started_at = null,
+      device_id = p_device_id
+  where user_id = auth.uid() and status in ('running', 'paused')
+  returning accumulated_seconds into final_seconds;
+
+  -- Reset back to idle after capturing the final duration
+  update public.active_sessions
+  set status = 'idle', accumulated_seconds = 0, subject_id = null
+  where user_id = auth.uid();
+
+  return final_seconds;
 end;
 $$ language plpgsql security definer;
 

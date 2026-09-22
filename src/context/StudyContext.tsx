@@ -938,34 +938,30 @@ export function StudyProvider({ children }: { children: ReactNode }) {
           accumulated_seconds_before: accumulatedSecondsRef.current,
         });
 
-        // 1. Direct update to reset active_sessions row immediately.
-        // This ensures status is no longer 'running' or 'paused', preventing duplicate study_sessions
-        // insertion even if the remote database is running an older version of stop_session RPC.
+        // 1. Call stop_session RPC to reset active_sessions state server-side
+        let rpcFinalSeconds: number | null = null;
         try {
-          await supabase.from('active_sessions').update({
-            status: 'stopped',
-            accumulated_seconds: 0,
-            started_at: null,
-            paused_at: null,
-            subject_id: null,
-            device_id: deviceId,
-            updated_at: new Date().toISOString(),
-          }).eq('user_id', uid);
-        } catch (updErr) {
-          console.warn('[Timer Write: active_sessions direct reset]', updErr);
+          const { data, error: rpcError } = await supabase.rpc('stop_session', {
+            p_device_id: deviceId,
+          });
+          if (!rpcError && typeof data === 'number') {
+            rpcFinalSeconds = data;
+          } else if (rpcError) {
+            console.warn('[Timer Write: stop_session RPC error fallback to manual reset]', rpcError);
+            await supabase.from('active_sessions').update({
+              status: 'idle',
+              started_at: null,
+              accumulated_seconds: 0,
+              subject_id: null,
+              device_id: deviceId,
+              updated_at: new Date().toISOString(),
+            }).eq('user_id', uid);
+          }
+        } catch (e) {
+          console.warn('[Timer Write: stop_session exception]:', e);
         }
 
-        // 2. Call stop_session RPC to reset active_sessions state
-        const { error: rpcError } = await supabase.rpc('stop_session', {
-          p_user_id: uid,
-          p_device_id: deviceId,
-        });
-        if (rpcError) {
-          console.warn('[Timer Write: stop_session RPC error fallback to delete]', rpcError);
-          await supabase.from('active_sessions').delete().eq('user_id', uid);
-        }
-
-        // 3. Instant peer broadcast over WebSocket (<50ms latency across windows/devices)
+        // 2. Instant peer broadcast over WebSocket (<50ms latency across windows/devices)
         try {
           activeChannelRef.current?.send({
             type: 'broadcast',
@@ -980,9 +976,18 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         } catch (bErr) {
           console.warn('[Realtime Broadcast error]:', bErr);
         }
+
+        return rpcFinalSeconds;
       } else if (status === 'paused') {
         const effectiveAccumulated = extra?.accumulatedSeconds ?? extra?.elapsedBeforePause ?? accumulatedSecondsRef.current;
         const effectiveMode = extra?.mode || timerMode || 'stopwatch';
+        const dbMode = effectiveMode === 'pomodoro' ? 'pomodoro' : 'stopwatch';
+        const dbPhase = effectiveMode === 'pomodoro'
+          ? (extra?.pomodoroPhase === 'work' || pomodoroPhase === 'work' ? 'focus' : 'break')
+          : null;
+        const dbDuration = effectiveMode === 'pomodoro'
+          ? (extra?.targetDuration ?? (pomodoroPhase === 'work' ? pomodoroWorkDuration : pomodoroBreakDuration))
+          : null;
 
         console.log('[Timer Write: syncActiveSessionToDb (paused)]', {
           timestamp: new Date().toISOString(),
@@ -994,20 +999,20 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
         // 1. Try pause_session RPC first
         const { error: rpcError } = await supabase.rpc('pause_session', {
-          p_user_id: uid,
           p_device_id: deviceId,
         });
         if (rpcError) {
+          console.warn('[Timer Write: pause_session RPC fallback upsert]', rpcError);
           // Fallback direct upsert
           await supabase.from('active_sessions').upsert({
             user_id: uid,
             device_id: deviceId,
             status: 'paused',
-            paused_at: new Date().toISOString(),
+            started_at: null,
             accumulated_seconds: effectiveAccumulated,
-            elapsed_before_pause: effectiveAccumulated,
-            mode: effectiveMode,
-            timer_mode: effectiveMode,
+            mode: dbMode,
+            pomodoro_phase: dbPhase,
+            pomodoro_duration_seconds: dbDuration,
             updated_at: new Date().toISOString(),
           }, { onConflict: 'user_id' });
         }
@@ -1036,11 +1041,15 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         const activeSubId = extra?.subjectId !== undefined ? extra.subjectId : (isUuid(sub?.id) ? sub!.id : null);
         const activeSubName = extra?.subjectName !== undefined ? extra.subjectName : (sub?.name || null);
         const effectiveMode = extra?.mode || timerMode || 'stopwatch';
+        const dbMode = effectiveMode === 'pomodoro' ? 'pomodoro' : 'stopwatch';
         const targetDuration = extra?.targetDuration !== undefined ? extra.targetDuration : (
           effectiveMode === 'pomodoro'
             ? (pomodoroPhase === 'work' ? pomodoroWorkDuration : pomodoroBreakDuration)
             : null
         );
+        const dbPhase = effectiveMode === 'pomodoro'
+          ? (extra?.pomodoroPhase === 'work' || pomodoroPhase === 'work' ? 'focus' : 'break')
+          : null;
         const effectiveAccumulated = extra?.accumulatedSeconds ?? extra?.elapsedBeforePause ?? accumulatedSecondsRef.current;
         const startedAtIso = extra?.startedAt !== undefined ? extra.startedAt : new Date().toISOString();
 
@@ -1050,41 +1059,22 @@ export function StudyProvider({ children }: { children: ReactNode }) {
           deviceId,
           accumulated_seconds: effectiveAccumulated,
           startedAt: startedAtIso,
-          mode: effectiveMode,
+          mode: dbMode,
         });
 
-        // If continuing an active pause, attempt resume_session RPC first
-        let rpcSuccess = false;
-        if (extra?.startedAt === undefined && accumulatedSecondsRef.current > 0) {
-          const { data: resumed, error: rpcError } = await supabase.rpc('resume_session', {
-            p_user_id: uid,
-            p_device_id: deviceId,
-          });
-          if (!rpcError && resumed) {
-            rpcSuccess = true;
-          }
-        }
-
-        if (!rpcSuccess) {
-          // Direct upsert with full state
-          await supabase.from('active_sessions').upsert({
-            user_id: uid,
-            device_id: deviceId,
-            subject_id: activeSubId,
-            subject_name: activeSubName,
-            status: 'running',
-            started_at: startedAtIso,
-            paused_at: null,
-            accumulated_seconds: effectiveAccumulated,
-            elapsed_before_pause: effectiveAccumulated,
-            mode: effectiveMode,
-            timer_mode: effectiveMode,
-            pomodoro_phase: extra?.pomodoroPhase || pomodoroPhase,
-            pomodoro_duration_seconds: targetDuration,
-            target_duration: targetDuration,
-            updated_at: new Date().toISOString(),
-          }, { onConflict: 'user_id' });
-        }
+        // Direct upsert with exact columns matching active_sessions table schema
+        await supabase.from('active_sessions').upsert({
+          user_id: uid,
+          device_id: deviceId,
+          subject_id: isUuid(activeSubId) ? activeSubId : null,
+          status: 'running',
+          started_at: startedAtIso,
+          accumulated_seconds: effectiveAccumulated,
+          mode: dbMode,
+          pomodoro_phase: dbPhase,
+          pomodoro_duration_seconds: targetDuration,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'user_id' });
 
         // 2. Peer broadcast
         try {
@@ -1113,7 +1103,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     };
 
     try {
-      await executeSync();
+      return await executeSync();
     } catch (err) {
       console.warn('Failed to sync active session to Supabase, retrying once in 1s:', err);
       setTimeout(async () => {
@@ -1198,8 +1188,12 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       setTimerMode(effectiveMode);
     }
 
-    if (pomodoro_phase && (pomodoro_phase === 'work' || pomodoro_phase === 'shortBreak' || pomodoro_phase === 'longBreak')) {
-      setPomodoroPhase(pomodoro_phase);
+    if (pomodoro_phase) {
+      if (pomodoro_phase === 'focus' || pomodoro_phase === 'work') {
+        setPomodoroPhase('work');
+      } else if (pomodoro_phase === 'break' || pomodoro_phase === 'shortBreak' || pomodoro_phase === 'longBreak') {
+        setPomodoroPhase('shortBreak');
+      }
     }
 
     if (subject_id) {
@@ -2572,7 +2566,19 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    if (seconds <= 0) {
+    // 1. Reset remote active_sessions state via stop_session RPC & get server-authoritative duration
+    const rpcFinalSeconds = await syncActiveSessionToDb('stopped');
+    const secondsToPersist = (typeof rpcFinalSeconds === 'number' && rpcFinalSeconds >= 0)
+      ? rpcFinalSeconds
+      : seconds;
+
+    console.log('[Timer Stop: server-authoritative duration]', {
+      clientSeconds: seconds,
+      rpcFinalSeconds,
+      secondsToPersist,
+    });
+
+    if (secondsToPersist <= 0) {
       startTimeRef.current = null;
       accumulatedSecondsRef.current = 0;
       setIsStudying(false);
@@ -2582,11 +2588,10 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       setCurrentNotes('');
       sessionStartTimeRef.current = null;
       clearPersistedTimer();
-      syncActiveSessionToDb('stopped');
       return;
     }
 
-    const saved = await persistCompletedSession(seconds, notesOverride, activeSub);
+    const saved = await persistCompletedSession(secondsToPersist, notesOverride, activeSub);
     if (!saved) return;
 
     // Clear references and reset state to 0 on save
@@ -2599,7 +2604,6 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     setCurrentNotes('');
     sessionStartTimeRef.current = null;
     clearPersistedTimer();
-    syncActiveSessionToDb('stopped');
   }, [
     checkDebounce,
     isStudying,
