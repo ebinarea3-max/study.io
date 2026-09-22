@@ -74,16 +74,120 @@ create table if not exists public.room_presence (
 
 -- 6. Active Sessions Table (Live Multi-Device Timer Sync)
 create table if not exists public.active_sessions (
-  user_id uuid references auth.users on delete cascade primary key,
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users on delete cascade not null unique,
   subject_id uuid references public.subjects(id) on delete set null,
   subject_name text,
-  status text not null check (status in ('running', 'paused', 'stopped')),
+  status text not null default 'idle' check (status in ('idle', 'running', 'paused', 'stopped')),
   started_at timestamp with time zone,
-  elapsed_before_pause integer default 0,
-  timer_mode text not null check (timer_mode in ('stopwatch', 'pomodoro')),
-  target_duration integer,
-  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+  paused_at timestamp with time zone,
+  accumulated_seconds integer not null default 0,
+  mode text not null default 'stopwatch' check (mode in ('stopwatch', 'pomodoro')),
+  pomodoro_phase text check (pomodoro_phase in ('focus', 'work', 'break', 'shortBreak')),
+  pomodoro_duration_seconds integer,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  device_id text
 );
+
+-- Migration safety for existing instances
+alter table public.active_sessions add column if not exists id uuid default gen_random_uuid();
+alter table public.active_sessions add column if not exists mode text default 'stopwatch';
+alter table public.active_sessions add column if not exists paused_at timestamp with time zone;
+alter table public.active_sessions add column if not exists accumulated_seconds integer default 0;
+alter table public.active_sessions add column if not exists pomodoro_phase text default null;
+alter table public.active_sessions add column if not exists pomodoro_duration_seconds integer default null;
+alter table public.active_sessions add column if not exists device_id text default null;
+
+-- Auto-update updated_at trigger
+create or replace function public.set_active_sessions_updated_at()
+returns trigger as $$
+begin
+  new.updated_at = timezone('utc'::text, now());
+  return new;
+end;
+$$ language plpgsql;
+
+drop trigger if exists trigger_active_sessions_updated_at on public.active_sessions;
+create trigger trigger_active_sessions_updated_at
+  before update on public.active_sessions
+  for each row execute function public.set_active_sessions_updated_at();
+
+-- RPC: pause_session (Atomic, server-calculated accumulated time)
+create or replace function public.pause_session(p_user_id uuid, p_device_id text)
+returns void as $$
+  update public.active_sessions
+  set accumulated_seconds = accumulated_seconds + 
+      coalesce(greatest(0, extract(epoch from (now() - started_at))::int), 0),
+      status = 'paused',
+      paused_at = now(),
+      started_at = null,
+      device_id = p_device_id
+  where user_id = p_user_id and status = 'running';
+$$ language sql security definer;
+
+-- RPC: resume_session (Guarded transition from paused to running)
+create or replace function public.resume_session(p_user_id uuid, p_device_id text)
+returns void as $$
+  update public.active_sessions
+  set status = 'running',
+      started_at = now(),
+      paused_at = null,
+      device_id = p_device_id
+  where user_id = p_user_id and status = 'paused';
+$$ language sql security definer;
+
+-- RPC: stop_session (Finalizes elapsed, writes study_sessions history, resets active_sessions)
+create or replace function public.stop_session(
+  p_user_id uuid,
+  p_device_id text,
+  p_notes text default null
+)
+returns void as $$
+declare
+  v_session record;
+  v_final_seconds int;
+begin
+  select * into v_session from public.active_sessions where user_id = p_user_id and status in ('running', 'paused');
+  if found then
+    if v_session.status = 'running' and v_session.started_at is not null then
+      v_final_seconds := coalesce(v_session.accumulated_seconds, 0) + greatest(0, extract(epoch from (now() - v_session.started_at))::int);
+    else
+      v_final_seconds := coalesce(v_session.accumulated_seconds, 0);
+    end if;
+
+    if v_final_seconds > 0 then
+      insert into public.study_sessions (
+        user_id,
+        subject_id,
+        duration_seconds,
+        started_at,
+        ended_at,
+        notes,
+        mode,
+        created_at
+      ) values (
+        p_user_id,
+        v_session.subject_id,
+        v_final_seconds,
+        coalesce(v_session.started_at, now() - (v_final_seconds || ' seconds')::interval),
+        now(),
+        coalesce(p_notes, ''),
+        coalesce(v_session.mode, 'stopwatch'),
+        now()
+      );
+    end if;
+
+    update public.active_sessions
+    set status = 'stopped',
+        started_at = null,
+        paused_at = null,
+        accumulated_seconds = 0,
+        subject_id = null,
+        device_id = p_device_id
+    where user_id = p_user_id;
+  end if;
+end;
+$$ language plpgsql security definer;
 
 -- ====================================================================
 -- Row-Level Security (RLS) Policies

@@ -64,6 +64,8 @@ export function FocusModeModal() {
     resetTimer,
     currentNotes,
     setCurrentNotes,
+    isSyncConnected,
+    isRemoteTransitioning,
   } = useStudy();
 
   const [ambientSound, setAmbientSound] = useState<AmbientSoundType | 'none'>('none');
@@ -181,6 +183,25 @@ export function FocusModeModal() {
         </div>
 
         <div className="flex items-center gap-3">
+          {/* Live Sync Status Indicator */}
+          <div
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold backdrop-blur-md transition-all ${
+              isSyncConnected
+                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                : 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
+            }`}
+            title={isSyncConnected ? "Cross-device timer sync is active" : "Reconnecting to cloud sync..."}
+          >
+            <span
+              className={`w-2 h-2 rounded-full transition-transform duration-300 ${
+                isSyncConnected ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'
+              } ${isRemoteTransitioning ? 'scale-150 ring-4 ring-emerald-400/40 animate-ping' : ''}`}
+            />
+            <span className="text-[11px] font-bold hidden sm:inline">
+              {isSyncConnected ? 'Synced' : 'Reconnecting'}
+            </span>
+          </div>
+
           {/* Notes scratchpad toggle */}
           <button
             onClick={() => setShowNotes(!showNotes)}
@@ -212,7 +233,9 @@ export function FocusModeModal() {
       {/* Center Digital Clock & Breathing Visualizer */}
       <div className="relative z-10 my-auto flex flex-col items-center justify-center text-center">
         {/* Breathing Ring Aura */}
-        <div className="relative flex items-center justify-center">
+        <div className={`relative flex items-center justify-center rounded-full transition-all duration-300 ${
+          isRemoteTransitioning ? 'ring-4 ring-emerald-400/50 scale-[1.03] shadow-[0_0_60px_rgba(16,185,129,0.4)]' : ''
+        }`}>
           <div
             className="w-72 h-72 sm:w-96 sm:h-96 rounded-full border-2 border-dashed animate-pulse-breathe flex items-center justify-center transition-all duration-700"
             style={{
@@ -329,8 +352,8 @@ export function FocusModeModal() {
                     setIsSaving(false);
                   }
                 }}
-                disabled={isSaving}
-                className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black text-sm transition-all shadow-xl shadow-emerald-500/25 flex items-center gap-2 active:scale-95 hover:scale-[1.02] cursor-pointer disabled:opacity-50"
+                disabled={isSaving || isRemoteTransitioning}
+                className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black text-sm transition-all shadow-xl shadow-emerald-500/25 flex items-center gap-2 active:scale-95 hover:scale-[1.02] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSaving ? (
                   <>
@@ -354,8 +377,8 @@ export function FocusModeModal() {
                     setIsSaving(false);
                   }
                 }}
-                disabled={isSaving}
-                className="px-6 py-3.5 rounded-2xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white font-bold text-sm transition-all flex items-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50"
+                disabled={isSaving || isRemoteTransitioning}
+                className="px-6 py-3.5 rounded-2xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white font-bold text-sm transition-all flex items-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <SkipForward className="w-4 h-4" />
                 <span>Skip Break</span>
@@ -367,14 +390,16 @@ export function FocusModeModal() {
               <>
                 <button
                   onClick={startPomodoroBreak}
-                  className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-teal-400 to-emerald-500 hover:from-teal-300 hover:to-emerald-400 text-slate-950 font-black text-sm transition-all shadow-xl shadow-teal-500/25 flex items-center gap-2 active:scale-95 hover:scale-[1.02] cursor-pointer"
+                  disabled={isSaving || isRemoteTransitioning}
+                  className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-teal-400 to-emerald-500 hover:from-teal-300 hover:to-emerald-400 text-slate-950 font-black text-sm transition-all shadow-xl shadow-teal-500/25 flex items-center gap-2 active:scale-95 hover:scale-[1.02] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Play className="w-4 h-4 fill-current" />
                   <span>Start Break</span>
                 </button>
                 <button
                   onClick={resetTimer}
-                  className="px-5 py-3.5 rounded-2xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700 text-slate-400 hover:text-white font-bold text-sm transition-colors active:scale-95 cursor-pointer"
+                  disabled={isSaving || isRemoteTransitioning}
+                  className="px-5 py-3.5 rounded-2xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700 text-slate-400 hover:text-white font-bold text-sm transition-colors active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <span>Skip Break</span>
                 </button>
@@ -383,14 +408,16 @@ export function FocusModeModal() {
               <>
                 <button
                   onClick={pauseTimer}
-                  className="px-6 py-3 rounded-2xl bg-slate-900/90 hover:bg-slate-800 text-amber-300 font-bold text-sm border border-amber-500/30 transition-all flex items-center gap-2 active:scale-95 cursor-pointer"
+                  disabled={isSaving || isRemoteTransitioning}
+                  className="px-6 py-3 rounded-2xl bg-slate-900/90 hover:bg-slate-800 text-amber-300 font-bold text-sm border border-amber-500/30 transition-all flex items-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Pause className="w-4 h-4" />
                   <span>Pause Break</span>
                 </button>
                 <button
                   onClick={resetTimer}
-                  className="px-6 py-3 rounded-2xl bg-slate-900/80 hover:bg-slate-800 border border-slate-700 text-slate-400 hover:text-white font-bold text-sm transition-colors active:scale-95 cursor-pointer"
+                  disabled={isSaving || isRemoteTransitioning}
+                  className="px-6 py-3 rounded-2xl bg-slate-900/80 hover:bg-slate-800 border border-slate-700 text-slate-400 hover:text-white font-bold text-sm transition-colors active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <span>End Break</span>
                 </button>
@@ -408,7 +435,8 @@ export function FocusModeModal() {
                 }
                 startTimer(activeSub.id);
               }}
-              className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black text-sm transition-all shadow-xl shadow-emerald-500/25 flex items-center gap-2 active:scale-95 hover:scale-[1.02] cursor-pointer"
+              disabled={isSaving || isRemoteTransitioning}
+              className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black text-sm transition-all shadow-xl shadow-emerald-500/25 flex items-center gap-2 active:scale-95 hover:scale-[1.02] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Flame className="w-5 h-5 fill-current" />
               <span>Start Focus Session</span>
@@ -424,7 +452,8 @@ export function FocusModeModal() {
                 }
                 startTimer(activeSub.id);
               }}
-              className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black text-sm transition-all shadow-xl shadow-emerald-500/25 flex items-center gap-2.5 active:scale-95 hover:scale-[1.02] cursor-pointer"
+              disabled={isSaving || isRemoteTransitioning}
+              className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black text-sm transition-all shadow-xl shadow-emerald-500/25 flex items-center gap-2.5 active:scale-95 hover:scale-[1.02] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Play className="w-5 h-5 fill-current" />
               <span>Start Session</span>
@@ -434,7 +463,8 @@ export function FocusModeModal() {
             <>
               <button
                 onClick={pauseTimer}
-                className="px-6 py-3 rounded-2xl bg-slate-900/90 hover:bg-slate-800 text-amber-300 font-bold text-sm border border-amber-500/30 transition-all flex items-center gap-2 active:scale-95 cursor-pointer"
+                disabled={isSaving || isRemoteTransitioning}
+                className="px-6 py-3 rounded-2xl bg-slate-900/90 hover:bg-slate-800 text-amber-300 font-bold text-sm border border-amber-500/30 transition-all flex items-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Pause className="w-4 h-4" />
                 <span>Pause</span>
@@ -442,7 +472,7 @@ export function FocusModeModal() {
 
               <button
                 onClick={handleStopAndSave}
-                disabled={isSaving}
+                disabled={isSaving || isRemoteTransitioning}
                 className="px-6 py-3 rounded-2xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 font-bold text-sm transition-all flex items-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 title={isSaving ? "Saving session..." : "Stop and save session"}
               >
@@ -464,8 +494,8 @@ export function FocusModeModal() {
             <>
               <button
                 onClick={resumeTimer}
-                disabled={isSaving}
-                className="px-6 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm transition-all shadow-lg shadow-emerald-500/25 flex items-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50"
+                disabled={isSaving || isRemoteTransitioning}
+                className="px-6 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm transition-all shadow-lg shadow-emerald-500/25 flex items-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Play className="w-4 h-4 fill-current" />
                 <span>Resume</span>
@@ -473,7 +503,7 @@ export function FocusModeModal() {
 
               <button
                 onClick={handleStopAndSave}
-                disabled={isSaving}
+                disabled={isSaving || isRemoteTransitioning}
                 className="px-6 py-3 rounded-2xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 font-bold text-sm transition-all flex items-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 title={isSaving ? "Saving session..." : "Stop and save session"}
               >
@@ -492,7 +522,8 @@ export function FocusModeModal() {
 
               <button
                 onClick={resetTimer}
-                className="p-3 rounded-2xl bg-slate-900/80 hover:bg-slate-800 border border-white/[0.08] text-neutral-400 hover:text-white transition-colors active:scale-95 cursor-pointer"
+                disabled={isSaving || isRemoteTransitioning}
+                className="p-3 rounded-2xl bg-slate-900/80 hover:bg-slate-800 border border-white/[0.08] text-neutral-400 hover:text-white transition-colors active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Reset Timer"
               >
                 <RotateCcw className="w-4 h-4" />

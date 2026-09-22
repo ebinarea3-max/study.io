@@ -86,6 +86,9 @@ export function StudyTimer() {
     activeTaskId,
     hasHydrated,
     isLoadingSessions,
+    isSyncConnected,
+    isRemoteTransitioning,
+    lastRemoteSyncTime,
   } = useStudy();
 
   const subjectList = Array.isArray(subjects) ? subjects : [];
@@ -784,14 +787,35 @@ export function StudyTimer() {
               )}
             </div>
 
-            {/* High-Contrast Fullscreen Focus Mode Button - Hidden on mobile */}
-            <button
-              onClick={() => setIsFocusModeOpen(true)}
-              className="hidden md:flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/35 text-emerald-300 text-xs font-bold transition-all shadow-md shadow-emerald-500/10 active:scale-95 cursor-pointer"
-            >
-              <Maximize2 className="w-4 h-4 text-emerald-400" />
-              <span>Fullscreen Focus Mode</span>
-            </button>
+            <div className="flex items-center gap-2 sm:gap-3">
+              {/* Live Cross-Device Sync Status Indicator */}
+              <div
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold backdrop-blur-md transition-all ${
+                  isSyncConnected
+                    ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                    : 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
+                }`}
+                title={isSyncConnected ? "Timer synced in real-time across devices" : "Connecting to real-time timer sync..."}
+              >
+                <span
+                  className={`w-2 h-2 rounded-full transition-transform duration-300 ${
+                    isSyncConnected ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'
+                  } ${isRemoteTransitioning ? 'scale-150 ring-4 ring-emerald-400/40 animate-ping' : ''}`}
+                />
+                <span className="text-[11px] font-bold hidden xs:inline">
+                  {isSyncConnected ? 'Live Sync' : 'Reconnecting'}
+                </span>
+              </div>
+
+              {/* High-Contrast Fullscreen Focus Mode Button - Hidden on mobile */}
+              <button
+                onClick={() => setIsFocusModeOpen(true)}
+                className="hidden md:flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/35 text-emerald-300 text-xs font-bold transition-all shadow-md shadow-emerald-500/10 active:scale-95 cursor-pointer"
+              >
+                <Maximize2 className="w-4 h-4 text-emerald-400" />
+                <span>Fullscreen Focus Mode</span>
+              </button>
+            </div>
           </div>
 
           {/* Subject Selection Bar - Compact on Mobile */}
@@ -827,10 +851,13 @@ export function StudyTimer() {
                       setShowDropdown(!showDropdown);
                     }
                   }}
-                  disabled={isStudying}
-                  className={`w-full flex items-center justify-between px-3 sm:px-4 py-2 sm:py-2.5 bg-black/40 hover:bg-black/60 border rounded-2xl text-xs sm:text-sm font-semibold transition-all disabled:opacity-75 disabled:cursor-not-allowed cursor-pointer ${
+                  disabled={isStudying || isRemoteTransitioning}
+                  title={isStudying ? "Subject cannot be changed while session is active" : "Select a subject to focus on"}
+                  className={`w-full flex items-center justify-between px-3 sm:px-4 py-2 sm:py-2.5 bg-black/40 hover:bg-black/60 border rounded-2xl text-xs sm:text-sm font-semibold transition-all disabled:opacity-85 disabled:cursor-not-allowed cursor-pointer ${
                     subjectWarning
                       ? 'border-amber-500/80 ring-2 ring-amber-500/30 shadow-lg shadow-amber-500/10'
+                      : isStudying
+                      ? 'border-white/[0.12] bg-white/[0.02]'
                       : 'border-white/[0.08]'
                   }`}
                 >
@@ -842,8 +869,13 @@ export function StudyTimer() {
                     <span className={`truncate ${selectedSubject?.name ? "text-white font-bold tracking-tight" : activeSubjects.length === 0 ? "text-emerald-400 font-bold tracking-tight" : "text-neutral-400 font-medium tracking-tight"}`}>
                       {selectedSubject?.name || (activeSubjects.length === 0 ? '[ + Add a Subject ]' : '[ Select a Subject ]')}
                     </span>
+                    {isStudying && (
+                      <span className="text-[10px] uppercase font-bold text-neutral-400 bg-white/[0.08] px-1.5 py-0.5 rounded-md flex-shrink-0 ml-1">
+                        Locked
+                      </span>
+                    )}
                   </div>
-                  <ChevronDown className="w-4 h-4 text-neutral-400 flex-shrink-0 ml-1" />
+                  <ChevronDown className={`w-4 h-4 text-neutral-400 flex-shrink-0 ml-1 transition-transform ${isStudying ? 'opacity-40' : ''}`} />
                 </button>
 
                 {showDropdown && !isStudying && (
@@ -919,7 +951,11 @@ export function StudyTimer() {
 
           {/* Center Timer Circular Display - Scaled to w-64 h-64 on Mobile */}
           <div className="relative z-10 flex flex-col items-center justify-center my-auto py-1 sm:py-6 flex-shrink-0">
-            <div className="relative flex items-center justify-center p-1 sm:p-2 w-64 h-64 sm:w-80 sm:h-80 mx-auto aspect-square">
+            <div className={`relative flex items-center justify-center p-1 sm:p-2 w-64 h-64 sm:w-80 sm:h-80 mx-auto aspect-square transition-all duration-300 rounded-full ${
+              isRemoteTransitioning
+                ? 'scale-[1.03] ring-4 ring-emerald-400/50 shadow-[0_0_50px_rgba(16,185,129,0.4)]'
+                : ''
+            }`}>
               {/* Subtle Emerald Outer Halo / Gradient Rim */}
               <div className="absolute inset-0 rounded-full bg-gradient-to-b from-emerald-500/20 via-emerald-500/5 to-transparent blur-lg pointer-events-none" />
               <div className="absolute inset-1 sm:inset-1.5 rounded-full border border-emerald-500/25 pointer-events-none" />
@@ -1062,8 +1098,8 @@ export function StudyTimer() {
                         setIsSaving(false);
                       }
                     }}
-                    disabled={isSaving}
-                    className="px-5 sm:px-6 py-3 sm:py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black text-xs sm:text-sm transition-all shadow-xl shadow-emerald-500/25 flex items-center justify-center gap-2 active:scale-95 hover:scale-[1.02] cursor-pointer disabled:opacity-50 flex-1 xs:flex-initial min-w-[140px]"
+                    disabled={isSaving || isRemoteTransitioning}
+                    className="px-5 sm:px-6 py-3 sm:py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black text-xs sm:text-sm transition-all shadow-xl shadow-emerald-500/25 flex items-center justify-center gap-2 active:scale-95 hover:scale-[1.02] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[140px]"
                   >
                     {isSaving ? (
                       <>
@@ -1087,8 +1123,8 @@ export function StudyTimer() {
                         setIsSaving(false);
                       }
                     }}
-                    disabled={isSaving}
-                    className="px-5 sm:px-6 py-3 sm:py-3.5 rounded-2xl bg-neutral-900 hover:bg-neutral-800 border border-white/[0.12] text-neutral-300 hover:text-white font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 flex-1 xs:flex-initial min-w-[120px]"
+                    disabled={isSaving || isRemoteTransitioning}
+                    className="px-5 sm:px-6 py-3 sm:py-3.5 rounded-2xl bg-neutral-900 hover:bg-neutral-800 border border-white/[0.12] text-neutral-300 hover:text-white font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[120px]"
                   >
                     <SkipForward className="w-4 h-4" />
                     <span>Skip Break</span>
@@ -1100,14 +1136,16 @@ export function StudyTimer() {
                   <>
                     <button
                       onClick={startPomodoroBreak}
-                      className="px-6 sm:px-8 py-3 sm:py-3.5 rounded-2xl bg-gradient-to-r from-teal-400 to-emerald-500 hover:from-teal-300 hover:to-emerald-400 text-slate-950 font-black text-xs sm:text-sm transition-all shadow-xl shadow-teal-500/25 flex items-center justify-center gap-2 active:scale-95 hover:scale-[1.02] cursor-pointer flex-1 xs:flex-initial min-w-[130px]"
+                      disabled={isSaving || isRemoteTransitioning}
+                      className="px-6 sm:px-8 py-3 sm:py-3.5 rounded-2xl bg-gradient-to-r from-teal-400 to-emerald-500 hover:from-teal-300 hover:to-emerald-400 text-slate-950 font-black text-xs sm:text-sm transition-all shadow-xl shadow-teal-500/25 flex items-center justify-center gap-2 active:scale-95 hover:scale-[1.02] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[130px]"
                     >
                       <Play className="w-4 h-4 fill-current" />
                       <span>Start Break</span>
                     </button>
                     <button
                       onClick={handleReset}
-                      className="px-4 sm:px-5 py-3 sm:py-3.5 rounded-2xl bg-neutral-900 hover:bg-neutral-800 border border-white/[0.08] text-neutral-400 hover:text-white font-bold text-xs sm:text-sm transition-colors active:scale-95 cursor-pointer flex-1 xs:flex-initial min-w-[110px]"
+                      disabled={isSaving || isRemoteTransitioning}
+                      className="px-4 sm:px-5 py-3 sm:py-3.5 rounded-2xl bg-neutral-900 hover:bg-neutral-800 border border-white/[0.08] text-neutral-400 hover:text-white font-bold text-xs sm:text-sm transition-colors active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[110px]"
                     >
                       <span>Skip Break</span>
                     </button>
@@ -1116,14 +1154,16 @@ export function StudyTimer() {
                   <>
                     <button
                       onClick={handlePause}
-                      className="px-5 sm:px-6 py-2.5 sm:py-3 rounded-2xl bg-neutral-900 hover:bg-neutral-800 text-amber-300 font-bold text-xs sm:text-sm border border-amber-500/30 transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer flex-1 xs:flex-initial min-w-[120px]"
+                      disabled={isSaving || isRemoteTransitioning}
+                      className="px-5 sm:px-6 py-2.5 sm:py-3 rounded-2xl bg-neutral-900 hover:bg-neutral-800 text-amber-300 font-bold text-xs sm:text-sm border border-amber-500/30 transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[120px]"
                     >
                       <Pause className="w-4 h-4" />
                       <span>Pause Break</span>
                     </button>
                     <button
                       onClick={handleReset}
-                      className="px-5 sm:px-6 py-2.5 sm:py-3 rounded-2xl bg-neutral-900/80 hover:bg-neutral-800 border border-white/[0.08] text-neutral-400 hover:text-white font-bold text-xs sm:text-sm transition-colors active:scale-95 cursor-pointer flex-1 xs:flex-initial min-w-[110px]"
+                      disabled={isSaving || isRemoteTransitioning}
+                      className="px-5 sm:px-6 py-2.5 sm:py-3 rounded-2xl bg-neutral-900/80 hover:bg-neutral-800 border border-white/[0.08] text-neutral-400 hover:text-white font-bold text-xs sm:text-sm transition-colors active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[110px]"
                     >
                       <span>End Break</span>
                     </button>
@@ -1136,7 +1176,8 @@ export function StudyTimer() {
                     setPomodoroCompletedPhase(null);
                     handleStartSession();
                   }}
-                  className="px-6 sm:px-8 py-3 sm:py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black text-xs sm:text-sm transition-all shadow-xl shadow-emerald-500/25 flex items-center justify-center gap-2 active:scale-95 hover:scale-[1.02] cursor-pointer w-full xs:w-auto"
+                  disabled={isSaving || isRemoteTransitioning}
+                  className="px-6 sm:px-8 py-3 sm:py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black text-xs sm:text-sm transition-all shadow-xl shadow-emerald-500/25 flex items-center justify-center gap-2 active:scale-95 hover:scale-[1.02] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed w-full xs:w-auto"
                 >
                   <Flame className="w-4 sm:w-5 h-4 sm:h-5 fill-current" />
                   <span>Start Focus Session</span>
@@ -1145,8 +1186,9 @@ export function StudyTimer() {
                 /* 1. IDLE State: One primary button */
                 <button
                   onClick={handleStartSession}
+                  disabled={!selectedSubject?.id || isSaving || isRemoteTransitioning}
                   className={`px-6 sm:px-8 py-3.5 sm:py-3.5 rounded-2xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-2 sm:gap-2.5 w-full xs:w-auto ${
-                    !selectedSubject?.id
+                    !selectedSubject?.id || isRemoteTransitioning
                       ? 'bg-neutral-800/80 text-neutral-500 border border-white/[0.08] opacity-50 cursor-not-allowed shadow-none'
                       : 'bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 shadow-xl shadow-emerald-500/25 active:scale-95 hover:scale-[1.02] cursor-pointer'
                   }`}
@@ -1160,7 +1202,8 @@ export function StudyTimer() {
                 <>
                   <button
                     onClick={handlePause}
-                    className="px-4 sm:px-6 py-2.5 sm:py-3 rounded-2xl bg-neutral-900 hover:bg-neutral-800 text-amber-300 font-bold text-xs sm:text-sm border border-amber-500/30 transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer flex-1 xs:flex-initial min-w-[110px]"
+                    disabled={isSaving || isRemoteTransitioning}
+                    className="px-4 sm:px-6 py-2.5 sm:py-3 rounded-2xl bg-neutral-900 hover:bg-neutral-800 text-amber-300 font-bold text-xs sm:text-sm border border-amber-500/30 transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[110px]"
                   >
                     <Pause className="w-4 h-4" />
                     <span>Pause</span>
@@ -1168,7 +1211,7 @@ export function StudyTimer() {
 
                   <button
                     onClick={handleStopAndSave}
-                    disabled={isSaving}
+                    disabled={isSaving || isRemoteTransitioning}
                     className="px-4 sm:px-6 py-2.5 sm:py-3 rounded-2xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[130px]"
                     title={isSaving ? "Saving session..." : "Stop and save session"}
                   >
@@ -1190,8 +1233,8 @@ export function StudyTimer() {
                 <>
                   <button
                     onClick={handleResume}
-                    disabled={isSaving}
-                    className="px-4 sm:px-6 py-2.5 sm:py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs sm:text-sm transition-all shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 flex-1 xs:flex-initial min-w-[110px]"
+                    disabled={isSaving || isRemoteTransitioning}
+                    className="px-4 sm:px-6 py-2.5 sm:py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs sm:text-sm transition-all shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[110px]"
                   >
                     <Play className="w-4 h-4 fill-current" />
                     <span>Resume</span>
@@ -1199,7 +1242,7 @@ export function StudyTimer() {
 
                   <button
                     onClick={handleStopAndSave}
-                    disabled={isSaving}
+                    disabled={isSaving || isRemoteTransitioning}
                     className="px-4 sm:px-6 py-2.5 sm:py-3 rounded-2xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[130px]"
                     title={isSaving ? "Saving session..." : "Stop and save session"}
                   >
@@ -1218,7 +1261,8 @@ export function StudyTimer() {
 
                   <button
                     onClick={handleReset}
-                    className="p-2.5 sm:p-3 rounded-2xl bg-neutral-900/80 hover:bg-neutral-800 border border-white/[0.08] text-neutral-400 hover:text-white transition-colors active:scale-95 cursor-pointer flex-shrink-0"
+                    disabled={isSaving || isRemoteTransitioning}
+                    className="p-2.5 sm:p-3 rounded-2xl bg-neutral-900/80 hover:bg-neutral-800 border border-white/[0.08] text-neutral-400 hover:text-white transition-colors active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
                     title="Reset Timer"
                   >
                     <RotateCcw className="w-4 h-4" />
