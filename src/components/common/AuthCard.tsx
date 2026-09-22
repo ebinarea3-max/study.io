@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { getSupabase } from '../../lib/supabase';
 import { Loader2, AlertCircle } from 'lucide-react';
+import { Logo } from '../Logo';
 
 interface AuthCardProps {
   onSuccess?: () => void;
@@ -65,10 +66,8 @@ export function AuthCard({ onSuccess, isModal = false }: AuthCardProps) {
 
       {/* Header Info */}
       <div className="text-center mb-6 relative z-10">
-        <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-white/[0.04] border border-white/[0.08] shadow-inner mb-4">
-          <div className="w-7 h-7 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center font-black text-slate-950 text-sm shadow-md shadow-emerald-500/20">
-            ⚡
-          </div>
+        <div className="inline-flex items-center justify-center mb-3">
+          <Logo className="w-12 h-12" />
         </div>
         <h2 className="text-2xl font-black text-white tracking-tight">
           Welcome to study.io

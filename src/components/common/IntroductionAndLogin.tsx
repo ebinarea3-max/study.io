@@ -9,6 +9,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { AuthCard } from './AuthCard';
+import { Logo } from '../Logo';
 
 export function IntroductionAndLogin() {
   return (
@@ -22,18 +23,16 @@ export function IntroductionAndLogin() {
 
       {/* Top Header */}
       <header className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 flex items-center justify-between relative z-10">
-        <div className="flex items-center gap-2.5">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-500 via-teal-400 to-cyan-400 flex items-center justify-center font-black text-slate-950 text-xl shadow-lg shadow-emerald-500/25">
-            ⚡
-          </div>
+        <div className="flex items-center gap-3">
+          <Logo className="w-9 h-9" />
           <div>
-            <div className="text-lg font-black tracking-tight text-white flex items-center gap-1.5">
+            <div className="text-lg font-black tracking-tight text-white flex items-center gap-1.5 leading-none">
               <span>study.io</span>
-              <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+              <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 leading-none">
                 Focus
               </span>
             </div>
-            <div className="text-[10px] text-slate-400 -mt-0.5">Gamified Focus &amp; Productivity</div>
+            <div className="text-[10px] text-slate-400 mt-0.5">Gamified Focus &amp; Productivity</div>
           </div>
         </div>
 
