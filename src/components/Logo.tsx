@@ -3,36 +3,53 @@ import React from 'react';
 export function Logo({ className = "w-7 h-7" }: { className?: string }) {
   return (
     <div className={`relative flex items-center justify-center shrink-0 ${className}`}>
-      <svg viewBox="0 0 48 48" fill="none" className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <radialGradient id="ringGlow" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#10B981" stopOpacity="0.25" />
-            <stop offset="100%" stopColor="#10B981" stopOpacity="0" />
-          </radialGradient>
-          <linearGradient id="eclipseGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#34D399" />
-            <stop offset="60%" stopColor="#10B981" />
-            <stop offset="100%" stopColor="#059669" />
-          </linearGradient>
-          <filter id="coreGlow" x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur stdDeviation="1.5" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-        </defs>
-        <circle cx="24" cy="24" r="20" fill="url(#ringGlow)" />
-        <circle cx="24" cy="24" r="16" stroke="#1E293B" strokeWidth="3.5" strokeLinecap="round" />
+      <svg
+        viewBox="0 0 64 64"
+        fill="none"
+        className="w-full h-full"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        {/* Dark Squircle Background */}
+        <rect
+          width="64"
+          height="64"
+          rx="16"
+          fill="#0F172A"
+          stroke="#1E293B"
+          strokeWidth="1.5"
+        />
+
+        {/* Book Left Page */}
         <path
-          d="M 24 8 A 16 16 0 1 1 35.3 12.7"
-          stroke="url(#eclipseGrad)"
+          d="M 29.5 19 C 25.5 16.5 20.5 16.5 16 18.5 V 43 C 20.5 41.5 25.5 42 29.5 45.5"
+          stroke="#94A3B8"
           strokeWidth="3.5"
           strokeLinecap="round"
-          filter="url(#coreGlow)"
+          strokeLinejoin="round"
         />
-        <circle cx="35.3" cy="12.7" r="2.5" fill="#6EE7B7" filter="url(#coreGlow)" />
-        <circle cx="24" cy="24" r="3" fill="#F8FAFC" />
+
+        {/* Book Right Page */}
+        <path
+          d="M 34.5 19 C 38.5 16.5 43.5 16.5 48 18.5 V 43 C 43.5 41.5 38.5 42 34.5 45.5"
+          stroke="#94A3B8"
+          strokeWidth="3.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+
+        {/* Green "i" dot */}
+        <circle cx="32" cy="13.5" r="3.75" fill="#10B981" />
+
+        {/* Green "i" vertical spine */}
+        <line
+          x1="32"
+          y1="19"
+          x2="32"
+          y2="46.5"
+          stroke="#10B981"
+          strokeWidth="3.5"
+          strokeLinecap="round"
+        />
       </svg>
     </div>
   );
