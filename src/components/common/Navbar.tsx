@@ -181,7 +181,7 @@ export function Navbar({
                 </span>
               </div>
               <div className="hidden sm:block text-[10px] text-slate-400 font-medium tracking-wide mt-0.5 uppercase">
-                Focus Telemetry &amp; Protocol
+                Focus &amp; Habit Tracking
               </div>
             </div>
           </div>
@@ -318,7 +318,7 @@ export function Navbar({
                       className="text-[11px] sm:text-xs font-hud font-bold tracking-wider"
                       style={{ color: theme.textAccent }}
                     >
-                      {user.streakDays}D
+                      {user.streakDays}
                     </span>
                   </div>
                 )}

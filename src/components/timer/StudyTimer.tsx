@@ -1424,7 +1424,7 @@ export function StudyTimer() {
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4" style={{ color: theme.accent }} />
               <span className="text-xs font-hud font-bold text-white tracking-widest uppercase">
-                TELEMETRY OVERVIEW
+                DAILY OVERVIEW
               </span>
             </div>
             {/* Today vs Yesterday Toggle */}
@@ -1512,7 +1512,7 @@ export function StudyTimer() {
                   <Flame className="w-full h-full fill-current" style={{ color: theme.accent }} />
                 </div>
                 <span className="text-lg font-hud font-black tracking-tight" style={{ color: theme.textAccent }}>
-                  {user?.streakDays ?? 0}D
+                  {user?.streakDays ?? 0}
                 </span>
               </div>
             </div>
@@ -1532,7 +1532,7 @@ export function StudyTimer() {
           <div className="flex items-center gap-2 pb-2.5 border-b border-white/[0.08] relative z-10">
             <MessageCircle className="w-4 h-4" style={{ color: theme.accent }} />
             <span className="text-xs font-hud font-bold text-white tracking-widest uppercase">
-              OPERATIONAL DIRECTIVE
+              TODAY'S BOOST
             </span>
           </div>
 

@@ -342,7 +342,7 @@ export function DailyTodoList() {
         <div className="flex items-center gap-2">
           <CheckSquare className="w-4 h-4" style={{ color: theme.accent }} />
           <span className="font-hud-mono text-xs uppercase font-bold text-white tracking-wider">
-            Operational Checklist
+            TODO LIST
           </span>
         </div>
         <span
@@ -383,7 +383,7 @@ export function DailyTodoList() {
           type="text"
           value={taskInput}
           onChange={e => setTaskInput(e.target.value)}
-          placeholder="+ Deploy new objective / task item..."
+          placeholder="+ Take a note / Add an item..."
           className="w-full bg-transparent text-xs text-neutral-200 placeholder:text-neutral-500 focus:outline-none font-sans py-0.5"
         />
         {taskInput.trim() && (
@@ -440,8 +440,8 @@ export function DailyTodoList() {
         {todos.length === 0 && (
           <div className="py-6 text-center text-xs text-neutral-500 space-y-1">
             <CheckCircle2 className="w-7 h-7 text-neutral-600 mx-auto mb-1 opacity-70" />
-            <p className="text-neutral-400 font-hud-mono font-bold tracking-wider">CHECKLIST EMPTY</p>
-            <p className="text-[11px] text-neutral-500 mt-0.5">Type above to dispatch a new task directive</p>
+            <p className="text-neutral-400 font-hud-mono font-bold tracking-wider">Your checklist is empty</p>
+            <p className="text-[11px] text-neutral-500 mt-0.5">Type above in '+ Take a note / Add an item...' and press Enter</p>
           </div>
         )}
 

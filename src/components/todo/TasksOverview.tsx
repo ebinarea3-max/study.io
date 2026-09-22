@@ -107,7 +107,7 @@ export function TasksOverview() {
           <div className="flex items-center gap-2">
             <Radio className="w-3.5 h-3.5" style={{ color: theme.accent }} />
             <span className="font-hud-mono text-[11px] font-bold uppercase tracking-wider text-neutral-300">
-              Operational Directive // Objectives
+              TODAY'S BOOST // Objectives
             </span>
           </div>
           <span
@@ -146,7 +146,7 @@ export function TasksOverview() {
           <div className="flex items-center gap-2">
             <Sparkles className="w-3.5 h-3.5" style={{ color: theme.accent }} />
             <span className="font-hud-mono text-xs uppercase tracking-wider font-bold text-neutral-300">
-              Daily Telemetry
+              Daily Overview
             </span>
           </div>
 
