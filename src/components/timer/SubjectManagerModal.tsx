@@ -49,6 +49,10 @@ export function SubjectManagerModal({ isOpen = true, onClose, subjects: propsSub
   if (!isOpen) return null;
 
   // 3. Fix the "Add New Subject" Handler with fallback defaults
+  const handleCreateSubject = async (name: string, color = '#10b981', targetMinutes = 60) => {
+    const trimmed = (name || '').trim();
+    if (!trimmed) {
+      setErrorMessage('Please enter a subject name.');
       return;
     }
 
