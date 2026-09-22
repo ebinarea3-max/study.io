@@ -13,6 +13,7 @@ import {
   ChevronDown,
   GripVertical,
 } from 'lucide-react';
+import { useRankTheme } from '../../hooks/useRankTheme';
 
 export interface DailyTodo {
   id: string;
@@ -36,6 +37,7 @@ export function DailyTodoList() {
   const [todos, setTodos] = useState<DailyTodo[]>([]);
   const [taskInput, setTaskInput] = useState('');
   const [isCompletedOpen, setIsCompletedOpen] = useState(true);
+  const { theme } = useRankTheme();
 
   const inFlightOpsRef = useRef<number>(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -334,27 +336,37 @@ export function DailyTodoList() {
   const progressPercent = todos.length > 0 ? Math.round((completedTodos.length / todos.length) * 100) : 0;
 
   return (
-    <div className="rounded-3xl bg-neutral-900/50 border border-white/[0.08] hover:border-cyan-500/30 backdrop-blur-xl p-5 shadow-xl space-y-3 transition-all relative overflow-hidden group">
-      {/* Subtle Ambient Ice Cyan Glow */}
-      <div className="absolute -top-10 -left-10 w-32 h-32 rounded-full bg-cyan-500/10 blur-2xl pointer-events-none" />
-
+    <div className="hud-surface hud-corner-bracket border border-white/[0.08] rounded-2xl p-4 sm:p-5 space-y-3 relative overflow-hidden group">
       {/* Header Row */}
-      <div className="flex items-center justify-between pb-2.5 border-b border-cyan-500/15 relative z-10">
+      <div className="flex items-center justify-between pb-2.5 border-b border-white/[0.06] relative z-10">
         <div className="flex items-center gap-2">
-          <CheckSquare className="w-4 h-4 text-cyan-400" />
-          <span className="text-xs font-bold text-white tracking-tight uppercase">Todo List</span>
+          <CheckSquare className="w-4 h-4" style={{ color: theme.accent }} />
+          <span className="font-hud-mono text-xs uppercase font-bold text-white tracking-wider">
+            Operational Checklist
+          </span>
         </div>
-        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium bg-cyan-950/60 text-cyan-300 border border-cyan-800/50 shadow-sm">
-          <span className="font-bold text-cyan-200">{completedTodos.length}</span> / {todos.length} completed
+        <span
+          className="px-2.5 py-0.5 rounded font-hud-mono text-[11px] font-bold border shadow-sm"
+          style={{
+            color: theme.accent,
+            borderColor: `${theme.accent}40`,
+            backgroundColor: `${theme.accent}15`,
+          }}
+        >
+          <span className="font-bold">{completedTodos.length}</span> / {todos.length} COMPLETED
         </span>
       </div>
 
-      {/* Minimal Progress Line (when items exist) */}
+      {/* Progress Bar */}
       {todos.length > 0 && (
-        <div className="h-1.5 w-full rounded-full bg-black/50 overflow-hidden border border-white/[0.05] relative z-10">
+        <div className="h-1.5 w-full rounded-full bg-black/60 overflow-hidden border border-white/[0.05] relative z-10">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-teal-400 transition-all duration-500 shadow-sm shadow-cyan-500/20"
-            style={{ width: `${progressPercent}%` }}
+            className="h-full rounded-full transition-all duration-500 shadow-sm"
+            style={{
+              width: `${progressPercent}%`,
+              backgroundColor: theme.accent,
+              boxShadow: `0 0 10px ${theme.glow}`,
+            }}
           />
         </div>
       )}
@@ -362,24 +374,26 @@ export function DailyTodoList() {
       {/* Task Input: Clean, borderless inline input at the top */}
       <form
         onSubmit={handleAddTask}
-        className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-black/40 border border-white/[0.08] focus-within:border-cyan-500/50 focus-within:ring-1 focus-within:ring-cyan-500/20 focus-within:bg-black/60 transition-all relative z-10"
+        className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-black/40 border border-white/[0.08] focus-within:border-white/30 focus-within:ring-1 focus-within:bg-black/60 transition-all relative z-10"
+        style={{ '--tw-ring-color': theme.accent } as React.CSSProperties}
       >
-        <Plus className="w-4 h-4 text-cyan-400/70 flex-shrink-0" />
+        <Plus className="w-4 h-4 text-neutral-400 flex-shrink-0" />
         <input
           ref={inputRef}
           type="text"
           value={taskInput}
           onChange={e => setTaskInput(e.target.value)}
-          placeholder="+ Take a note / Add an item..."
-          className="w-full bg-transparent text-xs text-slate-800 dark:text-neutral-200 placeholder:text-slate-500 dark:placeholder:text-neutral-500 focus:outline-none font-sans py-0.5"
+          placeholder="+ Deploy new objective / task item..."
+          className="w-full bg-transparent text-xs text-neutral-200 placeholder:text-neutral-500 focus:outline-none font-sans py-0.5"
         />
         {taskInput.trim() && (
           <button
             type="submit"
             disabled={!taskInput.trim()}
-            className="px-2.5 py-1 text-[11px] font-bold bg-cyan-500 hover:bg-cyan-400 text-slate-950 rounded-lg transition-all flex-shrink-0 cursor-pointer disabled:opacity-50 shadow-sm shadow-cyan-500/20"
+            className="px-2.5 py-1 text-[11px] font-hud-mono font-bold text-slate-950 rounded-lg transition-all flex-shrink-0 cursor-pointer disabled:opacity-50 active:scale-95"
+            style={{ backgroundColor: theme.accent }}
           >
-            Add
+            ADD
           </button>
         )}
       </form>
@@ -390,16 +404,16 @@ export function DailyTodoList() {
         {activeTodos.map(item => (
           <div
             key={item.id}
-            className="group flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-neutral-800/40 transition-colors"
+            className="group flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/[0.04] transition-colors"
           >
-            <GripVertical className="w-3.5 h-3.5 text-neutral-400 dark:text-neutral-600 opacity-0 group-hover:opacity-40 transition-opacity flex-shrink-0 cursor-grab" />
+            <GripVertical className="w-3.5 h-3.5 text-neutral-600 opacity-0 group-hover:opacity-40 transition-opacity flex-shrink-0 cursor-grab" />
 
-            {/* Google Keep Square Checkbox */}
+            {/* Checkbox */}
             <button
               type="button"
               onClick={() => handleToggleTask(item.id, item.is_completed)}
               aria-label="Mark task complete"
-              className="w-[18px] h-[18px] rounded-[4px] border-[1.5px] border-slate-400 dark:border-neutral-600 hover:border-cyan-500 bg-slate-50 dark:bg-black/40 hover:bg-cyan-500/10 transition-all flex items-center justify-center flex-shrink-0 cursor-pointer group-hover:border-slate-500 dark:group-hover:border-neutral-400 active:scale-95"
+              className="w-[18px] h-[18px] rounded-[4px] border-[1.5px] border-neutral-600 bg-black/40 transition-all flex items-center justify-center flex-shrink-0 cursor-pointer group-hover:border-neutral-400 active:scale-95"
             />
 
             {/* Inline Editable Task Title */}
@@ -407,7 +421,7 @@ export function DailyTodoList() {
               type="text"
               value={item.task}
               onChange={e => handleUpdateTaskText(item.id, e.target.value)}
-              className="w-full bg-transparent text-xs text-slate-800 dark:text-neutral-200 focus:text-slate-950 dark:focus:text-white focus:outline-none py-0.5 tracking-wide leading-relaxed font-sans"
+              className="w-full bg-transparent text-xs text-neutral-200 focus:text-white focus:outline-none py-0.5 tracking-wide leading-relaxed font-sans"
             />
 
             {/* Delete button on hover */}
@@ -415,7 +429,7 @@ export function DailyTodoList() {
               type="button"
               onClick={() => handleDeleteTask(item.id)}
               title="Delete item"
-              className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-rose-500 p-1 transition-opacity cursor-pointer flex-shrink-0"
+              className="opacity-0 group-hover:opacity-100 text-neutral-500 hover:text-rose-400 p-1 transition-opacity cursor-pointer flex-shrink-0"
             >
               <Trash2 className="w-3.5 h-3.5" />
             </button>
@@ -424,14 +438,14 @@ export function DailyTodoList() {
 
         {/* Empty State message if 0 todos */}
         {todos.length === 0 && (
-          <div className="py-5 text-center text-xs text-slate-500 dark:text-neutral-500 space-y-1">
-            <CheckCircle2 className="w-7 h-7 text-slate-400 dark:text-neutral-600 mx-auto mb-1 opacity-70" />
-            <p className="text-slate-600 dark:text-neutral-400 font-semibold">Your checklist is empty</p>
-            <p className="text-[11px] text-slate-500 dark:text-neutral-400 mt-0.5 font-medium">Type above in &quot;+ Take a note / Add an item...&quot; and press Enter</p>
+          <div className="py-6 text-center text-xs text-neutral-500 space-y-1">
+            <CheckCircle2 className="w-7 h-7 text-neutral-600 mx-auto mb-1 opacity-70" />
+            <p className="text-neutral-400 font-hud-mono font-bold tracking-wider">CHECKLIST EMPTY</p>
+            <p className="text-[11px] text-neutral-500 mt-0.5">Type above to dispatch a new task directive</p>
           </div>
         )}
 
-        {/* Google Keep Completed Items Collapsible Section */}
+        {/* Completed Items Collapsible Section */}
         {completedTodos.length > 0 && (
           <div className="pt-2">
             <div className="border-t border-white/[0.08] pt-2 mb-1 flex items-center justify-between">
@@ -445,18 +459,18 @@ export function DailyTodoList() {
                     isCompletedOpen ? '' : '-rotate-90'
                   }`}
                 />
-                <span className="flex items-center gap-1.5">
-                  <Check className="w-3.5 h-3.5 text-cyan-400 stroke-[2.5]" />
-                  <span>Completed items ({completedTodos.length})</span>
+                <span className="flex items-center gap-1.5 font-hud-mono text-[11px] tracking-wide">
+                  <Check className="w-3.5 h-3.5 stroke-[2.5]" style={{ color: theme.accent }} />
+                  <span>COMPLETED OBJECTIVES ({completedTodos.length})</span>
                 </span>
               </button>
 
               <button
                 type="button"
                 onClick={handleClearCompleted}
-                className="text-[11px] text-neutral-500 hover:text-rose-400 transition-colors cursor-pointer"
+                className="font-hud-mono text-[10px] uppercase font-bold text-neutral-500 hover:text-rose-400 transition-colors cursor-pointer tracking-wider"
               >
-                Clear all
+                CLEAR ALL
               </button>
             </div>
 
@@ -465,14 +479,15 @@ export function DailyTodoList() {
                 {completedTodos.map(item => (
                   <div
                     key={item.id}
-                    className="group flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-neutral-800/30 transition-colors"
+                    className="group flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-neutral-800/20 transition-colors"
                   >
                     <div className="w-3.5 flex-shrink-0" />
                     <button
                       type="button"
                       onClick={() => handleToggleTask(item.id, item.is_completed)}
                       aria-label="Mark task incomplete"
-                      className="w-[18px] h-[18px] rounded-[4px] bg-cyan-500 border border-cyan-400 text-slate-950 flex items-center justify-center transition-all flex-shrink-0 cursor-pointer shadow-sm shadow-cyan-500/25 active:scale-95"
+                      className="w-[18px] h-[18px] rounded-[4px] text-slate-950 flex items-center justify-center transition-all flex-shrink-0 cursor-pointer shadow-sm active:scale-95"
+                      style={{ backgroundColor: theme.accent }}
                     >
                       <Check className="w-3 h-3 stroke-[3]" />
                     </button>

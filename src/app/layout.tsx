@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Rajdhani, Chakra_Petch } from "next/font/google";
 import "./globals.css";
 import { Providers } from "../components/common/Providers";
 
@@ -11,6 +11,18 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+const rajdhani = Rajdhani({
+  variable: "--font-hud",
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+});
+
+const chakraPetch = Chakra_Petch({
+  variable: "--font-hud-mono",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
 export const viewport: Viewport = {
@@ -51,9 +63,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} dark h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${rajdhani.variable} ${chakraPetch.variable} dark h-full antialiased`}
     >
-      <body className="min-h-screen overflow-x-hidden flex flex-col text-slate-100 bg-[#090a0c] dark antialiased selection:bg-emerald-500/30 selection:text-emerald-200">
+      <body className="min-h-screen overflow-x-hidden flex flex-col text-slate-200 bg-[#0A0C10] dark antialiased selection:bg-[var(--tier-accent)]/30 selection:text-[var(--tier-accent)]">
         <Providers>{children}</Providers>
       </body>
     </html>

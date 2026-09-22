@@ -20,9 +20,15 @@ import { TasksOverview } from '../components/todo/TasksOverview';
 import { DailyBoostModal } from '../components/common/DailyBoostModal';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import { Logo } from '../components/Logo';
+import { NavTabType } from '../components/common/Navbar';
+import { SwipeTabContainer } from '../components/common/SwipeTabContainer';
+import { SettingsTabContent } from '../components/common/SettingsTabContent';
+import { useRankTheme } from '../hooks/useRankTheme';
 
 export default function Home() {
   const { isAuthenticated, isLoading, user } = useAuth();
+  useRankTheme(); // Hydrate CSS custom properties globally for current session
+
   const {
     refetchSessions,
     levelUpData,
@@ -35,8 +41,8 @@ export default function Home() {
     dismissSeasonRecap,
   } = useStudy();
 
-  // Navigation tabs: Timer, Tasks, and Analytics
-  const [activeTab, setActiveTab] = useState<'timer' | 'tasks' | 'analytics'>('timer');
+  // Navigation tabs: Timer, Tasks, Analytics, and Settings
+  const [activeTab, setActiveTab] = useState<NavTabType>('timer');
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -97,13 +103,15 @@ export default function Home() {
   // Loading state while verifying stored session
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#090A0C] flex flex-col items-center justify-center text-slate-100 relative">
-        <div className="fixed inset-0 pointer-events-none bg-[radial-gradient(#ffffff0a_1px,transparent_1px)] [background-size:16px_16px] z-0" />
+      <div className="min-h-screen bg-[#0A0C10] flex flex-col items-center justify-center text-slate-100 relative">
+        <div className="fixed inset-0 pointer-events-none bg-hud-grid z-0" />
         <div className="relative z-10 flex flex-col items-center">
           <div className="mb-4 animate-pulse">
             <Logo className="w-14 h-14" />
           </div>
-          <div className="text-sm font-bold text-slate-400 tracking-wide">Loading study.io...</div>
+          <div className="text-sm font-hud font-bold text-slate-400 tracking-widest uppercase">
+            INITIALIZING STUDY.IO TELEMETRY...
+          </div>
         </div>
       </div>
     );
@@ -116,9 +124,9 @@ export default function Home() {
 
   // Authenticated: Full StudyPulse focus dashboard
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[#090A0C] text-slate-100 flex flex-col relative selection:bg-emerald-500/30 selection:text-emerald-200">
-      {/* Subtle Developer-grade Dot Grid Overlay */}
-      <div className="fixed inset-0 pointer-events-none bg-[radial-gradient(#ffffff0a_1px,transparent_1px)] [background-size:16px_16px] z-0" />
+    <div className="min-h-screen overflow-x-hidden bg-[#0A0C10] text-slate-100 flex flex-col relative selection:bg-[var(--tier-accent)]/30 selection:text-[var(--tier-text-accent)]">
+      {/* Drifting Ambient HUD Grid Overlay */}
+      <div className="fixed inset-0 pointer-events-none bg-hud-grid z-0" />
 
       {/* Floating Animated Cheers */}
       <FloatingReactions />
@@ -129,7 +137,7 @@ export default function Home() {
         onDismiss={dismissXpNotification}
       />
 
-      {/* Top Navigation Bar (Rooms removed) */}
+      {/* Top Navigation Bar */}
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -146,29 +154,38 @@ export default function Home() {
         />
       )}
 
-      {/* Main Content Area */}
+      {/* Main Content Area with Mobile Swipe Navigation */}
       <main
         className={`flex-1 max-w-7xl w-full mx-auto relative z-10 ${
           activeTab === 'timer'
-            ? 'p-0 md:px-6 md:py-8 pb-16 md:pb-12'
+            ? 'p-0 md:px-6 md:py-8 pb-24 md:pb-12'
             : 'px-3.5 sm:px-6 py-5 sm:py-8 pb-24 md:pb-12'
         }`}
       >
-        {activeTab === 'timer' && (
-          <ErrorBoundary fallbackTitle="Focus Timer">
-            <StudyTimer />
-          </ErrorBoundary>
-        )}
-        {activeTab === 'tasks' && (
-          <ErrorBoundary fallbackTitle="Tasks Overview">
-            <TasksOverview />
-          </ErrorBoundary>
-        )}
-        {activeTab === 'analytics' && (
-          <ErrorBoundary fallbackTitle="Analytics Dashboard">
-            <AnalyticsDashboard onStartSession={() => setActiveTab('timer')} />
-          </ErrorBoundary>
-        )}
+        <SwipeTabContainer activeTab={activeTab} onChangeTab={setActiveTab}>
+          {{
+            timer: (
+              <ErrorBoundary fallbackTitle="Focus Timer">
+                <StudyTimer />
+              </ErrorBoundary>
+            ),
+            tasks: (
+              <ErrorBoundary fallbackTitle="Tasks Overview">
+                <TasksOverview />
+              </ErrorBoundary>
+            ),
+            analytics: (
+              <ErrorBoundary fallbackTitle="Analytics Dashboard">
+                <AnalyticsDashboard onStartSession={() => setActiveTab('timer')} />
+              </ErrorBoundary>
+            ),
+            settings: (
+              <ErrorBoundary fallbackTitle="Settings & Preferences">
+                <SettingsTabContent />
+              </ErrorBoundary>
+            ),
+          }}
+        </SwipeTabContainer>
       </main>
 
       {/* Modals & Celebrations */}

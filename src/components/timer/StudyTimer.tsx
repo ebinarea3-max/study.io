@@ -38,6 +38,7 @@ import { calculateFocusXP } from '../../lib/gamification';
 import { calculateSessionRP } from '../../lib/rankedSystem';
 import { getLocalDateString, isSessionToday, isSessionYesterday } from '../../lib/dateUtils';
 import { Skeleton } from '../common/Skeleton';
+import { useRankTheme } from '../../hooks/useRankTheme';
 
 const EMPTY_STATE_QUOTES = [
   'Every long streak starts with one session.',
@@ -47,6 +48,7 @@ const EMPTY_STATE_QUOTES = [
 
 export function StudyTimer() {
   const { user, isLoading, updateProfile } = useAuth();
+  const { theme, userRank } = useRankTheme();
   const {
     subjects = [],
     selectedSubject,
@@ -668,16 +670,25 @@ export function StudyTimer() {
 
       {/* Main Left Column (Timer & Subject Goal Progress) */}
       <div className="lg:col-span-8 flex-1 md:flex-initial flex flex-col justify-between overflow-hidden md:overflow-visible space-y-0 md:space-y-6">
-        {/* Main Timer Glass Card */}
-        <div className="relative rounded-3xl bg-neutral-900/50 border border-white/[0.08] hover:border-emerald-500/25 backdrop-blur-2xl p-3.5 sm:p-8 lg:p-10 shadow-2xl overflow-hidden flex-1 md:flex-initial flex flex-col justify-between transition-all">
+        {/* Main Timer Game-HUD Card with Targeting Reticle Corner Brackets */}
+        <div
+          className="relative rounded-3xl bg-[#14171D] border border-white/[0.08] p-3.5 sm:p-8 lg:p-10 shadow-2xl overflow-hidden flex-1 md:flex-initial flex flex-col justify-between transition-all hud-corner-frame"
+          style={{ borderColor: `${theme.accent}35`, boxShadow: `0 0 35px -10px ${theme.glow}` }}
+        >
+          {/* Angular Targeting Reticle Corner Brackets */}
+          <div className="hud-corner-bracket hud-corner-tl" />
+          <div className="hud-corner-bracket hud-corner-tr" />
+          <div className="hud-corner-bracket hud-corner-bl" />
+          <div className="hud-corner-bracket hud-corner-br" />
+
           {/* Subtle Ambient Glow */}
           <div
             className="absolute -top-24 -right-24 w-72 h-72 rounded-full blur-[100px] opacity-15 pointer-events-none transition-all duration-700"
-            style={{ backgroundColor: subjectColor }}
+            style={{ backgroundColor: theme.accent }}
           />
           <div
             className="absolute -bottom-24 -left-24 w-72 h-72 rounded-full blur-[100px] opacity-10 pointer-events-none transition-all duration-700"
-            style={{ backgroundColor: subjectColor }}
+            style={{ backgroundColor: theme.accent }}
           />
 
           {/* Subtle Previous Session Recovery Banner */}
@@ -687,7 +698,7 @@ export function StudyTimer() {
                 <div className="w-7 h-7 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center flex-shrink-0">
                   <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
                 </div>
-                <span>Previous session recovered and paused.</span>
+                <span className="font-hud tracking-wide">PREVIOUS SESSION RESTORED (PAUSED)</span>
               </div>
               <button
                 onClick={() => setShowRecoveryBanner(false)}
@@ -703,28 +714,30 @@ export function StudyTimer() {
           <div className="flex flex-wrap items-center justify-between gap-2.5 sm:gap-4 relative z-10 pb-3 sm:pb-6 border-b border-white/[0.08] flex-shrink-0">
             <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
               {/* Mode Pill Toggle */}
-              <div className="flex items-center gap-1 p-0.5 sm:p-1 rounded-2xl bg-black/60 border border-white/[0.08]">
+              <div className="flex items-center gap-1 p-0.5 sm:p-1 rounded-2xl bg-[#0A0C10] border border-white/[0.08]">
                 <button
                   onClick={() => { if (!isStudying) setTimerMode('stopwatch'); }}
                   disabled={isStudying}
-                  className={`px-3 sm:px-4 py-1 sm:py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 ${
+                  className={`px-3 sm:px-4 py-1 sm:py-1.5 rounded-xl text-xs font-hud font-bold tracking-wider transition-all active:scale-95 ${
                     timerMode === 'stopwatch'
-                      ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/30'
+                      ? 'text-slate-950 shadow-md'
                       : 'text-neutral-400 hover:text-white'
                   } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+                  style={timerMode === 'stopwatch' ? { background: theme.gradient, boxShadow: `0 0 12px ${theme.glow}` } : undefined}
                 >
-                  Stopwatch
+                  STOPWATCH
                 </button>
                 <button
                   onClick={() => { if (!isStudying) setTimerMode('pomodoro'); }}
                   disabled={isStudying}
-                  className={`px-3 sm:px-4 py-1 sm:py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 ${
+                  className={`px-3 sm:px-4 py-1 sm:py-1.5 rounded-xl text-xs font-hud font-bold tracking-wider transition-all active:scale-95 ${
                     timerMode === 'pomodoro'
-                      ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/30'
+                      ? 'text-slate-950 shadow-md'
                       : 'text-neutral-400 hover:text-white'
                   } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+                  style={timerMode === 'pomodoro' ? { background: theme.gradient, boxShadow: `0 0 12px ${theme.glow}` } : undefined}
                 >
-                  Pomodoro
+                  POMODORO
                 </button>
               </div>
 
@@ -910,110 +923,204 @@ export function StudyTimer() {
             </div>
           </div>
 
-          {/* Center Timer Circular Display - Scaled to w-64 h-64 on Mobile */}
+          {/* Center Timer Display - Game HUD Radar / Reactor Core Display */}
           <div className="relative z-10 flex flex-col items-center justify-center my-auto py-1 sm:py-6 flex-shrink-0">
             <div className={`relative flex items-center justify-center p-1 sm:p-2 w-64 h-64 sm:w-80 sm:h-80 mx-auto aspect-square transition-all duration-300 rounded-full ${
               isRemoteTransitioning
-                ? 'scale-[1.03] ring-4 ring-emerald-400/50 shadow-[0_0_50px_rgba(16,185,129,0.4)]'
+                ? 'scale-[1.03] ring-4 ring-white/50 shadow-[0_0_50px_var(--tier-glow)]'
                 : ''
             }`}>
-              {/* Subtle Emerald Outer Halo / Gradient Rim */}
-              <div className="absolute inset-0 rounded-full bg-gradient-to-b from-emerald-500/20 via-emerald-500/5 to-transparent blur-lg pointer-events-none" />
-              <div className="absolute inset-1 sm:inset-1.5 rounded-full border border-emerald-500/25 pointer-events-none" />
-
-              {/* Outer Animated Ring */}
+              {/* Outer Tier Accent Ambient Halo */}
               <div
-                className={`w-full h-full rounded-full border-4 flex items-center justify-center transition-all duration-700 relative z-10 ${
-                  isStudying && !isPaused ? 'shadow-2xl' : 'shadow-[0_0_35px_rgba(16,185,129,0.12)]'
-                }`}
+                className="absolute inset-0 rounded-full blur-xl pointer-events-none transition-all duration-700 opacity-25"
+                style={{ background: theme.gradient }}
+              />
+
+              {/* Segmented Radar / Reactor Core SVG Ring */}
+              <svg
+                viewBox="0 0 300 300"
+                className="absolute inset-0 w-full h-full pointer-events-none select-none"
+              >
+                <defs>
+                  <linearGradient id="timerTierGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor={theme.accent} />
+                    <stop offset="50%" stopColor={theme.accentHover} />
+                    <stop offset="100%" stopColor={theme.accent} />
+                  </linearGradient>
+                </defs>
+
+                {/* Outer Graduation Tick Marks (60 radial ticks) */}
+                <g opacity="0.85">
+                  {Array.from({ length: 60 }).map((_, i) => {
+                    const angle = (i * 6 - 90) * (Math.PI / 180);
+                    const isMajor = i % 5 === 0;
+                    const rOuter = 144;
+                    const rInner = isMajor ? 133 : 139;
+                    const x1 = 150 + rOuter * Math.cos(angle);
+                    const y1 = 150 + rOuter * Math.sin(angle);
+                    const x2 = 150 + rInner * Math.cos(angle);
+                    const y2 = 150 + rInner * Math.sin(angle);
+                    return (
+                      <line
+                        key={i}
+                        x1={x1}
+                        y1={y1}
+                        x2={x2}
+                        y2={y2}
+                        stroke={isMajor ? theme.accent : 'rgba(255,255,255,0.18)'}
+                        strokeWidth={isMajor ? 2 : 1}
+                        strokeLinecap="round"
+                      />
+                    );
+                  })}
+                </g>
+
+                {/* Background Track Circle */}
+                <circle
+                  cx="150"
+                  cy="150"
+                  r="124"
+                  fill="none"
+                  stroke="rgba(255, 255, 255, 0.06)"
+                  strokeWidth="3.5"
+                />
+
+                {/* Dynamic Progress Arc */}
+                <circle
+                  cx="150"
+                  cy="150"
+                  r="124"
+                  fill="none"
+                  stroke="url(#timerTierGrad)"
+                  strokeWidth="4.5"
+                  strokeLinecap="round"
+                  strokeDasharray={2 * Math.PI * 124}
+                  strokeDashoffset={2 * Math.PI * 124 - (progressPercent / 100) * (2 * Math.PI * 124)}
+                  className="transition-all duration-500 ease-out"
+                  style={{
+                    filter: `drop-shadow(0 0 8px ${theme.glow})`,
+                  }}
+                  transform="rotate(-90 150 150)"
+                />
+              </svg>
+
+              {/* Rotating Radar Scanline when Running */}
+              {isStudying && !isPaused && (
+                <div
+                  className="absolute inset-5 rounded-full pointer-events-none animate-radar-sweep opacity-30"
+                  style={{
+                    background: `conic-gradient(from 0deg, transparent 0deg, transparent 270deg, ${theme.glow} 330deg, ${theme.accent} 360deg)`,
+                  }}
+                />
+              )}
+
+              {/* Inner Dial */}
+              <div
+                className="w-[78%] h-[78%] rounded-full bg-[#0A0C10] border flex flex-col items-center justify-center p-2.5 sm:p-6 text-center relative z-10 shadow-inner"
                 style={{
-                  borderColor: isStudying ? `${subjectColor}50` : 'rgba(16, 185, 129, 0.35)',
+                  borderColor: isStudying ? `${theme.accent}50` : 'rgba(255, 255, 255, 0.08)',
                   boxShadow: isStudying && !isPaused
-                    ? `0 0 50px ${subjectColor}30, 0 0 30px rgba(16, 185, 129, 0.2)`
-                    : '0 0 35px rgba(16, 185, 129, 0.12)',
+                    ? `inset 0 0 30px ${theme.glow}, 0 0 25px ${theme.glow}`
+                    : 'inset 0 0 20px rgba(0,0,0,0.8)',
                 }}
               >
-                {/* Inner Dial */}
+                {/* Pomodoro Phase / Subject Pill */}
                 <div
-                  className="w-[84%] h-[84%] rounded-full bg-black/60 border border-white/[0.08] flex flex-col items-center justify-center p-2.5 sm:p-6 text-center shadow-inner"
+                  className="mb-1 sm:mb-2 text-[10px] sm:text-[11px] font-hud font-bold px-2.5 sm:px-3 py-0.5 rounded-full border transition-colors max-w-[90%] truncate shadow-sm uppercase tracking-wider"
                   style={{
-                    borderColor: isStudying ? `${subjectColor}60` : undefined,
+                    backgroundColor: selectedSubject ? theme.badgeBg : 'rgba(255, 255, 255, 0.05)',
+                    borderColor: selectedSubject ? `${theme.accent}50` : 'rgba(255, 255, 255, 0.1)',
+                    color: selectedSubject ? theme.textAccent : '#94a3b8',
                   }}
                 >
-                  {/* Pomodoro Phase / Subject Pill */}
-                  <div
-                    className="mb-1 sm:mb-2 text-[10px] sm:text-[11px] font-bold px-2.5 sm:px-3 py-0.5 rounded-full border transition-colors max-w-[90%] truncate shadow-sm"
-                    style={{
-                      backgroundColor: selectedSubject ? `${subjectColor}18` : 'rgba(255, 255, 255, 0.05)',
-                      borderColor: selectedSubject ? `${subjectColor}50` : 'rgba(255, 255, 255, 0.1)',
-                      color: selectedSubject ? subjectColor : '#94a3b8',
-                    }}
-                  >
-                    {!selectedSubject
-                      ? 'Select a subject above'
-                      : timerMode === 'pomodoro'
-                      ? pomodoroPhase === 'work'
-                        ? `🔥 ${selectedSubject.name} (${pomodoroPreset === '50/10' ? '50m' : '25m'})`
-                        : `☕ Recharge Break (${pomodoroPreset === '50/10' ? '10m' : '5m'})`
-                      : selectedSubject.name}
-                  </div>
+                  {!selectedSubject
+                    ? 'SELECT SUBJECT'
+                    : timerMode === 'pomodoro'
+                    ? pomodoroPhase === 'work'
+                      ? `FOCUS // ${selectedSubject.name}`
+                      : `RECHARGE // BREAK`
+                    : selectedSubject.name}
+                </div>
 
-                  {/* Big Digital Numbers with Strict Tabular Monospaced Formatting */}
-                  <div
-                    className="font-mono text-4xl sm:text-5xl md:text-6xl font-black tracking-tight text-white drop-shadow-md tabular-nums select-none"
-                    style={{
-                      fontVariantNumeric: 'tabular-nums',
-                      fontFamily: 'var(--font-geist-mono), monospace',
-                    }}
-                  >
-                    {displayTime}
-                  </div>
+                {/* Big Technical Digital Numbers */}
+                <div
+                  className="font-hud font-black text-4xl sm:text-5xl md:text-6xl tracking-wider text-white drop-shadow-lg tabular-nums select-none"
+                  style={{
+                    textShadow: isStudying && !isPaused ? `0 0 16px ${theme.glow}` : undefined,
+                  }}
+                >
+                  {displayTime}
+                </div>
 
-                  {/* Status Indicator: Warm Neutral Pulsing Waiting Dot */}
-                  <div className="mt-1.5 sm:mt-2 flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-semibold text-slate-700 dark:text-neutral-300">
-                    <span
-                      className={`w-2 h-2 rounded-full transition-all ${
-                        pomodoroCompletedPhase === 'work'
-                          ? 'bg-emerald-500 animate-ping'
-                          : pomodoroCompletedPhase === 'break'
-                          ? 'bg-amber-500 animate-bounce'
-                          : isStudying
-                          ? isPaused
-                            ? 'bg-amber-500'
-                            : 'bg-emerald-500 animate-pulse'
-                          : 'bg-amber-500 dark:bg-amber-200/90 shadow-[0_0_8px_rgba(245,158,11,0.35)] animate-[pulse_2s_ease-in-out_infinite]'
-                      }`}
-                    />
-                    <span className="text-slate-700 dark:text-neutral-300 font-semibold">
-                      {pomodoroCompletedPhase === 'work'
-                        ? 'Focus Complete!'
+                {/* Animated HUD Monospace Status Readout */}
+                <div className="mt-1.5 sm:mt-2 flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-[11px] font-hud-mono font-bold tracking-wider uppercase">
+                  <span
+                    className={`w-2 h-2 rounded-full transition-all ${
+                      pomodoroCompletedPhase === 'work'
+                        ? 'animate-ping'
                         : pomodoroCompletedPhase === 'break'
-                        ? 'Break Over'
-                        : timerMode === 'pomodoro' && pomodoroPhase === 'shortBreak'
-                        ? isPaused
-                          ? 'Break Paused — Ready'
-                          : 'Recharging'
+                        ? 'animate-bounce'
                         : isStudying
                         ? isPaused
-                          ? 'Timer Paused'
-                          : 'Studying Live'
-                        : 'Ready to Start'}
-                    </span>
-                  </div>
+                          ? ''
+                          : 'animate-pulse'
+                        : 'animate-[pulse_2s_ease-in-out_infinite]'
+                    }`}
+                    style={{
+                      backgroundColor:
+                        pomodoroCompletedPhase === 'work'
+                          ? theme.accent
+                          : isStudying
+                          ? isPaused
+                            ? '#f59e0b'
+                            : theme.accent
+                          : theme.accent,
+                      boxShadow: `0 0 8px ${theme.accent}`,
+                    }}
+                  />
+                  <span style={{ color: isStudying && !isPaused ? theme.textAccent : '#94A3B8' }}>
+                    {pomodoroCompletedPhase === 'work'
+                      ? '● COMPLETE // BLOCK FINISHED'
+                      : pomodoroCompletedPhase === 'break'
+                      ? '● BREAK OVER // READY'
+                      : timerMode === 'pomodoro' && pomodoroPhase === 'shortBreak'
+                      ? isPaused
+                        ? '● HOLD // RECHARGE PAUSED'
+                        : '● ACTIVE // RECHARGING'
+                      : isStudying
+                      ? isPaused
+                        ? '● HOLD // SESSION PAUSED'
+                        : '● ACTIVE // FOCUS LIVE'
+                      : '● STANDBY // SYSTEM READY'}
+                  </span>
                 </div>
               </div>
             </div>
 
             {/* Focus Block Complete Alert Banner */}
             {pomodoroCompletedPhase === 'work' && (
-              <div className="mt-6 w-full max-w-md flex items-center justify-between gap-3 px-5 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500/20 via-teal-500/15 to-emerald-500/10 border border-emerald-500/40 text-emerald-200 text-xs font-semibold backdrop-blur-md shadow-xl shadow-emerald-500/10 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div
+                className="mt-6 w-full max-w-md flex items-center justify-between gap-3 px-5 py-3.5 rounded-2xl border text-xs font-semibold backdrop-blur-md shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-300"
+                style={{
+                  backgroundColor: theme.badgeBg,
+                  borderColor: `${theme.accent}50`,
+                  boxShadow: `0 0 20px ${theme.glow}`,
+                }}
+              >
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center flex-shrink-0">
-                    <Sparkles className="w-4 h-4 text-emerald-300 animate-pulse" />
+                  <div
+                    className="w-8 h-8 rounded-xl border flex items-center justify-center flex-shrink-0"
+                    style={{
+                      backgroundColor: theme.badgeBg,
+                      borderColor: `${theme.accent}50`,
+                      color: theme.accent,
+                    }}
+                  >
+                    <Sparkles className="w-4 h-4 animate-pulse" />
                   </div>
                   <div>
-                    <div className="text-sm font-black text-white">Focus Block Complete! 🎉</div>
-                    <div className="text-[11px] text-emerald-300/90 font-normal">
+                    <div className="text-sm font-hud font-black text-white tracking-wide">FOCUS BLOCK COMPLETE 🎉</div>
+                    <div className="text-[11px] text-slate-300 font-normal">
                       Save session to trigger rank settlement and pause for break, or skip.
                     </div>
                   </div>
@@ -1023,13 +1130,13 @@ export function StudyTimer() {
 
             {/* Break Over Alert Banner */}
             {pomodoroCompletedPhase === 'break' && (
-              <div className="mt-6 w-full max-w-md flex items-center justify-between gap-3 px-5 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500/20 via-amber-500/15 to-transparent border border-amber-500/40 text-amber-200 text-xs font-semibold backdrop-blur-md shadow-xl shadow-amber-500/10 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div className="mt-6 w-full max-w-md flex items-center justify-between gap-3 px-5 py-3.5 rounded-2xl bg-amber-500/15 border border-amber-500/40 text-amber-200 text-xs font-semibold backdrop-blur-md shadow-xl shadow-amber-500/10 animate-in fade-in slide-in-from-bottom-2 duration-300">
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center flex-shrink-0">
                     <Flame className="w-4 h-4 text-amber-300 animate-pulse" />
                   </div>
                   <div>
-                    <div className="text-sm font-black text-white">Break Over — Ready to Study?</div>
+                    <div className="text-sm font-hud font-black text-white tracking-wide">BREAK OVER // READY TO STUDY?</div>
                     <div className="text-[11px] text-amber-300/90 font-normal">
                       Timer switched back to focus mode. Click start when ready.
                     </div>
@@ -1045,8 +1152,8 @@ export function StudyTimer() {
               </div>
             )}
 
-            {/* Action Buttons: Context-aware controls */}
-            <div className="mt-auto pt-2 sm:pt-8 flex flex-wrap items-center justify-center gap-2 sm:gap-3 relative z-10 w-full flex-shrink-0 pb-1 sm:pb-0">
+            {/* Action Buttons: Context-aware HUD controls */}
+            <div className="mt-auto pt-4 sm:pt-8 flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 relative z-10 w-full flex-shrink-0 pb-1 sm:pb-0">
               {pomodoroCompletedPhase === 'work' ? (
                 /* Prompt 1: Focus Block Complete -> Save & Start Break / Skip Break */
                 <>
@@ -1060,17 +1167,18 @@ export function StudyTimer() {
                       }
                     }}
                     disabled={isSaving || isRemoteTransitioning}
-                    className="px-5 sm:px-6 py-3 sm:py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black text-xs sm:text-sm transition-all shadow-xl shadow-emerald-500/25 flex items-center justify-center gap-2 active:scale-95 hover:scale-[1.02] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[140px]"
+                    className="px-6 sm:px-8 py-3.5 rounded-xl font-hud font-bold text-xs sm:text-sm text-slate-950 transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[150px] uppercase tracking-wider hud-btn-primary"
+                    style={{ background: theme.gradient, boxShadow: `0 0 20px ${theme.glow}` }}
                   >
                     {isSaving ? (
                       <>
                         <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
-                        <span>Saving...</span>
+                        <span>SAVING...</span>
                       </>
                     ) : (
                       <>
                         <Coffee className="w-4 h-4 fill-current" />
-                        <span>Save & Start Break</span>
+                        <span>SAVE &amp; START BREAK</span>
                       </>
                     )}
                   </button>
@@ -1085,10 +1193,10 @@ export function StudyTimer() {
                       }
                     }}
                     disabled={isSaving || isRemoteTransitioning}
-                    className="px-5 sm:px-6 py-3 sm:py-3.5 rounded-2xl bg-neutral-900 hover:bg-neutral-800 border border-white/[0.12] text-neutral-300 hover:text-white font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[120px]"
+                    className="px-5 sm:px-6 py-3.5 rounded-xl bg-[#14171D] hover:bg-[#1B2028] border border-white/[0.12] text-slate-300 hover:text-white font-hud font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[120px] uppercase tracking-wider"
                   >
                     <SkipForward className="w-4 h-4" />
-                    <span>Skip Break</span>
+                    <span>SKIP BREAK</span>
                   </button>
                 </>
               ) : timerMode === 'pomodoro' && pomodoroPhase === 'shortBreak' ? (
@@ -1098,17 +1206,18 @@ export function StudyTimer() {
                     <button
                       onClick={startPomodoroBreak}
                       disabled={isSaving || isRemoteTransitioning}
-                      className="px-6 sm:px-8 py-3 sm:py-3.5 rounded-2xl bg-gradient-to-r from-teal-400 to-emerald-500 hover:from-teal-300 hover:to-emerald-400 text-slate-950 font-black text-xs sm:text-sm transition-all shadow-xl shadow-teal-500/25 flex items-center justify-center gap-2 active:scale-95 hover:scale-[1.02] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[130px]"
+                      className="px-6 sm:px-8 py-3.5 rounded-xl font-hud font-bold text-xs sm:text-sm text-slate-950 transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[140px] uppercase tracking-wider hud-btn-primary"
+                      style={{ background: theme.gradient, boxShadow: `0 0 20px ${theme.glow}` }}
                     >
                       <Play className="w-4 h-4 fill-current" />
-                      <span>Start Break</span>
+                      <span>START BREAK</span>
                     </button>
                     <button
                       onClick={handleReset}
                       disabled={isSaving || isRemoteTransitioning}
-                      className="px-4 sm:px-5 py-3 sm:py-3.5 rounded-2xl bg-neutral-900 hover:bg-neutral-800 border border-white/[0.08] text-neutral-400 hover:text-white font-bold text-xs sm:text-sm transition-colors active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[110px]"
+                      className="px-5 sm:px-6 py-3.5 rounded-xl bg-[#14171D] hover:bg-[#1B2028] border border-white/[0.08] text-slate-400 hover:text-white font-hud font-bold text-xs sm:text-sm transition-colors active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[110px] uppercase tracking-wider"
                     >
-                      <span>Skip Break</span>
+                      <span>SKIP BREAK</span>
                     </button>
                   </>
                 ) : (
@@ -1116,17 +1225,17 @@ export function StudyTimer() {
                     <button
                       onClick={handlePause}
                       disabled={isSaving || isRemoteTransitioning}
-                      className="px-5 sm:px-6 py-2.5 sm:py-3 rounded-2xl bg-neutral-900 hover:bg-neutral-800 text-amber-300 font-bold text-xs sm:text-sm border border-amber-500/30 transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[120px]"
+                      className="px-5 sm:px-7 py-3 rounded-xl bg-[#14171D] hover:bg-[#1B2028] text-amber-300 font-hud font-bold text-xs sm:text-sm border border-amber-500/40 transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[120px] uppercase tracking-wider"
                     >
                       <Pause className="w-4 h-4" />
-                      <span>Pause Break</span>
+                      <span>PAUSE BREAK</span>
                     </button>
                     <button
                       onClick={handleReset}
                       disabled={isSaving || isRemoteTransitioning}
-                      className="px-5 sm:px-6 py-2.5 sm:py-3 rounded-2xl bg-neutral-900/80 hover:bg-neutral-800 border border-white/[0.08] text-neutral-400 hover:text-white font-bold text-xs sm:text-sm transition-colors active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[110px]"
+                      className="px-5 sm:px-6 py-3 rounded-xl bg-[#14171D] hover:bg-[#1B2028] border border-white/[0.08] text-slate-400 hover:text-white font-hud font-bold text-xs sm:text-sm transition-colors active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[110px] uppercase tracking-wider"
                     >
-                      <span>End Break</span>
+                      <span>END BREAK</span>
                     </button>
                   </>
                 )
@@ -1138,25 +1247,33 @@ export function StudyTimer() {
                     handleStartSession();
                   }}
                   disabled={isSaving || isRemoteTransitioning}
-                  className="px-6 sm:px-8 py-3 sm:py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black text-xs sm:text-sm transition-all shadow-xl shadow-emerald-500/25 flex items-center justify-center gap-2 active:scale-95 hover:scale-[1.02] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed w-full xs:w-auto"
+                  className="px-8 sm:px-10 py-3.5 sm:py-4 font-hud font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-2.5 w-full xs:w-auto hud-btn-primary cursor-pointer hover:scale-[1.02]"
+                  style={{
+                    background: theme.gradient,
+                    boxShadow: `0 0 24px -2px ${theme.glow}`,
+                  }}
                 >
                   <Flame className="w-4 sm:w-5 h-4 sm:h-5 fill-current" />
-                  <span>Start Focus Session</span>
+                  <span>START FOCUS SESSION</span>
                 </button>
               ) : !isStudying ? (
-                /* 1. IDLE State: One primary button */
+                /* 1. IDLE State: Beveled HUD Button */
                 <button
                   onClick={handleStartSession}
                   disabled={!selectedSubject?.id || isSaving || isRemoteTransitioning}
-                  className={`px-6 sm:px-8 py-3.5 sm:py-3.5 rounded-2xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-2 sm:gap-2.5 w-full xs:w-auto ${
+                  className={`px-8 sm:px-10 py-3.5 sm:py-4 font-hud font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-2.5 w-full xs:w-auto hud-btn-primary ${
                     !selectedSubject?.id || isRemoteTransitioning
-                      ? 'bg-neutral-800/80 text-neutral-500 border border-white/[0.08] opacity-50 cursor-not-allowed shadow-none'
-                      : 'bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 shadow-xl shadow-emerald-500/25 active:scale-95 hover:scale-[1.02] cursor-pointer'
+                      ? 'opacity-40 cursor-not-allowed shadow-none'
+                      : 'cursor-pointer hover:scale-[1.02]'
                   }`}
+                  style={{
+                    background: theme.gradient,
+                    boxShadow: `0 0 24px -2px ${theme.glow}`,
+                  }}
                   title={!selectedSubject?.id ? 'Please select a subject before starting the timer' : 'Start Focus Session'}
                 >
                   <Play className="w-4 sm:w-5 h-4 sm:h-5 fill-current" />
-                  <span>Start Session</span>
+                  <span>START SESSION</span>
                 </button>
               ) : !isPaused ? (
                 /* 2. RUNNING State: Two buttons (Pause & Stop & Save) */
@@ -1164,58 +1281,59 @@ export function StudyTimer() {
                   <button
                     onClick={handlePause}
                     disabled={isSaving || isRemoteTransitioning}
-                    className="px-4 sm:px-6 py-2.5 sm:py-3 rounded-2xl bg-neutral-900 hover:bg-neutral-800 text-amber-300 font-bold text-xs sm:text-sm border border-amber-500/30 transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[110px]"
+                    className="px-5 sm:px-7 py-3 rounded-xl bg-[#14171D] hover:bg-[#1B2028] text-amber-300 font-hud font-bold text-xs sm:text-sm border border-amber-500/40 transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[120px] shadow-sm tracking-wider uppercase"
                   >
                     <Pause className="w-4 h-4" />
-                    <span>Pause</span>
+                    <span>PAUSE</span>
                   </button>
 
                   <button
                     onClick={handleStopAndSave}
                     disabled={isSaving || isRemoteTransitioning}
-                    className="px-4 sm:px-6 py-2.5 sm:py-3 rounded-2xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[130px]"
+                    className="px-5 sm:px-7 py-3 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/40 text-rose-300 font-hud font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[140px] shadow-sm tracking-wider uppercase"
                     title={isSaving ? "Saving session..." : "Stop and save session"}
                   >
                     {isSaving ? (
                       <>
                         <div className="w-4 h-4 border-2 border-rose-300 border-t-transparent rounded-full animate-spin" />
-                        <span>Saving...</span>
+                        <span>SAVING...</span>
                       </>
                     ) : (
                       <>
                         <Square className="w-4 h-4 fill-current" />
-                        <span>Stop & Save</span>
+                        <span>STOP &amp; SAVE</span>
                       </>
                     )}
                   </button>
                 </>
               ) : (
-                /* 3. PAUSED State: Two buttons (Resume & Stop & Save) plus subtle Reset icon */
+                /* 3. PAUSED State: Resume, Stop & Save, Reset */
                 <>
                   <button
                     onClick={handleResume}
                     disabled={isSaving || isRemoteTransitioning}
-                    className="px-4 sm:px-6 py-2.5 sm:py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs sm:text-sm transition-all shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[110px]"
+                    className="px-6 sm:px-8 py-3 rounded-xl font-hud font-bold text-xs sm:text-sm text-slate-950 transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[120px] tracking-wider uppercase hud-btn-primary"
+                    style={{ background: theme.gradient, boxShadow: `0 0 16px ${theme.glow}` }}
                   >
                     <Play className="w-4 h-4 fill-current" />
-                    <span>Resume</span>
+                    <span>RESUME</span>
                   </button>
 
                   <button
                     onClick={handleStopAndSave}
                     disabled={isSaving || isRemoteTransitioning}
-                    className="px-4 sm:px-6 py-2.5 sm:py-3 rounded-2xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[130px]"
+                    className="px-5 sm:px-7 py-3 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/40 text-rose-300 font-hud font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[140px] shadow-sm tracking-wider uppercase"
                     title={isSaving ? "Saving session..." : "Stop and save session"}
                   >
                     {isSaving ? (
                       <>
                         <div className="w-4 h-4 border-2 border-rose-300 border-t-transparent rounded-full animate-spin" />
-                        <span>Saving...</span>
+                        <span>SAVING...</span>
                       </>
                     ) : (
                       <>
                         <Square className="w-4 h-4 fill-current" />
-                        <span>Stop & Save</span>
+                        <span>STOP &amp; SAVE</span>
                       </>
                     )}
                   </button>
@@ -1223,7 +1341,7 @@ export function StudyTimer() {
                   <button
                     onClick={handleReset}
                     disabled={isSaving || isRemoteTransitioning}
-                    className="p-2.5 sm:p-3 rounded-2xl bg-neutral-900/80 hover:bg-neutral-800 border border-white/[0.08] text-neutral-400 hover:text-white transition-colors active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                    className="p-3 rounded-xl bg-[#14171D] hover:bg-[#1B2028] border border-white/[0.08] text-slate-400 hover:text-white transition-colors active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
                     title="Reset Timer"
                   >
                     <RotateCcw className="w-4 h-4" />
@@ -1284,104 +1402,144 @@ export function StudyTimer() {
         {/* 1. Todo List Card - Google Notes / Keep Checklist */}
         <DailyTodoList />
 
-        {/* 2. Daily Overview (Electric Violet / Indigo Accent) */}
-        <div className="rounded-3xl bg-neutral-900/50 border border-white/[0.08] hover:border-violet-500/30 backdrop-blur-xl p-5 shadow-xl space-y-4 transition-all relative overflow-hidden group">
-          {/* Subtle Ambient Violet Glow */}
-          <div className="absolute -top-12 -right-12 w-32 h-32 rounded-full bg-violet-600/10 blur-2xl pointer-events-none" />
+        {/* 2. Unified HUD Stat Readout Panel */}
+        <div
+          className="rounded-2xl bg-[#14171D] border border-white/[0.08] p-5 shadow-xl space-y-4 transition-all relative overflow-hidden hud-corner-frame"
+          style={{ borderColor: `${theme.accent}30` }}
+        >
+          <div className="hud-corner-bracket hud-corner-tl" />
+          <div className="hud-corner-bracket hud-corner-tr" />
+          <div className="hud-corner-bracket hud-corner-bl" />
+          <div className="hud-corner-bracket hud-corner-br" />
 
-          <div className="flex items-center justify-between pb-3 border-b border-violet-500/15 relative z-10">
+          {/* Ambient Tier Glow */}
+          <div
+            className="absolute -top-12 -right-12 w-32 h-32 rounded-full blur-2xl pointer-events-none opacity-20"
+            style={{ backgroundColor: theme.accent }}
+          />
+
+          <div className="flex items-center justify-between pb-3 border-b border-white/[0.08] relative z-10">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-violet-500 dark:text-violet-400" />
-              <span className="text-xs font-bold text-slate-900 dark:text-violet-200 tracking-tight uppercase">Daily Overview</span>
+              <Sparkles className="w-4 h-4" style={{ color: theme.accent }} />
+              <span className="text-xs font-hud font-bold text-white tracking-widest uppercase">
+                TELEMETRY OVERVIEW
+              </span>
             </div>
             {/* Today vs Yesterday Toggle */}
-            <div className="flex items-center gap-1 p-0.5 rounded-xl bg-slate-100 dark:bg-violet-950/50 border border-slate-200 dark:border-violet-800/40 text-[10px]">
+            <div className="flex items-center gap-1 p-0.5 rounded-xl bg-[#0A0C10] border border-white/[0.08] text-[10px]">
               <button
                 onClick={() => setOverviewView('today')}
-                className={`px-2 py-0.5 rounded-lg font-bold transition-all cursor-pointer ${
+                className={`px-2.5 py-1 rounded-lg font-hud font-bold tracking-wider uppercase transition-all cursor-pointer ${
                   overviewView === 'today'
-                    ? 'bg-violet-600 text-white shadow-sm'
-                    : 'text-slate-600 dark:text-violet-300/70 hover:text-slate-900 dark:hover:text-white'
+                    ? 'text-slate-950 shadow-sm'
+                    : 'text-slate-400 hover:text-white'
                 }`}
+                style={overviewView === 'today' ? { background: theme.gradient } : undefined}
               >
-                Today
+                TODAY
               </button>
               <button
                 onClick={() => setOverviewView('yesterday')}
-                className={`px-2 py-0.5 rounded-lg font-bold transition-all cursor-pointer ${
+                className={`px-2.5 py-1 rounded-lg font-hud font-bold tracking-wider uppercase transition-all cursor-pointer ${
                   overviewView === 'yesterday'
-                    ? 'bg-violet-600 text-white shadow-sm'
-                    : 'text-slate-600 dark:text-violet-300/70 hover:text-slate-900 dark:hover:text-white'
+                    ? 'text-slate-950 shadow-sm'
+                    : 'text-slate-400 hover:text-white'
                 }`}
+                style={overviewView === 'yesterday' ? { background: theme.gradient } : undefined}
               >
-                Yesterday
+                YESTERDAY
               </button>
             </div>
           </div>
 
-          <div className="flex items-center justify-between text-[11px] text-slate-600 dark:text-violet-300/70 font-semibold font-mono relative z-10">
-            <span>{overviewView === 'today' ? "Today's Activity" : "Yesterday's Activity"}</span>
-            <span>
+          <div className="flex items-center justify-between text-[11px] text-slate-400 font-semibold font-hud tracking-wider uppercase relative z-10">
+            <span>{overviewView === 'today' ? "TODAY'S METRICS" : "YESTERDAY'S METRICS"}</span>
+            <span className="font-hud-mono">
               {overviewView === 'today'
                 ? new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
                 : new Date(Date.now() - 86400000).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
             </span>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 relative z-10">
-            <div className="p-3 rounded-2xl bg-slate-100 dark:bg-violet-950/20 border border-slate-200 dark:border-violet-800/30 hover:border-violet-500/30 transition-colors space-y-1">
-              <div className="text-[10px] uppercase font-semibold tracking-wider text-slate-500 dark:text-violet-300/70">Total Focus</div>
-              <div className="text-lg font-bold text-slate-900 dark:text-violet-100 font-mono tabular-nums tracking-tight">
+          {/* Unified HUD Stat Readout Strip */}
+          <div className="rounded-xl bg-[#0A0C10] border border-white/[0.08] p-3 divide-y divide-white/[0.08] space-y-2 relative z-10">
+            <div className="flex items-center justify-between pt-1">
+              <div>
+                <div className="text-[10px] font-hud font-bold tracking-widest text-slate-400 uppercase">
+                  TOTAL FOCUS
+                </div>
+                <div className="text-xs text-slate-500 font-medium">Recorded study duration</div>
+              </div>
+              <div
+                className="text-lg font-hud font-black tracking-tight tabular-nums"
+                style={{ color: theme.textAccent }}
+              >
                 {(isLoading || isLoadingSessions) && !hasHydrated ? (
-                  <Skeleton className="h-6 w-20 my-0.5 bg-slate-200 dark:bg-violet-900/50" />
+                  <Skeleton className="h-6 w-20 bg-slate-800" />
                 ) : (
                   formatHoursAndMins(overviewView === 'today' ? overviewTodaySeconds : yesterdayTotalSeconds)
                 )}
               </div>
             </div>
-            <div className="p-3 rounded-2xl bg-slate-100 dark:bg-violet-950/20 border border-slate-200 dark:border-violet-800/30 hover:border-violet-500/30 transition-colors space-y-1">
-              <div className="text-[10px] uppercase font-semibold tracking-wider text-slate-500 dark:text-violet-300/70">Sessions</div>
-              <div className="text-lg font-bold text-slate-900 dark:text-violet-100 font-mono tabular-nums tracking-tight">
+
+            <div className="flex items-center justify-between pt-2">
+              <div>
+                <div className="text-[10px] font-hud font-bold tracking-widest text-slate-400 uppercase">
+                  SESSIONS
+                </div>
+                <div className="text-xs text-slate-500 font-medium">Completed study blocks</div>
+              </div>
+              <div className="text-lg font-hud font-black text-white tracking-tight tabular-nums">
                 {(isLoading || isLoadingSessions) && !hasHydrated ? (
-                  <Skeleton className="h-6 w-12 my-0.5 bg-slate-200 dark:bg-violet-900/50" />
+                  <Skeleton className="h-6 w-12 bg-slate-800" />
                 ) : (
                   overviewView === 'today' ? overviewTodaySessionsCount : yesterdaySessionsCount
                 )}
               </div>
             </div>
-          </div>
 
-          <div className="pt-1 flex items-center justify-between text-xs relative z-10">
-            <span className="flex items-center gap-1.5 text-slate-600 dark:text-neutral-400">
-              <Flame className="w-3.5 h-3.5 text-[#f97316] fill-[#f97316]" />
-              <span className="font-medium">Streak</span>
-            </span>
-            {(user?.streakDays ?? 0) > 0 ? (
-              <span className="px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-700/40 text-orange-700 dark:text-[#f97316] font-mono font-bold text-xs tabular-nums shadow-sm shadow-orange-950/30">
-                {user?.streakDays ?? 0} {(user?.streakDays ?? 0) === 1 ? 'day' : 'days'}
-              </span>
-            ) : (
-              <span className="font-mono font-bold text-slate-500 dark:text-neutral-400 tabular-nums">Start today</span>
-            )}
+            <div className="flex items-center justify-between pt-2">
+              <div>
+                <div className="text-[10px] font-hud font-bold tracking-widest text-slate-400 uppercase">
+                  ACTIVE STREAK
+                </div>
+                <div className="text-xs text-slate-500 font-medium">Daily consistency multiplier</div>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-4 h-4 flex items-center justify-center animate-ember-glow">
+                  <Flame className="w-full h-full fill-current" style={{ color: theme.accent }} />
+                </div>
+                <span className="text-lg font-hud font-black tracking-tight" style={{ color: theme.textAccent }}>
+                  {user?.streakDays ?? 0}D
+                </span>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* 3. Today's Boost / Motivation Card (Solar Amber / Warm Gold Accent) */}
-        <div className="rounded-3xl bg-amber-950/10 border border-amber-500/20 hover:border-amber-500/35 backdrop-blur-xl p-5 shadow-xl space-y-3 transition-all relative overflow-hidden group">
-          {/* Subtle Ambient Amber Glow */}
-          <div className="absolute -bottom-10 -right-10 w-32 h-32 rounded-full bg-amber-500/10 blur-2xl pointer-events-none" />
+        {/* 3. Today's Boost / Motivation Card */}
+        <div
+          className="rounded-2xl bg-[#14171D] border border-white/[0.08] p-5 shadow-xl space-y-3 transition-all relative overflow-hidden hud-corner-frame"
+          style={{ borderColor: `${theme.accent}30` }}
+        >
+          <div className="hud-corner-bracket hud-corner-tl" />
+          <div className="hud-corner-bracket hud-corner-tr" />
+          <div className="hud-corner-bracket hud-corner-bl" />
+          <div className="hud-corner-bracket hud-corner-br" />
 
-          <div className="flex items-center gap-2 pb-2.5 border-b border-amber-500/15 relative z-10">
-            <MessageCircle className="w-4 h-4 text-amber-500 dark:text-amber-400" />
-            <span className="text-xs font-bold text-slate-800 dark:text-amber-300 tracking-tight uppercase">Today's Boost</span>
+          <div className="flex items-center gap-2 pb-2.5 border-b border-white/[0.08] relative z-10">
+            <MessageCircle className="w-4 h-4" style={{ color: theme.accent }} />
+            <span className="text-xs font-hud font-bold text-white tracking-widest uppercase">
+              OPERATIONAL DIRECTIVE
+            </span>
           </div>
 
           <div className="min-h-[40px] flex flex-col justify-center relative z-10">
-            <p className="text-[15px] font-semibold text-slate-800 dark:text-amber-100/95 leading-snug tracking-tight drop-shadow-sm">
+            <p className="text-[14px] font-semibold text-slate-200 leading-snug tracking-tight">
               {primaryBoostMessage}
             </p>
             {secondaryBoostMessage && (
-              <p className="text-xs text-slate-700 dark:text-amber-300/80 mt-1.5 leading-normal font-medium">
+              <p className="text-xs text-slate-400 mt-1.5 leading-normal font-medium">
                 {secondaryBoostMessage}
               </p>
             )}

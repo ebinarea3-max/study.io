@@ -21,10 +21,13 @@ import { UserAvatar } from './UserAvatar';
 import { Logo } from '../Logo';
 import { getRankTier } from '../../lib/rankedSystem';
 import { getTierBadge, getLevelTitle } from '../../lib/gamification';
+import { useRankTheme } from '../../hooks/useRankTheme';
+
+export type NavTabType = 'timer' | 'tasks' | 'analytics' | 'settings';
 
 interface NavbarProps {
-  activeTab: 'timer' | 'tasks' | 'analytics';
-  setActiveTab: (tab: 'timer' | 'tasks' | 'analytics') => void;
+  activeTab: NavTabType;
+  setActiveTab: (tab: NavTabType) => void;
   onOpenAuth: () => void;
   onOpenProfile: () => void;
   onOpenSettings: () => void;
@@ -39,6 +42,7 @@ export function Navbar({
 }: NavbarProps) {
   const { user, isAuthenticated, logout } = useAuth();
   const { isStudying, setIsFocusModeOpen, gamification, sessions } = useStudy();
+  const { theme, userRank, totalRP } = useRankTheme();
 
   const [showPersonaMenu, setShowPersonaMenu] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -144,25 +148,6 @@ export function Navbar({
     user?.displayName,
   ]);
 
-  // Derive total RP and Level directly from the single source of truth for total study seconds
-  const totalSeconds = useMemo(() => {
-    return (sessions || []).reduce(
-      (sum, s) => sum + Number(s.durationSeconds ?? (s as any).duration_seconds ?? (s as any).duration ?? 0),
-      0
-    );
-  }, [sessions]);
-
-  const totalRP = useMemo(() => {
-    const focusRP = Math.floor(totalSeconds / 60) * 10;
-    const profileRP = Number((user as any)?.rp ?? user?.seasonRp ?? 0);
-    return Math.max(focusRP, profileRP);
-  }, [totalSeconds, (user as any)?.rp, user?.seasonRp]);
-
-  const userRank = useMemo(
-    () => getRankTier(totalRP),
-    [totalRP]
-  );
-
   // Prevent level/title flicker by falling back to stored user_metadata / user profile
   const effectiveLevel = gamification.level || (user?.user_metadata as any)?.level || user?.level || 1;
   const effectiveTitle = gamification.title || (user?.user_metadata as any)?.levelTitle || user?.levelTitle || getLevelTitle(effectiveLevel);
@@ -175,59 +160,84 @@ export function Navbar({
 
   return (
     <>
-    <header className="sticky top-0 z-40 w-full border-b border-slate-200 dark:border-white/[0.08] bg-white/90 dark:bg-[#090A0C]/85 backdrop-blur-xl transition-colors">
+    <header className="sticky top-0 z-40 w-full border-b border-white/[0.08] bg-[#0A0C10]/90 backdrop-blur-xl transition-colors">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 h-16 flex items-center justify-between gap-2 sm:gap-4">
         {/* Logo & Brand */}
         <div className="flex items-center gap-2.5 sm:gap-6">
           <div className="flex items-center gap-2.5 cursor-pointer select-none group" onClick={() => setActiveTab('timer')}>
             <Logo className="w-7 h-7 transition-transform group-hover:scale-105" />
             <div className="flex flex-col justify-center">
-              <div className="text-sm sm:text-base font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-1.5 leading-none">
-                <span>study.io</span>
-                <span className="hidden sm:inline-flex items-center text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 leading-none">
-                  Focus
+              <div className="text-sm sm:text-base font-hud font-extrabold tracking-wider text-white flex items-center gap-1.5 leading-none">
+                <span>STUDY.IO</span>
+                <span
+                  className="hidden sm:inline-flex items-center text-[9px] uppercase font-bold tracking-widest px-1.5 py-0.5 rounded border leading-none"
+                  style={{
+                    backgroundColor: theme.badgeBg,
+                    borderColor: `${theme.accent}50`,
+                    color: theme.accent,
+                  }}
+                >
+                  HUD // {userRank.tier}
                 </span>
               </div>
-              <div className="hidden sm:block text-[10px] text-slate-600 dark:text-slate-400 font-medium mt-0.5">Focus & Habit Tracking</div>
+              <div className="hidden sm:block text-[10px] text-slate-400 font-medium tracking-wide mt-0.5 uppercase">
+                Focus Telemetry &amp; Protocol
+              </div>
             </div>
           </div>
 
-          {/* Navigation Tabs - Hidden on mobile, handled by bottom navigation */}
-          <nav className="hidden md:flex items-center gap-1 p-1 rounded-2xl bg-slate-100 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800/80">
+          {/* Navigation Tabs - Desktop HUD strip */}
+          <nav className="hidden md:flex items-center gap-1 p-1 rounded-2xl bg-[#14171D] border border-white/[0.08]">
             <button
               onClick={() => setActiveTab('timer')}
-              className={`flex items-center gap-1 sm:gap-2 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-xl text-xs font-hud font-bold tracking-wider transition-all cursor-pointer ${
                 activeTab === 'timer'
-                  ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
-                  : 'text-slate-700 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white hover:bg-slate-200/80 dark:hover:bg-slate-800/60'
+                  ? 'text-slate-950 shadow-md'
+                  : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
               }`}
+              style={activeTab === 'timer' ? { background: theme.gradient, boxShadow: `0 0 16px ${theme.glow}` } : undefined}
             >
               <Timer className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span className="text-[11px] sm:text-xs">Timer</span>
+              <span>TIMER</span>
             </button>
 
             <button
               onClick={() => setActiveTab('tasks')}
-              className={`flex items-center gap-1 sm:gap-2 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-xl text-xs font-hud font-bold tracking-wider transition-all cursor-pointer ${
                 activeTab === 'tasks'
-                  ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
-                  : 'text-slate-700 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white hover:bg-slate-200/80 dark:hover:bg-slate-800/60'
+                  ? 'text-slate-950 shadow-md'
+                  : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
               }`}
+              style={activeTab === 'tasks' ? { background: theme.gradient, boxShadow: `0 0 16px ${theme.glow}` } : undefined}
             >
               <CheckSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span className="text-[11px] sm:text-xs">Tasks</span>
+              <span>TASKS</span>
             </button>
 
             <button
               onClick={() => setActiveTab('analytics')}
-              className={`flex items-center gap-1 sm:gap-2 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-xl text-xs font-hud font-bold tracking-wider transition-all cursor-pointer ${
                 activeTab === 'analytics'
-                  ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
-                  : 'text-slate-700 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white hover:bg-slate-200/80 dark:hover:bg-slate-800/60'
+                  ? 'text-slate-950 shadow-md'
+                  : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
               }`}
+              style={activeTab === 'analytics' ? { background: theme.gradient, boxShadow: `0 0 16px ${theme.glow}` } : undefined}
             >
               <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span className="text-[11px] sm:text-xs">Analytics</span>
+              <span>STATS</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('settings')}
+              className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-xl text-xs font-hud font-bold tracking-wider transition-all cursor-pointer ${
+                activeTab === 'settings'
+                  ? 'text-slate-950 shadow-md'
+                  : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
+              }`}
+              style={activeTab === 'settings' ? { background: theme.gradient, boxShadow: `0 0 16px ${theme.glow}` } : undefined}
+            >
+              <Settings className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span>SETTINGS</span>
             </button>
           </nav>
         </div>
@@ -239,40 +249,70 @@ export function Navbar({
           {!isAuthenticated ? (
             <Link
               href="/login"
-              className="flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-bold text-xs shadow-md shadow-emerald-500/20 transition-all hover:scale-105 active:scale-95 flex-shrink-0"
+              className="flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-xl text-slate-950 font-bold text-xs transition-all hover:scale-105 active:scale-95 flex-shrink-0 font-hud tracking-wider"
+              style={{ background: theme.gradient, boxShadow: `0 0 14px ${theme.glow}` }}
             >
               <LogIn className="w-3.5 h-3.5" />
-              <span>Sign In</span>
+              <span>SIGN IN</span>
             </Link>
           ) : (
             <>
-              {/* Free Fire Rank Badge Pill - Visible on mobile & desktop */}
+              {/* Angular Esports Rank Badge with Built-in Micro Progress Segment */}
               <div
-                className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-slate-100 dark:bg-slate-900/90 border border-slate-300 dark:border-white/[0.08] text-slate-800 dark:text-slate-200 cursor-default select-none shadow-sm"
+                className="relative flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 bg-[#14171D] border text-slate-100 cursor-default select-none shadow-md overflow-hidden"
+                style={{
+                  clipPath: 'polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px)',
+                  borderColor: `${theme.accent}55`,
+                  boxShadow: `0 0 14px ${theme.glow}`,
+                }}
                 title={`Ranked Season RP: ${userRank.rp.toLocaleString()} RP (${userRank.fullTitle})`}
               >
+                {/* Micro Progress Bar along bottom edge */}
+                <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-white/[0.08]">
+                  <div
+                    className="h-full transition-all duration-500"
+                    style={{
+                      width: `${userRank.progressPercent}%`,
+                      background: theme.gradient,
+                      boxShadow: `0 0 6px ${theme.accent}`,
+                    }}
+                  />
+                </div>
+
                 <div
                   className="w-2 h-2 rounded-full animate-pulse flex-shrink-0"
-                  style={{ backgroundColor: userRank.config.badgeAccent }}
+                  style={{ backgroundColor: theme.accent, boxShadow: `0 0 6px ${theme.accent}` }}
                 />
                 <span
-                  className="text-[10px] sm:text-xs font-black italic tracking-wider uppercase truncate max-w-[75px] sm:max-w-none text-amber-800 dark:text-amber-400"
+                  className="text-[10px] sm:text-xs font-hud font-bold tracking-widest uppercase truncate max-w-[80px] sm:max-w-none"
+                  style={{ color: theme.textAccent }}
                 >
                   {userRank.fullTitle}
                 </span>
-                <span className="hidden sm:inline text-[11px] font-mono text-slate-600 dark:text-slate-400 font-bold">
+                <span className="hidden sm:inline text-[11px] font-hud-mono font-bold text-slate-400">
                   {userRank.rp.toLocaleString()} RP
                 </span>
               </div>
 
-              {/* Streak Badge - Rendered only if streak > 0 */}
+              {/* Glowing Ember Streak Badge */}
               {user.streakDays > 0 && (
                 <div
-                  className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-orange-50 dark:bg-neutral-900/60 border border-orange-200 dark:border-white/[0.08] text-slate-800 dark:text-neutral-300 cursor-default select-none shadow-sm"
+                  className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-[#14171D] border text-slate-200 cursor-default select-none shadow-sm"
+                  style={{
+                    borderColor: `${theme.accent}40`,
+                    boxShadow: `0 0 10px ${theme.glow}`,
+                  }}
                   title={`${user.streakDays} Day Study Streak (+${user.streakDays * 50} XP bonus)`}
                 >
-                  <Flame className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#f97316] fill-[#f97316]" />
-                  <span className="text-[11px] sm:text-xs font-bold font-mono tabular-nums text-orange-700 dark:text-orange-400">{user.streakDays}d</span>
+                  <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex items-center justify-center animate-ember-glow">
+                    <Flame className="w-full h-full fill-current" style={{ color: theme.accent }} />
+                  </div>
+                  <span
+                    className="text-[11px] sm:text-xs font-hud font-bold tracking-wider"
+                    style={{ color: theme.textAccent }}
+                  >
+                    {user.streakDays}D
+                  </span>
                 </div>
               )}
             </>
@@ -468,84 +508,84 @@ export function Navbar({
       </div>
     </header>
 
-    {/* Mobile Sticky Bottom Navigation Bar: 4 Dedicated Tabs */}
+    {/* Mobile Floating Dock Navigation: 4 Dedicated Tabs with Sliding Tier Indicator */}
     <nav
-      aria-label="Mobile Bottom Navigation"
-      className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#0d1117]/95 backdrop-blur-xl border-t border-slate-200 dark:border-white/10 md:hidden flex justify-around items-center py-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] px-3 shadow-2xl"
+      aria-label="Mobile Floating Dock Navigation"
+      className="fixed bottom-4 left-3 right-3 max-w-sm mx-auto z-40 hud-glass-overlay rounded-full p-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.7)] md:hidden transition-all"
+      style={{
+        borderColor: `${theme.accent}35`,
+      }}
     >
-      {/* Tab 1: Timer */}
-      <button
-        onClick={() => setActiveTab('timer')}
-        className={`flex flex-col items-center justify-center gap-1 py-1 px-3 rounded-xl transition-all active:scale-95 cursor-pointer ${
-          activeTab === 'timer'
-            ? 'text-emerald-400 font-bold'
-            : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-        }`}
-      >
+      <div className="relative flex items-center justify-between w-full">
+        {/* Sliding active indicator pill in Tier Accent */}
         <div
-          className={`p-1.5 rounded-xl transition-all ${
+          className="absolute top-0 bottom-0 rounded-full transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
+          style={{
+            width: '25%',
+            transform: `translateX(${
+              activeTab === 'timer' ? '0%' : activeTab === 'tasks' ? '100%' : activeTab === 'analytics' ? '200%' : '300%'
+            })`,
+            background: theme.gradient,
+            boxShadow: `0 0 20px ${theme.glow}`,
+          }}
+        />
+
+        {/* Tab 1: Timer */}
+        <button
+          onClick={() => setActiveTab('timer')}
+          className={`relative z-10 flex-1 flex flex-col items-center justify-center py-2 rounded-full transition-all active:scale-95 cursor-pointer ${
             activeTab === 'timer'
-              ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-500/40'
-              : 'text-slate-500 dark:text-slate-400'
+              ? 'text-slate-950 font-bold'
+              : 'text-slate-400 hover:text-white'
           }`}
+          aria-label="Timer"
         >
           <Timer className="w-5 h-5" />
-        </div>
-        <span className="text-[10px] tracking-tight">Timer</span>
-      </button>
+          <span className="text-[9px] font-hud font-bold tracking-widest uppercase mt-0.5">Timer</span>
+        </button>
 
-      {/* Tab 2: Tasks */}
-      <button
-        onClick={() => setActiveTab('tasks')}
-        className={`flex flex-col items-center justify-center gap-1 py-1 px-3 rounded-xl transition-all active:scale-95 cursor-pointer ${
-          activeTab === 'tasks'
-            ? 'text-emerald-400 font-bold'
-            : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-        }`}
-      >
-        <div
-          className={`p-1.5 rounded-xl transition-all ${
+        {/* Tab 2: Tasks */}
+        <button
+          onClick={() => setActiveTab('tasks')}
+          className={`relative z-10 flex-1 flex flex-col items-center justify-center py-2 rounded-full transition-all active:scale-95 cursor-pointer ${
             activeTab === 'tasks'
-              ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-500/40'
-              : 'text-slate-500 dark:text-slate-400'
+              ? 'text-slate-950 font-bold'
+              : 'text-slate-400 hover:text-white'
           }`}
+          aria-label="Tasks"
         >
           <CheckSquare className="w-5 h-5" />
-        </div>
-        <span className="text-[10px] tracking-tight">Tasks</span>
-      </button>
+          <span className="text-[9px] font-hud font-bold tracking-widest uppercase mt-0.5">Tasks</span>
+        </button>
 
-      {/* Tab 3: Analytics */}
-      <button
-        onClick={() => setActiveTab('analytics')}
-        className={`flex flex-col items-center justify-center gap-1 py-1 px-3 rounded-xl transition-all active:scale-95 cursor-pointer ${
-          activeTab === 'analytics'
-            ? 'text-emerald-400 font-bold'
-            : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-        }`}
-      >
-        <div
-          className={`p-1.5 rounded-xl transition-all ${
+        {/* Tab 3: Analytics */}
+        <button
+          onClick={() => setActiveTab('analytics')}
+          className={`relative z-10 flex-1 flex flex-col items-center justify-center py-2 rounded-full transition-all active:scale-95 cursor-pointer ${
             activeTab === 'analytics'
-              ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-500/40'
-              : 'text-slate-500 dark:text-slate-400'
+              ? 'text-slate-950 font-bold'
+              : 'text-slate-400 hover:text-white'
           }`}
+          aria-label="Analytics"
         >
           <BarChart3 className="w-5 h-5" />
-        </div>
-        <span className="text-[10px] tracking-tight">Analytics</span>
-      </button>
+          <span className="text-[9px] font-hud font-bold tracking-widest uppercase mt-0.5">Stats</span>
+        </button>
 
-      {/* Tab 4: Settings */}
-      <button
-        onClick={onOpenSettings}
-        className="flex flex-col items-center justify-center gap-1 py-1 px-3 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all active:scale-95 cursor-pointer"
-      >
-        <div className="p-1.5 rounded-xl bg-slate-100 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400">
+        {/* Tab 4: Settings */}
+        <button
+          onClick={() => setActiveTab('settings')}
+          className={`relative z-10 flex-1 flex flex-col items-center justify-center py-2 rounded-full transition-all active:scale-95 cursor-pointer ${
+            activeTab === 'settings'
+              ? 'text-slate-950 font-bold'
+              : 'text-slate-400 hover:text-white'
+          }`}
+          aria-label="Settings"
+        >
           <Settings className="w-5 h-5" />
-        </div>
-        <span className="text-[10px] tracking-tight">Settings</span>
-      </button>
+          <span className="text-[9px] font-hud font-bold tracking-widest uppercase mt-0.5">Config</span>
+        </button>
+      </div>
     </nav>
     </>
   );
