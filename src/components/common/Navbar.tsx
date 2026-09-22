@@ -293,15 +293,6 @@ export function Navbar({
             )}
           </button>
 
-          {/* Settings Button */}
-          <button
-            onClick={onOpenSettings}
-            className="p-2 rounded-xl bg-slate-100 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white transition-colors shadow-sm cursor-pointer"
-            title="App Settings & Database"
-          >
-            <Settings className="w-4 h-4" />
-          </button>
-
           {/* User Profile Pill with Dynamic Level & Circular Progress Ring */}
           <div className="relative">
             <button
