@@ -1286,163 +1286,56 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     const supabase = getSupabase();
     if (!supabase) return;
 
-    if (!realtimeUserId) {
-      console.log('[Realtime] Gated: waiting for active non-null Supabase auth session');
+    // Only initialize the channel when user?.id is fully loaded
+    const userId = user?.id;
+    if (!userId || userId.startsWith('user-scholar') || userId.startsWith('guest')) {
       setRealtimeStatus('WAITING_AUTH');
       setIsSyncConnected(false);
       return;
     }
 
-    let isMounted = true;
-    let reconnectTimer: NodeJS.Timeout | null = null;
-    let currentBroadcastChannel: any = null;
-    let currentDbChannel: any = null;
-    const backoffDelays = [1000, 2000, 4000, 8000, 16000, 30000];
-    let reconnectAttempt = 0;
+    setRealtimeStatus('CONNECTING...');
 
-    // 1. Log Supabase client's realtime connection state directly (Section 3 of requirements)
-    const rt = (supabase as any)?.realtime;
-    if (rt) {
-      try {
-        if (typeof rt.onOpen === 'function') {
-          rt.onOpen(() => console.log('[Realtime socket] OPENED'));
+    const handleSessionChange = (payload: any) => {
+      realtimeEventCountRef.current++;
+      setRealtimeEventsCount(realtimeEventCountRef.current);
+      console.log(`[Realtime Event #${realtimeEventCountRef.current} postgres_changes]`, payload);
+      if (handleRemoteSyncRef.current) {
+        if (payload.eventType === 'DELETE') {
+          handleRemoteSyncRef.current(null);
+        } else {
+          handleRemoteSyncRef.current(payload.new);
         }
-        if (typeof rt.onError === 'function') {
-          rt.onError((err: any) => console.warn('[Realtime socket] ERROR', err));
-        }
-        if (typeof rt.onClose === 'function') {
-          rt.onClose(() => console.log('[Realtime socket] CLOSED'));
-        }
-      } catch (rtErr) {
-        console.warn('[Realtime socket listener error]:', rtErr);
       }
-    }
-
-    const broadcastChannelName = `broadcast-session-${realtimeUserId}`;
-    const dbChannelName = `active-session-${realtimeUserId}`;
-
-    const setupChannels = async () => {
-      // Clean up previous channels
-      if (currentBroadcastChannel) {
-        try { supabase.removeChannel(currentBroadcastChannel); } catch {}
-        currentBroadcastChannel = null;
-      }
-      if (currentDbChannel) {
-        try { supabase.removeChannel(currentDbChannel); } catch {}
-        currentDbChannel = null;
-      }
-      activeChannelRef.current = null;
-
-      // Pass user JWT to Realtime socket so RLS policies evaluating auth.uid() succeed
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.access_token && supabase.realtime) {
-          console.log('[Realtime socket] Setting auth token on socket');
-          await supabase.realtime.setAuth(session.access_token);
-        }
-      } catch (authErr) {
-        console.warn('[Realtime socket] setAuth failed:', authErr);
-      }
-
-      console.log('[Realtime] Setting up channels for userId:', realtimeUserId);
-      setRealtimeStatus('CONNECTING...');
-
-      // 1. Peer WebSocket Broadcast Channel:
-      // Immune to database publication errors; delivers sub-50ms peer updates between phone and PC
-      const bChannel = supabase
-        .channel(broadcastChannelName, {
-          config: {
-            broadcast: { self: true },
-          },
-        })
-        .on(
-          'broadcast',
-          { event: 'active_session_sync' },
-          (payload: any) => {
-            if (!isMounted) return;
-            realtimeEventCountRef.current++;
-            setRealtimeEventsCount(realtimeEventCountRef.current);
-            console.log(`[Realtime Event #${realtimeEventCountRef.current} Broadcast]`, payload);
-            if (handleRemoteSyncRef.current) {
-              handleRemoteSyncRef.current(payload?.payload);
-            }
-          }
-        )
-        .subscribe((status: string, err?: any) => {
-          if (!isMounted) return;
-          console.log('[Realtime Broadcast status]', status, err || '');
-          if (status === 'SUBSCRIBED') {
-            setIsSyncConnected(true);
-            setRealtimeStatus(prev => prev.includes('Live + DB') ? 'SUBSCRIBED' : 'SUBSCRIBED');
-          }
-        });
-
-      currentBroadcastChannel = bChannel;
-      activeChannelRef.current = bChannel;
-
-      // 2. Database Postgres Changes Channel:
-      // Listens for active_sessions table updates; requires table in supabase_realtime publication
-      const dChannel = supabase
-        .channel(dbChannelName)
-        .on(
-          'postgres_changes' as never,
-          {
-            event: '*',
-            schema: 'public',
-            table: 'active_sessions',
-            filter: `user_id=eq.${realtimeUserId}`,
-          },
-          (payload: any) => {
-            if (!isMounted) return;
-            realtimeEventCountRef.current++;
-            setRealtimeEventsCount(realtimeEventCountRef.current);
-            console.log(`[Realtime Event #${realtimeEventCountRef.current} postgres_changes]`, {
-              eventType: payload.eventType,
-              timestamp: new Date().toISOString(),
-              payload,
-            });
-            if (handleRemoteSyncRef.current) {
-              if (payload.eventType === 'DELETE') {
-                handleRemoteSyncRef.current(null);
-              } else {
-                handleRemoteSyncRef.current(payload.new);
-              }
-            }
-          }
-        )
-        .subscribe((status: string, err?: any) => {
-          if (!isMounted) return;
-          console.log('[Realtime DB status]', status, err || '');
-          if (status === 'SUBSCRIBED') {
-            setIsSyncConnected(true);
-            setRealtimeStatus('SUBSCRIBED');
-            reconnectAttempt = 0;
-            refetchActiveSession();
-          } else if (status === 'CHANNEL_ERROR') {
-            console.warn('[Realtime DB CHANNEL_ERROR]: active_sessions is not in supabase_realtime publication. Run in Supabase SQL editor: alter publication supabase_realtime add table active_sessions;');
-            // If peer broadcast channel connected, timer still syncs live over WebSockets
-            setRealtimeStatus(prev => prev.startsWith('SUBSCRIBED') ? 'SUBSCRIBED (Peer WS)' : 'CHANNEL_ERROR');
-          } else if (status === 'TIMED_OUT' || status === 'CLOSED') {
-            const delay = backoffDelays[Math.min(reconnectAttempt, backoffDelays.length - 1)];
-            reconnectAttempt++;
-            if (reconnectTimer) clearTimeout(reconnectTimer);
-            reconnectTimer = setTimeout(() => {
-              if (isMounted) setupChannels();
-            }, delay);
-          }
-        });
-
-      currentDbChannel = dChannel;
     };
 
-    setupChannels();
+    const channel = supabase.channel(`active-session-${userId}`)
+      .on(
+        'postgres_changes' as never,
+        {
+          event: '*',
+          schema: 'public',
+          table: 'active_sessions',
+          filter: `user_id=eq.${userId}`,
+        },
+        (payload: any) => handleSessionChange(payload)
+      )
+      .subscribe((status: string) => {
+        setRealtimeStatus(status);
+        if (status === 'SUBSCRIBED') {
+          setIsSyncConnected(true);
+          refetchActiveSession();
+        } else if (status === 'CHANNEL_ERROR' || status === 'CLOSED' || status === 'TIMED_OUT') {
+          setIsSyncConnected(false);
+        }
+      });
 
-    // Mobile backgrounding safeguard (Section 3 of prompt): plain SELECT on visibilitychange/focus
+    activeChannelRef.current = channel;
+
+    // Mobile backgrounding safeguard: plain SELECT on visibilitychange/focus
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        console.log('[Realtime] App resumed/visible -> re-fetching active session via SELECT & checking subscription');
         refetchActiveSession();
-        setupChannels();
       }
     };
 
@@ -1450,21 +1343,12 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     window.addEventListener('focus', handleVisibilityChange);
 
     return () => {
-      isMounted = false;
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', handleVisibilityChange);
-      if (reconnectTimer) clearTimeout(reconnectTimer);
-      if (currentBroadcastChannel) {
-        try { supabase.removeChannel(currentBroadcastChannel); } catch {}
-        currentBroadcastChannel = null;
-      }
-      if (currentDbChannel) {
-        try { supabase.removeChannel(currentDbChannel); } catch {}
-        currentDbChannel = null;
-      }
+      supabase.removeChannel(channel);
       activeChannelRef.current = null;
     };
-  }, [realtimeUserId, refetchActiveSession]);
+  }, [user?.id, refetchActiveSession]);
 
   // Load from Supabase or localStorage fallback
   useEffect(() => {
@@ -1592,7 +1476,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         if (isUuid) {
           const { data: dbSessions, error: sessError } = await supabase
             .from('study_sessions')
-            .select('*, subjects(name, color)')
+            .select('id, user_id, subject_id, duration_seconds, started_at, ended_at, notes, mode')
             .eq('user_id', activeUserId)
             .order('started_at', { ascending: false });
 
@@ -1807,9 +1691,9 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
       const { data: dbSessions, error } = await supabase
         .from('study_sessions')
-        .select('*, subjects(name, color)')
+        .select('id, user_id, subject_id, duration_seconds, started_at, ended_at, notes, mode')
         .eq('user_id', activeUserId)
-        .order('created_at', { ascending: false });
+        .order('started_at', { ascending: false });
 
       if (!error && dbSessions) {
         const mappedSessions = normalizeStudySessions(dbSessions, subjects, currentUser);
@@ -1981,34 +1865,17 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       const payload: Record<string, any> = {
         user_id: authUserId,
         subject_id: subjectIdToSave,
-        subject_name: subjectNameToSave,
-        subject: subjectNameToSave,
         duration_seconds: durationInt,
-        completed_at: sessionData.endTime || new Date().toISOString(),
-        started_at: sessionData.startTime,
-        ended_at: sessionData.endTime,
+        started_at: sessionData.startTime || new Date(Date.now() - durationInt * 1000).toISOString(),
+        ended_at: sessionData.endTime || new Date().toISOString(),
         notes: sessionData.notes && sessionData.notes.trim().length > 0 ? sessionData.notes.trim() : null,
-        mode: sessionData.mode || timerMode,
+        mode: sessionData.mode || timerMode || 'stopwatch',
       };
 
-      let insertRes = await supabase
+      const insertRes = await supabase
         .from('study_sessions')
         .insert(payload)
         .select();
-
-      if (insertRes.error && (insertRes.error.code === 'PGRST204' || insertRes.error.message?.includes('subject_name') || insertRes.error.message?.includes('completed_at') || insertRes.error.message?.includes('subject'))) {
-        const fallback = { ...payload };
-        if (insertRes.error.code === 'PGRST204' || insertRes.error.message?.includes('subject_name')) {
-          delete fallback.subject_name;
-        }
-        if (insertRes.error.code === 'PGRST204' || insertRes.error.message?.includes('completed_at')) {
-          delete fallback.completed_at;
-        }
-        if (insertRes.error.code === 'PGRST204' || (insertRes.error.message?.includes('subject') && !insertRes.error.message?.includes('subject_id'))) {
-          delete fallback.subject;
-        }
-        insertRes = await supabase.from('study_sessions').insert(fallback).select();
-      }
 
       if (insertRes.error) {
         console.error("Error saving session:", insertRes.error);
@@ -2040,22 +1907,22 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         if (targetUserId && !targetUserId.startsWith('user-scholar-')) {
           const { data: dbSessions, error } = await supabase
             .from('study_sessions')
-            .select('*, subjects(name, color)')
+            .select('id, user_id, subject_id, duration_seconds, started_at, ended_at, notes, mode')
             .eq('user_id', targetUserId)
             .gte('started_at', startOfDay.toISOString())
             .lte('started_at', endOfDay.toISOString())
             .order('started_at', { ascending: false });
 
           if (!error && dbSessions) {
-            return dbSessions
-              .map((s): StudySession | null => {
+            return (dbSessions as any[])
+              .map((s: any): StudySession | null => {
                 const subjectList = Array.isArray(subjects) ? subjects : [];
                 const localSub = subjectList.find(sub => sub && sub.id === s.subject_id);
-                const resolvedName = localSub?.name || s.subject_name || s.subjects?.name || (s.subject ? s.subject : null);
+                const resolvedName = localSub?.name || 'General Focus';
                 if (!resolvedName || resolvedName.trim().toLowerCase() === 'unassigned' || !s.subject_id) {
                   return null;
                 }
-                const resolvedColor = localSub?.color || s.subjects?.color || (s as any).subject_color || '#10B981';
+                const resolvedColor = localSub?.color || '#10B981';
                 return {
                   id: s.id,
                   userId: s.user_id,
@@ -2065,13 +1932,13 @@ export function StudyProvider({ children }: { children: ReactNode }) {
                   subjectName: resolvedName,
                   subjectColor: resolvedColor,
                   subject_name: resolvedName,
-                  subject: s.subjects || s.subject,
+                  subject: localSub || null,
                   startTime: s.started_at,
                   endTime: s.ended_at,
                   durationSeconds: s.duration_seconds,
                   notes: s.notes || '',
                   mode: (s.mode as TimerMode) || 'stopwatch',
-                  createdAt: s.created_at,
+                  createdAt: s.started_at,
                 };
               })
               .filter((s): s is StudySession => s !== null);
@@ -2372,14 +2239,11 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     const sessionPayload = {
       user_id: activeUser?.id || currentUser.id,
       subject_id: subjectId || activeSubject?.id || null,
-      subject_name: activeSubject?.name || 'General Study',
       duration_seconds: duration,
-      created_at: new Date().toISOString(),
-      date: new Date().toISOString().split('T')[0],
       started_at: startedAt,
       ended_at: endedAt,
-      mode: currentMode,
       notes: notesToSave && notesToSave.trim().length > 0 ? notesToSave.trim() : null,
+      mode: currentMode || 'stopwatch',
     };
 
     console.log("Saving focus session payload:", sessionPayload);
@@ -2398,24 +2262,6 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         const { data, error } = await supabase.from('study_sessions').insert([sessionPayload]).select();
         if (error) {
           console.error("Supabase session insert error:", error);
-          if (error.code === 'PGRST204' || error.message?.includes('column')) {
-            const cleanPayload = {
-              user_id: sessionPayload.user_id,
-              subject_id: sessionPayload.subject_id,
-              duration_seconds: sessionPayload.duration_seconds,
-              started_at: sessionPayload.started_at,
-              ended_at: sessionPayload.ended_at,
-              notes: sessionPayload.notes,
-              mode: sessionPayload.mode,
-              created_at: sessionPayload.created_at,
-            };
-            const retryRes = await supabase.from('study_sessions').insert([cleanPayload]).select();
-            if (retryRes.error) {
-              console.error("Supabase session insert retry error:", retryRes.error);
-            } else {
-              insertedRecordId = retryRes.data?.[0]?.id || null;
-            }
-          }
         } else {
           insertedRecordId = data?.[0]?.id || null;
         }
@@ -2430,15 +2276,15 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       userName: currentUser.displayName,
       userAvatar: currentUser.avatarUrl,
       subjectId: sessionPayload.subject_id || activeSubject.id,
-      subjectName: sessionPayload.subject_name,
+      subjectName: activeSubject.name || 'General Focus',
       subjectColor: activeSubject.color || '#10b981',
-      subject_name: sessionPayload.subject_name,
+      subject_name: activeSubject.name || 'General Focus',
       startTime: startedAt,
       endTime: endedAt,
       durationSeconds: sessionPayload.duration_seconds,
       notes: notesToSave,
       mode: currentMode as TimerMode,
-      createdAt: sessionPayload.created_at,
+      createdAt: new Date().toISOString(),
     };
 
     // Immediately append the new session to the current day's session array

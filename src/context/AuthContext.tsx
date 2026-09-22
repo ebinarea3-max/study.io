@@ -77,7 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Compute total accumulated study minutes across all rows in study_sessions for the current user
       const { data: dbSessions } = await supabase
         .from('study_sessions')
-        .select('duration_seconds, duration, seconds')
+        .select('id, user_id, subject_id, duration_seconds, started_at, ended_at, notes, mode')
         .eq('user_id', authUser.id);
 
       // Also check local storage sessions in case offline / pending sessions exist
@@ -87,13 +87,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (rawSess) {
           const parsed = JSON.parse(rawSess);
           if (Array.isArray(parsed)) {
-            localSessionSeconds = parsed.reduce((acc: number, s: any) => acc + (Number(s.durationSeconds ?? s.duration_seconds ?? s.duration ?? 0)), 0);
+            localSessionSeconds = parsed.reduce((acc: number, s: any) => acc + (Number(s.durationSeconds ?? s.duration_seconds ?? 0)), 0);
           }
         }
       } catch {}
 
       const dbSessionSeconds = dbSessions
-        ? dbSessions.reduce((acc, s: any) => acc + (Number(s.duration_seconds ?? s.duration ?? s.seconds ?? 0)), 0)
+        ? dbSessions.reduce((acc, s: any) => acc + (Number(s.duration_seconds ?? 0)), 0)
         : 0;
 
       const totalStudySeconds = Math.max(dbSessionSeconds, localSessionSeconds, Number(profile?.total_study_seconds ?? 0));
@@ -103,22 +103,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const syncedRP = Math.max(calculatedRP, currentProfileRP);
       const calculatedLevel = Math.max(1, Math.floor(Math.sqrt(Math.max(0, syncedRP) / 100)) + 1);
 
-      // Auto-Sync Fix: Only update if calculatedRP from eligible (>= 5min) sessions exceeds profile.rp
-      if (calculatedRP > currentProfileRP && authUser.id && !authUser.id.startsWith('user-scholar')) {
-        const updatePayload: Record<string, any> = {
-          rp: syncedRP,
-          season_rp: syncedRP,
-          total_study_seconds: totalStudySeconds,
-        };
+      // Only update valid columns (level) if level increased
+      if (calculatedLevel > (profile?.level || 1) && authUser.id && !authUser.id.startsWith('user-scholar')) {
         try {
-          const { error: updateErr } = await supabase.from('profiles').update(updatePayload).eq('id', authUser.id);
-          if (updateErr) {
-            // If column 'rp' doesn't exist, retry with season_rp
-            delete updatePayload.rp;
-            await supabase.from('profiles').update(updatePayload).eq('id', authUser.id);
-          }
+          await supabase.from('profiles').update({ level: calculatedLevel }).eq('id', authUser.id);
         } catch (e) {
-          console.warn('Failed to auto-sync RP to Supabase profile:', e);
+          console.warn('Failed to sync level to Supabase profile:', e);
         }
       }
 
@@ -499,6 +489,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const updateProfile = useCallback((updates: Partial<UserProfile>) => {
     setUser(prev => {
+      // Guard against unnecessary state updates & render loops
+      let hasChanges = false;
+      for (const [key, val] of Object.entries(updates)) {
+        if ((prev as any)[key] !== val) {
+          hasChanges = true;
+          break;
+        }
+      }
+      if (!hasChanges) return prev;
+
       const updated: UserProfile = {
         ...prev,
         ...updates,
@@ -521,65 +521,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.setItem('studypulse_active_user', JSON.stringify(updated));
       } catch {}
 
+      // Only send valid columns in the update payload to Supabase:
+      // (name, avatar_url, daily_goal_hours, streak_days, level)
+      // and query against 'id' as the primary key: .from('profiles').update(updates).eq('id', user.id)
       const supabase = getSupabase();
-      if (supabase && prev.id && !prev.id.startsWith('user-scholar')) {
-        const payload: Record<string, any> = {
-          name: updated.displayName,
-          avatar_url: updated.avatarUrl || null,
-          daily_goal_hours: updated.dailyGoalHours,
-          streak_days: updated.streakDays,
-          level: updated.level,
-          total_study_seconds: updated.totalStudySeconds,
-        };
-        if (updated.xp !== undefined) {
-          payload.xp = updated.xp;
+      if (supabase && prev.id && !prev.id.startsWith('user-scholar') && !prev.id.startsWith('guest')) {
+        const payload: Record<string, any> = {};
+
+        if (updates.displayName !== undefined && updates.displayName !== prev.displayName) {
+          payload.name = updates.displayName.trim();
         }
-        if (updated.currentSeasonId !== undefined) {
-          payload.current_season_id = updated.currentSeasonId;
+        if (updates.avatarUrl !== undefined && updates.avatarUrl !== prev.avatarUrl) {
+          payload.avatar_url = updates.avatarUrl || null;
         }
-        if (updated.seasonRp !== undefined || updated.rp !== undefined) {
-          const rpVal = updated.rp !== undefined ? updated.rp : updated.seasonRp;
-          payload.season_rp = rpVal;
-          payload.rp = rpVal;
+        if (updates.dailyGoalHours !== undefined && Number(updates.dailyGoalHours) !== Number(prev.dailyGoalHours)) {
+          payload.daily_goal_hours = Number(updates.dailyGoalHours);
         }
-        if (updated.last_streak_bonus_date !== undefined || updated.lastStreakBonusDate !== undefined) {
-          const dateVal = updated.last_streak_bonus_date || updated.lastStreakBonusDate;
-          payload.last_streak_bonus_date = dateVal;
-          try {
-            if (dateVal) {
-              localStorage.setItem('studypulse_last_streak_bonus_date', dateVal);
-            }
-          } catch {}
+        if (updates.streakDays !== undefined && Number(updates.streakDays) !== Number(prev.streakDays)) {
+          payload.streak_days = Number(updates.streakDays);
         }
-        if (updated.last_seen_level !== undefined) {
-          try {
-            localStorage.setItem(`studypulse_last_seen_level_${prev.id}`, String(updated.last_seen_level));
-            localStorage.setItem('last_seen_level', String(updated.last_seen_level));
-          } catch {}
+        if (updates.level !== undefined && Number(updates.level) !== Number(prev.level)) {
+          payload.level = Number(updates.level);
         }
 
-        supabase.from('profiles').update(payload).eq('id', prev.id).then(
-          ({ error }) => {
-            // Fallback: if 'xp', 'current_season_id', 'season_rp', 'rp', or 'last_streak_bonus_date' column doesn't exist in profiles table yet, retry gracefully
-            if (error) {
-              const fallbackPayload = { ...payload };
-              if (error.code === 'PGRST204' || error.message?.includes('last_streak_bonus_date')) {
-                delete fallbackPayload.last_streak_bonus_date;
+        if (Object.keys(payload).length > 0) {
+          supabase
+            .from('profiles')
+            .update(payload)
+            .eq('id', prev.id)
+            .then(({ error }) => {
+              if (error) {
+                console.warn('[AuthContext] Profile update error:', error);
               }
-              if (error.code === 'PGRST204' || error.message?.includes('rp')) {
-                delete fallbackPayload.rp;
-              }
-              if (error.code === 'PGRST204' || error.message?.includes('season')) {
-                delete fallbackPayload.current_season_id;
-                delete fallbackPayload.season_rp;
-              }
-              if (error.code === 'PGRST204' || error.message?.includes('xp')) {
-                delete fallbackPayload.xp;
-              }
-              supabase.from('profiles').update(fallbackPayload).eq('id', prev.id).then();
-            }
-          }
-        );
+            });
+        }
       }
 
       return updated;

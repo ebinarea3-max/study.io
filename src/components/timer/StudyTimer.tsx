@@ -273,14 +273,11 @@ export function StudyTimer() {
       const sessionPayload = {
         user_id: activeUser?.id || user?.id,
         subject_id: subjectId || selectedSub?.id || null,
-        subject_name: selectedSub?.name || 'General Study',
         duration_seconds: seconds,
-        created_at: new Date().toISOString(),
-        date: new Date().toISOString().split('T')[0],
         started_at: startedAt,
         ended_at: endedAt,
-        mode: currentMode,
-        notes: notesToSave,
+        notes: notesToSave && notesToSave.trim().length > 0 ? notesToSave.trim() : null,
+        mode: currentMode || 'stopwatch',
       };
 
       console.log("Saving focus session payload:", sessionPayload);
@@ -290,7 +287,7 @@ export function StudyTimer() {
         sessionPayload,
       });
 
-      // 3. Insert the record into study_sessions
+      // 3. Insert the record into study_sessions matching exact column names
       let insertedRecordId: string | null = null;
 
       if (supabase && activeUser?.id) {
@@ -298,26 +295,6 @@ export function StudyTimer() {
           const { data, error } = await supabase.from('study_sessions').insert([sessionPayload]).select();
           if (error) {
             console.error("Supabase session insert error:", error);
-            // Schema fallback: if Postgres table does not have subject_name / date client columns, retry with DB-exact columns
-            if (error.code === 'PGRST204' || error.message?.includes('column')) {
-              const cleanPayload = {
-                user_id: sessionPayload.user_id,
-                subject_id: sessionPayload.subject_id,
-                duration_seconds: sessionPayload.duration_seconds,
-                started_at: sessionPayload.started_at,
-                ended_at: sessionPayload.ended_at,
-                notes: sessionPayload.notes,
-                mode: sessionPayload.mode,
-                created_at: sessionPayload.created_at,
-              };
-              const retryRes = await supabase.from('study_sessions').insert([cleanPayload]).select();
-              if (retryRes.error) {
-                console.error("Supabase session insert retry error:", retryRes.error);
-              } else {
-                insertedRecordId = retryRes.data?.[0]?.id || null;
-                console.log('Session successfully persisted to Supabase:', retryRes.data);
-              }
-            }
           } else {
             insertedRecordId = data?.[0]?.id || null;
             console.log('Session successfully persisted to Supabase:', data);
@@ -334,15 +311,15 @@ export function StudyTimer() {
         userName: user?.displayName || 'Scholar',
         userAvatar: user?.avatarUrl,
         subjectId: sessionPayload.subject_id || selectedSub.id,
-        subjectName: sessionPayload.subject_name,
+        subjectName: selectedSub.name || 'General Study',
         subjectColor: selectedSub.color || '#10b981',
-        subject_name: sessionPayload.subject_name,
+        subject_name: selectedSub.name || 'General Study',
         startTime: startedAt,
         endTime: endedAt,
         durationSeconds: sessionPayload.duration_seconds,
         notes: notesToSave || '',
         mode: currentMode,
-        createdAt: sessionPayload.created_at,
+        createdAt: new Date().toISOString(),
       };
 
       // 4. Immediately backup to localStorage cache and append to local state
@@ -429,7 +406,7 @@ export function StudyTimer() {
         prevRP,
         newRP,
         breakdown: rpBreakdown,
-        subjectName: sessionPayload.subject_name,
+        subjectName: selectedSub.name || 'General Study',
         subjectColor: selectedSub.color || '#10b981',
       });
 
