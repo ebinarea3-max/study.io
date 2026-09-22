@@ -5,6 +5,7 @@ import { useStudy } from '../../context/StudyContext';
 import { useAuth } from '../../context/AuthContext';
 import { Subject } from '../../types';
 import { X, Plus, Edit2, Trash2, BookOpen, Check, Palette, AlertTriangle, Loader2 } from 'lucide-react';
+import { createPortal } from 'react-dom';
 
 interface SubjectManagerModalProps {
   isOpen?: boolean;
@@ -48,10 +49,6 @@ export function SubjectManagerModal({ isOpen = true, onClose, subjects: propsSub
   if (!isOpen) return null;
 
   // 3. Fix the "Add New Subject" Handler with fallback defaults
-  const handleCreateSubject = async (name: string, color = '#10b981', targetMinutes = 60) => {
-    const trimmed = (name || '').trim();
-    if (!trimmed) {
-      setErrorMessage('Please enter a subject name.');
       return;
     }
 
@@ -138,8 +135,16 @@ export function SubjectManagerModal({ isOpen = true, onClose, subjects: propsSub
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md">
+  const [mounted, setMounted] = useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!isOpen) return null;
+  
+  const modalContent = (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/75 backdrop-blur-md">
       <div className="relative w-full max-w-xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-6 overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-800">
@@ -339,7 +344,7 @@ export function SubjectManagerModal({ isOpen = true, onClose, subjects: propsSub
 
       {/* Delete Confirmation Modal */}
       {deletingSubject && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
           <div className="relative w-full max-w-sm bg-[#0c0d12] border border-white/[0.1] rounded-2xl shadow-2xl p-5 space-y-4 animate-in zoom-in-95 duration-150">
             <div className="flex items-start gap-3">
               <div className="w-9 h-9 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400 flex-shrink-0">
@@ -383,6 +388,9 @@ export function SubjectManagerModal({ isOpen = true, onClose, subjects: propsSub
       )}
     </div>
   );
+  
+  if (!mounted || typeof document === 'undefined') return null;
+  return createPortal(modalContent, document.body);
 }
 
 // Export alias for compatibility
