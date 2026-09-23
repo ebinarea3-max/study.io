@@ -654,7 +654,7 @@ export function StudyTimer() {
   }, [isLoading, user?.streakDays, overviewTodaySeconds, todaySessions.length, lockedEmptyQuote]);
 
   return (
-    <div className="w-full max-w-6xl mx-auto flex-1 flex flex-col md:grid md:grid-cols-1 lg:grid-cols-12 justify-between md:justify-start gap-2 sm:gap-4 lg:gap-6 max-md:overflow-hidden md:overflow-visible py-2 md:p-0">
+    <div className="w-full max-w-6xl mx-auto max-md:h-[calc(100dvh-8.5rem)] flex max-md:flex-col max-md:justify-between max-md:items-center md:grid md:grid-cols-1 lg:grid-cols-12 md:justify-start gap-2 sm:gap-4 lg:gap-6 max-md:overflow-hidden md:overflow-visible max-md:px-2 max-md:py-2 md:p-0">
       {/* Subject Manager Modal - Conditionally mounted strictly when open (Stop Background Rendering) */}
       {isManageSubjectsOpen && (
         <ErrorBoundary
@@ -670,10 +670,10 @@ export function StudyTimer() {
       )}
 
       {/* Main Left Column (Timer & Subject Goal Progress) */}
-      <div className="lg:col-span-8 flex-1 flex flex-col justify-between max-md:overflow-hidden md:overflow-visible space-y-0 md:space-y-3">
+      <div className="lg:col-span-8 w-full h-full flex flex-col justify-between max-md:overflow-hidden md:overflow-visible space-y-0 md:space-y-3">
         {/* Main Timer Game-HUD Card with Targeting Reticle Corner Brackets */}
         <div
-          className="relative rounded-3xl bg-[var(--surface)] backdrop-blur-xl border border-[var(--border)] p-2 sm:p-8 lg:p-10 shadow-xl overflow-hidden flex-1 md:flex-initial flex flex-col justify-between transition-all mb-2"
+          className="relative w-full h-full rounded-3xl bg-[var(--surface)] backdrop-blur-xl border border-[var(--border)] max-md:px-4 max-md:py-2 sm:p-8 lg:p-10 shadow-xl max-md:overflow-hidden md:overflow-hidden flex flex-col max-md:justify-between max-md:items-center md:justify-between transition-all max-md:mb-0 mb-2"
           
         >
           {/* Angular Targeting Reticle Corner Brackets */}
@@ -702,7 +702,7 @@ export function StudyTimer() {
           )}
 
           {/* Top Controls: Mode Switcher, Preset Selector & Focus Mode Button */}
-          <div className="w-full flex flex-wrap items-center justify-between gap-2.5 sm:gap-4 relative z-10 pb-2 sm:pb-6 border-b border-[var(--border)] flex-shrink-0">
+          <div className="w-full flex flex-wrap items-center max-md:justify-center justify-between gap-2.5 sm:gap-4 relative z-10 max-md:pb-2 sm:pb-6 max-md:border-b-0 border-b border-[var(--border)] flex-shrink-0 max-md:w-full">
             <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
               {/* Mode Pill Toggle */}
               <div className="flex items-center gap-1 p-0.5 sm:p-1 rounded-2xl bg-[var(--bg)] border border-[var(--border)]">
@@ -915,8 +915,8 @@ export function StudyTimer() {
           </div>
 
           {/* Center Timer Display - Game HUD Radar / Reactor Core Display */}
-          <div className="relative z-10 flex-1 flex flex-col items-center justify-center py-2 sm:py-6 min-h-[200px]">
-            <div className={`relative flex items-center justify-center p-1 sm:p-2 w-full max-w-[220px] sm:max-w-[256px] md:max-w-[320px] aspect-square transition-all duration-300 rounded-full mx-auto ${
+          <div className="relative z-10 flex flex-col items-center justify-center py-2 sm:py-6">
+            <div className={`relative flex items-center justify-center p-1 sm:p-2 w-56 h-56 sm:w-64 sm:h-64 md:w-80 md:h-80 mx-auto aspect-square transition-all duration-300 rounded-full flex-shrink-0 ${
               isRemoteTransitioning
                 ? 'scale-[1.03] ring-4 ring-white/50 shadow-[0_0_50px_var(--tier-glow)]'
                 : ''
@@ -1141,7 +1141,7 @@ export function StudyTimer() {
             )}
 
             {/* Action Buttons: Context-aware HUD controls */}
-            <div className="mt-auto pt-3 sm:pt-8 flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 relative z-10 w-full flex-shrink-0">
+            <div className="max-md:mb-2 max-md:mt-auto pt-3 sm:pt-8 flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 relative z-10 w-full max-w-sm flex-shrink-0 mx-auto">
               {pomodoroCompletedPhase === 'work' ? (
                 /* Prompt 1: Focus Block Complete -> Save & Start Break / Skip Break */
                 <>
