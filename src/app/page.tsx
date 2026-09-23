@@ -124,7 +124,7 @@ export default function Home() {
 
   // Authenticated: Full StudyPulse focus dashboard
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[#0A0C10] text-slate-100 flex flex-col relative selection:bg-[var(--tier-accent)]/30 selection:text-[var(--tier-text-accent)]">
+    <div className="h-[100dvh] md:h-auto md:min-h-screen overflow-hidden md:overflow-x-hidden md:overflow-y-auto bg-[#0A0C10] text-slate-100 flex flex-col relative selection:bg-[var(--tier-accent)]/30 selection:text-[var(--tier-text-accent)]">
       {/* Drifting Ambient HUD Grid Overlay */}
       <div className="fixed inset-0 pointer-events-none bg-hud-grid z-0" />
 
@@ -156,10 +156,10 @@ export default function Home() {
 
       {/* Main Content Area with Mobile Swipe Navigation */}
       <main
-        className={`flex-1 max-w-7xl w-full mx-auto relative z-10 ${
+        className={`flex-1 max-w-7xl w-full mx-auto relative z-10 flex flex-col md:block overflow-hidden md:overflow-visible ${
           activeTab === 'timer'
-            ? 'p-0 md:px-6 md:py-8 pb-24 md:pb-12'
-            : 'px-3.5 sm:px-6 py-5 sm:py-8 pb-24 md:pb-12'
+            ? 'p-0 md:px-6 md:py-8 pb-0 md:pb-12 overflow-hidden'
+            : 'px-3.5 sm:px-6 py-5 sm:py-8 pb-24 md:pb-12 overflow-y-auto overscroll-contain'
         }`}
       >
         <SwipeTabContainer activeTab={activeTab} onChangeTab={setActiveTab}>
