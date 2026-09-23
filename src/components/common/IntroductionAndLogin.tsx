@@ -13,7 +13,7 @@ import { Logo } from '../Logo';
 
 export function IntroductionAndLogin() {
   return (
-    <div className="min-h-screen bg-[#090A0C] text-slate-100 flex flex-col justify-between relative overflow-hidden selection:bg-emerald-500/30 selection:text-emerald-200">
+    <div className="min-h-screen bg-[var(--bg)] text-slate-100 flex flex-col justify-between relative overflow-hidden selection:bg-emerald-500/30 selection:text-emerald-200">
       {/* Subtle Developer-grade Dot Grid Overlay */}
       <div className="fixed inset-0 pointer-events-none bg-[radial-gradient(#ffffff0a_1px,transparent_1px)] [background-size:16px_16px] z-0" />
 

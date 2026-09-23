@@ -1,32 +1,25 @@
 @import "tailwindcss";
 
 :root {
-  /* Unified Permanent Dark UI Palette */
-  --bg: #0B0E14;
-  --background: #0B0E14;
-  --surface: #141824;
-  --surface-high: #1E2333;
+  /* Unified Permanent Premium UI Palette */
+  --bg: #0A0D14;
+  --background: #0A0D14;
+  --surface: rgba(16, 21, 30, 0.8);
   --border: rgba(255, 255, 255, 0.08);
-  --card-bg: #141824;
-  --card-border: rgba(255, 255, 255, 0.08);
   
-  --text-primary: #F8FAFC;
-  --foreground: #F8FAFC;
+  --text-primary: #FFFFFF;
+  --foreground: #FFFFFF;
   --text-secondary: #94A3B8;
 
-  /* Base brand accent: Electric Cyan */
-  --accent: #06B6D4;
-  --primary: #06B6D4;
+  /* Base brand accent: Electric Emerald/Cyan */
+  --accent: #00E599;
+  --primary: #00E599;
+  --accent-glow: rgba(0, 229, 153, 0.3);
 
-  /* Dynamic Rank Tier Accent System (Only for badges, crests, and progress) */
-  --tier-accent: #C97C3D;
-  --tier-accent-rgb: 201, 124, 61;
-  --tier-accent-hover: #DB8B4B;
-  --tier-glow: rgba(201, 124, 61, 0.35);
-  --tier-border: rgba(201, 124, 61, 0.28);
-  --tier-gradient: linear-gradient(135deg, #C97C3D 0%, #E69D5E 50%, #9C5722 100%);
-  --tier-badge-bg: rgba(201, 124, 61, 0.14);
-  --tier-text-accent: #EAA972;
+  /* Fallbacks for older variables */
+  --card-bg: var(--surface);
+  --card-border: var(--border);
+  --surface-high: rgba(30, 35, 51, 0.8);
 }
 
 /* Dynamic Card Texture Backgrounds Removed */
@@ -69,8 +62,8 @@ html.dark body,
 /* Subtle Ambient Drifting HUD Grid */
 .bg-hud-grid {
   background-image: 
-    linear-gradient(to right, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+    linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
   background-size: 32px 32px;
   animation: gridDrift 60s linear infinite;
 }

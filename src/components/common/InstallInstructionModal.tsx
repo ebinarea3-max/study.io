@@ -13,14 +13,14 @@ export function InstallInstructionModal({ isOpen, onClose }: InstallInstructionM
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-md bg-[#0c0d10] border border-white/[0.1] rounded-3xl shadow-2xl p-6 overflow-hidden">
+      <div className="relative w-full max-w-md bg-[var(--surface)] border border-[var(--border)] rounded-3xl shadow-2xl p-6 overflow-hidden">
         {/* Ambient background glow */}
         <div className="absolute -top-20 -right-20 w-44 h-44 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-20 -left-20 w-44 h-44 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400" />
 
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-white/[0.08]">
+        <div className="flex items-center justify-between pb-4 border-b border-[var(--border)]">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shadow-sm">
               <Smartphone className="w-4 h-4" />
@@ -91,7 +91,7 @@ export function InstallInstructionModal({ isOpen, onClose }: InstallInstructionM
         </div>
 
         {/* Footer */}
-        <div className="pt-3 border-t border-white/[0.08]">
+        <div className="pt-3 border-t border-[var(--border)]">
           <button
             type="button"
             onClick={onClose}

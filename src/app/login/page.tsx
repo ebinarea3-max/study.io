@@ -18,7 +18,7 @@ export default function LoginPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#080C15] flex flex-col items-center justify-center text-slate-100">
+      <div className="min-h-screen bg-[var(--bg)] flex flex-col items-center justify-center text-slate-100">
         <div className="mb-4 animate-pulse">
           <Logo className="w-14 h-14" />
         </div>

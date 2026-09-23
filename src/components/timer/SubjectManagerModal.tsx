@@ -349,7 +349,7 @@ export function SubjectManagerModal({ isOpen = true, onClose, subjects: propsSub
       {/* Delete Confirmation Modal */}
       {deletingSubject && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="relative w-full max-w-sm bg-[#0c0d12] border border-white/[0.1] rounded-2xl shadow-2xl p-5 space-y-4 animate-in zoom-in-95 duration-150">
+          <div className="relative w-full max-w-sm bg-[var(--surface)] border border-[var(--border)] rounded-2xl shadow-2xl p-5 space-y-4 animate-in zoom-in-95 duration-150">
             <div className="flex items-start gap-3">
               <div className="w-9 h-9 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400 flex-shrink-0">
                 <AlertTriangle className="w-5 h-5" />

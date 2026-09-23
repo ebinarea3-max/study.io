@@ -672,8 +672,8 @@ export function StudyTimer() {
       <div className="lg:col-span-8 flex-1 md:flex-initial flex flex-col justify-between md:justify-start overflow-hidden md:overflow-visible space-y-0 md:space-y-6">
         {/* Main Timer Game-HUD Card with Targeting Reticle Corner Brackets */}
         <div
-          className="relative rounded-3xl bg-[#14171D] border border-white/[0.08] p-3.5 sm:p-8 lg:p-10 shadow-2xl overflow-hidden flex-1 md:flex-initial flex flex-col justify-between transition-all"
-          style={{ borderColor: `${theme.accent}35`, boxShadow: `0 0 35px -10px ${theme.glow}` }}
+          className="relative rounded-3xl bg-[var(--surface)] backdrop-blur-xl border border-[var(--border)] p-3.5 sm:p-8 lg:p-10 shadow-xl overflow-hidden flex-1 md:flex-initial flex flex-col justify-between transition-all"
+          style={{ backgroundImage: "var(--card-texture, none)", borderColor: 'var(--border)', boxShadow: 'inset 0 1px 0 var(--card-highlight, transparent)' }}
         >
           {/* Angular Targeting Reticle Corner Brackets */}
           <div className="hud-corner-bracket hud-corner-tl" />
@@ -684,11 +684,11 @@ export function StudyTimer() {
           {/* Subtle Ambient Glow */}
           <div
             className="absolute -top-24 -right-24 w-72 h-72 rounded-full blur-[100px] opacity-15 pointer-events-none transition-all duration-700"
-            style={{ backgroundColor: theme.accent }}
+            style={{ backgroundColor: 'var(--accent)' }}
           />
           <div
             className="absolute -bottom-24 -left-24 w-72 h-72 rounded-full blur-[100px] opacity-10 pointer-events-none transition-all duration-700"
-            style={{ backgroundColor: theme.accent }}
+            style={{ backgroundColor: 'var(--accent)' }}
           />
 
           {/* Subtle Previous Session Recovery Banner */}
@@ -711,10 +711,10 @@ export function StudyTimer() {
           )}
 
           {/* Top Controls: Mode Switcher, Preset Selector & Focus Mode Button */}
-          <div className="flex flex-wrap items-center justify-between gap-2.5 sm:gap-4 relative z-10 pb-3 sm:pb-6 border-b border-white/[0.08] flex-shrink-0">
+          <div className="flex flex-wrap items-center justify-between gap-2.5 sm:gap-4 relative z-10 pb-3 sm:pb-6 border-b border-[var(--border)] flex-shrink-0">
             <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
               {/* Mode Pill Toggle */}
-              <div className="flex items-center gap-1 p-0.5 sm:p-1 rounded-2xl bg-[#0A0C10] border border-white/[0.08]">
+              <div className="flex items-center gap-1 p-0.5 sm:p-1 rounded-2xl bg-[var(--bg)] border border-[var(--border)]">
                 <button
                   onClick={() => { if (!isStudying) setTimerMode('stopwatch'); }}
                   disabled={isStudying}
@@ -723,7 +723,7 @@ export function StudyTimer() {
                       ? 'text-slate-950 shadow-sm'
                       : 'text-neutral-400 hover:text-white'
                   } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
-                  style={timerMode === 'stopwatch' ? { backgroundColor: theme.accent } : undefined}
+                  style={timerMode === 'stopwatch' ? { backgroundColor: 'rgba(255, 255, 255, 0.05)', color: 'var(--accent)', boxShadow: 'inset 0 0 0 1px var(--border)' } : undefined}
                 >
                   STOPWATCH
                 </button>
@@ -735,7 +735,7 @@ export function StudyTimer() {
                       ? 'text-slate-950 shadow-sm'
                       : 'text-neutral-400 hover:text-white'
                   } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
-                  style={timerMode === 'pomodoro' ? { backgroundColor: theme.accent } : undefined}
+                  style={timerMode === 'pomodoro' ? { backgroundColor: 'rgba(255, 255, 255, 0.05)', color: 'var(--accent)', boxShadow: 'inset 0 0 0 1px var(--border)' } : undefined}
                 >
                   POMODORO
                 </button>
@@ -744,7 +744,7 @@ export function StudyTimer() {
               {/* Clean Pill/Segment Preset Selector (25/5 and 50/10) */}
               {timerMode === 'pomodoro' && (
                 <div
-                  className="flex items-center gap-1 p-0.5 sm:p-1 rounded-2xl bg-black/60 border border-white/[0.08] animate-in fade-in zoom-in-95 duration-200"
+                  className="flex items-center gap-1 p-0.5 sm:p-1 rounded-2xl bg-black/60 border border-[var(--border)] animate-in fade-in zoom-in-95 duration-200"
                   title={isStudying ? "Interval presets are locked while session is running" : "Choose focus / break interval preset"}
                 >
                   <button
@@ -831,8 +831,8 @@ export function StudyTimer() {
                     subjectWarning
                       ? 'border-amber-500/80 ring-2 ring-amber-500/30 shadow-lg shadow-amber-500/10'
                       : isStudying
-                      ? 'border-white/[0.12] bg-white/[0.02]'
-                      : 'border-white/[0.08]'
+                      ? 'border-[var(--border)] bg-white/[0.02]'
+                      : 'border-[var(--border)]'
                   }`}
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
@@ -853,7 +853,7 @@ export function StudyTimer() {
                 </button>
 
                 {showDropdown && !isStudying && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-[#0d0e12] border border-white/[0.08] rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-[var(--surface)] backdrop-blur-xl border border-[var(--border)] rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95 duration-150">
                     <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-neutral-500 select-none border-b border-white/[0.06] mb-1">
                       Select a subject to focus on
                     </div>
@@ -896,7 +896,7 @@ export function StudyTimer() {
                       })}
                     </div>
 
-                    <div className="pt-2 mt-2 border-t border-white/[0.08]">
+                    <div className="pt-2 mt-2 border-t border-[var(--border)]">
                       <button
                         type="button"
                         onClick={handleOpenSubjectManager}
@@ -914,7 +914,7 @@ export function StudyTimer() {
               <button
                 type="button"
                 onClick={handleOpenSubjectManager}
-                className="hidden sm:flex p-2.5 sm:py-2.5 sm:px-3.5 rounded-2xl bg-neutral-900/70 hover:bg-neutral-800 border border-white/[0.08] text-neutral-300 hover:text-white transition-colors items-center justify-center gap-2 text-xs font-semibold active:scale-95 cursor-pointer shadow-sm flex-shrink-0"
+                className="hidden sm:flex p-2.5 sm:py-2.5 sm:px-3.5 rounded-2xl bg-neutral-900/70 hover:bg-neutral-800 border border-[var(--border)] text-neutral-300 hover:text-white transition-colors items-center justify-center gap-2 text-xs font-semibold active:scale-95 cursor-pointer shadow-sm flex-shrink-0"
                 title="Edit Subjects"
               >
                 <FolderPlus className="w-4 h-4 text-[#8FA3A1]" />
@@ -933,7 +933,7 @@ export function StudyTimer() {
               {/* Outer Tier Accent Ambient Halo */}
               <div
                 className="absolute inset-0 rounded-full blur-xl pointer-events-none transition-all duration-700 opacity-[0.08]"
-                style={{ background: theme.gradient }}
+                style={{ backgroundColor: 'var(--accent)' }}
               />
 
               {/* Segmented Radar / Reactor Core SVG Ring */}
@@ -943,9 +943,9 @@ export function StudyTimer() {
               >
                 <defs>
                   <linearGradient id="timerTierGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor={theme.accent} />
-                    <stop offset="50%" stopColor={theme.accentHover} />
-                    <stop offset="100%" stopColor={theme.accent} />
+                    <stop offset="0%" stopColor={'var(--accent)'} />
+                    <stop offset="50%" stopColor={'var(--accent)'} />
+                    <stop offset="100%" stopColor={'var(--accent)'} />
                   </linearGradient>
                 </defs>
 
@@ -968,7 +968,7 @@ export function StudyTimer() {
                         y1={y1}
                         x2={x2}
                         y2={y2}
-                        stroke={isActiveTick ? theme.accent : 'rgba(255,255,255,0.04)'}
+                        stroke={isActiveTick ? 'var(--accent)' : 'rgba(255,255,255,0.04)'}
                         strokeWidth={isActiveTick ? 2 : 1}
                         strokeLinecap="round"
                         className="transition-all duration-500 opacity-60"
@@ -1000,7 +1000,7 @@ export function StudyTimer() {
                   strokeDashoffset={2 * Math.PI * 124 - (progressPercent / 100) * (2 * Math.PI * 124)}
                   className="transition-all duration-500 ease-out"
                   style={{
-                    filter: `drop-shadow(0 0 3px rgba(var(--tier-accent-rgb), 0.5))`,
+                    filter: 'drop-shadow(0 0 3px rgba(var(--tier-accent-rgb), 0.5))',
                   }}
                   transform="rotate(-90 150 150)"
                 />
@@ -1011,18 +1011,18 @@ export function StudyTimer() {
                 <div
                   className="absolute inset-5 rounded-full pointer-events-none animate-radar-sweep opacity-30"
                   style={{
-                    background: `conic-gradient(from 0deg, transparent 0deg, transparent 270deg, ${theme.glow} 330deg, ${theme.accent} 360deg)`,
+                    background: 'conic-gradient(from 0deg, transparent 0deg, transparent 270deg, var(--glow) 330deg, var(--accent) 360deg)',
                   }}
                 />
               )}
 
               {/* Inner Dial */}
               <div
-                className="w-[78%] h-[78%] rounded-full bg-[#0A0C10] border flex flex-col items-center justify-center p-2.5 sm:p-6 text-center relative z-10 shadow-inner"
+                className="w-[78%] h-[78%] rounded-full bg-[var(--bg)] border-2 flex flex-col items-center justify-center p-2.5 sm:p-6 text-center relative z-10 shadow-inner"
                 style={{
-                  borderColor: isStudying ? `${theme.accent}50` : 'rgba(255, 255, 255, 0.08)',
+                  borderColor: isStudying ? 'var(--border)' : 'rgba(255, 255, 255, 0.08)',
                   boxShadow: isStudying && !isPaused
-                    ? `inset 0 0 30px ${theme.glow}, 0 0 25px ${theme.glow}`
+                    ? 'inset 0 0 30px var(--glow), 0 0 25px var(--glow)'
                     : 'inset 0 0 20px rgba(0,0,0,0.8)',
                 }}
               >
@@ -1031,15 +1031,15 @@ export function StudyTimer() {
                   className="mb-1 sm:mb-2 text-[10px] sm:text-[11px] font-hud font-bold px-2.5 sm:px-3 py-0.5 rounded-full border transition-colors max-w-[90%] truncate shadow-sm uppercase tracking-wider"
                   style={{
                     backgroundColor: selectedSubject ? theme.badgeBg : 'rgba(255, 255, 255, 0.05)',
-                    borderColor: selectedSubject ? `${theme.accent}50` : 'rgba(255, 255, 255, 0.1)',
-                    color: selectedSubject ? theme.textAccent : '#94a3b8',
+                    borderColor: selectedSubject ? 'var(--border)' : 'rgba(255, 255, 255, 0.1)',
+                    color: selectedSubject ? 'var(--accent)' : '#94a3b8',
                   }}
                 >
                   {!selectedSubject
                     ? 'Select a subject'
                     : timerMode === 'pomodoro'
                     ? pomodoroPhase === 'work'
-                      ? `Focus: ${selectedSubject.name}`
+                      ? 'Focus: ${selectedSubject.name}'
                       : `Break`
                     : selectedSubject.name}
                 </div>
@@ -1048,7 +1048,7 @@ export function StudyTimer() {
                 <div
                   className="font-hud font-black text-4xl sm:text-5xl md:text-6xl tracking-wider text-white drop-shadow-lg tabular-nums select-none"
                   style={{
-                    textShadow: isStudying && !isPaused ? `0 0 16px ${theme.glow}` : undefined,
+                    textShadow: isStudying && !isPaused ? '0 0 16px var(--glow)' : undefined,
                   }}
                 >
                   {displayTime}
@@ -1071,16 +1071,16 @@ export function StudyTimer() {
                     style={{
                       backgroundColor:
                         pomodoroCompletedPhase === 'work'
-                          ? theme.accent
+                          ? 'var(--accent)'
                           : isStudying
                           ? isPaused
                             ? '#f59e0b'
-                            : theme.accent
-                          : theme.accent,
-                      boxShadow: `0 0 8px ${theme.accent}`,
+                            : 'var(--accent)'
+                          : 'var(--accent)',
+                      boxShadow: '0 0 8px var(--accent)',
                     }}
                   />
-                  <span style={{ color: isStudying && !isPaused ? theme.textAccent : '#94A3B8' }}>
+                  <span style={{ color: isStudying && !isPaused ? 'var(--accent)' : '#94A3B8' }}>
                     {pomodoroCompletedPhase === 'work'
                       ? '● Block Finished'
                       : pomodoroCompletedPhase === 'break'
@@ -1105,8 +1105,8 @@ export function StudyTimer() {
                 className="mt-6 w-full max-w-md flex items-center justify-between gap-3 px-5 py-3.5 rounded-2xl border text-xs font-semibold backdrop-blur-md shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-300"
                 style={{
                   backgroundColor: theme.badgeBg,
-                  borderColor: `${theme.accent}50`,
-                  boxShadow: `0 0 20px ${theme.glow}`,
+                  borderColor: 'var(--border)',
+                  boxShadow: '0 0 20px var(--glow)',
                 }}
               >
                 <div className="flex items-center gap-2.5">
@@ -1114,8 +1114,8 @@ export function StudyTimer() {
                     className="w-8 h-8 rounded-xl border flex items-center justify-center flex-shrink-0"
                     style={{
                       backgroundColor: theme.badgeBg,
-                      borderColor: `${theme.accent}50`,
-                      color: theme.accent,
+                      borderColor: 'var(--border)',
+                      color: 'var(--accent)',
                     }}
                   >
                     <Sparkles className="w-4 h-4 animate-pulse" />
@@ -1170,7 +1170,7 @@ export function StudyTimer() {
                     }}
                     disabled={isSaving || isRemoteTransitioning}
                     className="px-6 sm:px-8 py-3.5 rounded-xl font-hud font-bold text-xs sm:text-sm text-slate-950 transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[150px] uppercase tracking-wider hud-btn-primary"
-                    style={{ backgroundColor: theme.accent }}
+                    style={{ backgroundColor: 'var(--accent)' }}
                   >
                     {isSaving ? (
                       <>
@@ -1195,7 +1195,7 @@ export function StudyTimer() {
                       }
                     }}
                     disabled={isSaving || isRemoteTransitioning}
-                    className="px-5 sm:px-6 py-3.5 rounded-xl bg-[#14171D] hover:bg-[#1B2028] border border-white/[0.12] text-slate-300 hover:text-white font-hud font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[120px] uppercase tracking-wider"
+                    className="px-5 sm:px-6 py-3.5 rounded-xl bg-[var(--surface)] backdrop-blur-xl hover:bg-[#1B2028] border border-[var(--border)] text-slate-300 hover:text-white font-hud font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[120px] uppercase tracking-wider"
                   >
                     <SkipForward className="w-4 h-4" />
                     <span>SKIP BREAK</span>
@@ -1209,7 +1209,7 @@ export function StudyTimer() {
                       onClick={startPomodoroBreak}
                       disabled={isSaving || isRemoteTransitioning}
                       className="px-6 sm:px-8 py-3.5 rounded-xl font-hud font-bold text-xs sm:text-sm text-slate-950 transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[140px] uppercase tracking-wider hud-btn-primary"
-                      style={{ backgroundColor: theme.accent }}
+                      style={{ backgroundColor: 'var(--accent)' }}
                     >
                       <Play className="w-4 h-4 fill-current" />
                       <span>START BREAK</span>
@@ -1217,7 +1217,7 @@ export function StudyTimer() {
                     <button
                       onClick={handleReset}
                       disabled={isSaving || isRemoteTransitioning}
-                      className="px-5 sm:px-6 py-3.5 rounded-xl bg-[#14171D] hover:bg-[#1B2028] border border-white/[0.08] text-slate-400 hover:text-white font-hud font-bold text-xs sm:text-sm transition-colors active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[110px] uppercase tracking-wider"
+                      className="px-5 sm:px-6 py-3.5 rounded-xl bg-[var(--surface)] backdrop-blur-xl hover:bg-[#1B2028] border border-[var(--border)] text-slate-400 hover:text-white font-hud font-bold text-xs sm:text-sm transition-colors active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[110px] uppercase tracking-wider"
                     >
                       <span>SKIP BREAK</span>
                     </button>
@@ -1227,7 +1227,7 @@ export function StudyTimer() {
                     <button
                       onClick={handlePause}
                       disabled={isSaving || isRemoteTransitioning}
-                      className="px-5 sm:px-7 py-3 rounded-xl bg-[#14171D] hover:bg-[#1B2028] text-amber-300 font-hud font-bold text-xs sm:text-sm border border-amber-500/40 transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[120px] uppercase tracking-wider"
+                      className="px-5 sm:px-7 py-3 rounded-xl bg-[var(--surface)] backdrop-blur-xl hover:bg-[#1B2028] text-amber-300 font-hud font-bold text-xs sm:text-sm border border-amber-500/40 transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[120px] uppercase tracking-wider"
                     >
                       <Pause className="w-4 h-4" />
                       <span>PAUSE BREAK</span>
@@ -1235,7 +1235,7 @@ export function StudyTimer() {
                     <button
                       onClick={handleReset}
                       disabled={isSaving || isRemoteTransitioning}
-                      className="px-5 sm:px-6 py-3 rounded-xl bg-[#14171D] hover:bg-[#1B2028] border border-white/[0.08] text-slate-400 hover:text-white font-hud font-bold text-xs sm:text-sm transition-colors active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[110px] uppercase tracking-wider"
+                      className="px-5 sm:px-6 py-3 rounded-xl bg-[var(--surface)] backdrop-blur-xl hover:bg-[#1B2028] border border-[var(--border)] text-slate-400 hover:text-white font-hud font-bold text-xs sm:text-sm transition-colors active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[110px] uppercase tracking-wider"
                     >
                       <span>END BREAK</span>
                     </button>
@@ -1250,9 +1250,7 @@ export function StudyTimer() {
                   }}
                   disabled={isSaving || isRemoteTransitioning}
                   className="px-8 sm:px-10 py-3.5 sm:py-4 font-hud font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-2.5 w-full xs:w-auto hud-btn-primary cursor-pointer hover:scale-[1.02]"
-                  style={{
-                    backgroundColor: theme.accent,
-                  }}
+                  style={{ background: 'var(--accent)', boxShadow: '0 0 20px var(--accent-glow)', color: '#0A0D14' }}
                 >
                   <Flame className="w-4 sm:w-5 h-4 sm:h-5 fill-current" />
                   <span>START FOCUS SESSION</span>
@@ -1267,9 +1265,7 @@ export function StudyTimer() {
                       ? 'opacity-40 cursor-not-allowed shadow-none'
                       : 'cursor-pointer hover:scale-[1.02]'
                   }`}
-                  style={{
-                    backgroundColor: theme.accent,
-                  }}
+                  style={{ background: 'var(--accent)', boxShadow: '0 0 20px var(--accent-glow)', color: '#0A0D14' }}
                   title={!selectedSubject?.id ? 'Please select a subject before starting the timer' : 'Start Focus Session'}
                 >
                   <Play className="w-4 sm:w-5 h-4 sm:h-5 fill-current" />
@@ -1281,7 +1277,7 @@ export function StudyTimer() {
                   <button
                     onClick={handlePause}
                     disabled={isSaving || isRemoteTransitioning}
-                    className="px-5 sm:px-7 py-3 rounded-xl bg-[#14171D] hover:bg-[#1B2028] text-amber-300 font-hud font-bold text-xs sm:text-sm border border-amber-500/40 transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[120px] shadow-sm tracking-wider uppercase"
+                    className="px-5 sm:px-7 py-3 rounded-xl bg-[var(--surface)] backdrop-blur-xl hover:bg-[#1B2028] text-amber-300 font-hud font-bold text-xs sm:text-sm border border-amber-500/40 transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[120px] shadow-sm tracking-wider uppercase"
                   >
                     <Pause className="w-4 h-4" />
                     <span>PAUSE</span>
@@ -1313,7 +1309,7 @@ export function StudyTimer() {
                     onClick={handleResume}
                     disabled={isSaving || isRemoteTransitioning}
                     className="px-6 sm:px-8 py-3 rounded-xl font-hud font-bold text-xs sm:text-sm text-slate-950 transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[120px] tracking-wider uppercase hud-btn-primary"
-                    style={{ background: theme.gradient, boxShadow: `0 0 16px ${theme.glow}` }}
+                    style={{ background: 'var(--accent)', boxShadow: '0 0 20px var(--accent-glow)', color: '#0A0D14' }}
                   >
                     <Play className="w-4 h-4 fill-current" />
                     <span>RESUME</span>
@@ -1341,7 +1337,7 @@ export function StudyTimer() {
                   <button
                     onClick={handleReset}
                     disabled={isSaving || isRemoteTransitioning}
-                    className="p-3 rounded-xl bg-[#14171D] hover:bg-[#1B2028] border border-white/[0.08] text-slate-400 hover:text-white transition-colors active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                    className="p-3 rounded-xl bg-[var(--surface)] backdrop-blur-xl hover:bg-[#1B2028] border border-[var(--border)] text-slate-400 hover:text-white transition-colors active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
                     title="Reset Timer"
                   >
                     <RotateCcw className="w-4 h-4" />
@@ -1353,7 +1349,7 @@ export function StudyTimer() {
         </div>
 
         {/* Subject Today's Progress Card - Hidden on mobile single-screen view, visible on desktop */}
-        <div className="hidden md:flex rounded-2xl bg-neutral-900/50 border border-white/[0.08] p-5 flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+        <div className="hidden md:flex rounded-2xl bg-neutral-900/50 border border-[var(--border)] p-5 flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
           <div className="flex items-center gap-3">
             <div
               className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white shadow-md"
@@ -1404,8 +1400,8 @@ export function StudyTimer() {
 
         {/* 2. Unified HUD Stat Readout Panel */}
         <div
-          className="rounded-2xl bg-[#14171D] border border-white/[0.08] p-5 shadow-xl space-y-4 transition-all relative overflow-hidden"
-          style={{ borderColor: `${theme.accent}30` }}
+          className="rounded-2xl bg-[var(--surface)] backdrop-blur-xl border border-[var(--border)] p-5 shadow-xl space-y-4 transition-all relative overflow-hidden"
+          style={{ borderColor: 'var(--border)' }}
         >
           <div className="hud-corner-bracket hud-corner-tl" />
           <div className="hud-corner-bracket hud-corner-tr" />
@@ -1415,18 +1411,18 @@ export function StudyTimer() {
           {/* Ambient Tier Glow */}
           <div
             className="absolute -top-12 -right-12 w-32 h-32 rounded-full blur-2xl pointer-events-none opacity-20"
-            style={{ backgroundColor: theme.accent }}
+            style={{ backgroundColor: 'var(--accent)' }}
           />
 
-          <div className="flex items-center justify-between pb-3 border-b border-white/[0.08] relative z-10">
+          <div className="flex items-center justify-between pb-3 border-b border-[var(--border)] relative z-10">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4" style={{ color: theme.accent }} />
+              <Sparkles className="w-4 h-4" style={{ color: 'var(--accent)' }} />
               <span className="text-xs font-hud font-bold text-white tracking-widest uppercase">
                 DAILY OVERVIEW
               </span>
             </div>
             {/* Today vs Yesterday Toggle */}
-            <div className="flex items-center gap-1 p-0.5 rounded-xl bg-[#0A0C10] border border-white/[0.08] text-[10px]">
+            <div className="flex items-center gap-1 p-0.5 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-[10px]">
               <button
                 onClick={() => setOverviewView('today')}
                 className={`px-2.5 py-1 rounded-lg font-hud font-bold tracking-wider uppercase transition-all cursor-pointer ${
@@ -1434,7 +1430,7 @@ export function StudyTimer() {
                     ? 'text-slate-950 shadow-sm'
                     : 'text-slate-400 hover:text-white'
                 }`}
-                style={overviewView === 'today' ? { background: theme.gradient } : undefined}
+                style={overviewView === 'today' ? { backgroundColor: 'rgba(255, 255, 255, 0.05)', color: 'var(--accent)', boxShadow: 'inset 0 0 0 1px var(--border)' } : undefined}
               >
                 TODAY
               </button>
@@ -1445,7 +1441,7 @@ export function StudyTimer() {
                     ? 'text-slate-950 shadow-sm'
                     : 'text-slate-400 hover:text-white'
                 }`}
-                style={overviewView === 'yesterday' ? { background: theme.gradient } : undefined}
+                style={overviewView === 'yesterday' ? { backgroundColor: 'rgba(255, 255, 255, 0.05)', color: 'var(--accent)', boxShadow: 'inset 0 0 0 1px var(--border)' } : undefined}
               >
                 YESTERDAY
               </button>
@@ -1462,7 +1458,7 @@ export function StudyTimer() {
           </div>
 
           {/* Unified HUD Stat Readout Strip */}
-          <div className="rounded-xl bg-[#0A0C10] border border-white/[0.08] p-3 divide-y divide-white/[0.08] space-y-2 relative z-10">
+          <div className="rounded-xl bg-[var(--bg)] border border-[var(--border)] p-3 divide-y divide-white/[0.08] space-y-2 relative z-10">
             <div className="flex items-center justify-between pt-1">
               <div>
                 <div className="text-[10px] font-hud font-bold tracking-widest text-slate-400 uppercase">
@@ -1472,7 +1468,7 @@ export function StudyTimer() {
               </div>
               <div
                 className="text-lg font-hud font-black tracking-tight tabular-nums"
-                style={{ color: theme.textAccent }}
+                style={{ color: 'var(--accent)' }}
               >
                 {(isLoading || isLoadingSessions) && !hasHydrated ? (
                   <Skeleton className="h-6 w-20 bg-slate-800" />
@@ -1507,9 +1503,9 @@ export function StudyTimer() {
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-4 h-4 flex items-center justify-center animate-ember-glow">
-                  <Flame className="w-full h-full fill-current" style={{ color: theme.accent }} />
+                  <Flame className="w-full h-full fill-current" style={{ color: 'var(--accent)' }} />
                 </div>
-                <span className="text-lg font-hud font-black tracking-tight" style={{ color: theme.textAccent }}>
+                <span className="text-lg font-hud font-black tracking-tight" style={{ color: 'var(--accent)' }}>
                   {user?.streakDays ?? 0}
                 </span>
               </div>
@@ -1519,16 +1515,16 @@ export function StudyTimer() {
 
         {/* 3. Today's Boost / Motivation Card */}
         <div
-          className="rounded-2xl bg-[#14171D] border border-white/[0.08] p-5 shadow-xl space-y-3 transition-all relative overflow-hidden"
-          style={{ borderColor: `${theme.accent}30` }}
+          className="rounded-2xl bg-[var(--surface)] backdrop-blur-xl border border-[var(--border)] p-5 shadow-xl space-y-3 transition-all relative overflow-hidden"
+          style={{ borderColor: 'var(--border)' }}
         >
           <div className="hud-corner-bracket hud-corner-tl" />
           <div className="hud-corner-bracket hud-corner-tr" />
           <div className="hud-corner-bracket hud-corner-bl" />
           <div className="hud-corner-bracket hud-corner-br" />
 
-          <div className="flex items-center gap-2 pb-2.5 border-b border-white/[0.08] relative z-10">
-            <MessageCircle className="w-4 h-4" style={{ color: theme.accent }} />
+          <div className="flex items-center gap-2 pb-2.5 border-b border-[var(--border)] relative z-10">
+            <MessageCircle className="w-4 h-4" style={{ color: 'var(--accent)' }} />
             <span className="text-xs font-hud font-bold text-white tracking-widest uppercase">
               TODAY'S BOOST
             </span>

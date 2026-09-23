@@ -155,7 +155,7 @@ export function FocusModeModal() {
   const subjectColor = selectedSubject?.color || '#5A6B6A';
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#050811] text-white flex flex-col justify-between p-6 sm:p-10 select-none overflow-hidden animate-in fade-in duration-300">
+    <div className="fixed inset-0 z-50 bg-[var(--bg)] text-white flex flex-col justify-between p-6 sm:p-10 select-none overflow-hidden animate-in fade-in duration-300">
       {/* Background atmospheric ambient glowing blobs */}
       <div
         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full blur-[140px] opacity-20 pointer-events-none transition-all duration-1000"
@@ -531,7 +531,7 @@ export function FocusModeModal() {
               <button
                 onClick={resetTimer}
                 disabled={isSaving || isRemoteTransitioning}
-                className="p-3 rounded-2xl bg-slate-900/80 hover:bg-slate-800 border border-white/[0.08] text-neutral-400 hover:text-white transition-colors active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                className="p-3 rounded-2xl bg-slate-900/80 hover:bg-slate-800 border border-[var(--border)] text-neutral-400 hover:text-white transition-colors active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Reset Timer"
               >
                 <RotateCcw className="w-4 h-4" />
@@ -566,7 +566,7 @@ export function FocusModeModal() {
       )}
 
       {/* Bottom Controls: Ambient Sound Player */}
-      <div className="relative z-10 flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-white/[0.08]">
+      <div className="relative z-10 flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-[var(--border)]">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs font-semibold text-neutral-400 mr-1 flex items-center gap-1.5">
             <Music className="w-3.5 h-3.5 text-emerald-400" />
@@ -578,7 +578,7 @@ export function FocusModeModal() {
             className={`px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all duration-150 active:scale-95 cursor-pointer ${
               ambientSound === 'none'
                 ? 'bg-white/[0.12] text-white border border-white/25 shadow-sm shadow-white/5'
-                : 'bg-white/[0.03] hover:bg-white/[0.08] text-neutral-400 hover:text-white border border-white/[0.06] hover:border-white/[0.12]'
+                : 'bg-white/[0.03] hover:bg-white/[0.08] text-neutral-400 hover:text-white border border-white/[0.06] hover:border-[var(--border)]'
             }`}
           >
             {ambientSound === 'none' && <span className="w-1.5 h-1.5 rounded-full bg-neutral-300" />}
@@ -590,7 +590,7 @@ export function FocusModeModal() {
             className={`px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all duration-150 active:scale-95 cursor-pointer ${
               ambientSound === 'whitenoise'
                 ? 'bg-teal-500/15 text-teal-200 border border-teal-500/40 shadow-sm shadow-teal-500/20'
-                : 'bg-white/[0.03] hover:bg-white/[0.08] text-neutral-400 hover:text-white border border-white/[0.06] hover:border-white/[0.12]'
+                : 'bg-white/[0.03] hover:bg-white/[0.08] text-neutral-400 hover:text-white border border-white/[0.06] hover:border-[var(--border)]'
             }`}
           >
             <Radio className="w-3.5 h-3.5 text-teal-400" />
@@ -603,7 +603,7 @@ export function FocusModeModal() {
             className={`px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all duration-150 active:scale-95 cursor-pointer ${
               ambientSound === 'brownnoise'
                 ? 'bg-amber-600/20 text-amber-200 border border-amber-600/40 shadow-sm shadow-amber-500/20'
-                : 'bg-white/[0.03] hover:bg-white/[0.08] text-neutral-400 hover:text-white border border-white/[0.06] hover:border-white/[0.12]'
+                : 'bg-white/[0.03] hover:bg-white/[0.08] text-neutral-400 hover:text-white border border-white/[0.06] hover:border-[var(--border)]'
             }`}
           >
             <Headphones className="w-3.5 h-3.5 text-amber-400" />
@@ -616,7 +616,7 @@ export function FocusModeModal() {
             className={`px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all duration-150 active:scale-95 cursor-pointer ${
               ambientSound === 'rain'
                 ? 'bg-blue-500/15 text-blue-200 border border-blue-500/40 shadow-sm shadow-blue-500/20'
-                : 'bg-white/[0.03] hover:bg-white/[0.08] text-neutral-400 hover:text-white border border-white/[0.06] hover:border-white/[0.12]'
+                : 'bg-white/[0.03] hover:bg-white/[0.08] text-neutral-400 hover:text-white border border-white/[0.06] hover:border-[var(--border)]'
             }`}
           >
             <CloudRain className="w-3.5 h-3.5 text-blue-400" />
@@ -629,7 +629,7 @@ export function FocusModeModal() {
             className={`px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all duration-150 active:scale-95 cursor-pointer ${
               ambientSound === 'lofi'
                 ? 'bg-purple-500/15 text-purple-200 border border-purple-500/40 shadow-sm shadow-purple-500/20'
-                : 'bg-white/[0.03] hover:bg-white/[0.08] text-neutral-400 hover:text-white border border-white/[0.06] hover:border-white/[0.12]'
+                : 'bg-white/[0.03] hover:bg-white/[0.08] text-neutral-400 hover:text-white border border-white/[0.06] hover:border-[var(--border)]'
             }`}
           >
             <Sparkles className="w-3.5 h-3.5 text-purple-400" />
@@ -642,7 +642,7 @@ export function FocusModeModal() {
             className={`px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all duration-150 active:scale-95 cursor-pointer ${
               ambientSound === 'campfire'
                 ? 'bg-orange-500/15 text-orange-200 border border-orange-500/40 shadow-sm shadow-orange-500/20'
-                : 'bg-white/[0.03] hover:bg-white/[0.08] text-neutral-400 hover:text-white border border-white/[0.06] hover:border-white/[0.12]'
+                : 'bg-white/[0.03] hover:bg-white/[0.08] text-neutral-400 hover:text-white border border-white/[0.06] hover:border-[var(--border)]'
             }`}
           >
             <Flame className="w-3.5 h-3.5 text-orange-400" />
@@ -655,7 +655,7 @@ export function FocusModeModal() {
             className={`px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all duration-150 active:scale-95 cursor-pointer ${
               ambientSound === 'waves'
                 ? 'bg-cyan-500/15 text-cyan-200 border border-cyan-500/40 shadow-sm shadow-cyan-500/20'
-                : 'bg-white/[0.03] hover:bg-white/[0.08] text-neutral-400 hover:text-white border border-white/[0.06] hover:border-white/[0.12]'
+                : 'bg-white/[0.03] hover:bg-white/[0.08] text-neutral-400 hover:text-white border border-white/[0.06] hover:border-[var(--border)]'
             }`}
           >
             <Waves className="w-3.5 h-3.5 text-cyan-400" />

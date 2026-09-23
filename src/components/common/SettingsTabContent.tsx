@@ -114,7 +114,7 @@ export function SettingsTabContent() {
       </div>
 
       {/* Account & Session Telemetry */}
-      <div className="p-5 rounded-2xl hud-surface border border-white/[0.08] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="p-5 rounded-2xl hud-surface border border-[var(--border)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3.5 min-w-0">
           <div
             className="w-12 h-12 rounded-2xl flex items-center justify-center font-hud font-black text-slate-950 text-base flex-shrink-0 shadow-md"
@@ -145,7 +145,7 @@ export function SettingsTabContent() {
       </div>
 
       {/* Audio Synthesizer */}
-      <div className="p-5 rounded-2xl hud-surface border border-white/[0.08] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="p-5 rounded-2xl hud-surface border border-[var(--border)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3.5">
           <div
             className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 border"
@@ -169,7 +169,7 @@ export function SettingsTabContent() {
         <button
           type="button"
           onClick={testAudio}
-          className="px-4 py-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.1] text-xs font-hud font-bold tracking-wider text-white transition-all active:scale-95 flex items-center gap-2 cursor-pointer shadow-sm self-start sm:self-auto"
+          className="px-4 py-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] border border-[var(--border)] text-xs font-hud font-bold tracking-wider text-white transition-all active:scale-95 flex items-center gap-2 cursor-pointer shadow-sm self-start sm:self-auto"
         >
           <Sparkles className="w-3.5 h-3.5" style={{ color: theme.accent }} />
           <span>TEST CHIMES</span>
@@ -177,7 +177,7 @@ export function SettingsTabContent() {
       </div>
 
       {/* PWA / Device Installation */}
-      <div className="p-5 rounded-2xl hud-surface border border-white/[0.08] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="p-5 rounded-2xl hud-surface border border-[var(--border)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3.5">
           <div
             className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 border"
@@ -230,7 +230,7 @@ export function SettingsTabContent() {
           <button
             type="button"
             onClick={handleInstallClick}
-            className="px-4 py-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.1] text-xs font-hud font-bold tracking-wider text-slate-200 transition-all active:scale-95 flex items-center gap-2 cursor-pointer shadow-sm flex-shrink-0 self-start sm:self-auto"
+            className="px-4 py-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-[var(--border)] text-xs font-hud font-bold tracking-wider text-slate-200 transition-all active:scale-95 flex items-center gap-2 cursor-pointer shadow-sm flex-shrink-0 self-start sm:self-auto"
           >
             <Smartphone className="w-3.5 h-3.5" style={{ color: theme.accent }} />
             <span>ADD TO HOME SCREEN</span>

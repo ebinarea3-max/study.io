@@ -626,7 +626,7 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
       {/* 1. Top Row — 3 Focus Time Metric Cards (Chronological Granularity: Today -> Week -> Month) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-4">
         {/* Card 1 (Left): Focus Time of Today */}
-        <div className="hud-surface border border-white/[0.08] rounded-2xl p-3.5 sm:p-4 relative flex flex-col justify-between overflow-hidden group">
+        <div className="hud-surface border border-[var(--border)] rounded-2xl p-3.5 sm:p-4 relative flex flex-col justify-between overflow-hidden group">
           <div
             className="h-1 w-8 rounded-full mb-2.5 transition-all"
             style={{ backgroundColor: theme.accent, boxShadow: `0 0 10px ${theme.glow}` }}
@@ -644,7 +644,7 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
         </div>
 
         {/* Card 2 (Center): Focus Time of This Week */}
-        <div className="hud-surface border border-white/[0.08] rounded-2xl p-3.5 sm:p-4 relative flex flex-col justify-between overflow-hidden group">
+        <div className="hud-surface border border-[var(--border)] rounded-2xl p-3.5 sm:p-4 relative flex flex-col justify-between overflow-hidden group">
           <div
             className="h-1 w-8 rounded-full mb-2.5 transition-all"
             style={{ backgroundColor: theme.accent, boxShadow: `0 0 10px ${theme.glow}` }}
@@ -662,7 +662,7 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
         </div>
 
         {/* Card 3 (Right): Focus Time of This Month */}
-        <div className="hud-surface border border-white/[0.08] rounded-2xl p-3.5 sm:p-4 relative flex flex-col justify-between overflow-hidden group">
+        <div className="hud-surface border border-[var(--border)] rounded-2xl p-3.5 sm:p-4 relative flex flex-col justify-between overflow-hidden group">
           <div
             className="h-1 w-8 rounded-full mb-2.5 transition-all"
             style={{ backgroundColor: theme.accent, boxShadow: `0 0 10px ${theme.glow}` }}
@@ -683,7 +683,7 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
       {/* 2. Middle Section — 2 Columns (Distribution & Calendar) */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-5 sm:gap-6 items-stretch">
         {/* Left Card: Project / Subject Time Distribution (7 cols) */}
-        <div className="md:col-span-7 hud-surface border border-white/[0.08] rounded-2xl p-4 sm:p-5 flex flex-col justify-between space-y-4 relative overflow-hidden">
+        <div className="md:col-span-7 hud-surface border border-[var(--border)] rounded-2xl p-4 sm:p-5 flex flex-col justify-between space-y-4 relative overflow-hidden">
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-white/[0.06]">
             <div className="flex items-center gap-2">
@@ -696,7 +696,7 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
             {/* Timeframe Buttons & Navigation */}
             <div className="flex items-center gap-1.5 flex-wrap">
               {/* Stepper buttons */}
-              <div className="flex items-center bg-black/60 border border-white/[0.08] rounded-xl p-0.5">
+              <div className="flex items-center bg-black/60 border border-[var(--border)] rounded-xl p-0.5">
                 <button
                   onClick={() => handleDistStep('prev')}
                   className="p-1 rounded-lg hover:bg-white/[0.08] text-neutral-400 hover:text-white transition-colors cursor-pointer"
@@ -720,7 +720,7 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
               </div>
 
               {/* [ Daily | Weekly | Monthly | Yearly ] */}
-              <div className="flex items-center bg-black/60 border border-white/[0.08] rounded-xl p-0.5 text-[11px] font-bold">
+              <div className="flex items-center bg-black/60 border border-[var(--border)] rounded-xl p-0.5 text-[11px] font-bold">
                 {(['daily', 'weekly', 'monthly', 'yearly'] as Timeframe[]).map(tf => (
                   <button
                     key={tf}
@@ -810,7 +810,7 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
                         if (active && payload && payload.length) {
                           const item = payload[0].payload;
                           return (
-                            <div className="bg-[#0A0C10] border border-white/[0.1] p-2.5 rounded-xl shadow-2xl text-xs font-hud-mono">
+                            <div className="bg-[var(--bg)] border border-[var(--border)] p-2.5 rounded-xl shadow-2xl text-xs font-hud-mono">
                               <div className="flex items-center gap-1.5 font-bold text-white mb-0.5">
                                 <span
                                   className="w-2 h-2 rounded-full"
@@ -872,7 +872,7 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
         </div>
 
         {/* Right Card: Calendar (5 cols) */}
-        <div className="md:col-span-5 hud-surface border border-white/[0.08] rounded-2xl p-4 sm:p-5 flex flex-col justify-between space-y-3 relative overflow-hidden">
+        <div className="md:col-span-5 hud-surface border border-[var(--border)] rounded-2xl p-4 sm:p-5 flex flex-col justify-between space-y-3 relative overflow-hidden">
           {/* Header */}
           <div className="flex items-center pb-2.5 border-b border-white/[0.06]">
             <h2 className="font-hud-mono text-xs uppercase font-bold text-neutral-200 tracking-wider flex items-center gap-2">
@@ -1000,7 +1000,7 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
 
                     {/* Tooltip on hover */}
                     {hoveredCalDay && hoveredCalDay.dateStr === c.dateKey && (
-                      <div className="absolute -top-10 left-1/2 -translate-x-1/2 z-50 pointer-events-none bg-[#0A0C10] border border-white/[0.1] px-2.5 py-1 rounded-lg text-[10px] font-hud-mono whitespace-nowrap shadow-2xl">
+                      <div className="absolute -top-10 left-1/2 -translate-x-1/2 z-50 pointer-events-none bg-[var(--bg)] border border-[var(--border)] px-2.5 py-1 rounded-lg text-[10px] font-hud-mono whitespace-nowrap shadow-2xl">
                         <span className="text-white font-bold">
                           {parseLocalDateString(c.dateKey).toLocaleDateString('en-US', {
                             month: 'short',
@@ -1024,7 +1024,7 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
       </div>
 
       {/* 3. Bottom Section — Focus Time Chart (Full Width) */}
-      <div className="w-full col-span-full hud-surface border border-white/[0.08] rounded-2xl p-4 sm:p-5 space-y-3 relative overflow-hidden">
+      <div className="w-full col-span-full hud-surface border border-[var(--border)] rounded-2xl p-4 sm:p-5 space-y-3 relative overflow-hidden">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-white/[0.06]">
           <div className="flex items-center gap-2">
@@ -1034,7 +1034,7 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
 
           {/* Controls */}
           <div className="flex items-center gap-1.5">
-            <div className="flex items-center bg-black/60 border border-white/[0.08] rounded-xl p-0.5">
+            <div className="flex items-center bg-black/60 border border-[var(--border)] rounded-xl p-0.5">
               <button
                 onClick={() => handleFocusChartStep('prev')}
                 className="p-1 rounded-lg hover:bg-white/[0.08] text-neutral-400 hover:text-white transition-colors cursor-pointer"
@@ -1051,7 +1051,7 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
               </button>
             </div>
 
-            <div className="flex items-center bg-black/60 border border-white/[0.08] rounded-xl p-0.5 text-[11px] font-bold">
+            <div className="flex items-center bg-black/60 border border-[var(--border)] rounded-xl p-0.5 text-[11px] font-bold">
               {(['daily', 'weekly', 'monthly', 'yearly'] as Timeframe[]).map(tf => (
                 <button
                   key={tf}
@@ -1115,7 +1115,7 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
                   if (active && payload && payload.length) {
                     const item = payload[0].payload;
                     return (
-                      <div className="bg-[#0A0C10] border border-white/[0.1] p-2.5 rounded-xl shadow-2xl text-xs font-hud-mono">
+                      <div className="bg-[var(--bg)] border border-[var(--border)] p-2.5 rounded-xl shadow-2xl text-xs font-hud-mono">
                         <div className="font-bold text-white mb-0.5">{item.label}</div>
                         <div className="font-bold" style={{ color: theme.accent }}>
                           {formatHoursAndMins(item.rawSec)}

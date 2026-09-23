@@ -103,7 +103,7 @@ export default function Home() {
   // Loading state while verifying stored session
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#0A0C10] flex flex-col items-center justify-center text-slate-100 relative">
+      <div className="min-h-screen bg-[var(--bg)] flex flex-col items-center justify-center text-slate-100 relative">
         <div className="fixed inset-0 pointer-events-none bg-hud-grid z-0" />
         <div className="relative z-10 flex flex-col items-center">
           <div className="mb-4 animate-pulse">
@@ -124,7 +124,7 @@ export default function Home() {
 
   // Authenticated: Full StudyPulse focus dashboard
   return (
-    <div className="h-[100dvh] md:h-auto md:min-h-screen overflow-hidden md:overflow-x-hidden md:overflow-y-auto bg-[#0A0C10] text-slate-100 flex flex-col relative selection:bg-[var(--tier-accent)]/30 selection:text-[var(--tier-text-accent)]">
+    <div className="h-[100dvh] md:h-auto md:min-h-screen overflow-hidden md:overflow-x-hidden md:overflow-y-auto bg-[var(--bg)] text-slate-100 flex flex-col relative selection:bg-[var(--tier-accent)]/30 selection:text-[var(--tier-text-accent)]">
       {/* Drifting Ambient HUD Grid Overlay */}
       <div className="fixed inset-0 pointer-events-none bg-hud-grid z-0" />
 

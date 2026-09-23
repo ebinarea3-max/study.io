@@ -60,9 +60,13 @@ export function DailyTodoList() {
         if (saved) {
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            setTodos(parsed.map(normalizeTodo));
+            queueMicrotask(() => {
+              setTodos(parsed.map(normalizeTodo));
+            });
           } else if (Array.isArray(parsed) && parsed.length === 0) {
-            setTodos([]);
+            queueMicrotask(() => {
+              setTodos([]);
+            });
           }
         }
       } catch (err) {
@@ -349,7 +353,7 @@ export function DailyTodoList() {
   const progressPercent = todos.length > 0 ? Math.round((completedTodos.length / todos.length) * 100) : 0;
 
   return (
-    <div className="hud-surface border border-white/[0.08] rounded-2xl p-4 sm:p-5 space-y-3 relative overflow-hidden group">
+    <div className="hud-surface border border-[var(--border)] rounded-2xl p-4 sm:p-5 space-y-3 relative overflow-hidden group">
       {/* Header Row */}
       <div className="flex items-center justify-between pb-2.5 border-b border-white/[0.06] relative z-10">
         <div className="flex items-center gap-2">
@@ -380,7 +384,7 @@ export function DailyTodoList() {
       {/* Task Input: Clean, borderless inline input at the top */}
       <form
         onSubmit={handleAddTask}
-        className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-black/40 border border-white/[0.08] focus-within:border-white/30 focus-within:ring-1 focus-within:bg-black/60 transition-all relative z-10"
+        className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-black/40 border border-[var(--border)] focus-within:border-white/30 focus-within:ring-1 focus-within:bg-black/60 transition-all relative z-10"
         style={{ '--tw-ring-color': theme.accent } as React.CSSProperties}
       >
         <Plus className="w-4 h-4 text-neutral-400 flex-shrink-0" />
@@ -453,7 +457,7 @@ export function DailyTodoList() {
         {/* Completed Items Collapsible Section */}
         {completedTodos.length > 0 && (
           <div className="pt-2">
-            <div className="border-t border-white/[0.08] pt-2 mb-1 flex items-center justify-between">
+            <div className="border-t border-[var(--border)] pt-2 mb-1 flex items-center justify-between">
               <button
                 type="button"
                 onClick={() => setIsCompletedOpen(!isCompletedOpen)}

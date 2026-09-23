@@ -44,7 +44,7 @@ export function Navbar({
 }: NavbarProps) {
   const { user, isAuthenticated, logout } = useAuth();
   const { isStudying, setIsFocusModeOpen, gamification, sessions } = useStudy();
-  const { theme, userRank, totalRP, devTierOverride, setDevTierOverride } = useRankTheme();
+  const { theme, userRank, totalRP } = useRankTheme();
 
   const [showPersonaMenu, setShowPersonaMenu] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -162,7 +162,7 @@ export function Navbar({
 
   return (
     <>
-    <header className="sticky top-0 z-40 w-full border-b border-white/[0.08] bg-[#0A0C10]/90 backdrop-blur-xl transition-colors">
+    <header className="sticky top-0 z-40 w-full border-b border-[var(--border)] bg-[var(--bg)]/90 backdrop-blur-xl transition-colors">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 h-16 flex items-center justify-between gap-2 sm:gap-4">
         {/* Logo & Brand */}
         <div className="flex items-center gap-2.5 sm:gap-6">
@@ -176,7 +176,7 @@ export function Navbar({
           </div>
 
           {/* Navigation Tabs - Desktop HUD strip */}
-          <nav className="hidden md:flex items-center gap-1 p-1 rounded-2xl bg-[#14171D] border border-white/[0.08]">
+          <nav className="hidden md:flex items-center gap-1 p-1 rounded-2xl bg-[var(--surface)] border border-[var(--border)]">
             <button
               onClick={() => setActiveTab('timer')}
               className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-xl text-xs font-hud font-bold tracking-wider transition-all cursor-pointer ${
@@ -248,7 +248,7 @@ export function Navbar({
             <div className="flex items-center gap-2">
               {/* Rank Status Pill */}
               <div
-                className="relative flex items-center h-8 sm:h-9 pl-1 pr-3 sm:pr-4 bg-[#14161C] border border-slate-800 text-slate-100 cursor-default select-none rounded-xl"
+                className="relative flex items-center h-8 sm:h-9 pl-1 pr-3 sm:pr-4 bg-[var(--surface)] border border-slate-800 text-slate-100 cursor-default select-none rounded-xl"
                 title={`Ranked Season RP: ${userRank.rp.toLocaleString()} RP (${userRank.fullTitle})`}
               >
                 <div className="flex items-center gap-1.5 sm:gap-2">
@@ -267,29 +267,12 @@ export function Navbar({
             </div>
           )}
 
-          {/* Dev-only Tier Switcher (Only visible in development mode) */}
-          {process.env.NODE_ENV === 'development' && (
-            <select
-              value={devTierOverride || ''}
-              onChange={(e) => setDevTierOverride(e.target.value || null)}
-              className="hidden sm:block px-2 py-1.5 h-8 sm:h-9 bg-[#14161C] border border-slate-800 rounded-xl text-[10px] text-slate-400 font-mono outline-none cursor-pointer"
-            >
-              <option value="">Auto Tier</option>
-              <option value="Bronze">Bronze</option>
-              <option value="Silver">Silver</option>
-              <option value="Gold">Gold</option>
-              <option value="Platinum">Platinum</option>
-              <option value="Diamond">Diamond</option>
-              <option value="Champion">Champion</option>
-              <option value="Master">Master</option>
-              <option value="Grandmaster">Grandmaster</option>
-            </select>
-          )}
+
 
           {/* Native Fullscreen Toggle Button */}
           <button
             onClick={toggleFullscreen}
-            className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#14161C] border border-slate-800 hover:border-slate-600 text-slate-400 hover:text-slate-200 transition-colors hidden sm:flex items-center justify-center cursor-pointer"
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[var(--surface)] border border-slate-800 hover:border-slate-600 text-slate-400 hover:text-slate-200 transition-colors hidden sm:flex items-center justify-center cursor-pointer"
             title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
             aria-label={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
           >

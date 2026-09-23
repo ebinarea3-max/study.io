@@ -86,7 +86,7 @@ export function InstallAppButton({ variant = 'nav', className = '' }: InstallApp
           <button
             type="button"
             onClick={handleInstallClick}
-            className="px-3 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.1] text-xs font-semibold text-emerald-300 hover:text-emerald-200 transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer shadow-sm"
+            className="px-3 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-[var(--border)] text-xs font-semibold text-emerald-300 hover:text-emerald-200 transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer shadow-sm"
             title="View manual install instructions"
           >
             <Smartphone className="w-3.5 h-3.5 text-emerald-400" />

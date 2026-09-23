@@ -57,7 +57,7 @@ export function AuthCard({ onSuccess, isModal = false }: AuthCardProps) {
       className={`w-full relative overflow-hidden ${
         isModal
           ? ''
-          : 'bg-[#0B0C0E] border border-white/[0.08] rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-2xl'
+          : 'bg-[var(--bg)] border border-[var(--border)] rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-2xl'
       }`}
     >
       {/* Decorative ambient lighting */}
@@ -91,7 +91,7 @@ export function AuthCard({ onSuccess, isModal = false }: AuthCardProps) {
           type="button"
           onClick={handleGoogleSignIn}
           disabled={isLoading}
-          className="w-full flex items-center justify-center gap-3 py-3.5 px-5 rounded-2xl bg-neutral-900/90 hover:bg-neutral-800 active:bg-neutral-850 border border-white/[0.12] hover:border-white/25 text-white font-semibold text-sm transition-all shadow-lg hover:shadow-neutral-950/50 active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100 cursor-pointer group"
+          className="w-full flex items-center justify-center gap-3 py-3.5 px-5 rounded-2xl bg-neutral-900/90 hover:bg-neutral-800 active:bg-neutral-850 border border-[var(--border)] hover:border-white/25 text-white font-semibold text-sm transition-all shadow-lg hover:shadow-neutral-950/50 active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100 cursor-pointer group"
         >
           {isLoading ? (
             <>

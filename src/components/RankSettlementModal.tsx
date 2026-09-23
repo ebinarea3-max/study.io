@@ -470,7 +470,7 @@ export function RankSettlementModal({
   const remainingRP = Math.max(0, displayRank.maxRP - animatingRP);
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#06080F]/95 backdrop-blur-md flex flex-col items-center justify-center select-none overflow-hidden animate-in fade-in duration-300">
+    <div className="fixed inset-0 z-50 bg-[var(--bg)]/95 backdrop-blur-md flex flex-col items-center justify-center select-none overflow-hidden animate-in fade-in duration-300">
       
       {/* 1. Backdrop Vignette: Darkening at screen edges to push focus to center */}
       <div
@@ -740,7 +740,7 @@ export function RankSettlementModal({
           }`}
         >
           {/* Consolidated Session Stats Glassmorphic Strip */}
-          <div className="w-full mb-3 px-4 sm:px-5 py-2.5 rounded-lg bg-white/[0.03] border border-white/[0.08] backdrop-blur-md flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-xs text-slate-400">
+          <div className="w-full mb-3 px-4 sm:px-5 py-2.5 rounded-lg bg-white/[0.03] border border-[var(--border)] backdrop-blur-md flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-xs text-slate-400">
             <span className="flex items-center gap-1.5">
               <span className="text-slate-400">Focus Duration</span>
               <span className="font-medium text-slate-200">{formattedDuration}</span>

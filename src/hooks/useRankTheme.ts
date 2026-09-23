@@ -10,14 +10,12 @@ export function useRankTheme(): {
   theme: RankThemePalette;
   userRank: RankTierDetails;
   totalRP: number;
-  devTierOverride: string | null;
-  setDevTierOverride: (tier: string | null) => void;
 } {
   const { user } = useAuth();
   const { sessions } = useStudy();
   
   // Dev-only tier override
-  const [devTierOverride, setDevTierOverride] = useState<string | null>(null);
+  const devTierOverride = null;
 
   const totalSeconds = useMemo(() => {
     return (sessions || []).reduce(
@@ -37,9 +35,7 @@ export function useRankTheme(): {
   }, [totalRP]);
 
   const theme = useMemo(() => {
-    if (devTierOverride) {
-      return getRankTheme(devTierOverride);
-    }
+    
     return getRankTheme(userRank.tier);
   }, [userRank.tier, devTierOverride]);
 
@@ -48,14 +44,17 @@ export function useRankTheme(): {
     if (typeof document === 'undefined') return;
     const root = document.documentElement;
 
-    // Enable crossfade transition for tier changes (badges/crests)
-    root.style.transition = 'color 1.2s ease, border-color 1.2s ease, box-shadow 1.2s ease';
+    // Enable crossfade transition for tier changes (badges/crests/backgrounds)
+    root.style.transition = 'background-color 0.35s ease, border-color 0.35s ease, color 0.35s ease, box-shadow 0.35s ease';
+    document.body.style.transition = 'background-color 0.35s ease, border-color 0.35s ease';
 
+    // Inject CSS variables to documentElement for global tier reactive styles (RESTRICTED TO BADGES/CRESTS ONLY)
+    
+    // We only set the --tier-* variables here so the main app background remains static.
+    // Keep legacy variables for backwards compatibility
     root.style.setProperty('--tier-accent', theme.accent);
     root.style.setProperty('--tier-glow', theme.glow);
     root.style.setProperty('--tier-border', theme.border);
-    
-    // Legacy fallback variables
     root.style.setProperty('--tier-accent-rgb', theme.accentRgb || '255,255,255');
     root.style.setProperty('--tier-accent-hover', theme.accentHover || theme.accent);
     root.style.setProperty('--tier-gradient', theme.gradient || 'none');
@@ -69,7 +68,5 @@ export function useRankTheme(): {
     theme,
     userRank,
     totalRP,
-    devTierOverride,
-    setDevTierOverride,
   };
 }
