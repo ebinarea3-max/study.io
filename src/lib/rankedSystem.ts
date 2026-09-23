@@ -28,6 +28,7 @@ export type RankTierName =
   | 'Platinum'
   | 'Diamond'
   | 'Heroic'
+  | 'Master'
   | 'Grandmaster';
 
 export type RankDivision = 'I' | 'II' | 'III' | 'IV' | '';
@@ -306,13 +307,28 @@ export const RANK_TIERS: RankTierConfig[] = [
     wingsAccent: '#F87171',
   },
 
-  // Grandmaster: 8,000+ RP
+  // Master: 8,000 – 9,999 RP
+  {
+    tier: 'Master',
+    division: '',
+    fullTitle: 'MASTER',
+    minRP: 8000,
+    maxRP: 10000,
+    badgeAccent: '#8B5CF6',
+    badgeSecondary: '#5B21B6',
+    glowColor: 'rgba(139, 92, 246, 0.85)',
+    metallicGradient: 'from-violet-500 via-purple-200 to-violet-700',
+    borderGlow: 'border-violet-500/80',
+    wingsAccent: '#A78BFA',
+  },
+
+  // Grandmaster: 10,000+ RP
   {
     tier: 'Grandmaster',
     division: '',
     fullTitle: 'GRANDMASTER',
-    minRP: 8000,
-    maxRP: 10000,
+    minRP: 10000,
+    maxRP: 12000,
     badgeAccent: '#F97316',
     badgeSecondary: '#9A3412',
     glowColor: 'rgba(249, 115, 22, 0.9)',
@@ -470,6 +486,7 @@ export function calculateSeasonReset(previousRP: number): {
   let newRP = 0;
   switch (previousTier.tier) {
     case 'Grandmaster':
+    case 'Master':
     case 'Heroic':
       newRP = 1525; // Gold II
       break;

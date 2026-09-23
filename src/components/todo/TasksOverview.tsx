@@ -105,18 +105,13 @@ export function TasksOverview() {
       <div className="hud-surface hud-corner-frame border border-white/[0.08] rounded-2xl p-4 sm:p-4.5 space-y-2 relative overflow-hidden group">
         <div className="flex items-center justify-between pb-2 border-b border-white/[0.06] relative z-10">
           <div className="flex items-center gap-2">
-            <Radio className="w-3.5 h-3.5" style={{ color: theme.accent }} />
+            <Radio className="w-3.5 h-3.5 text-tier" />
             <span className="font-hud-mono text-[11px] font-bold uppercase tracking-wider text-neutral-300">
               TODAY'S BOOST // Objectives
             </span>
           </div>
           <span
-            className="font-hud-mono text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded border"
-            style={{
-              color: theme.accent,
-              borderColor: `${theme.accent}40`,
-              backgroundColor: `${theme.accent}12`,
-            }}
+            className="font-hud-mono text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded border text-tier border-tier-muted bg-tier-muted"
           >
             ACTIVE DISPATCH
           </span>
@@ -127,7 +122,7 @@ export function TasksOverview() {
             {primaryBoostMessage}
           </p>
           {secondaryBoostMessage && (
-            <p className="text-[11px] font-hud-mono mt-1 leading-normal" style={{ color: theme.accent }}>
+            <p className="text-[11px] font-hud-mono mt-1 leading-normal text-tier">
               {secondaryBoostMessage}
             </p>
           )}
@@ -144,7 +139,7 @@ export function TasksOverview() {
         {/* Header Row */}
         <div className="flex items-center justify-between pb-2 border-b border-white/[0.06]">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-3.5 h-3.5" style={{ color: theme.accent }} />
+            <Sparkles className="w-3.5 h-3.5 text-tier" />
             <span className="font-hud-mono text-xs uppercase tracking-wider font-bold text-neutral-300">
               Daily Overview
             </span>
@@ -156,10 +151,9 @@ export function TasksOverview() {
               onClick={() => setOverviewView('today')}
               className={`px-2.5 py-1 rounded font-hud-mono font-bold tracking-wider transition-all cursor-pointer ${
                 overviewView === 'today'
-                  ? 'text-slate-950 shadow-sm'
+                  ? 'text-slate-950 shadow-sm bg-tier'
                   : 'text-neutral-400 hover:text-white'
               }`}
-              style={overviewView === 'today' ? { backgroundColor: theme.accent } : undefined}
             >
               TODAY
             </button>
@@ -167,10 +161,9 @@ export function TasksOverview() {
               onClick={() => setOverviewView('yesterday')}
               className={`px-2.5 py-1 rounded font-hud-mono font-bold tracking-wider transition-all cursor-pointer ${
                 overviewView === 'yesterday'
-                  ? 'text-slate-950 shadow-sm'
+                  ? 'text-slate-950 shadow-sm bg-tier'
                   : 'text-neutral-400 hover:text-white'
               }`}
-              style={overviewView === 'yesterday' ? { backgroundColor: theme.accent } : undefined}
             >
               YESTERDAY
             </button>

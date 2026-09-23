@@ -754,7 +754,7 @@ export function StudyTimer() {
                     disabled={isStudying}
                     className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 active:scale-95 ${
                       pomodoroPreset === '25/5'
-                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/50 shadow-sm shadow-emerald-500/20'
+                        ? 'bg-tier-muted text-tier-bright border border-tier-muted shadow-sm'
                         : 'text-neutral-400 hover:text-white border border-transparent'
                     } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
                     title="25m Focus / 5m Break (Standard)"
@@ -769,7 +769,7 @@ export function StudyTimer() {
                     disabled={isStudying}
                     className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 active:scale-95 ${
                       pomodoroPreset === '50/10'
-                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/50 shadow-sm shadow-emerald-500/20'
+                        ? 'bg-tier-muted text-tier-bright border border-tier-muted shadow-sm'
                         : 'text-neutral-400 hover:text-white border border-transparent'
                     } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
                     title="50m Focus / 10m Break (Deep Work)"
@@ -784,9 +784,9 @@ export function StudyTimer() {
               {/* High-Contrast Fullscreen Focus Mode Button - Hidden on mobile */}
               <button
                 onClick={() => setIsFocusModeOpen(true)}
-                className="hidden md:flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/35 text-emerald-300 text-xs font-bold transition-all shadow-md shadow-emerald-500/10 active:scale-95 cursor-pointer"
+                className="hidden md:flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl bg-tier-muted hover:bg-[rgba(var(--tier-accent-rgb),0.25)] border border-tier-muted text-tier-bright text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer"
               >
-                <Maximize2 className="w-4 h-4 text-emerald-400" />
+                <Maximize2 className="w-4 h-4 text-tier" />
                 <span>Fullscreen Focus Mode</span>
               </button>
             </div>
@@ -838,9 +838,9 @@ export function StudyTimer() {
                   <div className="flex items-center gap-2.5 min-w-0">
                     <span
                       className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full flex-shrink-0 shadow-sm transition-colors"
-                      style={{ backgroundColor: selectedSubject ? (selectedSubject?.color || subjectColor) : activeSubjects.length === 0 ? '#10B981' : '#64748B' }}
+                      style={{ backgroundColor: selectedSubject ? (selectedSubject?.color || subjectColor) : activeSubjects.length === 0 ? 'var(--tier-accent)' : '#64748B' }}
                     />
-                    <span className={`truncate ${selectedSubject?.name ? "text-white font-bold tracking-tight" : activeSubjects.length === 0 ? "text-emerald-400 font-bold tracking-tight" : "text-neutral-400 font-medium tracking-tight"}`}>
+                    <span className={`truncate ${selectedSubject?.name ? "text-white font-bold tracking-tight" : activeSubjects.length === 0 ? "text-tier font-bold tracking-tight" : "text-neutral-400 font-medium tracking-tight"}`}>
                       {selectedSubject?.name || (activeSubjects.length === 0 ? '[ + Add a Subject ]' : '[ Select a Subject ]')}
                     </span>
                     {isStudying && (

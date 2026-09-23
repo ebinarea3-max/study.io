@@ -1,0 +1,8 @@
+- `[x]` 1. Update `src/lib/rankedSystem.ts` with the new `Master` tier and RP boundaries.
+- `[x]` 2. Update `src/lib/rankTheme.ts` to include `Master`, and define the new tokens (bg, surface, cardTexture, icon) for all 8 tiers.
+- `[x]` 3. Update `src/hooks/useRankTheme.ts` to inject all new CSS variables and handle the 1.2s crossfade transition logic.
+- `[x]` 4. Update CSS (likely `src/app/globals.css` or similar) to apply crossfades and `.card::before` pseudo-elements.
+- `[x]` 5. Update the header emblem to use the tier's Lucide icon with varying glow, including the Grandmaster pulse animation.
+- `[x]` 6. Re-theme hardcoded components (Timer ring, start button, active nav tab, progress bars, checkboxes, stats).
+- `[x]` 7. Add a dev-only tier switcher for testing.
+- `[x]` 8. Verify UI.

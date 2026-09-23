@@ -26,6 +26,23 @@
   --primary: var(--tier-accent);
 }
 
+/* Dynamic Card Texture Backgrounds */
+.card, .sideCard {
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.card::before, .sideCard::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: var(--card-texture, none);
+  z-index: -1;
+  transition: background 1.2s ease, opacity 1.2s ease;
+}
+
 html, body {
   transition: background-color 0.25s ease, color 0.2s ease;
 }
@@ -204,6 +221,22 @@ html.dark body,
   animation: emberGlow 2.4s ease-in-out infinite;
 }
 
+/* Grandmaster Badge Breathing Glow */
+@keyframes gmPulse {
+  0%, 100% {
+    filter: brightness(1);
+    transform: scale(1);
+  }
+  50% {
+    filter: brightness(1.15);
+    transform: scale(1.03);
+  }
+}
+
+.animate-gm-pulse {
+  animation: gmPulse 3.5s ease-in-out infinite;
+}
+
 /* Custom Obsidian Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
@@ -259,6 +292,18 @@ html.dark body,
 
 .bg-tier {
   background-color: var(--tier-accent);
+}
+
+.bg-tier-muted {
+  background-color: rgba(var(--tier-accent-rgb), 0.15);
+}
+
+.border-tier-muted {
+  border-color: rgba(var(--tier-accent-rgb), 0.35);
+}
+
+.text-tier-bright {
+  color: var(--tier-text-accent);
 }
 
 /* Floating cheer emoji keyframes */

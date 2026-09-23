@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useEffect } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useStudy } from '../context/StudyContext';
 import { getRankTier, RankTierDetails } from '../lib/rankedSystem';
@@ -10,9 +10,14 @@ export function useRankTheme(): {
   theme: RankThemePalette;
   userRank: RankTierDetails;
   totalRP: number;
+  devTierOverride: string | null;
+  setDevTierOverride: (tier: string | null) => void;
 } {
   const { user } = useAuth();
   const { sessions } = useStudy();
+  
+  // Dev-only tier override
+  const [devTierOverride, setDevTierOverride] = useState<string | null>(null);
 
   const totalSeconds = useMemo(() => {
     return (sessions || []).reduce(
@@ -32,25 +37,36 @@ export function useRankTheme(): {
   }, [totalRP]);
 
   const theme = useMemo(() => {
+    if (devTierOverride) {
+      return getRankTheme(devTierOverride);
+    }
     return getRankTheme(userRank.tier);
-  }, [userRank.tier]);
+  }, [userRank.tier, devTierOverride]);
 
   // Inject CSS variables to documentElement for global tier reactive styles
   useEffect(() => {
     if (typeof document === 'undefined') return;
     const root = document.documentElement;
 
+    // Enable crossfade transition for theme changes
+    root.style.transition = 'background-color 1.2s ease, border-color 1.2s ease, box-shadow 1.2s ease, color 1.2s ease';
+
     root.style.setProperty('--tier-accent', theme.accent);
-    root.style.setProperty('--tier-accent-rgb', theme.accentRgb);
-    root.style.setProperty('--tier-accent-hover', theme.accentHover);
     root.style.setProperty('--tier-glow', theme.glow);
     root.style.setProperty('--tier-border', theme.border);
     root.style.setProperty('--tier-surface', theme.surface);
-    root.style.setProperty('--tier-surface-high', theme.surfaceHigh);
+    root.style.setProperty('--tier-bg', theme.bg);
     root.style.setProperty('--tier-base', theme.base);
-    root.style.setProperty('--tier-gradient', theme.gradient);
-    root.style.setProperty('--tier-badge-bg', theme.badgeBg);
-    root.style.setProperty('--tier-text-accent', theme.textAccent);
+    root.style.setProperty('--card-texture', theme.cardTexture);
+    
+    // Legacy fallback variables
+    root.style.setProperty('--tier-accent-rgb', theme.accentRgb || '255,255,255');
+    root.style.setProperty('--tier-accent-hover', theme.accentHover || theme.accent);
+    root.style.setProperty('--tier-surface-high', theme.surfaceHigh || theme.surface);
+    root.style.setProperty('--tier-gradient', theme.gradient || 'none');
+    root.style.setProperty('--tier-badge-bg', theme.badgeBg || 'transparent');
+    root.style.setProperty('--tier-text-accent', theme.textAccent || theme.accent);
+
     root.setAttribute('data-rank-tier', theme.tier.toLowerCase());
   }, [theme]);
 
@@ -58,5 +74,7 @@ export function useRankTheme(): {
     theme,
     userRank,
     totalRP,
+    devTierOverride,
+    setDevTierOverride,
   };
 }
