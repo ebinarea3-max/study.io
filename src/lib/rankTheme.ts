@@ -112,14 +112,14 @@ export const RANK_THEMES: Record<RankTierName, RankThemePalette> = {
     badgeBg: 'rgba(111, 168, 220, 0.14)',
     textAccent: '#A1CFF8',
   },
-  Heroic: {
-    tier: 'Heroic',
+  Champion: {
+    tier: 'Champion',
     accent: '#B24FE8',
-    glow: 'rgba(178,79,232,0.42)',
+    glow: 'rgba(178, 79, 232, 0.40)',
     bg: '#0A0812',
     base: '#0A0812',
     surface: '#16121F',
-    border: 'rgba(190,130,240,0.12)',
+    border: 'rgba(190, 130, 240, 0.12)',
     cardTexture: 'radial-gradient(circle at top center, rgba(178,79,232,0.06) 0%, transparent 50%), radial-gradient(circle at bottom right, rgba(178,79,232,0.04) 0%, transparent 50%)',
     icon: 'Sparkles',
     // Fallbacks
@@ -133,11 +133,11 @@ export const RANK_THEMES: Record<RankTierName, RankThemePalette> = {
   Master: {
     tier: 'Master',
     accent: '#5B4FE8',
-    glow: 'rgba(91,79,232,0.45)',
+    glow: 'rgba(91, 79, 232, 0.45)',
     bg: '#08071A',
     base: '#08071A',
     surface: '#121130',
-    border: 'rgba(140,130,255,0.13)',
+    border: 'rgba(140, 130, 255, 0.13)',
     cardTexture: 'radial-gradient(ellipse at top center, rgba(91,79,232,0.08) 0%, transparent 60%), radial-gradient(circle at bottom left, rgba(91,79,232,0.05) 0%, transparent 40%)',
     icon: 'Crown',
     // Fallbacks
@@ -151,11 +151,11 @@ export const RANK_THEMES: Record<RankTierName, RankThemePalette> = {
   Grandmaster: {
     tier: 'Grandmaster',
     accent: '#FF3366',
-    glow: 'rgba(255,51,102,0.48)',
+    glow: 'rgba(255, 51, 102, 0.48)',
     bg: '#12060A',
     base: '#12060A',
     surface: '#1F0C12',
-    border: 'rgba(255,100,140,0.14)',
+    border: 'rgba(255, 100, 140, 0.14)',
     cardTexture: 'radial-gradient(circle at center, rgba(255,51,102,0.06) 0%, transparent 70%), radial-gradient(circle at top left, rgba(255,51,102,0.04) 0%, transparent 40%), radial-gradient(circle at bottom right, rgba(255,51,102,0.04) 0%, transparent 40%)',
     icon: 'Award',
     // Fallbacks

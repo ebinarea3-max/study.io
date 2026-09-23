@@ -16,8 +16,8 @@ const TIER_SCALES: Record<string, number> = {
   Gold: 1.12,
   Platinum: 1.18,
   Diamond: 1.25,
-  Heroic: 1.32,
-  Master: 1.40,
+  Champion: 1.38,
+  Master: 1.44,
   Grandmaster: 1.50,
 };
 
@@ -130,13 +130,13 @@ export function RankCrestBadge({
             <stop offset="100%" stopColor="#0F172A" />
           </linearGradient>
 
-          {/* Heroic Inlay */}
-          <linearGradient id={`tierHeroicLight-${tier}`} x1="0%" y1="0%" x2="100%" y2="100%">
+          {/* Champion Inlay */}
+          <linearGradient id={`tierChampionLight-${tier}`} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#FEE2E2" />
             <stop offset="40%" stopColor="#EF4444" />
             <stop offset="100%" stopColor="#B91C1C" />
           </linearGradient>
-          <linearGradient id={`tierHeroicDark-${tier}`} x1="0%" y1="0%" x2="100%" y2="100%">
+          <linearGradient id={`tierChampionDark-${tier}`} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#B91C1C" />
             <stop offset="50%" stopColor="#7F1D1D" />
             <stop offset="100%" stopColor="#450A0A" />
@@ -169,7 +169,7 @@ export function RankCrestBadge({
             tier === 'Gold' ? `url(#tierGoldLight-${tier})` :
             tier === 'Platinum' ? `url(#tierPlatinumLight-${tier})` :
             tier === 'Diamond' ? `url(#tierDiamondLight-${tier})` :
-            tier === 'Heroic' ? `url(#tierHeroicLight-${tier})` :
+            tier === 'Champion' ? `url(#tierChampionLight-${tier})` :
             `url(#tierGrandmasterLight-${tier})`;
 
           const accentDark =
@@ -178,7 +178,7 @@ export function RankCrestBadge({
             tier === 'Gold' ? `url(#tierGoldDark-${tier})` :
             tier === 'Platinum' ? `url(#tierPlatinumDark-${tier})` :
             tier === 'Diamond' ? `url(#tierDiamondDark-${tier})` :
-            tier === 'Heroic' ? `url(#tierHeroicDark-${tier})` :
+            tier === 'Champion' ? `url(#tierChampionDark-${tier})` :
             `url(#tierGrandmasterDark-${tier})`;
 
           const steelLight = `url(#crestSteelLight-${tier})`;

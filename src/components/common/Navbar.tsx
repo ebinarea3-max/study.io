@@ -280,7 +280,7 @@ export function Navbar({
               <option value="Gold">Gold</option>
               <option value="Platinum">Platinum</option>
               <option value="Diamond">Diamond</option>
-              <option value="Heroic">Heroic</option>
+              <option value="Champion">Champion</option>
               <option value="Master">Master</option>
               <option value="Grandmaster">Grandmaster</option>
             </select>

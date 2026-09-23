@@ -2,19 +2,20 @@
  * StudyPulse - Free Fire Ranked Season & RP Engine
  * 
  * Free Fire Rank Tiers & Divisions:
- * 1. Bronze: Bronze I (0-399), Bronze II (400-599), Bronze III (600-799)
- * 2. Silver: Silver I (800-999), Silver II (1000-1149), Silver III (1150-1299)
- * 3. Gold: Gold I (1300-1449), Gold II (1450-1599), Gold III (1600-1749), Gold IV (1750-1899)
- * 4. Platinum: Platinum I (1900-2099), Platinum II (2100-2299), Platinum III (2300-2499), Platinum IV (2500-2699)
- * 5. Diamond: Diamond I (2700-2899), Diamond II (2900-3099), Diamond III (3100-3299), Diamond IV (3300-3499)
- * 6. Heroic: 3500 - 4999
- * 7. Grandmaster: 5000+
+ * 1. Bronze: Bronze I (0-399), Bronze II (400-799), Bronze III (800-1199)
+ * 2. Silver: Silver I (1200-1699), Silver II (1700-2199), Silver III (2200-2699)
+ * 3. Gold: Gold I (2700-3299), Gold II (3300-3899), Gold III (3900-4499), Gold IV (4500-5099)
+ * 4. Platinum: Platinum I (5100-5799), Platinum II (5800-6499), Platinum III (6500-7199), Platinum IV (7200-7899)
+ * 5. Diamond: Diamond I (7900-8899), Diamond II (8900-9899), Diamond III (9900-10899), Diamond IV (10900-11999)
+ * 6. Champion: 12000 - 16999
+ * 7. Master: 17000 - 22999
+ * 8. Grandmaster: 23000+
  * 
  * Monthly Soft-Reset Rules:
- * - Grandmaster / Heroic -> Gold II (1500 RP)
- * - Diamond (I - IV) -> Gold I (1350 RP)
- * - Platinum (I - IV) -> Silver II (1000 RP)
- * - Gold (I - IV) -> Silver I (800 RP)
+ * - Grandmaster / Master / Champion -> Gold II (3300 RP)
+ * - Diamond (I - IV) -> Gold I (2700 RP)
+ * - Platinum (I - IV) -> Silver II (1700 RP)
+ * - Gold (I - IV) -> Silver I (1200 RP)
  * - Silver (I - III) -> Bronze II (400 RP)
  * - Bronze (I - III) -> Bronze I (0 RP)
  */
@@ -27,7 +28,7 @@ export type RankTierName =
   | 'Gold'
   | 'Platinum'
   | 'Diamond'
-  | 'Heroic'
+  | 'Champion'
   | 'Master'
   | 'Grandmaster';
 
@@ -48,13 +49,13 @@ export interface RankTierConfig {
 }
 
 export const RANK_TIERS: RankTierConfig[] = [
-  // Bronze: 0 – 599 RP
+  // Bronze: 0 – 1,199 RP
   {
     tier: 'Bronze',
     division: 'I',
     fullTitle: 'BRONZE I',
     minRP: 0,
-    maxRP: 200,
+    maxRP: 400,
     badgeAccent: '#D97706',
     badgeSecondary: '#92400E',
     glowColor: 'rgba(217, 119, 6, 0.4)',
@@ -66,8 +67,8 @@ export const RANK_TIERS: RankTierConfig[] = [
     tier: 'Bronze',
     division: 'II',
     fullTitle: 'BRONZE II',
-    minRP: 200,
-    maxRP: 400,
+    minRP: 400,
+    maxRP: 800,
     badgeAccent: '#D97706',
     badgeSecondary: '#92400E',
     glowColor: 'rgba(217, 119, 6, 0.45)',
@@ -79,8 +80,8 @@ export const RANK_TIERS: RankTierConfig[] = [
     tier: 'Bronze',
     division: 'III',
     fullTitle: 'BRONZE III',
-    minRP: 400,
-    maxRP: 600,
+    minRP: 800,
+    maxRP: 1200,
     badgeAccent: '#F59E0B',
     badgeSecondary: '#B45309',
     glowColor: 'rgba(245, 158, 11, 0.5)',
@@ -89,13 +90,13 @@ export const RANK_TIERS: RankTierConfig[] = [
     wingsAccent: '#F59E0B',
   },
 
-  // Silver: 600 – 1,199 RP
+  // Silver: 1,200 – 2,699 RP
   {
     tier: 'Silver',
     division: 'I',
     fullTitle: 'SILVER I',
-    minRP: 600,
-    maxRP: 800,
+    minRP: 1200,
+    maxRP: 1700,
     badgeAccent: '#94A3B8',
     badgeSecondary: '#475569',
     glowColor: 'rgba(148, 163, 184, 0.4)',
@@ -107,8 +108,8 @@ export const RANK_TIERS: RankTierConfig[] = [
     tier: 'Silver',
     division: 'II',
     fullTitle: 'SILVER II',
-    minRP: 800,
-    maxRP: 1000,
+    minRP: 1700,
+    maxRP: 2200,
     badgeAccent: '#CBD5E1',
     badgeSecondary: '#64748B',
     glowColor: 'rgba(203, 213, 225, 0.45)',
@@ -120,8 +121,8 @@ export const RANK_TIERS: RankTierConfig[] = [
     tier: 'Silver',
     division: 'III',
     fullTitle: 'SILVER III',
-    minRP: 1000,
-    maxRP: 1200,
+    minRP: 2200,
+    maxRP: 2700,
     badgeAccent: '#E2E8F0',
     badgeSecondary: '#94A3B8',
     glowColor: 'rgba(226, 232, 240, 0.5)',
@@ -130,13 +131,13 @@ export const RANK_TIERS: RankTierConfig[] = [
     wingsAccent: '#F8FAFC',
   },
 
-  // Gold: 1,200 – 2,499 RP
+  // Gold: 2,700 – 5,099 RP
   {
     tier: 'Gold',
     division: 'I',
     fullTitle: 'GOLD I',
-    minRP: 1200,
-    maxRP: 1525,
+    minRP: 2700,
+    maxRP: 3300,
     badgeAccent: '#EAB308',
     badgeSecondary: '#A16207',
     glowColor: 'rgba(234, 179, 8, 0.5)',
@@ -148,8 +149,8 @@ export const RANK_TIERS: RankTierConfig[] = [
     tier: 'Gold',
     division: 'II',
     fullTitle: 'GOLD II',
-    minRP: 1525,
-    maxRP: 1850,
+    minRP: 3300,
+    maxRP: 3900,
     badgeAccent: '#F59E0B',
     badgeSecondary: '#B45309',
     glowColor: 'rgba(245, 158, 11, 0.55)',
@@ -161,8 +162,8 @@ export const RANK_TIERS: RankTierConfig[] = [
     tier: 'Gold',
     division: 'III',
     fullTitle: 'GOLD III',
-    minRP: 1850,
-    maxRP: 2175,
+    minRP: 3900,
+    maxRP: 4500,
     badgeAccent: '#F59E0B',
     badgeSecondary: '#D97706',
     glowColor: 'rgba(245, 158, 11, 0.6)',
@@ -174,8 +175,8 @@ export const RANK_TIERS: RankTierConfig[] = [
     tier: 'Gold',
     division: 'IV',
     fullTitle: 'GOLD IV',
-    minRP: 2175,
-    maxRP: 2500,
+    minRP: 4500,
+    maxRP: 5100,
     badgeAccent: '#FBBF24',
     badgeSecondary: '#B45309',
     glowColor: 'rgba(251, 191, 36, 0.65)',
@@ -184,13 +185,13 @@ export const RANK_TIERS: RankTierConfig[] = [
     wingsAccent: '#FEF08A',
   },
 
-  // Platinum: 2,500 – 4,199 RP
+  // Platinum: 5,100 – 7,899 RP
   {
     tier: 'Platinum',
     division: 'I',
     fullTitle: 'PLATINUM I',
-    minRP: 2500,
-    maxRP: 2925,
+    minRP: 5100,
+    maxRP: 5800,
     badgeAccent: '#06B6D4',
     badgeSecondary: '#0E7490',
     glowColor: 'rgba(6, 182, 212, 0.55)',
@@ -202,8 +203,8 @@ export const RANK_TIERS: RankTierConfig[] = [
     tier: 'Platinum',
     division: 'II',
     fullTitle: 'PLATINUM II',
-    minRP: 2925,
-    maxRP: 3350,
+    minRP: 5800,
+    maxRP: 6500,
     badgeAccent: '#06B6D4',
     badgeSecondary: '#155E75',
     glowColor: 'rgba(6, 182, 212, 0.6)',
@@ -215,8 +216,8 @@ export const RANK_TIERS: RankTierConfig[] = [
     tier: 'Platinum',
     division: 'III',
     fullTitle: 'PLATINUM III',
-    minRP: 3350,
-    maxRP: 3775,
+    minRP: 6500,
+    maxRP: 7200,
     badgeAccent: '#0EA5E9',
     badgeSecondary: '#0369A1',
     glowColor: 'rgba(14, 165, 233, 0.65)',
@@ -228,8 +229,8 @@ export const RANK_TIERS: RankTierConfig[] = [
     tier: 'Platinum',
     division: 'IV',
     fullTitle: 'PLATINUM IV',
-    minRP: 3775,
-    maxRP: 4200,
+    minRP: 7200,
+    maxRP: 7900,
     badgeAccent: '#38BDF8',
     badgeSecondary: '#0284C7',
     glowColor: 'rgba(56, 189, 248, 0.7)',
@@ -238,13 +239,13 @@ export const RANK_TIERS: RankTierConfig[] = [
     wingsAccent: '#A5F3FC',
   },
 
-  // Diamond: 4,200 – 6,499 RP
+  // Diamond: 7,900 – 11,999 RP
   {
     tier: 'Diamond',
     division: 'I',
     fullTitle: 'DIAMOND I',
-    minRP: 4200,
-    maxRP: 4775,
+    minRP: 7900,
+    maxRP: 8900,
     badgeAccent: '#A855F7',
     badgeSecondary: '#6B21A8',
     glowColor: 'rgba(168, 85, 247, 0.6)',
@@ -256,8 +257,8 @@ export const RANK_TIERS: RankTierConfig[] = [
     tier: 'Diamond',
     division: 'II',
     fullTitle: 'DIAMOND II',
-    minRP: 4775,
-    maxRP: 5350,
+    minRP: 8900,
+    maxRP: 9900,
     badgeAccent: '#C084FC',
     badgeSecondary: '#7E22CE',
     glowColor: 'rgba(192, 132, 252, 0.65)',
@@ -269,8 +270,8 @@ export const RANK_TIERS: RankTierConfig[] = [
     tier: 'Diamond',
     division: 'III',
     fullTitle: 'DIAMOND III',
-    minRP: 5350,
-    maxRP: 5925,
+    minRP: 9900,
+    maxRP: 10900,
     badgeAccent: '#D946EF',
     badgeSecondary: '#86198F',
     glowColor: 'rgba(217, 70, 239, 0.7)',
@@ -282,8 +283,8 @@ export const RANK_TIERS: RankTierConfig[] = [
     tier: 'Diamond',
     division: 'IV',
     fullTitle: 'DIAMOND IV',
-    minRP: 5925,
-    maxRP: 6500,
+    minRP: 10900,
+    maxRP: 12000,
     badgeAccent: '#E879F9',
     badgeSecondary: '#A21CAF',
     glowColor: 'rgba(232, 121, 249, 0.75)',
@@ -292,49 +293,49 @@ export const RANK_TIERS: RankTierConfig[] = [
     wingsAccent: '#F5D0FE',
   },
 
-  // Heroic: 6,500 – 7,999 RP
+  // Champion: 12,000 – 16,999 RP
   {
-    tier: 'Heroic',
+    tier: 'Champion',
     division: '',
-    fullTitle: 'HEROIC',
-    minRP: 6500,
-    maxRP: 8000,
-    badgeAccent: '#EF4444',
-    badgeSecondary: '#991B1B',
-    glowColor: 'rgba(239, 68, 68, 0.8)',
-    metallicGradient: 'from-rose-500 via-red-200 to-red-700',
-    borderGlow: 'border-red-500/80',
-    wingsAccent: '#F87171',
+    fullTitle: 'CHAMPION',
+    minRP: 12000,
+    maxRP: 17000,
+    badgeAccent: '#B24FE8',
+    badgeSecondary: '#7B35B8',
+    glowColor: 'rgba(178, 79, 232, 0.8)',
+    metallicGradient: 'from-purple-500 via-fuchsia-200 to-fuchsia-700',
+    borderGlow: 'border-purple-500/80',
+    wingsAccent: '#D2A4FB',
   },
 
-  // Master: 8,000 – 9,999 RP
+  // Master: 17,000 – 22,999 RP
   {
     tier: 'Master',
     division: '',
     fullTitle: 'MASTER',
-    minRP: 8000,
-    maxRP: 10000,
-    badgeAccent: '#8B5CF6',
-    badgeSecondary: '#5B21B6',
-    glowColor: 'rgba(139, 92, 246, 0.85)',
-    metallicGradient: 'from-violet-500 via-purple-200 to-violet-700',
-    borderGlow: 'border-violet-500/80',
-    wingsAccent: '#A78BFA',
+    minRP: 17000,
+    maxRP: 23000,
+    badgeAccent: '#5B4FE8',
+    badgeSecondary: '#4135B3',
+    glowColor: 'rgba(91, 79, 232, 0.85)',
+    metallicGradient: 'from-indigo-500 via-blue-200 to-indigo-700',
+    borderGlow: 'border-indigo-500/80',
+    wingsAccent: '#9F8FFC',
   },
 
-  // Grandmaster: 10,000+ RP
+  // Grandmaster: 23,000+ RP
   {
     tier: 'Grandmaster',
     division: '',
     fullTitle: 'GRANDMASTER',
-    minRP: 10000,
-    maxRP: 12000,
-    badgeAccent: '#F97316',
-    badgeSecondary: '#9A3412',
-    glowColor: 'rgba(249, 115, 22, 0.9)',
-    metallicGradient: 'from-amber-400 via-orange-200 to-red-600',
-    borderGlow: 'border-orange-500/90',
-    wingsAccent: '#FB923C',
+    minRP: 23000,
+    maxRP: 30000,
+    badgeAccent: '#FF3366',
+    badgeSecondary: '#B81840',
+    glowColor: 'rgba(255, 51, 102, 0.9)',
+    metallicGradient: 'from-rose-500 via-pink-200 to-red-600',
+    borderGlow: 'border-rose-500/90',
+    wingsAccent: '#FF8AAB',
   },
 ];
 
@@ -468,11 +469,11 @@ export function calculateSessionRP(
 /**
  * Calculate Free Fire Monthly Soft Rank Reset
  * Rules (Aligned with updated tier boundaries):
- * - Grandmaster / Heroic -> Gold II (1525 RP)
- * - Diamond (I - IV)     -> Gold I (1200 RP)
- * - Platinum (I - IV)    -> Silver II (800 RP)
- * - Gold (I - IV)        -> Silver I (600 RP)
- * - Silver (I - III)     -> Bronze II (200 RP)
+ * - Grandmaster / Master / Champion -> Gold II (3300 RP)
+ * - Diamond (I - IV)     -> Gold I (2700 RP)
+ * - Platinum (I - IV)    -> Silver II (1700 RP)
+ * - Gold (I - IV)        -> Silver I (1200 RP)
+ * - Silver (I - III)     -> Bronze II (400 RP)
  * - Bronze (I - III)     -> Bronze I (0 RP)
  */
 export function calculateSeasonReset(previousRP: number): {
@@ -487,20 +488,20 @@ export function calculateSeasonReset(previousRP: number): {
   switch (previousTier.tier) {
     case 'Grandmaster':
     case 'Master':
-    case 'Heroic':
-      newRP = 1525; // Gold II
+    case 'Champion':
+      newRP = 3300; // Gold II
       break;
     case 'Diamond':
-      newRP = 1200; // Gold I
+      newRP = 2700; // Gold I
       break;
     case 'Platinum':
-      newRP = 800; // Silver II
+      newRP = 1700; // Silver II
       break;
     case 'Gold':
-      newRP = 600; // Silver I
+      newRP = 1200; // Silver I
       break;
     case 'Silver':
-      newRP = 200; // Bronze II
+      newRP = 400; // Bronze II
       break;
     case 'Bronze':
     default:
