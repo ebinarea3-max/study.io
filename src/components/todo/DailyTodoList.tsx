@@ -353,17 +353,18 @@ export function DailyTodoList() {
   const progressPercent = todos.length > 0 ? Math.round((completedTodos.length / todos.length) * 100) : 0;
 
   return (
-    <div className="hud-surface border border-[var(--border)] rounded-2xl p-4 sm:p-5 space-y-3 relative overflow-hidden group">
+    <div className="hud-surface border border-[var(--border)] rounded-2xl p-4 sm:p-5 space-y-3 relative overflow-hidden group"
+      style={{ borderTop: "1px solid rgba(245, 158, 11, 0.4)" }}>
       {/* Header Row */}
       <div className="flex items-center justify-between pb-2.5 border-b border-white/[0.06] relative z-10">
         <div className="flex items-center gap-2">
-          <CheckSquare className="w-4 h-4 text-tier" />
+          <CheckSquare className="w-4 h-4 text-[#F59E0B]" />
           <span className="font-hud-mono text-xs uppercase font-bold text-white tracking-wider">
             TODO LIST
           </span>
         </div>
         <span
-          className="px-2.5 py-0.5 rounded font-hud-mono text-[11px] font-bold border shadow-sm text-tier border-tier-muted bg-tier-muted"
+          className="px-2.5 py-0.5 rounded font-hud-mono text-[11px] font-bold border shadow-sm" style={{ backgroundColor: "rgba(245, 158, 11, 0.1)", color: "#FBBF24", borderColor: "rgba(245, 158, 11, 0.25)" }}
         >
           <span className="font-bold">{completedTodos.length}</span> / {todos.length} COMPLETED
         </span>
@@ -373,7 +374,7 @@ export function DailyTodoList() {
       {todos.length > 0 && (
         <div className="h-1.5 w-full rounded-full bg-black/60 overflow-hidden border border-white/[0.05] relative z-10">
           <div
-            className="h-full rounded-full transition-all duration-500 shadow-sm bg-tier glow-tier"
+            className="h-full rounded-full transition-all duration-500 shadow-sm bg-[#F59E0B] "
             style={{
               width: `${progressPercent}%`,
             }}
@@ -385,7 +386,7 @@ export function DailyTodoList() {
       <form
         onSubmit={handleAddTask}
         className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-black/40 border border-[var(--border)] focus-within:border-white/30 focus-within:ring-1 focus-within:bg-black/60 transition-all relative z-10"
-        style={{ '--tw-ring-color': theme.accent } as React.CSSProperties}
+        style={{ '--tw-ring-color': '#F59E0B' } as React.CSSProperties}
       >
         <Plus className="w-4 h-4 text-neutral-400 flex-shrink-0" />
         <input
@@ -400,7 +401,7 @@ export function DailyTodoList() {
           <button
             type="submit"
             disabled={!taskInput.trim()}
-            className="px-2.5 py-1 text-[11px] font-hud-mono font-bold text-slate-950 rounded-lg transition-all flex-shrink-0 cursor-pointer disabled:opacity-50 active:scale-95 bg-tier"
+            className="px-2.5 py-1 text-[11px] font-hud-mono font-bold text-slate-950 rounded-lg transition-all flex-shrink-0 cursor-pointer disabled:opacity-50 active:scale-95 bg-[#F59E0B]"
           >
             ADD
           </button>
@@ -469,7 +470,7 @@ export function DailyTodoList() {
                   }`}
                 />
                 <span className="flex items-center gap-1.5 font-hud-mono text-[11px] tracking-wide">
-                  <Check className="w-3.5 h-3.5 stroke-[2.5] text-tier" />
+                  <Check className="w-3.5 h-3.5 stroke-[2.5] text-[#F59E0B]" />
                   <span>COMPLETED OBJECTIVES ({completedTodos.length})</span>
                 </span>
               </button>

@@ -1009,7 +1009,7 @@ export function StudyTimer() {
 
               {/* Inner Dial */}
               <div
-                className="w-[78%] h-[78%] rounded-full bg-[var(--bg)] border flex flex-col items-center justify-center p-2.5 sm:p-6 text-center relative z-10 shadow-inner"
+                className="w-[78%] h-[78%] rounded-full bg-[var(--bg)] border-2 flex flex-col items-center justify-center p-2.5 sm:p-6 text-center relative z-10 shadow-inner"
                 style={{ borderColor: "rgba(255, 255, 255, 0.1)", boxShadow: "inset 0 2px 10px rgba(0, 0, 0, 0.8)" }}
               >
                 {/* Pomodoro Phase / Subject Pill */}
@@ -1236,7 +1236,7 @@ export function StudyTimer() {
                   }}
                   disabled={isSaving || isRemoteTransitioning}
                   className="px-8 sm:px-10 py-3.5 sm:py-4 font-sans font-semibold text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2.5 w-full xs:w-auto rounded-xl cursor-pointer hover:scale-[1.02]"
-                  style={{ background: 'linear-gradient(180deg, #00F2FE 0%, #00C4D4 100%)', boxShadow: '0 4px 20px rgba(0, 242, 254, 0.3)', color: '#041014', border: '1px solid rgba(255, 255, 255, 0.35)' }}
+                  style={{ background: '#10B981', boxShadow: '0 4px 20px rgba(16, 185, 129, 0.3)', color: '#000000', border: '1px solid rgba(255, 255, 255, 0.35)' }}
                 >
                   <Flame className="w-4 sm:w-5 h-4 sm:h-5 fill-current" />
                   <span>START FOCUS SESSION</span>
@@ -1251,7 +1251,7 @@ export function StudyTimer() {
                       ? 'opacity-40 cursor-not-allowed shadow-none'
                       : 'cursor-pointer hover:scale-[1.02]'
                   }`}
-                  style={{ background: 'linear-gradient(180deg, #00F2FE 0%, #00C4D4 100%)', boxShadow: '0 4px 20px rgba(0, 242, 254, 0.3)', color: '#041014', border: '1px solid rgba(255, 255, 255, 0.35)' }}
+                  style={{ background: '#10B981', boxShadow: '0 4px 20px rgba(16, 185, 129, 0.3)', color: '#000000', border: '1px solid rgba(255, 255, 255, 0.35)' }}
                   title={!selectedSubject?.id ? 'Please select a subject before starting the timer' : 'Start Focus Session'}
                 >
                   <Play className="w-4 sm:w-5 h-4 sm:h-5 fill-current" />
@@ -1295,7 +1295,7 @@ export function StudyTimer() {
                     onClick={handleResume}
                     disabled={isSaving || isRemoteTransitioning}
                     className="px-6 sm:px-8 py-3 rounded-xl font-hud font-bold text-xs sm:text-sm text-slate-950 transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[120px] tracking-wider uppercase hud-btn-primary"
-                    style={{ background: 'linear-gradient(180deg, #00F2FE 0%, #00C4D4 100%)', boxShadow: '0 4px 20px rgba(0, 242, 254, 0.3)', color: '#041014', border: '1px solid rgba(255, 255, 255, 0.35)' }}
+                    style={{ background: '#10B981', boxShadow: '0 4px 20px rgba(16, 185, 129, 0.3)', color: '#000000', border: '1px solid rgba(255, 255, 255, 0.35)' }}
                   >
                     <Play className="w-4 h-4 fill-current" />
                     <span>RESUME</span>
@@ -1345,7 +1345,7 @@ export function StudyTimer() {
         {/* 2. Unified HUD Stat Readout Panel */}
         <div
           className="rounded-2xl bg-[var(--surface)] backdrop-blur-xl border border-[var(--border)] p-5 shadow-xl space-y-4 transition-all relative overflow-hidden"
-          style={{ borderColor: 'var(--border)' }}
+          style={{ borderTop: "1px solid rgba(6, 182, 212, 0.4)" }}
         >
           <div className="hud-corner-bracket hud-corner-tl" />
           <div className="hud-corner-bracket hud-corner-tr" />
@@ -1360,7 +1360,7 @@ export function StudyTimer() {
 
           <div className="flex items-center justify-between pb-3 border-b border-[var(--border)] relative z-10">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4" style={{ color: 'var(--accent)' }} />
+              <Sparkles className="w-4 h-4" style={{ color: "#06B6D4" }} />
               <span className="text-xs font-hud font-bold text-white tracking-widest uppercase">
                 DAILY OVERVIEW
               </span>
@@ -1374,7 +1374,7 @@ export function StudyTimer() {
                     ? 'text-slate-950 shadow-sm'
                     : 'text-slate-400 hover:text-white'
                 }`}
-                style={overviewView === 'today' ? { backgroundColor: 'rgba(255, 255, 255, 0.05)', color: 'var(--accent)', boxShadow: 'inset 0 0 0 1px var(--border)' } : undefined}
+                style={overviewView === 'today' ? { backgroundColor: '#06B6D4', color: '#04181C', boxShadow: 'inset 0 0 0 1px rgba(6, 182, 212, 0.5)' } : undefined}
               >
                 TODAY
               </button>
@@ -1385,7 +1385,7 @@ export function StudyTimer() {
                     ? 'text-slate-950 shadow-sm'
                     : 'text-slate-400 hover:text-white'
                 }`}
-                style={overviewView === 'yesterday' ? { backgroundColor: 'rgba(255, 255, 255, 0.05)', color: 'var(--accent)', boxShadow: 'inset 0 0 0 1px var(--border)' } : undefined}
+                style={overviewView === 'yesterday' ? { backgroundColor: '#06B6D4', color: '#04181C', boxShadow: 'inset 0 0 0 1px rgba(6, 182, 212, 0.5)' } : undefined}
               >
                 YESTERDAY
               </button>
@@ -1412,7 +1412,7 @@ export function StudyTimer() {
               </div>
               <div
                 className="text-lg font-hud font-black tracking-tight tabular-nums"
-                style={{ color: 'var(--accent)' }}
+                style={{ color: "#06B6D4" }}
               >
                 {(isLoading || isLoadingSessions) && !hasHydrated ? (
                   <Skeleton className="h-6 w-20 bg-slate-800" />
@@ -1447,9 +1447,9 @@ export function StudyTimer() {
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-4 h-4 flex items-center justify-center animate-ember-glow">
-                  <Flame className="w-full h-full fill-current" style={{ color: 'var(--accent)' }} />
+                  <Flame className="w-full h-full fill-current" style={{ color: "#06B6D4" }} />
                 </div>
-                <span className="text-lg font-hud font-black tracking-tight" style={{ color: 'var(--accent)' }}>
+                <span className="text-lg font-hud font-black tracking-tight" style={{ color: "#06B6D4" }}>
                   {user?.streakDays ?? 0}
                 </span>
               </div>
@@ -1460,7 +1460,7 @@ export function StudyTimer() {
         {/* 3. Today's Boost / Motivation Card */}
         <div
           className="rounded-2xl bg-[var(--surface)] backdrop-blur-xl border border-[var(--border)] p-5 shadow-xl space-y-3 transition-all relative overflow-hidden"
-          style={{ borderColor: 'var(--border)' }}
+          style={{ borderTop: "1px solid rgba(16, 185, 129, 0.4)" }}
         >
           <div className="hud-corner-bracket hud-corner-tl" />
           <div className="hud-corner-bracket hud-corner-tr" />
@@ -1468,14 +1468,14 @@ export function StudyTimer() {
           <div className="hud-corner-bracket hud-corner-br" />
 
           <div className="flex items-center gap-2 pb-2.5 border-b border-[var(--border)] relative z-10">
-            <MessageCircle className="w-4 h-4" style={{ color: 'var(--accent)' }} />
+            <MessageCircle className="w-4 h-4" style={{ color: "#10B981" }} />
             <span className="text-xs font-hud font-bold text-white tracking-widest uppercase">
               TODAY'S BOOST
             </span>
           </div>
 
           <div className="min-h-[40px] flex flex-col justify-center relative z-10">
-            <p className="text-[14px] font-semibold text-slate-200 leading-snug tracking-tight">
+            <p className="text-[14px] font-semibold text-[#E2E8F0] leading-snug tracking-tight">
               {primaryBoostMessage}
             </p>
             {secondaryBoostMessage && (

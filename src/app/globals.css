@@ -2,9 +2,9 @@
 
 :root {
   /* Unified Permanent Premium UI Palette */
-  --bg: #090B10;
-  --background: #090B10;
-  --surface: rgba(14, 18, 26, 0.7);
+  --bg: #0A0D14;
+  --background: #0A0D14;
+  --surface: rgba(15, 19, 28, 0.78);
   --border: rgba(255, 255, 255, 0.08);
   
   --text-primary: #FFFFFF;
@@ -83,8 +83,8 @@ html.dark body,
   border: 1px solid var(--border);
   border-top: 1px solid rgba(255, 255, 255, 0.14);
   box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
 
 /* Frosted Glass Treatment ONLY for Floating Overlays (Dock, Modals, Sheets) */
