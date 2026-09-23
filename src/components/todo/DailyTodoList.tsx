@@ -46,6 +46,7 @@ export function DailyTodoList() {
   const saveLocal = (items: DailyTodo[]) => {
     try {
       localStorage.setItem('studypulse_todos', JSON.stringify(items));
+      window.dispatchEvent(new Event('studypulse_todos_updated'));
     } catch (err) {
       console.warn('Failed to save todos to localStorage:', err);
     }
@@ -53,17 +54,24 @@ export function DailyTodoList() {
 
   // 1. Initial load from localStorage (instant rendering, zero flash) + fetch from Supabase
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem('studypulse_todos');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setTodos(parsed.map(normalizeTodo));
+    const syncFromLocal = () => {
+      try {
+        const saved = localStorage.getItem('studypulse_todos');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setTodos(parsed.map(normalizeTodo));
+          } else if (Array.isArray(parsed) && parsed.length === 0) {
+            setTodos([]);
+          }
         }
+      } catch (err) {
+        console.warn('Failed to parse local todos:', err);
       }
-    } catch (err) {
-      console.warn('Failed to parse local todos:', err);
-    }
+    };
+
+    syncFromLocal();
+    window.addEventListener('studypulse_todos_updated', syncFromLocal);
 
     // 2. Fetch remote todos from Supabase with active session verification
     const fetchRemoteTodos = async () => {
@@ -133,8 +141,13 @@ export function DailyTodoList() {
       });
       return () => {
         subscription.unsubscribe();
+        window.removeEventListener('studypulse_todos_updated', syncFromLocal);
       };
     }
+    
+    return () => {
+      window.removeEventListener('studypulse_todos_updated', syncFromLocal);
+    };
   }, []);
 
   // 3. Add Task: Optimistic update + Supabase insert + UUID replacement

@@ -55,6 +55,8 @@ export const metadata: Metadata = {
   },
 };
 
+import { DevRankSwitcher } from "../components/dev/DevRankSwitcher";
+
 export default function RootLayout({
   children,
 }: {
@@ -66,7 +68,10 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${rajdhani.variable} ${chakraPetch.variable} dark h-full antialiased`}
     >
       <body className="min-h-screen overflow-x-hidden flex flex-col text-slate-200 bg-[#0A0C10] dark antialiased selection:bg-[var(--tier-accent)]/30 selection:text-[var(--tier-accent)]">
-        <Providers>{children}</Providers>
+        <Providers>
+          {children}
+          <DevRankSwitcher />
+        </Providers>
       </body>
     </html>
   );
