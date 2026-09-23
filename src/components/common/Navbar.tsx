@@ -419,8 +419,7 @@ export function Navbar({
                   <div className="w-full h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden relative">
                     <div
                       className="h-full rounded-full transition-all duration-500"
-                      style={{ background: 'var(--tier-gradient)' }}
-                      style={{ width: `${gamification.progressPercent}%` }}
+                      style={{ background: 'var(--tier-gradient)', width: `${gamification.progressPercent}%` }}
                     />
                   </div>
 
