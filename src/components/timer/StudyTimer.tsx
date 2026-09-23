@@ -702,7 +702,7 @@ export function StudyTimer() {
           )}
 
           {/* Top Controls: Mode Switcher, Preset Selector & Focus Mode Button */}
-          <div className="flex flex-wrap items-center justify-between gap-2.5 sm:gap-4 relative z-10 pb-3 sm:pb-6 border-b border-[var(--border)] flex-shrink-0">
+          <div className="w-full flex flex-wrap items-center justify-between gap-2.5 sm:gap-4 relative z-10 pb-2 sm:pb-6 border-b border-[var(--border)] flex-shrink-0">
             <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
               {/* Mode Pill Toggle */}
               <div className="flex items-center gap-1 p-0.5 sm:p-1 rounded-2xl bg-[var(--bg)] border border-[var(--border)]">
@@ -915,8 +915,8 @@ export function StudyTimer() {
           </div>
 
           {/* Center Timer Display - Game HUD Radar / Reactor Core Display */}
-          <div className="relative z-10 flex flex-col items-center justify-center py-0 sm:py-6 flex-shrink-0">
-            <div className={`relative flex-shrink-0 flex items-center justify-center p-1 sm:p-2 w-52 h-52 sm:w-64 sm:h-64 md:w-80 md:h-80 mx-auto aspect-square transition-all duration-300 rounded-full ${
+          <div className="relative z-10 flex-1 flex flex-col items-center justify-center py-2 sm:py-6 min-h-[200px]">
+            <div className={`relative flex items-center justify-center p-1 sm:p-2 w-full max-w-[220px] sm:max-w-[256px] md:max-w-[320px] aspect-square transition-all duration-300 rounded-full mx-auto ${
               isRemoteTransitioning
                 ? 'scale-[1.03] ring-4 ring-white/50 shadow-[0_0_50px_var(--tier-glow)]'
                 : ''
@@ -1009,7 +1009,7 @@ export function StudyTimer() {
 
               {/* Inner Dial */}
               <div
-                className="w-[78%] h-[78%] max-w-[200px] max-h-[200px] sm:max-w-none sm:max-h-none rounded-full bg-[var(--bg)] flex flex-col items-center justify-center p-2.5 sm:p-6 text-center relative z-10 shadow-inner"
+                className="w-[78%] h-[78%] rounded-full bg-[var(--bg)] flex flex-col items-center justify-center p-2.5 sm:p-6 text-center relative z-10 shadow-inner"
                 style={{ border: "2px solid rgba(255, 255, 255, 0.12)", boxShadow: "inset 0 2px 10px rgba(0, 0, 0, 0.8)" }}
               >
                 {/* Pomodoro Phase / Subject Pill */}
@@ -1141,7 +1141,7 @@ export function StudyTimer() {
             )}
 
             {/* Action Buttons: Context-aware HUD controls */}
-            <div className="mt-auto pt-2 sm:pt-8 flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 relative z-10 w-full flex-shrink-0 mb-1 sm:mb-0">
+            <div className="mt-auto pt-3 sm:pt-8 flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 relative z-10 w-full flex-shrink-0">
               {pomodoroCompletedPhase === 'work' ? (
                 /* Prompt 1: Focus Block Complete -> Save & Start Break / Skip Break */
                 <>
