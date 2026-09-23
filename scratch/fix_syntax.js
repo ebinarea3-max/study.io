@@ -1,26 +1,13 @@
 const fs = require('fs');
+const studyTimerPath = './src/components/timer/StudyTimer.tsx';
+let timer = fs.readFileSync(studyTimerPath, 'utf8');
 
-const file = './src/components/timer/StudyTimer.tsx';
-let content = fs.readFileSync(file, 'utf8');
+// The messed up section is around line 684
+const messedUpRegex = /\{\/\* Subtle Ambient Glow \*\/\}\s*<span className="font-hud tracking-wide">PREVIOUS SESSION RESTORED \(PAUSED\)<\/span>\s*<\/div>\s*<button\s*onClick=\{\(\) => setShowRecoveryBanner\(false\)\}\s*className="p-1\.5 rounded-xl hover:bg-amber-500\/20 text-amber-300 transition-colors cursor-pointer"\s*title="Dismiss"\s*>\s*<X className="w-3\.5 h-3\.5" \/>\s*<\/button>\s*<\/div>\s*\)\}/;
 
-// Fix border colors with opacities attached incorrectly
-content = content.replace(/`\$\{'var\(--accent\)'\}35`/g, "'var(--border)'");
-content = content.replace(/`\$\{'var\(--accent\)'\}50`/g, "'var(--border)'");
-content = content.replace(/`\$\{'var\(--accent\)'\}30`/g, "'var(--border)'");
+const fixedContent = `{/* Subtle Ambient Glow */}\n\n          {/* Session Resumed Alert Banner */}\n          {showRecoveryBanner && (\n            <div className="absolute top-4 left-1/2 -translate-x-1/2 w-[90%] max-w-sm px-4 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 backdrop-blur-md flex items-center justify-between shadow-lg z-50 animate-in fade-in slide-in-from-top-4">\n              <div className="flex items-center gap-2 text-amber-300 text-[10px] font-bold">\n                <Zap className="w-3.5 h-3.5 fill-current animate-pulse" />\n                <span className="font-hud tracking-wide">PREVIOUS SESSION RESTORED (PAUSED)</span>\n              </div>\n              <button\n                onClick={() => setShowRecoveryBanner(false)}\n                className="p-1.5 rounded-xl hover:bg-amber-500/20 text-amber-300 transition-colors cursor-pointer"\n                title="Dismiss"\n              >\n                <X className="w-3.5 h-3.5" />\n              </button>\n            </div>\n          )}`;
 
-// Fix Hover invalid TS syntax
-content = content.replace(/'var\(--accent\)'Hover/g, "'var(--accent)'");
+timer = timer.replace(messedUpRegex, fixedContent);
+fs.writeFileSync(studyTimerPath, timer, 'utf8');
 
-// Fix template literals with just variables
-content = content.replace(/`([^`]*)\$\{'var\(--glow\)'\}([^`]*)`/g, "'$1var(--glow)$2'");
-content = content.replace(/`([^`]*)\$\{'var\(--accent\)'\}([^`]*)`/g, "'$1var(--accent)$2'");
-
-// Clean up remaining conic gradient syntax
-content = content.replace(/conic-gradient\(from 0deg, transparent 0deg, transparent 270deg, \$\{'var\(--glow\)'\} 330deg, \$\{'var\(--accent\)'\} 360deg\)/g, "conic-gradient(from 0deg, transparent 0deg, transparent 270deg, var(--glow) 330deg, var(--accent) 360deg)");
-
-// Run it a second time for multiple template literal variables in the same string
-content = content.replace(/`([^`]*)\$\{'var\(--glow\)'\}([^`]*)`/g, "'$1var(--glow)$2'");
-content = content.replace(/`([^`]*)\$\{'var\(--accent\)'\}([^`]*)`/g, "'$1var(--accent)$2'");
-
-fs.writeFileSync(file, content, 'utf8');
-console.log('Fixed invalid syntax in StudyTimer.tsx');
+console.log('Fixed syntax error');

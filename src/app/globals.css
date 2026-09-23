@@ -2,9 +2,9 @@
 
 :root {
   /* Unified Permanent Premium UI Palette */
-  --bg: #0A0D14;
-  --background: #0A0D14;
-  --surface: rgba(16, 22, 31, 0.75);
+  --bg: #090B10;
+  --background: #090B10;
+  --surface: rgba(14, 18, 26, 0.7);
   --border: rgba(255, 255, 255, 0.08);
   
   --text-primary: #FFFFFF;
@@ -12,9 +12,9 @@
   --text-secondary: #94A3B8;
 
   /* Base brand accent: Electric Emerald/Cyan */
-  --accent: #00E599;
-  --primary: #00E599;
-  --accent-glow: rgba(0, 229, 153, 0.3);
+  --accent: #00F2FE;
+  --primary: #00F2FE;
+  --accent-glow: rgba(0, 242, 254, 0.3);
 
   /* Fallbacks for older variables */
   --card-bg: var(--surface);
@@ -81,8 +81,10 @@ html.dark body,
 .hud-surface {
   background-color: var(--surface);
   border: 1px solid var(--border);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
 /* Frosted Glass Treatment ONLY for Floating Overlays (Dock, Modals, Sheets) */

@@ -28,6 +28,7 @@ import {
   Check,
   X,
   Coffee,
+  Zap,
   SkipForward,
 } from 'lucide-react';
 import { soundFx } from '../../lib/audio';
@@ -673,7 +674,7 @@ export function StudyTimer() {
         {/* Main Timer Game-HUD Card with Targeting Reticle Corner Brackets */}
         <div
           className="relative rounded-3xl bg-[var(--surface)] backdrop-blur-xl border border-[var(--border)] p-3.5 sm:p-8 lg:p-10 shadow-xl overflow-hidden flex-1 md:flex-initial flex flex-col justify-between transition-all"
-          style={{ backgroundImage: "var(--card-texture, none)", borderColor: 'var(--border)', boxShadow: 'inset 0 1px 0 var(--card-highlight, transparent)' }}
+          
         >
           {/* Angular Targeting Reticle Corner Brackets */}
           <div className="hud-corner-bracket hud-corner-tl" />
@@ -682,22 +683,12 @@ export function StudyTimer() {
           <div className="hud-corner-bracket hud-corner-br" />
 
           {/* Subtle Ambient Glow */}
-          <div
-            className="absolute -top-24 -right-24 w-72 h-72 rounded-full blur-[100px] opacity-15 pointer-events-none transition-all duration-700"
-            style={{ backgroundColor: 'var(--accent)' }}
-          />
-          <div
-            className="absolute -bottom-24 -left-24 w-72 h-72 rounded-full blur-[100px] opacity-10 pointer-events-none transition-all duration-700"
-            style={{ backgroundColor: 'var(--accent)' }}
-          />
 
-          {/* Subtle Previous Session Recovery Banner */}
+          {/* Session Resumed Alert Banner */}
           {showRecoveryBanner && (
-            <div className="relative z-30 mb-3 sm:mb-6 flex items-center justify-between gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs font-semibold backdrop-blur-md shadow-lg shadow-amber-500/5 animate-in fade-in slide-in-from-top-2 duration-300 flex-shrink-0">
-              <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center flex-shrink-0">
-                  <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
-                </div>
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 w-[90%] max-w-sm px-4 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 backdrop-blur-md flex items-center justify-between shadow-lg z-50 animate-in fade-in slide-in-from-top-4">
+              <div className="flex items-center gap-2 text-amber-300 text-[10px] font-bold">
+                <Zap className="w-3.5 h-3.5 fill-current animate-pulse" />
                 <span className="font-hud tracking-wide">PREVIOUS SESSION RESTORED (PAUSED)</span>
               </div>
               <button
@@ -723,7 +714,7 @@ export function StudyTimer() {
                       ? 'text-slate-950 shadow-sm'
                       : 'text-neutral-400 hover:text-white'
                   } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
-                  style={timerMode === 'stopwatch' ? { backgroundColor: 'rgba(255, 255, 255, 0.05)', color: 'var(--accent)', boxShadow: 'inset 0 0 0 1px var(--border)' } : undefined}
+                  style={timerMode === 'stopwatch' ? { backgroundColor: 'rgba(255, 255, 255, 0.1)', color: '#FFFFFF', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' } : { color: '#94A3B8' }}
                 >
                   STOPWATCH
                 </button>
@@ -735,7 +726,7 @@ export function StudyTimer() {
                       ? 'text-slate-950 shadow-sm'
                       : 'text-neutral-400 hover:text-white'
                   } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
-                  style={timerMode === 'pomodoro' ? { backgroundColor: 'rgba(255, 255, 255, 0.05)', color: 'var(--accent)', boxShadow: 'inset 0 0 0 1px var(--border)' } : undefined}
+                  style={timerMode === 'pomodoro' ? { backgroundColor: 'rgba(255, 255, 255, 0.1)', color: '#FFFFFF', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' } : { color: '#94A3B8' }}
                 >
                   POMODORO
                 </button>
@@ -1018,13 +1009,8 @@ export function StudyTimer() {
 
               {/* Inner Dial */}
               <div
-                className="w-[78%] h-[78%] rounded-full bg-[var(--bg)] border-2 flex flex-col items-center justify-center p-2.5 sm:p-6 text-center relative z-10 shadow-inner"
-                style={{
-                  borderColor: isStudying ? 'var(--border)' : 'rgba(255, 255, 255, 0.08)',
-                  boxShadow: isStudying && !isPaused
-                    ? 'inset 0 0 30px var(--glow), 0 0 25px var(--glow)'
-                    : 'inset 0 0 20px rgba(0,0,0,0.8)',
-                }}
+                className="w-[78%] h-[78%] rounded-full bg-[var(--bg)] border flex flex-col items-center justify-center p-2.5 sm:p-6 text-center relative z-10 shadow-inner"
+                style={{ borderColor: "rgba(255, 255, 255, 0.1)", boxShadow: "inset 0 2px 10px rgba(0, 0, 0, 0.8)" }}
               >
                 {/* Pomodoro Phase / Subject Pill */}
                 <div
@@ -1039,14 +1025,14 @@ export function StudyTimer() {
                     ? 'Select a subject'
                     : timerMode === 'pomodoro'
                     ? pomodoroPhase === 'work'
-                      ? 'Focus: ${selectedSubject.name}'
-                      : `Break`
+                      ? `Focus: ${selectedSubject.name}`
+                      : 'Break'
                     : selectedSubject.name}
                 </div>
 
                 {/* Big Technical Digital Numbers */}
                 <div
-                  className="font-hud font-black text-4xl sm:text-5xl md:text-6xl tracking-wider text-white drop-shadow-lg tabular-nums select-none"
+                  className="font-mono text-4xl sm:text-5xl md:text-6xl tracking-tight text-white drop-shadow-lg tabular-nums select-none"
                   style={{
                     textShadow: isStudying && !isPaused ? '0 0 16px var(--glow)' : undefined,
                   }}
@@ -1071,13 +1057,13 @@ export function StudyTimer() {
                     style={{
                       backgroundColor:
                         pomodoroCompletedPhase === 'work'
-                          ? 'var(--accent)'
+                          ? '#10B981'
                           : isStudying
                           ? isPaused
                             ? '#f59e0b'
-                            : 'var(--accent)'
-                          : 'var(--accent)',
-                      boxShadow: '0 0 8px var(--accent)',
+                            : '#10B981'
+                          : '#10B981',
+                      boxShadow: '0 0 8px #10B981',
                     }}
                   />
                   <span style={{ color: isStudying && !isPaused ? 'var(--accent)' : '#94A3B8' }}>
@@ -1249,8 +1235,8 @@ export function StudyTimer() {
                     handleStartSession();
                   }}
                   disabled={isSaving || isRemoteTransitioning}
-                  className="px-8 sm:px-10 py-3.5 sm:py-4 font-hud font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-2.5 w-full xs:w-auto hud-btn-primary cursor-pointer hover:scale-[1.02]"
-                  style={{ background: 'linear-gradient(135deg, #06B6D4 0%, #0891B2 100%)', boxShadow: '0 4px 20px rgba(6, 182, 212, 0.28)', color: '#FFFFFF' }}
+                  className="px-8 sm:px-10 py-3.5 sm:py-4 font-sans font-semibold text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2.5 w-full xs:w-auto rounded-xl cursor-pointer hover:scale-[1.02]"
+                  style={{ background: 'linear-gradient(180deg, #00F2FE 0%, #00C4D4 100%)', boxShadow: '0 4px 20px rgba(0, 242, 254, 0.3)', color: '#041014', border: '1px solid rgba(255, 255, 255, 0.35)' }}
                 >
                   <Flame className="w-4 sm:w-5 h-4 sm:h-5 fill-current" />
                   <span>START FOCUS SESSION</span>
@@ -1260,12 +1246,12 @@ export function StudyTimer() {
                 <button
                   onClick={handleStartSession}
                   disabled={!selectedSubject?.id || isSaving || isRemoteTransitioning}
-                  className={`px-8 sm:px-10 py-3.5 sm:py-4 font-hud font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-2.5 w-full xs:w-auto hud-btn-primary ${
+                  className={`px-8 sm:px-10 py-3.5 sm:py-4 font-sans font-semibold text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2.5 w-full xs:w-auto rounded-xl ${
                     !selectedSubject?.id || isRemoteTransitioning
                       ? 'opacity-40 cursor-not-allowed shadow-none'
                       : 'cursor-pointer hover:scale-[1.02]'
                   }`}
-                  style={{ background: 'linear-gradient(135deg, #06B6D4 0%, #0891B2 100%)', boxShadow: '0 4px 20px rgba(6, 182, 212, 0.28)', color: '#FFFFFF' }}
+                  style={{ background: 'linear-gradient(180deg, #00F2FE 0%, #00C4D4 100%)', boxShadow: '0 4px 20px rgba(0, 242, 254, 0.3)', color: '#041014', border: '1px solid rgba(255, 255, 255, 0.35)' }}
                   title={!selectedSubject?.id ? 'Please select a subject before starting the timer' : 'Start Focus Session'}
                 >
                   <Play className="w-4 sm:w-5 h-4 sm:h-5 fill-current" />
@@ -1309,7 +1295,7 @@ export function StudyTimer() {
                     onClick={handleResume}
                     disabled={isSaving || isRemoteTransitioning}
                     className="px-6 sm:px-8 py-3 rounded-xl font-hud font-bold text-xs sm:text-sm text-slate-950 transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[120px] tracking-wider uppercase hud-btn-primary"
-                    style={{ background: 'linear-gradient(135deg, #06B6D4 0%, #0891B2 100%)', boxShadow: '0 4px 20px rgba(6, 182, 212, 0.28)', color: '#FFFFFF' }}
+                    style={{ background: 'linear-gradient(180deg, #00F2FE 0%, #00C4D4 100%)', boxShadow: '0 4px 20px rgba(0, 242, 254, 0.3)', color: '#041014', border: '1px solid rgba(255, 255, 255, 0.35)' }}
                   >
                     <Play className="w-4 h-4 fill-current" />
                     <span>RESUME</span>
@@ -1348,49 +1334,7 @@ export function StudyTimer() {
           </div>
         </div>
 
-        {/* Subject Today's Progress Card - Hidden on mobile single-screen view, visible on desktop */}
-        <div className="hidden md:flex rounded-2xl bg-[var(--surface)] backdrop-blur-xl border border-[var(--border)] p-5 flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white shadow-md"
-              style={{ backgroundColor: `${subjectColor}25`, borderColor: subjectColor, borderWidth: 1 }}
-            >
-              <Clock className="w-5 h-5" style={{ color: subjectColor }} />
-            </div>
-            <div>
-              <div className="text-xs text-neutral-400">
-                {selectedSubject?.name ? `Today on ${selectedSubject.name}` : 'Today on Subject'}
-              </div>
-              <div className="text-base font-bold text-white flex items-center gap-2">
-                <span className="font-mono tabular-nums">{formatHoursAndMins(todaySubjectSeconds)}</span>
-                {selectedSubject?.name && (
-                  <span className="text-xs text-neutral-500 font-normal font-mono">
-                    / {Math.floor((selectedSubject?.targetMinutesPerDay || 120) / 60)}h target
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Mini progress bar */}
-          <div className="w-full sm:w-64">
-            <div className="flex justify-between text-[11px] text-neutral-400 mb-1 font-medium">
-              <span>Goal Progress</span>
-              <span style={{ color: subjectColor }} className="font-mono font-bold tabular-nums">
-                {Math.round(progressPercent)}%
-              </span>
-            </div>
-            <div className="h-2 w-full rounded-full bg-black/50 overflow-hidden border border-white/[0.05]">
-              <div
-                className="h-full rounded-full transition-all duration-500"
-                style={{
-                  width: `${progressPercent}%`,
-                  backgroundColor: subjectColor,
-                }}
-              />
-            </div>
-          </div>
-        </div>
+        
       </div>
 
       {/* Right Secondary Column (Todo List, Daily Overview & Today's Boost - Home Page Sidebar, exclusively rendered in Tasks tab on mobile) */}
