@@ -471,14 +471,10 @@ export function Navbar({
       <div className="relative flex items-center justify-between w-full">
         {/* Sliding active indicator pill in Tier Accent */}
         <div
-          className="absolute top-0 bottom-0 rounded-full transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
+          className="absolute top-0 bottom-0 rounded-full transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none bg-white/15 border border-white/20"
           style={{
             width: '25%',
-            transform: `translateX(${
-              activeTab === 'timer' ? '0%' : activeTab === 'tasks' ? '100%' : activeTab === 'analytics' ? '200%' : '300%'
-            })`,
-            background: theme.gradient,
-            boxShadow: `0 0 20px ${theme.glow}`,
+            transform: `translateX(${activeTab === 'timer' ? '0%' : activeTab === 'tasks' ? '100%' : activeTab === 'analytics' ? '200%' : '300%' })`
           }}
         />
 

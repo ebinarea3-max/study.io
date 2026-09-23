@@ -670,10 +670,10 @@ export function StudyTimer() {
       )}
 
       {/* Main Left Column (Timer & Subject Goal Progress) */}
-      <div className="lg:col-span-8 flex-1 flex flex-col justify-between md:justify-start overflow-hidden space-y-0 md:space-y-3">
+      <div className="lg:col-span-8 flex-1 flex flex-col justify-between overflow-hidden space-y-0 md:space-y-3">
         {/* Main Timer Game-HUD Card with Targeting Reticle Corner Brackets */}
         <div
-          className="relative rounded-3xl bg-[var(--surface)] backdrop-blur-xl border border-[var(--border)] p-3.5 sm:p-8 lg:p-10 shadow-xl overflow-hidden flex-1 md:flex-initial flex flex-col justify-between transition-all"
+          className="relative rounded-3xl bg-[var(--surface)] backdrop-blur-xl border border-[var(--border)] p-3.5 sm:p-8 lg:p-10 shadow-xl overflow-hidden flex-1 md:flex-initial flex flex-col justify-between transition-all mb-2"
           
         >
           {/* Angular Targeting Reticle Corner Brackets */}
@@ -1009,7 +1009,7 @@ export function StudyTimer() {
 
               {/* Inner Dial */}
               <div
-                className="w-[78%] h-[78%] rounded-full bg-[var(--bg)] flex flex-col items-center justify-center p-2.5 sm:p-6 text-center relative z-10 shadow-inner"
+                className="w-[78%] h-[78%] max-w-[200px] max-h-[200px] sm:max-w-none sm:max-h-none rounded-full bg-[var(--bg)] flex flex-col items-center justify-center p-2.5 sm:p-6 text-center relative z-10 shadow-inner"
                 style={{ border: "2px solid rgba(255, 255, 255, 0.12)", boxShadow: "inset 0 2px 10px rgba(0, 0, 0, 0.8)" }}
               >
                 {/* Pomodoro Phase / Subject Pill */}
