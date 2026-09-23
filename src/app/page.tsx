@@ -156,7 +156,7 @@ export default function Home() {
 
       {/* Main Content Area with Mobile Swipe Navigation */}
       <main
-        className={`max-w-7xl w-full mx-auto relative z-10 ${activeTab === 'timer' ? 'flex-1 overflow-hidden flex flex-col justify-between px-4 pb-20 pt-2 md:px-6 md:py-4 md:pb-4' : 'flex-1 overflow-y-auto overscroll-contain pb-24 px-4 pt-2 md:px-6 md:py-8'}`}
+        className={`max-w-7xl w-full mx-auto relative z-10 ${activeTab === 'timer' ? 'flex-1 max-md:overflow-hidden flex flex-col justify-between px-4 pb-20 pt-2 md:px-6 md:py-4 md:pb-4 md:overflow-visible' : 'flex-1 max-md:overflow-y-auto overscroll-contain pb-24 px-4 pt-2 md:px-6 md:py-8 md:overflow-visible'}`}
       >
         <SwipeTabContainer activeTab={activeTab} onChangeTab={setActiveTab}>
           {{
