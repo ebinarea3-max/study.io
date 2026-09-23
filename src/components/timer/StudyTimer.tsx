@@ -654,7 +654,7 @@ export function StudyTimer() {
   }, [isLoading, user?.streakDays, overviewTodaySeconds, todaySessions.length, lockedEmptyQuote]);
 
   return (
-    <div className="w-full max-w-6xl mx-auto max-md:h-full flex flex-col md:grid md:grid-cols-1 lg:grid-cols-12 justify-between md:justify-start gap-4 lg:gap-6 max-md:overflow-hidden md:overflow-visible p-4 pb-24 md:p-0">
+    <div className="w-full max-w-6xl mx-auto max-md:h-full flex flex-col md:grid md:grid-cols-1 lg:grid-cols-12 justify-between md:justify-start gap-2 sm:gap-4 lg:gap-6 max-md:overflow-hidden md:overflow-visible py-2 md:p-0">
       {/* Subject Manager Modal - Conditionally mounted strictly when open (Stop Background Rendering) */}
       {isManageSubjectsOpen && (
         <ErrorBoundary
@@ -673,7 +673,7 @@ export function StudyTimer() {
       <div className="lg:col-span-8 flex-1 flex flex-col justify-between max-md:overflow-hidden md:overflow-visible space-y-0 md:space-y-3">
         {/* Main Timer Game-HUD Card with Targeting Reticle Corner Brackets */}
         <div
-          className="relative rounded-3xl bg-[var(--surface)] backdrop-blur-xl border border-[var(--border)] p-3.5 sm:p-8 lg:p-10 shadow-xl overflow-hidden flex-1 md:flex-initial flex flex-col justify-between transition-all mb-2"
+          className="relative rounded-3xl bg-[var(--surface)] backdrop-blur-xl border border-[var(--border)] p-2 sm:p-8 lg:p-10 shadow-xl overflow-hidden flex-1 md:flex-initial flex flex-col justify-between transition-all mb-2"
           
         >
           {/* Angular Targeting Reticle Corner Brackets */}
@@ -915,8 +915,8 @@ export function StudyTimer() {
           </div>
 
           {/* Center Timer Display - Game HUD Radar / Reactor Core Display */}
-          <div className="relative z-10 flex flex-col items-center justify-center my-auto py-1 sm:py-6 flex-shrink-0">
-            <div className={`relative flex items-center justify-center p-1 sm:p-2 w-64 h-64 sm:w-80 sm:h-80 mx-auto aspect-square transition-all duration-300 rounded-full ${
+          <div className="relative z-10 flex flex-col items-center justify-center py-0 sm:py-6 flex-shrink-0">
+            <div className={`relative flex items-center justify-center p-1 sm:p-2 w-52 h-52 sm:w-64 sm:h-64 md:w-80 md:h-80 mx-auto aspect-square transition-all duration-300 rounded-full ${
               isRemoteTransitioning
                 ? 'scale-[1.03] ring-4 ring-white/50 shadow-[0_0_50px_var(--tier-glow)]'
                 : ''
@@ -1032,7 +1032,7 @@ export function StudyTimer() {
 
                 {/* Big Technical Digital Numbers */}
                 <div
-                  className="font-mono text-4xl sm:text-5xl md:text-6xl tracking-tight text-white drop-shadow-lg tabular-nums select-none"
+                  className="font-mono text-3xl sm:text-4xl md:text-5xl tracking-tight text-white drop-shadow-lg tabular-nums select-none"
                   style={{
                     textShadow: isStudying && !isPaused ? '0 0 16px var(--glow)' : undefined,
                   }}
@@ -1141,7 +1141,7 @@ export function StudyTimer() {
             )}
 
             {/* Action Buttons: Context-aware HUD controls */}
-            <div className="mt-auto pt-4 sm:pt-8 flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 relative z-10 w-full flex-shrink-0 pb-1 sm:pb-0">
+            <div className="mt-auto pt-2 sm:pt-8 flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 relative z-10 w-full flex-shrink-0 mb-1 sm:mb-0">
               {pomodoroCompletedPhase === 'work' ? (
                 /* Prompt 1: Focus Block Complete -> Save & Start Break / Skip Break */
                 <>
