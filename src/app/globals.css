@@ -4,7 +4,7 @@
   /* Unified Permanent Premium UI Palette */
   --bg: #0A0D14;
   --background: #0A0D14;
-  --surface: rgba(16, 21, 30, 0.8);
+  --surface: rgba(16, 22, 31, 0.75);
   --border: rgba(255, 255, 255, 0.08);
   
   --text-primary: #FFFFFF;
@@ -81,6 +81,8 @@ html.dark body,
 .hud-surface {
   background-color: var(--surface);
   border: 1px solid var(--border);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 /* Frosted Glass Treatment ONLY for Floating Overlays (Dock, Modals, Sheets) */

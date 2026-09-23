@@ -669,7 +669,7 @@ export function StudyTimer() {
       )}
 
       {/* Main Left Column (Timer & Subject Goal Progress) */}
-      <div className="lg:col-span-8 flex-1 md:flex-initial flex flex-col justify-between md:justify-start overflow-hidden md:overflow-visible space-y-0 md:space-y-6">
+      <div className="lg:col-span-8 flex-1 flex flex-col justify-between md:justify-start overflow-hidden space-y-0 md:space-y-3">
         {/* Main Timer Game-HUD Card with Targeting Reticle Corner Brackets */}
         <div
           className="relative rounded-3xl bg-[var(--surface)] backdrop-blur-xl border border-[var(--border)] p-3.5 sm:p-8 lg:p-10 shadow-xl overflow-hidden flex-1 md:flex-initial flex flex-col justify-between transition-all"
@@ -1250,7 +1250,7 @@ export function StudyTimer() {
                   }}
                   disabled={isSaving || isRemoteTransitioning}
                   className="px-8 sm:px-10 py-3.5 sm:py-4 font-hud font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-2.5 w-full xs:w-auto hud-btn-primary cursor-pointer hover:scale-[1.02]"
-                  style={{ background: 'var(--accent)', boxShadow: '0 0 20px var(--accent-glow)', color: '#0A0D14' }}
+                  style={{ background: 'linear-gradient(135deg, #06B6D4 0%, #0891B2 100%)', boxShadow: '0 4px 20px rgba(6, 182, 212, 0.28)', color: '#FFFFFF' }}
                 >
                   <Flame className="w-4 sm:w-5 h-4 sm:h-5 fill-current" />
                   <span>START FOCUS SESSION</span>
@@ -1265,7 +1265,7 @@ export function StudyTimer() {
                       ? 'opacity-40 cursor-not-allowed shadow-none'
                       : 'cursor-pointer hover:scale-[1.02]'
                   }`}
-                  style={{ background: 'var(--accent)', boxShadow: '0 0 20px var(--accent-glow)', color: '#0A0D14' }}
+                  style={{ background: 'linear-gradient(135deg, #06B6D4 0%, #0891B2 100%)', boxShadow: '0 4px 20px rgba(6, 182, 212, 0.28)', color: '#FFFFFF' }}
                   title={!selectedSubject?.id ? 'Please select a subject before starting the timer' : 'Start Focus Session'}
                 >
                   <Play className="w-4 sm:w-5 h-4 sm:h-5 fill-current" />
@@ -1309,7 +1309,7 @@ export function StudyTimer() {
                     onClick={handleResume}
                     disabled={isSaving || isRemoteTransitioning}
                     className="px-6 sm:px-8 py-3 rounded-xl font-hud font-bold text-xs sm:text-sm text-slate-950 transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[120px] tracking-wider uppercase hud-btn-primary"
-                    style={{ background: 'var(--accent)', boxShadow: '0 0 20px var(--accent-glow)', color: '#0A0D14' }}
+                    style={{ background: 'linear-gradient(135deg, #06B6D4 0%, #0891B2 100%)', boxShadow: '0 4px 20px rgba(6, 182, 212, 0.28)', color: '#FFFFFF' }}
                   >
                     <Play className="w-4 h-4 fill-current" />
                     <span>RESUME</span>
@@ -1349,7 +1349,7 @@ export function StudyTimer() {
         </div>
 
         {/* Subject Today's Progress Card - Hidden on mobile single-screen view, visible on desktop */}
-        <div className="hidden md:flex rounded-2xl bg-neutral-900/50 border border-[var(--border)] p-5 flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+        <div className="hidden md:flex rounded-2xl bg-[var(--surface)] backdrop-blur-xl border border-[var(--border)] p-5 flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
           <div className="flex items-center gap-3">
             <div
               className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white shadow-md"
@@ -1394,7 +1394,7 @@ export function StudyTimer() {
       </div>
 
       {/* Right Secondary Column (Todo List, Daily Overview & Today's Boost - Home Page Sidebar, exclusively rendered in Tasks tab on mobile) */}
-      <div className="hidden lg:block lg:col-span-4 space-y-6">
+      <div className="hidden lg:block lg:col-span-4 space-y-4 overflow-y-auto pr-2">
         {/* 1. Todo List Card - Google Notes / Keep Checklist */}
         <DailyTodoList />
 
