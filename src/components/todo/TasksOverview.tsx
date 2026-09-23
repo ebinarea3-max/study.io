@@ -71,17 +71,17 @@ export function TasksOverview() {
     let secondary = '';
 
     if (currentStreak >= 30) {
-      primary = "🔥 30-day streak! You've basically made this a lifestyle.";
+      primary = "30-day streak! You've basically made this a lifestyle.";
     } else if (currentStreak >= 14) {
-      primary = "🔥 Two weeks strong — this is becoming a habit now.";
+      primary = "Two weeks strong — this is becoming a habit now.";
     } else if (currentStreak >= 7) {
-      primary = "🔥 7-day streak! Consistency is compounding.";
+      primary = "7-day streak! Consistency is compounding.";
     } else if (currentStreak >= 3) {
-      primary = `🔥 You're on a ${currentStreak}-day streak — don't break the chain.`;
+      primary = `You're on a ${currentStreak}-day streak — don't break the chain.`;
     } else if (currentStreak === 2) {
-      primary = "🔥 You're on a 2-day streak — keep it going today.";
+      primary = "You're on a 2-day streak — keep it going today.";
     } else if (currentStreak === 1) {
-      primary = "🔥 Day 1 logged. Check off tasks to build momentum.";
+      primary = "Day 1 logged. Check off tasks to build momentum.";
     }
 
     if (focusMinutes >= 240) {
@@ -118,8 +118,11 @@ export function TasksOverview() {
         </div>
 
         <div className="min-h-[34px] flex flex-col justify-center relative z-10">
-          <p className="text-xs sm:text-[13px] font-medium text-neutral-200 leading-snug">
-            {primaryBoostMessage}
+          <p className="text-xs sm:text-[13px] font-medium text-neutral-200 leading-snug flex items-center gap-1.5">
+            {(user?.streakDays ?? 0) >= 1 && (
+              <Flame className="w-3.5 h-3.5 text-tier flex-shrink-0" />
+            )}
+            <span>{primaryBoostMessage}</span>
           </p>
           {secondaryBoostMessage && (
             <p className="text-[11px] font-hud-mono mt-1 leading-normal text-tier">

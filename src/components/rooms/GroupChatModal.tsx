@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Send, MessageSquare, X, Users, Sparkles, Smile } from 'lucide-react';
 import Image from 'next/image';
 import { UserAvatar } from '../common/UserAvatar';
+import { CheerIcon } from '../common/CheerIcon';
 
 interface GroupChatModalProps {
   isOpen: boolean;
@@ -13,12 +14,12 @@ interface GroupChatModalProps {
 }
 
 const QUICK_REACTION_BAR = [
-  { emoji: '🔥', label: 'Fire' },
-  { emoji: '⚡', label: 'Power' },
-  { emoji: '☕', label: 'Coffee' },
-  { emoji: '👏', label: 'Clap' },
-  { emoji: '🎯', label: 'Target' },
-  { emoji: '💪', label: 'Strong' },
+  { emoji: 'flame', label: 'Fire' },
+  { emoji: 'power', label: 'Power' },
+  { emoji: 'coffee', label: 'Coffee' },
+  { emoji: 'clap', label: 'Clap' },
+  { emoji: 'target', label: 'Target' },
+  { emoji: 'muscle', label: 'Strong' },
 ];
 
 export function GroupChatModal({ isOpen, onClose }: GroupChatModalProps) {
@@ -115,7 +116,7 @@ export function GroupChatModal({ isOpen, onClose }: GroupChatModalProps) {
                     key={msg.id}
                     className="p-2.5 rounded-2xl bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 text-xs text-amber-200 flex items-center gap-2.5"
                   >
-                    <span className="text-xl">{msg.cheerEmoji || '🔥'}</span>
+                    <CheerIcon id={msg.cheerEmoji || 'flame'} className="w-5 h-5 text-amber-400" />
                     <div>
                       <span className="font-bold text-amber-300">{msg.userName}</span>{' '}
                       <span className="text-slate-300">{msg.message}</span>
@@ -166,10 +167,10 @@ export function GroupChatModal({ isOpen, onClose }: GroupChatModalProps) {
               <button
                 key={r.emoji}
                 onClick={() => handleQuickCheer(r.emoji)}
-                className="text-base p-1.5 rounded-lg hover:bg-slate-800 hover:scale-130 transition-transform"
+                className="p-1.5 rounded-lg hover:bg-slate-800 hover:scale-110 transition-transform text-slate-400 hover:text-white"
                 title={`Send ${r.label}`}
               >
-                {r.emoji}
+                <CheerIcon id={r.emoji} className="w-4 h-4" />
               </button>
             ))}
           </div>

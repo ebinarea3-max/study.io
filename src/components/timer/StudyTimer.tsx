@@ -609,17 +609,17 @@ export function StudyTimer() {
 
     // 1. Streak-based evaluation
     if (currentStreak >= 30) {
-      primary = "🔥 30-day streak! You've basically made this a lifestyle.";
+      primary = "30-day streak! You've basically made this a lifestyle.";
     } else if (currentStreak >= 14) {
-      primary = "🔥 Two weeks strong — this is becoming a habit now.";
+      primary = "Two weeks strong — this is becoming a habit now.";
     } else if (currentStreak >= 7) {
-      primary = "🔥 7-day streak! Consistency is compounding.";
+      primary = "7-day streak! Consistency is compounding.";
     } else if (currentStreak >= 3) {
-      primary = `🔥 You're on a ${currentStreak}-day streak — don't break the chain.`;
+      primary = `You're on a ${currentStreak}-day streak — don't break the chain.`;
     } else if (currentStreak === 2) {
-      primary = "🔥 You're on a 2-day streak — don't break the chain.";
+      primary = "You're on a 2-day streak — don't break the chain.";
     } else if (currentStreak === 1) {
-      primary = "🔥 Day 1 logged. Come back tomorrow to start a streak.";
+      primary = "Day 1 logged. Come back tomorrow to start a streak.";
     }
 
     // 2. Session-length based evaluation (based on completed focus time)
@@ -1121,7 +1121,7 @@ export function StudyTimer() {
                     <Sparkles className="w-4 h-4 animate-pulse" />
                   </div>
                   <div>
-                    <div className="text-sm font-hud font-black text-white tracking-wide">FOCUS BLOCK COMPLETE 🎉</div>
+                    <div className="text-sm font-hud font-black text-white tracking-wide">FOCUS BLOCK COMPLETE</div>
                     <div className="text-[11px] text-slate-300 font-normal">
                       Save session to trigger rank settlement and pause for break, or skip.
                     </div>

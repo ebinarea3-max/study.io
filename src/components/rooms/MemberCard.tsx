@@ -7,13 +7,14 @@ import { useRoom } from '../../context/RoomContext';
 import { Flame, Coffee, Sparkles, BookOpen, Clock, Zap } from 'lucide-react';
 import Image from 'next/image';
 import { UserAvatar } from '../common/UserAvatar';
+import { CheerIcon } from '../common/CheerIcon';
 
 interface MemberCardProps {
   member: RoomMember;
   isCurrentUser?: boolean;
 }
 
-const QUICK_CHEERS = ['🔥', '☕', '⚡', '👏', '🎯', '💪'];
+const QUICK_CHEERS = ['flame', 'coffee', 'zap', 'clap', 'target', 'muscle'];
 
 export function MemberCard({ member, isCurrentUser }: MemberCardProps) {
   const { sendCheer } = useRoom();
@@ -166,10 +167,10 @@ export function MemberCard({ member, isCurrentUser }: MemberCardProps) {
                 <button
                   key={emoji}
                   onClick={() => handleSendCheer(emoji)}
-                  className="text-lg p-1.5 hover:scale-130 transition-transform rounded-lg hover:bg-slate-800"
+                  className="p-1.5 hover:scale-110 transition-transform rounded-lg hover:bg-slate-800 text-slate-300 hover:text-white"
                   title={`Cheer with ${emoji}`}
                 >
-                  {emoji}
+                  <CheerIcon id={emoji} className="w-5 h-5" />
                 </button>
               ))}
             </div>

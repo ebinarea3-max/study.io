@@ -250,16 +250,24 @@ export function FocusModeModal() {
               {/* Pomodoro Phase Tag */}
               {timerMode === 'pomodoro' && (
                 <div
-                  className="mb-2 text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full border"
+                  className="mb-2 flex items-center justify-center gap-1.5 text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full border"
                   style={{
                     backgroundColor: `${subjectColor}15`,
                     borderColor: `${subjectColor}40`,
                     color: subjectColor,
                   }}
                 >
-                  {pomodoroPhase === 'work'
-                    ? `🔥 Focus Sprint (${pomodoroPreset === '50/10' ? '50m' : '25m'})`
-                    : `☕ Recharge Break (${pomodoroPreset === '50/10' ? '10m' : '5m'})`}
+                  {pomodoroPhase === 'work' ? (
+                    <>
+                      <Flame className="w-3.5 h-3.5" />
+                      <span>Focus Sprint ({pomodoroPreset === '50/10' ? '50m' : '25m'})</span>
+                    </>
+                  ) : (
+                    <>
+                      <Coffee className="w-3.5 h-3.5" />
+                      <span>Recharge Break ({pomodoroPreset === '50/10' ? '10m' : '5m'})</span>
+                    </>
+                  )}
                 </div>
               )}
 
@@ -316,7 +324,7 @@ export function FocusModeModal() {
           <div className="mt-4 flex items-center justify-between gap-3 px-5 py-3 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-200 text-xs font-semibold backdrop-blur-md shadow-xl shadow-emerald-500/10 animate-in fade-in duration-300">
             <div className="flex items-center gap-2.5">
               <Sparkles className="w-4 h-4 text-emerald-300 animate-pulse" />
-              <span>Focus Block Complete! 🎉 Save session and take a break or skip.</span>
+              <span>Focus Block Complete! Save session and take a break or skip.</span>
             </div>
           </div>
         )}

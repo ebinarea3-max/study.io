@@ -21,6 +21,9 @@
  * - Level 13+: "Grandmaster"
  */
 
+import React from 'react';
+import { Sprout, Zap, Hexagon, Trophy } from 'lucide-react';
+
 export const GAMIFICATION_CONFIG = {
   XP_PER_MINUTE: 10,
   XP_PER_SECOND: 10 / 60,
@@ -31,7 +34,7 @@ export const GAMIFICATION_CONFIG = {
 export type TierBadge = {
   tier: 'novice' | 'worker' | 'master' | 'grandmaster';
   title: string;
-  icon: string;
+  icon: React.ReactNode;
   badgeClass: string;
   glowClass: string;
   textColor: string;
@@ -128,7 +131,7 @@ export function getTierBadge(level: number): TierBadge {
     return {
       tier: 'novice',
       title: 'Novice Scholar',
-      icon: '🌱',
+      icon: React.createElement(Sprout, { className: "w-[1em] h-[1em]" }),
       badgeClass: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
       glowClass: 'shadow-emerald-500/20',
       textColor: 'text-emerald-400',
@@ -140,7 +143,7 @@ export function getTierBadge(level: number): TierBadge {
     return {
       tier: 'worker',
       title: 'Deep Worker',
-      icon: '⚡',
+      icon: React.createElement(Zap, { className: "w-[1em] h-[1em]" }),
       badgeClass: 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30',
       glowClass: 'shadow-cyan-500/20',
       textColor: 'text-cyan-400',
@@ -152,7 +155,7 @@ export function getTierBadge(level: number): TierBadge {
     return {
       tier: 'master',
       title: 'Focus Master',
-      icon: '🔮',
+      icon: React.createElement(Hexagon, { className: "w-[1em] h-[1em]" }),
       badgeClass: 'bg-purple-500/15 text-purple-300 border-purple-500/30',
       glowClass: 'shadow-purple-500/20',
       textColor: 'text-purple-400',
@@ -163,7 +166,7 @@ export function getTierBadge(level: number): TierBadge {
   return {
     tier: 'grandmaster',
     title: 'Grandmaster',
-    icon: '🏆',
+    icon: React.createElement(Trophy, { className: "w-[1em] h-[1em]" }),
     badgeClass: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
     glowClass: 'shadow-amber-500/25',
     textColor: 'text-amber-400',

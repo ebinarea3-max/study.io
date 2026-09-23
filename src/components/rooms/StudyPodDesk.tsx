@@ -7,6 +7,7 @@ import { useRoom } from '../../context/RoomContext';
 import { Flame, Coffee, BookOpen, Sparkles, Zap, Laptop, Brain, Target, Heart } from 'lucide-react';
 import Image from 'next/image';
 import { UserAvatar } from '../common/UserAvatar';
+import { CheerIcon } from '../common/CheerIcon';
 
 interface StudyPodDeskProps {
   member: RoomMember;
@@ -14,12 +15,12 @@ interface StudyPodDeskProps {
 }
 
 const QUICK_CHEERS = [
-  { emoji: '🔥', label: 'Fire' },
-  { emoji: '⚡', label: 'Energy' },
-  { emoji: '☕', label: 'Coffee' },
-  { emoji: '👏', label: 'Clap' },
-  { emoji: '🎯', label: 'Focus' },
-  { emoji: '💪', label: 'Strength' },
+  { id: 'flame', label: 'Fire' },
+  { id: 'zap', label: 'Energy' },
+  { id: 'coffee', label: 'Coffee' },
+  { id: 'clap', label: 'Clap' },
+  { id: 'target', label: 'Focus' },
+  { id: 'muscle', label: 'Strength' },
 ];
 
 export function StudyPodDesk({ member, isCurrentUser }: StudyPodDeskProps) {
@@ -210,12 +211,12 @@ export function StudyPodDesk({ member, isCurrentUser }: StudyPodDeskProps) {
             <div className="absolute bottom-11 left-0 right-0 p-2 bg-slate-950/95 border border-slate-700 rounded-2xl shadow-2xl flex items-center justify-around gap-1 z-30 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-100">
               {QUICK_CHEERS.map(c => (
                 <button
-                  key={c.emoji}
-                  onClick={() => handleSendCheer(c.emoji)}
-                  className="text-lg p-1.5 hover:scale-135 transition-transform rounded-xl hover:bg-slate-800"
+                  key={c.id}
+                  onClick={() => handleSendCheer(c.id)}
+                  className="p-1.5 hover:scale-110 transition-transform rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white"
                   title={`Cheer with ${c.label}`}
                 >
-                  {c.emoji}
+                  <CheerIcon id={c.id} className="w-5 h-5" />
                 </button>
               ))}
             </div>

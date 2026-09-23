@@ -6,14 +6,15 @@ import { useAuth } from '../../context/AuthContext';
 import { Send, Flame, MessageSquare, Sparkles, Smile, Users } from 'lucide-react';
 import Image from 'next/image';
 import { UserAvatar } from '../common/UserAvatar';
+import { CheerIcon } from '../common/CheerIcon';
 
 const QUICK_REACTION_BAR = [
-  { emoji: '🔥', label: 'Fire' },
-  { emoji: '⚡', label: 'Power' },
-  { emoji: '☕', label: 'Coffee' },
-  { emoji: '👏', label: 'Clap' },
-  { emoji: '🎯', label: 'Target' },
-  { emoji: '💪', label: 'Strong' },
+  { id: 'flame', label: 'Fire' },
+  { id: 'power', label: 'Power' },
+  { id: 'coffee', label: 'Coffee' },
+  { id: 'clap', label: 'Clap' },
+  { id: 'target', label: 'Target' },
+  { id: 'muscle', label: 'Strong' },
 ];
 
 export function RoomChatAndReactions() {
@@ -72,7 +73,7 @@ export function RoomChatAndReactions() {
                   key={msg.id}
                   className="p-2.5 rounded-xl bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 text-xs text-amber-200 flex items-center gap-2"
                 >
-                  <span className="text-xl">{msg.cheerEmoji || '🔥'}</span>
+                  <CheerIcon id={msg.cheerEmoji || 'flame'} className="w-5 h-5 text-amber-400" />
                   <div>
                     <span className="font-bold text-amber-300">{msg.userName}</span>{' '}
                     <span className="text-slate-300">{msg.message}</span>
@@ -121,12 +122,12 @@ export function RoomChatAndReactions() {
         <div className="flex items-center gap-1.5 flex-1 justify-around">
           {QUICK_REACTION_BAR.map(r => (
             <button
-              key={r.emoji}
-              onClick={() => handleQuickCheer(r.emoji)}
-              className="text-base p-1.5 rounded-lg hover:bg-slate-800 hover:scale-125 transition-transform"
+              key={r.id}
+              onClick={() => handleQuickCheer(r.id)}
+              className="p-1.5 rounded-lg hover:bg-slate-800 hover:scale-110 transition-transform text-slate-400 hover:text-white"
               title={`Send ${r.label} to room`}
             >
-              {r.emoji}
+              <CheerIcon id={r.id} className="w-4 h-4" />
             </button>
           ))}
         </div>
