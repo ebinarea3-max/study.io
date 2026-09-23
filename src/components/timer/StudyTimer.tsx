@@ -654,7 +654,7 @@ export function StudyTimer() {
   }, [isLoading, user?.streakDays, overviewTodaySeconds, todaySessions.length, lockedEmptyQuote]);
 
   return (
-    <div className="w-full max-w-6xl mx-auto max-md:h-full flex flex-col md:grid md:grid-cols-1 lg:grid-cols-12 justify-between md:justify-start gap-2 sm:gap-4 lg:gap-6 max-md:overflow-hidden md:overflow-visible py-2 md:p-0">
+    <div className="w-full max-w-6xl mx-auto flex-1 flex flex-col md:grid md:grid-cols-1 lg:grid-cols-12 justify-between md:justify-start gap-2 sm:gap-4 lg:gap-6 max-md:overflow-hidden md:overflow-visible py-2 md:p-0">
       {/* Subject Manager Modal - Conditionally mounted strictly when open (Stop Background Rendering) */}
       {isManageSubjectsOpen && (
         <ErrorBoundary
@@ -916,7 +916,7 @@ export function StudyTimer() {
 
           {/* Center Timer Display - Game HUD Radar / Reactor Core Display */}
           <div className="relative z-10 flex flex-col items-center justify-center py-0 sm:py-6 flex-shrink-0">
-            <div className={`relative flex items-center justify-center p-1 sm:p-2 w-52 h-52 sm:w-64 sm:h-64 md:w-80 md:h-80 mx-auto aspect-square transition-all duration-300 rounded-full ${
+            <div className={`relative flex-shrink-0 flex items-center justify-center p-1 sm:p-2 w-52 h-52 sm:w-64 sm:h-64 md:w-80 md:h-80 mx-auto aspect-square transition-all duration-300 rounded-full ${
               isRemoteTransitioning
                 ? 'scale-[1.03] ring-4 ring-white/50 shadow-[0_0_50px_var(--tier-glow)]'
                 : ''
