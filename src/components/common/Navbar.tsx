@@ -259,65 +259,62 @@ export function Navbar({
             <>
               {/* Unified Status Readout Panel (Rank + Streak) */}
               <div
-                className="relative flex bg-[#14171D] border text-slate-100 cursor-default select-none shadow-md overflow-hidden"
+                className="relative flex items-center h-9 sm:h-10 bg-[#14171D] border text-slate-100 cursor-default select-none shadow-md"
                 style={{
                   clipPath: 'polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px)',
-                  borderColor: `${theme.accent}55`,
+                  borderColor: theme.accent,
                   boxShadow: `0 0 14px ${theme.glow}`,
                 }}
               >
                 {/* Rank Section */}
                 <div 
-                  className="relative flex flex-col justify-center px-2.5 sm:px-3.5 py-1.5"
+                  className="relative flex flex-col justify-center px-3 sm:px-4 h-full"
                   title={`Ranked Season RP: ${userRank.rp.toLocaleString()} RP (${userRank.fullTitle})`}
                 >
-                  {/* Integrated Progress Bar along bottom edge of rank section */}
-                  <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-white/[0.08]">
-                    <div
-                      className="h-full transition-all duration-500"
-                      style={{
-                        width: `${userRank.progressPercent}%`,
-                        background: theme.gradient,
-                        boxShadow: `0 0 6px ${theme.accent}`,
-                      }}
-                    />
-                  </div>
-
-                  <div className="flex items-center gap-1.5 sm:gap-2 pb-[3px]">
+                  <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5">
                     <div
                       className="w-2 h-2 rounded-full animate-pulse flex-shrink-0"
                       style={{ backgroundColor: theme.accent, boxShadow: `0 0 6px ${theme.accent}` }}
                     />
                     <span
-                      className="text-[10px] sm:text-xs font-hud font-bold tracking-widest uppercase truncate max-w-[80px] sm:max-w-none"
-                      style={{ color: theme.textAccent }}
+                      className="text-xs font-bold tracking-wider font-hud uppercase truncate max-w-[80px] sm:max-w-none"
+                      style={{ color: theme.textAccent || '#fff' }}
                     >
                       {userRank.fullTitle}
                     </span>
-                    <span className="hidden sm:inline text-[11px] font-hud-mono font-bold text-slate-400">
+                    <span className="hidden sm:inline text-[10px] text-slate-400 font-mono">
                       {userRank.rp.toLocaleString()} RP
                     </span>
+                  </div>
+                  
+                  {/* Integrated Progress Bar directly spanning bottom of rank cell text area */}
+                  <div className="w-full h-[2px] bg-slate-800 rounded-full overflow-hidden mt-0.5">
+                    <div
+                      className="h-full transition-all duration-500 rounded-full"
+                      style={{
+                        width: `${userRank.progressPercent}%`,
+                        background: theme.gradient || theme.accent,
+                        boxShadow: `0 0 6px ${theme.accent}`,
+                      }}
+                    />
                   </div>
                 </div>
 
                 {/* Vertical Divider */}
                 {user.streakDays > 0 && (
-                  <div className="w-[1px] bg-white/[0.12]" />
+                  <div className="h-4 w-[1px] bg-slate-700/60 mx-1 sm:mx-2" />
                 )}
 
                 {/* Streak Section */}
                 {user.streakDays > 0 && (
                   <div
-                    className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5"
+                    className="flex items-center gap-1.5 px-3 sm:px-4 h-full"
                     title={`${user.streakDays} Day Study Streak (+${user.streakDays * 50} XP bonus)`}
                   >
-                    <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex items-center justify-center animate-ember-glow">
-                      <Flame className="w-full h-full fill-current" style={{ color: theme.accent }} />
+                    <div className="w-4 h-4 flex items-center justify-center animate-ember-glow">
+                      <Flame className="w-full h-full fill-amber-500 text-amber-500" style={{ filter: `drop-shadow(0 0 6px ${theme.accent})` }} />
                     </div>
-                    <span
-                      className="text-[11px] sm:text-xs font-hud font-bold tracking-wider"
-                      style={{ color: theme.textAccent }}
-                    >
+                    <span className="text-xs font-bold text-white font-hud tracking-wider">
                       {user.streakDays}
                     </span>
                   </div>
