@@ -204,22 +204,44 @@ export function TasksOverview() {
             <Flame className="w-3.5 h-3.5 animate-ember-glow" style={{ color: '#F59E0B' }} />
             <span>STREAK CONTINUITY</span>
           </span>
-          {(user?.streakDays ?? 0) > 0 ? (
-            <span
-              className="px-2.5 py-0.5 rounded font-hud-mono font-bold text-xs tracking-wider border shadow-sm"
-              style={{
-                color: '#FBBF24',
-                borderColor: '#F59E0B60',
-                backgroundColor: 'rgba(245, 158, 11, 0.12)',
-              }}
-            >
-              {user?.streakDays ?? 0} {(user?.streakDays ?? 0) === 1 ? 'DAY' : 'DAYS'}
-            </span>
-          ) : (
-            <span className="font-hud-mono font-bold text-neutral-500 text-xs tracking-wider">
-              READY TO INITIALIZE
-            </span>
-          )}
+          <div className="flex items-center gap-3">
+            <div className="flex flex-col items-end gap-1">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-neutral-500 font-medium">
+                  {(user?.streakDays ?? 0) > 0 ? `${(user?.streakDays ?? 0) % 7}/7 to next multiplier` : 'Start your streak'}
+                </span>
+                <div 
+                  className="w-[60px] sm:w-[80px] h-[5px] rounded-full overflow-hidden"
+                  style={{ backgroundColor: 'var(--tier-border)' }}
+                >
+                  <div 
+                    className="h-full rounded-full transition-all duration-500" 
+                    style={{ 
+                      backgroundColor: theme.accent, 
+                      width: `${((user?.streakDays ?? 0) % 7) / 7 * 100}%` 
+                    }} 
+                  />
+                </div>
+              </div>
+            </div>
+            
+            {(user?.streakDays ?? 0) > 0 ? (
+              <span
+                className="px-2.5 py-0.5 rounded font-hud-mono font-bold text-xs tracking-wider border shadow-sm shrink-0"
+                style={{
+                  color: '#FBBF24',
+                  borderColor: '#F59E0B60',
+                  backgroundColor: 'rgba(245, 158, 11, 0.12)',
+                }}
+              >
+                {user?.streakDays ?? 0} {(user?.streakDays ?? 0) === 1 ? 'DAY' : 'DAYS'}
+              </span>
+            ) : (
+              <span className="font-hud-mono font-bold text-neutral-500 text-xs tracking-wider shrink-0">
+                0 DAYS
+              </span>
+            )}
+          </div>
         </div>
       </div>
     </div>
