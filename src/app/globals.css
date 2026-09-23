@@ -12,9 +12,9 @@
   --text-secondary: #94A3B8;
 
   /* Base brand accent: Electric Emerald/Cyan */
-  --accent: #00F2FE;
-  --primary: #00F2FE;
-  --accent-glow: rgba(0, 242, 254, 0.3);
+  --accent: #FFFFFF;
+  --primary: #FFFFFF;
+  --accent-glow: rgba(255, 255, 255, 0.3);
 
   /* Fallbacks for older variables */
   --card-bg: var(--surface);

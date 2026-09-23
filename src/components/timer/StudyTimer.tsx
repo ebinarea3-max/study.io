@@ -745,7 +745,7 @@ export function StudyTimer() {
                     disabled={isStudying}
                     className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 active:scale-95 ${
                       pomodoroPreset === '25/5'
-                        ? 'bg-primary-muted text-primary-bright border border-primary-muted shadow-sm'
+                        ? 'bg-white/10 text-white border-white/20 shadow-sm'
                         : 'text-neutral-400 hover:text-white border border-transparent'
                     } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
                     title="25m Focus / 5m Break (Standard)"
@@ -760,7 +760,7 @@ export function StudyTimer() {
                     disabled={isStudying}
                     className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 active:scale-95 ${
                       pomodoroPreset === '50/10'
-                        ? 'bg-primary-muted text-primary-bright border border-primary-muted shadow-sm'
+                        ? 'bg-white/10 text-white border-white/20 shadow-sm'
                         : 'text-neutral-400 hover:text-white border border-transparent'
                     } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
                     title="50m Focus / 10m Break (Deep Work)"
@@ -1002,15 +1002,15 @@ export function StudyTimer() {
                 <div
                   className="absolute inset-5 rounded-full pointer-events-none animate-radar-sweep opacity-30"
                   style={{
-                    background: 'conic-gradient(from 0deg, transparent 0deg, transparent 270deg, var(--glow) 330deg, var(--accent) 360deg)',
+                    background: 'conic-gradient(from 0deg, transparent 0deg, transparent 270deg, rgba(255,255,255,0.1) 330deg, rgba(255,255,255,0.3) 360deg)',
                   }}
                 />
               )}
 
               {/* Inner Dial */}
               <div
-                className="w-[78%] h-[78%] rounded-full bg-[var(--bg)] border-2 flex flex-col items-center justify-center p-2.5 sm:p-6 text-center relative z-10 shadow-inner"
-                style={{ borderColor: "rgba(255, 255, 255, 0.1)", boxShadow: "inset 0 2px 10px rgba(0, 0, 0, 0.8)" }}
+                className="w-[78%] h-[78%] rounded-full bg-[var(--bg)] flex flex-col items-center justify-center p-2.5 sm:p-6 text-center relative z-10 shadow-inner"
+                style={{ border: "2px solid rgba(255, 255, 255, 0.12)", boxShadow: "inset 0 2px 10px rgba(0, 0, 0, 0.8)" }}
               >
                 {/* Pomodoro Phase / Subject Pill */}
                 <div
@@ -1236,7 +1236,7 @@ export function StudyTimer() {
                   }}
                   disabled={isSaving || isRemoteTransitioning}
                   className="px-8 sm:px-10 py-3.5 sm:py-4 font-sans font-semibold text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2.5 w-full xs:w-auto rounded-xl cursor-pointer hover:scale-[1.02]"
-                  style={{ background: '#10B981', boxShadow: '0 4px 20px rgba(16, 185, 129, 0.3)', color: '#000000', border: '1px solid rgba(255, 255, 255, 0.35)' }}
+                  style={{ background: '#10B981', color: '#021C11', fontWeight: 700, border: 'none', boxShadow: '0 4px 20px rgba(16, 185, 129, 0.3)' }}
                 >
                   <Flame className="w-4 sm:w-5 h-4 sm:h-5 fill-current" />
                   <span>START FOCUS SESSION</span>
@@ -1251,7 +1251,7 @@ export function StudyTimer() {
                       ? 'opacity-40 cursor-not-allowed shadow-none'
                       : 'cursor-pointer hover:scale-[1.02]'
                   }`}
-                  style={{ background: '#10B981', boxShadow: '0 4px 20px rgba(16, 185, 129, 0.3)', color: '#000000', border: '1px solid rgba(255, 255, 255, 0.35)' }}
+                  style={{ background: '#10B981', color: '#021C11', fontWeight: 700, border: 'none', boxShadow: '0 4px 20px rgba(16, 185, 129, 0.3)' }}
                   title={!selectedSubject?.id ? 'Please select a subject before starting the timer' : 'Start Focus Session'}
                 >
                   <Play className="w-4 sm:w-5 h-4 sm:h-5 fill-current" />
@@ -1295,7 +1295,7 @@ export function StudyTimer() {
                     onClick={handleResume}
                     disabled={isSaving || isRemoteTransitioning}
                     className="px-6 sm:px-8 py-3 rounded-xl font-hud font-bold text-xs sm:text-sm text-slate-950 transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[120px] tracking-wider uppercase hud-btn-primary"
-                    style={{ background: '#10B981', boxShadow: '0 4px 20px rgba(16, 185, 129, 0.3)', color: '#000000', border: '1px solid rgba(255, 255, 255, 0.35)' }}
+                    style={{ background: '#10B981', color: '#021C11', fontWeight: 700, border: 'none', boxShadow: '0 4px 20px rgba(16, 185, 129, 0.3)' }}
                   >
                     <Play className="w-4 h-4 fill-current" />
                     <span>RESUME</span>
@@ -1345,7 +1345,7 @@ export function StudyTimer() {
         {/* 2. Unified HUD Stat Readout Panel */}
         <div
           className="rounded-2xl bg-[var(--surface)] backdrop-blur-xl border border-[var(--border)] p-5 shadow-xl space-y-4 transition-all relative overflow-hidden"
-          style={{ borderTop: "1px solid rgba(6, 182, 212, 0.4)" }}
+          style={{ borderTop: "1px solid rgba(99, 102, 241, 0.4)" }}
         >
           <div className="hud-corner-bracket hud-corner-tl" />
           <div className="hud-corner-bracket hud-corner-tr" />
@@ -1360,7 +1360,7 @@ export function StudyTimer() {
 
           <div className="flex items-center justify-between pb-3 border-b border-[var(--border)] relative z-10">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4" style={{ color: "#06B6D4" }} />
+              <Sparkles className="w-4 h-4" style={{ color: "#6366F1" }} />
               <span className="text-xs font-hud font-bold text-white tracking-widest uppercase">
                 DAILY OVERVIEW
               </span>
@@ -1374,7 +1374,7 @@ export function StudyTimer() {
                     ? 'text-slate-950 shadow-sm'
                     : 'text-slate-400 hover:text-white'
                 }`}
-                style={overviewView === 'today' ? { backgroundColor: '#06B6D4', color: '#04181C', boxShadow: 'inset 0 0 0 1px rgba(6, 182, 212, 0.5)' } : undefined}
+                style={overviewView === 'today' ? { backgroundColor: '#6366F1', color: '#FFFFFF', boxShadow: 'inset 0 0 0 1px rgba(99, 102, 241, 0.5)' } : undefined}
               >
                 TODAY
               </button>
@@ -1385,7 +1385,7 @@ export function StudyTimer() {
                     ? 'text-slate-950 shadow-sm'
                     : 'text-slate-400 hover:text-white'
                 }`}
-                style={overviewView === 'yesterday' ? { backgroundColor: '#06B6D4', color: '#04181C', boxShadow: 'inset 0 0 0 1px rgba(6, 182, 212, 0.5)' } : undefined}
+                style={overviewView === 'yesterday' ? { backgroundColor: '#6366F1', color: '#FFFFFF', boxShadow: 'inset 0 0 0 1px rgba(99, 102, 241, 0.5)' } : undefined}
               >
                 YESTERDAY
               </button>
@@ -1412,7 +1412,7 @@ export function StudyTimer() {
               </div>
               <div
                 className="text-lg font-hud font-black tracking-tight tabular-nums"
-                style={{ color: "#06B6D4" }}
+                style={{ color: "#6366F1" }}
               >
                 {(isLoading || isLoadingSessions) && !hasHydrated ? (
                   <Skeleton className="h-6 w-20 bg-slate-800" />
@@ -1447,9 +1447,9 @@ export function StudyTimer() {
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-4 h-4 flex items-center justify-center animate-ember-glow">
-                  <Flame className="w-full h-full fill-current" style={{ color: "#06B6D4" }} />
+                  <Flame className="w-full h-full fill-current" style={{ color: "#6366F1" }} />
                 </div>
-                <span className="text-lg font-hud font-black tracking-tight" style={{ color: "#06B6D4" }}>
+                <span className="text-lg font-hud font-black tracking-tight" style={{ color: "#6366F1" }}>
                   {user?.streakDays ?? 0}
                 </span>
               </div>

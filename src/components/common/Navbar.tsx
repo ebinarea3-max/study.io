@@ -184,7 +184,7 @@ export function Navbar({
                   ? 'text-white shadow-sm'
                   : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
               }`}
-              style={activeTab === 'timer' ? { backgroundColor: theme.accent } : undefined}
+              style={activeTab === 'timer' ? { background: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#FFFFFF', fontWeight: 600 } : undefined}
             >
               <Timer className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>TIMER</span>
@@ -197,7 +197,7 @@ export function Navbar({
                   ? 'text-white shadow-sm'
                   : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
               }`}
-              style={activeTab === 'tasks' ? { backgroundColor: theme.accent } : undefined}
+              style={activeTab === 'tasks' ? { background: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#FFFFFF', fontWeight: 600 } : undefined}
             >
               <CheckSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>TASKS</span>
@@ -210,7 +210,7 @@ export function Navbar({
                   ? 'text-white shadow-sm'
                   : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
               }`}
-              style={activeTab === 'analytics' ? { backgroundColor: theme.accent } : undefined}
+              style={activeTab === 'analytics' ? { background: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#FFFFFF', fontWeight: 600 } : undefined}
             >
               <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>STATS</span>
@@ -223,7 +223,7 @@ export function Navbar({
                   ? 'text-white shadow-sm'
                   : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
               }`}
-              style={activeTab === 'settings' ? { backgroundColor: theme.accent } : undefined}
+              style={activeTab === 'settings' ? { background: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#FFFFFF', fontWeight: 600 } : undefined}
             >
               <Settings className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>SETTINGS</span>
