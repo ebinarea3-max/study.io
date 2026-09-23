@@ -672,7 +672,7 @@ export function StudyTimer() {
       <div className="lg:col-span-8 flex-1 md:flex-initial flex flex-col justify-between overflow-hidden md:overflow-visible space-y-0 md:space-y-6">
         {/* Main Timer Game-HUD Card with Targeting Reticle Corner Brackets */}
         <div
-          className="relative rounded-3xl bg-[#14171D] border border-white/[0.08] p-3.5 sm:p-8 lg:p-10 shadow-2xl overflow-hidden flex-1 md:flex-initial flex flex-col justify-between transition-all hud-corner-frame"
+          className="relative rounded-3xl bg-[#14171D] border border-white/[0.08] p-3.5 sm:p-8 lg:p-10 shadow-2xl overflow-hidden flex-1 md:flex-initial flex flex-col justify-between transition-all"
           style={{ borderColor: `${theme.accent}35`, boxShadow: `0 0 35px -10px ${theme.glow}` }}
         >
           {/* Angular Targeting Reticle Corner Brackets */}
@@ -720,10 +720,10 @@ export function StudyTimer() {
                   disabled={isStudying}
                   className={`px-3 sm:px-4 py-1 sm:py-1.5 rounded-xl text-xs font-hud font-bold tracking-wider transition-all active:scale-95 ${
                     timerMode === 'stopwatch'
-                      ? 'text-slate-950 shadow-md'
+                      ? 'text-slate-950 shadow-sm'
                       : 'text-neutral-400 hover:text-white'
                   } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
-                  style={timerMode === 'stopwatch' ? { background: theme.gradient, boxShadow: `0 0 12px ${theme.glow}` } : undefined}
+                  style={timerMode === 'stopwatch' ? { backgroundColor: theme.accent } : undefined}
                 >
                   STOPWATCH
                 </button>
@@ -732,10 +732,10 @@ export function StudyTimer() {
                   disabled={isStudying}
                   className={`px-3 sm:px-4 py-1 sm:py-1.5 rounded-xl text-xs font-hud font-bold tracking-wider transition-all active:scale-95 ${
                     timerMode === 'pomodoro'
-                      ? 'text-slate-950 shadow-md'
+                      ? 'text-slate-950 shadow-sm'
                       : 'text-neutral-400 hover:text-white'
                   } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
-                  style={timerMode === 'pomodoro' ? { background: theme.gradient, boxShadow: `0 0 12px ${theme.glow}` } : undefined}
+                  style={timerMode === 'pomodoro' ? { backgroundColor: theme.accent } : undefined}
                 >
                   POMODORO
                 </button>
@@ -932,7 +932,7 @@ export function StudyTimer() {
             }`}>
               {/* Outer Tier Accent Ambient Halo */}
               <div
-                className="absolute inset-0 rounded-full blur-xl pointer-events-none transition-all duration-700 opacity-25"
+                className="absolute inset-0 rounded-full blur-xl pointer-events-none transition-all duration-700 opacity-[0.08]"
                 style={{ background: theme.gradient }}
               />
 
@@ -968,10 +968,10 @@ export function StudyTimer() {
                         y1={y1}
                         x2={x2}
                         y2={y2}
-                        stroke={isActiveTick ? theme.accent : 'rgba(255,255,255,0.1)'}
+                        stroke={isActiveTick ? theme.accent : 'rgba(255,255,255,0.04)'}
                         strokeWidth={isActiveTick ? 2 : 1}
                         strokeLinecap="round"
-                        className="transition-all duration-500"
+                        className="transition-all duration-500 opacity-60"
                       />
                     );
                   })}
@@ -983,8 +983,8 @@ export function StudyTimer() {
                   cy="150"
                   r="124"
                   fill="none"
-                  stroke="rgba(255, 255, 255, 0.06)"
-                  strokeWidth="3.5"
+                  stroke="rgba(255, 255, 255, 0.04)"
+                  strokeWidth="2.5"
                 />
 
                 {/* Dynamic Progress Arc */}
@@ -994,13 +994,13 @@ export function StudyTimer() {
                   r="124"
                   fill="none"
                   stroke="url(#timerTierGrad)"
-                  strokeWidth="3.5"
+                  strokeWidth="2.5"
                   strokeLinecap="round"
                   strokeDasharray={2 * Math.PI * 124}
                   strokeDashoffset={2 * Math.PI * 124 - (progressPercent / 100) * (2 * Math.PI * 124)}
                   className="transition-all duration-500 ease-out"
                   style={{
-                    filter: `drop-shadow(0 0 6px ${theme.glow})`,
+                    filter: `drop-shadow(0 0 3px rgba(var(--tier-accent-rgb), 0.5))`,
                   }}
                   transform="rotate(-90 150 150)"
                 />
@@ -1036,11 +1036,11 @@ export function StudyTimer() {
                   }}
                 >
                   {!selectedSubject
-                    ? 'SELECT SUBJECT'
+                    ? 'Select a subject'
                     : timerMode === 'pomodoro'
                     ? pomodoroPhase === 'work'
-                      ? `FOCUS // ${selectedSubject.name}`
-                      : `RECHARGE // BREAK`
+                      ? `Focus: ${selectedSubject.name}`
+                      : `Break`
                     : selectedSubject.name}
                 </div>
 
@@ -1082,18 +1082,18 @@ export function StudyTimer() {
                   />
                   <span style={{ color: isStudying && !isPaused ? theme.textAccent : '#94A3B8' }}>
                     {pomodoroCompletedPhase === 'work'
-                      ? '● COMPLETE // BLOCK FINISHED'
+                      ? '● Block Finished'
                       : pomodoroCompletedPhase === 'break'
-                      ? '● BREAK OVER // READY'
+                      ? '● Break Over'
                       : timerMode === 'pomodoro' && pomodoroPhase === 'shortBreak'
                       ? isPaused
-                        ? '● HOLD // RECHARGE PAUSED'
-                        : '● ACTIVE // RECHARGING'
+                        ? '● Break Paused'
+                        : '● Break Active'
                       : isStudying
                       ? isPaused
-                        ? '● HOLD // SESSION PAUSED'
-                        : '● ACTIVE // FOCUS LIVE'
-                      : '● STANDBY // SYSTEM READY'}
+                        ? '● Session Paused'
+                        : '● Focusing'
+                      : '● Ready to start'}
                   </span>
                 </div>
               </div>
@@ -1170,7 +1170,7 @@ export function StudyTimer() {
                     }}
                     disabled={isSaving || isRemoteTransitioning}
                     className="px-6 sm:px-8 py-3.5 rounded-xl font-hud font-bold text-xs sm:text-sm text-slate-950 transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[150px] uppercase tracking-wider hud-btn-primary"
-                    style={{ background: theme.gradient, boxShadow: `0 0 20px ${theme.glow}` }}
+                    style={{ backgroundColor: theme.accent }}
                   >
                     {isSaving ? (
                       <>
@@ -1209,7 +1209,7 @@ export function StudyTimer() {
                       onClick={startPomodoroBreak}
                       disabled={isSaving || isRemoteTransitioning}
                       className="px-6 sm:px-8 py-3.5 rounded-xl font-hud font-bold text-xs sm:text-sm text-slate-950 transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[140px] uppercase tracking-wider hud-btn-primary"
-                      style={{ background: theme.gradient, boxShadow: `0 0 20px ${theme.glow}` }}
+                      style={{ backgroundColor: theme.accent }}
                     >
                       <Play className="w-4 h-4 fill-current" />
                       <span>START BREAK</span>
@@ -1251,8 +1251,7 @@ export function StudyTimer() {
                   disabled={isSaving || isRemoteTransitioning}
                   className="px-8 sm:px-10 py-3.5 sm:py-4 font-hud font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-2.5 w-full xs:w-auto hud-btn-primary cursor-pointer hover:scale-[1.02]"
                   style={{
-                    background: theme.gradient,
-                    boxShadow: `0 0 24px -2px ${theme.glow}`,
+                    backgroundColor: theme.accent,
                   }}
                 >
                   <Flame className="w-4 sm:w-5 h-4 sm:h-5 fill-current" />
@@ -1269,8 +1268,7 @@ export function StudyTimer() {
                       : 'cursor-pointer hover:scale-[1.02]'
                   }`}
                   style={{
-                    background: theme.gradient,
-                    boxShadow: `0 0 24px -2px ${theme.glow}`,
+                    backgroundColor: theme.accent,
                   }}
                   title={!selectedSubject?.id ? 'Please select a subject before starting the timer' : 'Start Focus Session'}
                 >
@@ -1406,7 +1404,7 @@ export function StudyTimer() {
 
         {/* 2. Unified HUD Stat Readout Panel */}
         <div
-          className="rounded-2xl bg-[#14171D] border border-white/[0.08] p-5 shadow-xl space-y-4 transition-all relative overflow-hidden hud-corner-frame"
+          className="rounded-2xl bg-[#14171D] border border-white/[0.08] p-5 shadow-xl space-y-4 transition-all relative overflow-hidden"
           style={{ borderColor: `${theme.accent}30` }}
         >
           <div className="hud-corner-bracket hud-corner-tl" />
@@ -1521,7 +1519,7 @@ export function StudyTimer() {
 
         {/* 3. Today's Boost / Motivation Card */}
         <div
-          className="rounded-2xl bg-[#14171D] border border-white/[0.08] p-5 shadow-xl space-y-3 transition-all relative overflow-hidden hud-corner-frame"
+          className="rounded-2xl bg-[#14171D] border border-white/[0.08] p-5 shadow-xl space-y-3 transition-all relative overflow-hidden"
           style={{ borderColor: `${theme.accent}30` }}
         >
           <div className="hud-corner-bracket hud-corner-tl" />

@@ -41,6 +41,7 @@
   background: var(--card-texture, none);
   z-index: -1;
   transition: background 1.2s ease, opacity 1.2s ease;
+  opacity: 0.35;
 }
 
 html, body {
@@ -105,74 +106,26 @@ html.dark body,
   box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.6);
 }
 
-/* Angular Reticle HUD Corner Brackets Frame */
-.hud-corner-frame {
-  position: relative;
-}
-
-.hud-corner-bracket {
-  position: absolute;
-  width: 12px;
-  height: 12px;
-  border-color: var(--tier-accent);
-  pointer-events: none;
-  transition: border-color 0.3s ease, transform 0.2s ease;
-}
-
-.hud-corner-tl {
-  top: -1px;
-  left: -1px;
-  border-top-width: 2px;
-  border-left-width: 2px;
-  border-top-left-radius: 2px;
-}
-
-.hud-corner-tr {
-  top: -1px;
-  right: -1px;
-  border-top-width: 2px;
-  border-right-width: 2px;
-  border-top-right-radius: 2px;
-}
-
-.hud-corner-bl {
-  bottom: -1px;
-  left: -1px;
-  border-bottom-width: 2px;
-  border-left-width: 2px;
-  border-bottom-left-radius: 2px;
-}
-
-.hud-corner-br {
-  bottom: -1px;
-  right: -1px;
-  border-bottom-width: 2px;
-  border-right-width: 2px;
-  border-bottom-right-radius: 2px;
-}
 
 /* Beveled / Clipped HUD Button */
 .hud-btn-primary {
   position: relative;
-  background: var(--tier-gradient);
+  background: var(--tier-accent);
   color: #0A0C10;
   font-family: var(--font-hud), sans-serif;
   font-weight: 700;
   letter-spacing: 0.04em;
   clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 0 20px -3px var(--tier-glow);
 }
 
 .hud-btn-primary:hover {
   filter: brightness(1.1);
-  box-shadow: 0 0 28px -1px var(--tier-glow);
   transform: translateY(-1px);
 }
 
 .hud-btn-primary:active {
   transform: scale(0.97);
-  box-shadow: 0 0 12px var(--tier-glow);
 }
 
 /* Radar Sweep / Reactor Core Rotation */
@@ -295,7 +248,7 @@ html.dark body,
 }
 
 .bg-tier-muted {
-  background-color: rgba(var(--tier-accent-rgb), 0.15);
+  background-color: rgba(var(--tier-accent-rgb), 0.05);
 }
 
 .border-tier-muted {

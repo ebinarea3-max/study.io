@@ -3,14 +3,14 @@ import { Flame, Shield, Star, Hexagon, Gem, Sparkles, Crown, Award } from 'lucid
 import { useRankTheme } from '../hooks/useRankTheme';
 
 const TIER_GLOW_MAPPING: Record<string, string> = {
-  Bronze: '0 0 8px var(--tier-glow)',
-  Silver: '0 0 10px var(--tier-glow)',
-  Gold: '0 0 12px var(--tier-glow)',
-  Platinum: '0 0 14px var(--tier-glow)',
-  Diamond: '0 0 16px var(--tier-glow)',
-  Heroic: '0 0 20px var(--tier-glow)',
-  Master: '0 0 24px var(--tier-glow)',
-  Grandmaster: '0 0 32px var(--tier-glow)',
+  Bronze: '0 0 4px var(--tier-glow)',
+  Silver: '0 0 5px var(--tier-glow)',
+  Gold: '0 0 6px var(--tier-glow)',
+  Platinum: '0 0 7px var(--tier-glow)',
+  Diamond: '0 0 8px var(--tier-glow)',
+  Heroic: '0 0 10px var(--tier-glow)',
+  Master: '0 0 12px var(--tier-glow)',
+  Grandmaster: '0 0 16px var(--tier-glow)',
 };
 
 export function Logo({ className = "w-7 h-7" }: { className?: string }) {

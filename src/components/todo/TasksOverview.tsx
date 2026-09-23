@@ -102,7 +102,7 @@ export function TasksOverview() {
   return (
     <div className="w-full max-w-3xl mx-auto space-y-4 px-3.5 sm:px-6 py-4 pb-24 md:pb-12 animate-in fade-in duration-200">
       {/* 1. Operational Directive (Top of Tasks View) */}
-      <div className="hud-surface hud-corner-frame border border-white/[0.08] rounded-2xl p-4 sm:p-4.5 space-y-2 relative overflow-hidden group">
+      <div className="hud-surface  border border-white/[0.08] rounded-2xl p-4 sm:p-4.5 space-y-2 relative overflow-hidden group">
         <div className="flex items-center justify-between pb-2 border-b border-white/[0.06] relative z-10">
           <div className="flex items-center gap-2">
             <Radio className="w-3.5 h-3.5 text-tier" />
@@ -135,7 +135,7 @@ export function TasksOverview() {
       </div>
 
       {/* 3. Daily Telemetry Overview (Below To-Do List) */}
-      <div className="hud-surface hud-corner-frame border border-white/[0.08] rounded-2xl p-4 sm:p-5 space-y-3.5 relative overflow-hidden">
+      <div className="hud-surface  border border-white/[0.08] rounded-2xl p-4 sm:p-5 space-y-3.5 relative overflow-hidden">
         {/* Header Row */}
         <div className="flex items-center justify-between pb-2 border-b border-white/[0.06]">
           <div className="flex items-center gap-2">

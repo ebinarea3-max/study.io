@@ -19,6 +19,7 @@ import { useAuth } from '../../context/AuthContext';
 import { usePwaInstall } from '../../hooks/usePwaInstall';
 import { InstallInstructionModal } from './InstallInstructionModal';
 import { useRankTheme } from '../../hooks/useRankTheme';
+import { TierIcon } from './TierIcon';
 
 export function SettingsTabContent() {
   const { user, deleteAccount } = useAuth();
@@ -65,7 +66,7 @@ export function SettingsTabContent() {
   return (
     <div className="w-full max-w-4xl mx-auto space-y-5 pb-24 md:pb-8">
       {/* HUD Header Banner */}
-      <div className="relative p-5 sm:p-6 rounded-2xl hud-surface hud-corner-frame overflow-hidden">
+      <div className="relative p-5 sm:p-6 rounded-2xl hud-surface overflow-hidden">
         <div className="hud-corner-bracket hud-corner-tl" />
         <div className="hud-corner-bracket hud-corner-tr" />
         <div className="hud-corner-bracket hud-corner-bl" />
@@ -108,7 +109,7 @@ export function SettingsTabContent() {
               borderColor: `${theme.accent}40`,
             }}
           >
-            <Trophy className="w-4 h-4" style={{ color: theme.accent }} />
+            <TierIcon className="w-4 h-4" style={{ color: theme.accent }} />
             <span className="font-hud text-xs font-bold tracking-wider" style={{ color: theme.textAccent }}>
               {userRank.fullTitle} // {userRank.rp} RP
             </span>

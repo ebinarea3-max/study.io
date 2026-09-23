@@ -169,19 +169,6 @@ export function Navbar({
             <div className="flex flex-col justify-center">
               <div className="text-sm sm:text-base font-hud font-extrabold tracking-wider text-white flex items-center gap-1.5 leading-none">
                 <span>STUDY.IO</span>
-                <span
-                  className="hidden sm:inline-flex items-center text-[9px] uppercase font-bold tracking-widest px-1.5 py-0.5 rounded border leading-none"
-                  style={{
-                    backgroundColor: theme.badgeBg,
-                    borderColor: `${theme.accent}50`,
-                    color: theme.accent,
-                  }}
-                >
-                  HUD // {userRank.tier}
-                </span>
-              </div>
-              <div className="hidden sm:block text-[10px] text-slate-400 font-medium tracking-wide mt-0.5 uppercase">
-                Focus &amp; Habit Tracking
               </div>
             </div>
           </div>
@@ -192,10 +179,10 @@ export function Navbar({
               onClick={() => setActiveTab('timer')}
               className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-xl text-xs font-hud font-bold tracking-wider transition-all cursor-pointer ${
                 activeTab === 'timer'
-                  ? 'text-slate-950 shadow-md'
+                  ? 'text-white shadow-sm'
                   : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
               }`}
-              style={activeTab === 'timer' ? { background: theme.gradient, boxShadow: `0 0 16px ${theme.glow}` } : undefined}
+              style={activeTab === 'timer' ? { backgroundColor: theme.accent } : undefined}
             >
               <Timer className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>TIMER</span>
@@ -205,10 +192,10 @@ export function Navbar({
               onClick={() => setActiveTab('tasks')}
               className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-xl text-xs font-hud font-bold tracking-wider transition-all cursor-pointer ${
                 activeTab === 'tasks'
-                  ? 'text-slate-950 shadow-md'
+                  ? 'text-white shadow-sm'
                   : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
               }`}
-              style={activeTab === 'tasks' ? { background: theme.gradient, boxShadow: `0 0 16px ${theme.glow}` } : undefined}
+              style={activeTab === 'tasks' ? { backgroundColor: theme.accent } : undefined}
             >
               <CheckSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>TASKS</span>
@@ -218,10 +205,10 @@ export function Navbar({
               onClick={() => setActiveTab('analytics')}
               className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-xl text-xs font-hud font-bold tracking-wider transition-all cursor-pointer ${
                 activeTab === 'analytics'
-                  ? 'text-slate-950 shadow-md'
+                  ? 'text-white shadow-sm'
                   : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
               }`}
-              style={activeTab === 'analytics' ? { background: theme.gradient, boxShadow: `0 0 16px ${theme.glow}` } : undefined}
+              style={activeTab === 'analytics' ? { backgroundColor: theme.accent } : undefined}
             >
               <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>STATS</span>
@@ -231,10 +218,10 @@ export function Navbar({
               onClick={() => setActiveTab('settings')}
               className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-xl text-xs font-hud font-bold tracking-wider transition-all cursor-pointer ${
                 activeTab === 'settings'
-                  ? 'text-slate-950 shadow-md'
+                  ? 'text-white shadow-sm'
                   : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
               }`}
-              style={activeTab === 'settings' ? { background: theme.gradient, boxShadow: `0 0 16px ${theme.glow}` } : undefined}
+              style={activeTab === 'settings' ? { backgroundColor: theme.accent } : undefined}
             >
               <Settings className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>SETTINGS</span>

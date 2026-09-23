@@ -10,6 +10,7 @@ import {
 } from '../lib/rankedSystem';
 import { RankSettlementData } from '../types';
 import { ChevronRight } from 'lucide-react';
+import { TierIcon } from './common/TierIcon';
 
 interface RankSettlementModalProps {
   isOpen: boolean;
@@ -357,6 +358,16 @@ function EsportsRankCrest({
           );
         })()}
       </svg>
+
+      {/* Tier Icon Overlay */}
+      <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
+        <TierIcon
+          tier={details.tier}
+          className={`text-white drop-shadow-md filter transition-all duration-700 ${
+            tier === 'Grandmaster' || tier === 'Master' ? 'w-16 h-16 sm:w-20 sm:h-20' : 'w-12 h-12 sm:w-16 sm:h-16'
+          }`}
+        />
+      </div>
 
       {/* Ambient Rotating Conic Sheen across badge surface (8s linear loop for metal luster) */}
       {showSheen && !isGhost && (
