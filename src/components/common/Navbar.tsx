@@ -343,7 +343,7 @@ export function Navbar({
                 {/* Online/Studying status pulse */}
                 <span
                   className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-slate-950 ${
-                    isStudying ? 'bg-tier animate-pulse' : 'bg-slate-400 dark:bg-slate-500'
+                    isStudying ? 'bg-primary animate-pulse' : 'bg-slate-400 dark:bg-slate-500'
                   }`}
                 />
               </div>
@@ -354,7 +354,7 @@ export function Navbar({
                   {displayName}
                 </div>
                 <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="text-[10px] font-extrabold text-tier font-mono leading-none">
+                  <span className="text-[10px] font-extrabold text-primary font-mono leading-none">
                     Lv. {effectiveLevel}
                   </span>
                   <span className="text-[9px] px-1.5 py-0.2 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium leading-tight border border-slate-200 dark:border-transparent">
@@ -412,7 +412,7 @@ export function Navbar({
                   {/* XP Footnote */}
                   <div className="mt-1.5 flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
                     <span>{gamification.xpInCurrentLevel} / {gamification.xpNeededForNextLevel} XP</span>
-                    <span className="text-tier-bright font-semibold font-mono">
+                    <span className="text-primary-bright font-semibold font-mono">
                       {gamification.xpRemaining} XP to Lv. {gamification.level + 1}
                     </span>
                   </div>
@@ -421,7 +421,7 @@ export function Navbar({
                   <div className="mt-2.5 pt-2 border-t border-slate-200 dark:border-slate-800/60 grid grid-cols-3 gap-1 text-[9px] text-center">
                     <div className="p-1 rounded bg-slate-100 dark:bg-slate-900/60">
                       <div className="text-slate-500 dark:text-slate-400">Focus</div>
-                      <div className="text-tier font-bold font-mono">+{gamification.focusXP}</div>
+                      <div className="text-primary font-bold font-mono">+{gamification.focusXP}</div>
                     </div>
                     <div className="p-1 rounded bg-slate-100 dark:bg-slate-900/60">
                       <div className="text-slate-500 dark:text-slate-400">Tasks</div>
@@ -455,7 +455,7 @@ export function Navbar({
                   {!isAuthenticated ? (
                     <button
                       onClick={() => { onOpenAuth(); setShowPersonaMenu(false); }}
-                      className="w-full text-left px-2.5 py-2 rounded-xl text-xs font-medium text-tier hover:bg-tier-muted transition-colors flex items-center gap-2.5 cursor-pointer"
+                      className="w-full text-left px-2.5 py-2 rounded-xl text-xs font-medium text-primary hover:bg-primary-muted transition-colors flex items-center gap-2.5 cursor-pointer"
                     >
                       <LogIn className="w-3.5 h-3.5" />
                       <span>Sign In / Switch Account</span>
@@ -559,3 +559,4 @@ export function Navbar({
     </>
   );
 }
+

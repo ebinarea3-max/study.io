@@ -48,21 +48,16 @@ export function useRankTheme(): {
     if (typeof document === 'undefined') return;
     const root = document.documentElement;
 
-    // Enable crossfade transition for theme changes
-    root.style.transition = 'background-color 1.2s ease, border-color 1.2s ease, box-shadow 1.2s ease, color 1.2s ease';
+    // Enable crossfade transition for tier changes (badges/crests)
+    root.style.transition = 'color 1.2s ease, border-color 1.2s ease, box-shadow 1.2s ease';
 
     root.style.setProperty('--tier-accent', theme.accent);
     root.style.setProperty('--tier-glow', theme.glow);
     root.style.setProperty('--tier-border', theme.border);
-    root.style.setProperty('--tier-surface', theme.surface);
-    root.style.setProperty('--tier-bg', theme.bg);
-    root.style.setProperty('--tier-base', theme.base);
-    root.style.setProperty('--card-texture', theme.cardTexture);
     
     // Legacy fallback variables
     root.style.setProperty('--tier-accent-rgb', theme.accentRgb || '255,255,255');
     root.style.setProperty('--tier-accent-hover', theme.accentHover || theme.accent);
-    root.style.setProperty('--tier-surface-high', theme.surfaceHigh || theme.surface);
     root.style.setProperty('--tier-gradient', theme.gradient || 'none');
     root.style.setProperty('--tier-badge-bg', theme.badgeBg || 'transparent');
     root.style.setProperty('--tier-text-accent', theme.textAccent || theme.accent);
