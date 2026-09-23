@@ -252,7 +252,7 @@ export function Navbar({
                 title={`Ranked Season RP: ${userRank.rp.toLocaleString()} RP (${userRank.fullTitle})`}
               >
                 <div className="flex items-center gap-1.5 sm:gap-2">
-                  <RankCrestBadge tier={userRank.tier as any} size={44} className="-ml-4 drop-shadow-md" />
+                  <RankCrestBadge tier={userRank.tier as any} size={40} className="-ml-3 drop-shadow-md" />
                   <span
                     className="text-xs font-bold tracking-wider font-hud uppercase truncate max-w-[80px] sm:max-w-none"
                     style={{ color: theme.accent }}

@@ -1,6 +1,5 @@
 import React from 'react';
 import { RankTierName, RANK_TIERS } from '../../lib/rankedSystem';
-import { TierIcon } from './TierIcon';
 
 interface RankCrestBadgeProps {
   tier: RankTierName;
@@ -11,6 +10,17 @@ interface RankCrestBadgeProps {
   showSheen?: boolean;
 }
 
+const TIER_SCALES: Record<string, number> = {
+  Bronze: 1.0,
+  Silver: 1.06,
+  Gold: 1.12,
+  Platinum: 1.18,
+  Diamond: 1.25,
+  Heroic: 1.32,
+  Master: 1.40,
+  Grandmaster: 1.50,
+};
+
 export function RankCrestBadge({
   tier,
   size = 72,
@@ -20,11 +30,15 @@ export function RankCrestBadge({
   showSheen = true,
 }: RankCrestBadgeProps) {
   const config = RANK_TIERS.find(t => t.tier === tier) || RANK_TIERS[0];
-
+  const scale = TIER_SCALES[tier] || 1.0;
+  
   // Use inline style for size if size is a number
+  const actualSize = typeof size === 'number' ? size * scale : `calc(${size} * ${scale})`;
+
   const containerStyle: React.CSSProperties = {
-    width: size,
-    height: size,
+    width: actualSize,
+    height: actualSize,
+    minWidth: actualSize,
     filter: isGhost && ghostColor ? `drop-shadow(0 0 10px ${ghostColor})` : undefined,
   };
 
@@ -319,14 +333,7 @@ export function RankCrestBadge({
         })()}
       </svg>
 
-      {/* Tier Icon Overlay */}
-      <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
-        <TierIcon
-          tier={config.tier}
-          className="text-white drop-shadow-md filter transition-all duration-700"
-          style={{ width: '28%', height: '28%', marginTop: '4%' }}
-        />
-      </div>
+      {/* Center of shield is left empty/faceted gem core as requested, TierIcon removed */}
 
       {/* Ambient Rotating Conic Sheen across badge surface (8s linear loop for metal luster) */}
       {showSheen && !isGhost && (
