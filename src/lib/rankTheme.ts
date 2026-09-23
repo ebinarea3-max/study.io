@@ -8,6 +8,7 @@ export interface RankThemePalette {
   glow: string;
   border: string;
   surface: string;
+  bg: string; // The solid background color for badges/elements
   base: string; // The app background
   cardTexture: string; // CSS background for cards
   icon: string; // Lucide icon name
