@@ -669,7 +669,7 @@ export function StudyTimer() {
       )}
 
       {/* Main Left Column (Timer & Subject Goal Progress) */}
-      <div className="lg:col-span-8 flex-1 md:flex-initial flex flex-col justify-between overflow-hidden md:overflow-visible space-y-0 md:space-y-6">
+      <div className="lg:col-span-8 flex-1 md:flex-initial flex flex-col justify-between md:justify-start overflow-hidden md:overflow-visible space-y-0 md:space-y-6">
         {/* Main Timer Game-HUD Card with Targeting Reticle Corner Brackets */}
         <div
           className="relative rounded-3xl bg-[#14171D] border border-white/[0.08] p-3.5 sm:p-8 lg:p-10 shadow-2xl overflow-hidden flex-1 md:flex-initial flex flex-col justify-between transition-all"
