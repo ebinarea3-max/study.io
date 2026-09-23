@@ -65,7 +65,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${rajdhani.variable} ${chakraPetch.variable} dark h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${rajdhani.variable} ${chakraPetch.variable} dark antialiased`}
     >
       <body className="min-h-screen overflow-x-hidden flex flex-col text-slate-200 bg-[var(--bg)] dark antialiased selection:bg-[var(--tier-accent)]/30 selection:text-[var(--tier-accent)]">
         <Providers>

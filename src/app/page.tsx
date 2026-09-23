@@ -124,7 +124,7 @@ export default function Home() {
 
   // Authenticated: Full StudyPulse focus dashboard
   return (
-    <div className="h-[100dvh] overflow-hidden bg-[var(--bg)] text-slate-100 flex flex-col relative selection:bg-[var(--tier-accent)]/30 selection:text-[var(--tier-text-accent)]">
+    <div className="max-md:h-[100dvh] max-md:overflow-hidden md:min-h-screen w-full md:overflow-y-auto bg-[var(--bg)] text-slate-100 flex flex-col relative selection:bg-[var(--tier-accent)]/30 selection:text-[var(--tier-text-accent)]">
       {/* Drifting Ambient HUD Grid Overlay */}
       <div className="fixed inset-0 pointer-events-none bg-hud-grid z-0" />
 
@@ -156,9 +156,9 @@ export default function Home() {
 
       {/* Main Content Area with Mobile Swipe Navigation */}
       <main
-        className={`flex-1 max-w-7xl w-full mx-auto relative z-10 flex flex-col overflow-hidden ${
+        className={`flex-1 max-w-7xl w-full mx-auto relative z-10 flex flex-col max-md:overflow-hidden md:overflow-visible ${
           activeTab === 'timer'
-            ? 'p-0 md:px-6 md:py-4 pb-0 md:pb-4 overflow-hidden'
+            ? 'p-0 md:px-6 md:py-4 pb-0 md:pb-4 max-md:overflow-hidden md:overflow-visible'
             : 'px-3.5 sm:px-6 py-5 sm:py-8 pb-24 md:pb-12 overflow-y-auto overscroll-contain'
         }`}
       >
