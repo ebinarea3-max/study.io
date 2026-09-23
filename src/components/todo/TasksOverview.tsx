@@ -199,35 +199,16 @@ export function TasksOverview() {
         </div>
 
         {/* Streak Footer */}
-        <div className="pt-2 flex items-center justify-between border-t border-white/[0.05]">
-          <span className="flex items-center gap-1.5 text-neutral-400 font-hud-mono text-xs">
-            <Flame className="w-3.5 h-3.5 animate-ember-glow" style={{ color: '#F59E0B' }} />
-            <span>STREAK CONTINUITY</span>
-          </span>
-          <div className="flex items-center gap-3">
-            <div className="flex flex-col items-end gap-1">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] text-neutral-500 font-medium">
-                  {(user?.streakDays ?? 0) > 0 ? `${(user?.streakDays ?? 0) % 7}/7 to next multiplier` : 'Start your streak'}
-                </span>
-                <div 
-                  className="w-[60px] sm:w-[80px] h-[5px] rounded-full overflow-hidden"
-                  style={{ backgroundColor: 'var(--tier-border)' }}
-                >
-                  <div 
-                    className="h-full rounded-full transition-all duration-500" 
-                    style={{ 
-                      backgroundColor: theme.accent, 
-                      width: `${((user?.streakDays ?? 0) % 7) / 7 * 100}%` 
-                    }} 
-                  />
-                </div>
-              </div>
-            </div>
-            
+        <div className="pt-3 border-t border-white/[0.05] flex flex-col gap-3">
+          {/* Top Row: Label and Streak Pill */}
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-1.5 text-neutral-400 font-hud-mono text-xs">
+              <Flame className="w-3.5 h-3.5 animate-ember-glow" style={{ color: '#F59E0B' }} />
+              <span>STREAK CONTINUITY</span>
+            </span>
             {(user?.streakDays ?? 0) > 0 ? (
               <span
-                className="px-2.5 py-0.5 rounded font-hud-mono font-bold text-xs tracking-wider border shadow-sm shrink-0"
+                className="px-2.5 py-0.5 rounded font-hud-mono font-bold text-xs tracking-wider border shadow-sm"
                 style={{
                   color: '#FBBF24',
                   borderColor: '#F59E0B60',
@@ -237,10 +218,31 @@ export function TasksOverview() {
                 {user?.streakDays ?? 0} {(user?.streakDays ?? 0) === 1 ? 'DAY' : 'DAYS'}
               </span>
             ) : (
-              <span className="font-hud-mono font-bold text-neutral-500 text-xs tracking-wider shrink-0">
+              <span className="font-hud-mono font-bold text-neutral-500 text-xs tracking-wider">
                 0 DAYS
               </span>
             )}
+          </div>
+          
+          {/* Bottom Row: Full-width Progress Bar */}
+          <div className="flex flex-col gap-1.5">
+            <div 
+              className="w-full h-[5px] rounded-full overflow-hidden bg-white/5"
+              style={{ backgroundColor: 'var(--tier-border)' }}
+            >
+              {(user?.streakDays ?? 0) > 0 && (
+                <div 
+                  className="h-full rounded-full transition-all duration-500" 
+                  style={{ 
+                    backgroundColor: theme.accent, 
+                    width: `${((user?.streakDays ?? 0) % 7) / 7 * 100}%` 
+                  }} 
+                />
+              )}
+            </div>
+            <span className="text-[10.5px] text-neutral-500 font-medium">
+              {(user?.streakDays ?? 0) > 0 ? `${(user?.streakDays ?? 0) % 7}/7 to next multiplier` : 'Start your streak'}
+            </span>
           </div>
         </div>
       </div>

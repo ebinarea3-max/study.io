@@ -23,6 +23,7 @@ import { getRankTier } from '../../lib/rankedSystem';
 import { getTierBadge, getLevelTitle } from '../../lib/gamification';
 import { useRankTheme } from '../../hooks/useRankTheme';
 import { TierIcon } from './TierIcon';
+import { RankCrestBadge } from './RankCrestBadge';
 
 export type NavTabType = 'timer' | 'tasks' | 'analytics' | 'settings';
 
@@ -245,21 +246,13 @@ export function Navbar({
             </Link>
           ) : (
             <div className="flex items-center gap-2">
-              {/* Header Emblem Square */}
-              <div 
-                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shadow-sm"
-                style={{ background: theme.gradient, boxShadow: `0 0 12px ${theme.glow}` }}
-              >
-                <TierIcon className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-white/90 drop-shadow-md" />
-              </div>
-              
               {/* Rank Status Pill */}
               <div
-                className="relative flex items-center h-8 sm:h-9 px-3 sm:px-4 bg-[#14161C] border border-slate-800 text-slate-100 cursor-default select-none rounded-xl"
+                className="relative flex items-center h-8 sm:h-9 pl-1 pr-3 sm:pr-4 bg-[#14161C] border border-slate-800 text-slate-100 cursor-default select-none rounded-xl"
                 title={`Ranked Season RP: ${userRank.rp.toLocaleString()} RP (${userRank.fullTitle})`}
               >
                 <div className="flex items-center gap-1.5 sm:gap-2">
-                  <TierIcon className="w-3.5 h-3.5 flex-shrink-0" style={{ color: theme.accent }} />
+                  <RankCrestBadge tier={userRank.tier as any} size={44} className="-ml-4 drop-shadow-md" />
                   <span
                     className="text-xs font-bold tracking-wider font-hud uppercase truncate max-w-[80px] sm:max-w-none"
                     style={{ color: theme.accent }}

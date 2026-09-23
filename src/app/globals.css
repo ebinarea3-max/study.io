@@ -612,3 +612,9 @@ html.light ::selection,
   background-color: rgba(16, 185, 129, 0.25) !important;
   color: #065f46 !important;
 }
+
+@keyframes sheenSweep {
+  0% { transform: skewX(-20deg) translateX(-150%); }
+  50% { transform: skewX(-20deg) translateX(150%); }
+  100% { transform: skewX(-20deg) translateX(150%); }
+}

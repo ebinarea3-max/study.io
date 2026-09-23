@@ -20,6 +20,7 @@ import { usePwaInstall } from '../../hooks/usePwaInstall';
 import { InstallInstructionModal } from './InstallInstructionModal';
 import { useRankTheme } from '../../hooks/useRankTheme';
 import { TierIcon } from './TierIcon';
+import { RankCrestBadge } from './RankCrestBadge';
 
 export function SettingsTabContent() {
   const { user, deleteAccount } = useAuth();
@@ -74,12 +75,7 @@ export function SettingsTabContent() {
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div
-              className="w-11 h-11 rounded-xl flex items-center justify-center font-hud text-slate-950 text-base font-black shadow-md flex-shrink-0"
-              style={{ background: theme.gradient, boxShadow: `0 0 16px ${theme.glow}` }}
-            >
-              <ShieldCheck className="w-6 h-6 text-slate-950" />
-            </div>
+            <RankCrestBadge tier={userRank.tier as any} size={48} className="drop-shadow-lg" />
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="font-hud text-lg sm:text-xl font-black text-white tracking-wider uppercase">
