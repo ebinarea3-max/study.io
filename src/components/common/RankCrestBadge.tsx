@@ -45,6 +45,7 @@ export function RankCrestBadge({
   const accentLight = `url(#tier${tier}Light-${tier})`;
   const accentDark = `url(#tier${tier}Dark-${tier})`;
   const steelLight = `url(#crestSteelLight-${tier})`;
+  const steelDark = `url(#crestSteelDark-${tier})`;
   
   // Custom compositions based on tier
   const renderComposition = () => {
