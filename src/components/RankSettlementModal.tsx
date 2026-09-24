@@ -12,6 +12,8 @@ import { RankSettlementData } from '../types';
 import { ChevronRight } from 'lucide-react';
 import { TierIcon } from './common/TierIcon';
 import { RankCrestBadge } from './common/RankCrestBadge';
+import Image from 'next/image';
+import { getRankIconPath } from '../utils/rankIcons';
 interface RankSettlementModalProps {
   isOpen: boolean;
   data: RankSettlementData | null;
@@ -604,71 +606,16 @@ export function RankSettlementModal({
             style={{ backgroundColor: displayRank.config.badgeAccent }}
           />
 
-          {/* CHROMATIC ABERRATION PULSE (Decaying red & cyan badge copies offset by 3px) */}
-          {showChromatic && !prefersReducedMotion && (
-            <>
-              {/* Cyan Copy (-3px X offset) */}
-              <div
-                className="absolute inset-0 flex items-center justify-center pointer-events-none mix-blend-screen opacity-70"
-                style={{
-                  animation: 'chromaticDecayCyan 0.3s ease-out forwards',
-                  willChange: 'transform, opacity',
-                }}
-              >
-                <RankCrestBadge
-                  tier={displayRank.tier}
-                  isGhost
-                  ghostColor="#00E5FF"
-                  showSheen={false}
-                  size="100%"
-                  className="w-56 h-56 sm:w-72 sm:h-72"
-                />
-              </div>
-
-              {/* Red Copy (+3px X offset) */}
-              <div
-                className="absolute inset-0 flex items-center justify-center pointer-events-none mix-blend-screen opacity-70"
-                style={{
-                  animation: 'chromaticDecayRed 0.3s ease-out forwards',
-                  willChange: 'transform, opacity',
-                }}
-              >
-                <RankCrestBadge
-                  tier={displayRank.tier}
-                  isGhost
-                  ghostColor="#FF1744"
-                  showSheen={false}
-                  size="100%"
-                  className="w-56 h-56 sm:w-72 sm:h-72"
-                />
-              </div>
-            </>
-          )}
-
-          {/* TWO-PHASE MASS SLAM & LANDING WOBBLE CONTAINER */}
-          {/* Outer Layer: Landing Wobble (damps out 2-3 degree rotation over 0.6s on landing) */}
-          <div
-            className="relative"
-            style={{
-              animation: prefersReducedMotion ? 'none' : 'landingWobble 0.92s cubic-bezier(0.2, 0.8, 0.4, 1) forwards',
-              willChange: 'transform',
-            }}
-          >
-            {/* Inner Layer: Phase A (0-0.32s) scale 2.2->0.92, blur 12->0px + Phase B (0.32-0.52s) spring overshoot settle */}
-            <div
-              className="relative transition-all duration-300"
-              style={{
-                animation: prefersReducedMotion ? 'simpleFadeIn 0.3s ease-out forwards' : 'badgeMassSlam 0.52s linear forwards',
-                willChange: 'transform, opacity, filter',
-              }}
-            >
-              <RankCrestBadge
-                tier={displayRank.tier}
-                showSheen={!prefersReducedMotion}
-                size="100%"
-                className="w-56 h-56 sm:w-72 sm:h-72"
-              />
-            </div>
+          {/* CHROMATIC ABERRATION PULSE & MASS SLAM REPLACED WITH NEW CREST */}
+          <div className="relative w-36 h-36 sm:w-48 sm:h-48 mx-auto mb-4 flex items-center justify-center">
+            <Image
+              src={getRankIconPath(displayRank.tier, displayRank.division)}
+              alt="Rank Crest"
+              width={192}
+              height={192}
+              priority
+              className="object-contain drop-shadow-[0_0_25px_rgba(255,255,255,0.25)] animate-pulse"
+            />
           </div>
         </div>
 
