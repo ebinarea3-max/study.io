@@ -1,7 +1,7 @@
 import React from 'react';
-import Image from 'next/image';
 import { useRankTheme } from '../../hooks/useRankTheme';
-import { getRankIconPath } from '../../utils/rankIcons';
+import { RankCrestBadge } from './RankCrestBadge';
+import { RankTierName } from '../../lib/rankedSystem';
 
 interface TierIconProps {
   className?: string;
@@ -14,18 +14,14 @@ interface TierIconProps {
 export function TierIcon({ className, style, tier, division, size = 24 }: TierIconProps) {
   const { userRank } = useRankTheme();
   
-  const displayTier = tier || userRank.tier;
-  const displayDivision = division || userRank.division;
+  const displayTier = (tier || userRank.tier) as RankTierName;
 
   return (
-    <Image
-      src={getRankIconPath(displayTier, displayDivision)}
-      alt={`${displayTier} icon`}
-      width={size}
-      height={size}
-      className={`object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.1)] ${className || ''}`}
-      style={{ mixBlendMode: 'screen', ...style }}
-      unoptimized
-    />
+    <div style={style} className={className}>
+      <RankCrestBadge
+        tier={displayTier}
+        size={size}
+      />
+    </div>
   );
 }

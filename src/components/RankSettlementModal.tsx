@@ -607,16 +607,11 @@ export function RankSettlementModal({
           />
 
           {/* CHROMATIC ABERRATION PULSE & MASS SLAM REPLACED WITH NEW CREST */}
-          <div className="relative w-36 h-36 sm:w-48 sm:h-48 mx-auto mb-4 flex items-center justify-center">
-            <Image
-              src={getRankIconPath(displayRank.tier, displayRank.division)}
-              alt="Rank Crest"
-              width={192}
-              height={192}
-              priority
-              unoptimized
-              className="object-contain drop-shadow-[0_0_25px_rgba(255,255,255,0.25)] animate-pulse"
-              style={{ mixBlendMode: 'screen' }}
+          <div className="relative mx-auto mb-4 flex items-center justify-center">
+            <RankCrestBadge
+              tier={displayRank.tier}
+              size={192}
+              className="animate-in zoom-in spin-in-12 duration-700 ease-out"
             />
           </div>
         </div>
