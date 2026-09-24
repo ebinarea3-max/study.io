@@ -15,7 +15,7 @@ rank_names = [
 ]
 
 # Path to the uploaded image
-img_path = r"C:\Users\Lenovo\.gemini\antigravity-ide\brain\0f86ff9e-1f98-487e-b226-23f499667938\.user_uploaded\media_1790224019603.jpg"
+img_path = r"C:\Users\Lenovo\.gemini\antigravity-ide\scratch\studypulse-app\scratch\ranks_sheet.png"
 
 print("Loading image from", img_path)
 img = cv2.imread(img_path)
@@ -138,8 +138,9 @@ for i, box in enumerate(sorted_boxes):
     out_img = remove(pil_img)
     
     name = rank_names[i]
-    out_path = os.path.join(out_dir, f"{name}.webp")
-    out_img.save(out_path, format="WEBP")
+    out_path = os.path.join(out_dir, f"{name}.png")
+    out_img.save(out_path, format="PNG")
     print(f"Saved {name} to {out_path}")
 
 print("Done processing badges.")
+
