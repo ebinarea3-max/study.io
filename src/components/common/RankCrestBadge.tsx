@@ -4,6 +4,7 @@ import { BookOpen, Feather, Brain, Trophy, Crown, Sparkles, Hexagon } from 'luci
 
 interface RankCrestBadgeProps {
   tier: RankTierName;
+  division?: string;
   size?: number | string;
   className?: string;
   isGhost?: boolean;
@@ -24,6 +25,7 @@ const TIER_SCALES: Record<string, number> = {
 
 export function RankCrestBadge({
   tier,
+  division,
   size = 72,
   className = '',
   isGhost = false,
