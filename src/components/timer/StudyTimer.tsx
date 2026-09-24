@@ -1141,7 +1141,7 @@ export function StudyTimer() {
             )}
 
             {/* Action Buttons: Context-aware HUD controls */}
-            <div className="max-md:mb-2 max-md:mt-auto pt-3 sm:pt-8 flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 relative z-10 w-full max-w-sm flex-shrink-0 mx-auto">
+            <div className="max-md:mb-2 pt-3 sm:pt-8 flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 relative z-10 w-full max-w-sm flex-shrink-0 mx-auto">
               {pomodoroCompletedPhase === 'work' ? (
                 /* Prompt 1: Focus Block Complete -> Save & Start Break / Skip Break */
                 <>
@@ -1235,8 +1235,8 @@ export function StudyTimer() {
                     handleStartSession();
                   }}
                   disabled={isSaving || isRemoteTransitioning}
-                  className="px-8 sm:px-10 py-3.5 sm:py-4 font-sans font-semibold text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2.5 w-full xs:w-auto rounded-xl cursor-pointer hover:scale-[1.02]"
-                  style={{ background: '#10B981', color: '#021C11', fontWeight: 700, border: 'none', boxShadow: '0 4px 20px rgba(16, 185, 129, 0.3)' }}
+                  className="px-8 sm:px-10 py-3.5 sm:py-4 font-sans font-bold text-sm uppercase tracking-wide transition-all flex items-center justify-center gap-2.5 w-full xs:w-auto rounded-xl cursor-pointer hover:scale-[1.02]"
+                  style={{ background: '#10B981', color: '#021C11', fontWeight: 800, border: 'none', boxShadow: '0 4px 20px rgba(16, 185, 129, 0.4)' }}
                 >
                   <Flame className="w-4 sm:w-5 h-4 sm:h-5 fill-current" />
                   <span>START FOCUS SESSION</span>
@@ -1246,12 +1246,12 @@ export function StudyTimer() {
                 <button
                   onClick={handleStartSession}
                   disabled={!selectedSubject?.id || isSaving || isRemoteTransitioning}
-                  className={`px-8 sm:px-10 py-3.5 sm:py-4 font-sans font-semibold text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2.5 w-full xs:w-auto rounded-xl ${
+                  className={`px-8 sm:px-10 py-3.5 sm:py-4 font-sans font-bold text-sm uppercase tracking-wide transition-all flex items-center justify-center gap-2.5 w-full xs:w-auto rounded-xl ${
                     !selectedSubject?.id || isRemoteTransitioning
                       ? 'opacity-40 cursor-not-allowed shadow-none'
                       : 'cursor-pointer hover:scale-[1.02]'
                   }`}
-                  style={{ background: '#10B981', color: '#021C11', fontWeight: 700, border: 'none', boxShadow: '0 4px 20px rgba(16, 185, 129, 0.3)' }}
+                  style={{ background: '#10B981', color: '#021C11', fontWeight: 800, border: 'none', boxShadow: '0 4px 20px rgba(16, 185, 129, 0.4)' }}
                   title={!selectedSubject?.id ? 'Please select a subject before starting the timer' : 'Start Focus Session'}
                 >
                   <Play className="w-4 sm:w-5 h-4 sm:h-5 fill-current" />
@@ -1295,7 +1295,7 @@ export function StudyTimer() {
                     onClick={handleResume}
                     disabled={isSaving || isRemoteTransitioning}
                     className="px-6 sm:px-8 py-3 rounded-xl font-hud font-bold text-xs sm:text-sm text-slate-950 transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[120px] tracking-wider uppercase hud-btn-primary"
-                    style={{ background: '#10B981', color: '#021C11', fontWeight: 700, border: 'none', boxShadow: '0 4px 20px rgba(16, 185, 129, 0.3)' }}
+                    style={{ background: '#10B981', color: '#021C11', fontWeight: 800, border: 'none', boxShadow: '0 4px 20px rgba(16, 185, 129, 0.4)' }}
                   >
                     <Play className="w-4 h-4 fill-current" />
                     <span>RESUME</span>
