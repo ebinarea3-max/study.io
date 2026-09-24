@@ -180,6 +180,72 @@ export function RankCrestBadge({
             <stop offset="100%" stopColor={config.badgeSecondary} stopOpacity="0.0" />
           </radialGradient>
         </defs>
+        
+        {/* === CONDITIONAL ESPORTS WINGS BASED ON DIVISION === */}
+        {(() => {
+          let count = 0;
+          if (division === 'I') count = 1;
+          else if (division === 'II') count = 2;
+          else if (division === 'III') count = 3;
+          else if (division === 'IV') count = 4;
+          
+          if (tier === 'Champion' || tier === 'Master' || tier === 'Grandmaster') {
+             // For apex tiers, just give them full legendary wings if they want them, or maybe 4 wings.
+             count = 4;
+          }
+          
+          if (count === 0) return null;
+
+          return (
+            <g>
+              {/* WING 1: Mid Razor Blade (Always present if count >= 1) */}
+              {count >= 1 && (
+                <g>
+                  {/* Left */}
+                  <polygon points="145,160 85,115 30,105 55,140 130,188" fill={accentLight} />
+                  <polygon points="130,188 55,140 30,105 45,160 125,205" fill={accentDark} />
+                  {/* Right */}
+                  <polygon points="195,160 255,115 310,105 285,140 210,188" fill={accentLight} />
+                  <polygon points="210,188 285,140 310,105 295,160 215,205" fill={accentDark} />
+                </g>
+              )}
+
+              {/* WING 2: Upper Razor Blade (Present if count >= 2) */}
+              {count >= 2 && (
+                <g>
+                  {/* Left */}
+                  <polygon points="150,140 100,75 40,48 70,88 120,150" fill={steelLight} stroke="rgba(255,255,255,0.4)" strokeWidth="1" />
+                  <polygon points="120,150 70,88 40,48 60,110 135,170" fill={steelDark} />
+                  {/* Right */}
+                  <polygon points="190,140 240,75 300,48 270,88 220,150" fill={steelLight} stroke="rgba(255,255,255,0.4)" strokeWidth="1" />
+                  <polygon points="220,150 270,88 300,48 280,110 205,170" fill={steelDark} />
+                </g>
+              )}
+
+              {/* WING 3: Lower Blade Flange (Present if count >= 3) */}
+              {count >= 3 && (
+                <g>
+                  {/* Left */}
+                  <polygon points="140,195 90,170 45,175 75,205 135,225" fill={steelDark} />
+                  {/* Right */}
+                  <polygon points="200,195 250,170 295,175 265,205 205,225" fill={steelDark} />
+                </g>
+              )}
+
+              {/* WING 4: Topmost Extra Blade for Division IV or Apex Tiers */}
+              {count >= 4 && (
+                <g>
+                  {/* Left */}
+                  <polygon points="160,120 120,40 60,10 90,60 130,135" fill={accentLight} stroke="rgba(255,255,255,0.6)" strokeWidth="1" />
+                  <polygon points="130,135 90,60 60,10 70,75 140,145" fill={accentDark} />
+                  {/* Right */}
+                  <polygon points="180,120 220,40 280,10 250,60 210,135" fill={accentLight} stroke="rgba(255,255,255,0.6)" strokeWidth="1" />
+                  <polygon points="210,135 250,60 280,10 270,75 200,145" fill={accentDark} />
+                </g>
+              )}
+            </g>
+          );
+        })()}
 
         {/* Shield Frame */}
         {tier !== 'Champion' && tier !== 'Grandmaster' && (
