@@ -260,6 +260,7 @@ export function Navbar({
                     height={36}
                     unoptimized
                     className="object-contain drop-shadow-md -ml-3"
+                    style={{ mixBlendMode: 'screen' }}
                   />
                   <span
                     className="text-xs font-bold tracking-wider font-hud uppercase truncate max-w-[80px] sm:max-w-none"

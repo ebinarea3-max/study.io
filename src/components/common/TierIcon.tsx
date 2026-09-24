@@ -23,8 +23,8 @@ export function TierIcon({ className, style, tier, division, size = 24 }: TierIc
       alt={`${displayTier} icon`}
       width={size}
       height={size}
-      className={`object-contain ${className || ''}`}
-      style={style}
+      className={`object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.1)] ${className || ''}`}
+      style={{ mixBlendMode: 'screen', ...style }}
       unoptimized
     />
   );
