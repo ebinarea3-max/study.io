@@ -701,8 +701,9 @@ export function StudyTimer() {
             </div>
           )}
 
+          <div className="flex flex-col items-center gap-2 w-full relative z-20">
           {/* Top Controls: Mode Switcher, Preset Selector & Focus Mode Button */}
-          <div className="w-full flex flex-wrap items-center max-md:justify-center justify-between gap-2.5 sm:gap-4 relative z-10 max-md:pb-2 sm:pb-6 max-md:border-b-0 border-b border-[var(--border)] flex-shrink-0 max-md:w-full">
+          <div className="w-full flex flex-wrap items-center max-md:justify-center justify-between gap-2.5 sm:gap-4 relative z-10 sm:pb-6 max-md:border-b-0 border-b border-[var(--border)] flex-shrink-0">
             <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
               {/* Mode Pill Toggle */}
               <div className="flex items-center gap-1 p-0.5 sm:p-1 rounded-2xl bg-[var(--bg)] border border-[var(--border)]">
@@ -784,7 +785,7 @@ export function StudyTimer() {
           </div>
 
           {/* Subject Selection Bar - Compact on Mobile */}
-          <div className="relative z-20 my-2 sm:my-5 flex-shrink-0">
+          <div className="relative z-20 w-full sm:my-5 flex-shrink-0">
             {/* Subject warning banner */}
             {subjectWarning && (
               <div className="mb-2 sm:mb-3 flex items-center justify-between gap-2.5 px-3 py-2 rounded-2xl bg-amber-500/15 border border-amber-500/40 text-amber-200 text-xs font-semibold backdrop-blur-md shadow-lg shadow-amber-500/10 animate-in fade-in slide-in-from-top-2 duration-200">
@@ -914,8 +915,10 @@ export function StudyTimer() {
             </div>
           </div>
 
+                  </div>
+
           {/* Center Timer Display - Game HUD Radar / Reactor Core Display */}
-          <div className="relative z-10 flex flex-col items-center justify-center py-2 sm:py-6">
+          <div className="relative z-10 flex flex-col items-center justify-center py-1 sm:py-6 max-md:my-auto">
             <div className={`relative flex items-center justify-center p-1 sm:p-2 w-56 h-56 sm:w-64 sm:h-64 md:w-80 md:h-80 mx-auto aspect-square transition-all duration-300 rounded-full flex-shrink-0 ${
               isRemoteTransitioning
                 ? 'scale-[1.03] ring-4 ring-white/50 shadow-[0_0_50px_var(--tier-glow)]'
