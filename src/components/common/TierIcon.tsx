@@ -15,11 +15,13 @@ export function TierIcon({ className, style, tier, division, size = 24 }: TierIc
   const { userRank } = useRankTheme();
   
   const displayTier = (tier || userRank.tier) as RankTierName;
+  const displayDivision = division || userRank.division;
 
   return (
     <div style={style} className={className}>
       <RankCrestBadge
         tier={displayTier}
+        division={displayDivision}
         size={size}
       />
     </div>

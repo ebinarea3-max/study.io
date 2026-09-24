@@ -610,6 +610,7 @@ export function RankSettlementModal({
           <div className="relative mx-auto mb-4 flex items-center justify-center">
             <RankCrestBadge
               tier={displayRank.tier}
+              division={displayRank.division}
               size={192}
               className="animate-in zoom-in spin-in-12 duration-700 ease-out"
             />

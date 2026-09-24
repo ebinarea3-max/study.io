@@ -256,6 +256,7 @@ export function Navbar({
                 <div className="flex items-center gap-1.5 sm:gap-2">
                   <RankCrestBadge
                     tier={userRank.tier}
+                    division={userRank.division}
                     size={36}
                     className="-ml-3"
                   />

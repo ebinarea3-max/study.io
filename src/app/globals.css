@@ -608,3 +608,12 @@ html.light ::selection,
   50% { transform: skewX(-20deg) translateX(150%); }
   100% { transform: skewX(-20deg) translateX(150%); }
 }
+
+@keyframes floating {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.animate-floating {
+  animation: floating 3s ease-in-out infinite;
+}
