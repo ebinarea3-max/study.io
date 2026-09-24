@@ -1,30 +1,31 @@
 import React from 'react';
-import { Flame, Shield, Star, Hexagon, Gem, Sparkles, Crown, Award, LucideProps } from 'lucide-react';
+import Image from 'next/image';
 import { useRankTheme } from '../../hooks/useRankTheme';
-import { getRankTheme, RankTierName } from '../../lib/rankTheme';
+import { getRankIconPath } from '../../utils/rankIcons';
 
-interface TierIconProps extends LucideProps {
-  iconName?: string;
+interface TierIconProps {
+  className?: string;
+  style?: React.CSSProperties;
   tier?: string;
+  division?: string;
+  size?: number;
 }
 
-export function TierIcon({ iconName, tier, ...props }: TierIconProps) {
-  const { theme } = useRankTheme();
+export function TierIcon({ className, style, tier, division, size = 24 }: TierIconProps) {
+  const { userRank } = useRankTheme();
   
-  let name = iconName || theme.icon;
-  if (tier) {
-    name = getRankTheme(tier as RankTierName).icon;
-  }
+  const displayTier = tier || userRank.tier;
+  const displayDivision = division || userRank.division;
 
-  switch (name) {
-    case 'Flame': return <Flame {...props} />;
-    case 'Shield': return <Shield {...props} />;
-    case 'Star': return <Star {...props} />;
-    case 'Hexagon': return <Hexagon {...props} />;
-    case 'Gem': return <Gem {...props} />;
-    case 'Sparkles': return <Sparkles {...props} />;
-    case 'Crown': return <Crown {...props} />;
-    case 'Award': return <Award {...props} />;
-    default: return <Flame {...props} />;
-  }
+  return (
+    <Image
+      src={getRankIconPath(displayTier, displayDivision)}
+      alt={`${displayTier} icon`}
+      width={size}
+      height={size}
+      className={`object-contain ${className || ''}`}
+      style={style}
+      unoptimized
+    />
+  );
 }
