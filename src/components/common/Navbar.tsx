@@ -23,7 +23,8 @@ import { getRankTier } from '../../lib/rankedSystem';
 import { getTierBadge, getLevelTitle } from '../../lib/gamification';
 import { useRankTheme } from '../../hooks/useRankTheme';
 import { TierIcon } from './TierIcon';
-import { RankCrestBadge } from './RankCrestBadge';
+import Image from 'next/image';
+import { getRankIconPath } from '../../utils/rankIcons';
 
 export type NavTabType = 'timer' | 'tasks' | 'analytics' | 'settings';
 
@@ -252,7 +253,13 @@ export function Navbar({
                 title={`Ranked Season RP: ${userRank.rp.toLocaleString()} RP (${userRank.fullTitle})`}
               >
                 <div className="flex items-center gap-1.5 sm:gap-2">
-                  <RankCrestBadge tier={userRank.tier as any} size={40} className="-ml-3 drop-shadow-md" />
+                  <Image
+                    src={getRankIconPath(userRank.tier, userRank.division)}
+                    alt="Rank Crest"
+                    width={36}
+                    height={36}
+                    className="object-contain drop-shadow-md -ml-3"
+                  />
                   <span
                     className="text-xs font-bold tracking-wider font-hud uppercase truncate max-w-[80px] sm:max-w-none"
                     style={{ color: theme.accent }}
