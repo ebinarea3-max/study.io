@@ -614,6 +614,7 @@ export function RankSettlementModal({
               width={192}
               height={192}
               priority
+              unoptimized
               className="object-contain drop-shadow-[0_0_25px_rgba(255,255,255,0.25)] animate-pulse"
             />
           </div>

@@ -258,6 +258,7 @@ export function Navbar({
                     alt="Rank Crest"
                     width={36}
                     height={36}
+                    unoptimized
                     className="object-contain drop-shadow-md -ml-3"
                   />
                   <span
