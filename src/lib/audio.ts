@@ -550,49 +550,110 @@ class AudioEngine {
     }
   }
 
-  // Tier-up fanfare: rising two-note interval (perfect fifth: D5 587.33Hz -> A5 880.00Hz)
-  public playTierUpFanfare(intensity: number = 1) {
+  // Deep cinematic promotion sound: sub-bass swell, warm mid-range tonal layer, and resonant impact hit at the end
+  public playCinematicPromotionSound(intensity: number = 1, spinDurationMs: number = 1200) {
     try {
       const ctx = this.getContext();
       if (!ctx) return;
       const now = ctx.currentTime;
+      const spinDur = spinDurationMs / 1000;
 
-      const notes = [
-        { freq: 587.33, offset: 0, dur: 0.18, gain: 0.15 },
-        { freq: 880.00, offset: 0.11, dur: 0.4, gain: 0.2 },
-      ];
+      // Base intensity scaling
+      const gainScale = 1 + (intensity - 1) * 0.15;
+      const sustainScale = 1 + (intensity - 1) * 0.1;
 
-      // At intensity 3-5: add a third harmonic note
-      if (intensity >= 3) {
-        notes.push({ freq: 1174.66, offset: 0.11, dur: 0.4, gain: 0.15 }); // D6
-        notes[0].gain *= 1.2;
-        notes[1].gain *= 1.2;
-      }
+      // 1. Low sub-bass swell (45-60Hz) underneath the spin
+      const subOsc = ctx.createOscillator();
+      const subGain = ctx.createGain();
+      subOsc.type = 'sine';
+      subOsc.frequency.setValueAtTime(45 + intensity * 2, now); // 45-60Hz
+      
+      subGain.gain.setValueAtTime(0, now);
+      subGain.gain.linearRampToValueAtTime(0.35 * gainScale, now + 0.15); // slow attack 150ms
+      subGain.gain.linearRampToValueAtTime(0.25 * gainScale, now + spinDur - 0.1);
+      subGain.gain.exponentialRampToValueAtTime(0.001, now + spinDur + 0.6 * sustainScale);
+      
+      subOsc.connect(subGain);
+      subGain.connect(ctx.destination);
+      subOsc.start(now);
+      subOsc.stop(now + spinDur + 1.2);
 
-      // At intensity 6-8: add a fourth layered tone plus a subtle low-end sub-bass swell
-      if (intensity >= 6) {
-        notes.push({ freq: 1760.00, offset: 0.11, dur: 0.5, gain: 0.1 }); // A6
-        // subtle low-end sub-bass swell (~200ms, low gain)
-        notes.push({ freq: 146.83, offset: 0, dur: 0.2, gain: 0.25 }); // D3
-      }
+      // 2. Mid-range tonal layer (brass/string swell)
+      const detunes = [-4, 4];
+      detunes.forEach((detune) => {
+        const midOsc = ctx.createOscillator();
+        const midGain = ctx.createGain();
+        const filter = ctx.createBiquadFilter();
 
-      notes.forEach(({ freq, offset, dur, gain: noteGain }) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
+        midOsc.type = 'sawtooth';
+        // Warm rich root: D3 (146.83Hz)
+        midOsc.frequency.setValueAtTime(146.83, now); 
+        midOsc.detune.setValueAtTime(detune, now);
 
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(freq, now + offset);
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(400, now);
+        filter.frequency.exponentialRampToValueAtTime(800 + intensity * 60, now + spinDur * 0.6);
+        filter.frequency.exponentialRampToValueAtTime(300, now + spinDur);
 
-        gain.gain.setValueAtTime(0, now + offset);
-        gain.gain.linearRampToValueAtTime(noteGain, now + offset + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + dur);
+        const baseGain = 0.08 * gainScale;
+        midGain.gain.setValueAtTime(0, now);
+        midGain.gain.linearRampToValueAtTime(baseGain, now + 0.3);
+        midGain.gain.linearRampToValueAtTime(baseGain * 0.6, now + spinDur - 0.1);
+        midGain.gain.exponentialRampToValueAtTime(0.001, now + spinDur + 0.5);
 
-        osc.connect(gain);
-        gain.connect(ctx.destination);
+        midOsc.connect(filter);
+        filter.connect(midGain);
+        midGain.connect(ctx.destination);
 
-        osc.start(now + offset);
-        osc.stop(now + offset + dur + 0.02);
+        midOsc.start(now);
+        midOsc.stop(now + spinDur + 1.2);
       });
+
+      // 3. Resonant impact hit at settle (now + spinDur)
+      const hitTime = now + spinDur;
+      
+      const hitOsc = ctx.createOscillator();
+      const hitGain = ctx.createGain();
+      // Triangle/Sine blend feel, using triangle for a bit of harmonic bite
+      hitOsc.type = 'triangle';
+      hitOsc.frequency.setValueAtTime(110, hitTime);
+      hitOsc.frequency.exponentialRampToValueAtTime(55, hitTime + 0.15);
+
+      hitGain.gain.setValueAtTime(0, hitTime);
+      hitGain.gain.linearRampToValueAtTime(0.45 * gainScale, hitTime + 0.02);
+      hitGain.gain.exponentialRampToValueAtTime(0.001, hitTime + 0.3 * sustainScale);
+
+      hitOsc.connect(hitGain);
+      hitGain.connect(ctx.destination);
+      hitOsc.start(hitTime);
+      hitOsc.stop(hitTime + 0.5 * sustainScale);
+
+      // Noise crack for the hit
+      const bufferLength = Math.max(1, Math.floor(ctx.sampleRate * 0.1));
+      const noiseBuffer = ctx.createBuffer(1, bufferLength, ctx.sampleRate);
+      const output = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < bufferLength; i++) {
+        output[i] = (Math.random() * 2 - 1) * 0.5;
+      }
+      const noiseSource = ctx.createBufferSource();
+      noiseSource.buffer = noiseBuffer;
+
+      const noiseFilter = ctx.createBiquadFilter();
+      noiseFilter.type = 'lowpass';
+      noiseFilter.frequency.setValueAtTime(600, hitTime);
+      noiseFilter.frequency.exponentialRampToValueAtTime(100, hitTime + 0.1);
+
+      const noiseGain = ctx.createGain();
+      noiseGain.gain.setValueAtTime(0.18 * gainScale, hitTime);
+      noiseGain.gain.exponentialRampToValueAtTime(0.0001, hitTime + 0.1);
+
+      noiseSource.connect(noiseFilter);
+      noiseFilter.connect(noiseGain);
+      noiseGain.connect(ctx.destination);
+
+      noiseSource.start(hitTime);
+      noiseSource.stop(hitTime + 0.15);
+
     } catch {
       // ignore
     }
