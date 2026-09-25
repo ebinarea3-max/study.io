@@ -60,6 +60,17 @@ export function RankCrestBadge({
 
   const imageSrc = `/images/ranks/${imageFileName}`;
 
+  let animationClass = '';
+  if (!isGhost) {
+    if (['Bronze', 'Silver', 'Gold'].includes(tier)) {
+      animationClass = 'animate-rank-float';
+    } else if (['Platinum', 'Diamond'].includes(tier)) {
+      animationClass = 'animate-rank-float-intense';
+    } else if (['Champion', 'Master', 'Grandmaster'].includes(tier)) {
+      animationClass = 'animate-rank-float-legendary';
+    }
+  }
+
   return (
     <div
       className={`relative flex items-center justify-center select-none ${className}`}
@@ -68,7 +79,7 @@ export function RankCrestBadge({
       <img
         src={imageSrc}
         alt={`${tier} ${division || ''} Rank Badge`}
-        className="w-full h-full object-contain filter transition-all duration-500"
+        className={`w-full h-full object-contain filter transition-all duration-500 ${animationClass}`}
         draggable={false}
       />
 

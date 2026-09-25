@@ -617,3 +617,28 @@ html.light ::selection,
 .animate-floating {
   animation: floating 3s ease-in-out infinite;
 }
+
+/* --- Rank Icon Animations --- */
+@keyframes rankFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+.animate-rank-float {
+  animation: rankFloat 4s ease-in-out infinite;
+}
+
+@keyframes rankFloatIntense {
+  0%, 100% { transform: translateY(0) scale(1); filter: brightness(1); }
+  50% { transform: translateY(-8px) scale(1.02); filter: brightness(1.15); }
+}
+.animate-rank-float-intense {
+  animation: rankFloatIntense 4s ease-in-out infinite;
+}
+
+@keyframes rankFloatLegendary {
+  0%, 100% { transform: translateY(0) scale(1); filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.2)) brightness(1); }
+  50% { transform: translateY(-10px) scale(1.04); filter: drop-shadow(0 0 20px rgba(255, 165, 0, 0.6)) brightness(1.25); }
+}
+.animate-rank-float-legendary {
+  animation: rankFloatLegendary 5s ease-in-out infinite;
+}
