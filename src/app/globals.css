@@ -618,27 +618,66 @@ html.light ::selection,
   animation: floating 3s ease-in-out infinite;
 }
 
-/* --- Rank Icon Animations --- */
-@keyframes rankFloat {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
+/* --- Rank Ambient Animations --- */
+@keyframes rankBreatheBronze {
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(184, 115, 51, 0.15)); }
+  50% { filter: drop-shadow(0 0 14px rgba(184, 115, 51, 0.2)); }
 }
-.animate-rank-float {
-  animation: rankFloat 4s ease-in-out infinite;
+@keyframes rankBreatheSilver {
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(192, 192, 192, 0.22)); }
+  50% { filter: drop-shadow(0 0 14px rgba(192, 192, 192, 0.28)); }
+}
+@keyframes rankBreatheGold {
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.3)); }
+  50% { filter: drop-shadow(0 0 16px rgba(255, 215, 0, 0.4)); }
+}
+@keyframes rankBreathePlatinum {
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(0, 255, 255, 0.35)); }
+  50% { filter: drop-shadow(0 0 18px rgba(0, 255, 255, 0.45)); }
+}
+@keyframes rankBreatheDiamond {
+  0%, 100% { filter: drop-shadow(0 0 10px rgba(220, 240, 255, 0.4)); }
+  50% { filter: drop-shadow(0 0 20px rgba(220, 240, 255, 0.5)); }
+}
+@keyframes rankBreatheChampion {
+  0%, 100% { filter: drop-shadow(0 0 12px rgba(138, 43, 226, 0.45)) drop-shadow(0 0 12px rgba(255, 215, 0, 0.45)); }
+  50% { filter: drop-shadow(0 0 24px rgba(138, 43, 226, 0.55)) drop-shadow(0 0 24px rgba(255, 215, 0, 0.55)); }
+}
+@keyframes rankBreatheMaster {
+  0%, 100% { filter: drop-shadow(0 0 12px rgba(255, 69, 0, 0.48)); }
+  50% { filter: drop-shadow(0 0 25px rgba(255, 69, 0, 0.6)); }
+}
+@keyframes rankBreatheGrandmaster {
+  0%, 100% { filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.55)); }
+  50% { filter: drop-shadow(0 0 30px rgba(138, 43, 226, 0.65)); }
 }
 
-@keyframes rankFloatIntense {
-  0%, 100% { transform: translateY(0) scale(1); filter: brightness(1); }
-  50% { transform: translateY(-8px) scale(1.02); filter: brightness(1.15); }
-}
-.animate-rank-float-intense {
-  animation: rankFloatIntense 4s ease-in-out infinite;
+@keyframes sweepConic {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
-@keyframes rankFloatLegendary {
-  0%, 100% { transform: translateY(0) scale(1); filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.2)) brightness(1); }
-  50% { transform: translateY(-10px) scale(1.04); filter: drop-shadow(0 0 20px rgba(255, 165, 0, 0.6)) brightness(1.25); }
+@keyframes glintFlash {
+  0%, 98% { opacity: 0; transform: scale(0.5); }
+  99% { opacity: 1; transform: scale(1.5); }
+  100% { opacity: 0; transform: scale(0.5); }
 }
-.animate-rank-float-legendary {
-  animation: rankFloatLegendary 5s ease-in-out infinite;
+
+@keyframes driftUpward {
+  0% { transform: translateY(0) scale(0.8); opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 0.8; }
+  100% { transform: translateY(-40px) scale(1.2); opacity: 0; }
+}
+
+@keyframes orbitStar {
+  from { transform: rotate(0deg) translateX(45px) rotate(0deg); }
+  to { transform: rotate(360deg) translateX(45px) rotate(-360deg); }
+}
+
+@keyframes silverSparkPath {
+  0% { transform: translate(10px, 40px); opacity: 0; }
+  25% { opacity: 1; }
+  75% { opacity: 1; }
+  100% { transform: translate(40px, -20px); opacity: 0; }
 }

@@ -80,6 +80,7 @@ export function RankSettlementModal({
   const prevRankDetails = useMemo(() => getRankTier(prevRP), [prevRP]);
   const newRankDetails = useMemo(() => getRankTier(newRP), [newRP]);
   const isRankUp = newRankDetails.fullTitle !== prevRankDetails.fullTitle;
+  const isMajorTierUp = newRankDetails.tier !== prevRankDetails.tier;
 
   // Active crest details (morphs during tier up)
   const [displayRank, setDisplayRank] = useState<RankTierDetails>(
@@ -377,7 +378,7 @@ export function RankSettlementModal({
               // 2. Reached 100%! Pause 0.3s, flash bar white, play tier-up fanfare, and burst confetti
               setProgressRatio(1);
               setIsBarFlashing(true);
-              soundFx.playTierUpFanfare();
+              soundFx.playTierUpFanfare(); // Standard fanfare
 
               confetti({
                 particleCount: 90,
@@ -434,7 +435,14 @@ export function RankSettlementModal({
                       // Final tick completion chime
                       setCounterPopped(true);
                       setTimeout(() => setCounterPopped(false), 250);
-                      soundFx.playRankFillCompletion();
+                      
+                      // If major tier up, play richer resolution chord
+                      if (isMajorTierUp) {
+                        soundFx.playTierUpFanfare(); // Richer fanfare layered for major tier
+                        soundFx.playRankFillCompletion(); 
+                      } else {
+                        soundFx.playRankFillCompletion();
+                      }
                     }
                   };
 
@@ -514,12 +522,12 @@ export function RankSettlementModal({
       )}
 
       {/* 4. Fullscreen Radial Flash on landing impact (~0.35s, 0 -> 0.35 -> 0 over 0.25s) */}
-      {showRadialFlash && !prefersReducedMotion && (
+      {(showRadialFlash || (isMajorTierUp && animPhase === 'title')) && !prefersReducedMotion && (
         <div
           className="absolute inset-0 pointer-events-none z-10"
           style={{
             background: `radial-gradient(circle at 50% 36%, ${displayRank.config.badgeAccent}66 0%, ${displayRank.config.badgeAccent}22 45%, transparent 75%)`,
-            animation: 'radialFlashAnim 0.25s ease-out forwards',
+            animation: showRadialFlash ? 'radialFlashAnim 0.25s ease-out forwards' : 'majorTierFlash 1.5s ease-out forwards',
             willChange: 'opacity',
           }}
         />
@@ -613,6 +621,7 @@ export function RankSettlementModal({
               division={displayRank.division}
               size={192}
               className="animate-in zoom-in spin-in-12 duration-700 ease-out"
+              isSettled={animPhase !== 'slam' && animPhase !== 'impact'}
             />
           </div>
         </div>
@@ -626,7 +635,13 @@ export function RankSettlementModal({
           }`}
         >
           {/* Header Status Label: Stamped letter-spacing 0.6em -> 0.15em with blur 6px -> 0 */}
-          <div className="flex items-center gap-2 mb-1.5">
+          <div className="flex flex-col items-center gap-1 mb-1.5">
+            {isMajorTierUp && (
+              <span className="text-xs uppercase font-bold text-amber-400 inline-block drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]"
+                    style={{ animation: 'fadeOutLabel 2s forwards 1s' }}>
+                NEW TIER UNLOCKED
+              </span>
+            )}
             <span
               className="text-xs uppercase font-semibold text-slate-400 inline-block"
               style={{
@@ -931,17 +946,20 @@ export function RankSettlementModal({
           }
         }
 
-        /* 4. RADIAL FLASH */
         @keyframes radialFlashAnim {
-          0% {
-            opacity: 0;
-          }
-          28% {
-            opacity: 0.35;
-          }
-          100% {
-            opacity: 0;
-          }
+          0% { opacity: 0; }
+          28% { opacity: 0.35; }
+          100% { opacity: 0; }
+        }
+
+        @keyframes majorTierFlash {
+          0% { opacity: 0; }
+          15% { opacity: 0.6; }
+          100% { opacity: 0; }
+        }
+
+        @keyframes fadeOutLabel {
+          to { opacity: 0; }
         }
 
         /* 5. RADIAL SPARK / SHARD BURST (Trajectory driven by CSS variables) */
