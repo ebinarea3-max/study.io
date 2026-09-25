@@ -98,6 +98,12 @@ export function RankSettlementModal({
   const [showProgress, setShowProgress] = useState(false);
   const [showContinue, setShowContinue] = useState(false);
 
+  // Flip Animation States
+  const [flipPhase, setFlipPhase] = useState<'idle' | 'out' | 'in'>('idle');
+  const [flipDuration, setFlipDuration] = useState(350);
+  const [showRevealFlash, setShowRevealFlash] = useState(false);
+  const [revealParticles, setRevealParticles] = useState<SparkParticle[]>([]);
+
   // RP Bar & Counter States
   const [animatingRP, setAnimatingRP] = useState(prevRP);
   const [displayedGain, setDisplayedGain] = useState(0);
@@ -174,6 +180,9 @@ export function RankSettlementModal({
       setCounterPopped(false);
       setDisplayRank(isRankUp ? prevRankDetails : newRankDetails);
       setActiveBarColor(isRankUp ? prevRankDetails.config.badgeAccent : newRankDetails.config.badgeAccent);
+      setFlipPhase('idle');
+      setShowRevealFlash(false);
+      setRevealParticles([]);
       return;
     }
 
@@ -271,21 +280,67 @@ export function RankSettlementModal({
 
         // Particles unmount after 950ms
         timers.push(setTimeout(() => setParticles([]), 950));
+
+        // FLIP-REVEAL SEQUENCE (if rank up)
+        if (isRankUp) {
+          const duration = isMajorTierUp ? 500 : 350;
+          setFlipDuration(duration);
+          setFlipPhase('out');
+
+          // Swap image at 90 degrees
+          timers.push(setTimeout(() => {
+            setDisplayRank(newRankDetails);
+            setActiveBarColor(newRankDetails.config.badgeAccent);
+            setFlipPhase('in');
+
+            // Complete flip and trigger reveal accent
+            timers.push(setTimeout(() => {
+              setFlipPhase('idle');
+              setShowRevealFlash(true);
+              timers.push(setTimeout(() => setShowRevealFlash(false), 150));
+
+              if (isMajorTierUp) {
+                soundFx.playTierUpFanfare(); // Play tier up fanfare on reveal
+              }
+
+              const pCount = isMajorTierUp ? 18 : 10;
+              const generatedParticles = Array.from({ length: pCount }).map((_, i) => {
+                const angle = (i / pCount) * 2 * Math.PI;
+                const dist = 60 + Math.random() * 60;
+                return {
+                  id: i,
+                  dx: Math.cos(angle) * dist,
+                  dy: Math.sin(angle) * dist,
+                  rot: 0,
+                  size: 2 + Math.random() * 3,
+                  opacity: 0.8 + Math.random() * 0.2,
+                  color: newRankDetails.config.badgeAccent,
+                };
+              });
+              setRevealParticles(generatedParticles);
+              timers.push(setTimeout(() => setRevealParticles([]), 500));
+            }, duration));
+          }, duration));
+        }
+
       }, 340)
     );
 
+    // Calculate delay offset to wait for flip to finish before showing title & progress
+    const delayOffset = isRankUp ? (isMajorTierUp ? 1000 : 700) : 0;
+
     // ==========================================
-    // STAGE 3: TEXT STAMP at 0.52s (520ms)
+    // STAGE 3: TEXT STAMP at 0.52s + offset
     // ==========================================
     timers.push(
       setTimeout(() => {
         setShowTitle(true);
         setAnimPhase('title');
-      }, 520)
+      }, 520 + delayOffset)
     );
 
     // ==========================================
-    // STAGE 4: EARNED RP BAR PROGRESS at 0.85s (850ms)
+    // STAGE 4: EARNED RP BAR PROGRESS at 0.85s + offset
     // ==========================================
     timers.push(
       setTimeout(() => {
@@ -294,178 +349,64 @@ export function RankSettlementModal({
 
         const lastPoppedRef = { current: -1 };
 
-        if (!isRankUp) {
-          // Standard single tier fill from prevRP to newRP
-          const startTime = performance.now();
-          const duration = 1200; // 1.2s smooth roll-up
-          const tierMin = newRankDetails.minRP;
-          const tierMax = newRankDetails.maxRP;
-          const needed = Math.max(1, tierMax - tierMin);
-          const startRatio = Math.min(1, Math.max(0, prevRP - tierMin) / needed);
-          const targetRatio = Math.min(1, Math.max(0, newRP - tierMin) / needed);
+        // Standard single tier fill logic (used for both normal and rank-ups now)
+        const startTime = performance.now();
+        const duration = 1200; // 1.2s smooth roll-up
+        const tierMin = newRankDetails.minRP;
+        const tierMax = newRankDetails.maxRP;
+        const needed = Math.max(1, tierMax - tierMin);
+        // If prevRP is below tierMin, startRatio is 0 (which is correct for rank up)
+        const startRatio = Math.min(1, Math.max(0, prevRP - tierMin) / needed);
+        const targetRatio = Math.min(1, Math.max(0, newRP - tierMin) / needed);
 
-          const runProgress = (now: number) => {
-            const elapsed = now - startTime;
-            const progress = Math.min(1, elapsed / duration);
-            const ease = cubicBezierEase(progress);
+        const runProgress = (now: number) => {
+          const elapsed = now - startTime;
+          const progress = Math.min(1, elapsed / duration);
+          const ease = cubicBezierEase(progress);
 
-            const curRP = Math.round(prevRP + (newRP - prevRP) * ease);
-            const curGain = Math.round(totalGained * ease);
-            const curRatio = startRatio + (targetRatio - startRatio) * ease;
+          const curRP = Math.round(prevRP + (newRP - prevRP) * ease);
+          const curGain = Math.round(totalGained * ease);
+          const curRatio = startRatio + (targetRatio - startRatio) * ease;
 
-            setAnimatingRP(curRP);
-            setDisplayedGain(curGain);
-            setProgressRatio(curRatio);
+          setAnimatingRP(curRP);
+          setDisplayedGain(curGain);
+          setProgressRatio(curRatio);
 
-            // Check segment pop (5 segments: 0.2 each)
-            const currentSegment = Math.floor(curRatio / 0.2);
-            if (currentSegment > lastPoppedRef.current && currentSegment < 5) {
-              lastPoppedRef.current = currentSegment;
-              setPoppedSegment(currentSegment);
-              soundFx.playSegmentTick(curRatio);
-              setTimeout(() => setPoppedSegment(null), 160);
-            }
+          // Check segment pop (5 segments: 0.2 each)
+          const currentSegment = Math.floor(curRatio / 0.2);
+          if (currentSegment > lastPoppedRef.current && currentSegment < 5) {
+            lastPoppedRef.current = currentSegment;
+            setPoppedSegment(currentSegment);
+            soundFx.playSegmentTick(curRatio);
+            setTimeout(() => setPoppedSegment(null), 160);
+          }
 
-            if (progress < 1) {
-              animFrameRef.current = requestAnimationFrame(runProgress);
-            } else {
-              setAnimatingRP(newRP);
-              setDisplayedGain(totalGained);
-              setProgressRatio(targetRatio);
+          if (progress < 1) {
+            animFrameRef.current = requestAnimationFrame(runProgress);
+          } else {
+            setAnimatingRP(newRP);
+            setDisplayedGain(totalGained);
+            setProgressRatio(targetRatio);
 
-              // Final tick: scale counter and play 432Hz completion chime
-              setCounterPopped(true);
-              setTimeout(() => setCounterPopped(false), 250);
-              soundFx.playRankFillCompletion();
-            }
-          };
+            // Final tick: scale counter and play completion chime
+            setCounterPopped(true);
+            setTimeout(() => setCounterPopped(false), 250);
+            soundFx.playRankFillCompletion();
+          }
+        };
 
-          animFrameRef.current = requestAnimationFrame(runProgress);
-        } else {
-          // TIER-UP MULTI-PHASE SEQUENCE:
-          // 1. Fill previous tier from prevRP to 100% (prevRankDetails.maxRP)
-          const startTime = performance.now();
-          const durationStage1 = 700;
-          const pTierMin = prevRankDetails.minRP;
-          const pTierMax = prevRankDetails.maxRP;
-          const pNeeded = Math.max(1, pTierMax - pTierMin);
-          const pStartRatio = Math.min(1, Math.max(0, prevRP - pTierMin) / pNeeded);
-
-          const runStage1 = (now: number) => {
-            const elapsed = now - startTime;
-            const progress = Math.min(1, elapsed / durationStage1);
-            const ease = cubicBezierEase(progress);
-
-            const curRP = Math.round(prevRP + (pTierMax - prevRP) * ease);
-            const curGain = Math.round((pTierMax - prevRP) * ease);
-            const curRatio = pStartRatio + (1 - pStartRatio) * ease;
-
-            setAnimatingRP(curRP);
-            setDisplayedGain(curGain);
-            setProgressRatio(curRatio);
-
-            const currentSegment = Math.floor(curRatio / 0.2);
-            if (currentSegment > lastPoppedRef.current && currentSegment < 5) {
-              lastPoppedRef.current = currentSegment;
-              setPoppedSegment(currentSegment);
-              soundFx.playSegmentTick(curRatio);
-              setTimeout(() => setPoppedSegment(null), 160);
-            }
-
-            if (progress < 1) {
-              animFrameRef.current = requestAnimationFrame(runStage1);
-            } else {
-              // 2. Reached 100%! Pause 0.3s, flash bar white, play tier-up fanfare, and burst confetti
-              setProgressRatio(1);
-              setIsBarFlashing(true);
-              soundFx.playTierUpFanfare(); // Standard fanfare
-
-              confetti({
-                particleCount: 90,
-                spread: 75,
-                origin: { y: 0.52 },
-                colors: [newRankDetails.config.badgeAccent, '#FFFFFF', '#CBD5E1'],
-              });
-
-              // 3. Morph/crossfade crest to new tier and switch active bar color
-              timers.push(
-                setTimeout(() => {
-                  setDisplayRank(newRankDetails);
-                  setActiveBarColor(newRankDetails.config.badgeAccent);
-                  setIsBarFlashing(false);
-                  setProgressRatio(0);
-                  lastPoppedRef.current = -1;
-
-                  // 4. Fill into NEW tier from minRP to newRP
-                  const startStage2 = performance.now();
-                  const durationStage2 = 700;
-                  const nTierMin = newRankDetails.minRP;
-                  const nTierMax = newRankDetails.maxRP;
-                  const nNeeded = Math.max(1, nTierMax - nTierMin);
-                  const targetRatio = Math.min(1, Math.max(0, newRP - nTierMin) / nNeeded);
-
-                  const runStage2 = (now2: number) => {
-                    const elapsed2 = now2 - startStage2;
-                    const progress2 = Math.min(1, elapsed2 / durationStage2);
-                    const ease2 = cubicBezierEase(progress2);
-
-                    const curRP2 = Math.round(nTierMin + (newRP - nTierMin) * ease2);
-                    const curGain2 = Math.round((pTierMax - prevRP) + (newRP - nTierMin) * ease2);
-                    const curRatio2 = targetRatio * ease2;
-
-                    setAnimatingRP(curRP2);
-                    setDisplayedGain(curGain2);
-                    setProgressRatio(curRatio2);
-
-                    const currentSegment2 = Math.floor(curRatio2 / 0.2);
-                    if (currentSegment2 > lastPoppedRef.current && currentSegment2 < 5) {
-                      lastPoppedRef.current = currentSegment2;
-                      setPoppedSegment(currentSegment2);
-                      soundFx.playSegmentTick(curRatio2);
-                      setTimeout(() => setPoppedSegment(null), 160);
-                    }
-
-                    if (progress2 < 1) {
-                      animFrameRef.current = requestAnimationFrame(runStage2);
-                    } else {
-                      setAnimatingRP(newRP);
-                      setDisplayedGain(totalGained);
-                      setProgressRatio(targetRatio);
-
-                      // Final tick completion chime
-                      setCounterPopped(true);
-                      setTimeout(() => setCounterPopped(false), 250);
-                      
-                      // If major tier up, play richer resolution chord
-                      if (isMajorTierUp) {
-                        soundFx.playTierUpFanfare(); // Richer fanfare layered for major tier
-                        soundFx.playRankFillCompletion(); 
-                      } else {
-                        soundFx.playRankFillCompletion();
-                      }
-                    }
-                  };
-
-                  animFrameRef.current = requestAnimationFrame(runStage2);
-                }, 320)
-              );
-            }
-          };
-
-          animFrameRef.current = requestAnimationFrame(runStage1);
-        }
-      }, 850)
+        animFrameRef.current = requestAnimationFrame(runProgress);
+      }, 850 + delayOffset)
     );
 
     // ==========================================
-    // STAGE 5: CONTINUE BUTTON at 2.45s (or 2.65s for rank up)
+    // STAGE 5: CONTINUE BUTTON at 2.35s + offset
     // ==========================================
-    const continueDelay = isRankUp ? 2650 : 2350;
     timers.push(
       setTimeout(() => {
         setShowContinue(true);
         setAnimPhase('ready');
-      }, continueDelay)
+      }, 2350 + delayOffset)
     );
 
     return () => {
@@ -478,6 +419,29 @@ export function RankSettlementModal({
   if (!isOpen || !data) return null;
 
   const remainingRP = Math.max(0, displayRank.maxRP - animatingRP);
+
+  const getFlipStyle = () => {
+    if (prefersReducedMotion) return {};
+    if (flipPhase === 'idle') {
+      return {
+        transform: 'rotateY(0deg) scale(1)',
+        filter: 'blur(0px)',
+        transition: `transform ${flipDuration}ms ease-out, filter ${flipDuration}ms ease-out`
+      };
+    } else if (flipPhase === 'out') {
+      return {
+        transform: 'rotateY(90deg) scale(0.85)',
+        filter: 'blur(4px)',
+        transition: `transform ${flipDuration}ms ease-in, filter ${flipDuration}ms ease-in`
+      };
+    } else if (flipPhase === 'in') {
+      return {
+        transform: 'rotateY(0deg) scale(1)',
+        filter: 'blur(0px)',
+        transition: `transform ${flipDuration}ms ease-out, filter ${flipDuration}ms ease-out`
+      };
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 bg-[var(--bg)]/95 backdrop-blur-md flex flex-col items-center justify-center select-none overflow-hidden animate-in fade-in duration-300">
@@ -615,14 +579,57 @@ export function RankSettlementModal({
           />
 
           {/* CHROMATIC ABERRATION PULSE & MASS SLAM REPLACED WITH NEW CREST */}
-          <div className="relative mx-auto mb-4 flex items-center justify-center">
-            <RankCrestBadge
-              tier={displayRank.tier}
-              division={displayRank.division}
-              size={192}
-              className="animate-in zoom-in spin-in-12 duration-700 ease-out"
-              isSettled={animPhase !== 'slam' && animPhase !== 'impact'}
-            />
+          <div className="relative mx-auto mb-4 flex items-center justify-center perspective-[1000px]">
+            <div 
+              style={getFlipStyle()}
+              className="relative w-full h-full flex items-center justify-center transform-gpu"
+            >
+              <RankCrestBadge
+                tier={displayRank.tier}
+                division={displayRank.division}
+                size={192}
+                className="animate-in zoom-in spin-in-12 duration-700 ease-out"
+                isSettled={animPhase !== 'slam' && animPhase !== 'impact' && flipPhase === 'idle'}
+              />
+              
+              {/* REVEAL FLASH */}
+              {showRevealFlash && !prefersReducedMotion && (
+                <div
+                  className="absolute inset-[-20%] rounded-full pointer-events-none z-10 mix-blend-screen"
+                  style={{
+                    background: `radial-gradient(circle at 50% 50%, ${displayRank.config.badgeAccent}99 0%, transparent 60%)`,
+                    animation: 'revealFlashAnim 0.15s ease-out forwards',
+                    willChange: 'opacity',
+                  }}
+                />
+              )}
+              
+              {/* REVEAL PARTICLES */}
+              {revealParticles.length > 0 && !prefersReducedMotion && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+                  {revealParticles.map((p) => (
+                    <div
+                      key={`rev-${p.id}`}
+                      className="absolute pointer-events-none"
+                      style={{
+                        width: `${p.size}px`,
+                        height: `${p.size}px`,
+                        backgroundColor: p.color,
+                        borderRadius: '50%',
+                        boxShadow: `0 0 6px ${p.color}`,
+                        transform: 'translate(0, 0)',
+                        animation: `particleBurstAnim 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards`,
+                        ['--target-x' as string]: `${p.dx}px`,
+                        ['--target-y' as string]: `${p.dy}px`,
+                        ['--target-rot' as string]: `0deg`,
+                        opacity: p.opacity,
+                        willChange: 'transform, opacity',
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -955,6 +962,12 @@ export function RankSettlementModal({
         @keyframes majorTierFlash {
           0% { opacity: 0; }
           15% { opacity: 0.6; }
+          100% { opacity: 0; }
+        }
+
+        @keyframes revealFlashAnim {
+          0% { opacity: 0; }
+          50% { opacity: 0.3; }
           100% { opacity: 0; }
         }
 
