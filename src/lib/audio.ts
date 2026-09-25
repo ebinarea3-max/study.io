@@ -551,7 +551,7 @@ class AudioEngine {
   }
 
   // Tier-up fanfare: rising two-note interval (perfect fifth: D5 587.33Hz -> A5 880.00Hz)
-  public playTierUpFanfare() {
+  public playTierUpFanfare(intensity: number = 1) {
     try {
       const ctx = this.getContext();
       if (!ctx) return;
@@ -561,6 +561,20 @@ class AudioEngine {
         { freq: 587.33, offset: 0, dur: 0.18, gain: 0.15 },
         { freq: 880.00, offset: 0.11, dur: 0.4, gain: 0.2 },
       ];
+
+      // At intensity 3-5: add a third harmonic note
+      if (intensity >= 3) {
+        notes.push({ freq: 1174.66, offset: 0.11, dur: 0.4, gain: 0.15 }); // D6
+        notes[0].gain *= 1.2;
+        notes[1].gain *= 1.2;
+      }
+
+      // At intensity 6-8: add a fourth layered tone plus a subtle low-end sub-bass swell
+      if (intensity >= 6) {
+        notes.push({ freq: 1760.00, offset: 0.11, dur: 0.5, gain: 0.1 }); // A6
+        // subtle low-end sub-bass swell (~200ms, low gain)
+        notes.push({ freq: 146.83, offset: 0, dur: 0.2, gain: 0.25 }); // D3
+      }
 
       notes.forEach(({ freq, offset, dur, gain: noteGain }) => {
         const osc = ctx.createOscillator();

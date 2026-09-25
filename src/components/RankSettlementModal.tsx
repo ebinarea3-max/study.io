@@ -82,6 +82,11 @@ export function RankSettlementModal({
   const isRankUp = newRankDetails.fullTitle !== prevRankDetails.fullTitle;
   const isMajorTierUp = newRankDetails.tier !== prevRankDetails.tier;
 
+  const TIER_INTENSITY_MAP: Record<RankTierName, number> = {
+    Bronze: 1, Silver: 2, Gold: 3, Platinum: 4, Diamond: 5, Champion: 6, Master: 7, Grandmaster: 8,
+  };
+  const intensity = isMajorTierUp ? TIER_INTENSITY_MAP[newRankDetails.tier] : (isRankUp ? 0.4 : 0);
+
   // Active crest details (morphs during tier up)
   const [displayRank, setDisplayRank] = useState<RankTierDetails>(
     isRankUp ? prevRankDetails : newRankDetails
@@ -101,8 +106,10 @@ export function RankSettlementModal({
   // Flip Animation States
   const [flipPhase, setFlipPhase] = useState<'idle' | 'out' | 'in'>('idle');
   const [flipDuration, setFlipDuration] = useState(350);
+  const [flipScaleDip, setFlipScaleDip] = useState(0.85);
   const [showRevealFlash, setShowRevealFlash] = useState(false);
   const [revealParticles, setRevealParticles] = useState<SparkParticle[]>([]);
+  const [revealConfetti, setRevealConfetti] = useState(false);
 
   // RP Bar & Counter States
   const [animatingRP, setAnimatingRP] = useState(prevRP);
@@ -183,6 +190,7 @@ export function RankSettlementModal({
       setFlipPhase('idle');
       setShowRevealFlash(false);
       setRevealParticles([]);
+      setRevealConfetti(false);
       return;
     }
 
@@ -235,14 +243,15 @@ export function RankSettlementModal({
         // Deep multi-layered sub-bass audio impact (sweep + crack + sub body)
         soundFx.playSubBassImpact();
 
-        // Screen shake: decaying random offset (amplitude 14px -> 0 over 0.45s at ~60fps)
+        // Screen shake: decaying random offset
         const shakeStart = performance.now();
         const shakeDuration = 450;
+        const shakeAmpBase = intensity >= 1 ? 10 + (intensity - 1) * (14 / 7) : 10;
         const runShake = (now: number) => {
           const elapsed = now - shakeStart;
           const p = Math.min(1, elapsed / shakeDuration);
           if (p < 1) {
-            const amp = 14 * Math.pow(1 - p, 2);
+            const amp = shakeAmpBase * Math.pow(1 - p, 2);
             const x = (Math.random() * 2 - 1) * amp;
             const y = (Math.random() * 2 - 1) * amp;
             setShakeOffset({ x, y });
@@ -283,8 +292,11 @@ export function RankSettlementModal({
 
         // FLIP-REVEAL SEQUENCE (if rank up)
         if (isRankUp) {
-          const duration = isMajorTierUp ? 500 : 350;
+          const totalFlipDuration = intensity >= 1 ? 700 + (intensity - 1) * (600 / 7) : 700;
+          const duration = totalFlipDuration / 2;
+          const scaleDip = intensity >= 1 ? 0.85 - (intensity - 1) * (0.15 / 7) : 0.85;
           setFlipDuration(duration);
+          setFlipScaleDip(scaleDip);
           setFlipPhase('out');
 
           // Swap image at 90 degrees
@@ -297,16 +309,25 @@ export function RankSettlementModal({
             timers.push(setTimeout(() => {
               setFlipPhase('idle');
               setShowRevealFlash(true);
-              timers.push(setTimeout(() => setShowRevealFlash(false), 150));
+              const flashDur = intensity >= 6 ? 250 : 150;
+              timers.push(setTimeout(() => setShowRevealFlash(false), flashDur));
 
-              if (isMajorTierUp) {
-                soundFx.playTierUpFanfare(); // Play tier up fanfare on reveal
+              if (intensity >= 1) {
+                soundFx.playTierUpFanfare(intensity);
+              } else {
+                soundFx.playTierUpFanfare(1);
               }
 
-              const pCount = isMajorTierUp ? 18 : 10;
+              if (intensity >= 6) {
+                setRevealConfetti(true);
+                timers.push(setTimeout(() => setRevealConfetti(false), 1500));
+              }
+
+              const pCount = intensity >= 1 ? Math.round(8 + (intensity - 1) * (22 / 7)) : 8;
               const generatedParticles = Array.from({ length: pCount }).map((_, i) => {
                 const angle = (i / pCount) * 2 * Math.PI;
-                const dist = 60 + Math.random() * 60;
+                const spreadRadius = intensity >= 1 ? 60 + (intensity - 1) * (60 / 7) : 60;
+                const dist = spreadRadius + Math.random() * spreadRadius;
                 return {
                   id: i,
                   dx: Math.cos(angle) * dist,
@@ -430,7 +451,7 @@ export function RankSettlementModal({
       };
     } else if (flipPhase === 'out') {
       return {
-        transform: 'rotateY(90deg) scale(0.85)',
+        transform: `rotateY(90deg) scale(${flipScaleDip})`,
         filter: 'blur(4px)',
         transition: `transform ${flipDuration}ms ease-in, filter ${flipDuration}ms ease-in`
       };
@@ -491,7 +512,7 @@ export function RankSettlementModal({
           className="absolute inset-0 pointer-events-none z-10"
           style={{
             background: `radial-gradient(circle at 50% 36%, ${displayRank.config.badgeAccent}66 0%, ${displayRank.config.badgeAccent}22 45%, transparent 75%)`,
-            animation: showRadialFlash ? 'radialFlashAnim 0.25s ease-out forwards' : 'majorTierFlash 1.5s ease-out forwards',
+            animation: showRadialFlash ? 'radialFlashAnim 0.25s ease-out forwards' : (intensity >= 6 ? 'majorTierFlashIntense 1.8s ease-out forwards' : 'majorTierFlash 1.5s ease-out forwards'),
             willChange: 'opacity',
           }}
         />
@@ -598,8 +619,9 @@ export function RankSettlementModal({
                   className="absolute inset-[-20%] rounded-full pointer-events-none z-10 mix-blend-screen"
                   style={{
                     background: `radial-gradient(circle at 50% 50%, ${displayRank.config.badgeAccent}99 0%, transparent 60%)`,
-                    animation: 'revealFlashAnim 0.15s ease-out forwards',
+                    animation: `revealFlashAnim 0.15s ease-out forwards`,
                     willChange: 'opacity',
+                    ['--flash-peak' as string]: intensity >= 1 ? `${0.25 + (intensity - 1) * (0.30 / 7)}` : '0.25',
                   }}
                 />
               )}
@@ -633,6 +655,25 @@ export function RankSettlementModal({
           </div>
         </div>
 
+        {/* HIGH INTENSITY CONFETTI SHOWER (Intensity 6+) */}
+        {revealConfetti && !prefersReducedMotion && (
+          <div className="absolute inset-0 pointer-events-none overflow-hidden z-20 flex justify-center">
+            {Array.from({ length: 40 }).map((_, i) => (
+              <div
+                key={`conf-${i}`}
+                className="absolute top-0 w-1.5 h-3"
+                style={{
+                  backgroundColor: Math.random() > 0.5 ? displayRank.config.badgeAccent : '#fff',
+                  left: `${10 + Math.random() * 80}%`,
+                  opacity: 0,
+                  transform: `translateY(-20px) rotate(${Math.random() * 360}deg)`,
+                  animation: `confettiFall 1.5s cubic-bezier(0.3, 0, 0.8, 1) ${Math.random() * 0.2}s forwards`,
+                }}
+              />
+            ))}
+          </div>
+        )}
+
         {/* ==========================================
             TEXT REVEAL: Stamped Typography & Rule Wipe
             ========================================== */}
@@ -642,12 +683,32 @@ export function RankSettlementModal({
           }`}
         >
           {/* Header Status Label: Stamped letter-spacing 0.6em -> 0.15em with blur 6px -> 0 */}
-          <div className="flex flex-col items-center gap-1 mb-1.5">
+          <div className="flex flex-col items-center gap-1 mb-1.5 relative">
             {isMajorTierUp && (
-              <span className="text-xs uppercase font-bold text-amber-400 inline-block drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]"
-                    style={{ animation: 'fadeOutLabel 2s forwards 1s' }}>
-                NEW TIER UNLOCKED
-              </span>
+              <div className="relative">
+                <span className={`uppercase font-bold text-amber-400 inline-block drop-shadow-[0_0_8px_rgba(251,191,36,0.8)] ${
+                  intensity >= 3 ? 'text-sm' : 'text-xs'
+                }`}
+                      style={{ animation: `fadeOutLabel ${intensity >= 6 ? 1.4 : 1}s forwards 1s ${intensity >= 3 ? ', labelScalePop 0.4s ease-out' : ''}` }}>
+                  NEW TIER UNLOCKED
+                </span>
+                {intensity >= 6 && (
+                  <div className="absolute inset-0 pointer-events-none" style={{ animation: 'fadeOutLabel 1.4s forwards 1s' }}>
+                    {Array.from({ length: 8 }).map((_, i) => (
+                      <div key={i} className="absolute w-1 h-1 bg-amber-400 rounded-full"
+                           style={{
+                             left: `${50 + (Math.random() - 0.5) * 120}%`,
+                             top: `${50 + (Math.random() - 0.5) * 20}%`,
+                             animation: `particleBurstAnim 1s ease-out infinite ${Math.random()}s`,
+                             ['--target-x' as string]: `${(Math.random() - 0.5) * 30}px`,
+                             ['--target-y' as string]: `${(Math.random() - 0.5) * 30}px`,
+                             ['--target-rot' as string]: `0deg`,
+                           }}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
             <span
               className="text-xs uppercase font-semibold text-slate-400 inline-block"
@@ -965,14 +1026,31 @@ export function RankSettlementModal({
           100% { opacity: 0; }
         }
 
+        @keyframes majorTierFlashIntense {
+          0% { opacity: 0; }
+          15% { opacity: 0.85; }
+          100% { opacity: 0; }
+        }
+
         @keyframes revealFlashAnim {
           0% { opacity: 0; }
-          50% { opacity: 0.3; }
+          50% { opacity: var(--flash-peak, 0.3); }
           100% { opacity: 0; }
         }
 
         @keyframes fadeOutLabel {
           to { opacity: 0; }
+        }
+
+        @keyframes labelScalePop {
+          0% { transform: scale(0.5); opacity: 0; }
+          70% { transform: scale(1.1); opacity: 1; }
+          100% { transform: scale(1); }
+        }
+
+        @keyframes confettiFall {
+          0% { opacity: 1; transform: translateY(-20px) rotate(0deg); }
+          100% { opacity: 0; transform: translateY(200px) rotate(720deg); }
         }
 
         /* 5. RADIAL SPARK / SHARD BURST (Trajectory driven by CSS variables) */
