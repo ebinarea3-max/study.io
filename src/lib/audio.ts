@@ -1,6 +1,6 @@
 // Web Audio API Sound Synthesizer & Ambient Sound Generator
 
-export type AmbientSoundType = 'pinknoise' | 'brownnoise' | 'whitenoise' | 'rain' | 'waves' | 'campfire' | 'lofi';
+export type AmbientSoundType = 'pinknoise' | 'brownnoise' | 'whitenoise' | 'rain' | 'campfire';
 
 class AudioEngine {
   private ctx: AudioContext | null = null;
@@ -168,9 +168,7 @@ class AudioEngine {
     'brownnoise': 1.2,
     'whitenoise': 0.15,
     'rain': 0.8,
-    'waves': 1.0,
     'campfire': 0.9,
-    'lofi': 0.7,
   };
 
   public async startAmbient(type: AmbientSoundType, volume = 0.4) {
@@ -194,9 +192,7 @@ class AudioEngine {
         'brownnoise': '/audio/ambience/brown-noise.wav',
         'whitenoise': '/audio/ambience/white-noise.wav',
         'rain': '/audio/ambience/rain.wav',
-        'waves': '/audio/ambience/waves.wav',
         'campfire': '/audio/ambience/fireplace.wav',
-        'lofi': '/audio/ambience/lofi-cafe.wav',
       };
       
       const url = urls[type];

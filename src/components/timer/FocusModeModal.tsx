@@ -17,8 +17,7 @@ import {
   CheckCircle2,
   CloudRain,
   Music,
-  Waves,
-  Sparkles,
+  
   Edit3,
   Radio,
   Headphones,
@@ -27,7 +26,7 @@ import {
   X,
   ChevronUp,
   Check,
-} from 'lucide-react';
+  Sparkles} from 'lucide-react';
 
 const MOTIVATIONAL_QUOTES = [
   "Deep work is the superpower of the 21st century.",
@@ -539,9 +538,7 @@ export function FocusModeModal() {
                 ambientSound === 'brownnoise' ? 'Brown Noise' :
                 ambientSound === 'whitenoise' ? 'White Noise' :
                 ambientSound === 'rain' ? 'Rain' :
-                ambientSound === 'waves' ? 'Waves' :
-                ambientSound === 'campfire' ? 'Fireplace' :
-                ambientSound === 'lofi' ? 'Lofi Cafe' : 'Silent'
+                ambientSound === 'campfire' ? 'Fireplace' : 'Silent'
               }
             </span>
             {ambientSound !== 'none' && <span className="w-1.5 h-1.5 rounded-full bg-[var(--tier-accent)] animate-pulse ml-0.5" />}
@@ -564,10 +561,8 @@ export function FocusModeModal() {
                     { id: 'brownnoise', label: 'Brown Noise', icon: <Headphones className="w-4 h-4" /> },
                     { id: 'whitenoise', label: 'White Noise', icon: <Radio className="w-4 h-4" /> },
                     { id: 'rain', label: 'Rain', icon: <CloudRain className="w-4 h-4" /> },
-                    { id: 'waves', label: 'Waves', icon: <Waves className="w-4 h-4" /> },
-                    { id: 'campfire', label: 'Fireplace', icon: <Flame className="w-4 h-4" /> },
-                    { id: 'lofi', label: 'Lofi Cafe', icon: <Sparkles className="w-4 h-4" /> }
-                  ].map(option => (
+                    
+                    { id: 'campfire', label: 'Fireplace', icon: <Flame className="w-4 h-4" /> }].map(option => (
                     <button
                       key={option.id}
                       onClick={() => {
