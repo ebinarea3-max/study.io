@@ -13,6 +13,7 @@ import { ChevronRight } from 'lucide-react';
 import { TierIcon } from './common/TierIcon';
 import { RankCrestBadge } from './common/RankCrestBadge';
 import Image from 'next/image';
+import { AnimatePresence, motion } from 'framer-motion';
 import { getRankIconPath } from '../utils/rankIcons';
 interface RankSettlementModalProps {
   isOpen: boolean;
@@ -104,12 +105,11 @@ export function RankSettlementModal({
   const [showContinue, setShowContinue] = useState(false);
 
   // Reveal Animation States
-  const [revealMode, setRevealMode] = useState<'idle' | 'impact-hit-small' | 'impact-hit-large'>('idle');
-  const [revealDuration, setRevealDuration] = useState(350);
-  const [showRevealFlash, setShowRevealFlash] = useState(false);
-  const [revealParticles, setRevealParticles] = useState<SparkParticle[]>([]);
+  const [punchMode, setPunchMode] = useState<'idle' | 'small' | 'large'>('idle');
+  
+  
   const [shatterShards, setShatterShards] = useState<any[]>([]);
-  const [showPulseGlow, setShowPulseGlow] = useState(false);
+  
 
   // RP Bar & Counter States
   const [animatingRP, setAnimatingRP] = useState(prevRP);
@@ -187,11 +187,11 @@ export function RankSettlementModal({
       setCounterPopped(false);
       setDisplayRank(isRankUp ? prevRankDetails : newRankDetails);
       setActiveBarColor(isRankUp ? prevRankDetails.config.badgeAccent : newRankDetails.config.badgeAccent);
-      setRevealMode('idle');
-      setShowRevealFlash(false);
-      setRevealParticles([]);
+      setPunchMode('idle');
+      
+      
       setShatterShards([]);
-      setShowPulseGlow(false);
+      
       return;
     }
 
@@ -298,11 +298,9 @@ export function RankSettlementModal({
             // SUB-RANK-UP: Quick Hit
             // ==========================================
             setDisplayRank(newRankDetails); // Base rank becomes new rank
-            setRevealMode('impact-hit-small');
+            setPunchMode('small');
             
-            // Flash
-            setShowRevealFlash(true);
-            timers.push(setTimeout(() => setShowRevealFlash(false), 250));
+            
 
             // Screen shake
             const shakeAmpBase = 6;
@@ -330,7 +328,7 @@ export function RankSettlementModal({
             // Settle
             timers.push(setTimeout(() => {
               setActiveBarColor(newRankDetails.config.badgeAccent);
-              setRevealMode('idle');
+              setPunchMode('idle');
             }, 300));
             
           } else {
@@ -343,7 +341,7 @@ export function RankSettlementModal({
 
             timers.push(setTimeout(() => {
               setDisplayRank(newRankDetails);
-              setRevealMode('impact-hit-large');
+              setPunchMode('large');
 
               // At T+200 (low point of scale punch), we trigger shards, shake, and heavy audio
               timers.push(setTimeout(() => {
@@ -388,34 +386,15 @@ export function RankSettlementModal({
                 });
                 setShatterShards(outShards);
 
-                // Flash
-                setShowRevealFlash(true);
-                timers.push(setTimeout(() => setShowRevealFlash(false), 500));
+                
 
-                // Final resolve particles
-                const pCount = Math.round(14 + (intensity - 1) * (16 / 7));
-                const generatedParticles = Array.from({ length: pCount }).map((_, i) => {
-                  const angle = (i / pCount) * 2 * Math.PI;
-                  const spreadRadius = 80 + (intensity - 1) * (80 / 7);
-                  const dist = spreadRadius + Math.random() * spreadRadius;
-                  return {
-                    id: i,
-                    dx: Math.cos(angle) * dist,
-                    dy: Math.sin(angle) * dist,
-                    rot: 0,
-                    size: 3 + Math.random() * 4,
-                    opacity: 0.8 + Math.random() * 0.2,
-                    color: newRankDetails.config.badgeAccent,
-                  };
-                });
-                setRevealParticles(generatedParticles);
-                timers.push(setTimeout(() => setRevealParticles([]), 500));
+                
                 
               }, 200)); // wait 200ms to hit low point of scale
               
               // Settle at end of punch
               timers.push(setTimeout(() => {
-                setRevealMode('idle');
+                setPunchMode('idle');
                 setActiveBarColor(newRankDetails.config.badgeAccent);
                 setShatterShards([]);
               }, 600));
@@ -528,27 +507,7 @@ export function RankSettlementModal({
 
   const remainingRP = Math.max(0, displayRank.maxRP - animatingRP);
 
-  const getContainerStyle = () => {
-    if (prefersReducedMotion) return {};
-    
-    if (revealMode === 'impact-hit-small') {
-      return {
-        animation: 'impactPunchSmall 300ms cubic-bezier(0.17, 0.89, 0.32, 1.28) forwards'
-      };
-    }
-    if (revealMode === 'impact-hit-large') {
-      return {
-        animation: 'impactPunchLarge 600ms cubic-bezier(0.17, 0.89, 0.32, 1.28) forwards'
-      };
-    }
 
-    return {
-      transform: 'translateY(0px) scale(1)',
-      opacity: 1,
-      filter: 'blur(0px)',
-      transition: 'transform 300ms ease-out'
-    };
-  };
 
   return (
     <div className="fixed inset-0 z-50 bg-[var(--bg)]/95 backdrop-blur-md flex flex-col items-center justify-center select-none overflow-hidden animate-in fade-in duration-300">
@@ -685,61 +644,37 @@ export function RankSettlementModal({
             style={{ backgroundColor: displayRank.config.badgeAccent }}
           />
 
+          
           {/* CHROMATIC ABERRATION PULSE & MASS SLAM REPLACED WITH NEW CREST */}
-          <div className="relative mx-auto mb-4 flex items-center justify-center perspective-[1000px] w-[192px] h-[192px]">
-            {/* Soft Radial Glow Ring for Pulse Crossfade */}
-            {showPulseGlow && !prefersReducedMotion && (
-              <div 
-                className="absolute inset-[-40%] rounded-full opacity-0 pointer-events-none z-0"
-                style={{
-                  background: `radial-gradient(circle at 50% 50%, ${displayRank.config.badgeAccent}55 0%, transparent 65%)`,
-                  animation: `pulseGlowRing 0.5s ease-out forwards`,
-                  filter: 'blur(10px)'
-                }}
-              />
-            )}
-            
-            <div 
-              style={getContainerStyle()}
+          <div className="relative mx-auto mb-4 flex items-center justify-center perspective-[1000px] w-full h-[280px]">
+            <motion.div 
               className="relative w-full h-full flex items-center justify-center transform-gpu z-10"
+              animate={
+                punchMode === 'small' 
+                  ? { scale: [1, 0.88, 1.05, 1], transition: { duration: 0.3, times: [0, 0.35, 0.7, 1], ease: "easeOut" } }
+                  : punchMode === 'large'
+                  ? { scale: [1, 0.75, 1.12, 1], transition: { duration: 0.5, times: [0, 0.35, 0.7, 1], ease: "easeOut" } }
+                  : { scale: 1 }
+              }
             >
-              {/* BASE NEW BADGE: Always visible at bottom, fades in during crossfade */}
-              <div 
-                className="absolute inset-0"
-                style={{
-                  zIndex: 10,
-                  opacity: revealMode.startsWith('impact-hit') ? 1 : (revealMode === 'idle' ? 1 : 0),
-                  animation: revealMode === 'impact-hit-small' ? 'fadeInNewBadge 250ms ease-in-out forwards' : (revealMode === 'impact-hit-large' ? 'fadeInNewBadge 400ms ease-in-out forwards' : 'none')
-                }}
-              >
-                <RankCrestBadge
-                  tier={displayRank.tier}
-                  division={displayRank.division}
-                  size={192}
-                  className={revealMode === 'idle' ? "animate-in zoom-in spin-in-12 duration-700 ease-out" : ""}
-                  isSettled={animPhase !== 'slam' && animPhase !== 'impact' && revealMode === 'idle'}
-                />
-              </div>
-
-              {/* OVERLAY OLD BADGE: Fades out simply */}
-              {revealMode.startsWith('impact-hit') && (
-                <div 
-                  className="absolute inset-0"
-                  style={{
-                    zIndex: 20,
-                    opacity: 1, // Start opacity for keyframe
-                    animation: revealMode === 'impact-hit-small' ? 'fadeOutOldBadge 250ms ease-in-out forwards' : (revealMode === 'impact-hit-large' ? 'fadeOutOldBadge 400ms ease-in-out forwards' : 'none')
-                  }}
+              <AnimatePresence mode="popLayout">
+                <motion.div
+                  key={displayRank.fullTitle}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1, transition: { duration: 0.25 } }}
+                  exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
+                  className="absolute inset-0 flex items-center justify-center"
                 >
                   <RankCrestBadge
-                    tier={prevRankDetails.tier}
-                    division={prevRankDetails.division}
+                    tier={displayRank.tier}
+                    division={displayRank.division}
                     size={192}
-                    className=""
-                    isSettled={false} // Prevent idle animations during transition
+                    className={animPhase !== 'slam' && animPhase !== 'impact' && punchMode === 'idle' ? "animate-in zoom-in spin-in-12 duration-700 ease-out" : ""}
+                    isSettled={animPhase !== 'slam' && animPhase !== 'impact' && punchMode === 'idle'}
                   />
-                </div>
-              )}
+                </motion.div>
+              </AnimatePresence>
+            </motion.div>
             
             {/* SHEDDING SHARDS */}
             {shatterShards.length > 0 && !prefersReducedMotion && (
@@ -763,46 +698,6 @@ export function RankSettlementModal({
                 ))}
               </div>
             )}
-              
-              {/* REVEAL FLASH */}
-              {showRevealFlash && !prefersReducedMotion && (
-                <div
-                  className="absolute inset-[-20%] rounded-full pointer-events-none z-10 mix-blend-screen"
-                  style={{
-                    background: `radial-gradient(circle at 50% 50%, ${displayRank.config.badgeAccent}99 0%, transparent 60%)`,
-                    animation: `revealFlashAnim 0.15s ease-out forwards`,
-                    willChange: 'opacity',
-                    ['--flash-peak' as string]: intensity >= 1 ? `${0.25 + (intensity - 1) * (0.30 / 7)}` : '0.25',
-                  }}
-                />
-              )}
-              
-              {/* REVEAL PARTICLES */}
-              {revealParticles.length > 0 && !prefersReducedMotion && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-                  {revealParticles.map((p) => (
-                    <div
-                      key={`rev-${p.id}`}
-                      className="absolute pointer-events-none"
-                      style={{
-                        width: `${p.size}px`,
-                        height: `${p.size}px`,
-                        backgroundColor: p.color,
-                        borderRadius: '50%',
-                        boxShadow: `0 0 6px ${p.color}`,
-                        transform: 'translate(0, 0)',
-                        animation: `particleBurstAnim 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards`,
-                        ['--target-x' as string]: `${p.dx}px`,
-                        ['--target-y' as string]: `${p.dy}px`,
-                        ['--target-rot' as string]: `0deg`,
-                        opacity: p.opacity,
-                        willChange: 'transform, opacity',
-                      }}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
           </div>
         </div>
 
@@ -1180,35 +1075,7 @@ export function RankSettlementModal({
           100% { transform: scale(1); }
         }
 
-        @keyframes impactPunchSmall {
-          0% { transform: scale(1); }
-          30% { transform: scale(0.88); }
-          65% { transform: scale(1.05); }
-          100% { transform: scale(1); }
-        }
 
-        @keyframes impactPunchLarge {
-          0% { transform: scale(1); }
-          40% { transform: scale(0.75); }
-          70% { transform: scale(1.12); }
-          100% { transform: scale(1); }
-        }
-
-        @keyframes fadeInNewBadge {
-          0% { opacity: 0; }
-          100% { opacity: 1; }
-        }
-
-        @keyframes fadeOutOldBadge {
-          0% { opacity: 1; }
-          100% { opacity: 0; }
-        }
-
-        @keyframes pulseGlowRing {
-          0% { transform: scale(0.9); opacity: 0; }
-          50% { transform: scale(1.15); opacity: 0.5; }
-          100% { transform: scale(1.15); opacity: 0; }
-        }
 
         @keyframes shatterOutAnim {
           0% { transform: translate(0, 0) scale(1) rotate(0deg); opacity: 1; }
@@ -1326,16 +1193,6 @@ export function RankSettlementModal({
           }
           50% {
             box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.45), 0 0 22px rgba(255, 255, 255, 0.3);
-          }
-        }
-
-        /* 10. SIMPLE FADE IN (Reduced Motion Mode) */
-        @keyframes simpleFadeIn {
-          0% {
-            opacity: 0;
-          }
-          100% {
-            opacity: 1;
           }
         }
       `}</style>
