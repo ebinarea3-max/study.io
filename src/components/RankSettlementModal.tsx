@@ -104,10 +104,12 @@ export function RankSettlementModal({
   const [showContinue, setShowContinue] = useState(false);
 
   // Reveal Animation States
-  const [revealMode, setRevealMode] = useState<'idle' | 'flip-out' | 'flip-in' | 'spin'>('idle');
+  const [revealMode, setRevealMode] = useState<'idle' | 'forge-out' | 'forge-in' | 'shatter-crack' | 'shatter-out' | 'shatter-in' | 'shatter-settle'>('idle');
   const [revealDuration, setRevealDuration] = useState(350);
   const [showRevealFlash, setShowRevealFlash] = useState(false);
   const [revealParticles, setRevealParticles] = useState<SparkParticle[]>([]);
+  const [shatterShards, setShatterShards] = useState<any[]>([]);
+  const [showForgeGlow, setShowForgeGlow] = useState(false);
 
   // RP Bar & Counter States
   const [animatingRP, setAnimatingRP] = useState(prevRP);
@@ -188,6 +190,8 @@ export function RankSettlementModal({
       setRevealMode('idle');
       setShowRevealFlash(false);
       setRevealParticles([]);
+      setShatterShards([]);
+      setShowForgeGlow(false);
       return;
     }
 
@@ -291,21 +295,24 @@ export function RankSettlementModal({
         if (isRankUp) {
           if (!isMajorTierUp) {
             // ==========================================
-            // SUB-RANK-UP: Simple Flip (0 -> 90 -> 0)
+            // SUB-RANK-UP: Forge Reveal
             // ==========================================
-            const halfDur = 350;
-            setRevealDuration(halfDur);
-            setRevealMode('flip-out');
+            setRevealDuration(600);
+            setRevealMode('forge-out');
+            
+            // Soft glow ring
+            timers.push(setTimeout(() => setShowForgeGlow(true), 100));
+            timers.push(setTimeout(() => setShowForgeGlow(false), 1200));
 
-            soundFx.playCinematicPromotionSound(0.4, halfDur * 2);
+            soundFx.playCinematicPromotionSound(0.4, 1200);
 
-            // Swap image at 90 degrees
+            // New badge materializes at 550ms
             timers.push(setTimeout(() => {
               setDisplayRank(newRankDetails);
               setActiveBarColor(newRankDetails.config.badgeAccent);
-              setRevealMode('flip-in');
+              setRevealMode('forge-in');
 
-              // Complete flip and trigger reveal accent
+              // Settle at 1250ms (550 + 700)
               timers.push(setTimeout(() => {
                 setRevealMode('idle');
                 setShowRevealFlash(true);
@@ -314,70 +321,164 @@ export function RankSettlementModal({
                 const pCount = 10;
                 const generatedParticles = Array.from({ length: pCount }).map((_, i) => {
                   const angle = (i / pCount) * 2 * Math.PI;
-                  const dist = 60 + Math.random() * 60;
+                  const dist = 40 + Math.random() * 40;
                   return {
                     id: i,
                     dx: Math.cos(angle) * dist,
                     dy: Math.sin(angle) * dist,
                     rot: 0,
                     size: 2 + Math.random() * 3,
-                    opacity: 0.8 + Math.random() * 0.2,
+                    opacity: 0.7 + Math.random() * 0.2,
                     color: newRankDetails.config.badgeAccent,
                   };
                 });
                 setRevealParticles(generatedParticles);
                 timers.push(setTimeout(() => setRevealParticles([]), 500));
-              }, halfDur));
-            }, halfDur));
+              }, 700));
+            }, 550));
           } else {
             // ==========================================
-            // MAJOR-TIER-UP: Deliberate 2-rotation Spin
+            // MAJOR-TIER-UP: Shatter & Reassemble
             // ==========================================
-            const spinDur = intensity >= 1 ? 2000 + (intensity - 1) * (500 / 7) : 2000;
-            setRevealDuration(spinDur);
-            setRevealMode('spin');
+            // Total timing scales with intensity (1 to 8):
+            // Intensity 1 (Silver): ~1.8s
+            // Intensity 8 (Grandmaster): ~2.8s
+            const timeScale = 1 + (intensity - 1) * (1 / 7);
+            
+            const crackDur = 300 * timeScale;
+            const shatterOutDur = 650 * timeScale;
+            const pauseDur = 200 * timeScale;
+            const reassembleDur = 700 * timeScale;
+            const bounceDur = 200;
+            
+            setRevealDuration(crackDur);
+            setRevealMode('shatter-crack');
 
-            soundFx.playCinematicPromotionSound(intensity, spinDur);
-
-            // Swap image early in the first rotation (~150ms in)
+            // 1. Crack Phase
             timers.push(setTimeout(() => {
-              setDisplayRank(newRankDetails);
-              setActiveBarColor(newRankDetails.config.badgeAccent);
-            }, 180));
+              // Screen shake & crack sound
+              const shakeAmpBase = intensity >= 1 ? 8 + (intensity - 1) * (6 / 7) : 8;
+              const shakeStart = performance.now();
+              const shakeDur = 300;
+              const runShake = (now: number) => {
+                const elapsed = now - shakeStart;
+                const p = Math.min(1, elapsed / shakeDur);
+                if (p < 1) {
+                  const amp = shakeAmpBase * Math.pow(1 - p, 2);
+                  const x = (Math.random() * 2 - 1) * amp;
+                  const y = (Math.random() * 2 - 1) * amp;
+                  setShakeOffset({ x, y });
+                  shakeFrameRef.current = requestAnimationFrame(runShake);
+                } else {
+                  setShakeOffset({ x: 0, y: 0 });
+                }
+              };
+              shakeFrameRef.current = requestAnimationFrame(runShake);
+              soundFx.playShatterCrack(intensity);
 
-            // Complete spin and trigger reveal accent (right as it settles)
-            timers.push(setTimeout(() => {
-              setRevealMode('idle');
-              setShowRevealFlash(true);
-              const flashDur = intensity >= 6 ? 250 : 150;
-              timers.push(setTimeout(() => setShowRevealFlash(false), flashDur));
-
-              const pCount = intensity >= 1 ? Math.round(8 + (intensity - 1) * (22 / 7)) : 8;
-              const generatedParticles = Array.from({ length: pCount }).map((_, i) => {
-                const angle = (i / pCount) * 2 * Math.PI;
-                const spreadRadius = intensity >= 1 ? 60 + (intensity - 1) * (60 / 7) : 60;
-                const dist = spreadRadius + Math.random() * spreadRadius;
+              // 2. Shatter Out Phase
+              setRevealMode('shatter-out');
+              setDisplayRank(prevRankDetails);
+              
+              const numShards = Math.round(14 + (intensity - 1) * (10 / 7));
+              const outShards = Array.from({ length: numShards }).map((_, i) => {
+                const angle = (i / numShards) * 2 * Math.PI + (Math.random() * 0.5 - 0.25);
+                const dist = 80 + Math.random() * 100 * timeScale;
                 return {
-                  id: i,
-                  dx: Math.cos(angle) * dist,
-                  dy: Math.sin(angle) * dist,
-                  rot: 0,
-                  size: 2 + Math.random() * 3,
-                  opacity: 0.8 + Math.random() * 0.2,
-                  color: newRankDetails.config.badgeAccent,
+                  id: `out-${i}`,
+                  x: Math.cos(angle) * dist,
+                  y: Math.sin(angle) * dist,
+                  rot: (Math.random() - 0.5) * 720,
+                  size: 8 + Math.random() * 12,
+                  delay: 0,
+                  dur: shatterOutDur,
+                  color: prevRankDetails.config.badgeAccent,
+                  isOut: true,
                 };
               });
-              setRevealParticles(generatedParticles);
-              timers.push(setTimeout(() => setRevealParticles([]), 500));
-            }, spinDur));
+              setShatterShards(outShards);
+
+              // 3. Pause
+              timers.push(setTimeout(() => {
+                setShatterShards([]);
+                
+                // 4. Reassemble In Phase
+                timers.push(setTimeout(() => {
+                  setRevealMode('shatter-in');
+                  setDisplayRank(newRankDetails);
+                  setActiveBarColor(newRankDetails.config.badgeAccent);
+                  
+                  // Audio builds under reassembly
+                  soundFx.playCinematicPromotionSound(intensity, reassembleDur);
+                  
+                  const inShards = Array.from({ length: numShards }).map((_, i) => {
+                    const angle = (i / numShards) * 2 * Math.PI + (Math.random() * 0.5 - 0.25);
+                    const dist = 120 + Math.random() * 150 * timeScale;
+                    return {
+                      id: `in-${i}`,
+                      startX: Math.cos(angle) * dist,
+                      startY: Math.sin(angle) * dist,
+                      startRot: (Math.random() - 0.5) * 720,
+                      size: 8 + Math.random() * 16,
+                      delay: Math.random() * 0.2 * reassembleDur,
+                      dur: reassembleDur * 0.8,
+                      color: newRankDetails.config.badgeAccent,
+                      isIn: true,
+                    };
+                  });
+                  setShatterShards(inShards);
+
+                  // 5. Settle Bounce & Impact
+                  timers.push(setTimeout(() => {
+                    setRevealMode('shatter-settle');
+                    setShatterShards([]);
+                    
+                    setShowRevealFlash(true);
+                    const flashDur = intensity >= 6 ? 250 : 150;
+                    timers.push(setTimeout(() => setShowRevealFlash(false), flashDur));
+
+                    const pCount = Math.round(14 + (intensity - 1) * (16 / 7));
+                    const generatedParticles = Array.from({ length: pCount }).map((_, i) => {
+                      const angle = (i / pCount) * 2 * Math.PI;
+                      const spreadRadius = 80 + (intensity - 1) * (80 / 7);
+                      const dist = spreadRadius + Math.random() * spreadRadius;
+                      return {
+                        id: i,
+                        dx: Math.cos(angle) * dist,
+                        dy: Math.sin(angle) * dist,
+                        rot: 0,
+                        size: 3 + Math.random() * 4,
+                        opacity: 0.8 + Math.random() * 0.2,
+                        color: newRankDetails.config.badgeAccent,
+                      };
+                    });
+                    setRevealParticles(generatedParticles);
+                    timers.push(setTimeout(() => setRevealParticles([]), 500));
+                    
+                    // Idle state after bounce
+                    timers.push(setTimeout(() => {
+                      setRevealMode('idle');
+                    }, bounceDur));
+                    
+                  }, reassembleDur));
+                }, pauseDur));
+              }, shatterOutDur));
+            }, crackDur));
           }
         }
 
       }, 340)
     );
 
-    // Calculate delay offset to wait for spin to finish before showing title & progress
-    const delayOffset = isRankUp ? (isMajorTierUp ? (intensity >= 1 ? 2000 + (intensity - 1) * (500 / 7) : 2000) - 200 : 500) : 0;
+    // Calculate delay offset to wait for sequence to finish before showing title & progress
+    const getDelayOffset = () => {
+      if (!isRankUp) return 0;
+      if (!isMajorTierUp) return 1250 - 200; // Forge duration (550 + 700) minus overlap
+      const timeScale = 1 + (intensity - 1) * (1 / 7);
+      const shatterTotal = (300 + 650 + 200 + 700) * timeScale;
+      return shatterTotal - 300;
+    };
+    const delayOffset = getDelayOffset();
 
     // ==========================================
     // STAGE 3: TEXT STAMP at 0.52s + offset
@@ -472,25 +573,40 @@ export function RankSettlementModal({
 
   const getContainerStyle = () => {
     if (prefersReducedMotion) return {};
-    if (revealMode === 'flip-out') {
+    
+    // Forge
+    if (revealMode === 'forge-out') {
       return {
-        transform: `rotateY(90deg) scale(0.85)`,
-        filter: 'blur(4px)',
-        transition: `transform ${revealDuration}ms ease-in, filter ${revealDuration}ms ease-in`
+        transform: 'translateY(-40px) scale(0.9)',
+        opacity: 0,
+        filter: 'blur(6px)',
+        transition: 'transform 600ms ease-in, opacity 600ms ease-in, filter 600ms ease-in',
       };
-    } else if (revealMode === 'flip-in') {
+    } else if (revealMode === 'forge-in') {
       return {
-        transform: 'rotateY(0deg) scale(1)',
-        filter: 'blur(0px)',
-        transition: `transform ${revealDuration}ms ease-out, filter ${revealDuration}ms ease-out`
-      };
-    } else if (revealMode === 'spin') {
-      return {
-        animation: `majorTierSpin ${revealDuration}ms cubic-bezier(0.3, 0, 0.2, 1) forwards`
+        animation: 'forgeIn 700ms cubic-bezier(0.2, 1, 0.3, 1) forwards'
       };
     }
+    
+    // Shatter
+    else if (revealMode === 'shatter-crack') {
+      return {
+        animation: 'shatterCrack 300ms ease-in-out forwards'
+      };
+    } else if (revealMode === 'shatter-out' || revealMode === 'shatter-in') {
+      return {
+        opacity: 0,
+        pointerEvents: 'none' as const,
+      };
+    } else if (revealMode === 'shatter-settle') {
+      return {
+        animation: 'shatterBounce 200ms cubic-bezier(0.3, 1.5, 0.7, 1) forwards'
+      };
+    }
+
     return {
-      transform: 'rotateY(0deg) scale(1)',
+      transform: 'translateY(0px) scale(1)',
+      opacity: 1,
       filter: 'blur(0px)',
       transition: 'transform 300ms ease-out'
     };
@@ -633,14 +749,14 @@ export function RankSettlementModal({
 
           {/* CHROMATIC ABERRATION PULSE & MASS SLAM REPLACED WITH NEW CREST */}
           <div className="relative mx-auto mb-4 flex items-center justify-center perspective-[1000px]">
-            {/* Trailing Glow for Major Tier Spin */}
-            {revealMode === 'spin' && !prefersReducedMotion && (
+            {/* Soft Radial Glow Ring for Forge Reveal */}
+            {showForgeGlow && !prefersReducedMotion && (
               <div 
-                className="absolute inset-[-30%] rounded-full opacity-0 pointer-events-none z-0"
+                className="absolute inset-[-40%] rounded-full opacity-0 pointer-events-none z-0"
                 style={{
-                  background: `radial-gradient(circle at 50% 50%, ${displayRank.config.badgeAccent}44 0%, transparent 70%)`,
-                  animation: `spinGlow ${revealDuration}ms ease-in-out forwards`,
-                  filter: 'blur(12px)'
+                  background: `radial-gradient(circle at 50% 50%, ${displayRank.config.badgeAccent}55 0%, transparent 65%)`,
+                  animation: `forgeGlowRing 1.1s ease-out forwards`,
+                  filter: 'blur(10px)'
                 }}
               />
             )}
@@ -649,17 +765,56 @@ export function RankSettlementModal({
               style={getContainerStyle()}
               className="relative w-full h-full flex items-center justify-center transform-gpu z-10"
             >
-              <div style={{
-                animation: revealMode === 'spin' && !prefersReducedMotion ? 'badgeSpinPulse 220ms infinite alternate ease-in-out' : 'none'
-              }}>
-                <RankCrestBadge
-                  tier={displayRank.tier}
-                  division={displayRank.division}
-                  size={192}
-                  className="animate-in zoom-in spin-in-12 duration-700 ease-out"
-                  isSettled={animPhase !== 'slam' && animPhase !== 'impact' && revealMode === 'idle'}
-                />
+              <RankCrestBadge
+                tier={displayRank.tier}
+                division={displayRank.division}
+                size={192}
+                className="animate-in zoom-in spin-in-12 duration-700 ease-out"
+                isSettled={animPhase !== 'slam' && animPhase !== 'impact' && revealMode === 'idle'}
+              />
+            </div>
+            
+            {/* SHATTER SHARDS */}
+            {shatterShards.length > 0 && !prefersReducedMotion && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+                {shatterShards.map((s) => (
+                  <div
+                    key={s.id}
+                    className="absolute pointer-events-none rounded-sm"
+                    style={{
+                      width: `${s.size}px`,
+                      height: `${s.size}px`,
+                      background: `linear-gradient(135deg, ${s.color} 0%, ${s.color}99 100%)`,
+                      boxShadow: `0 0 8px ${s.color}66`,
+                      ...(s.isOut 
+                        ? {
+                            animation: `shatterOutAnim ${s.dur}ms cubic-bezier(0.1, 1, 0.3, 1) forwards`,
+                            ['--target-x' as string]: `${s.x}px`,
+                            ['--target-y' as string]: `${s.y}px`,
+                            ['--target-rot' as string]: `${s.rot}deg`,
+                          } 
+                        : {
+                            animation: `shatterInAnim ${s.dur}ms cubic-bezier(0.5, 0, 0.2, 1) forwards ${s.delay}ms`,
+                            opacity: 0,
+                            ['--start-x' as string]: `${s.startX}px`,
+                            ['--start-y' as string]: `${s.startY}px`,
+                            ['--start-rot' as string]: `${s.startRot}deg`,
+                          }
+                      )
+                    }}
+                  >
+                    {s.isIn && (
+                      <div 
+                        className="absolute inset-[-50%] bg-white rounded-full opacity-0 mix-blend-screen"
+                        style={{
+                          animation: `shardGlint 150ms ease-out forwards ${s.delay + s.dur - 75}ms`
+                        }}
+                      />
+                    )}
+                  </div>
+                ))}
               </div>
+            )}
               
               {/* REVEAL FLASH */}
               {showRevealFlash && !prefersReducedMotion && (
@@ -1077,23 +1232,46 @@ export function RankSettlementModal({
           100% { transform: scale(1); }
         }
 
-        @keyframes majorTierSpin {
-          0% { transform: rotateY(0deg); }
-          35% { transform: rotateY(360deg); }
-          92% { transform: rotateY(700deg); } /* Hang */
-          100% { transform: rotateY(720deg); } /* Settle */
+        @keyframes forgeIn {
+          0% { transform: translateY(30px) scale(0.7); opacity: 0; filter: blur(8px); }
+          100% { transform: translateY(0px) scale(1); opacity: 1; filter: blur(0px); }
         }
 
-        @keyframes spinGlow {
-          0% { opacity: 0; transform: scale(0.8); }
-          50% { opacity: 1; transform: scale(1.2); }
-          90% { opacity: 0.8; transform: scale(1.1); }
-          100% { opacity: 0; transform: scale(1); }
+        @keyframes forgeGlowRing {
+          0% { transform: scale(0.6); opacity: 0; }
+          40% { opacity: 0.6; }
+          100% { transform: scale(1.6); opacity: 0; }
         }
 
-        @keyframes badgeSpinPulse {
-          0% { transform: scale(1); }
-          100% { transform: scale(0.92); }
+        @keyframes shatterCrack {
+          0% { transform: scale(1) rotate(0deg); }
+          20% { transform: scale(1.05) rotate(-2deg); }
+          40% { transform: scale(1.03) rotate(2deg); }
+          60% { transform: scale(1.06) rotate(-1deg); }
+          80% { transform: scale(1.04) rotate(1deg); }
+          100% { transform: scale(1.05) rotate(0deg); }
+        }
+
+        @keyframes shatterOutAnim {
+          0% { transform: translate(0, 0) scale(1) rotate(0deg); opacity: 1; }
+          100% { transform: translate(var(--target-x), var(--target-y)) scale(0) rotate(var(--target-rot)); opacity: 0; }
+        }
+
+        @keyframes shatterInAnim {
+          0% { transform: translate(var(--start-x), var(--start-y)) scale(0) rotate(var(--start-rot)); opacity: 0; }
+          40% { opacity: 1; }
+          100% { transform: translate(0, 0) scale(1) rotate(0deg); opacity: 1; }
+        }
+
+        @keyframes shatterBounce {
+          0% { transform: scale(1.05); }
+          100% { transform: scale(1); }
+        }
+
+        @keyframes shardGlint {
+          0% { opacity: 0; transform: scale(0.5); }
+          50% { opacity: 0.8; transform: scale(1.5); }
+          100% { opacity: 0; transform: scale(2); }
         }
 
         /* 5. RADIAL SPARK / SHARD BURST (Trajectory driven by CSS variables) */

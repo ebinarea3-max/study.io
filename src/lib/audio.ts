@@ -660,6 +660,61 @@ class AudioEngine {
     }
   }
 
+  // Quick noise-burst layered with a low thud for the shatter crack
+  public playShatterCrack(intensity: number = 1) {
+    try {
+      const ctx = this.getContext();
+      if (!ctx) return;
+      const now = ctx.currentTime;
+      
+      const gainScale = 1 + (intensity - 1) * 0.15;
+
+      // Low thud
+      const thudOsc = ctx.createOscillator();
+      const thudGain = ctx.createGain();
+      thudOsc.type = 'sine';
+      thudOsc.frequency.setValueAtTime(80, now);
+      thudOsc.frequency.exponentialRampToValueAtTime(40, now + 0.1);
+      
+      thudGain.gain.setValueAtTime(0, now);
+      thudGain.gain.linearRampToValueAtTime(0.3 * gainScale, now + 0.02);
+      thudGain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+
+      thudOsc.connect(thudGain);
+      thudGain.connect(ctx.destination);
+      thudOsc.start(now);
+      thudOsc.stop(now + 0.2);
+
+      // Sharp noise crack
+      const bufferLength = Math.max(1, Math.floor(ctx.sampleRate * 0.1));
+      const noiseBuffer = ctx.createBuffer(1, bufferLength, ctx.sampleRate);
+      const output = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < bufferLength; i++) {
+        output[i] = (Math.random() * 2 - 1) * 0.5;
+      }
+      const noiseSource = ctx.createBufferSource();
+      noiseSource.buffer = noiseBuffer;
+
+      const noiseFilter = ctx.createBiquadFilter();
+      noiseFilter.type = 'highpass';
+      noiseFilter.frequency.setValueAtTime(1000, now);
+      
+      const noiseGain = ctx.createGain();
+      noiseGain.gain.setValueAtTime(0.25 * gainScale, now);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+
+      noiseSource.connect(noiseFilter);
+      noiseFilter.connect(noiseGain);
+      noiseGain.connect(ctx.destination);
+      
+      noiseSource.start(now);
+      noiseSource.stop(now + 0.1);
+
+    } catch {
+      // ignore
+    }
+  }
+
   // Warm resonant chime / overtone at 432Hz for RP fill completion
   public playRankFillCompletion() {
     try {
