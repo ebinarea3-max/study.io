@@ -715,6 +715,7 @@ export function RankSettlementModal({
               <div 
                 className="absolute inset-0"
                 style={{
+                  zIndex: 10,
                   opacity: revealMode === 'pulse-crossfade' ? 0 : 1,
                   animation: revealMode === 'pulse-crossfade' ? 'fadeInNewBadge 450ms ease-in-out forwards' : 'none'
                 }}
@@ -733,6 +734,7 @@ export function RankSettlementModal({
                 <div 
                   className="absolute inset-0"
                   style={{
+                    zIndex: 20,
                     opacity: revealMode === 'pulse-crossfade' ? 1 : 1,
                     animation: revealMode === 'pulse-crossfade' ? 'fadeOutOldBadge 450ms ease-in-out forwards' : 'none',
                     // The masking for the shatter shed phase
@@ -748,12 +750,12 @@ export function RankSettlementModal({
                     division={prevRankDetails.division}
                     size={192}
                     className=""
-                    isSettled={true}
+                    isSettled={false}
                   />
 
                   {/* Cracked Glass SVG Overlay during Surface Shatter */}
                   {revealMode.startsWith('surface-') && (
-                    <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100">
+                    <svg className="absolute inset-0 w-full h-full pointer-events-none z-30" viewBox="0 0 100 100">
                       <path 
                         d="M50 50 L20 10 M50 50 L80 15 M50 50 L10 60 M50 50 L90 70 M50 50 L30 95 M50 50 L65 90 M35 30 L15 35 M65 35 L85 45 M30 70 L10 85 M70 75 L85 90" 
                         stroke="rgba(255,255,255,0.7)" 
@@ -772,7 +774,7 @@ export function RankSettlementModal({
             
             {/* SHEDDING SHARDS */}
             {shatterShards.length > 0 && !prefersReducedMotion && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-40">
                 {shatterShards.map((s) => (
                   <div
                     key={s.id}

@@ -124,17 +124,7 @@ export function RankCrestBadge({
         <div className="absolute inset-0" style={{ filter: staticFilter, zIndex: 0 }} />
       )}
       
-      {/* Grandmaster Rotating Ring */}
-      {showEffects && tier === 'Grandmaster' && (
-        <div 
-          className="absolute inset-[-15%] rounded-full opacity-60 pointer-events-none"
-          style={{
-            background: 'conic-gradient(from 0deg, rgba(138,43,226,0), rgba(138,43,226,0.6) 25%, rgba(255,215,0,0.6) 50%, rgba(138,43,226,0.6) 75%, rgba(138,43,226,0))',
-            animation: 'sweepConic 6s linear infinite',
-            zIndex: 1
-          }}
-        />
-      )}
+      {/* Grandmaster Rotating Ring removed as requested */}
 
       <img
         src={imageSrc}
