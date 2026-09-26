@@ -158,12 +158,8 @@ export function FocusModeModal() {
   const subjectColor = selectedSubject?.color || '#5A6B6A';
 
   return (
-    <div className="fixed inset-0 z-50 bg-[var(--bg)] text-white flex flex-col justify-between p-6 sm:p-10 select-none overflow-hidden animate-in fade-in duration-300">
-      {/* Background atmospheric ambient glowing blobs */}
-      <div
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full blur-[140px] opacity-20 pointer-events-none transition-all duration-1000"
-        style={{ backgroundColor: subjectColor }}
-      />
+    <div className="fixed inset-0 z-50 bg-black text-white flex flex-col justify-between p-6 sm:p-10 select-none overflow-hidden animate-in fade-in duration-300">
+      
 
       {/* Top Bar */}
       <div className="relative z-10 flex items-center justify-between">
@@ -186,34 +182,6 @@ export function FocusModeModal() {
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Live Sync Status Indicator */}
-          <div
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold backdrop-blur-md transition-all bg-white/5 border border-white/10 text-neutral-300"
-            title={isSyncConnected ? "Cross-device timer sync is active" : "Reconnecting to cloud sync..."}
-          >
-            <span
-              className={`w-2 h-2 rounded-full transition-transform duration-300 ${
-                isSyncConnected ? 'bg-emerald-400' : 'bg-[var(--tier-accent)] animate-pulse'
-              } ${isRemoteTransitioning ? 'scale-150 ring-4 ring-emerald-400/40 animate-ping' : ''}`}
-            />
-            <span className="text-[11px] font-bold hidden sm:inline">
-              {isSyncConnected ? 'Synced' : 'Reconnecting'}
-            </span>
-          </div>
-
-          {/* Notes scratchpad toggle */}
-          <button
-            onClick={() => setShowNotes(!showNotes)}
-            className={`p-2.5 rounded-xl border transition-all ${
-              showNotes
-                ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300'
-                : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-white'
-            }`}
-            title="Focus Scratchpad"
-          >
-            <Edit3 className="w-4 h-4" />
-          </button>
-
           {/* Exit Focus Mode */}
           <button
             onClick={() => {
@@ -221,7 +189,7 @@ export function FocusModeModal() {
               setAmbientSound('none');
               setIsFocusModeOpen(false);
             }}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white text-xs font-semibold transition-all cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-neutral-400 hover:text-white text-[11px] font-medium transition-all cursor-pointer"
           >
             <Minimize2 className="w-4 h-4" />
             <span>Exit Fullscreen</span>
@@ -232,19 +200,12 @@ export function FocusModeModal() {
       {/* Center Digital Clock & Breathing Visualizer */}
       <div className="relative z-10 my-auto flex flex-col items-center justify-center text-center">
         {/* Soft Radial Gradient Glow Behind Timer */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,var(--tier-glow)_0%,transparent_70%)] pointer-events-none" />
+        
         {/* Breathing Ring Aura */}
         <div className={`relative flex items-center justify-center rounded-full transition-all duration-300 ${
-          isRemoteTransitioning ? 'ring-4 ring-emerald-400/50 scale-[1.03] shadow-[0_0_60px_rgba(16,185,129,0.4)]' : ''
+          isRemoteTransitioning ? 'scale-[1.01]' : ''
         }`}>
-          <div
-            className="w-72 h-72 sm:w-96 sm:h-96 rounded-full border-2 border-dashed border-[var(--tier-border)] animate-pulse-breathe flex items-center justify-center transition-all duration-700"
-            style={{ boxShadow: isStudying && !isPaused ? `0 0 80px ${subjectColor}25` : 'none' }}
-          >
-            <div
-              className="w-60 h-60 sm:w-80 sm:h-80 rounded-full border border-[var(--tier-border)] bg-gradient-to-b from-[#0c0d12] to-[#121318] flex flex-col items-center justify-center p-6 shadow-2xl"
-              
-            >
+          <div className="flex flex-col items-center justify-center">
               {/* Pomodoro Phase Tag */}
               {timerMode === 'pomodoro' && (
                 <div
@@ -271,26 +232,25 @@ export function FocusModeModal() {
 
               {/* Big Digital Clock */}
               <div
-                className="font-mono text-5xl sm:text-6xl md:text-7xl font-black tracking-tight text-white drop-shadow-md"
+                className="font-mono text-7xl sm:text-8xl md:text-[8rem] font-extralight tracking-tight text-white/95 drop-shadow-sm flex items-center justify-center gap-2"
                 style={{ fontVariantNumeric: 'tabular-nums' }}
               >
-                {displayTime}
+                {displayTime.split(':').map((part, i, arr) => (
+                  <React.Fragment key={i}>
+                    {part}
+                    {i < arr.length - 1 && (
+                      <span className={`opacity-30 ${isStudying && !isPaused ? 'animate-pulse' : ''} -mt-4`}>
+                        :
+                      </span>
+                    )}
+                  </React.Fragment>
+                ))}
               </div>
 
               {/* Status pill */}
               <div className="mt-3 flex items-center gap-2">
-                <span
-                  className={`w-2 h-2 rounded-full ${
-                    pomodoroCompletedPhase === 'work'
-                      ? 'bg-[var(--tier-accent)] animate-ping'
-                      : pomodoroCompletedPhase === 'break'
-                      ? 'bg-[var(--tier-accent)] animate-bounce'
-                      : isStudying && !isPaused
-                      ? 'bg-[var(--tier-accent)] animate-ping'
-                      : 'bg-slate-500'
-                  }`}
-                />
-                <span className="text-xs font-medium text-slate-400">
+                
+                <span className="text-xs uppercase tracking-[0.25em] text-neutral-500 font-medium">
                   {pomodoroCompletedPhase === 'work'
                     ? 'Focus Complete!'
                     : pomodoroCompletedPhase === 'break'
@@ -307,12 +267,11 @@ export function FocusModeModal() {
                 </span>
               </div>
             </div>
-          </div>
         </div>
 
         {/* Motivational quote */}
         <div className="mt-6 max-w-md px-4">
-          <p className="text-xs sm:text-sm text-slate-400 italic font-medium transition-all duration-500">
+          <p className="text-sm text-neutral-400 italic font-normal tracking-wide transition-all duration-500">
             &ldquo;{MOTIVATIONAL_QUOTES[quoteIndex]}&rdquo;
           </p>
         </div>
@@ -459,7 +418,7 @@ export function FocusModeModal() {
                 startTimer(activeSub.id);
               }}
               disabled={isSaving || isRemoteTransitioning}
-              className="px-8 py-3.5 rounded-2xl bg-[var(--tier-accent)] hover:bg-[var(--tier-accent-hover)] text-slate-950 font-black text-sm transition-all duration-300 shadow-[0_0_30px_var(--tier-glow)] flex items-center gap-2.5 active:scale-95 hover:scale-[1.02] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-8 py-3 rounded-full bg-white hover:bg-neutral-200 text-black font-medium text-sm transition-all duration-300 shadow-lg shadow-white/5 flex items-center gap-2 active:scale-95 hover:scale-[1.02] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Play className="w-5 h-5 fill-current" />
               <span>Start Session</span>
