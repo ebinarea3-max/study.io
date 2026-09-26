@@ -772,7 +772,6 @@ export function RankSettlementModal({
                 className="animate-in zoom-in spin-in-12 duration-700 ease-out"
                 isSettled={animPhase !== 'slam' && animPhase !== 'impact' && revealMode === 'idle'}
               />
-            </div>
             
             {/* SHATTER SHARDS */}
             {shatterShards.length > 0 && !prefersReducedMotion && (
