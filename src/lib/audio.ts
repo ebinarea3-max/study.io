@@ -149,7 +149,21 @@ class AudioEngine {
   }
 
   // Ambient sound synthesizer: Rain, Lofi, WhiteNoise, BrownNoise, Campfire, Waves
-  public startAmbient(type: AmbientSoundType, volume = 0.4) {
+  private workletLoaded = false;
+  private audioBuffers = new Map<string, AudioBuffer>();
+
+  private async getAmbientBuffer(ctx: AudioContext, url: string): Promise<AudioBuffer> {
+    if (this.audioBuffers.has(url)) {
+      return this.audioBuffers.get(url)!;
+    }
+    const response = await fetch(url);
+    const arrayBuffer = await response.arrayBuffer();
+    const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+    this.audioBuffers.set(url, audioBuffer);
+    return audioBuffer;
+  }
+
+  public async startAmbient(type: AmbientSoundType, volume = 0.4) {
     this.stopAmbient();
     try {
       const ctx = this.getContext();
@@ -161,200 +175,69 @@ class AudioEngine {
       masterGain.connect(ctx.destination);
       this.ambientGain = masterGain;
 
-      const sampleRate = ctx.sampleRate;
-      const bufferSize = 4 * sampleRate; // 4 seconds seamless procedural buffer
-
-      if (type === 'whitenoise') {
-        // Pure uniform random noise buffer values between -1.0 and 1.0
-        const noiseBuffer = ctx.createBuffer(1, bufferSize, sampleRate);
-        const output = noiseBuffer.getChannelData(0);
-        for (let i = 0; i < bufferSize; i++) {
-          output[i] = Math.random() * 2 - 1;
+      if (type === 'whitenoise' || type === 'brownnoise') {
+        if (!this.workletLoaded) {
+          await ctx.audioWorklet.addModule('/audio/noise-worklet.js');
+          this.workletLoaded = true;
         }
-
-        const whiteSource = ctx.createBufferSource();
-        whiteSource.buffer = noiseBuffer;
-        whiteSource.loop = true;
-
-        // Gentle high-cut filter at 10kHz to preserve genuine white noise hiss without ear-piercing digital fatigue
-        const filter = ctx.createBiquadFilter();
-        filter.type = 'lowpass';
-        filter.frequency.setValueAtTime(10000, ctx.currentTime);
-
-        // Scaled gain node to normalize full-scale white noise to comfortable ambient level
-        const whiteGain = ctx.createGain();
-        whiteGain.gain.setValueAtTime(0.08, ctx.currentTime);
-
-        whiteSource.connect(filter);
-        filter.connect(whiteGain);
-        whiteGain.connect(masterGain);
-
-        whiteSource.start();
-        this.activeNodes.push(whiteSource);
-        this.ambientSource = whiteSource;
-      } else if (type === 'brownnoise') {
-        // Brownian noise (1/f^2 red noise): Leaky integration of random white noise
-        const noiseBuffer = ctx.createBuffer(1, bufferSize, sampleRate);
-        const output = noiseBuffer.getChannelData(0);
-        let lastOut = 0.0;
-        for (let i = 0; i < bufferSize; i++) {
-          const white = Math.random() * 2 - 1;
-          // Brownian integration accumulator
-          lastOut = (lastOut + 0.02 * white) / 1.02;
-          output[i] = lastOut * 3.4; // Normalized compensation
+        
+        const noiseNode = new AudioWorkletNode(ctx, 'noise-generator');
+        const noiseTypeParam = noiseNode.parameters.get('noiseType');
+        if (noiseTypeParam) {
+          noiseTypeParam.setValueAtTime(type === 'brownnoise' ? 1 : 0, ctx.currentTime);
         }
-
-        const brownSource = ctx.createBufferSource();
-        brownSource.buffer = noiseBuffer;
-        brownSource.loop = true;
-
-        // Low-pass filter to sculpt deep, warm low-frequency focus rumble
-        const lowpass = ctx.createBiquadFilter();
-        lowpass.type = 'lowpass';
-        lowpass.frequency.setValueAtTime(360, ctx.currentTime);
-
-        // Sub-bass warmth boost for rich focus rumble
-        const warmth = ctx.createBiquadFilter();
-        warmth.type = 'peaking';
-        warmth.frequency.setValueAtTime(100, ctx.currentTime);
-        warmth.Q.setValueAtTime(1.1, ctx.currentTime);
-        warmth.gain.setValueAtTime(4.0, ctx.currentTime);
-
-        const brownGain = ctx.createGain();
-        brownGain.gain.setValueAtTime(1.2, ctx.currentTime);
-
-        brownSource.connect(lowpass);
-        lowpass.connect(warmth);
-        warmth.connect(brownGain);
-        brownGain.connect(masterGain);
-
-        brownSource.start();
-        this.activeNodes.push(brownSource);
-        this.ambientSource = brownSource;
-      } else if (type === 'rain') {
-        const noiseBuffer = ctx.createBuffer(1, bufferSize, sampleRate);
-        const output = noiseBuffer.getChannelData(0);
-
-        // Pink noise filtering for natural rainfall
-        let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
-        for (let i = 0; i < bufferSize; i++) {
-          const white = Math.random() * 2 - 1;
-          b0 = 0.99886 * b0 + white * 0.0555179;
-          b1 = 0.99332 * b1 + white * 0.0750759;
-          b2 = 0.96900 * b2 + white * 0.1538520;
-          b3 = 0.86650 * b3 + white * 0.3104856;
-          b4 = 0.55000 * b4 + white * 0.5329522;
-          b5 = -0.7616 * b5 - white * 0.0168980;
-          output[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.11;
-          b6 = white * 0.115926;
-        }
-
-        const rainSource = ctx.createBufferSource();
-        rainSource.buffer = noiseBuffer;
-        rainSource.loop = true;
 
         const filter = ctx.createBiquadFilter();
-        filter.type = 'lowpass';
-        filter.frequency.setValueAtTime(1000, ctx.currentTime);
-
-        const highpass = ctx.createBiquadFilter();
-        highpass.type = 'highpass';
-        highpass.frequency.setValueAtTime(200, ctx.currentTime);
-
-        rainSource.connect(filter);
-        filter.connect(highpass);
-        highpass.connect(masterGain);
-
-        rainSource.start();
-        this.activeNodes.push(rainSource);
-        this.ambientSource = rainSource;
-      } else if (type === 'campfire') {
-        const noiseBuffer = ctx.createBuffer(1, bufferSize, sampleRate);
-        const output = noiseBuffer.getChannelData(0);
-        let b0 = 0, b1 = 0, b2 = 0;
-        for (let i = 0; i < bufferSize; i++) {
-          const white = Math.random() * 2 - 1;
-          b0 = 0.99 * b0 + white * 0.08;
-          b1 = 0.95 * b1 + white * 0.12;
-          b2 = 0.90 * b2 + white * 0.2;
-          output[i] = (b0 + b1 + b2) * 0.12;
-        }
-
-        const fireSource = ctx.createBufferSource();
-        fireSource.buffer = noiseBuffer;
-        fireSource.loop = true;
-
-        const filter = ctx.createBiquadFilter();
-        filter.type = 'bandpass';
-        filter.frequency.setValueAtTime(650, ctx.currentTime);
-        filter.Q.setValueAtTime(2.8, ctx.currentTime);
-
-        fireSource.connect(filter);
-        filter.connect(masterGain);
-
-        fireSource.start();
-        this.activeNodes.push(fireSource);
-        this.ambientSource = fireSource;
-      } else if (type === 'waves') {
-        const noiseBuffer = ctx.createBuffer(1, bufferSize, sampleRate);
-        const output = noiseBuffer.getChannelData(0);
-        for (let i = 0; i < bufferSize; i++) {
-          output[i] = (Math.random() * 2 - 1) * 0.2;
-        }
-
-        const waveSource = ctx.createBufferSource();
-        waveSource.buffer = noiseBuffer;
-        waveSource.loop = true;
-
-        const filter = ctx.createBiquadFilter();
-        filter.type = 'lowpass';
-        filter.frequency.setValueAtTime(420, ctx.currentTime);
-
-        // LFO for periodic wave crests
-        const lfo = ctx.createOscillator();
-        lfo.frequency.setValueAtTime(0.12, ctx.currentTime);
-        const lfoGain = ctx.createGain();
-        lfoGain.gain.setValueAtTime(300, ctx.currentTime);
-
-        lfo.connect(lfoGain);
-        lfoGain.connect(filter.frequency);
-        lfo.start();
-        this.activeNodes.push(lfo);
-
-        waveSource.connect(filter);
-        filter.connect(masterGain);
-
-        waveSource.start();
-        this.activeNodes.push(waveSource);
-        this.ambientSource = waveSource;
-      } else if (type === 'lofi') {
-        const chordFrequencies = [261.63, 329.63, 392.00, 493.88]; // Cmaj7 warm pad
-        chordFrequencies.forEach(freq => {
-          const osc = ctx.createOscillator();
-          osc.type = 'triangle';
-          osc.frequency.setValueAtTime(freq, ctx.currentTime);
-
-          // Subtle chorus detune
-          const detuneLfo = ctx.createOscillator();
-          detuneLfo.frequency.setValueAtTime(0.3 + Math.random() * 0.2, ctx.currentTime);
-          const detuneGain = ctx.createGain();
-          detuneGain.gain.setValueAtTime(4, ctx.currentTime);
-          detuneLfo.connect(detuneGain);
-          detuneGain.connect(osc.detune);
-          detuneLfo.start();
-          this.activeNodes.push(detuneLfo);
-
-          const filter = ctx.createBiquadFilter();
+        if (type === 'whitenoise') {
           filter.type = 'lowpass';
-          filter.frequency.setValueAtTime(850, ctx.currentTime);
+          filter.frequency.setValueAtTime(14000, ctx.currentTime); // 14kHz gentle lowpass
+        } else {
+          filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(360, ctx.currentTime);
+          
+          const warmth = ctx.createBiquadFilter();
+          warmth.type = 'peaking';
+          warmth.frequency.setValueAtTime(100, ctx.currentTime);
+          warmth.Q.setValueAtTime(1.1, ctx.currentTime);
+          warmth.gain.setValueAtTime(4.0, ctx.currentTime);
+          
+          filter.connect(warmth);
+          warmth.connect(masterGain);
+          
+          noiseNode.connect(filter);
+          this.activeNodes.push(noiseNode as any);
+          this.ambientSource = noiseNode;
+          return;
+        }
 
-          osc.connect(filter);
-          filter.connect(masterGain);
-          osc.start();
-          this.activeNodes.push(osc);
-        });
+        const nodeGain = ctx.createGain();
+        nodeGain.gain.setValueAtTime(type === 'whitenoise' ? 0.08 : 1.2, ctx.currentTime);
+        
+        noiseNode.connect(filter);
+        filter.connect(nodeGain);
+        nodeGain.connect(masterGain);
 
-        this.ambientSource = masterGain;
+        this.activeNodes.push(noiseNode as any);
+        this.ambientSource = noiseNode;
+      } else {
+        // Real audio loops
+        const urls: Record<string, string> = {
+          'rain': '/audio/ambience/rain.wav',
+          'campfire': '/audio/ambience/fireplace.wav',
+          'waves': '/audio/ambience/waves.wav',
+          'lofi': '/audio/ambience/lofi.wav',
+        };
+        const url = urls[type];
+        if (url) {
+          const buffer = await this.getAmbientBuffer(ctx, url);
+          const source = ctx.createBufferSource();
+          source.buffer = buffer;
+          source.loop = true;
+          source.connect(masterGain);
+          source.start();
+          this.activeNodes.push(source);
+          this.ambientSource = source;
+        }
       }
     } catch {
       // Audio ambient fallback

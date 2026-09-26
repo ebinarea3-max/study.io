@@ -180,7 +180,7 @@ export function FocusModeModal() {
               </span>
             </div>
             <div className="text-xs text-slate-400">
-              Studying as <span className="text-amber-400 font-medium">{user.displayName}</span>
+              Studying as <span className="text-[var(--tier-accent)] font-medium">{user.displayName}</span>
             </div>
           </div>
         </div>
@@ -193,7 +193,7 @@ export function FocusModeModal() {
           >
             <span
               className={`w-2 h-2 rounded-full transition-transform duration-300 ${
-                isSyncConnected ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'
+                isSyncConnected ? 'bg-emerald-400' : 'bg-[var(--tier-accent)] animate-pulse'
               } ${isRemoteTransitioning ? 'scale-150 ring-4 ring-emerald-400/40 animate-ping' : ''}`}
             />
             <span className="text-[11px] font-bold hidden sm:inline">
@@ -232,17 +232,17 @@ export function FocusModeModal() {
       {/* Center Digital Clock & Breathing Visualizer */}
       <div className="relative z-10 my-auto flex flex-col items-center justify-center text-center">
         {/* Soft Radial Gradient Glow Behind Timer */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(217,119,6,0.12)_0%,transparent_70%)] pointer-events-none" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,var(--tier-glow)_0%,transparent_70%)] pointer-events-none" />
         {/* Breathing Ring Aura */}
         <div className={`relative flex items-center justify-center rounded-full transition-all duration-300 ${
           isRemoteTransitioning ? 'ring-4 ring-emerald-400/50 scale-[1.03] shadow-[0_0_60px_rgba(16,185,129,0.4)]' : ''
         }`}>
           <div
-            className="w-72 h-72 sm:w-96 sm:h-96 rounded-full border-2 border-dashed border-amber-500/20 animate-pulse-breathe flex items-center justify-center transition-all duration-700"
+            className="w-72 h-72 sm:w-96 sm:h-96 rounded-full border-2 border-dashed border-[var(--tier-border)] animate-pulse-breathe flex items-center justify-center transition-all duration-700"
             style={{ boxShadow: isStudying && !isPaused ? `0 0 80px ${subjectColor}25` : 'none' }}
           >
             <div
-              className="w-60 h-60 sm:w-80 sm:h-80 rounded-full border border-amber-500/20 bg-gradient-to-b from-[#0c0d12] to-[#121318] flex flex-col items-center justify-center p-6 shadow-2xl"
+              className="w-60 h-60 sm:w-80 sm:h-80 rounded-full border border-[var(--tier-border)] bg-gradient-to-b from-[#0c0d12] to-[#121318] flex flex-col items-center justify-center p-6 shadow-2xl"
               
             >
               {/* Pomodoro Phase Tag */}
@@ -282,11 +282,11 @@ export function FocusModeModal() {
                 <span
                   className={`w-2 h-2 rounded-full ${
                     pomodoroCompletedPhase === 'work'
-                      ? 'bg-amber-400 animate-ping'
+                      ? 'bg-[var(--tier-accent)] animate-ping'
                       : pomodoroCompletedPhase === 'break'
-                      ? 'bg-amber-400 animate-bounce'
+                      ? 'bg-[var(--tier-accent)] animate-bounce'
                       : isStudying && !isPaused
-                      ? 'bg-amber-400 animate-ping'
+                      ? 'bg-[var(--tier-accent)] animate-ping'
                       : 'bg-slate-500'
                   }`}
                 />
@@ -329,14 +329,14 @@ export function FocusModeModal() {
 
         {/* Break Over Banner */}
         {pomodoroCompletedPhase === 'break' && (
-          <div className="mt-4 flex items-center justify-between gap-3 px-5 py-3 rounded-2xl bg-amber-500/20 border border-amber-500/40 text-amber-200 text-xs font-semibold backdrop-blur-md shadow-xl shadow-amber-500/10 animate-in fade-in duration-300">
+          <div className="mt-4 flex items-center justify-between gap-3 px-5 py-3 rounded-2xl bg-[var(--tier-accent)]/[0.15] border border-[var(--tier-border)] text-[var(--tier-accent)] text-xs font-semibold backdrop-blur-md shadow-xl animate-in fade-in duration-300">
             <div className="flex items-center gap-2.5">
-              <Flame className="w-4 h-4 text-amber-300 animate-pulse" />
+              <Flame className="w-4 h-4 text-[var(--tier-accent)] animate-pulse" />
               <span>Break Over — Ready to Study? Click Start when you are ready.</span>
             </div>
             <button
               onClick={() => setPomodoroCompletedPhase(null)}
-              className="p-1 rounded-lg hover:bg-amber-500/20 text-amber-300 cursor-pointer"
+              className="p-1 rounded-lg hover:bg-[var(--tier-accent)]/[0.2] text-[var(--tier-accent)] cursor-pointer"
               title="Dismiss"
             >
               <X className="w-3.5 h-3.5" />
@@ -415,7 +415,7 @@ export function FocusModeModal() {
                 <button
                   onClick={pauseTimer}
                   disabled={isSaving || isRemoteTransitioning}
-                  className="px-6 py-3 rounded-2xl bg-slate-900/90 hover:bg-slate-800 text-amber-300 font-bold text-sm border border-amber-500/30 transition-all flex items-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-6 py-3 rounded-2xl bg-slate-900/90 hover:bg-slate-800 text-[var(--tier-accent)] font-bold text-sm border border-[var(--tier-border)] transition-all flex items-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Pause className="w-4 h-4" />
                   <span>Pause Break</span>
@@ -459,7 +459,7 @@ export function FocusModeModal() {
                 startTimer(activeSub.id);
               }}
               disabled={isSaving || isRemoteTransitioning}
-              className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-600 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-black font-semibold text-sm transition-all duration-300 shadow-[0_0_30px_rgba(245,158,11,0.35)] flex items-center gap-2.5 active:scale-95 hover:scale-[1.02] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-8 py-3.5 rounded-2xl bg-[var(--tier-accent)] hover:bg-[var(--tier-accent-hover)] text-slate-950 font-black text-sm transition-all duration-300 shadow-[0_0_30px_var(--tier-glow)] flex items-center gap-2.5 active:scale-95 hover:scale-[1.02] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Play className="w-5 h-5 fill-current" />
               <span>Start Session</span>
@@ -470,7 +470,7 @@ export function FocusModeModal() {
               <button
                 onClick={pauseTimer}
                 disabled={isSaving || isRemoteTransitioning}
-                className="px-6 py-3 rounded-2xl bg-slate-900/90 hover:bg-slate-800 text-amber-300 font-bold text-sm border border-amber-500/30 transition-all flex items-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-6 py-3 rounded-2xl bg-slate-900/90 hover:bg-slate-800 text-[var(--tier-accent)] font-bold text-sm border border-[var(--tier-border)] transition-all flex items-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Pause className="w-4 h-4" />
                 <span>Pause</span>
@@ -564,15 +564,16 @@ export function FocusModeModal() {
       )}
 
       {/* Bottom Controls: Ambient Sound Player */}
-      <div className="relative z-10 flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-[var(--border)]">
+      <div className="relative z-10 flex flex-wrap items-center justify-between gap-4 pt-4">
         
         {/* Relative container for the popover positioning */}
         <div className="relative">
+          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 ml-1 font-hud">Atmosphere</div>
           <button
             onClick={() => setIsAmbientMenuOpen(!isAmbientMenuOpen)}
-            className="bg-white/[0.04] border border-white/10 hover:border-amber-500/30 text-neutral-300 text-xs px-3.5 py-1.5 rounded-full flex items-center gap-2 transition-all cursor-pointer select-none"
+            className="bg-white/[0.04] border border-white/10 hover:border-[var(--tier-border)] text-neutral-300 text-xs px-3.5 py-1.5 rounded-full flex items-center gap-2 transition-all cursor-pointer select-none"
           >
-            <Music className={`w-3.5 h-3.5 ${ambientSound !== 'none' ? 'text-amber-500' : 'text-neutral-400'}`} />
+            <Music className={`w-3.5 h-3.5 ${ambientSound !== 'none' ? 'text-[var(--tier-accent)]' : 'text-neutral-400'}`} />
             <span className="tracking-tight">
               Atmosphere: {
                 ambientSound === 'whitenoise' ? 'White Noise' :
@@ -583,7 +584,7 @@ export function FocusModeModal() {
                 ambientSound === 'waves' ? 'Waves' : 'Silent'
               }
             </span>
-            {ambientSound !== 'none' && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse ml-0.5" />}
+            {ambientSound !== 'none' && <span className="w-1.5 h-1.5 rounded-full bg-[var(--tier-accent)] animate-pulse ml-0.5" />}
             <ChevronUp className={`w-3.5 h-3.5 text-neutral-500 transition-transform ${isAmbientMenuOpen ? 'rotate-180' : ''}`} />
           </button>
 
@@ -614,7 +615,7 @@ export function FocusModeModal() {
                       }}
                       className={`flex items-center justify-between rounded-xl px-3 py-2 text-sm transition-colors cursor-pointer ${
                         ambientSound === option.id 
-                          ? 'bg-amber-500/15 text-amber-300' 
+                          ? 'bg-[var(--tier-accent)]/[0.15] text-[var(--tier-accent)]' 
                           : 'text-neutral-400 hover:text-white hover:bg-white/[0.06]'
                       }`}
                     >
@@ -622,7 +623,7 @@ export function FocusModeModal() {
                         {option.icon}
                         <span>{option.label}</span>
                       </div>
-                      {ambientSound === option.id && <Check className="w-4 h-4 text-amber-400" />}
+                      {ambientSound === option.id && <Check className="w-4 h-4 text-[var(--tier-accent)]" />}
                     </button>
                   ))}
                 </div>
@@ -639,7 +640,7 @@ export function FocusModeModal() {
                       value={ambientVolume}
                       onClick={e => e.stopPropagation()}
                       onChange={e => handleVolumeChange(parseFloat(e.target.value))}
-                      className="flex-1 accent-amber-500 bg-white/10 rounded-lg cursor-pointer h-1.5"
+                      className="flex-1 accent-[var(--tier-accent)] bg-white/10 rounded-lg cursor-pointer h-1.5"
                     />
                   </div>
                 )}
