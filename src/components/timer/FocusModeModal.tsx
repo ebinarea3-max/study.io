@@ -25,6 +25,8 @@ import {
   Coffee,
   SkipForward,
   X,
+  ChevronUp,
+  Check,
 } from 'lucide-react';
 
 const MOTIVATIONAL_QUOTES = [
@@ -73,6 +75,7 @@ export function FocusModeModal() {
   const [quoteIndex, setQuoteIndex] = useState(0);
   const [showNotes, setShowNotes] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isAmbientMenuOpen, setIsAmbientMenuOpen] = useState(false);
 
   // Maintain activeSubjectRef to prevent stale closures in callbacks
   const activeSubjectRef = useRef(selectedSubject);
@@ -562,104 +565,88 @@ export function FocusModeModal() {
 
       {/* Bottom Controls: Ambient Sound Player */}
       <div className="relative z-10 flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-[var(--border)]">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-semibold text-neutral-400 mr-1 flex items-center gap-1.5">
-            <Music className="w-3.5 h-3.5 text-amber-500" />
-            <span className="tracking-tight">Atmosphere:</span>
-          </span>
-
+        
+        {/* Relative container for the popover positioning */}
+        <div className="relative">
           <button
-            onClick={() => handleAmbientChange('none')}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all duration-150 active:scale-95 cursor-pointer ${
-              ambientSound === 'none' ? 'bg-amber-500/15 border-amber-500/40 text-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.2)]' : 'bg-white/[0.03] border-white/10 text-neutral-400 hover:text-white hover:bg-white/[0.06]'
-            }`}
+            onClick={() => setIsAmbientMenuOpen(!isAmbientMenuOpen)}
+            className="bg-white/[0.04] border border-white/10 hover:border-amber-500/30 text-neutral-300 text-xs px-3.5 py-1.5 rounded-full flex items-center gap-2 transition-all cursor-pointer select-none"
           >
-            {ambientSound === 'none' && <span className="w-1.5 h-1.5 rounded-full bg-neutral-300" />}
-            <span>Silent</span>
+            <Music className={`w-3.5 h-3.5 ${ambientSound !== 'none' ? 'text-amber-500' : 'text-neutral-400'}`} />
+            <span className="tracking-tight">
+              Atmosphere: {
+                ambientSound === 'whitenoise' ? 'White Noise' :
+                ambientSound === 'brownnoise' ? 'Brown Noise' :
+                ambientSound === 'rain' ? 'Rain' :
+                ambientSound === 'lofi' ? 'Lofi Cafe' :
+                ambientSound === 'campfire' ? 'Fireplace' :
+                ambientSound === 'waves' ? 'Waves' : 'Silent'
+              }
+            </span>
+            {ambientSound !== 'none' && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse ml-0.5" />}
+            <ChevronUp className={`w-3.5 h-3.5 text-neutral-500 transition-transform ${isAmbientMenuOpen ? 'rotate-180' : ''}`} />
           </button>
 
-          <button
-            onClick={() => handleAmbientChange('whitenoise')}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all duration-150 active:scale-95 cursor-pointer ${
-              ambientSound === 'whitenoise' ? 'bg-amber-500/15 border-amber-500/40 text-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.2)]' : 'bg-white/[0.03] border-white/10 text-neutral-400 hover:text-white hover:bg-white/[0.06]'
-            }`}
-          >
-            <Radio className="w-3.5 h-3.5" />
-            <span>White Noise</span>
-            {ambientSound === 'whitenoise' && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />}
-          </button>
+          {/* Floating Popover Menu */}
+          {isAmbientMenuOpen && (
+            <>
+              {/* Invisible overlay to catch clicks outside */}
+              <div 
+                className="fixed inset-0 z-40" 
+                onClick={() => setIsAmbientMenuOpen(false)} 
+              />
+              <div className="absolute bottom-full left-0 mb-3 z-50 bg-[#0e1015]/95 backdrop-blur-md border border-white/10 rounded-2xl p-2.5 shadow-2xl min-w-[220px] animate-in slide-in-from-bottom-2 fade-in duration-200">
+                <div className="flex flex-col gap-1">
+                  {[
+                    { id: 'none', label: 'Silent', icon: <span className="w-3.5 h-3.5 rounded-full bg-neutral-300 mx-0.5" /> },
+                    { id: 'whitenoise', label: 'White Noise', icon: <Radio className="w-4 h-4" /> },
+                    { id: 'brownnoise', label: 'Brown Noise', icon: <Headphones className="w-4 h-4" /> },
+                    { id: 'rain', label: 'Rain', icon: <CloudRain className="w-4 h-4" /> },
+                    { id: 'lofi', label: 'Lofi Cafe', icon: <Sparkles className="w-4 h-4" /> },
+                    { id: 'campfire', label: 'Fireplace', icon: <Flame className="w-4 h-4" /> },
+                    { id: 'waves', label: 'Waves', icon: <Waves className="w-4 h-4" /> }
+                  ].map(option => (
+                    <button
+                      key={option.id}
+                      onClick={() => {
+                        handleAmbientChange(option.id as any);
+                        setIsAmbientMenuOpen(false);
+                      }}
+                      className={`flex items-center justify-between rounded-xl px-3 py-2 text-sm transition-colors cursor-pointer ${
+                        ambientSound === option.id 
+                          ? 'bg-amber-500/15 text-amber-300' 
+                          : 'text-neutral-400 hover:text-white hover:bg-white/[0.06]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        {option.icon}
+                        <span>{option.label}</span>
+                      </div>
+                      {ambientSound === option.id && <Check className="w-4 h-4 text-amber-400" />}
+                    </button>
+                  ))}
+                </div>
 
-          <button
-            onClick={() => handleAmbientChange('brownnoise')}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all duration-150 active:scale-95 cursor-pointer ${
-              ambientSound === 'brownnoise' ? 'bg-amber-500/15 border-amber-500/40 text-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.2)]' : 'bg-white/[0.03] border-white/10 text-neutral-400 hover:text-white hover:bg-white/[0.06]'
-            }`}
-          >
-            <Headphones className="w-3.5 h-3.5" />
-            <span>Brown Noise</span>
-            {ambientSound === 'brownnoise' && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />}
-          </button>
-
-          <button
-            onClick={() => handleAmbientChange('rain')}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all duration-150 active:scale-95 cursor-pointer ${
-              ambientSound === 'rain' ? 'bg-amber-500/15 border-amber-500/40 text-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.2)]' : 'bg-white/[0.03] border-white/10 text-neutral-400 hover:text-white hover:bg-white/[0.06]'
-            }`}
-          >
-            <CloudRain className="w-3.5 h-3.5" />
-            <span>Rain</span>
-            {ambientSound === 'rain' && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />}
-          </button>
-
-          <button
-            onClick={() => handleAmbientChange('lofi')}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all duration-150 active:scale-95 cursor-pointer ${
-              ambientSound === 'lofi' ? 'bg-amber-500/15 border-amber-500/40 text-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.2)]' : 'bg-white/[0.03] border-white/10 text-neutral-400 hover:text-white hover:bg-white/[0.06]'
-            }`}
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Lofi Cafe</span>
-            {ambientSound === 'lofi' && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />}
-          </button>
-
-          <button
-            onClick={() => handleAmbientChange('campfire')}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all duration-150 active:scale-95 cursor-pointer ${
-              ambientSound === 'campfire' ? 'bg-amber-500/15 border-amber-500/40 text-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.2)]' : 'bg-white/[0.03] border-white/10 text-neutral-400 hover:text-white hover:bg-white/[0.06]'
-            }`}
-          >
-            <Flame className="w-3.5 h-3.5" />
-            <span>Fireplace</span>
-            {ambientSound === 'campfire' && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />}
-          </button>
-
-          <button
-            onClick={() => handleAmbientChange('waves')}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all duration-150 active:scale-95 cursor-pointer ${
-              ambientSound === 'waves' ? 'bg-amber-500/15 border-amber-500/40 text-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.2)]' : 'bg-white/[0.03] border-white/10 text-neutral-400 hover:text-white hover:bg-white/[0.06]'
-            }`}
-          >
-            <Waves className="w-3.5 h-3.5" />
-            <span>Waves</span>
-            {ambientSound === 'waves' && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />}
-          </button>
+                {/* Volume Slider if sound active */}
+                {ambientSound !== 'none' && (
+                  <div className="mt-2 pt-2 border-t border-white/10 flex items-center gap-3 px-2">
+                    <Volume2 className="w-4 h-4 text-neutral-500" />
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.05"
+                      value={ambientVolume}
+                      onClick={e => e.stopPropagation()}
+                      onChange={e => handleVolumeChange(parseFloat(e.target.value))}
+                      className="flex-1 accent-amber-500 bg-white/10 rounded-lg cursor-pointer h-1.5"
+                    />
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
-
-        {/* Volume Slider if sound active */}
-        {ambientSound !== 'none' && (
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.06]">
-            <Volume2 className="w-4 h-4 text-neutral-400" />
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.05"
-              value={ambientVolume}
-              onChange={e => handleVolumeChange(parseFloat(e.target.value))}
-              className="w-24 accent-emerald-400 bg-white/10 rounded-lg cursor-pointer"
-            />
-          </div>
-        )}
       </div>
     </div>
   );
