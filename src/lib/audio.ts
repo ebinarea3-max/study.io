@@ -156,19 +156,21 @@ class AudioEngine {
       return this.audioBuffers.get(url)!;
     }
     const response = await fetch(url);
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     const arrayBuffer = await response.arrayBuffer();
     const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+    console.log(`Successfully decoded audio for ${url}`);
     this.audioBuffers.set(url, audioBuffer);
     return audioBuffer;
   }
 
   // Volume compensation factors to ensure consistent perceived loudness across all files
   private volumeCompensation: Record<AmbientSoundType, number> = {
-    'pinknoise': 1.0,
-    'brownnoise': 1.2,
-    'whitenoise': 0.15,
-    'rain': 0.8,
-    'campfire': 0.9,
+    'pinknoise': 1.5,
+    'brownnoise': 2.5,
+    'whitenoise': 1.0,
+    'rain': 2.0,
+    'campfire': 2.0,
   };
 
   public async startAmbient(type: AmbientSoundType, volume = 0.4) {
@@ -188,11 +190,11 @@ class AudioEngine {
 
       // Real audio loops
       const urls: Record<AmbientSoundType, string> = {
-        'pinknoise': '/audio/ambience/pink-noise.wav',
-        'brownnoise': '/audio/ambience/brown-noise.wav',
-        'whitenoise': '/audio/ambience/white-noise.wav',
-        'rain': '/audio/ambience/rain.wav',
-        'campfire': '/audio/ambience/fireplace.wav',
+        'pinknoise': '/audio/ambience/pink-noise.mp3',
+        'brownnoise': '/audio/ambience/brown-noise.mp3',
+        'whitenoise': '/audio/ambience/white-noise.mp3',
+        'rain': '/audio/ambience/rain.mp3',
+        'campfire': '/audio/ambience/fireplace.mp3',
       };
       
       const url = urls[type];
@@ -206,8 +208,8 @@ class AudioEngine {
         this.activeNodes.push(source);
         this.ambientSource = source;
       }
-    } catch {
-      // Audio ambient fallback
+    } catch (e) {
+      console.error("Audio Engine Error in startAmbient:", e);
     }
   }
 
