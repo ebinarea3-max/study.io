@@ -562,15 +562,15 @@ class AudioEngine {
       const gainScale = 1 + (intensity - 1) * 0.15;
       const sustainScale = 1 + (intensity - 1) * 0.1;
 
-      // 1. Low sub-bass swell (45-60Hz) underneath the spin
+      // 1. Low sub-bass swell (45-60Hz) building underneath the spin
       const subOsc = ctx.createOscillator();
       const subGain = ctx.createGain();
       subOsc.type = 'sine';
       subOsc.frequency.setValueAtTime(45 + intensity * 2, now); // 45-60Hz
       
       subGain.gain.setValueAtTime(0, now);
-      subGain.gain.linearRampToValueAtTime(0.35 * gainScale, now + 0.15); // slow attack 150ms
-      subGain.gain.linearRampToValueAtTime(0.25 * gainScale, now + spinDur - 0.1);
+      // Slow rising swell that grows as the badge decelerates
+      subGain.gain.exponentialRampToValueAtTime(0.35 * gainScale, now + spinDur - 0.05);
       subGain.gain.exponentialRampToValueAtTime(0.001, now + spinDur + 0.6 * sustainScale);
       
       subOsc.connect(subGain);
@@ -578,7 +578,7 @@ class AudioEngine {
       subOsc.start(now);
       subOsc.stop(now + spinDur + 1.2);
 
-      // 2. Mid-range tonal layer (brass/string swell)
+      // 2. Mid-range tonal layer (brass/string swell) building under spin
       const detunes = [-4, 4];
       detunes.forEach((detune) => {
         const midOsc = ctx.createOscillator();
@@ -591,14 +591,15 @@ class AudioEngine {
         midOsc.detune.setValueAtTime(detune, now);
 
         filter.type = 'lowpass';
-        filter.frequency.setValueAtTime(400, now);
-        filter.frequency.exponentialRampToValueAtTime(800 + intensity * 60, now + spinDur * 0.6);
-        filter.frequency.exponentialRampToValueAtTime(300, now + spinDur);
+        filter.frequency.setValueAtTime(300, now);
+        // Filter opens up as it decelerates
+        filter.frequency.exponentialRampToValueAtTime(800 + intensity * 60, now + spinDur - 0.1);
+        filter.frequency.exponentialRampToValueAtTime(300, now + spinDur + 0.2);
 
         const baseGain = 0.08 * gainScale;
         midGain.gain.setValueAtTime(0, now);
-        midGain.gain.linearRampToValueAtTime(baseGain, now + 0.3);
-        midGain.gain.linearRampToValueAtTime(baseGain * 0.6, now + spinDur - 0.1);
+        // Swell up until the settle
+        midGain.gain.exponentialRampToValueAtTime(baseGain * 0.8, now + spinDur - 0.05);
         midGain.gain.exponentialRampToValueAtTime(0.001, now + spinDur + 0.5);
 
         midOsc.connect(filter);
@@ -609,12 +610,12 @@ class AudioEngine {
         midOsc.stop(now + spinDur + 1.2);
       });
 
-      // 3. Resonant impact hit at settle (now + spinDur)
+      // 3. Resonant impact hit at exactly the final settle beat
       const hitTime = now + spinDur;
       
       const hitOsc = ctx.createOscillator();
       const hitGain = ctx.createGain();
-      // Triangle/Sine blend feel, using triangle for a bit of harmonic bite
+      // Triangle for a bit of harmonic bite
       hitOsc.type = 'triangle';
       hitOsc.frequency.setValueAtTime(110, hitTime);
       hitOsc.frequency.exponentialRampToValueAtTime(55, hitTime + 0.15);

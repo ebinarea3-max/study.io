@@ -103,10 +103,9 @@ export function RankSettlementModal({
   const [showProgress, setShowProgress] = useState(false);
   const [showContinue, setShowContinue] = useState(false);
 
-  // Spin Animation States
-  const [isSpinning, setIsSpinning] = useState(false);
-  const [spinDegrees, setSpinDegrees] = useState(0);
-  const [spinDuration, setSpinDuration] = useState(1200);
+  // Reveal Animation States
+  const [revealMode, setRevealMode] = useState<'idle' | 'flip-out' | 'flip-in' | 'spin'>('idle');
+  const [revealDuration, setRevealDuration] = useState(350);
   const [showRevealFlash, setShowRevealFlash] = useState(false);
   const [revealParticles, setRevealParticles] = useState<SparkParticle[]>([]);
 
@@ -186,8 +185,7 @@ export function RankSettlementModal({
       setCounterPopped(false);
       setDisplayRank(isRankUp ? prevRankDetails : newRankDetails);
       setActiveBarColor(isRankUp ? prevRankDetails.config.badgeAccent : newRankDetails.config.badgeAccent);
-      setIsSpinning(false);
-      setSpinDegrees(0);
+      setRevealMode('idle');
       setShowRevealFlash(false);
       setRevealParticles([]);
       return;
@@ -289,61 +287,97 @@ export function RankSettlementModal({
         // Particles unmount after 950ms
         timers.push(setTimeout(() => setParticles([]), 950));
 
-        // SPIN-REVEAL SEQUENCE (if rank up)
+        // TRANSFORMATION SEQUENCE (if rank up)
         if (isRankUp) {
-          const totalSpinDuration = intensity >= 1 ? 1200 + (intensity - 1) * (1000 / 7) : 1200;
-          const totalDegrees = intensity >= 4 ? 1440 : 1080;
-          
-          setSpinDuration(totalSpinDuration);
-          setIsSpinning(true);
+          if (!isMajorTierUp) {
+            // ==========================================
+            // SUB-RANK-UP: Simple Flip (0 -> 90 -> 0)
+            // ==========================================
+            const halfDur = 350;
+            setRevealDuration(halfDur);
+            setRevealMode('flip-out');
 
-          soundFx.playCinematicPromotionSound(intensity >= 1 ? intensity : 0.4, totalSpinDuration);
+            soundFx.playCinematicPromotionSound(0.4, halfDur * 2);
 
-          // Give browser a moment to apply the transition property before setting rotation target
-          timers.push(setTimeout(() => {
-            setSpinDegrees(totalDegrees);
-          }, 50));
+            // Swap image at 90 degrees
+            timers.push(setTimeout(() => {
+              setDisplayRank(newRankDetails);
+              setActiveBarColor(newRankDetails.config.badgeAccent);
+              setRevealMode('flip-in');
 
-          // Swap image at the midpoint of the FIRST rotation (~90 deg).
-          // With cubic-bezier ease-out over 1.2s+, 90 deg happens very quickly.
-          timers.push(setTimeout(() => {
-            setDisplayRank(newRankDetails);
-            setActiveBarColor(newRankDetails.config.badgeAccent);
-          }, 110)); // 50ms (delay) + 60ms
+              // Complete flip and trigger reveal accent
+              timers.push(setTimeout(() => {
+                setRevealMode('idle');
+                setShowRevealFlash(true);
+                timers.push(setTimeout(() => setShowRevealFlash(false), 150));
 
-          // Complete spin and trigger reveal accent
-          timers.push(setTimeout(() => {
-            setIsSpinning(false);
-            setShowRevealFlash(true);
-            const flashDur = intensity >= 6 ? 250 : 150;
-            timers.push(setTimeout(() => setShowRevealFlash(false), flashDur));
+                const pCount = 10;
+                const generatedParticles = Array.from({ length: pCount }).map((_, i) => {
+                  const angle = (i / pCount) * 2 * Math.PI;
+                  const dist = 60 + Math.random() * 60;
+                  return {
+                    id: i,
+                    dx: Math.cos(angle) * dist,
+                    dy: Math.sin(angle) * dist,
+                    rot: 0,
+                    size: 2 + Math.random() * 3,
+                    opacity: 0.8 + Math.random() * 0.2,
+                    color: newRankDetails.config.badgeAccent,
+                  };
+                });
+                setRevealParticles(generatedParticles);
+                timers.push(setTimeout(() => setRevealParticles([]), 500));
+              }, halfDur));
+            }, halfDur));
+          } else {
+            // ==========================================
+            // MAJOR-TIER-UP: Deliberate 2-rotation Spin
+            // ==========================================
+            const spinDur = intensity >= 1 ? 2000 + (intensity - 1) * (500 / 7) : 2000;
+            setRevealDuration(spinDur);
+            setRevealMode('spin');
 
-            const pCount = intensity >= 1 ? Math.round(8 + (intensity - 1) * (22 / 7)) : 8;
-            const generatedParticles = Array.from({ length: pCount }).map((_, i) => {
-              const angle = (i / pCount) * 2 * Math.PI;
-              const spreadRadius = intensity >= 1 ? 60 + (intensity - 1) * (60 / 7) : 60;
-              const dist = spreadRadius + Math.random() * spreadRadius;
-              return {
-                id: i,
-                dx: Math.cos(angle) * dist,
-                dy: Math.sin(angle) * dist,
-                rot: 0,
-                size: 2 + Math.random() * 3,
-                opacity: 0.8 + Math.random() * 0.2,
-                color: newRankDetails.config.badgeAccent,
-              };
-            });
-            setRevealParticles(generatedParticles);
-            timers.push(setTimeout(() => setRevealParticles([]), 500));
-          }, totalSpinDuration + 50));
+            soundFx.playCinematicPromotionSound(intensity, spinDur);
+
+            // Swap image early in the first rotation (~150ms in)
+            timers.push(setTimeout(() => {
+              setDisplayRank(newRankDetails);
+              setActiveBarColor(newRankDetails.config.badgeAccent);
+            }, 180));
+
+            // Complete spin and trigger reveal accent (right as it settles)
+            timers.push(setTimeout(() => {
+              setRevealMode('idle');
+              setShowRevealFlash(true);
+              const flashDur = intensity >= 6 ? 250 : 150;
+              timers.push(setTimeout(() => setShowRevealFlash(false), flashDur));
+
+              const pCount = intensity >= 1 ? Math.round(8 + (intensity - 1) * (22 / 7)) : 8;
+              const generatedParticles = Array.from({ length: pCount }).map((_, i) => {
+                const angle = (i / pCount) * 2 * Math.PI;
+                const spreadRadius = intensity >= 1 ? 60 + (intensity - 1) * (60 / 7) : 60;
+                const dist = spreadRadius + Math.random() * spreadRadius;
+                return {
+                  id: i,
+                  dx: Math.cos(angle) * dist,
+                  dy: Math.sin(angle) * dist,
+                  rot: 0,
+                  size: 2 + Math.random() * 3,
+                  opacity: 0.8 + Math.random() * 0.2,
+                  color: newRankDetails.config.badgeAccent,
+                };
+              });
+              setRevealParticles(generatedParticles);
+              timers.push(setTimeout(() => setRevealParticles([]), 500));
+            }, spinDur));
+          }
         }
 
       }, 340)
     );
 
     // Calculate delay offset to wait for spin to finish before showing title & progress
-    // Spin duration is up to ~2200ms
-    const delayOffset = isRankUp ? (intensity >= 1 ? 1200 + (intensity - 1) * (1000 / 7) - 200 : 1000) : 0;
+    const delayOffset = isRankUp ? (isMajorTierUp ? (intensity >= 1 ? 2000 + (intensity - 1) * (500 / 7) : 2000) - 200 : 500) : 0;
 
     // ==========================================
     // STAGE 3: TEXT STAMP at 0.52s + offset
@@ -436,11 +470,29 @@ export function RankSettlementModal({
 
   const remainingRP = Math.max(0, displayRank.maxRP - animatingRP);
 
-  const getSpinStyle = () => {
+  const getContainerStyle = () => {
     if (prefersReducedMotion) return {};
+    if (revealMode === 'flip-out') {
+      return {
+        transform: `rotateY(90deg) scale(0.85)`,
+        filter: 'blur(4px)',
+        transition: `transform ${revealDuration}ms ease-in, filter ${revealDuration}ms ease-in`
+      };
+    } else if (revealMode === 'flip-in') {
+      return {
+        transform: 'rotateY(0deg) scale(1)',
+        filter: 'blur(0px)',
+        transition: `transform ${revealDuration}ms ease-out, filter ${revealDuration}ms ease-out`
+      };
+    } else if (revealMode === 'spin') {
+      return {
+        animation: `majorTierSpin ${revealDuration}ms cubic-bezier(0.3, 0, 0.2, 1) forwards`
+      };
+    }
     return {
-      transform: `rotateY(${spinDegrees}deg)`,
-      transition: isSpinning ? `transform ${spinDuration}ms cubic-bezier(0.22, 1, 0.36, 1)` : 'none',
+      transform: 'rotateY(0deg) scale(1)',
+      filter: 'blur(0px)',
+      transition: 'transform 300ms ease-out'
     };
   };
 
@@ -581,19 +633,31 @@ export function RankSettlementModal({
 
           {/* CHROMATIC ABERRATION PULSE & MASS SLAM REPLACED WITH NEW CREST */}
           <div className="relative mx-auto mb-4 flex items-center justify-center perspective-[1000px]">
+            {/* Trailing Glow for Major Tier Spin */}
+            {revealMode === 'spin' && !prefersReducedMotion && (
+              <div 
+                className="absolute inset-[-30%] rounded-full opacity-0 pointer-events-none z-0"
+                style={{
+                  background: `radial-gradient(circle at 50% 50%, ${displayRank.config.badgeAccent}44 0%, transparent 70%)`,
+                  animation: `spinGlow ${revealDuration}ms ease-in-out forwards`,
+                  filter: 'blur(12px)'
+                }}
+              />
+            )}
+            
             <div 
-              style={getSpinStyle()}
-              className="relative w-full h-full flex items-center justify-center transform-gpu"
+              style={getContainerStyle()}
+              className="relative w-full h-full flex items-center justify-center transform-gpu z-10"
             >
               <div style={{
-                animation: isSpinning && !prefersReducedMotion ? 'badgeSpinPulse 220ms infinite alternate ease-in-out' : 'none'
+                animation: revealMode === 'spin' && !prefersReducedMotion ? 'badgeSpinPulse 220ms infinite alternate ease-in-out' : 'none'
               }}>
                 <RankCrestBadge
                   tier={displayRank.tier}
                   division={displayRank.division}
                   size={192}
                   className="animate-in zoom-in spin-in-12 duration-700 ease-out"
-                  isSettled={animPhase !== 'slam' && animPhase !== 'impact' && !isSpinning}
+                  isSettled={animPhase !== 'slam' && animPhase !== 'impact' && revealMode === 'idle'}
                 />
               </div>
               
@@ -1011,6 +1075,20 @@ export function RankSettlementModal({
           0% { transform: scale(0.5); opacity: 0; }
           70% { transform: scale(1.1); opacity: 1; }
           100% { transform: scale(1); }
+        }
+
+        @keyframes majorTierSpin {
+          0% { transform: rotateY(0deg); }
+          35% { transform: rotateY(360deg); }
+          92% { transform: rotateY(700deg); } /* Hang */
+          100% { transform: rotateY(720deg); } /* Settle */
+        }
+
+        @keyframes spinGlow {
+          0% { opacity: 0; transform: scale(0.8); }
+          50% { opacity: 1; transform: scale(1.2); }
+          90% { opacity: 0.8; transform: scale(1.1); }
+          100% { opacity: 0; transform: scale(1); }
         }
 
         @keyframes badgeSpinPulse {
