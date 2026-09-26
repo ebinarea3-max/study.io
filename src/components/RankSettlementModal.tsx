@@ -694,7 +694,7 @@ export function RankSettlementModal({
           />
 
           {/* CHROMATIC ABERRATION PULSE & MASS SLAM REPLACED WITH NEW CREST */}
-          <div className="relative mx-auto mb-4 flex items-center justify-center perspective-[1000px]">
+          <div className="relative mx-auto mb-4 flex items-center justify-center perspective-[1000px] w-[192px] h-[192px]">
             {/* Soft Radial Glow Ring for Pulse Crossfade */}
             {showPulseGlow && !prefersReducedMotion && (
               <div 
