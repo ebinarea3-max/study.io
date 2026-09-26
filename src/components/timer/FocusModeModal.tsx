@@ -230,7 +230,7 @@ export function FocusModeModal() {
               )}
 
               {/* Big Digital Clock (Flip Clock Aesthetic) */}
-              <div className={`flex items-center justify-center gap-3 sm:gap-6 transition-all duration-700 ease-in-out ${isStudying && !isPaused ? 'scale-[1.15] sm:scale-125 translate-y-4' : 'scale-100 translate-y-0'}`}>
+              <div className={`flex items-center justify-center gap-3 sm:gap-6 transition-all duration-700 ease-in-out ${isStudying ? (isPaused ? 'scale-[1.15] sm:scale-[1.3] translate-y-2' : 'scale-[1.4] sm:scale-[1.7] md:scale-[2.1] translate-y-6') : 'scale-100 translate-y-0'}`}>
                 {displayTime.split(':').map((part, i, arr) => (
                   <React.Fragment key={i}>
                     {/* Digit Block (Flip Clock Style) */}
@@ -387,7 +387,7 @@ export function FocusModeModal() {
                 <button
                   onClick={pauseTimer}
                   disabled={isSaving || isRemoteTransitioning}
-                  className="px-6 py-3 rounded-2xl bg-slate-900/90 hover:bg-slate-800 text-[var(--tier-accent)] font-bold text-sm border border-[var(--tier-border)] transition-all flex items-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-[var(--tier-accent)] font-bold text-xs border border-[var(--tier-border)] transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Pause className="w-4 h-4" />
                   <span>Pause Break</span>
@@ -451,7 +451,7 @@ export function FocusModeModal() {
               <button
                 onClick={handleStopAndSave}
                 disabled={isSaving || isRemoteTransitioning}
-                className="px-6 py-3 rounded-2xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 font-bold text-sm transition-all flex items-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 font-bold text-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 title={isSaving ? "Saving session..." : "Stop and save session"}
               >
                 {isSaving ? (
@@ -473,7 +473,7 @@ export function FocusModeModal() {
               <button
                 onClick={resumeTimer}
                 disabled={isSaving || isRemoteTransitioning}
-                className="px-6 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm transition-all shadow-lg shadow-emerald-500/25 flex items-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition-all shadow-lg shadow-emerald-500/25 flex items-center gap-1.5 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Play className="w-4 h-4 fill-current" />
                 <span>Resume</span>
@@ -482,7 +482,7 @@ export function FocusModeModal() {
               <button
                 onClick={handleStopAndSave}
                 disabled={isSaving || isRemoteTransitioning}
-                className="px-6 py-3 rounded-2xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 font-bold text-sm transition-all flex items-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 font-bold text-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 title={isSaving ? "Saving session..." : "Stop and save session"}
               >
                 {isSaving ? (
