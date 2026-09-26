@@ -172,12 +172,12 @@ export function FocusModeModal() {
           <div>
             <div className="text-sm font-bold text-white flex items-center gap-2">
               <span>{selectedSubject?.name || 'No Subject Selected'}</span>
-              <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 font-mono">
+              <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 font-mono tracking-widest uppercase">
                 {timerMode.toUpperCase()}
               </span>
             </div>
             <div className="text-xs text-slate-400">
-              Studying as <span className="text-emerald-400 font-medium">{user.displayName}</span>
+              Studying as <span className="text-amber-400 font-medium">{user.displayName}</span>
             </div>
           </div>
         </div>
@@ -185,11 +185,7 @@ export function FocusModeModal() {
         <div className="flex items-center gap-3">
           {/* Live Sync Status Indicator */}
           <div
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold backdrop-blur-md transition-all ${
-              isSyncConnected
-                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                : 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
-            }`}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold backdrop-blur-md transition-all bg-white/5 border border-white/10 text-neutral-300"
             title={isSyncConnected ? "Cross-device timer sync is active" : "Reconnecting to cloud sync..."}
           >
             <span
@@ -232,20 +228,19 @@ export function FocusModeModal() {
 
       {/* Center Digital Clock & Breathing Visualizer */}
       <div className="relative z-10 my-auto flex flex-col items-center justify-center text-center">
+        {/* Soft Radial Gradient Glow Behind Timer */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(217,119,6,0.12)_0%,transparent_70%)] pointer-events-none" />
         {/* Breathing Ring Aura */}
         <div className={`relative flex items-center justify-center rounded-full transition-all duration-300 ${
           isRemoteTransitioning ? 'ring-4 ring-emerald-400/50 scale-[1.03] shadow-[0_0_60px_rgba(16,185,129,0.4)]' : ''
         }`}>
           <div
-            className="w-72 h-72 sm:w-96 sm:h-96 rounded-full border-2 border-dashed animate-pulse-breathe flex items-center justify-center transition-all duration-700"
-            style={{
-              borderColor: `${subjectColor}40`,
-              boxShadow: isStudying && !isPaused ? `0 0 80px ${subjectColor}25` : 'none',
-            }}
+            className="w-72 h-72 sm:w-96 sm:h-96 rounded-full border-2 border-dashed border-amber-500/20 animate-pulse-breathe flex items-center justify-center transition-all duration-700"
+            style={{ boxShadow: isStudying && !isPaused ? `0 0 80px ${subjectColor}25` : 'none' }}
           >
             <div
-              className="w-60 h-60 sm:w-80 sm:h-80 rounded-full border border-slate-800 bg-slate-950/60 backdrop-blur-2xl flex flex-col items-center justify-center p-6 shadow-2xl"
-              style={{ borderColor: `${subjectColor}50` }}
+              className="w-60 h-60 sm:w-80 sm:h-80 rounded-full border border-amber-500/20 bg-gradient-to-b from-[#0c0d12] to-[#121318] flex flex-col items-center justify-center p-6 shadow-2xl"
+              
             >
               {/* Pomodoro Phase Tag */}
               {timerMode === 'pomodoro' && (
@@ -284,11 +279,11 @@ export function FocusModeModal() {
                 <span
                   className={`w-2 h-2 rounded-full ${
                     pomodoroCompletedPhase === 'work'
-                      ? 'bg-emerald-400 animate-ping'
+                      ? 'bg-amber-400 animate-ping'
                       : pomodoroCompletedPhase === 'break'
                       ? 'bg-amber-400 animate-bounce'
                       : isStudying && !isPaused
-                      ? 'bg-emerald-400 animate-ping'
+                      ? 'bg-amber-400 animate-ping'
                       : 'bg-slate-500'
                   }`}
                 />
@@ -461,7 +456,7 @@ export function FocusModeModal() {
                 startTimer(activeSub.id);
               }}
               disabled={isSaving || isRemoteTransitioning}
-              className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black text-sm transition-all shadow-xl shadow-emerald-500/25 flex items-center gap-2.5 active:scale-95 hover:scale-[1.02] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-600 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-black font-semibold text-sm transition-all duration-300 shadow-[0_0_30px_rgba(245,158,11,0.35)] flex items-center gap-2.5 active:scale-95 hover:scale-[1.02] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Play className="w-5 h-5 fill-current" />
               <span>Start Session</span>
@@ -569,16 +564,14 @@ export function FocusModeModal() {
       <div className="relative z-10 flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-[var(--border)]">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs font-semibold text-neutral-400 mr-1 flex items-center gap-1.5">
-            <Music className="w-3.5 h-3.5 text-emerald-400" />
+            <Music className="w-3.5 h-3.5 text-amber-500" />
             <span className="tracking-tight">Atmosphere:</span>
           </span>
 
           <button
             onClick={() => handleAmbientChange('none')}
             className={`px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all duration-150 active:scale-95 cursor-pointer ${
-              ambientSound === 'none'
-                ? 'bg-white/[0.12] text-white border border-white/25 shadow-sm shadow-white/5'
-                : 'bg-white/[0.03] hover:bg-white/[0.08] text-neutral-400 hover:text-white border border-white/[0.06] hover:border-[var(--border)]'
+              ambientSound === 'none' ? 'bg-amber-500/15 border-amber-500/40 text-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.2)]' : 'bg-white/[0.03] border-white/10 text-neutral-400 hover:text-white hover:bg-white/[0.06]'
             }`}
           >
             {ambientSound === 'none' && <span className="w-1.5 h-1.5 rounded-full bg-neutral-300" />}
@@ -588,25 +581,21 @@ export function FocusModeModal() {
           <button
             onClick={() => handleAmbientChange('whitenoise')}
             className={`px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all duration-150 active:scale-95 cursor-pointer ${
-              ambientSound === 'whitenoise'
-                ? 'bg-teal-500/15 text-teal-200 border border-teal-500/40 shadow-sm shadow-teal-500/20'
-                : 'bg-white/[0.03] hover:bg-white/[0.08] text-neutral-400 hover:text-white border border-white/[0.06] hover:border-[var(--border)]'
+              ambientSound === 'whitenoise' ? 'bg-amber-500/15 border-amber-500/40 text-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.2)]' : 'bg-white/[0.03] border-white/10 text-neutral-400 hover:text-white hover:bg-white/[0.06]'
             }`}
           >
-            <Radio className="w-3.5 h-3.5 text-teal-400" />
+            <Radio className="w-3.5 h-3.5" />
             <span>White Noise</span>
-            {ambientSound === 'whitenoise' && <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse" />}
+            {ambientSound === 'whitenoise' && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />}
           </button>
 
           <button
             onClick={() => handleAmbientChange('brownnoise')}
             className={`px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all duration-150 active:scale-95 cursor-pointer ${
-              ambientSound === 'brownnoise'
-                ? 'bg-amber-600/20 text-amber-200 border border-amber-600/40 shadow-sm shadow-amber-500/20'
-                : 'bg-white/[0.03] hover:bg-white/[0.08] text-neutral-400 hover:text-white border border-white/[0.06] hover:border-[var(--border)]'
+              ambientSound === 'brownnoise' ? 'bg-amber-500/15 border-amber-500/40 text-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.2)]' : 'bg-white/[0.03] border-white/10 text-neutral-400 hover:text-white hover:bg-white/[0.06]'
             }`}
           >
-            <Headphones className="w-3.5 h-3.5 text-amber-400" />
+            <Headphones className="w-3.5 h-3.5" />
             <span>Brown Noise</span>
             {ambientSound === 'brownnoise' && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />}
           </button>
@@ -614,53 +603,45 @@ export function FocusModeModal() {
           <button
             onClick={() => handleAmbientChange('rain')}
             className={`px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all duration-150 active:scale-95 cursor-pointer ${
-              ambientSound === 'rain'
-                ? 'bg-blue-500/15 text-blue-200 border border-blue-500/40 shadow-sm shadow-blue-500/20'
-                : 'bg-white/[0.03] hover:bg-white/[0.08] text-neutral-400 hover:text-white border border-white/[0.06] hover:border-[var(--border)]'
+              ambientSound === 'rain' ? 'bg-amber-500/15 border-amber-500/40 text-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.2)]' : 'bg-white/[0.03] border-white/10 text-neutral-400 hover:text-white hover:bg-white/[0.06]'
             }`}
           >
-            <CloudRain className="w-3.5 h-3.5 text-blue-400" />
+            <CloudRain className="w-3.5 h-3.5" />
             <span>Rain</span>
-            {ambientSound === 'rain' && <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />}
+            {ambientSound === 'rain' && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />}
           </button>
 
           <button
             onClick={() => handleAmbientChange('lofi')}
             className={`px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all duration-150 active:scale-95 cursor-pointer ${
-              ambientSound === 'lofi'
-                ? 'bg-purple-500/15 text-purple-200 border border-purple-500/40 shadow-sm shadow-purple-500/20'
-                : 'bg-white/[0.03] hover:bg-white/[0.08] text-neutral-400 hover:text-white border border-white/[0.06] hover:border-[var(--border)]'
+              ambientSound === 'lofi' ? 'bg-amber-500/15 border-amber-500/40 text-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.2)]' : 'bg-white/[0.03] border-white/10 text-neutral-400 hover:text-white hover:bg-white/[0.06]'
             }`}
           >
-            <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+            <Sparkles className="w-3.5 h-3.5" />
             <span>Lofi Cafe</span>
-            {ambientSound === 'lofi' && <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />}
+            {ambientSound === 'lofi' && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />}
           </button>
 
           <button
             onClick={() => handleAmbientChange('campfire')}
             className={`px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all duration-150 active:scale-95 cursor-pointer ${
-              ambientSound === 'campfire'
-                ? 'bg-orange-500/15 text-orange-200 border border-orange-500/40 shadow-sm shadow-orange-500/20'
-                : 'bg-white/[0.03] hover:bg-white/[0.08] text-neutral-400 hover:text-white border border-white/[0.06] hover:border-[var(--border)]'
+              ambientSound === 'campfire' ? 'bg-amber-500/15 border-amber-500/40 text-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.2)]' : 'bg-white/[0.03] border-white/10 text-neutral-400 hover:text-white hover:bg-white/[0.06]'
             }`}
           >
-            <Flame className="w-3.5 h-3.5 text-orange-400" />
+            <Flame className="w-3.5 h-3.5" />
             <span>Fireplace</span>
-            {ambientSound === 'campfire' && <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />}
+            {ambientSound === 'campfire' && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />}
           </button>
 
           <button
             onClick={() => handleAmbientChange('waves')}
             className={`px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all duration-150 active:scale-95 cursor-pointer ${
-              ambientSound === 'waves'
-                ? 'bg-cyan-500/15 text-cyan-200 border border-cyan-500/40 shadow-sm shadow-cyan-500/20'
-                : 'bg-white/[0.03] hover:bg-white/[0.08] text-neutral-400 hover:text-white border border-white/[0.06] hover:border-[var(--border)]'
+              ambientSound === 'waves' ? 'bg-amber-500/15 border-amber-500/40 text-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.2)]' : 'bg-white/[0.03] border-white/10 text-neutral-400 hover:text-white hover:bg-white/[0.06]'
             }`}
           >
-            <Waves className="w-3.5 h-3.5 text-cyan-400" />
+            <Waves className="w-3.5 h-3.5" />
             <span>Waves</span>
-            {ambientSound === 'waves' && <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />}
+            {ambientSound === 'waves' && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />}
           </button>
         </div>
 
