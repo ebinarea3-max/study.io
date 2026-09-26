@@ -576,12 +576,13 @@ export function FocusModeModal() {
             <Music className={`w-3.5 h-3.5 ${ambientSound !== 'none' ? 'text-[var(--tier-accent)]' : 'text-neutral-400'}`} />
             <span className="tracking-tight">
               Atmosphere: {
-                ambientSound === 'whitenoise' ? 'White Noise' :
+                ambientSound === 'pinknoise' ? 'Pink Noise' :
                 ambientSound === 'brownnoise' ? 'Brown Noise' :
+                ambientSound === 'whitenoise' ? 'White Noise' :
                 ambientSound === 'rain' ? 'Rain' :
-                ambientSound === 'lofi' ? 'Lofi Cafe' :
+                ambientSound === 'waves' ? 'Waves' :
                 ambientSound === 'campfire' ? 'Fireplace' :
-                ambientSound === 'waves' ? 'Waves' : 'Silent'
+                ambientSound === 'lofi' ? 'Lofi Cafe' : 'Silent'
               }
             </span>
             {ambientSound !== 'none' && <span className="w-1.5 h-1.5 rounded-full bg-[var(--tier-accent)] animate-pulse ml-0.5" />}
@@ -600,12 +601,13 @@ export function FocusModeModal() {
                 <div className="flex flex-col gap-1">
                   {[
                     { id: 'none', label: 'Silent', icon: <span className="w-3.5 h-3.5 rounded-full bg-neutral-300 mx-0.5" /> },
-                    { id: 'whitenoise', label: 'White Noise', icon: <Radio className="w-4 h-4" /> },
+                    { id: 'pinknoise', label: 'Pink Noise', icon: <Radio className="w-4 h-4" /> },
                     { id: 'brownnoise', label: 'Brown Noise', icon: <Headphones className="w-4 h-4" /> },
+                    { id: 'whitenoise', label: 'White Noise', icon: <Radio className="w-4 h-4" /> },
                     { id: 'rain', label: 'Rain', icon: <CloudRain className="w-4 h-4" /> },
-                    { id: 'lofi', label: 'Lofi Cafe', icon: <Sparkles className="w-4 h-4" /> },
+                    { id: 'waves', label: 'Waves', icon: <Waves className="w-4 h-4" /> },
                     { id: 'campfire', label: 'Fireplace', icon: <Flame className="w-4 h-4" /> },
-                    { id: 'waves', label: 'Waves', icon: <Waves className="w-4 h-4" /> }
+                    { id: 'lofi', label: 'Lofi Cafe', icon: <Sparkles className="w-4 h-4" /> }
                   ].map(option => (
                     <button
                       key={option.id}

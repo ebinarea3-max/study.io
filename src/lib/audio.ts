@@ -1,6 +1,6 @@
 // Web Audio API Sound Synthesizer & Ambient Sound Generator
 
-export type AmbientSoundType = 'rain' | 'lofi' | 'campfire' | 'waves' | 'whitenoise' | 'brownnoise';
+export type AmbientSoundType = 'pinknoise' | 'brownnoise' | 'whitenoise' | 'rain' | 'waves' | 'campfire' | 'lofi';
 
 class AudioEngine {
   private ctx: AudioContext | null = null;
@@ -149,7 +149,6 @@ class AudioEngine {
   }
 
   // Ambient sound synthesizer: Rain, Lofi, WhiteNoise, BrownNoise, Campfire, Waves
-  private workletLoaded = false;
   private audioBuffers = new Map<string, AudioBuffer>();
 
   private async getAmbientBuffer(ctx: AudioContext, url: string): Promise<AudioBuffer> {
@@ -163,6 +162,17 @@ class AudioEngine {
     return audioBuffer;
   }
 
+  // Volume compensation factors to ensure consistent perceived loudness across all files
+  private volumeCompensation: Record<AmbientSoundType, number> = {
+    'pinknoise': 1.0,
+    'brownnoise': 1.2,
+    'whitenoise': 0.15,
+    'rain': 0.8,
+    'waves': 1.0,
+    'campfire': 0.9,
+    'lofi': 0.7,
+  };
+
   public async startAmbient(type: AmbientSoundType, volume = 0.4) {
     this.stopAmbient();
     try {
@@ -171,73 +181,34 @@ class AudioEngine {
 
       const masterGain = ctx.createGain();
       masterGain.gain.setValueAtTime(0.001, ctx.currentTime);
-      masterGain.gain.linearRampToValueAtTime(volume, ctx.currentTime + 1.2);
+      
+      const compFactor = this.volumeCompensation[type] || 1.0;
+      masterGain.gain.linearRampToValueAtTime(volume * compFactor, ctx.currentTime + 1.2);
+      
       masterGain.connect(ctx.destination);
       this.ambientGain = masterGain;
 
-      if (type === 'whitenoise' || type === 'brownnoise') {
-        if (!this.workletLoaded) {
-          await ctx.audioWorklet.addModule('/audio/noise-worklet.js');
-          this.workletLoaded = true;
-        }
-        
-        const noiseNode = new AudioWorkletNode(ctx, 'noise-generator');
-        const noiseTypeParam = noiseNode.parameters.get('noiseType');
-        if (noiseTypeParam) {
-          noiseTypeParam.setValueAtTime(type === 'brownnoise' ? 1 : 0, ctx.currentTime);
-        }
-
-        const filter = ctx.createBiquadFilter();
-        if (type === 'whitenoise') {
-          filter.type = 'lowpass';
-          filter.frequency.setValueAtTime(14000, ctx.currentTime); // 14kHz gentle lowpass
-        } else {
-          filter.type = 'lowpass';
-          filter.frequency.setValueAtTime(360, ctx.currentTime);
-          
-          const warmth = ctx.createBiquadFilter();
-          warmth.type = 'peaking';
-          warmth.frequency.setValueAtTime(100, ctx.currentTime);
-          warmth.Q.setValueAtTime(1.1, ctx.currentTime);
-          warmth.gain.setValueAtTime(4.0, ctx.currentTime);
-          
-          filter.connect(warmth);
-          warmth.connect(masterGain);
-          
-          noiseNode.connect(filter);
-          this.activeNodes.push(noiseNode as any);
-          this.ambientSource = noiseNode;
-          return;
-        }
-
-        const nodeGain = ctx.createGain();
-        nodeGain.gain.setValueAtTime(type === 'whitenoise' ? 0.08 : 1.2, ctx.currentTime);
-        
-        noiseNode.connect(filter);
-        filter.connect(nodeGain);
-        nodeGain.connect(masterGain);
-
-        this.activeNodes.push(noiseNode as any);
-        this.ambientSource = noiseNode;
-      } else {
-        // Real audio loops
-        const urls: Record<string, string> = {
-          'rain': '/audio/ambience/rain.wav',
-          'campfire': '/audio/ambience/fireplace.wav',
-          'waves': '/audio/ambience/waves.wav',
-          'lofi': '/audio/ambience/lofi.wav',
-        };
-        const url = urls[type];
-        if (url) {
-          const buffer = await this.getAmbientBuffer(ctx, url);
-          const source = ctx.createBufferSource();
-          source.buffer = buffer;
-          source.loop = true;
-          source.connect(masterGain);
-          source.start();
-          this.activeNodes.push(source);
-          this.ambientSource = source;
-        }
+      // Real audio loops
+      const urls: Record<AmbientSoundType, string> = {
+        'pinknoise': '/audio/ambience/pink-noise.wav',
+        'brownnoise': '/audio/ambience/brown-noise.wav',
+        'whitenoise': '/audio/ambience/white-noise.wav',
+        'rain': '/audio/ambience/rain.wav',
+        'waves': '/audio/ambience/waves.wav',
+        'campfire': '/audio/ambience/fireplace.wav',
+        'lofi': '/audio/ambience/lofi-cafe.wav',
+      };
+      
+      const url = urls[type];
+      if (url) {
+        const buffer = await this.getAmbientBuffer(ctx, url);
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.loop = true;
+        source.connect(masterGain);
+        source.start();
+        this.activeNodes.push(source);
+        this.ambientSource = source;
       }
     } catch {
       // Audio ambient fallback
