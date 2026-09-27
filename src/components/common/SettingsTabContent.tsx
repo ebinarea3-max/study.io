@@ -105,7 +105,7 @@ export function SettingsTabContent() {
               borderColor: `${theme.accent}40`,
             }}
           >
-            <TierIcon className="w-4 h-4" style={{ color: theme.accent }} />
+            <TierIcon size={20} className="flex-shrink-0 -ml-1 -mr-0.5 drop-shadow-sm" style={{ color: theme.accent }} />
             <span className="font-hud text-xs font-bold tracking-wider" style={{ color: theme.textAccent }}>
               {userRank.fullTitle} // {userRank.rp} RP
             </span>
