@@ -127,12 +127,6 @@ export function StudyTimer() {
     setAmbientVolume(vol);
     soundFx.setAmbientVolume(vol);
   };
-  const [ambientSound, setAmbientSound] = useState<AmbientSoundType | 'none'>('none');
-  const [ambientVolume, setAmbientVolume] = useState(0.5);
-  const [isAmbientMenuOpen, setIsAmbientMenuOpen] = useState(false);
-  useEffect(() => { return () => { soundFx.stopAmbient(); }; }, []);
-  const handleAmbientChange = (type: AmbientSoundType | 'none') => { setAmbientSound(type); if (type === 'none') { soundFx.stopAmbient(); } else { soundFx.startAmbient(type, ambientVolume); } };
-  const handleVolumeChange = (vol: number) => { setAmbientVolume(vol); soundFx.setAmbientVolume(vol); };
 
   const [showDropdown, setShowDropdown] = useState(false);
   const [overviewView, setOverviewView] = useState<'today' | 'yesterday'>('today');
