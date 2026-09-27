@@ -3,8 +3,7 @@
 import React, { useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import { soundFx } from '../../lib/audio';
-import { getTierBadge } from '../../lib/gamification';
-import { Sparkles, Trophy, ArrowRight, X } from 'lucide-react';
+import { Sparkles, ArrowRight, X } from 'lucide-react';
 import { useRankTheme } from '../../hooks/useRankTheme';
 
 interface LevelUpModalProps {
@@ -60,12 +59,11 @@ export function LevelUpModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
       <div 
-        className="relative w-full max-w-sm bg-[#0c0d12]/95 border backdrop-blur-xl rounded-3xl shadow-2xl p-6 sm:p-8 text-center overflow-hidden animate-in zoom-in-95 duration-200"
-        style={{ borderColor: `${theme.accent}30` }}
+        className="relative w-full max-w-sm bg-[#0c0d12]/95 border border-white/10 backdrop-blur-xl rounded-3xl shadow-2xl p-6 sm:p-8 text-center overflow-hidden animate-in zoom-in-95 duration-200"
       >
         {/* Background glow effects */}
         <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full blur-[100px] opacity-20 pointer-events-none"
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full blur-[100px] opacity-15 pointer-events-none"
           style={{ backgroundColor: theme.accent }}
         />
 
@@ -83,7 +81,7 @@ export function LevelUpModal({
         <div className="relative z-10 flex flex-col items-center mt-2">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs font-black tracking-widest uppercase mb-4" style={{ color: theme.accent }}>
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Level Up!</span>
+            <span>LEVEL UP</span>
           </div>
 
           {/* Level Transition Indicator */}
@@ -99,7 +97,7 @@ export function LevelUpModal({
           </div>
 
           {/* Unlocked Title */}
-          <div className="mt-8 mb-2">
+          <div className="mt-8 mb-6">
             <div className="text-[10px] uppercase font-bold tracking-widest text-slate-400 mb-1">
               New Title Unlocked
             </div>
@@ -107,6 +105,14 @@ export function LevelUpModal({
               {title}
             </div>
           </div>
+          
+          <button
+            onClick={onClose}
+            className="w-full py-3 px-6 rounded-2xl text-black font-black text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg active:scale-[0.98]"
+            style={{ background: theme.gradient, boxShadow: `0 4px 20px ${theme.accent}40` }}
+          >
+            <span>Confirm & Continue</span>
+          </button>
         </div>
       </div>
     </div>
