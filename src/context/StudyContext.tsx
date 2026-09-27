@@ -2072,7 +2072,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     });
     const isUuid = (id?: string | null) => typeof id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
     syncActiveSessionToDb('running', {
-      startedAt: new Date(nowAnchor).toISOString(),
+      startedAt: new Date().toISOString(),
       accumulatedSeconds: accumulatedSecondsRef.current,
       elapsedBeforePause: accumulatedSecondsRef.current,
       subjectId: isUuid(targetSub.id) ? targetSub.id : null,
@@ -2142,7 +2142,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       });
     }
     syncActiveSessionToDb('running', {
-      startedAt: new Date(nowAnchor).toISOString(),
+      startedAt: new Date().toISOString(),
       accumulatedSeconds: accumulatedSecondsRef.current,
       elapsedBeforePause: accumulatedSecondsRef.current,
       mode: timerMode,
