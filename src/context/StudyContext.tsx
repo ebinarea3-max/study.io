@@ -787,7 +787,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
       timerIntervalRef.current = setInterval(() => {
         if (startTimeRef.current === null) return;
-        const actualElapsed = Math.round((Date.now() - startTimeRef.current) / 1000);
+        const actualElapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
         accumulatedSecondsRef.current = actualElapsed;
 
         if (timerMode === 'pomodoro') {
@@ -828,7 +828,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         }
 
         setElapsedSeconds(actualElapsed);
-      }, 1000);
+      }, 100);
     }
 
     return () => {
