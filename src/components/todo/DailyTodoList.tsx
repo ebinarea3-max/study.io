@@ -364,7 +364,7 @@ export function DailyTodoList() {
           </span>
         </div>
         <span
-          className="px-2.5 py-0.5 rounded font-hud-mono text-[11px] font-bold border shadow-sm" style={{ backgroundColor: "rgba(245, 158, 11, 0.1)", color: "#FBBF24", borderColor: "rgba(245, 158, 11, 0.25)" }}
+          className="px-2.5 py-0.5 rounded font-hud-mono text-xs font-bold border shadow-sm bg-white/[0.04] border-white/10 text-neutral-300"
         >
           <span className="font-bold">{completedTodos.length}</span> / {todos.length} COMPLETED
         </span>

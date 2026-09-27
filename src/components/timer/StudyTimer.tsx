@@ -886,7 +886,7 @@ export function StudyTimer() {
                         const itemColor =
                           sub?.name === 'General Focus' && (sub?.color === '#3B82F6' || !sub?.color)
                             ? '#5A6B6A'
-                            : sub?.color || '#10B981';
+                            : sub?.color || 'var(--accent)';
 
                         return (
                           <button
@@ -1159,13 +1159,13 @@ export function StudyTimer() {
                     style={{
                       backgroundColor:
                         pomodoroCompletedPhase === 'work'
-                          ? '#10B981'
+                          ? 'var(--accent)'
                           : isStudying
                           ? isPaused
                             ? '#f59e0b'
-                            : '#10B981'
-                          : '#10B981',
-                      boxShadow: '0 0 8px #10B981',
+                            : 'var(--accent)'
+                          : 'var(--accent)',
+                      boxShadow: '0 0 8px var(--glow)',
                     }}
                   />
                   <span style={{ color: isStudying && !isPaused ? 'var(--accent)' : '#94A3B8' }}>
@@ -1338,7 +1338,7 @@ export function StudyTimer() {
                   }}
                   disabled={isSaving || isRemoteTransitioning}
                   className="px-8 sm:px-10 py-3.5 sm:py-4 font-sans font-bold text-sm uppercase tracking-wide transition-all flex items-center justify-center gap-2.5 w-full xs:w-auto rounded-xl cursor-pointer hover:scale-[1.02]"
-                  style={{ background: '#10B981', color: '#021C11', fontWeight: 800, border: 'none', boxShadow: '0 4px 20px rgba(16, 185, 129, 0.4)' }}
+                  style={{ background: theme.gradient, color: "#000000", fontWeight: 800, border: "none", boxShadow: `0 8px 32px ${theme.glow}60, inset 0 2px 4px rgba(255,255,255,0.3)` }}
                 >
                   <Flame className="w-4 sm:w-5 h-4 sm:h-5 fill-current" />
                   <span>START FOCUS SESSION</span>
@@ -1353,7 +1353,7 @@ export function StudyTimer() {
                       ? 'opacity-40 cursor-not-allowed shadow-none'
                       : 'cursor-pointer hover:scale-[1.02]'
                   }`}
-                  style={{ background: '#10B981', color: '#021C11', fontWeight: 800, border: 'none', boxShadow: '0 4px 20px rgba(16, 185, 129, 0.4)' }}
+                  style={{ background: theme.gradient, color: "#000000", fontWeight: 800, border: "none", boxShadow: `0 8px 32px ${theme.glow}60, inset 0 2px 4px rgba(255,255,255,0.3)` }}
                   title={!selectedSubject?.id ? 'Please select a subject before starting the timer' : 'Start Focus Session'}
                 >
                   <Play className="w-4 sm:w-5 h-4 sm:h-5 fill-current" />
@@ -1397,7 +1397,7 @@ export function StudyTimer() {
                     onClick={handleResume}
                     disabled={isSaving || isRemoteTransitioning}
                     className="px-6 sm:px-8 py-3 rounded-xl font-hud font-bold text-xs sm:text-sm text-slate-950 transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[120px] tracking-wider uppercase hud-btn-primary"
-                    style={{ background: '#10B981', color: '#021C11', fontWeight: 800, border: 'none', boxShadow: '0 4px 20px rgba(16, 185, 129, 0.4)' }}
+                    style={{ background: theme.gradient, color: "#000000", fontWeight: 800, border: "none", boxShadow: `0 8px 32px ${theme.glow}60, inset 0 2px 4px rgba(255,255,255,0.3)` }}
                   >
                     <Play className="w-4 h-4 fill-current" />
                     <span>RESUME</span>
