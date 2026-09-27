@@ -1444,7 +1444,7 @@ export function StudyTimer() {
             </div>
           </div>
               {/* Atmosphere UI (Mobile) */}
-              <div className="relative sm:hidden mt-6 flex justify-center w-full">
+              <div className="relative sm:hidden mt-3 flex justify-center w-full">
                 <button
                   onClick={() => setIsAmbientMenuOpen(!isAmbientMenuOpen)}
                   className="bg-white/[0.04] border border-white/10 hover:border-[var(--tier-border)] text-neutral-300 text-xs px-3.5 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer select-none"
@@ -1472,7 +1472,7 @@ export function StudyTimer() {
                       className="fixed inset-0 z-40" 
                       onClick={() => setIsAmbientMenuOpen(false)} 
                     />
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-[100] bg-[#0e1015]/95 backdrop-blur-md border border-white/10 rounded-2xl p-2.5 shadow-2xl min-w-[220px] animate-in slide-in-from-top-2 fade-in duration-200">
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-[100] bg-[#0e1015]/95 backdrop-blur-md border border-white/10 rounded-2xl p-2.5 shadow-2xl min-w-[220px] animate-in slide-in-from-bottom-2 fade-in duration-200">
                       <div className="flex flex-col gap-1">
                         {[
                           { id: 'none', label: 'Silent', icon: <span className="w-3.5 h-3.5 rounded-full bg-neutral-300 mx-0.5" /> },
