@@ -683,7 +683,7 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
       {/* 2. Middle Section — 2 Columns (Distribution & Calendar) */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-5 sm:gap-6 items-stretch">
         {/* Left Card: Project / Subject Time Distribution (7 cols) */}
-        <div className="md:col-span-7 hud-surface border border-[var(--border)] rounded-2xl p-4 sm:p-5 flex flex-col justify-between space-y-4 relative overflow-hidden">
+        <div className="md:col-span-7 hud-surface border border-[var(--border)] rounded-2xl p-4 sm:p-5 flex flex-col justify-start space-y-6 relative overflow-hidden">
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-white/[0.06]">
             <div className="flex items-center gap-2">
@@ -740,9 +740,9 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
           </div>
 
           {/* Active Range Sub-bar */}
-          <div className="flex items-center justify-between text-xs text-neutral-400 px-0.5">
-            <span className="font-hud-mono text-xs text-neutral-300">{distRange.label}</span>
-            <span className="font-hud-mono font-bold text-xs" style={{ color: theme.accent }}>
+          <div className="flex items-center justify-between px-0.5 pt-2 pb-4">
+            <span className="font-hud-mono text-sm sm:text-base text-neutral-300">{distRange.label}</span>
+            <span className="font-hud-mono font-bold text-sm sm:text-base" style={{ color: theme.accent }}>
               TOTAL: {formatHoursAndMins(distTotalSeconds)}
             </span>
           </div>
@@ -774,14 +774,14 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
               </p>
             </div>
           ) : (
-            <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 min-h-56">
+            <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-8 min-h-[16rem]">
               {/* Donut Chart */}
-              <div className="w-full sm:w-1/2 h-52 relative flex items-center justify-center">
+              <div className="w-full sm:w-1/2 h-64 relative flex items-center justify-center">
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10 pt-1">
-                  <div className="font-hud font-bold text-white text-2xl tracking-tight">
+                  <div className="font-hud font-bold text-white text-3xl tracking-tight">
                     {formatHoursAndMins(distTotalSeconds)}
                   </div>
-                  <div className="font-hud-mono text-[10px] uppercase font-bold tracking-wider text-neutral-500">
+                  <div className="font-hud-mono text-xs uppercase font-bold tracking-wider text-neutral-500 mt-1">
                     Total
                   </div>
                 </div>
@@ -791,8 +791,8 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
                       data={distSubjectBreakdown}
                       cx="50%"
                       cy="50%"
-                      innerRadius={65}
-                      outerRadius={95}
+                      innerRadius={80}
+                      outerRadius={115}
                       paddingAngle={3}
                       dataKey="seconds"
                     >
