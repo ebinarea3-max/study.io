@@ -703,7 +703,7 @@ export function StudyTimer() {
       <div className="lg:col-span-8 w-full h-full flex flex-col justify-between max-md:overflow-hidden md:overflow-visible space-y-0 md:space-y-3">
         {/* Main Timer Game-HUD Card with Targeting Reticle Corner Brackets */}
         <div
-          className="relative w-full h-full rounded-3xl bg-[var(--surface)] backdrop-blur-xl border border-[var(--border)] max-md:px-4 max-md:py-2 sm:p-8 lg:p-10 shadow-xl max-md:overflow-hidden md:overflow-hidden flex flex-col max-md:justify-between max-md:items-center md:justify-between transition-all max-md:mb-0 mb-2"
+          className="relative w-full h-full rounded-3xl bg-[var(--surface)] backdrop-blur-xl border border-[var(--border)] max-md:px-4 max-md:py-2 p-6 md:p-7 shadow-xl max-md:overflow-hidden md:overflow-hidden flex flex-col max-md:justify-between max-md:items-center md:justify-between transition-all"
           
         >
           {/* Angular Targeting Reticle Corner Brackets */}
@@ -1521,7 +1521,7 @@ export function StudyTimer() {
       </div>
 
       {/* Right Secondary Column (Todo List, Daily Overview & Today's Boost - Home Page Sidebar, exclusively rendered in Tasks tab on mobile) */}
-      <div className="hidden lg:block lg:col-span-4 space-y-4 pr-2 md:overflow-visible">
+      <div className="hidden lg:flex lg:col-span-4 flex-col justify-between h-full space-y-4 pr-2 md:overflow-visible">
         {/* 1. Todo List Card - Google Notes / Keep Checklist */}
         <DailyTodoList />
 
@@ -1544,7 +1544,7 @@ export function StudyTimer() {
           <div className="flex items-center justify-between pb-3 border-b border-[var(--border)] relative z-10">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4" style={{ color: "#6366F1" }} />
-              <span className="text-xs font-hud font-bold text-white tracking-widest uppercase">
+              <span className="text-xs font-semibold tracking-wider text-neutral-300 uppercase">
                 DAILY OVERVIEW
               </span>
             </div>
@@ -1575,9 +1575,9 @@ export function StudyTimer() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between text-[11px] text-slate-400 font-semibold font-hud tracking-wider uppercase relative z-10">
+          <div className="flex items-center justify-between text-xs font-medium text-neutral-400 relative z-10">
             <span>{overviewView === 'today' ? "TODAY'S METRICS" : "YESTERDAY'S METRICS"}</span>
-            <span className="font-hud-mono">
+            <span>
               {overviewView === 'today'
                 ? new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
                 : new Date(Date.now() - 86400000).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
@@ -1585,16 +1585,14 @@ export function StudyTimer() {
           </div>
 
           {/* Unified HUD Stat Readout Strip */}
-          <div className="rounded-xl bg-[var(--bg)] border border-[var(--border)] p-3 divide-y divide-white/[0.08] space-y-2 relative z-10">
-            <div className="flex items-center justify-between pt-1">
+          <div className="rounded-xl bg-[var(--bg)] border border-[var(--border)] p-3 relative z-10">
+            <div className="flex items-center justify-between py-2.5 sm:py-3 border-b border-white/[0.04]">
               <div>
-                <div className="text-[10px] font-hud font-bold tracking-widest text-slate-400 uppercase">
-                  TOTAL FOCUS
-                </div>
-                <div className="text-xs text-slate-500 font-medium">Recorded study duration</div>
+                <div className="text-xs font-semibold tracking-wide text-neutral-200">TOTAL FOCUS</div>
+                <div className="text-[11px] text-neutral-400/80">Recorded study duration</div>
               </div>
               <div
-                className="text-lg font-hud font-black tracking-tight tabular-nums"
+                className="text-base md:text-lg font-bold text-white tracking-tight tabular-nums"
                 style={{ color: "#6366F1" }}
               >
                 {(isLoading || isLoadingSessions) && !hasHydrated ? (
@@ -1605,14 +1603,12 @@ export function StudyTimer() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-2">
+            <div className="flex items-center justify-between py-2.5 sm:py-3 border-b border-white/[0.04]">
               <div>
-                <div className="text-[10px] font-hud font-bold tracking-widest text-slate-400 uppercase">
-                  SESSIONS
-                </div>
-                <div className="text-xs text-slate-500 font-medium">Completed study blocks</div>
+                <div className="text-xs font-semibold tracking-wide text-neutral-200">SESSIONS</div>
+                <div className="text-[11px] text-neutral-400/80">Completed study blocks</div>
               </div>
-              <div className="text-lg font-hud font-black text-white tracking-tight tabular-nums">
+              <div className="text-base md:text-lg font-bold text-white tracking-tight tabular-nums">
                 {(isLoading || isLoadingSessions) && !hasHydrated ? (
                   <Skeleton className="h-6 w-12 bg-slate-800" />
                 ) : (
@@ -1621,18 +1617,16 @@ export function StudyTimer() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-2">
+            <div className="flex items-center justify-between py-2.5 sm:py-3 border-b border-white/[0.04]">
               <div>
-                <div className="text-[10px] font-hud font-bold tracking-widest text-slate-400 uppercase">
-                  ACTIVE STREAK
-                </div>
-                <div className="text-xs text-slate-500 font-medium">Daily consistency multiplier</div>
+                <div className="text-xs font-semibold tracking-wide text-neutral-200">ACTIVE STREAK</div>
+                <div className="text-[11px] text-neutral-400/80">Daily consistency multiplier</div>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-4 h-4 flex items-center justify-center animate-ember-glow">
                   <Flame className="w-full h-full fill-current" style={{ color: "#6366F1" }} />
                 </div>
-                <span className="text-lg font-hud font-black tracking-tight" style={{ color: "#6366F1" }}>
+                <span className="text-base md:text-lg font-bold text-white tracking-tight" style={{ color: "#6366F1" }}>
                   {user?.streakDays ?? 0}
                 </span>
               </div>
