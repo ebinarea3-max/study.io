@@ -1031,7 +1031,7 @@ export function StudyTimer() {
             }`}>
               {/* Outer Tier Accent Ambient Halo */}
               <div
-                className="absolute inset-[-10%] rounded-full blur-3xl pointer-events-none transition-all duration-700 opacity-[0.12] group-hover:opacity-[0.25]"
+                className="absolute inset-[-10%] rounded-full blur-3xl pointer-events-none transition-all duration-700 opacity-[0.05] group-hover:opacity-[0.1]"
                 style={{ backgroundColor: 'var(--accent)' }}
               />
 
@@ -1118,7 +1118,7 @@ export function StudyTimer() {
               {/* Inner Dial */}
               <div
                 className="w-[78%] h-[78%] rounded-full flex flex-col items-center justify-center p-4 sm:p-8 text-center relative z-10 backdrop-blur-md transition-all duration-300"
-                style={{ backgroundColor: 'rgba(10, 15, 25, 0.65)', border: "1px solid rgba(255, 255, 255, 0.08)", boxShadow: "0 8px 32px rgba(0, 0, 0, 0.5), inset 0 2px 15px rgba(255, 255, 255, 0.05)" }}
+                style={{ backgroundColor: '#05070a', border: "1px solid rgba(255, 255, 255, 0.03)", boxShadow: "0 8px 32px rgba(0, 0, 0, 0.8), inset 0 1px 4px rgba(255, 255, 255, 0.02)" }}
               >
                 {/* Pomodoro Phase / Subject Pill */}
                 <div
@@ -1340,7 +1340,7 @@ export function StudyTimer() {
                   }}
                   disabled={isSaving || isRemoteTransitioning}
                   className="px-8 sm:px-10 py-3.5 sm:py-4 font-sans font-bold text-sm uppercase tracking-wide transition-all flex items-center justify-center gap-2.5 w-full xs:w-auto rounded-xl cursor-pointer hover:scale-[1.02]"
-                  style={{ background: theme.gradient, color: "#000000", fontWeight: 900, border: "none", boxShadow: `0 12px 40px ${theme.glow}70, inset 0 2px 6px rgba(255,255,255,0.4)` }}
+                  style={{ backgroundColor: "#05070a", color: "var(--accent)", fontWeight: 900, border: "1px solid var(--accent)", boxShadow: `0 8px 32px rgba(0,0,0,0.8), inset 0 2px 10px ${theme.glow}15` }}
                 >
                   <Flame className="w-4 sm:w-5 h-4 sm:h-5 fill-current" />
                   <span>START FOCUS SESSION</span>
