@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { getSupabase } from '../../lib/supabase';
 import { soundFx } from '../../lib/audio';
 import confetti from 'canvas-confetti';
@@ -411,10 +412,15 @@ export function DailyTodoList() {
       {/* Items Container */}
       <div className="max-h-72 overflow-y-auto space-y-0.5 pr-0.5 select-none relative z-10">
         {/* Active (Uncompleted) Tasks */}
-        {activeTodos.map(item => (
-          <div
+        <AnimatePresence>{activeTodos.map(item => (
+          <motion.div
+            layout
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, filter: "blur(4px)" }}
+            whileHover={{ y: -2, backgroundColor: "rgba(255,255,255,0.06)", boxShadow: "0 4px 12px rgba(0,0,0,0.2)" }}
             key={item.id}
-            className="group flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/[0.04] transition-colors"
+            className="group flex items-center gap-2 px-3 py-2.5 rounded-xl mb-1.5 bg-black/20 border border-white/5 transition-colors"
           >
             <GripVertical className="w-3.5 h-3.5 text-neutral-600 opacity-0 group-hover:opacity-40 transition-opacity flex-shrink-0 cursor-grab" />
 
@@ -443,8 +449,8 @@ export function DailyTodoList() {
             >
               <Trash2 className="w-3.5 h-3.5" />
             </button>
-          </div>
-        ))}
+          </motion.div>
+        ))}</AnimatePresence>
 
         {/* Empty State message if 0 todos */}
         {todos.length === 0 && (
@@ -486,10 +492,15 @@ export function DailyTodoList() {
 
             {isCompletedOpen && (
               <div className="space-y-0.5">
+                <AnimatePresence>
                 {completedTodos.map(item => (
-                  <div
+                  <motion.div
+                    layout
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
                     key={item.id}
-                    className="group flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-neutral-800/20 transition-colors"
+                    className="group flex items-center gap-2 px-3 py-2 rounded-xl mb-1 hover:bg-neutral-800/40 transition-colors"
                   >
                     <div className="w-3.5 flex-shrink-0" />
                     <button
@@ -512,8 +523,9 @@ export function DailyTodoList() {
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
-                  </div>
+                  </motion.div>
                 ))}
+                </AnimatePresence>
               </div>
             )}
           </div>

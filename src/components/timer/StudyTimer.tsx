@@ -1115,8 +1115,8 @@ export function StudyTimer() {
 
               {/* Inner Dial */}
               <div
-                className="w-[78%] h-[78%] rounded-full bg-[var(--bg)] flex flex-col items-center justify-center p-2.5 sm:p-6 text-center relative z-10 shadow-inner"
-                style={{ border: "2px solid rgba(255, 255, 255, 0.12)", boxShadow: "inset 0 2px 10px rgba(0, 0, 0, 0.8)" }}
+                className="w-[78%] h-[78%] rounded-full bg-black/40 backdrop-blur-2xl flex flex-col items-center justify-center p-2.5 sm:p-6 text-center relative z-10 shadow-2xl"
+                  style={{ border: "1px solid rgba(255, 255, 255, 0.15)", boxShadow: "inset 0 0 20px rgba(255, 255, 255, 0.05), 0 10px 40px rgba(0,0,0,0.5)" }}
               >
                 {/* Pomodoro Phase / Subject Pill */}
                 <div
@@ -1338,7 +1338,7 @@ export function StudyTimer() {
                   }}
                   disabled={isSaving || isRemoteTransitioning}
                   className="px-8 sm:px-10 py-3.5 sm:py-4 font-sans font-bold text-sm uppercase tracking-wide transition-all flex items-center justify-center gap-2.5 w-full xs:w-auto rounded-xl cursor-pointer hover:scale-[1.02]"
-                  style={{ background: '#10B981', color: '#021C11', fontWeight: 800, border: 'none', boxShadow: '0 4px 20px rgba(16, 185, 129, 0.4)' }}
+                  style={{ background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)', color: '#021C11', fontWeight: 800, border: '1px solid rgba(255,255,255,0.2)', boxShadow: '0 8px 32px rgba(16, 185, 129, 0.5), inset 0 2px 4px rgba(255,255,255,0.3)' }}
                 >
                   <Flame className="w-4 sm:w-5 h-4 sm:h-5 fill-current" />
                   <span>START FOCUS SESSION</span>
@@ -1351,9 +1351,9 @@ export function StudyTimer() {
                   className={`px-8 sm:px-10 py-3.5 sm:py-4 font-sans font-bold text-sm uppercase tracking-wide transition-all flex items-center justify-center gap-2.5 w-full xs:w-auto rounded-xl ${
                     !selectedSubject?.id || isRemoteTransitioning
                       ? 'opacity-40 cursor-not-allowed shadow-none'
-                      : 'cursor-pointer hover:scale-[1.02]'
+                      : 'cursor-pointer hover:scale-105 hover:shadow-[0_0_40px_rgba(16,185,129,0.6)]'
                   }`}
-                  style={{ background: '#10B981', color: '#021C11', fontWeight: 800, border: 'none', boxShadow: '0 4px 20px rgba(16, 185, 129, 0.4)' }}
+                  style={{ background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)', color: '#021C11', fontWeight: 800, border: '1px solid rgba(255,255,255,0.2)', boxShadow: '0 8px 32px rgba(16, 185, 129, 0.5), inset 0 2px 4px rgba(255,255,255,0.3)' }}
                   title={!selectedSubject?.id ? 'Please select a subject before starting the timer' : 'Start Focus Session'}
                 >
                   <Play className="w-4 sm:w-5 h-4 sm:h-5 fill-current" />
@@ -1397,7 +1397,7 @@ export function StudyTimer() {
                     onClick={handleResume}
                     disabled={isSaving || isRemoteTransitioning}
                     className="px-6 sm:px-8 py-3 rounded-xl font-hud font-bold text-xs sm:text-sm text-slate-950 transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[120px] tracking-wider uppercase hud-btn-primary"
-                    style={{ background: '#10B981', color: '#021C11', fontWeight: 800, border: 'none', boxShadow: '0 4px 20px rgba(16, 185, 129, 0.4)' }}
+                    style={{ background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)', color: '#021C11', fontWeight: 800, border: '1px solid rgba(255,255,255,0.2)', boxShadow: '0 8px 32px rgba(16, 185, 129, 0.5), inset 0 2px 4px rgba(255,255,255,0.3)' }}
                   >
                     <Play className="w-4 h-4 fill-current" />
                     <span>RESUME</span>
