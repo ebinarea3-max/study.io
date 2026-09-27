@@ -1,21 +1,20 @@
 const fs = require('fs');
-let c = fs.readFileSync('src/components/timer/StudyTimer.tsx', 'utf8');
 
-const target = `  const handleVolumeChange = (vol: number) => {
-    setAmbientVolume(vol);
-    soundFx.setAmbientVolume(vol);
-  };
-  const [ambientSound, setAmbientSound] = useState<AmbientSoundType | 'none'>('none');
-  const [ambientVolume, setAmbientVolume] = useState(0.5);
-  const [isAmbientMenuOpen, setIsAmbientMenuOpen] = useState(false);
-  useEffect(() => { return () => { soundFx.stopAmbient(); }; }, []);
-  const handleAmbientChange = (type: AmbientSoundType | 'none') => { setAmbientSound(type); if (type === 'none') { soundFx.stopAmbient(); } else { soundFx.startAmbient(type, ambientVolume); } };
-  const handleVolumeChange = (vol: number) => { setAmbientVolume(vol); soundFx.setAmbientVolume(vol); };`;
+const file = 'src/components/timer/StudyTimer.tsx';
+let content = fs.readFileSync(file, 'utf8');
 
-const replacement = `  const handleVolumeChange = (vol: number) => {
-    setAmbientVolume(vol);
-    soundFx.setAmbientVolume(vol);
-  };`;
+// The end of the file looks like:
+//         </div>
+//       </div>
+//     </div>
+//     </div>
+//     </div>
+//   );
+// }
+// We need to replace 5 </div> with 4 </div>.
+content = content.replace(/<\/div>\s*<\/div>\s*<\/div>\s*<\/div>\s*<\/div>\s*\);\s*\}/, '</div>\\n    </div>\\n    </div>\\n    </div>\\n  );\\n}');
+// wait, the replacement string should literally be the divs.
+content = content.replace(/<\/div>\s*<\/div>\s*<\/div>\s*<\/div>\s*<\/div>\s*\);\s*\}/, '      </div>\\n    </div>\\n    </div>\\n    </div>\\n  );\\n}');
+fs.writeFileSync(file, content, 'utf8');
 
-c = c.replace(target, replacement);
-fs.writeFileSync('src/components/timer/StudyTimer.tsx', c);
+console.log("Fixed extra div at bottom of StudyTimer.tsx");

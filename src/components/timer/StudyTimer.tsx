@@ -40,6 +40,7 @@ Target } from 'lucide-react';
 import { soundFx, AmbientSoundType } from '../../lib/audio';
 import confetti from 'canvas-confetti';
 import { getSupabase } from '../../lib/supabase';
+import { getDailyQuote } from '../../lib/quotes';
 import { StudySession, Subject, TimerMode, UserProfile } from '../../types';
 import { calculateFocusXP } from '../../lib/gamification';
 import { calculateSessionRP } from '../../lib/rankedSystem';
@@ -54,6 +55,7 @@ const EMPTY_STATE_QUOTES = [
 ];
 
 export function StudyTimer() {
+  const dailyQuote = getDailyQuote();
   const { user, isLoading, updateProfile } = useAuth();
   const { theme, userRank } = useRankTheme();
   const {
@@ -1651,12 +1653,14 @@ export function StudyTimer() {
           </div>
 
           <div className="min-h-[40px] flex flex-col justify-center relative z-10">
-            <p className="text-[14px] font-semibold text-[#E2E8F0] leading-snug tracking-tight">
-              {(user?.streakDays || 1) > 1 
-                ? `Day ${user?.streakDays || 1} directive active. Complete your scheduled focus blocks to maintain momentum.`
-                : "Day 1 logged. Return tomorrow to maintain your active streak."
-              }
-            </p>
+            <div className="flex flex-col gap-1.5 mt-1">
+              <p className="text-[13px] italic font-medium text-[#E2E8F0] leading-snug tracking-wide">
+                &ldquo;{dailyQuote.text}&rdquo;
+              </p>
+              <p className="text-[10px] uppercase font-bold text-neutral-400 tracking-widest text-right">
+                — {dailyQuote.author}
+              </p>
+            </div>
           </div>
         </div>
       </div>

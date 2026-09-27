@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useEffect } from 'react';
-import { Target, X } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Target, X, Quote as QuoteIcon } from 'lucide-react';
 import { useRankTheme } from '../../hooks/useRankTheme';
+import { getDailyQuote } from '../../lib/quotes';
 
 interface DailyBoostModalProps {
   isOpen: boolean;
@@ -18,49 +19,61 @@ export function DailyBoostModal({
   streakDays,
 }: DailyBoostModalProps) {
   const { theme } = useRankTheme();
+  const [quoteData, setQuoteData] = useState({ text: '', author: '' });
 
   useEffect(() => {
-    if (isOpen) {
-      const timer = setTimeout(() => {
-        onClose();
-      }, 4000);
-      return () => clearTimeout(timer);
-    }
-  }, [isOpen, onClose]);
+    setQuoteData(getDailyQuote());
+  }, []);
 
   if (!isOpen) return null;
-  
-  const xpBonus = streakDays * 50; // simple calculation for UI purposes
 
   return (
-    <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] animate-in fade-in slide-in-from-top-4 duration-300 pointer-events-none">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
       <div 
-        className="pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-2xl bg-[#0c0d12]/95 border border-white/10 backdrop-blur-md shadow-2xl relative overflow-hidden"
+        className="relative w-full max-w-md bg-[#0c0d12] border backdrop-blur-xl rounded-3xl shadow-2xl p-6 sm:p-8 text-center overflow-hidden animate-in zoom-in-95 duration-300"
+        style={{ borderColor: `${theme.accent}30` }}
       >
-        <div 
-          className="absolute inset-0 pointer-events-none opacity-20"
-          style={{ boxShadow: `inset 0 0 20px ${theme.accent}` }}
+        {/* Background glow effects */}
+        <div
+          className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full blur-[100px] opacity-10 pointer-events-none"
+          style={{ backgroundColor: theme.accent }}
         />
-        <div 
-          className="relative flex items-center justify-center w-8 h-8 rounded-full bg-white/5 border"
-          style={{ borderColor: `${theme.accent}40`, color: theme.accent }}
-        >
-          <Target className="w-4 h-4 fill-current opacity-80" />
-        </div>
-        <div className="relative flex flex-col pr-4">
-          <span className="text-[10px] font-hud font-bold tracking-widest text-slate-400 uppercase">
-            DAILY DIRECTIVE LOGGED
-          </span>
-          <span className="text-sm font-bold text-white tracking-tight">
-            Streak multiplier maintained: Day {streakDays} • +{xpBonus} XP
-          </span>
-        </div>
+
+        {/* Close Button */}
         <button
           onClick={onClose}
-          className="relative p-1 rounded-lg hover:bg-white/10 text-slate-500 hover:text-white transition-colors cursor-pointer"
+          className="absolute top-4 right-4 p-2 text-slate-500 hover:text-white rounded-xl hover:bg-white/10 transition-colors"
+          title="Close"
         >
-          <X className="w-4 h-4" />
+          <X className="w-5 h-5" />
         </button>
+
+        {/* Header */}
+        <div className="relative z-10 flex flex-col items-center mt-2">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-[11px] font-hud font-black tracking-widest uppercase mb-6" style={{ color: theme.accent }}>
+            <Target className="w-3.5 h-3.5" />
+            <span>DAILY DIRECTIVE</span>
+          </div>
+
+          {/* Quote Section */}
+          <div className="relative px-4 py-6 w-full flex flex-col items-center justify-center">
+            <QuoteIcon className="absolute top-0 left-2 w-8 h-8 opacity-20 transform -scale-x-100 -translate-y-1/2" style={{ color: theme.accent }} />
+            <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight leading-snug text-center" style={{ textShadow: "0 2px 10px rgba(0,0,0,0.5)" }}>
+              &ldquo;{quoteData.text}&rdquo;
+            </h2>
+            <p className="mt-4 text-sm font-semibold tracking-wide text-neutral-400 uppercase">
+              — {quoteData.author}
+            </p>
+          </div>
+          
+          <button
+            onClick={onClose}
+            className="w-full mt-6 py-3.5 px-6 rounded-2xl text-black font-black text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg active:scale-[0.98]"
+            style={{ background: theme.gradient, boxShadow: `0 4px 20px ${theme.accent}40` }}
+          >
+            <span>Acknowledge & Begin</span>
+          </button>
+        </div>
       </div>
     </div>
   );
