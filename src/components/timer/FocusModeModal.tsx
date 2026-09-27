@@ -52,10 +52,10 @@ export function FocusModeModal() {
       {/* Subtle Exit Hint (Hover or Top Left) */}
       <button
         onClick={() => setIsFocusModeOpen(false)}
-        className="absolute top-6 left-6 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-neutral-500 hover:text-white text-[11px] font-medium transition-all opacity-0 hover:opacity-100 cursor-pointer group"
+        className="absolute top-6 left-6 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-neutral-500 hover:text-white text-[11px] font-medium transition-all opacity-50 hover:opacity-100 cursor-pointer group"
       >
         <Minimize2 className="w-4 h-4" />
-        <span>Press ESC to exit</span>
+        <span>Exit Focus Mode</span>
       </button>
 
       {/* Big Timer */}

@@ -2483,11 +2483,11 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // 1. Reset remote active_sessions state via stop_session RPC & get server-authoritative duration
+    // 1. Reset remote active_sessions state via stop_session RPC
     const rpcFinalSeconds = await syncActiveSessionToDb('stopped');
-    const secondsToPersist = (typeof rpcFinalSeconds === 'number' && rpcFinalSeconds >= 0)
-      ? rpcFinalSeconds
-      : seconds;
+    
+    // Always trust local seconds if we have them, as RPC might have stale started_at if pause_session failed
+    const secondsToPersist = seconds;
 
     console.log('[Timer Stop: server-authoritative duration]', {
       clientSeconds: seconds,
