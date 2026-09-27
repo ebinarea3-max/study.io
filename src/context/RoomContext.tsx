@@ -199,6 +199,11 @@ export function RoomProvider({ children }: { children: ReactNode }) {
     lastActive: new Date().toISOString(),
   };
 
+  const currentUserMemberRef = useRef(currentUserMember);
+  useEffect(() => {
+    currentUserMemberRef.current = currentUserMember;
+  }, [currentUserMember]);
+
   // Broadcast current user's heartbeat every 2 seconds if inside an active room
   useEffect(() => {
     if (!channelRef.current || !activeRoomId) return;
@@ -207,7 +212,7 @@ export function RoomProvider({ children }: { children: ReactNode }) {
       try {
         channelRef.current?.postMessage({
           type: 'HEARTBEAT',
-          member: currentUserMember,
+          member: currentUserMemberRef.current,
         });
       } catch {
         // ignore
@@ -217,7 +222,7 @@ export function RoomProvider({ children }: { children: ReactNode }) {
     sendHeartbeat();
     const interval = setInterval(sendHeartbeat, 2000);
     return () => clearInterval(interval);
-  }, [currentUserMember, activeRoomId]);
+  }, [activeRoomId]);
 
   // Supabase Realtime room presence synchronization
   useEffect(() => {
