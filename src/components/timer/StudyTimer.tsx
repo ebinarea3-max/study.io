@@ -703,7 +703,7 @@ export function StudyTimer() {
       <div className="lg:col-span-8 w-full h-full flex flex-col justify-between max-md:overflow-hidden md:overflow-visible space-y-0 md:space-y-3">
         {/* Main Timer Game-HUD Card with Targeting Reticle Corner Brackets */}
         <div
-          className="relative w-full h-full rounded-3xl bg-[var(--surface)] backdrop-blur-xl border border-[var(--border)] p-5 sm:p-6 shadow-xl max-md:overflow-hidden md:overflow-hidden flex flex-col max-md:justify-between max-md:items-center md:justify-between transition-all"
+          className="relative w-full h-full rounded-3xl bg-[var(--surface)] backdrop-blur-xl border border-[var(--border)] p-5 sm:p-6 shadow-xl max-md:overflow-hidden md:overflow-hidden flex flex-col transition-all"
           
         >
           {/* Angular Targeting Reticle Corner Brackets */}
@@ -1021,7 +1021,7 @@ export function StudyTimer() {
                   </div>
 
           {/* Center Timer Display - Game HUD Radar / Reactor Core Display */}
-          <div className="relative z-10 flex flex-col items-center justify-center py-1 sm:py-6 max-md:my-auto">
+          <div className="relative z-10 flex flex-col items-center justify-center py-1 sm:py-6 my-auto">
             <div className={`relative flex items-center justify-center p-1 sm:p-2 w-56 h-56 sm:w-64 sm:h-64 md:w-80 md:h-80 mx-auto aspect-square transition-all duration-300 rounded-full flex-shrink-0 ${
               isRemoteTransitioning
                 ? 'scale-[1.03] ring-4 ring-white/50 shadow-[0_0_50px_var(--tier-glow)]'
@@ -1544,15 +1544,15 @@ export function StudyTimer() {
           <div className="flex items-center justify-between pb-3 border-b border-[var(--border)] relative z-10">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-amber-400/80" />
-              <span className="text-xs font-semibold tracking-wider text-neutral-300 uppercase">
+              <span className="text-sm font-bold tracking-wider text-neutral-200 uppercase">
                 DAILY OVERVIEW
               </span>
             </div>
             {/* Today vs Yesterday Toggle */}
-            <div className="flex items-center gap-1 p-0.5 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-[10px]">
+            <div className="flex items-center gap-1 p-0.5 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-xs">
               <button
                 onClick={() => setOverviewView('today')}
-                className={`px-2.5 py-1 rounded-lg font-hud font-bold tracking-wider uppercase transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded-lg font-hud font-bold tracking-wider uppercase transition-all cursor-pointer ${
                   overviewView === 'today'
                     ? 'text-slate-950 shadow-sm'
                     : 'text-slate-400 hover:text-white'
@@ -1563,7 +1563,7 @@ export function StudyTimer() {
               </button>
               <button
                 onClick={() => setOverviewView('yesterday')}
-                className={`px-2.5 py-1 rounded-lg font-hud font-bold tracking-wider uppercase transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded-lg font-hud font-bold tracking-wider uppercase transition-all cursor-pointer ${
                   overviewView === 'yesterday'
                     ? 'text-slate-950 shadow-sm'
                     : 'text-slate-400 hover:text-white'
