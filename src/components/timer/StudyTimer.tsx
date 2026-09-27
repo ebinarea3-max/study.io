@@ -1633,10 +1633,10 @@ export function StudyTimer() {
           </div>
         </div>
 
-        {/* 3. Today's Boost / Motivation Card */}
+        {/* 3. Daily Catalyst / Motivation Card */}
         <div
           className="rounded-2xl bg-[var(--surface)] backdrop-blur-xl border border-[var(--border)] p-5 shadow-xl space-y-3 transition-all relative overflow-hidden"
-          style={{ borderTop: "1px solid rgba(16, 185, 129, 0.4)" }}
+          style={{ borderTop: "1px solid rgba(255, 255, 255, 0.1)" }}
         >
           <div className="hud-corner-bracket hud-corner-tl" />
           <div className="hud-corner-bracket hud-corner-tr" />
@@ -1644,24 +1644,20 @@ export function StudyTimer() {
           <div className="hud-corner-bracket hud-corner-br" />
 
           <div className="flex items-center gap-2 pb-2.5 border-b border-[var(--border)] relative z-10">
-            <MessageCircle className="w-4 h-4" style={{ color: "#10B981" }} />
+            <Sparkles className="w-4 h-4" style={{ color: "var(--accent)" }} />
             <span className="text-xs font-hud font-bold text-white tracking-widest uppercase">
-              TODAY'S BOOST
+              DAILY CATALYST
             </span>
           </div>
 
           <div className="min-h-[40px] flex flex-col justify-center relative z-10">
             <p className="text-[14px] font-semibold text-[#E2E8F0] leading-snug tracking-tight">
-              {primaryBoostMessage}
+              Day {user?.streakDays || 1} logged. Return tomorrow to elevate your multiplier.
             </p>
-            {secondaryBoostMessage && (
-              <p className="text-xs text-slate-400 mt-1.5 leading-normal font-medium">
-                {secondaryBoostMessage}
-              </p>
-            )}
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 }
