@@ -1212,6 +1212,12 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     const targetDuration = Number(pomodoro_duration_seconds ?? target_duration ?? 0);
 
     if (status === 'running') {
+      if (timerIntervalRef.current !== null) {
+        // We are already running locally. Ignore redundant running syncs (like from HTTP polling)
+        // to prevent the timer from jittering and resetting its high-precision start time.
+        return;
+      }
+
       const startedAtMs = started_at ? new Date(started_at).getTime() : Date.now();
       const runningSeconds = Math.max(0, Math.floor((Date.now() - startedAtMs) / 1000));
       const calculatedElapsed = baseAccumulated + runningSeconds;
