@@ -259,7 +259,7 @@ export function FocusModeModal() {
 
                     {/* Separator */}
                     {i < arr.length - 1 && (
-                      <div className={`flex flex-col gap-6 sm:gap-10 justify-center transition-opacity duration-500 ${isStudying && !isPaused ? 'animate-pulse' : 'opacity-30'}`}>
+                      <div className={`flex flex-col gap-6 sm:gap-10 justify-center transition-opacity duration-500 ${isStudying && !isPaused ? 'opacity-100' : 'opacity-30'}`}>
                         <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-neutral-300 shadow-[0_0_15px_rgba(255,255,255,0.3)]" />
                         <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-neutral-300 shadow-[0_0_15px_rgba(255,255,255,0.3)]" />
                       </div>
