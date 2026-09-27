@@ -703,7 +703,7 @@ export function StudyTimer() {
       <div className="lg:col-span-8 w-full h-full flex flex-col justify-between max-md:overflow-hidden md:overflow-visible space-y-0 md:space-y-3">
         {/* Main Timer Game-HUD Card with Targeting Reticle Corner Brackets */}
         <div
-          className="relative w-full h-full rounded-3xl bg-[var(--surface)] backdrop-blur-xl border border-[var(--border)] max-md:px-4 max-md:py-2 p-6 md:p-7 shadow-xl max-md:overflow-hidden md:overflow-hidden flex flex-col max-md:justify-between max-md:items-center md:justify-between transition-all"
+          className="relative w-full h-full rounded-3xl bg-[var(--surface)] backdrop-blur-xl border border-[var(--border)] p-5 sm:p-6 shadow-xl max-md:overflow-hidden md:overflow-hidden flex flex-col max-md:justify-between max-md:items-center md:justify-between transition-all"
           
         >
           {/* Angular Targeting Reticle Corner Brackets */}
@@ -733,7 +733,7 @@ export function StudyTimer() {
 
           <div className="flex flex-col items-center gap-2 w-full relative z-20">
           {/* Top Controls: Mode Switcher, Preset Selector & Focus Mode Button */}
-          <div className="w-full flex flex-wrap items-center max-md:justify-center justify-between gap-2.5 sm:gap-4 relative z-10 sm:pb-6 max-md:border-b-0 border-b border-[var(--border)] flex-shrink-0">
+          <div className="w-full flex flex-wrap items-center max-md:justify-center justify-between gap-2.5 sm:gap-4 relative z-10 pb-4 max-md:border-b-0 border-b border-[var(--border)] flex-shrink-0">
             <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
               {/* Mode Pill Toggle */}
               <div className="flex items-center gap-1 p-0.5 sm:p-1 rounded-2xl bg-[var(--bg)] border border-[var(--border)]">
@@ -1243,7 +1243,7 @@ export function StudyTimer() {
             )}
 
             {/* Action Buttons: Context-aware HUD controls */}
-            <div className="max-md:mb-2 pt-3 sm:pt-8 flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 relative z-10 w-full max-w-sm flex-shrink-0 mx-auto">
+            <div className="max-md:mb-2 pt-4 flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 relative z-10 w-full max-w-sm flex-shrink-0 mx-auto">
               {pomodoroCompletedPhase === 'work' ? (
                 /* Prompt 1: Focus Block Complete -> Save & Start Break / Skip Break */
                 <>
@@ -1543,7 +1543,7 @@ export function StudyTimer() {
 
           <div className="flex items-center justify-between pb-3 border-b border-[var(--border)] relative z-10">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4" style={{ color: "#6366F1" }} />
+              <Sparkles className="w-4 h-4 text-amber-400/80" />
               <span className="text-xs font-semibold tracking-wider text-neutral-300 uppercase">
                 DAILY OVERVIEW
               </span>
@@ -1557,7 +1557,7 @@ export function StudyTimer() {
                     ? 'text-slate-950 shadow-sm'
                     : 'text-slate-400 hover:text-white'
                 }`}
-                style={overviewView === 'today' ? { backgroundColor: '#6366F1', color: '#FFFFFF', boxShadow: 'inset 0 0 0 1px rgba(99, 102, 241, 0.5)' } : undefined}
+                style={overviewView === "today" ? { backgroundColor: "rgba(255,255,255,0.1)", color: "#FFFFFF", boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.1)" } : undefined}
               >
                 TODAY
               </button>
@@ -1568,7 +1568,7 @@ export function StudyTimer() {
                     ? 'text-slate-950 shadow-sm'
                     : 'text-slate-400 hover:text-white'
                 }`}
-                style={overviewView === 'yesterday' ? { backgroundColor: '#6366F1', color: '#FFFFFF', boxShadow: 'inset 0 0 0 1px rgba(99, 102, 241, 0.5)' } : undefined}
+                style={overviewView === "yesterday" ? { backgroundColor: "rgba(255,255,255,0.1)", color: "#FFFFFF", boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.1)" } : undefined}
               >
                 YESTERDAY
               </button>
@@ -1592,8 +1592,7 @@ export function StudyTimer() {
                 <div className="text-[11px] text-neutral-400/80">Recorded study duration</div>
               </div>
               <div
-                className="text-base md:text-lg font-bold text-white tracking-tight tabular-nums"
-                style={{ color: "#6366F1" }}
+                className="text-base md:text-lg font-bold text-white tracking-tight tabular-nums font-mono"
               >
                 {(isLoading || isLoadingSessions) && !hasHydrated ? (
                   <Skeleton className="h-6 w-20 bg-slate-800" />
@@ -1624,9 +1623,9 @@ export function StudyTimer() {
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-4 h-4 flex items-center justify-center animate-ember-glow">
-                  <Flame className="w-full h-full fill-current" style={{ color: "#6366F1" }} />
+                  <Flame className="w-full h-full fill-current text-amber-500" />
                 </div>
-                <span className="text-base md:text-lg font-bold text-white tracking-tight" style={{ color: "#6366F1" }}>
+                <span className="text-base md:text-lg font-bold text-white tracking-tight">
                   {user?.streakDays ?? 0}
                 </span>
               </div>
