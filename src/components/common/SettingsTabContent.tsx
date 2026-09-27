@@ -75,7 +75,7 @@ export function SettingsTabContent() {
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <RankCrestBadge tier={userRank.tier as any} size={48} className="drop-shadow-lg" />
+            <RankCrestBadge tier={userRank.tier as any} division={userRank.division} size={48} className="drop-shadow-lg" />
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="font-hud text-lg sm:text-xl font-black text-white tracking-wider uppercase">

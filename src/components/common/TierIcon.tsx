@@ -23,6 +23,7 @@ export function TierIcon({ className, style, tier, division, size = 24 }: TierIc
         tier={displayTier}
         division={displayDivision}
         size={size}
+        isSettled={false}
       />
     </div>
   );
