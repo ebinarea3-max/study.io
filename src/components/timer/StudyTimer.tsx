@@ -30,8 +30,14 @@ import {
   Coffee,
   Zap,
   SkipForward,
+  Music,
+  Volume2,
+  CloudRain,
+  Radio,
+  Headphones,
+  ChevronUp,
 } from 'lucide-react';
-import { soundFx } from '../../lib/audio';
+import { soundFx, AmbientSoundType } from '../../lib/audio';
 import confetti from 'canvas-confetti';
 import { getSupabase } from '../../lib/supabase';
 import { StudySession, Subject, TimerMode, UserProfile } from '../../types';
@@ -98,6 +104,36 @@ export function StudyTimer() {
   const [isManageSubjectsOpen, setIsManageSubjectsOpen] = useState(false);
   const isSubjectModalOpen = isManageSubjectsOpen;
   const setIsSubjectModalOpen = setIsManageSubjectsOpen;
+  const [ambientSound, setAmbientSound] = useState<AmbientSoundType | 'none'>('none');
+  const [ambientVolume, setAmbientVolume] = useState(0.5);
+  const [isAmbientMenuOpen, setIsAmbientMenuOpen] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      soundFx.stopAmbient();
+    };
+  }, []);
+
+  const handleAmbientChange = (type: AmbientSoundType | 'none') => {
+    setAmbientSound(type);
+    if (type === 'none') {
+      soundFx.stopAmbient();
+    } else {
+      soundFx.startAmbient(type, ambientVolume);
+    }
+  };
+
+  const handleVolumeChange = (vol: number) => {
+    setAmbientVolume(vol);
+    soundFx.setAmbientVolume(vol);
+  };
+  const [ambientSound, setAmbientSound] = useState<AmbientSoundType | 'none'>('none');
+  const [ambientVolume, setAmbientVolume] = useState(0.5);
+  const [isAmbientMenuOpen, setIsAmbientMenuOpen] = useState(false);
+  useEffect(() => { return () => { soundFx.stopAmbient(); }; }, []);
+  const handleAmbientChange = (type: AmbientSoundType | 'none') => { setAmbientSound(type); if (type === 'none') { soundFx.stopAmbient(); } else { soundFx.startAmbient(type, ambientVolume); } };
+  const handleVolumeChange = (vol: number) => { setAmbientVolume(vol); soundFx.setAmbientVolume(vol); };
+
   const [showDropdown, setShowDropdown] = useState(false);
   const [overviewView, setOverviewView] = useState<'today' | 'yesterday'>('today');
   const [isSaving, setIsSaving] = useState(false);
