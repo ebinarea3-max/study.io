@@ -1623,7 +1623,7 @@ export function StudyTimer() {
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-4 h-4 flex items-center justify-center animate-ember-glow">
-                  <Flame className="w-full h-full fill-current text-amber-500" />
+                  <Flame className="w-full h-full text-orange-500 fill-orange-500" style={{ color: "#f97316" }} />
                 </div>
                 <span className="text-base md:text-lg font-bold text-white tracking-tight">
                   {user?.streakDays ?? 0}

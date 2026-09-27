@@ -248,6 +248,15 @@ export function Navbar({
             </Link>
           ) : (
             <div className="flex items-center gap-2">
+              {/* Streak Pill */}
+              <div
+                className="hidden sm:flex items-center h-8 sm:h-9 px-3 bg-[var(--surface)] border border-slate-800 text-slate-100 cursor-default select-none rounded-xl gap-1.5"
+                title={`${user?.streakDays || 0} Day Streak`}
+              >
+                <Flame className="w-4 h-4 text-orange-500 fill-orange-500" />
+                <span className="text-xs font-bold font-mono text-white">{user?.streakDays || 0}</span>
+              </div>
+
               {/* Rank Status Pill */}
               <div
                 className="relative flex items-center h-8 sm:h-9 pl-1 pr-3 sm:pr-4 bg-[var(--surface)] border border-slate-800 text-slate-100 cursor-default select-none rounded-xl"
