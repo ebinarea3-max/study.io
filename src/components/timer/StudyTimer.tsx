@@ -36,7 +36,7 @@ import {
   Radio,
   Headphones,
   ChevronUp,
-, Target} from 'lucide-react';
+Target } from 'lucide-react';
 import { soundFx, AmbientSoundType } from '../../lib/audio';
 import confetti from 'canvas-confetti';
 import { getSupabase } from '../../lib/supabase';
@@ -1660,8 +1660,6 @@ export function StudyTimer() {
           </div>
         </div>
       </div>
-    </div>
-    </div>
     </div>
   );
 }
