@@ -832,7 +832,7 @@ export function StudyTimer() {
                       className="fixed inset-0 z-40" 
                       onClick={() => setIsAmbientMenuOpen(false)} 
                     />
-                    <div className="absolute bottom-full right-0 mb-2 z-50 bg-[#0e1015]/95 backdrop-blur-md border border-white/10 rounded-2xl p-2.5 shadow-2xl min-w-[220px] animate-in slide-in-from-bottom-2 fade-in duration-200">
+                    <div className="absolute top-full right-0 mt-2 z-50 bg-[#0e1015]/95 backdrop-blur-md border border-white/10 rounded-2xl p-2.5 shadow-2xl min-w-[220px] animate-in slide-in-from-top-2 fade-in duration-200">
                       <div className="flex flex-col gap-1">
                         {[
                           { id: 'none', label: 'Silent', icon: <span className="w-3.5 h-3.5 rounded-full bg-neutral-300 mx-0.5" /> },
