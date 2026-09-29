@@ -51,6 +51,11 @@ export function FocusModeModal() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setIsFocusModeOpen(false);
+        if (document.fullscreenElement) {
+          document.exitFullscreen().catch(() => {});
+        } else if ((document as any).webkitFullscreenElement) {
+          (document as any).webkitExitFullscreen();
+        }
       }
     };
     
@@ -97,7 +102,7 @@ export function FocusModeModal() {
         )}
         
         <div 
-          className="font-hud font-black tracking-tighter text-white leading-none text-[22vw] md:text-[20vw] tabular-nums"
+          className="font-hud font-black tracking-tighter text-white leading-none text-[16vw] md:text-[20vw] tabular-nums"
           style={{ textShadow: `0 0 120px ${glowColor}` }}
         >
           {displayTime}
@@ -111,12 +116,19 @@ export function FocusModeModal() {
         }`}
       >
         <button
-          onClick={() => setIsFocusModeOpen(false)}
+          onClick={() => {
+            setIsFocusModeOpen(false);
+            if (document.fullscreenElement) {
+              document.exitFullscreen().catch(() => {});
+            } else if ((document as any).webkitFullscreenElement) {
+              (document as any).webkitExitFullscreen();
+            }
+          }}
           className="flex items-center gap-2.5 px-6 py-3 rounded-2xl bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/10 text-neutral-300 hover:text-white text-sm font-semibold transition-all shadow-2xl hover:scale-105 active:scale-95"
         >
           <Minimize2 className="w-4 h-4" />
           <span>Exit Fullscreen</span>
-          <span className="ml-2 px-1.5 py-0.5 rounded text-[10px] bg-black/40 text-neutral-400 font-mono">ESC</span>
+          <span className="hidden sm:inline-block ml-2 px-1.5 py-0.5 rounded text-[10px] bg-black/40 text-neutral-400 font-mono">ESC</span>
         </button>
       </div>
 
