@@ -450,12 +450,10 @@ export function StudyProvider({ children }: { children: ReactNode }) {
   const [pomodoroCompletedPhase, setPomodoroCompletedPhase] = useState<PomodoroCompletedPhase>(null);
 
   const pomodoroWorkDuration = useMemo(() => {
-    if (pomodoroPreset === 'test-5s') return 5;
     return pomodoroPreset === '50/10' ? 50 * 60 : 25 * 60;
   }, [pomodoroPreset]);
 
   const pomodoroBreakDuration = useMemo(() => {
-    if (pomodoroPreset === 'test-5s') return 3;
     return pomodoroPreset === '50/10' ? 10 * 60 : 5 * 60;
   }, [pomodoroPreset]);
 
