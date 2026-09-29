@@ -2747,14 +2747,10 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
   const dismissRankSettlement = useCallback(() => {
     setSettlementData(null);
-    // Keep paused break state intact if transitioning to break
-    if (timerModeRef.current !== 'pomodoro' || pomodoroPhaseRef.current !== 'shortBreak') {
-      resetTimer();
-    }
     setCurrentNotes('');
     setIsFocusModeOpen(false);
     refetchSessions();
-  }, [resetTimer, refetchSessions]);
+  }, [refetchSessions]);
 
   // Subjects Management
   const addSubject = (newSub: Omit<Subject, 'id' | 'createdAt'>) => {
