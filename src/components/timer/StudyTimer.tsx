@@ -809,13 +809,14 @@ export function StudyTimer() {
             <div className="flex items-center gap-2 sm:gap-3">
 
 
-              {/* High-Contrast Fullscreen Focus Mode Button - Hidden on mobile */}
+              {/* High-Contrast Fullscreen Focus Mode Button */}
               <button
                 onClick={() => setIsFocusModeOpen(true)}
-                className="hidden md:flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl bg-primary-muted hover:bg-[rgba(var(--tier-accent-rgb),0.25)] border border-primary-muted text-primary-bright text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer"
+                className="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-primary-muted hover:bg-[rgba(var(--tier-accent-rgb),0.25)] border border-primary-muted text-primary-bright text-[11px] sm:text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer w-full md:w-auto"
               >
-                <Maximize2 className="w-4 h-4 text-primary" />
-                <span>Fullscreen Focus Mode</span>
+                <Maximize2 className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-primary" />
+                <span className="hidden sm:inline">Fullscreen Focus Mode</span>
+                <span className="sm:hidden">Focus Mode</span>
               </button>
             </div>
           </div>
