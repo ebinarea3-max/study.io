@@ -165,7 +165,7 @@ export type TimerMode = 'stopwatch' | 'pomodoro' | 'countdown';
 
 export type PomodoroPhase = 'work' | 'shortBreak' | 'longBreak';
 
-export type PomodoroPreset = '25/5' | '50/10';
+export type PomodoroPreset = '25/5' | '50/10' | 'test-5s';
 
 export type PomodoroCompletedPhase = 'work' | 'break' | null;
 
