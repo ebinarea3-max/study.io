@@ -1025,11 +1025,14 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         const effectiveAccumulated = extra?.accumulatedSeconds ?? extra?.elapsedBeforePause ?? accumulatedSecondsRef.current;
         const effectiveMode = extra?.mode || timerMode || 'stopwatch';
         const dbMode = effectiveMode === 'pomodoro' ? 'pomodoro' : 'stopwatch';
+        
+        const effectivePhase = extra?.pomodoroPhase || pomodoroPhase;
         const dbPhase = effectiveMode === 'pomodoro'
-          ? (extra?.pomodoroPhase === 'work' || pomodoroPhase === 'work' ? 'focus' : 'break')
+          ? (effectivePhase === 'work' ? 'focus' : 'break')
           : null;
+        
         const dbDuration = effectiveMode === 'pomodoro'
-          ? (extra?.targetDuration ?? (pomodoroPhase === 'work' ? pomodoroWorkDuration : pomodoroBreakDuration))
+          ? (extra?.targetDuration ?? (effectivePhase === 'work' ? pomodoroWorkDuration : pomodoroBreakDuration))
           : null;
 
         console.log('[Timer Write: syncActiveSessionToDb (paused)]', {
@@ -1085,13 +1088,15 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         const activeSubName = extra?.subjectName !== undefined ? extra.subjectName : (sub?.name || null);
         const effectiveMode = extra?.mode || timerMode || 'stopwatch';
         const dbMode = effectiveMode === 'pomodoro' ? 'pomodoro' : 'stopwatch';
+        const effectivePhase = extra?.pomodoroPhase || pomodoroPhase;
+        
         const targetDuration = extra?.targetDuration !== undefined ? extra.targetDuration : (
           effectiveMode === 'pomodoro'
-            ? (pomodoroPhase === 'work' ? pomodoroWorkDuration : pomodoroBreakDuration)
+            ? (effectivePhase === 'work' ? pomodoroWorkDuration : pomodoroBreakDuration)
             : null
         );
         const dbPhase = effectiveMode === 'pomodoro'
-          ? (extra?.pomodoroPhase === 'work' || pomodoroPhase === 'work' ? 'focus' : 'break')
+          ? (effectivePhase === 'work' ? 'focus' : 'break')
           : null;
         const effectiveAccumulated = extra?.accumulatedSeconds ?? extra?.elapsedBeforePause ?? accumulatedSecondsRef.current;
         const startedAtIso = extra?.startedAt !== undefined ? extra.startedAt : new Date().toISOString();
