@@ -250,6 +250,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           localStorage.removeItem('studypulse_sessions');
           localStorage.removeItem('studypulse_subjects');
           localStorage.removeItem('studypulse_todos');
+          localStorage.removeItem('studypulse_pending_sessions');
         } catch {}
       }
       if (isSubscribed) {

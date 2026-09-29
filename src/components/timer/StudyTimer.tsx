@@ -814,10 +814,16 @@ export function StudyTimer() {
                 onClick={() => {
                   setIsFocusModeOpen(true);
                   const el = document.documentElement;
+                  const lockLandscape = () => {
+                    if (window.screen && window.screen.orientation && window.screen.orientation.lock) {
+                      window.screen.orientation.lock('landscape').catch(() => {});
+                    }
+                  };
                   if (el.requestFullscreen) {
-                    el.requestFullscreen().catch(() => {});
+                    el.requestFullscreen().then(lockLandscape).catch(() => {});
                   } else if ((el as any).webkitRequestFullscreen) {
                     (el as any).webkitRequestFullscreen();
+                    setTimeout(lockLandscape, 100);
                   }
                 }}
                 className="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-primary-muted hover:bg-[rgba(var(--tier-accent-rgb),0.25)] border border-primary-muted text-primary-bright text-[11px] sm:text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer w-full md:w-auto"
