@@ -131,6 +131,25 @@ export function StudyTimer() {
   };
 
   const [showDropdown, setShowDropdown] = useState(false);
+  
+  // Auto-open Focus Mode on mobile landscape rotation
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mql = window.matchMedia('(orientation: landscape)');
+    const handleOrientation = (e: MediaQueryListEvent) => {
+      if (e.matches && window.innerWidth < 1024) {
+        setIsFocusModeOpen(true);
+      }
+    };
+    // Add event listener
+    if (mql.addEventListener) mql.addEventListener('change', handleOrientation);
+    else mql.addListener(handleOrientation); // fallback for older Safari
+    
+    return () => {
+      if (mql.removeEventListener) mql.removeEventListener('change', handleOrientation);
+      else mql.removeListener(handleOrientation);
+    };
+  }, [setIsFocusModeOpen]);
   const [overviewView, setOverviewView] = useState<'today' | 'yesterday'>('today');
   const [isSaving, setIsSaving] = useState(false);
   const [showRecoveryBanner, setShowRecoveryBanner] = useState(false);

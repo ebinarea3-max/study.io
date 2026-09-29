@@ -579,6 +579,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       localStorage.removeItem('studypulse_is_authenticated');
       localStorage.removeItem('studypulse_active_user');
+      localStorage.removeItem('study_io_selected_subject_guest');
+      localStorage.removeItem('studypulse_selected_subject_id');
+      localStorage.removeItem('studypulse_sessions');
+      localStorage.removeItem('studypulse_subjects');
+      localStorage.removeItem('studypulse_todos');
+      localStorage.removeItem('studypulse_pending_sessions');
     } catch {}
   }, [saveUser]);
 
