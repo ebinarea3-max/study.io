@@ -804,7 +804,8 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         if (newWaterCount > prevWaterCount && newWaterCount > 0) {
           toast('Time to drink water! 💧', { icon: '🚰', duration: 5000 });
           if (typeof document !== 'undefined' && document.hidden && 'Notification' in window && Notification.permission === 'granted') {
-            new Notification('Time to drink water! 💧', { body: 'Take a quick sip to stay hydrated.', icon: '/icon-192.png' });
+            const iconUrl = typeof window !== 'undefined' ? `${window.location.origin}/icon-192.png` : '/icon-192.png';
+            new Notification('Time to drink water! 💧', { body: 'Take a quick sip to stay hydrated.', icon: iconUrl });
           }
         }
 
@@ -827,7 +828,8 @@ export function StudyProvider({ children }: { children: ReactNode }) {
               soundFx.playMilestoneBell();
               toast.success('Pomodoro session completed! Great focus! 🍅', { duration: 5000 });
               if (typeof document !== 'undefined' && document.hidden && 'Notification' in window && Notification.permission === 'granted') {
-                new Notification('Pomodoro session completed! 🍅', { body: 'Great focus! Take a well-deserved break.', icon: '/icon-192.png' });
+                const iconUrl = typeof window !== 'undefined' ? `${window.location.origin}/icon-192.png` : '/icon-192.png';
+                new Notification('Pomodoro session completed! 🍅', { body: 'Great focus! Take a well-deserved break.', icon: iconUrl });
               }
               confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 } });
               return;
@@ -847,7 +849,8 @@ export function StudyProvider({ children }: { children: ReactNode }) {
               soundFx.playMilestoneBell();
               toast.success('Break time is over! Ready to focus? 🚀', { duration: 5000 });
               if (typeof document !== 'undefined' && document.hidden && 'Notification' in window && Notification.permission === 'granted') {
-                new Notification('Break time is over! 🚀', { body: 'Ready to focus? Let\'s get back to work.', icon: '/icon-192.png' });
+                const iconUrl = typeof window !== 'undefined' ? `${window.location.origin}/icon-192.png` : '/icon-192.png';
+                new Notification('Break time is over! 🚀', { body: 'Ready to focus? Let\'s get back to work.', icon: iconUrl });
               }
               confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } });
               return;
