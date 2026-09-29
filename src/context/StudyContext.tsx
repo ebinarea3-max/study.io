@@ -1477,6 +1477,12 @@ export function StudyProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     cleanupLegacyDemoData();
 
+    // Prevent cross-account data bleed
+    setSessions([]);
+    setSubjectsState([]);
+    setTodos([]);
+    setSelectedSubjectIdState('');
+
     // 1. Initial load from storage
     try {
       const uid = user?.id || 'guest';
