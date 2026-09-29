@@ -1330,14 +1330,6 @@ export function StudyTimer() {
                 ) : (
                   <>
                     <button
-                      onClick={handlePause}
-                      disabled={isSaving || isRemoteTransitioning}
-                      className="px-5 sm:px-7 py-3 rounded-xl bg-[var(--surface)] backdrop-blur-xl hover:bg-[#1B2028] text-amber-300 font-hud font-bold text-xs sm:text-sm border border-amber-500/40 transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[120px] uppercase tracking-wider"
-                    >
-                      <Pause className="w-4 h-4" />
-                      <span>PAUSE BREAK</span>
-                    </button>
-                    <button
                       onClick={handleReset}
                       disabled={isSaving || isRemoteTransitioning}
                       className="px-5 sm:px-6 py-3 rounded-xl bg-[var(--surface)] backdrop-blur-xl hover:bg-[#1B2028] border border-[var(--border)] text-slate-400 hover:text-white font-hud font-bold text-xs sm:text-sm transition-colors active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[110px] uppercase tracking-wider"

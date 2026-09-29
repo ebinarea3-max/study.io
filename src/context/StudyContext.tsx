@@ -846,8 +846,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
               setElapsedSeconds(0);
               setPomodoroPhase('work');
               setIsStudying(false);
-              setIsPaused(true);
-              setPomodoroCompletedPhase('break');
+              setIsPaused(false);
               soundFx.playMilestoneBell();
               toast.success('Break time is over! Ready to focus? 🚀', { duration: 5000 });
               if (typeof document !== 'undefined' && document.hidden && 'Notification' in window && Notification.permission === 'granted') {
@@ -855,6 +854,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
                 new Notification('Break time is over! 🚀', { body: 'Ready to focus? Let\'s get back to work.', icon: iconUrl });
               }
               confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } });
+              syncActiveSessionToDb('stopped');
               return;
             }
           }
@@ -919,11 +919,11 @@ export function StudyProvider({ children }: { children: ReactNode }) {
               setElapsedSeconds(0);
               setPomodoroPhase('work');
               setIsStudying(false);
-              setIsPaused(true);
-              setPomodoroCompletedPhase('break');
+              setIsPaused(false);
               soundFx.playMilestoneBell();
               toast.success('Break time is over! Ready to focus? 🚀', { duration: 5000 });
               confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } });
+              syncActiveSessionToDb('stopped');
               return;
             }
           }
