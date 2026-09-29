@@ -834,8 +834,9 @@ export function StudyTimer() {
                   setIsFocusModeOpen(true);
                   const el = document.documentElement;
                   const lockLandscape = () => {
-                    if (window.screen && window.screen.orientation && window.screen.orientation.lock) {
-                      window.screen.orientation.lock('landscape').catch(() => {});
+                    const orientation = window.screen?.orientation as any;
+                    if (orientation && orientation.lock) {
+                      orientation.lock('landscape').catch(() => {});
                     }
                   };
                   if (el.requestFullscreen) {

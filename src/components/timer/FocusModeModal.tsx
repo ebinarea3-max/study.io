@@ -56,8 +56,9 @@ export function FocusModeModal() {
         } else if ((document as any).webkitFullscreenElement) {
           (document as any).webkitExitFullscreen();
         }
-        if (window.screen && window.screen.orientation && window.screen.orientation.unlock) {
-          window.screen.orientation.unlock();
+        const orientation = window.screen?.orientation as any;
+        if (orientation && orientation.unlock) {
+          orientation.unlock();
         }
       }
     };
@@ -126,8 +127,9 @@ export function FocusModeModal() {
             } else if ((document as any).webkitFullscreenElement) {
               (document as any).webkitExitFullscreen();
             }
-            if (window.screen && window.screen.orientation && window.screen.orientation.unlock) {
-              window.screen.orientation.unlock();
+            const orientation = window.screen?.orientation as any;
+            if (orientation && orientation.unlock) {
+              orientation.unlock();
             }
           }}
           className="flex items-center gap-2.5 px-6 py-3 rounded-2xl bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/10 text-neutral-300 hover:text-white text-sm font-semibold transition-all shadow-2xl hover:scale-105 active:scale-95"
