@@ -370,6 +370,15 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     userRef.current = user;
   }, [user]);
 
+  // Request native notification permissions
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+        Notification.requestPermission();
+      }
+    }
+  }, []);
+
   // Helper keys for user-scoped and local storage (module-level functions used)
 
   // State with immediate storage initialization
@@ -794,6 +803,9 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         const newWaterCount = Math.floor(actualElapsed / 1800);
         if (newWaterCount > prevWaterCount && newWaterCount > 0) {
           toast('Time to drink water! 💧', { icon: '🚰', duration: 5000 });
+          if (typeof document !== 'undefined' && document.hidden && 'Notification' in window && Notification.permission === 'granted') {
+            new Notification('Time to drink water! 💧', { body: 'Take a quick sip to stay hydrated.', icon: '/icon-192.png' });
+          }
         }
 
         accumulatedSecondsRef.current = actualElapsed;
@@ -814,6 +826,9 @@ export function StudyProvider({ children }: { children: ReactNode }) {
               setPomodoroCompletedPhase('work');
               soundFx.playMilestoneBell();
               toast.success('Pomodoro session completed! Great focus! 🍅', { duration: 5000 });
+              if (typeof document !== 'undefined' && document.hidden && 'Notification' in window && Notification.permission === 'granted') {
+                new Notification('Pomodoro session completed! 🍅', { body: 'Great focus! Take a well-deserved break.', icon: '/icon-192.png' });
+              }
               confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 } });
               return;
             } else {
@@ -831,6 +846,9 @@ export function StudyProvider({ children }: { children: ReactNode }) {
               setPomodoroCompletedPhase('break');
               soundFx.playMilestoneBell();
               toast.success('Break time is over! Ready to focus? 🚀', { duration: 5000 });
+              if (typeof document !== 'undefined' && document.hidden && 'Notification' in window && Notification.permission === 'granted') {
+                new Notification('Break time is over! 🚀', { body: 'Ready to focus? Let\'s get back to work.', icon: '/icon-192.png' });
+              }
               confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } });
               return;
             }
