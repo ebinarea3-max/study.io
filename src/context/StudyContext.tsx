@@ -1045,12 +1045,19 @@ export function StudyProvider({ children }: { children: ReactNode }) {
           accumulated_seconds_after: effectiveAccumulated,
         });
 
-        // 1. Try pause_session RPC first
-        const { error: rpcError } = await supabase.rpc('pause_session', {
-          p_device_id: deviceId,
-        });
-        if (rpcError) {
-          console.warn('[Timer Write: pause_session RPC fallback upsert]', rpcError);
+        // 1. Try pause_session RPC first (only if not updating pomodoro phase or target duration)
+        const isChangingPhase = extra?.pomodoroPhase !== undefined || extra?.targetDuration !== undefined || extra?.mode !== undefined;
+        let rpcError = null;
+        
+        if (!isChangingPhase) {
+          const res = await supabase.rpc('pause_session', {
+            p_device_id: deviceId,
+          });
+          rpcError = res.error;
+        }
+
+        if (isChangingPhase || rpcError) {
+          if (rpcError) console.warn('[Timer Write: pause_session RPC fallback upsert]', rpcError);
           // Fallback direct upsert
           await supabase.from('active_sessions').upsert({
             user_id: uid,
