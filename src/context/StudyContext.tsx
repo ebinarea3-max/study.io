@@ -9,6 +9,7 @@ import { getSupabase } from '../lib/supabase';
 import { getDeviceId } from '../lib/deviceId';
 import { soundFx } from '../lib/audio';
 import confetti from 'canvas-confetti';
+import toast from 'react-hot-toast';
 import {
   getLevelProgress,
   calculateFocusXP,
@@ -788,6 +789,13 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       timerIntervalRef.current = setInterval(() => {
         if (startTimeRef.current === null) return;
         const actualElapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
+        
+        const prevWaterCount = Math.floor(accumulatedSecondsRef.current / 1800);
+        const newWaterCount = Math.floor(actualElapsed / 1800);
+        if (newWaterCount > prevWaterCount && newWaterCount > 0) {
+          toast('Time to drink water! 💧', { icon: '🚰', duration: 5000 });
+        }
+
         accumulatedSecondsRef.current = actualElapsed;
 
         if (timerMode === 'pomodoro') {
@@ -805,6 +813,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
               setIsPaused(true);
               setPomodoroCompletedPhase('work');
               soundFx.playMilestoneBell();
+              toast.success('Pomodoro session completed! Great focus! 🍅', { duration: 5000 });
               confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 } });
               return;
             } else {
@@ -821,6 +830,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
               setIsPaused(true);
               setPomodoroCompletedPhase('break');
               soundFx.playMilestoneBell();
+              toast.success('Break time is over! Ready to focus? 🚀', { duration: 5000 });
               confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } });
               return;
             }
@@ -850,6 +860,13 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         startTimeRef.current !== null
       ) {
         const actualElapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
+
+        const prevWaterCount = Math.floor(accumulatedSecondsRef.current / 1800);
+        const newWaterCount = Math.floor(actualElapsed / 1800);
+        if (newWaterCount > prevWaterCount && newWaterCount > 0) {
+          toast('Time to drink water! 💧', { icon: '🚰', duration: 5000 });
+        }
+
         accumulatedSecondsRef.current = actualElapsed;
 
         if (timerMode === 'pomodoro') {
@@ -866,6 +883,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
               setIsPaused(true);
               setPomodoroCompletedPhase('work');
               soundFx.playMilestoneBell();
+              toast.success('Pomodoro session completed! Great focus! 🍅', { duration: 5000 });
               confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 } });
               return;
             } else {
@@ -881,6 +899,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
               setIsPaused(true);
               setPomodoroCompletedPhase('break');
               soundFx.playMilestoneBell();
+              toast.success('Break time is over! Ready to focus? 🚀', { duration: 5000 });
               confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } });
               return;
             }
