@@ -705,7 +705,7 @@ export function StudyTimer() {
   }, [isLoading, user?.streakDays, overviewTodaySeconds, todaySessions.length, lockedEmptyQuote]);
 
   return (
-    <div className="w-full max-w-7xl mx-auto max-md:h-[calc(100dvh-8.5rem)] flex flex-col lg:flex-row justify-center items-start gap-4 lg:gap-6 max-md:overflow-hidden md:overflow-visible px-4 md:px-6 py-2 md:py-4">
+    <div className="w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6 items-start justify-center max-md:h-[calc(100dvh-8.5rem)] max-md:overflow-hidden md:overflow-visible px-0 max-md:px-2 max-md:py-2">
       {/* Subject Manager Modal - Conditionally mounted strictly when open (Stop Background Rendering) */}
       {isManageSubjectsOpen && (
         <ErrorBoundary
@@ -721,7 +721,7 @@ export function StudyTimer() {
       )}
 
       {/* Main Left Column (Timer & Subject Goal Progress) */}
-      <div className="w-full lg:w-[60%] xl:w-[65%] max-w-4xl h-full flex flex-col justify-between max-md:overflow-hidden md:overflow-visible space-y-0 md:space-y-3">
+      <div className="w-full h-full flex flex-col justify-between max-md:overflow-hidden md:overflow-visible space-y-0 md:space-y-3">
         {/* Main Timer Game-HUD Card with Targeting Reticle Corner Brackets */}
         <div
           className="relative w-full h-full rounded-3xl bg-[var(--surface)] backdrop-blur-xl border border-[var(--border)] p-5 sm:p-6 shadow-xl max-md:overflow-hidden md:overflow-hidden flex flex-col transition-all"
@@ -1061,7 +1061,7 @@ export function StudyTimer() {
 
           {/* Center Timer Display - Game HUD Radar / Reactor Core Display */}
           <div className="relative z-10 flex flex-col items-center justify-center py-4 sm:py-8 my-auto w-full">
-            <div className={`relative flex items-center justify-center group p-2 sm:p-4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 mx-auto aspect-square transition-all duration-500 rounded-full flex-shrink-0 ${
+            <div className={`relative flex items-center justify-center group p-2 sm:p-4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 mx-auto aspect-square rounded-full flex-shrink-0 ${
               isRemoteTransitioning
                 ? 'scale-[1.03] ring-4 ring-white/50 shadow-[0_0_50px_var(--tier-glow)]'
                 : ''
@@ -1176,13 +1176,7 @@ export function StudyTimer() {
                 </div>
 
                 {/* Big Technical Digital Numbers */}
-                <div
-                  className="font-mono text-4xl sm:text-5xl md:text-6xl font-semibold text-white drop-shadow-xl tabular-nums select-none my-1 sm:my-2 w-full text-center"
-                  style={{
-                    textShadow: isStudying && !isPaused ? `0 0 20px ${theme.glow}, 0 0 40px ${theme.glow}80` : '0 4px 20px rgba(0,0,0,0.5)',
-                    fontVariantNumeric: 'tabular-nums'
-                  }}
-                >
+                <div className="font-mono tabular-nums text-white text-6xl font-bold select-none tracking-tight text-center w-full my-1 sm:my-2">
                   {displayTime}
                 </div>
 
@@ -1553,7 +1547,7 @@ export function StudyTimer() {
       </div>
 
       {/* Right Secondary Column (Todo List, Daily Overview & Today's Boost - Home Page Sidebar, exclusively rendered in Tasks tab on mobile) */}
-      <div className="hidden lg:flex w-[40%] xl:w-[35%] max-w-sm flex-col justify-start h-full space-y-4 pr-2 md:overflow-visible">
+      <div className="hidden lg:flex w-full flex-col justify-start h-full space-y-4 pr-2 md:overflow-visible">
         {/* 1. Todo List Card - Google Notes / Keep Checklist */}
         <DailyTodoList />
 
