@@ -1064,8 +1064,7 @@ export function StudyTimer() {
             <div className="relative flex items-center justify-center group p-2 sm:p-4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 mx-auto aspect-square rounded-full flex-shrink-0">
               {/* Outer Tier Accent Ambient Halo */}
               <div
-                className="absolute inset-[-10%] rounded-full blur-3xl pointer-events-none opacity-[0.05]"
-                style={{ backgroundColor: 'var(--accent)' }}
+                className="absolute inset-[-10%] rounded-full blur-3xl pointer-events-none opacity-[0.05] bg-[radial-gradient(circle_at_center,rgba(var(--tier-accent-rgb),0.08)_0%,transparent_70%)]"
               />
 
               {/* Segmented Radar / Reactor Core SVG Ring */}
@@ -1141,29 +1140,23 @@ export function StudyTimer() {
 
               {/* Inner Dial */}
               <div
-                className="w-[78%] h-[78%] rounded-full flex flex-col items-center justify-center p-4 sm:p-8 text-center relative z-10 backdrop-blur-md"
-                style={{ backgroundColor: '#05070a', border: "1px solid rgba(255, 255, 255, 0.03)", boxShadow: "0 8px 32px rgba(0, 0, 0, 0.8), inset 0 1px 4px rgba(255, 255, 255, 0.02)" }}
+                className="w-72 h-72 md:w-80 md:h-80 rounded-full border border-white/[0.08] bg-[#0c0d12]/60 backdrop-blur-sm flex flex-col items-center justify-center relative shadow-[inset_0_1px_1px_rgba(255,255,255,0.06),0_12px_40px_rgba(0,0,0,0.6)]"
               >
-                {/* Pomodoro Phase / Subject Pill */}
-                <div
-                  className="mb-2 sm:mb-3 text-[10px] sm:text-xs font-hud font-bold px-3 sm:px-4 py-1 rounded-full border transition-colors max-w-[90%] truncate shadow-sm uppercase tracking-wider backdrop-blur-sm"
-                  style={{
-                    backgroundColor: selectedSubject ? theme.badgeBg : 'rgba(255, 255, 255, 0.03)',
-                    borderColor: selectedSubject ? 'var(--border)' : 'rgba(255, 255, 255, 0.08)',
-                    color: selectedSubject ? 'var(--accent)' : '#94a3b8',
-                  }}
-                >
-                  {!selectedSubject
-                    ? 'Select a subject'
-                    : timerMode === 'pomodoro'
-                    ? pomodoroPhase === 'work'
-                      ? `Focus: ${selectedSubject.name}`
-                      : 'Break'
-                    : selectedSubject.name}
-                </div>
+                {/* Minimal Tick Marks */}
+                <div className="absolute top-4 w-0.5 h-2 bg-white/10 rounded-full" />
+                <div className="absolute bottom-4 w-0.5 h-2 bg-white/10 rounded-full" />
+                <div className="absolute left-4 w-2 h-0.5 bg-white/10 rounded-full" />
+                <div className="absolute right-4 w-2 h-0.5 bg-white/10 rounded-full" />
+
                 {/* Big Technical Digital Numbers */}
-                <div className="font-mono tabular-nums text-white text-6xl font-bold select-none tracking-tight w-full text-center -translate-x-1.5 md:-translate-x-2">
+                <div className="font-mono tabular-nums text-5xl md:text-6xl font-bold tracking-tight text-white/95 drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)] w-full text-center z-10">
                   {displayTime}
+                </div>
+
+                {/* Status */}
+                <div className="text-[11px] uppercase tracking-[0.2em] text-neutral-400 font-medium flex items-center gap-2 mt-2 z-10">
+                  <div className={`w-1.5 h-1.5 rounded-full ${isStudying && !isPaused ? 'bg-green-500 animate-pulse' : isPaused ? 'bg-amber-500' : 'bg-neutral-500'}`} />
+                  {!selectedSubject ? 'SELECT A SUBJECT' : isStudying && !isPaused ? 'RUNNING' : isPaused ? 'PAUSED' : 'READY TO START'}
                 </div>
               </div>
             </div>
@@ -1321,15 +1314,14 @@ export function StudyTimer() {
                 <button
                   onClick={handleStartSession}
                   disabled={!selectedSubject?.id || isSaving || isRemoteTransitioning}
-                  className={`group relative overflow-hidden px-10 sm:px-12 py-4 sm:py-5 font-sans font-bold text-sm sm:text-base uppercase tracking-widest transition-all flex items-center justify-center gap-3 w-full xs:w-auto rounded-2xl ${
+                  className={`group relative overflow-hidden bg-gradient-to-r from-amber-500 via-amber-600 to-orange-500 hover:brightness-110 text-black font-semibold text-sm tracking-wide px-8 py-3.5 rounded-xl shadow-[0_4px_24px_rgba(245,158,11,0.25)] transition-all flex items-center justify-center gap-2 w-full xs:w-auto hover:scale-[1.01] active:scale-[0.99] ${
                     !selectedSubject?.id || isRemoteTransitioning
-                      ? 'opacity-40 cursor-not-allowed shadow-none'
-                      : 'cursor-pointer hover:scale-[1.03] hover:-translate-y-1'
+                      ? 'opacity-40 cursor-not-allowed shadow-none hover:scale-100'
+                      : 'cursor-pointer'
                   }`}
-                  style={{ background: theme.gradient, color: "#000000", fontWeight: 800, border: "none", boxShadow: `0 8px 32px ${theme.glow}60, inset 0 2px 4px rgba(255,255,255,0.3)` }}
                   title={!selectedSubject?.id ? 'Please select a subject before starting the timer' : 'Start Focus Session'}
                 >
-                  <Play className="w-4 sm:w-5 h-4 sm:h-5 fill-current" />
+                  <Play className="w-5 h-5 fill-current" />
                   <span>START SESSION</span>
                 </button>
               ) : !isPaused ? (
