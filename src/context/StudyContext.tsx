@@ -488,6 +488,17 @@ export function StudyProvider({ children }: { children: ReactNode }) {
   const [todos, setTodos] = useState<TodoItem[]>(INITIAL_TODOS);
   const [selectedDate, setSelectedDate] = useState<string>(getTodayDateString(0));
 
+  const prevUserIdRef2 = useRef(user?.id);
+  useEffect(() => {
+    if (user?.id !== prevUserIdRef2.current) {
+      setSessions([]);
+      setTodos(INITIAL_TODOS);
+      setSubjectsState([]);
+      setSelectedSubjectIdState('');
+      prevUserIdRef2.current = user?.id;
+    }
+  }, [user?.id]);
+
   // Gamification & Celebrations State
   const [lastXpEarned, setLastXpEarned] = useState<{
     id: string;
