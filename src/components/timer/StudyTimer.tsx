@@ -1107,7 +1107,7 @@ export function StudyTimer() {
                         stroke={isActiveTick ? 'var(--accent)' : 'rgba(255,255,255,0.04)'}
                         strokeWidth={isActiveTick ? 2 : 1}
                         strokeLinecap="round"
-                        className="transition-all duration-500 opacity-60"
+                        className="opacity-60"
                       />
                     );
                   })}
@@ -1134,7 +1134,6 @@ export function StudyTimer() {
                   strokeLinecap="round"
                   strokeDasharray={2 * Math.PI * 124}
                   strokeDashoffset={2 * Math.PI * 124 - (progressPercent / 100) * (2 * Math.PI * 124)}
-                  className="transition-all duration-500 ease-out"
                   style={{
                     filter: 'drop-shadow(0 0 3px rgba(var(--tier-accent-rgb), 0.5))',
                   }}
@@ -1142,15 +1141,7 @@ export function StudyTimer() {
                 />
               </svg>
 
-              {/* Rotating Radar Scanline when Running */}
-              {isStudying && !isPaused && (
-                <div
-                  className="absolute inset-5 rounded-full pointer-events-none animate-radar-sweep opacity-30"
-                  style={{
-                    background: 'conic-gradient(from 0deg, transparent 0deg, transparent 270deg, rgba(255,255,255,0.1) 330deg, rgba(255,255,255,0.3) 360deg)',
-                  }}
-                />
-              )}
+
 
               {/* Inner Dial */}
               <div
