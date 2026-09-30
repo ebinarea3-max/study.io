@@ -1162,11 +1162,11 @@ export function StudyTimer() {
                     : selectedSubject.name}
                 </div>
                 {/* Big Technical Digital Numbers */}
-                <div className="font-mono tabular-nums text-white text-6xl font-bold select-none flex justify-center w-full">
+                <div className="font-mono tabular-nums text-white text-6xl font-bold select-none flex justify-center items-center w-full">
                   {displayTime.split('').map((char, i) => (
                     <span 
                       key={i} 
-                      className={`inline-block text-center ${char === ':' ? 'w-[0.3em] opacity-80' : 'w-[0.55em]'}`}
+                      className={`inline-block text-center ${char === ':' ? 'w-[0.25em] opacity-80 -translate-y-[0.1em]' : 'w-[0.6em]'}`}
                     >
                       {char}
                     </span>
