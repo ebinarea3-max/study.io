@@ -642,32 +642,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const deleteAccount = useCallback(async () => {
     setIsLoading(true);
     const supabase = getSupabase();
-    setUser(prev => {
-      if (supabase && prev.id) {
+    
+    if (supabase && user.id) {
+      try {
+        await Promise.allSettled([
+          supabase.from('study_sessions').delete().eq('user_id', user.id),
+          supabase.from('todos').delete().eq('user_id', user.id),
+          supabase.from('subjects').delete().eq('user_id', user.id),
+          supabase.from('room_presence').delete().eq('user_id', user.id),
+          supabase.from('profiles').delete().eq('id', user.id)
+        ]);
+        supabase.auth.signOut().then();
+      } catch {
+        // ignore
+      }
+    }
+    
+    if (user.email) {
+      const accounts = getStoredAccounts();
+      if (accounts[user.email.toLowerCase()]) {
+        delete accounts[user.email.toLowerCase()];
         try {
-          supabase.from('study_sessions').delete().eq('user_id', prev.id).then();
-          supabase.from('todos').delete().eq('user_id', prev.id).then();
-          supabase.from('subjects').delete().eq('user_id', prev.id).then();
-          supabase.from('room_presence').delete().eq('user_id', prev.id).then();
-          supabase.from('profiles').delete().eq('id', prev.id).then();
-          supabase.auth.signOut().then();
-        } catch {
-          // ignore
-        }
+          localStorage.setItem('studyio_registered_accounts', JSON.stringify(accounts));
+        } catch {}
       }
-      if (prev.email) {
-        const accounts = getStoredAccounts();
-        if (accounts[prev.email.toLowerCase()]) {
-          delete accounts[prev.email.toLowerCase()];
-          try {
-            localStorage.setItem('studyio_registered_accounts', JSON.stringify(accounts));
-          } catch {}
-        }
-      }
-      return INITIAL_USER;
-    });
+    }
 
     try {
+      if (user.id) {
+        localStorage.removeItem(`study_io_sessions_${user.id}`);
+        localStorage.removeItem(`study_io_subjects_${user.id}`);
+        localStorage.removeItem(`study_io_selected_subject_${user.id}`);
+      }
       localStorage.removeItem('studypulse_active_user');
       localStorage.removeItem('studypulse_is_authenticated');
       localStorage.removeItem('studypulse_sessions');
@@ -690,7 +696,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         window.location.href = '/';
       }
     }
-  }, [saveUser]);
+  }, [saveUser, user]);
 
   return (
     <AuthContext.Provider
