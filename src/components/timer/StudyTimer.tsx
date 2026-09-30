@@ -1177,23 +1177,13 @@ export function StudyTimer() {
 
                 {/* Big Technical Digital Numbers */}
                 <div
-                  className="font-mono text-4xl sm:text-5xl md:text-6xl font-semibold tracking-tighter text-white drop-shadow-xl select-none my-1 sm:my-2 w-full"
+                  className="font-mono text-4xl sm:text-5xl md:text-6xl font-semibold text-white drop-shadow-xl tabular-nums select-none my-1 sm:my-2 w-full text-center"
                   style={{
                     textShadow: isStudying && !isPaused ? `0 0 20px ${theme.glow}, 0 0 40px ${theme.glow}80` : '0 4px 20px rgba(0,0,0,0.5)',
                     transition: 'text-shadow 0.3s ease-in-out',
                   }}
                 >
-                  {displayTime.includes(':') ? (
-                    <div className="flex items-center justify-center w-full tabular-nums">
-                      <span className="w-[1.4em] text-right">{displayTime.split(':')[0]}</span>
-                      <span className="w-[0.3em] text-center opacity-80 mb-1 sm:mb-2">:</span>
-                      <span className="w-[1.4em] text-center">{displayTime.split(':')[1]}</span>
-                      <span className="w-[0.3em] text-center opacity-80 mb-1 sm:mb-2">:</span>
-                      <span className="w-[1.4em] text-left">{displayTime.split(':')[2]}</span>
-                    </div>
-                  ) : (
-                    displayTime
-                  )}
+                  {displayTime}
                 </div>
 
                 {/* Animated HUD Monospace Status Readout */}
