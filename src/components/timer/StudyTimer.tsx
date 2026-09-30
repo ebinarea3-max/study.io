@@ -705,7 +705,7 @@ export function StudyTimer() {
   }, [isLoading, user?.streakDays, overviewTodaySeconds, todaySessions.length, lockedEmptyQuote]);
 
   return (
-    <div className="w-full max-w-6xl mx-auto max-md:h-[calc(100dvh-8.5rem)] flex max-md:flex-col max-md:justify-between max-md:items-center md:grid md:grid-cols-1 lg:grid-cols-12 md:justify-start gap-2 sm:gap-4 lg:gap-6 max-md:overflow-hidden md:overflow-visible max-md:px-2 max-md:py-2 md:p-0">
+    <div className="w-full max-w-7xl mx-auto max-md:h-[calc(100dvh-8.5rem)] flex flex-col lg:flex-row justify-center items-start gap-4 lg:gap-6 max-md:overflow-hidden md:overflow-visible px-4 md:px-6 py-2 md:py-4">
       {/* Subject Manager Modal - Conditionally mounted strictly when open (Stop Background Rendering) */}
       {isManageSubjectsOpen && (
         <ErrorBoundary
@@ -721,7 +721,7 @@ export function StudyTimer() {
       )}
 
       {/* Main Left Column (Timer & Subject Goal Progress) */}
-      <div className="lg:col-span-8 w-full h-full flex flex-col justify-between max-md:overflow-hidden md:overflow-visible space-y-0 md:space-y-3">
+      <div className="w-full lg:w-[60%] xl:w-[65%] max-w-4xl h-full flex flex-col justify-between max-md:overflow-hidden md:overflow-visible space-y-0 md:space-y-3">
         {/* Main Timer Game-HUD Card with Targeting Reticle Corner Brackets */}
         <div
           className="relative w-full h-full rounded-3xl bg-[var(--surface)] backdrop-blur-xl border border-[var(--border)] p-5 sm:p-6 shadow-xl max-md:overflow-hidden md:overflow-hidden flex flex-col transition-all"
@@ -1180,7 +1180,7 @@ export function StudyTimer() {
                   className="font-mono text-4xl sm:text-5xl md:text-6xl font-semibold text-white drop-shadow-xl tabular-nums select-none my-1 sm:my-2 w-full text-center"
                   style={{
                     textShadow: isStudying && !isPaused ? `0 0 20px ${theme.glow}, 0 0 40px ${theme.glow}80` : '0 4px 20px rgba(0,0,0,0.5)',
-                    transition: 'text-shadow 0.3s ease-in-out',
+                    fontVariantNumeric: 'tabular-nums'
                   }}
                 >
                   {displayTime}
@@ -1553,7 +1553,7 @@ export function StudyTimer() {
       </div>
 
       {/* Right Secondary Column (Todo List, Daily Overview & Today's Boost - Home Page Sidebar, exclusively rendered in Tasks tab on mobile) */}
-      <div className="hidden lg:flex lg:col-span-4 flex-col justify-between h-full space-y-4 pr-2 md:overflow-visible">
+      <div className="hidden lg:flex w-[40%] xl:w-[35%] max-w-sm flex-col justify-start h-full space-y-4 pr-2 md:overflow-visible">
         {/* 1. Todo List Card - Google Notes / Keep Checklist */}
         <DailyTodoList />
 
