@@ -1162,7 +1162,7 @@ export function StudyTimer() {
                     : selectedSubject.name}
                 </div>
                 {/* Big Technical Digital Numbers */}
-                <div className="font-mono tabular-nums text-white text-6xl font-bold select-none tracking-tight w-full text-center">
+                <div className="font-mono tabular-nums text-white text-6xl font-bold select-none tracking-tight w-full text-center -translate-x-1.5 md:-translate-x-2">
                   {displayTime}
                 </div>
               </div>
