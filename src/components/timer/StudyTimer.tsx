@@ -1139,24 +1139,28 @@ export function StudyTimer() {
 
 
               {/* Inner Dial */}
-              <div
-                className="w-72 h-72 md:w-80 md:h-80 rounded-full border border-white/[0.08] bg-[#0c0d12]/60 backdrop-blur-sm flex flex-col items-center justify-center relative shadow-[inset_0_1px_1px_rgba(255,255,255,0.06),0_12px_40px_rgba(0,0,0,0.6)]"
-              >
-                {/* Minimal Tick Marks */}
-                <div className="absolute top-4 w-0.5 h-2 bg-white/10 rounded-full" />
-                <div className="absolute bottom-4 w-0.5 h-2 bg-white/10 rounded-full" />
-                <div className="absolute left-4 w-2 h-0.5 bg-white/10 rounded-full" />
-                <div className="absolute right-4 w-2 h-0.5 bg-white/10 rounded-full" />
+              <div className="w-72 h-72 md:w-80 md:h-80 rounded-full border border-white/[0.08] bg-[#0c0d12]/60 backdrop-blur-sm relative shadow-[inset_0_1px_1px_rgba(255,255,255,0.06),0_12px_40px_rgba(0,0,0,0.6)]">
+                {/* Minimal Tick Marks (12, 3, 6, 9) properly anchored */}
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 w-0.5 h-2 bg-white/10 rounded-full" />
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-0.5 h-2 bg-white/10 rounded-full" />
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 w-2 h-0.5 bg-white/10 rounded-full" />
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 w-2 h-0.5 bg-white/10 rounded-full" />
 
-                {/* Big Technical Digital Numbers */}
-                <div className="font-mono tabular-nums text-5xl md:text-6xl font-bold tracking-tight text-white/95 drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)] w-full text-center z-10">
-                  {displayTime}
-                </div>
+                {/* Absolute Centered Content Wrapper */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10">
+                  {/* Spacer to mathematically balance the vertical flex center against the status pill below */}
+                  <div className="h-6 mt-2" aria-hidden="true" />
+                  
+                  {/* Big Technical Digital Numbers */}
+                  <div className="font-mono tabular-nums text-5xl md:text-6xl font-bold tracking-tight text-white/95 drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)] w-full text-center -translate-x-1.5 md:-translate-x-2">
+                    {displayTime}
+                  </div>
 
-                {/* Status */}
-                <div className="text-[11px] uppercase tracking-[0.2em] text-neutral-400 font-medium flex items-center gap-2 mt-2 z-10">
-                  <div className={`w-1.5 h-1.5 rounded-full ${isStudying && !isPaused ? 'bg-green-500 animate-pulse' : isPaused ? 'bg-amber-500' : 'bg-neutral-500'}`} />
-                  {!selectedSubject ? 'SELECT A SUBJECT' : isStudying && !isPaused ? 'RUNNING' : isPaused ? 'PAUSED' : 'READY TO START'}
+                  {/* Status */}
+                  <div className="h-6 text-[11px] uppercase tracking-[0.2em] text-neutral-400 font-medium flex items-center justify-center gap-2 mt-2">
+                    <div className={`w-1.5 h-1.5 rounded-full ${isStudying && !isPaused ? 'bg-green-500 animate-pulse' : isPaused ? 'bg-amber-500' : 'bg-neutral-500'}`} />
+                    {!selectedSubject ? 'SELECT A SUBJECT' : isStudying && !isPaused ? 'RUNNING' : isPaused ? 'PAUSED' : 'READY TO START'}
+                  </div>
                 </div>
               </div>
             </div>
