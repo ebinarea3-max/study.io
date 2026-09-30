@@ -1174,49 +1174,9 @@ export function StudyTimer() {
                       : 'Break'
                     : selectedSubject.name}
                 </div>
-
                 {/* Big Technical Digital Numbers */}
-                <div className="font-mono tabular-nums text-white text-6xl font-bold select-none tracking-tight text-center w-full my-1 sm:my-2">
+                <div className="font-mono tabular-nums text-white text-6xl font-bold select-none tracking-tight">
                   {displayTime}
-                </div>
-
-                {/* Animated HUD Monospace Status Readout */}
-                <div className="mt-1.5 sm:mt-2 flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-[11px] font-hud-mono font-bold tracking-wider uppercase">
-                  <span
-                    className={`w-2 h-2 rounded-full transition-all ${
-                      pomodoroCompletedPhase === 'work'
-                        ? 'animate-ping'
-                        : pomodoroCompletedPhase === 'break'
-                        ? 'animate-bounce'
-                        : ''
-                    }`}
-                    style={{
-                      backgroundColor:
-                        pomodoroCompletedPhase === 'work'
-                          ? 'var(--accent)'
-                          : isStudying
-                          ? isPaused
-                            ? '#f59e0b'
-                            : 'var(--accent)'
-                          : 'var(--accent)',
-                      boxShadow: '0 0 8px var(--glow)',
-                    }}
-                  />
-                  <span style={{ color: isStudying && !isPaused ? 'var(--accent)' : '#94A3B8' }}>
-                    {pomodoroCompletedPhase === 'work'
-                      ? '● Block Finished'
-                      : pomodoroCompletedPhase === 'break'
-                      ? '● Break Over'
-                      : timerMode === 'pomodoro' && pomodoroPhase === 'shortBreak'
-                      ? isPaused
-                        ? '● Break Paused'
-                        : '● Break Active'
-                      : isStudying
-                      ? isPaused
-                        ? '● Session Paused'
-                        : '● Focusing'
-                      : '● Ready to start'}
-                  </span>
                 </div>
               </div>
             </div>
