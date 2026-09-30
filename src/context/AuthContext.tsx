@@ -83,7 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Also check local storage sessions in case offline / pending sessions exist
       let localSessionSeconds = 0;
       try {
-        const rawSess = localStorage.getItem(`study_io_sessions_${authUser.id}`) || localStorage.getItem('studypulse_sessions');
+        const rawSess = localStorage.getItem(`study_io_sessions_${authUser.id}`);
         if (rawSess) {
           const parsed = JSON.parse(rawSess);
           if (Array.isArray(parsed)) {
@@ -96,17 +96,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ? dbSessions.reduce((acc, s: any) => acc + (Number(s.duration_seconds ?? 0)), 0)
         : 0;
 
-      const totalStudySeconds = Math.max(dbSessionSeconds, localSessionSeconds, Number(profile?.total_study_seconds ?? 0));
+      const totalStudySeconds = Math.max(dbSessionSeconds, localSessionSeconds);
       const totalRankedMinutes = Math.floor(totalStudySeconds / 60);
       const calculatedRP = totalRankedMinutes * 10;
-      const currentProfileRP = Number(profile?.rp ?? profile?.season_rp ?? 0);
+      let currentProfileRP = Number(profile?.rp ?? profile?.season_rp ?? 0);
+      
+      // AUTO-REPAIR CORRUPTED PROFILES:
+      // If the profile RP is more than 500 points higher than what their sessions justify,
+      // they were affected by the studypulse_sessions leak. Reset their RP and Study Seconds.
+      let needsRepair = false;
+      if (currentProfileRP > calculatedRP + 500 || Number(profile?.total_study_seconds ?? 0) > totalStudySeconds + 3600) {
+        currentProfileRP = calculatedRP; // Reset RP
+        needsRepair = true;
+      }
+
       const syncedRP = Math.max(calculatedRP, currentProfileRP);
       const calculatedLevel = Math.max(1, Math.floor(Math.sqrt(Math.max(0, syncedRP) / 100)) + 1);
 
-      // Only update valid columns (level) if level increased
-      if (calculatedLevel > (profile?.level || 1) && authUser.id && !authUser.id.startsWith('user-scholar')) {
+      if ((needsRepair || calculatedLevel > (profile?.level || 1)) && authUser.id && !authUser.id.startsWith('user-scholar')) {
         try {
-          await supabase.from('profiles').update({ level: calculatedLevel }).eq('id', authUser.id);
+          const updatePayload: any = { level: calculatedLevel };
+          if (needsRepair) {
+            updatePayload.rp = syncedRP;
+            updatePayload.season_rp = syncedRP;
+            updatePayload.total_study_seconds = totalStudySeconds;
+          }
+          await supabase.from('profiles').update(updatePayload).eq('id', authUser.id);
         } catch (e) {
           console.warn('Failed to sync level to Supabase profile:', e);
         }
