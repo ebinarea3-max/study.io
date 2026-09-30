@@ -1177,9 +1177,10 @@ export function StudyTimer() {
 
                 {/* Big Technical Digital Numbers */}
                 <div
-                  className="font-mono text-5xl sm:text-6xl md:text-7xl font-semibold tracking-tighter text-white drop-shadow-xl tabular-nums select-none transition-all duration-300 my-1 sm:my-2"
+                  className="font-mono text-5xl sm:text-6xl md:text-7xl font-semibold tracking-tighter text-white drop-shadow-xl tabular-nums select-none my-1 sm:my-2"
                   style={{
                     textShadow: isStudying && !isPaused ? `0 0 20px ${theme.glow}, 0 0 40px ${theme.glow}80` : '0 4px 20px rgba(0,0,0,0.5)',
+                    transition: 'text-shadow 0.3s ease-in-out'
                   }}
                 >
                   {displayTime}

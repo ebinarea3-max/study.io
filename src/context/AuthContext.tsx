@@ -52,14 +52,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Immediately extract user_metadata for stable, zero-flicker UI
     const metaAvatar = (authUser.user_metadata?.avatar_url as string) || (authUser.user_metadata?.picture as string) || '';
-    const metaName = (authUser.user_metadata?.full_name as string) || (authUser.user_metadata?.name as string) || (authUser.user_metadata?.display_name as string) || authUser.email?.split('@')[0] || 'Focus Scholar';
+    const metaName = (authUser.user_metadata?.full_name as string) || (authUser.user_metadata?.name as string) || (authUser.user_metadata?.display_name as string) || (authUser.email ? authUser.email.split('@')[0] : '');
 
     setUser(prev => {
       const merged: UserProfile = {
         ...prev,
         id: authUser.id,
         email: authUser.email || prev.email || '',
-        displayName: metaName || prev.displayName,
+        displayName: metaName || prev.displayName || 'Focus Scholar',
         avatarUrl: metaAvatar || prev.avatarUrl,
         user_metadata: authUser.user_metadata,
       };
@@ -139,7 +139,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const synced: UserProfile = {
             id: profile.id,
             email: authUser.email || prev.email || '',
-            displayName: profile.name || metaName || prev.displayName,
+            displayName: profile.name || metaName || prev.displayName || 'Focus Scholar',
             avatarUrl: profile.avatar_url || metaAvatar || prev.avatarUrl,
             dailyGoalHours: Number(profile.daily_goal_hours ?? prev.dailyGoalHours ?? 4.0),
             streakDays: Number(profile.streak_days ?? prev.streakDays ?? 0),
