@@ -1154,7 +1154,7 @@ export function StudyTimer() {
 
               {/* Inner Dial */}
               <div
-                className="w-[78%] h-[78%] rounded-full flex flex-col items-center justify-center p-4 sm:p-8 text-center relative z-10 backdrop-blur-md transition-all duration-300"
+                className="w-[78%] h-[78%] rounded-full flex flex-col items-center justify-center p-4 sm:p-8 text-center relative z-10 backdrop-blur-md"
                 style={{ backgroundColor: '#05070a', border: "1px solid rgba(255, 255, 255, 0.03)", boxShadow: "0 8px 32px rgba(0, 0, 0, 0.8), inset 0 1px 4px rgba(255, 255, 255, 0.02)" }}
               >
                 {/* Pomodoro Phase / Subject Pill */}
@@ -1177,10 +1177,12 @@ export function StudyTimer() {
 
                 {/* Big Technical Digital Numbers */}
                 <div
-                  className="font-mono text-5xl sm:text-6xl md:text-7xl font-semibold tracking-tighter text-white drop-shadow-xl tabular-nums select-none my-1 sm:my-2"
+                  className="font-mono text-5xl sm:text-6xl md:text-7xl font-semibold text-white drop-shadow-xl tabular-nums select-none my-1 sm:my-2 w-full max-w-[280px] sm:max-w-[340px] text-center"
                   style={{
                     textShadow: isStudying && !isPaused ? `0 0 20px ${theme.glow}, 0 0 40px ${theme.glow}80` : '0 4px 20px rgba(0,0,0,0.5)',
-                    transition: 'text-shadow 0.3s ease-in-out'
+                    transition: 'text-shadow 0.3s ease-in-out',
+                    fontVariantNumeric: 'tabular-nums',
+                    letterSpacing: '0.02em',
                   }}
                 >
                   {displayTime}
