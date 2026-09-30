@@ -1061,14 +1061,10 @@ export function StudyTimer() {
 
           {/* Center Timer Display - Game HUD Radar / Reactor Core Display */}
           <div className="relative z-10 flex flex-col items-center justify-center py-4 sm:py-8 my-auto w-full">
-            <div className={`relative flex items-center justify-center group p-2 sm:p-4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 mx-auto aspect-square rounded-full flex-shrink-0 ${
-              isRemoteTransitioning
-                ? 'scale-[1.03] ring-4 ring-white/50 shadow-[0_0_50px_var(--tier-glow)]'
-                : ''
-            }`}>
+            <div className="relative flex items-center justify-center group p-2 sm:p-4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 mx-auto aspect-square rounded-full flex-shrink-0">
               {/* Outer Tier Accent Ambient Halo */}
               <div
-                className="absolute inset-[-10%] rounded-full blur-3xl pointer-events-none transition-all duration-700 opacity-[0.05] group-hover:opacity-[0.1]"
+                className="absolute inset-[-10%] rounded-full blur-3xl pointer-events-none opacity-[0.05]"
                 style={{ backgroundColor: 'var(--accent)' }}
               />
 
@@ -1166,8 +1162,15 @@ export function StudyTimer() {
                     : selectedSubject.name}
                 </div>
                 {/* Big Technical Digital Numbers */}
-                <div className="font-mono tabular-nums text-white text-6xl font-bold select-none tracking-tight">
-                  {displayTime}
+                <div className="font-mono tabular-nums text-white text-6xl font-bold select-none flex justify-center w-full">
+                  {displayTime.split('').map((char, i) => (
+                    <span 
+                      key={i} 
+                      className={`inline-block text-center ${char === ':' ? 'w-[0.3em] opacity-80' : 'w-[0.55em]'}`}
+                    >
+                      {char}
+                    </span>
+                  ))}
                 </div>
               </div>
             </div>
