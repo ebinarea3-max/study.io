@@ -588,7 +588,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {}
 
     if (typeof window !== 'undefined') {
-      window.location.href = '/';
+      if (window.location.pathname === '/') {
+        window.location.reload();
+      } else {
+        window.location.href = '/';
+      }
     }
   }, [saveUser]);
 
@@ -665,7 +669,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
 
     if (typeof window !== 'undefined') {
-      window.location.href = '/';
+      if (window.location.pathname === '/') {
+        window.location.reload();
+      } else {
+        window.location.href = '/';
+      }
     }
   }, [saveUser]);
 
