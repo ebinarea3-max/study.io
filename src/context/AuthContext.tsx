@@ -586,6 +586,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem('studypulse_todos');
       localStorage.removeItem('studypulse_pending_sessions');
     } catch {}
+
+    if (typeof window !== 'undefined') {
+      window.location.href = '/';
+    }
   }, [saveUser]);
 
   const resetAllData = useCallback(async () => {
@@ -659,6 +663,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     saveUser(INITIAL_USER);
     setIsAuthenticated(false);
     setIsLoading(false);
+
+    if (typeof window !== 'undefined') {
+      window.location.href = '/';
+    }
   }, [saveUser]);
 
   return (
