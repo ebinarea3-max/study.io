@@ -353,30 +353,30 @@ export function DailyTodoList() {
   const progressPercent = todos.length > 0 ? Math.round((completedTodos.length / todos.length) * 100) : 0;
 
   return (
-    <div className="relative w-full rounded-3xl bg-[var(--surface)] backdrop-blur-xl border border-[var(--border)] p-5 sm:p-6 shadow-xl flex flex-col gap-4 overflow-hidden group">
+    <div className="hud-surface border border-[var(--border)] rounded-2xl p-4 sm:p-5 space-y-3 relative overflow-hidden group"
+      style={{ borderTop: "1px solid rgba(245, 158, 11, 0.4)" }}>
       {/* Header Row */}
-      <div className="flex items-center justify-between pb-3 border-b border-white/[0.06] relative z-10">
-        <div className="flex items-center gap-2.5">
-          <CheckSquare className="w-4 h-4" style={{ color: theme.accent }} />
-          <span className="font-hud text-xs uppercase font-bold text-white tracking-widest">
+      <div className="flex items-center justify-between pb-2.5 border-b border-white/[0.06] relative z-10">
+        <div className="flex items-center gap-2">
+          <CheckSquare className="w-4 h-4 text-[#F59E0B]" />
+          <span className="font-hud-mono text-xs uppercase font-bold text-white tracking-wider">
             TODO LIST
           </span>
         </div>
         <span
-          className="px-3 py-1 rounded-full font-sans text-[10px] font-bold border shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] bg-[#0c0d12]/80 border-white/10 text-neutral-300 tracking-wider"
+          className="px-2.5 py-0.5 rounded font-hud-mono text-xs font-bold border shadow-sm bg-white/[0.04] border-white/10 text-neutral-300"
         >
-          <span style={{ color: theme.accent }}>{completedTodos.length}</span> / {todos.length} COMPLETED
+          <span className="font-bold">{completedTodos.length}</span> / {todos.length} COMPLETED
         </span>
       </div>
 
       {/* Progress Bar */}
       {todos.length > 0 && (
-        <div className="h-1.5 w-full rounded-full bg-[#0c0d12]/80 overflow-hidden border border-white/[0.05] relative z-10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.8)]">
+        <div className="h-1.5 w-full rounded-full bg-black/60 overflow-hidden border border-white/[0.05] relative z-10">
           <div
-            className="h-full rounded-full transition-all duration-700 ease-out shadow-[0_0_10px_var(--tier-glow)]"
+            className="h-full rounded-full transition-all duration-500 shadow-sm bg-[#F59E0B] "
             style={{
               width: `${progressPercent}%`,
-              background: theme.gradient,
             }}
           />
         </div>
@@ -385,23 +385,23 @@ export function DailyTodoList() {
       {/* Task Input: Clean, borderless inline input at the top */}
       <form
         onSubmit={handleAddTask}
-        className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-[#0c0d12]/60 border border-white/5 focus-within:border-white/20 focus-within:bg-[#0c0d12]/80 transition-all relative z-10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.5)]"
+        className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-black/40 border border-[var(--border)] focus-within:border-white/30 focus-within:ring-1 focus-within:bg-black/60 transition-all relative z-10"
+        style={{ '--tw-ring-color': '#F59E0B' } as React.CSSProperties}
       >
-        <Plus className="w-4 h-4 text-neutral-500 flex-shrink-0" />
+        <Plus className="w-4 h-4 text-neutral-400 flex-shrink-0" />
         <input
           ref={inputRef}
           type="text"
           value={taskInput}
           onChange={e => setTaskInput(e.target.value)}
-          placeholder="Add an objective..."
-          className="w-full bg-transparent text-sm text-neutral-200 placeholder:text-neutral-600 focus:outline-none font-sans py-0.5"
+          placeholder="+ Take a note / Add an item..."
+          className="w-full bg-transparent text-xs text-neutral-200 placeholder:text-neutral-500 focus:outline-none font-sans py-0.5"
         />
         {taskInput.trim() && (
           <button
             type="submit"
             disabled={!taskInput.trim()}
-            className="px-3 py-1.5 text-[11px] font-hud font-bold text-slate-950 rounded-lg transition-all flex-shrink-0 cursor-pointer disabled:opacity-50 active:scale-95 shadow-[0_2px_10px_var(--tier-glow)] tracking-wider"
-            style={{ background: theme.gradient }}
+            className="px-2.5 py-1 text-[11px] font-hud-mono font-bold text-slate-950 rounded-lg transition-all flex-shrink-0 cursor-pointer disabled:opacity-50 active:scale-95 bg-[#F59E0B]"
           >
             ADD
           </button>
@@ -409,21 +409,21 @@ export function DailyTodoList() {
       </form>
 
       {/* Items Container */}
-      <div className="max-h-72 overflow-y-auto space-y-1 pr-1 select-none relative z-10 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+      <div className="max-h-72 overflow-y-auto space-y-0.5 pr-0.5 select-none relative z-10">
         {/* Active (Uncompleted) Tasks */}
         {activeTodos.map(item => (
           <div
             key={item.id}
-            className="group flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/[0.03] border border-transparent hover:border-white/[0.05] transition-all"
+            className="group flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/[0.04] transition-colors"
           >
-            <GripVertical className="w-4 h-4 text-neutral-600 opacity-0 group-hover:opacity-40 transition-opacity flex-shrink-0 cursor-grab" />
+            <GripVertical className="w-3.5 h-3.5 text-neutral-600 opacity-0 group-hover:opacity-40 transition-opacity flex-shrink-0 cursor-grab" />
 
             {/* Checkbox */}
             <button
               type="button"
               onClick={() => handleToggleTask(item.id, item.is_completed)}
               aria-label="Mark task complete"
-              className="w-5 h-5 rounded-[6px] border border-white/20 bg-[#0c0d12]/60 shadow-[inset_0_1px_2px_rgba(0,0,0,0.5)] transition-all flex items-center justify-center flex-shrink-0 cursor-pointer hover:border-white/40 active:scale-95"
+              className="w-[18px] h-[18px] rounded-[4px] border-[1.5px] border-neutral-600 bg-black/40 transition-all flex items-center justify-center flex-shrink-0 cursor-pointer group-hover:border-neutral-400 active:scale-95"
             />
 
             {/* Inline Editable Task Title */}
@@ -431,7 +431,7 @@ export function DailyTodoList() {
               type="text"
               value={item.task}
               onChange={e => handleUpdateTaskText(item.id, e.target.value)}
-              className="w-full bg-transparent text-sm text-neutral-300 focus:text-white focus:outline-none py-0.5 tracking-wide font-sans transition-colors"
+              className="w-full bg-transparent text-xs text-neutral-200 focus:text-white focus:outline-none py-0.5 tracking-wide leading-relaxed font-sans"
             />
 
             {/* Delete button on hover */}
@@ -439,82 +439,78 @@ export function DailyTodoList() {
               type="button"
               onClick={() => handleDeleteTask(item.id)}
               title="Delete item"
-              className="opacity-0 group-hover:opacity-100 text-neutral-500 hover:text-rose-400 p-1.5 transition-opacity cursor-pointer flex-shrink-0 bg-white/5 hover:bg-rose-500/10 rounded-lg"
+              className="opacity-0 group-hover:opacity-100 text-neutral-500 hover:text-rose-400 p-1 transition-opacity cursor-pointer flex-shrink-0"
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="w-3.5 h-3.5" />
             </button>
           </div>
         ))}
 
         {/* Empty State message if 0 todos */}
         {todos.length === 0 && (
-          <div className="py-8 flex flex-col items-center justify-center text-center space-y-3">
-            <div className="w-12 h-12 rounded-full bg-white/[0.03] border border-white/[0.05] flex items-center justify-center mb-1 shadow-[inset_0_1px_2px_rgba(255,255,255,0.02)]">
-              <CheckCircle2 className="w-5 h-5 text-neutral-600" />
-            </div>
-            <div>
-              <p className="text-neutral-300 font-hud text-xs tracking-widest font-bold">ALL CLEAR</p>
-              <p className="text-xs text-neutral-500 mt-1.5 font-sans max-w-[200px] leading-relaxed">You have no active objectives. Add one above to get started.</p>
-            </div>
+          <div className="py-6 text-center text-xs text-neutral-500 space-y-1">
+            <CheckCircle2 className="w-7 h-7 text-neutral-600 mx-auto mb-1 opacity-70" />
+            <p className="text-neutral-400 font-hud-mono font-bold tracking-wider">Your checklist is empty</p>
+            <p className="text-[11px] text-neutral-500 mt-0.5">Type above in '+ Take a note / Add an item...' and press Enter</p>
           </div>
         )}
 
         {/* Completed Items Collapsible Section */}
         {completedTodos.length > 0 && (
-          <div className="pt-4 mt-2">
-            <div className="border-t border-white/[0.06] pt-4 mb-2 flex items-center justify-between">
+          <div className="pt-2">
+            <div className="border-t border-[var(--border)] pt-2 mb-1 flex items-center justify-between">
               <button
                 type="button"
                 onClick={() => setIsCompletedOpen(!isCompletedOpen)}
-                className="flex items-center gap-2 text-xs font-semibold text-neutral-400 hover:text-neutral-200 transition-colors cursor-pointer select-none"
+                className="flex items-center gap-1.5 text-xs font-semibold text-neutral-400 hover:text-neutral-200 transition-colors cursor-pointer select-none"
               >
                 <ChevronDown
-                  className={`w-4 h-4 text-neutral-500 transition-transform duration-300 ${
+                  className={`w-3.5 h-3.5 text-neutral-400 transition-transform duration-200 ${
                     isCompletedOpen ? '' : '-rotate-90'
                   }`}
                 />
-                <span className="flex items-center gap-2 font-hud text-[10px] tracking-widest uppercase">
-                  <Check className="w-3.5 h-3.5 stroke-[3]" style={{ color: theme.accent }} />
-                  <span>Completed ({completedTodos.length})</span>
+                <span className="flex items-center gap-1.5 font-hud-mono text-[11px] tracking-wide">
+                  <Check className="w-3.5 h-3.5 stroke-[2.5] text-[#F59E0B]" />
+                  <span>COMPLETED OBJECTIVES ({completedTodos.length})</span>
                 </span>
               </button>
 
               <button
                 type="button"
                 onClick={handleClearCompleted}
-                className="font-hud text-[10px] uppercase font-bold text-neutral-500 hover:text-rose-400 hover:bg-rose-500/10 px-2 py-1 rounded transition-colors cursor-pointer tracking-widest"
+                className="font-hud-mono text-[10px] uppercase font-bold text-neutral-500 hover:text-rose-400 transition-colors cursor-pointer tracking-wider"
               >
                 CLEAR ALL
               </button>
             </div>
 
             {isCompletedOpen && (
-              <div className="space-y-1 animate-in slide-in-from-top-2 fade-in duration-300">
+              <div className="space-y-0.5">
                 {completedTodos.map(item => (
                   <div
                     key={item.id}
-                    className="group flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/[0.02] transition-colors"
+                    className="group flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-neutral-800/20 transition-colors"
                   >
-                    <div className="w-4 flex-shrink-0" />
+                    <div className="w-3.5 flex-shrink-0" />
                     <button
                       type="button"
                       onClick={() => handleToggleTask(item.id, item.is_completed)}
                       aria-label="Mark task incomplete"
-                      className="w-5 h-5 rounded-[6px] text-slate-950 flex items-center justify-center transition-all flex-shrink-0 cursor-pointer shadow-sm active:scale-95 hover:brightness-110"
-                      style={{ background: theme.gradient }}
+                      className="w-[18px] h-[18px] rounded-[4px] text-slate-950 flex items-center justify-center transition-all flex-shrink-0 cursor-pointer shadow-sm active:scale-95"
+                      style={{ backgroundColor: theme.accent }}
                     >
                       <Check className="w-3 h-3 stroke-[3]" />
                     </button>
-                    <span className="w-full text-sm text-neutral-500 line-through py-0.5 tracking-wide font-sans transition-colors cursor-default">
+                    <span className="w-full text-xs text-neutral-500 line-through py-0.5 tracking-wide leading-relaxed truncate font-sans">
                       {item.task}
                     </span>
                     <button
                       type="button"
                       onClick={() => handleDeleteTask(item.id)}
                       title="Delete item"
-                      className="opacity-0 group-hover:opacity-100 text-neutral-500 hover:text-rose-400 p-1.5 transition-opacity cursor-pointer flex-shrink-0 bg-white/5 hover:bg-rose-500/10 rounded-lg"
+                      className="opacity-0 group-hover:opacity-100 text-neutral-500 hover:text-rose-400 p-1 transition-opacity cursor-pointer flex-shrink-0"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 ))}
