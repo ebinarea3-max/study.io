@@ -95,7 +95,7 @@ export function DailyTodoList() {
           .from('todos')
           .select('*')
           .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: true });
 
         if (error) {
           console.error(error);
@@ -172,7 +172,7 @@ export function DailyTodoList() {
 
     // Immediately update local state and fallback localStorage
     setTodos(prev => {
-      const updated = [optimisticItem, ...prev];
+      const updated = [...prev, optimisticItem];
       saveLocal(updated);
       return updated;
     });

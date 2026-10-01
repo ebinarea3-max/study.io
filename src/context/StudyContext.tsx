@@ -1637,7 +1637,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
           .from('todos')
           .select('*, subjects(name, color)')
           .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: true });
 
         if (dbTodos) {
           const mappedTodos: TodoItem[] = dbTodos.map(t => ({
@@ -2909,7 +2909,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     };
 
     setTodos(prev => {
-      const updated = [item, ...prev];
+      const updated = [...prev, item];
       try {
         localStorage.setItem('studypulse_todos', JSON.stringify(updated));
       } catch {}
