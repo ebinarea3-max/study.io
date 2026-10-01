@@ -630,16 +630,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (updates.level !== undefined && Number(updates.level) !== Number(prev.level)) {
           payload.level = Number(updates.level);
         }
-        if (updates.rp !== undefined && Number(updates.rp) !== Number(prev.rp)) {
-          payload.rp = Number(updates.rp);
-          payload.season_rp = Number(updates.rp);
-        }
-        if (updates.totalStudySeconds !== undefined && Number(updates.totalStudySeconds) !== Number(prev.totalStudySeconds)) {
-          payload.total_study_seconds = Number(updates.totalStudySeconds);
-        }
-        if (updates.levelTitle !== undefined && updates.levelTitle !== prev.levelTitle) {
-          payload.rank_title = updates.levelTitle;
-        }
 
         if (Object.keys(payload).length > 0) {
           supabase
