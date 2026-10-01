@@ -1444,6 +1444,19 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         },
         (payload: any) => handleSessionChange(payload)
       )
+      .on(
+        'postgres_changes' as never,
+        {
+          event: '*',
+          schema: 'public',
+          table: 'study_sessions',
+          filter: `user_id=eq.${userId}`,
+        },
+        (payload: any) => {
+          console.log('[Realtime study_sessions]', payload);
+          refetchSessions();
+        }
+      )
       .subscribe((status: string) => {
         setRealtimeStatus(status);
         if (status === 'SUBSCRIBED') {
@@ -1845,6 +1858,31 @@ export function StudyProvider({ children }: { children: ReactNode }) {
           const allLocal = mergeAndDeduplicateSessions(localFromStorage, prev);
           const merged = mergeAndDeduplicateSessions(allLocal, mappedSessions);
           finalMergedSessions = merged;
+          
+          const missingInDb = allLocal.filter(localSess => {
+            if (localSess.id && mappedSessions.some(m => m.id === localSess.id)) return false;
+            return !mappedSessions.some(dbSess => {
+               const dbTime = new Date(dbSess.startTime || (dbSess as any).started_at).getTime();
+               const locTime = new Date(localSess.startTime || (localSess as any).started_at).getTime();
+               return Math.abs(dbTime - locTime) < 5000 && dbSess.durationSeconds === localSess.durationSeconds;
+            });
+          });
+
+          if (missingInDb.length > 0) {
+            console.log('Migrating missing local sessions to Supabase:', missingInDb.length);
+            const inserts = missingInDb.map(item => ({
+              user_id: activeUserId,
+              subject_id: item.subjectId && item.subjectId.length === 36 ? item.subjectId : null,
+              duration_seconds: item.durationSeconds,
+              started_at: item.startTime,
+              ended_at: item.endTime,
+              notes: item.notes || null,
+              mode: item.mode || 'stopwatch',
+            }));
+            supabase.from('study_sessions').insert(inserts).then(({error}) => {
+                if (error) console.error('Error migrating local sessions:', error);
+            });
+          }
 
           persistSessionsToLocalStorage(merged, activeUserId);
           return merged;

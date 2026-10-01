@@ -59,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ...prev,
         id: authUser.id,
         email: authUser.email || prev.email || '',
-        displayName: metaName || prev.displayName || 'Focus Scholar',
+        displayName: metaName || prev.displayName || (authUser.email ? authUser.email.split('@')[0] : 'Focus Scholar'),
         avatarUrl: metaAvatar || prev.avatarUrl,
         user_metadata: authUser.user_metadata,
       };
@@ -139,7 +139,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const synced: UserProfile = {
             id: profile.id,
             email: authUser.email || prev.email || '',
-            displayName: profile.name || metaName || prev.displayName || 'Focus Scholar',
+            displayName: profile.name || metaName || prev.displayName || (authUser.email ? authUser.email.split('@')[0] : 'Focus Scholar'),
             avatarUrl: profile.avatar_url || metaAvatar || prev.avatarUrl,
             dailyGoalHours: Number(profile.daily_goal_hours ?? prev.dailyGoalHours ?? 4.0),
             streakDays: Number(profile.streak_days ?? prev.streakDays ?? 0),
@@ -177,6 +177,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // fallback
     }
   }, []);
+
+  useEffect(() => {
+    const supabase = getSupabase();
+    let channel: any = null;
+    if (supabase && user?.id && !user.id.startsWith('user-scholar') && !user.id.startsWith('guest')) {
+      channel = supabase.channel('public:profiles:' + user.id)
+        .on('postgres_changes' as never, { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${user.id}` }, (payload: any) => {
+          if (payload.new) {
+            setUser(prev => {
+              const updated = {
+                ...prev,
+                displayName: payload.new.name || prev.displayName,
+                avatarUrl: payload.new.avatar_url || prev.avatarUrl,
+                dailyGoalHours: payload.new.daily_goal_hours ?? prev.dailyGoalHours,
+                streakDays: payload.new.streak_days ?? prev.streakDays,
+                level: payload.new.level ?? prev.level,
+                rp: payload.new.rp ?? prev.rp,
+                seasonRp: payload.new.season_rp ?? payload.new.rp ?? prev.seasonRp,
+                totalStudySeconds: payload.new.total_study_seconds ?? prev.totalStudySeconds,
+                levelTitle: payload.new.rank_title || payload.new.level_title || prev.levelTitle,
+                user_metadata: {
+                  ...(prev.user_metadata || {}),
+                  level: payload.new.level ?? prev.level,
+                  levelTitle: payload.new.rank_title || payload.new.level_title || prev.levelTitle
+                }
+              };
+              try { localStorage.setItem('studypulse_active_user', JSON.stringify(updated)); } catch {}
+              return updated;
+            });
+          }
+        }).subscribe();
+    }
+    return () => {
+      if (supabase && channel) supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
 
   // Clean legacy demo data and setup Supabase Auth Listener
   useEffect(() => {
@@ -561,6 +597,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         if (updates.level !== undefined && Number(updates.level) !== Number(prev.level)) {
           payload.level = Number(updates.level);
+        }
+        if (updates.rp !== undefined && Number(updates.rp) !== Number(prev.rp)) {
+          payload.rp = Number(updates.rp);
+          payload.season_rp = Number(updates.rp);
+        }
+        if (updates.totalStudySeconds !== undefined && Number(updates.totalStudySeconds) !== Number(prev.totalStudySeconds)) {
+          payload.total_study_seconds = Number(updates.totalStudySeconds);
+        }
+        if (updates.levelTitle !== undefined && updates.levelTitle !== prev.levelTitle) {
+          payload.rank_title = updates.levelTitle;
         }
 
         if (Object.keys(payload).length > 0) {
