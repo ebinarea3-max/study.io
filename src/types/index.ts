@@ -72,6 +72,7 @@ export type UserProfile = {
   currentSeasonId?: string;
   seasonRp?: number;
   last_acknowledged_season?: string;
+  username_changed_at?: string;
   rp?: number;
   last_streak_bonus_date?: string; // YYYY-MM-DD
   lastStreakBonusDate?: string;     // alias for convenience

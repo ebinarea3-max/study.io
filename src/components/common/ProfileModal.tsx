@@ -6,11 +6,14 @@ import { useStudy } from '../../context/StudyContext';
 import { X, Target, User, Loader2, Save } from 'lucide-react';
 import { UserAvatar } from './UserAvatar';
 import { getRankTier } from '../../lib/rankedSystem';
+import { getSupabase } from '../../lib/supabase';
 
 interface ProfileModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
+
+const differenceInDays = (d1: Date, d2: Date) => Math.floor((d1.getTime() - d2.getTime()) / (1000 * 3600 * 24));
 
 export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   const { user, updateProfile } = useAuth();
@@ -21,7 +24,8 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   const [displayName, setDisplayName] = useState(user.name || user.displayName || '');
   const [username, setUsername] = useState(user.username || '');
   const [dailyGoalHours, setDailyGoalHours] = useState(user.dailyGoalHours);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   // Sync state whenever user or modal open status changes
   useEffect(() => {
@@ -29,6 +33,7 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
       setDisplayName(user.name || user.displayName || '');
       setUsername(user.username || '');
       setDailyGoalHours(user.dailyGoalHours);
+      setErrorMsg('');
     }
   }, [isOpen, user.name, user.displayName, user.username, user.dailyGoalHours]);
 
@@ -44,21 +49,63 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
 
   const cleanedHandle = username.replace(/^@/, '').toLowerCase().trim();
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
+  let cooldownDaysLeft = 0;
+  let isCooldownActive = false;
+
+  if (user.username_changed_at) {
+    cooldownDaysLeft = 30 - differenceInDays(new Date(), new Date(user.username_changed_at));
+    if (cooldownDaysLeft > 0) {
+      isCooldownActive = true;
+    }
+  }
+
+  const handleSave = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (isSaving) return;
+    
+    setIsSaving(true);
+    setErrorMsg("");
     
     try {
-      await updateProfile({
+      const updatePayload: any = {
         name: displayName.trim(),
-        username: cleanedHandle,
-        dailyGoalHours: Number(dailyGoalHours),
+        daily_goal_hours: Number(dailyGoalHours)
+      };
+
+      const usernameChanged = cleanedHandle !== (user.username || '');
+      
+      if (usernameChanged) {
+        if (isCooldownActive) {
+          throw new Error(`User ID can only be changed once every 30 days. Available again in ${cooldownDaysLeft} days.`);
+        }
+        updatePayload.username = cleanedHandle;
+        updatePayload.username_changed_at = new Date().toISOString();
+      }
+      
+      const supabase = getSupabase();
+      if (!supabase) throw new Error("Supabase client not initialized.");
+
+      // Perform async Supabase update
+      const { error } = await supabase
+        .from("profiles")
+        .update(updatePayload)
+        .eq("id", user.id);
+
+      if (error) throw error;
+
+      // Refresh profile context so header updates immediately
+      await updateProfile({
+        name: updatePayload.name,
+        username: updatePayload.username || user.username,
+        dailyGoalHours: updatePayload.daily_goal_hours,
+        ...(updatePayload.username_changed_at ? { username_changed_at: updatePayload.username_changed_at } : {})
       });
-      onClose();
-    } catch (err) {
-      console.error('Failed to update profile:', err);
+      onClose(); // Only close AFTER successful write
+    } catch (err: any) {
+      console.error("Failed to update profile:", err);
+      setErrorMsg(err.message || "Failed to save profile");
     } finally {
-      setIsSubmitting(false);
+      setIsSaving(false);
     }
   };
 
@@ -136,10 +183,18 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                   required
                   maxLength={20}
                   value={username}
+                  disabled={isCooldownActive}
                   onChange={(e) => setUsername(e.target.value.replace(/^@/, '').toLowerCase().replace(/[^a-z0-9_]/g, ''))}
                   placeholder="e.g. ebin_k"
-                  className="w-full bg-[#131822] border border-white/10 rounded-lg pl-9 pr-4 py-3 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 transition-all font-mono"
+                  className="w-full bg-[#131822] border border-white/10 rounded-lg pl-9 pr-4 py-3 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 transition-all font-mono disabled:opacity-50 disabled:cursor-not-allowed"
                 />
+              </div>
+              <div className="mt-1.5 text-[10px] font-mono">
+                {isCooldownActive ? (
+                  <span className="text-amber-400">Cooldown active: Editable in {cooldownDaysLeft} days</span>
+                ) : (
+                  <span className="text-neutral-500">Can only be changed once every 30 days.</span>
+                )}
               </div>
             </div>
 
@@ -169,26 +224,34 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
               </div>
             </div>
 
+            {errorMsg && (
+              <div className="text-[11px] text-rose-500 font-mono mt-2 bg-rose-500/10 border border-rose-500/20 p-2 rounded">
+                {errorMsg}
+              </div>
+            )}
+
             {/* Actions */}
             <div className="pt-4 flex gap-3 border-t border-white/5">
               <button
                 type="button"
                 onClick={onClose}
-                disabled={isSubmitting}
+                disabled={isSaving}
                 className="flex-1 py-3 px-4 rounded-lg border border-white/10 bg-[#131822] hover:bg-white/5 text-neutral-300 text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                disabled={isSubmitting || displayName.trim().length < 2 || cleanedHandle.length < 3}
+                disabled={isSaving || displayName.trim().length < 2 || cleanedHandle.length < 3 || (cleanedHandle !== (user.username || '') && isCooldownActive)}
                 className="flex-1 py-3 px-4 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black text-xs font-bold uppercase tracking-wider transition-all shadow-[0_0_20px_rgba(245,158,11,0.2)] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isSubmitting ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                {isSaving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" /> SAVING...
+                  </>
                 ) : (
                   <>
-                    <Save className="w-4 h-4" /> Save Profile
+                    <Save className="w-4 h-4" /> SAVE PROFILE
                   </>
                 )}
               </button>
