@@ -563,7 +563,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
   // Developer / Test simulation of monthly season soft-reset
   const simulateSeasonReset = useCallback(() => {
     const currentMonth = getCurrentSeasonId();
-    const previousRP = user?.seasonRp || 1450; // Demo value or existing
+    const previousRP = user?.seasonRp ?? user?.rp ?? 1450; // Demo value or existing
     const resetResult = calculateSeasonReset(previousRP);
     const recap: SeasonRecapData = {
       previousSeasonId: '2026-08',
@@ -597,7 +597,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     if (user && user.id && !user.id.startsWith('user-scholar')) {
       if (user.currentSeasonId && user.currentSeasonId !== currentMonth) {
         const prevSeason = user.currentSeasonId;
-        const prevRP = user.seasonRp || 0;
+        const prevRP = user.seasonRp ?? user.rp ?? 0;
         const reset = calculateSeasonReset(prevRP);
 
         const recap: SeasonRecapData = {
@@ -621,7 +621,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       } else if (!user.currentSeasonId) {
         updateProfile({
           currentSeasonId: currentMonth,
-          seasonRp: user.seasonRp ?? 0,
+          seasonRp: user.seasonRp ?? user.rp ?? 0,
         });
       }
     }
