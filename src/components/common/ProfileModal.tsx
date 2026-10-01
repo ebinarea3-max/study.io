@@ -78,6 +78,21 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
         if (isCooldownActive) {
           throw new Error(`User ID can only be changed once every 30 days. Available again in ${cooldownDaysLeft} days.`);
         }
+
+        const supabase = getSupabase();
+        if (!supabase) throw new Error("Supabase client not initialized.");
+
+        // Verify handle uniqueness before saving
+        const { data: existing } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("username", cleanedHandle)
+          .maybeSingle();
+
+        if (existing) {
+          throw new Error("This User ID is already taken. Please choose another.");
+        }
+
         updatePayload.username = cleanedHandle;
         updatePayload.username_changed_at = new Date().toISOString();
       }
