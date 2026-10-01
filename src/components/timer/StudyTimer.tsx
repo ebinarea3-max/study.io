@@ -36,7 +36,7 @@ import {
   Radio,
   Headphones,
   ChevronUp,
-Target } from 'lucide-react';
+Target, Settings } from 'lucide-react';
 import { soundFx, AmbientSoundType } from '../../lib/audio';
 import confetti from 'canvas-confetti';
 import { getSupabase } from '../../lib/supabase';
@@ -819,9 +819,10 @@ export function StudyTimer() {
                     </button>
                   ))}
                   <div className="flex-shrink-0 flex items-center gap-1 border border-white/10 bg-[#161b22] rounded-md px-2 py-1 focus-within:border-amber-500/50 transition-colors">
+                    <Settings className="w-3.5 h-3.5 text-neutral-500" />
                     <input
                       type="text"
-                      placeholder="Custom ⚙"
+                      placeholder="Custom"
                       value={customCountdownInput}
                       onChange={(e) => {
                         const val = e.target.value;
