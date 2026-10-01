@@ -125,6 +125,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const synced: UserProfile = {
             id: profile.id,
             email: authUser.email || prev.email || '',
+            username: profile.username || prev.username,
+            name: profile.name || prev.name,
             displayName: profile.name || metaName || prev.displayName || (authUser.email ? authUser.email.split('@')[0] : 'Focus Scholar'),
             avatarUrl: profile.avatar_url || metaAvatar || prev.avatarUrl,
             dailyGoalHours: Number(profile.daily_goal_hours ?? prev.dailyGoalHours ?? 4.0),
@@ -584,6 +586,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (updates.displayName !== undefined && updates.displayName !== prev.displayName) {
           payload.name = updates.displayName.trim();
+        }
+        if (updates.name !== undefined && updates.name !== prev.name) {
+          payload.name = updates.name.trim();
+        }
+        if (updates.username !== undefined && updates.username !== prev.username) {
+          payload.username = updates.username.trim().toLowerCase();
         }
         if (updates.avatarUrl !== undefined && updates.avatarUrl !== prev.avatarUrl) {
           payload.avatar_url = updates.avatarUrl || null;

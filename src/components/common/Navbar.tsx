@@ -348,9 +348,16 @@ export function Navbar({
               </div>
 
               {/* User Identity & Level Display */}
-              <div className="text-left hidden lg:block">
-                <div className="text-xs font-bold text-slate-900 dark:text-white leading-tight truncate max-w-[100px]">
-                  {displayName}
+              <div className="text-left hidden lg:flex lg:flex-col lg:justify-center">
+                <div className="flex items-baseline gap-1.5">
+                  <div className="text-[13px] font-bold text-slate-900 dark:text-white leading-tight truncate max-w-[120px]">
+                    {displayName}
+                  </div>
+                  {user?.username && (
+                    <div className="text-[10px] text-neutral-400 font-mono truncate max-w-[80px]">
+                      @{user.username}
+                    </div>
+                  )}
                 </div>
                 <div className="flex items-center gap-1.5 mt-0.5">
                   <span className="text-[10px] font-extrabold text-primary font-mono leading-none">
@@ -371,7 +378,9 @@ export function Navbar({
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-bold text-sm text-slate-900 dark:text-white truncate max-w-[180px]">{displayName}</div>
-                      <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate max-w-[180px]">{user.email}</div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate max-w-[180px]">
+                        {user?.username ? `@${user.username} • ` : ''}{user?.email}
+                      </div>
                     </div>
                     <span className="text-base">{effectiveTierBadge.icon}</span>
                   </div>

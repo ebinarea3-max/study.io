@@ -48,6 +48,9 @@ export type TodoItem = {
 };
 
 export type UserProfile = {
+  username?: string;
+  name?: string;
+
   id: string;
   email: string;
   displayName: string;
