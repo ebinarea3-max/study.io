@@ -18,8 +18,9 @@ export function ProfileSetupModal() {
   useEffect(() => {
     if (isAuthenticated && user && (!user.username || !user.name)) {
       setIsOpen(true);
-      if (!name && (user.name || user.displayName)) {
-        setName(user.name || user.displayName || '');
+      // Only default to real names, not Focus Scholar or email default
+      if (!name && user.name) {
+        setName(user.name);
       }
     } else {
       setIsOpen(false);
@@ -28,7 +29,7 @@ export function ProfileSetupModal() {
 
   useEffect(() => {
     const checkUsername = async () => {
-      const handle = username.trim().toLowerCase();
+      const handle = username.replace(/^@/, '').toLowerCase().trim();
       if (!handle || !/^[a-z0-9_]{3,20}$/.test(handle)) {
         setIsUnique(null);
         return;
@@ -36,7 +37,11 @@ export function ProfileSetupModal() {
       
       setIsCheckingUnique(true);
       const supabase = getSupabase();
-      if (!supabase) return;
+      if (!supabase) {
+        setIsCheckingUnique(false);
+        setIsUnique(true); // Allow through if supabase is not available
+        return;
+      }
       
       try {
         const { data, error } = await supabase
@@ -54,7 +59,7 @@ export function ProfileSetupModal() {
         }
       } catch (err) {
         console.error('Error checking username uniqueness:', err);
-        setIsUnique(null);
+        setIsUnique(true); // Don't permanently lock the button on network error
       } finally {
         setIsCheckingUnique(false);
       }
@@ -66,9 +71,10 @@ export function ProfileSetupModal() {
 
   if (!isOpen) return null;
 
-  const isUsernameValid = /^[a-z0-9_]{3,20}$/.test(username.trim().toLowerCase());
-  const isNameValid = name.trim().length > 0;
-  const canSubmit = isNameValid && isUsernameValid && isUnique === true && !isSubmitting;
+  const cleanedHandle = username.replace(/^@/, '').toLowerCase().trim();
+  const isUsernameValid = /^[a-z0-9_]{3,20}$/.test(cleanedHandle);
+  const isNameValid = name.trim().length >= 2;
+  const canSubmit = isNameValid && isUsernameValid && isUnique !== false && !isSubmitting;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,7 +84,7 @@ export function ProfileSetupModal() {
     try {
       await updateProfile({
         name: name.trim(),
-        username: username.trim().toLowerCase(),
+        username: cleanedHandle,
       });
       // Modal closes automatically via useEffect when profile updates
     } catch (err) {
@@ -115,7 +121,7 @@ export function ProfileSetupModal() {
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Focus Scholar"
+                placeholder="e.g. Ebin"
                 className="w-full bg-slate-900/50 border border-slate-800 rounded-xl px-4 py-3 text-slate-200 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all"
                 maxLength={30}
                 required
@@ -131,8 +137,8 @@ export function ProfileSetupModal() {
                 <input
                   type="text"
                   value={username}
-                  onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-                  placeholder="focus_scholar"
+                  onChange={(e) => setUsername(e.target.value.replace(/^@/, '').toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                  placeholder="e.g. ebin_k"
                   className="w-full bg-slate-900/50 border border-slate-800 rounded-xl pl-9 pr-12 py-3 text-slate-200 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all font-mono"
                   maxLength={20}
                   required
@@ -142,7 +148,7 @@ export function ProfileSetupModal() {
                   {!isCheckingUnique && username.length > 0 && isUsernameValid && isUnique === true && (
                     <Check className="w-4 h-4 text-emerald-400" />
                   )}
-                  {!isCheckingUnique && username.length > 0 && (isUnique === false || !isUsernameValid) && (
+                  {!isCheckingUnique && username.length > 0 && isUnique === false && (
                     <X className="w-4 h-4 text-rose-400" />
                   )}
                 </div>
