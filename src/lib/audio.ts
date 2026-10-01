@@ -178,14 +178,25 @@ class AudioEngine {
     try {
       if (typeof window === 'undefined') return;
       
-      if (!this.htmlAudio) {
-        this.htmlAudio = new Audio();
-        this.htmlAudio.loop = true;
-        this.htmlAudio.preload = 'auto';
+      const ctx = this.getContext();
+
+      // Guard: if already playing this exact type, do not restart to prevent stuttering
+      if (this.currentAmbientType === type && this.ambientGain && this.ambientSource) {
+         this.setAmbientVolume(volume);
+         return;
       }
       
+      this.stopAmbient();
+      this.currentAmbientType = type;
+
+      const masterGain = ctx.createGain();
+      masterGain.gain.setValueAtTime(0.001, ctx.currentTime);
+      
       const compFactor = this.volumeCompensation[type] || 1.0;
-      this.htmlAudio.volume = Math.max(0, Math.min(1, volume * compFactor));
+      masterGain.gain.linearRampToValueAtTime(volume * compFactor, ctx.currentTime + 1.2);
+      
+      masterGain.connect(ctx.destination);
+      this.ambientGain = masterGain;
 
       const urls: Record<AmbientSoundType, string> = {
         'pinknoise': '/audio/ambience/pink-noise.mp3',
@@ -196,19 +207,16 @@ class AudioEngine {
       };
       
       const url = urls[type];
-      if (!url) return;
-
-      if (this.currentAmbientType !== type || !this.htmlAudio.src.endsWith(url)) {
-        this.htmlAudio.src = url;
-        // Don't bind to onended or manual loops, HTMLAudioElement will handle native looping
-        this.currentAmbientType = type;
-      }
-
-      const playPromise = this.htmlAudio.play();
-      if (playPromise !== undefined) {
-        playPromise.catch(error => {
-          console.warn("Audio play interrupted:", error);
-        });
+      if (url) {
+        // Web Audio API buffer looping guarantees 100% gapless playback, unlike HTMLAudioElement
+        const buffer = await this.getAmbientBuffer(ctx, url);
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.loop = true; // Flawless native loop
+        source.connect(masterGain);
+        source.start(0);
+        this.activeNodes.push(source);
+        this.ambientSource = source;
       }
     } catch (e) {
       console.error("Audio Engine Error in startAmbient:", e);
@@ -216,10 +224,12 @@ class AudioEngine {
   }
 
   public setAmbientVolume(vol: number) {
-    if (this.htmlAudio && this.currentAmbientType) {
+    if (this.ambientGain && this.ctx && this.currentAmbientType) {
       const compFactor = this.volumeCompensation[this.currentAmbientType] || 1.0;
       const target = Math.max(0, Math.min(1, vol * compFactor));
-      this.htmlAudio.volume = target;
+      this.ambientGain.gain.cancelScheduledValues(this.ctx.currentTime);
+      this.ambientGain.gain.setValueAtTime(this.ambientGain.gain.value, this.ctx.currentTime);
+      this.ambientGain.gain.linearRampToValueAtTime(target, this.ctx.currentTime + 0.1);
     }
   }
 
@@ -624,8 +634,8 @@ class AudioEngine {
       clearInterval(this.noiseInterval);
       this.noiseInterval = null;
     }
-    this.ambientSource = null;
     this.currentAmbientType = null;
+    this.ambientSource = null;
   }
 
   public getCurrentAmbient() {
