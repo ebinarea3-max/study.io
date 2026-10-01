@@ -794,7 +794,7 @@ export function StudyTimer() {
               
               {/* Countdown Duration Selector */}
               {timerMode === 'countdown' && !isRunning && elapsedSeconds === 0 && (
-                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-2 w-full justify-start sm:justify-center mb-6 max-w-full">
+                <div className="flex items-center gap-2 flex-wrap py-2 w-full justify-center mb-6 max-w-full">
                   {[ 
                     { label: '30m', val: 1800 }, 
                     { label: '45m', val: 2700 }, 
