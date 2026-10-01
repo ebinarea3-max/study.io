@@ -1177,23 +1177,28 @@ export function StudyTimer() {
                     {timerMode === 'countdown' && !isStudying ? (
                       isEditingCountdown ? (
                         <input
-                          type="time"
-                          step="1"
+                          type="text"
+                          inputMode="numeric"
                           autoFocus
-                          className="bg-transparent border-none text-center outline-none w-full text-white/95"
+                          spellCheck={false}
+                          autoComplete="off"
+                          className="bg-transparent border-none text-center outline-none w-full text-white/95 placeholder:text-white/20 selection:bg-amber-500/40"
                           defaultValue={displayTime}
+                          placeholder="HH:MM:SS (or just 45 for mins)"
                           onBlur={(e) => {
                             setIsEditingCountdown(false);
-                            const val = e.target.value;
+                            const val = e.target.value.trim();
                             if (val) {
-                              const parts = val.split(':');
+                              const parts = val.split(':').map(n => parseInt(n.trim()) || 0);
                               let secs = 0;
                               if (parts.length === 3) {
-                                secs = parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60 + parseInt(parts[2]);
+                                secs = parts[0] * 3600 + parts[1] * 60 + parts[2];
                               } else if (parts.length === 2) {
-                                secs = parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60; // browsers usually return HH:mm if no seconds are chosen
+                                secs = parts[0] * 60 + parts[1]; // mm:ss
+                              } else if (parts.length === 1) {
+                                secs = parts[0] * 60; // just minutes
                               }
-                              if (!isNaN(secs) && secs > 0) {
+                              if (secs > 0) {
                                 setCountdownTarget(secs);
                               }
                             }
