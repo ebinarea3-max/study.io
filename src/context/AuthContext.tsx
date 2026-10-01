@@ -80,23 +80,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .select('id, user_id, subject_id, duration_seconds, started_at, ended_at, notes, mode')
         .eq('user_id', authUser.id);
 
-      // Also check local storage sessions in case offline / pending sessions exist
-      let localSessionSeconds = 0;
-      try {
-        const rawSess = localStorage.getItem(`study_io_sessions_${authUser.id}`);
-        if (rawSess) {
-          const parsed = JSON.parse(rawSess);
-          if (Array.isArray(parsed)) {
-            localSessionSeconds = parsed.reduce((acc: number, s: any) => acc + (Number(s.durationSeconds ?? s.duration_seconds ?? 0)), 0);
-          }
-        }
-      } catch {}
-
-      const dbSessionSeconds = dbSessions
+      const totalStudySeconds = dbSessions
         ? dbSessions.reduce((acc, s: any) => acc + (Number(s.duration_seconds ?? 0)), 0)
         : 0;
-
-      const totalStudySeconds = Math.max(dbSessionSeconds, localSessionSeconds);
       const totalRankedMinutes = Math.floor(totalStudySeconds / 60);
       const calculatedRP = totalRankedMinutes * 10;
       let currentProfileRP = Number(profile?.rp ?? profile?.season_rp ?? 0);
@@ -278,6 +264,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Listen to real-time auth changes (Sign In, Sign Out, Token Refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!isSubscribed) return;
+      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+        try {
+          localStorage.removeItem('studypulse_sessions');
+          localStorage.removeItem('studypulse_cached_profile');
+          localStorage.removeItem('studypulse_todos');
+          localStorage.removeItem('studypulse_active_sessions');
+          if (session?.user) {
+            localStorage.removeItem(`study_io_sessions_${session.user.id}`);
+            localStorage.removeItem(`study_io_todos_${session.user.id}`);
+          }
+        } catch {}
+      }
+
       if (session?.user) {
         setIsAuthenticated(true);
         try {

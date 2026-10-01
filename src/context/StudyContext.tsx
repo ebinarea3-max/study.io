@@ -1777,47 +1777,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
   // Synchronize pending sessions from localStorage fallback to Supabase
   const syncPendingSessions = useCallback(async () => {
-    const supabase = getSupabase();
-    if (!supabase) return;
-
-    try {
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (!authUser) return;
-
-      const pendingRaw = localStorage.getItem('studypulse_pending_sessions');
-      if (!pendingRaw) return;
-
-      const pending: StudySession[] = JSON.parse(pendingRaw);
-      if (!Array.isArray(pending) || pending.length === 0) return;
-
-      const remainingPending: StudySession[] = [];
-
-      for (const item of pending) {
-        const isUuid = item.subjectId && item.subjectId.length === 36;
-        const { error } = await supabase.from('study_sessions').insert({
-          user_id: authUser.id,
-          subject_id: isUuid ? item.subjectId : null,
-          duration_seconds: item.durationSeconds,
-          started_at: item.startTime,
-          ended_at: item.endTime,
-          notes: item.notes || null,
-          mode: item.mode || 'stopwatch',
-        });
-
-        if (error) {
-          console.error("Failed to sync pending study session:", error);
-          remainingPending.push(item);
-        }
-      }
-
-      if (remainingPending.length === 0) {
-        localStorage.removeItem('studypulse_pending_sessions');
-      } else {
-        localStorage.setItem('studypulse_pending_sessions', JSON.stringify(remainingPending));
-      }
-    } catch (err) {
-      console.error("Error during pending session sync:", err);
-    }
+    return;
   }, []);
 
   // 1. Hydrate Session History on Mount & Re-fetch all historical sessions
@@ -2044,16 +2004,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     };
 
     // Cache fallback helper
-    const cacheLocallyFallback = () => {
-      try {
-        const pendingRaw = localStorage.getItem('studypulse_pending_sessions');
-        const pending: StudySession[] = pendingRaw ? JSON.parse(pendingRaw) : [];
-        if (!pending.some(p => p.startTime === newLocalSession.startTime && p.durationSeconds === newLocalSession.durationSeconds)) {
-          pending.push(newLocalSession);
-          localStorage.setItem('studypulse_pending_sessions', JSON.stringify(pending));
-        }
-      } catch {}
-    };
+    const cacheLocallyFallback = () => {};
 
     if (!supabase) {
       console.error("Error saving session:", new Error("Supabase client not initialized"));
@@ -2466,16 +2417,19 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
     let insertedRecordId: string | null = null;
 
-    if (supabase && activeUser?.id) {
+    if (activeUser?.id) {
+      if (!supabase) return false;
       try {
         const { data, error } = await supabase.from('study_sessions').insert([sessionPayload]).select();
         if (error) {
           console.error("Supabase session insert error:", error);
+          return false;
         } else {
           insertedRecordId = data?.[0]?.id || null;
         }
       } catch (err) {
         console.error('StudyContext: Exception inserting session:', err);
+        return false;
       }
     }
 
