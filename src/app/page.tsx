@@ -124,7 +124,7 @@ export default function Home() {
 
   // Authenticated: Full StudyPulse focus dashboard
   return (
-    <div className="h-[100dvh] w-full md:min-h-screen bg-[var(--bg)] text-slate-100 flex flex-col relative overflow-hidden md:overflow-y-auto selection:bg-emerald-500/30 selection:text-emerald-400">
+    <div className="min-h-screen w-full overflow-y-auto pb-24 px-4 md:px-8 bg-[var(--bg)] text-slate-100 flex flex-col relative selection:bg-emerald-500/30 selection:text-emerald-400">
       {/* Drifting Ambient HUD Grid Overlay */}
       <div className="fixed inset-0 pointer-events-none bg-hud-grid z-0" />
 

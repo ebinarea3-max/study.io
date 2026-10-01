@@ -260,15 +260,14 @@ export function getStoredSessions(uid?: string, subjectList: Subject[] = [], cur
   if (typeof window === 'undefined') return [];
   const map = new Map<string, StudySession>();
 
-  const isRealUser = Boolean(uid && !uid.startsWith('guest') && !uid.startsWith('user-scholar'));
-  const keys = isRealUser
-    ? [getSessionStorageKey(uid), 'studypulse_pending_sessions'].filter(Boolean) as string[]
-    : [
-        uid ? getSessionStorageKey(uid) : null,
-        'study_io_sessions_guest',
-        'studypulse_sessions',
-        'studypulse_pending_sessions',
-      ].filter(Boolean) as string[];
+  // ALWAYS include all possible storage locations to prevent data loss.
+  // The deduplicator and normalizer will handle any redundant or orphaned sessions safely.
+  const keys = [
+    uid ? getSessionStorageKey(uid) : null,
+    'study_io_sessions_guest',
+    'studypulse_sessions',
+    'studypulse_pending_sessions',
+  ].filter(Boolean) as string[];
 
   for (const key of keys) {
     try {

@@ -151,7 +151,7 @@ export function SwipeTabContainer({
         {TABS.map((tab, idx) => (
           <div
             key={tab}
-            className="w-1/4 flex-shrink-0 flex flex-col transition-opacity duration-300 h-full"
+            className={`w-1/4 flex-shrink-0 flex flex-col transition-opacity duration-300 h-full ${currentIndex === idx ? 'overflow-y-auto pb-24' : 'overflow-hidden pointer-events-none'}`}
             style={{
               opacity: isDragging
                 ? Math.max(0.6, 1 - Math.abs(dragX) / 300)

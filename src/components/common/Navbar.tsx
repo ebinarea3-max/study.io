@@ -143,7 +143,7 @@ export function Navbar({
       (user as any)?.user_metadata?.name ||
       (user as any)?.user_metadata?.display_name ||
       user?.displayName ||
-      'Focus Scholar'
+      (user?.email ? user.email.split('@')[0] : 'Focus Scholar')
     );
   }, [
     user?.user_metadata?.full_name,
