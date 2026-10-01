@@ -111,6 +111,7 @@ export function StudyTimer() {
   const [isAmbientMenuOpen, setIsAmbientMenuOpen] = useState(false);
   const [countdownTarget, setCountdownTarget] = useState<number>(3600);
   const [customCountdownInput, setCustomCountdownInput] = useState("");
+  const [isEditingCountdown, setIsEditingCountdown] = useState(false);
 
   useEffect(() => {
     return () => {
@@ -804,52 +805,6 @@ export function StudyTimer() {
               </div>
 
               
-              {/* Countdown Duration Selector */}
-              {timerMode === 'countdown' && !isRunning && elapsedSeconds === 0 && (
-                <div className="flex items-center gap-2 flex-wrap py-2 w-full justify-center mb-6 max-w-full">
-                  {[ 
-                    { label: '30m', val: 1800 }, 
-                    { label: '45m', val: 2700 }, 
-                    { label: '1h', val: 3600 }, 
-                    { label: '1.5h', val: 5400 }, 
-                    { label: '2h', val: 7200 }, 
-                    { label: '3h', val: 10800 } 
-                  ].map(preset => (
-                    <button
-                      key={preset.label}
-                      onClick={() => {
-                        setCountdownTarget(preset.val);
-                        setCustomCountdownInput("");
-                      }}
-                      className={`flex-shrink-0 px-3 py-1.5 text-xs font-mono rounded-md transition-all ${
-                        countdownTarget === preset.val && !customCountdownInput
-                          ? 'border border-amber-500/60 bg-amber-500/10 text-amber-400 font-semibold shadow-[0_0_15px_rgba(245,158,11,0.15)]'
-                          : 'border border-white/10 bg-[#161b22] text-neutral-300 hover:border-amber-500/50 hover:text-amber-400'
-                      }`}
-                    >
-                      {preset.label}
-                    </button>
-                  ))}
-                  <div className="flex-shrink-0 flex items-center gap-1 border border-white/10 bg-[#161b22] rounded-md px-2 py-1 focus-within:border-amber-500/50 transition-colors">
-                    <Settings className="w-3.5 h-3.5 text-neutral-500" />
-                    <input
-                      type="text"
-                      placeholder="Custom"
-                      value={customCountdownInput}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setCustomCountdownInput(val);
-                        const mins = parseInt(val, 10);
-                        if (!isNaN(mins) && mins > 0 && mins <= 720) {
-                          setCountdownTarget(mins * 60);
-                        }
-                      }}
-                      className="bg-transparent text-xs font-mono text-neutral-300 placeholder:text-neutral-500 outline-none w-20 text-center"
-                    />
-                  </div>
-                </div>
-              )}
-
               {/* Clean Pill/Segment Preset Selector (25/5 and 50/10) */}
               {timerMode === 'pomodoro' && (
                 <div
@@ -1213,13 +1168,54 @@ export function StudyTimer() {
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 w-2 h-0.5 bg-white/10 rounded-full" />
 
                 {/* Absolute Centered Content Wrapper */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10">
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10 [&>div]:pointer-events-auto">
                   {/* Spacer to mathematically balance the vertical flex center against the status pill below */}
                   <div className="h-6 mt-2" aria-hidden="true" />
                   
                   {/* Big Technical Digital Numbers */}
                   <div className="font-mono tabular-nums text-5xl md:text-6xl font-bold tracking-tight text-white/95 drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)] w-full text-center -translate-x-1.5 md:-translate-x-2">
-                    {displayTime}
+                    {timerMode === 'countdown' && !isStudying ? (
+                      isEditingCountdown ? (
+                        <input
+                          type="time"
+                          step="1"
+                          autoFocus
+                          className="bg-transparent border-none text-center outline-none w-full text-white/95"
+                          defaultValue={displayTime}
+                          onBlur={(e) => {
+                            setIsEditingCountdown(false);
+                            const val = e.target.value;
+                            if (val) {
+                              const parts = val.split(':');
+                              let secs = 0;
+                              if (parts.length === 3) {
+                                secs = parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60 + parseInt(parts[2]);
+                              } else if (parts.length === 2) {
+                                secs = parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60; // browsers usually return HH:mm if no seconds are chosen
+                              }
+                              if (!isNaN(secs) && secs > 0) {
+                                setCountdownTarget(secs);
+                              }
+                            }
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.currentTarget.blur();
+                            }
+                          }}
+                        />
+                      ) : (
+                        <span 
+                          onClick={() => setIsEditingCountdown(true)} 
+                          className="cursor-pointer hover:text-amber-400 transition-colors pointer-events-auto"
+                          title="Click to edit duration"
+                        >
+                          {displayTime}
+                        </span>
+                      )
+                    ) : (
+                      displayTime
+                    )}
                   </div>
 
                   {/* Status */}
