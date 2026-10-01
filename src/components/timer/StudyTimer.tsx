@@ -109,6 +109,8 @@ export function StudyTimer() {
   const [ambientSound, setAmbientSound] = useState<AmbientSoundType | 'none'>('none');
   const [ambientVolume, setAmbientVolume] = useState(0.5);
   const [isAmbientMenuOpen, setIsAmbientMenuOpen] = useState(false);
+  const [countdownTarget, setCountdownTarget] = useState<number>(3600);
+  const [customCountdownInput, setCustomCountdownInput] = useState("");
 
   useEffect(() => {
     return () => {
@@ -620,6 +622,11 @@ export function StudyTimer() {
     const remaining = Math.max(0, target - elapsedSeconds);
     displayTime = formatSeconds(remaining);
     progressPercent = Math.min(100, (elapsedSeconds / target) * 100);
+  } else if (timerMode === 'countdown') {
+    const target = countdownTarget;
+    const remaining = Math.max(0, target - elapsedSeconds);
+    displayTime = formatSeconds(remaining);
+    progressPercent = Math.min(100, (elapsedSeconds / Math.max(1, target)) * 100);
   } else {
     const subjectTargetSeconds = ((selectedSubject?.targetMinutesPerDay || 120) * 60);
     progressPercent = selectedSubject?.id
@@ -783,6 +790,52 @@ export function StudyTimer() {
                   POMODORO
                 </button>
               </div>
+
+              
+              {/* Countdown Duration Selector */}
+              {timerMode === 'countdown' && !isRunning && elapsedSeconds === 0 && (
+                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-2 w-full justify-start sm:justify-center mb-6 max-w-full">
+                  {[ 
+                    { label: '30m', val: 1800 }, 
+                    { label: '45m', val: 2700 }, 
+                    { label: '1h', val: 3600 }, 
+                    { label: '1.5h', val: 5400 }, 
+                    { label: '2h', val: 7200 }, 
+                    { label: '3h', val: 10800 } 
+                  ].map(preset => (
+                    <button
+                      key={preset.label}
+                      onClick={() => {
+                        setCountdownTarget(preset.val);
+                        setCustomCountdownInput("");
+                      }}
+                      className={`flex-shrink-0 px-3 py-1.5 text-xs font-mono rounded-md transition-all ${
+                        countdownTarget === preset.val && !customCountdownInput
+                          ? 'border border-amber-500/60 bg-amber-500/10 text-amber-400 font-semibold shadow-[0_0_15px_rgba(245,158,11,0.15)]'
+                          : 'border border-white/10 bg-[#161b22] text-neutral-300 hover:border-amber-500/50 hover:text-amber-400'
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                  <div className="flex-shrink-0 flex items-center gap-1 border border-white/10 bg-[#161b22] rounded-md px-2 py-1 focus-within:border-amber-500/50 transition-colors">
+                    <input
+                      type="text"
+                      placeholder="Custom ⚙"
+                      value={customCountdownInput}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setCustomCountdownInput(val);
+                        const mins = parseInt(val, 10);
+                        if (!isNaN(mins) && mins > 0 && mins <= 720) {
+                          setCountdownTarget(mins * 60);
+                        }
+                      }}
+                      className="bg-transparent text-xs font-mono text-neutral-300 placeholder:text-neutral-500 outline-none w-20 text-center"
+                    />
+                  </div>
+                </div>
+              )}
 
               {/* Clean Pill/Segment Preset Selector (25/5 and 50/10) */}
               {timerMode === 'pomodoro' && (
