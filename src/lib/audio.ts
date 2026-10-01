@@ -7,6 +7,7 @@ class AudioEngine {
   private ambientGain: GainNode | null = null;
   private ambientSource: AudioNode | null = null;
   private currentAmbientType: AmbientSoundType | null = null;
+  private htmlAudio: HTMLAudioElement | null = null;
   private noiseInterval: number | null = null;
   private activeNodes: (AudioNode & { stop?: () => void })[] = [];
 
@@ -174,21 +175,18 @@ class AudioEngine {
   };
 
   public async startAmbient(type: AmbientSoundType, volume = 0.4) {
-    this.stopAmbient();
     try {
-      const ctx = this.getContext();
-      this.currentAmbientType = type;
-
-      const masterGain = ctx.createGain();
-      masterGain.gain.setValueAtTime(0.001, ctx.currentTime);
+      if (typeof window === 'undefined') return;
+      
+      if (!this.htmlAudio) {
+        this.htmlAudio = new Audio();
+        this.htmlAudio.loop = true;
+        this.htmlAudio.preload = 'auto';
+      }
       
       const compFactor = this.volumeCompensation[type] || 1.0;
-      masterGain.gain.linearRampToValueAtTime(volume * compFactor, ctx.currentTime + 1.2);
-      
-      masterGain.connect(ctx.destination);
-      this.ambientGain = masterGain;
+      this.htmlAudio.volume = Math.max(0, Math.min(1, volume * compFactor));
 
-      // Real audio loops
       const urls: Record<AmbientSoundType, string> = {
         'pinknoise': '/audio/ambience/pink-noise.mp3',
         'brownnoise': '/audio/ambience/brown-noise.mp3',
@@ -198,15 +196,19 @@ class AudioEngine {
       };
       
       const url = urls[type];
-      if (url) {
-        const buffer = await this.getAmbientBuffer(ctx, url);
-        const source = ctx.createBufferSource();
-        source.buffer = buffer;
-        source.loop = true;
-        source.connect(masterGain);
-        source.start();
-        this.activeNodes.push(source);
-        this.ambientSource = source;
+      if (!url) return;
+
+      if (this.currentAmbientType !== type || !this.htmlAudio.src.endsWith(url)) {
+        this.htmlAudio.src = url;
+        // Don't bind to onended or manual loops, HTMLAudioElement will handle native looping
+        this.currentAmbientType = type;
+      }
+
+      const playPromise = this.htmlAudio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(error => {
+          console.warn("Audio play interrupted:", error);
+        });
       }
     } catch (e) {
       console.error("Audio Engine Error in startAmbient:", e);
@@ -214,11 +216,10 @@ class AudioEngine {
   }
 
   public setAmbientVolume(vol: number) {
-    if (this.ambientGain && this.ctx) {
-      const target = Math.max(0, Math.min(1, vol));
-      this.ambientGain.gain.cancelScheduledValues(this.ctx.currentTime);
-      this.ambientGain.gain.setValueAtTime(this.ambientGain.gain.value, this.ctx.currentTime);
-      this.ambientGain.gain.linearRampToValueAtTime(target, this.ctx.currentTime + 0.1);
+    if (this.htmlAudio && this.currentAmbientType) {
+      const compFactor = this.volumeCompensation[this.currentAmbientType] || 1.0;
+      const target = Math.max(0, Math.min(1, vol * compFactor));
+      this.htmlAudio.volume = target;
     }
   }
 
