@@ -95,7 +95,7 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
   // Helper: Precalculate date-keyed map for sessions
   // -------------------------------------------------------------
   const sessionsByDateMap = useMemo(() => {
-    console.log("Total loaded sessions:", sessions.length, sessions.map(s => ({ date: s.startTime || s.createdAt, duration: s.durationSeconds })));
+
     const map: Record<string, { totalSeconds: number; count: number; sessions: typeof sessions }> = {};
     sessions.forEach(s => {
       const rawName = ((s as any).subject_name || s.subjectName || (s as any).subject?.name || (s as any).subject || '').trim().toLowerCase();
