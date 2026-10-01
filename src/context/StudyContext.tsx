@@ -267,6 +267,8 @@ export function getStoredSessions(uid?: string, subjectList: Subject[] = [], cur
     'study_io_sessions_guest',
     'studypulse_sessions',
     'studypulse_pending_sessions',
+    'study_sessions',
+    'focus_history',
   ].filter(Boolean) as string[];
 
   for (const key of keys) {
