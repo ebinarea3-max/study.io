@@ -846,7 +846,7 @@ export function StudyTimer() {
                     setTimeout(lockLandscape, 100);
                   }
                 }}
-                className="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-primary-muted hover:bg-[rgba(var(--tier-accent-rgb),0.25)] border border-primary-muted text-primary-bright text-[11px] sm:text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer w-full md:w-auto"
+                className="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-primary-muted hover:bg-[rgba(var(--tier-accent-rgb),0.25)] border border-primary-muted text-primary-bright text-[10px] sm:text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer w-full md:w-auto"
               >
                 <Maximize2 className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-primary" />
                 <span className="hidden sm:inline">Fullscreen Focus Mode</span>
@@ -862,7 +862,7 @@ export function StudyTimer() {
               <div className="mb-2 sm:mb-3 flex items-center justify-between gap-2.5 px-3 py-2 rounded-2xl bg-amber-500/15 border border-amber-500/40 text-amber-200 text-xs font-semibold backdrop-blur-md shadow-lg shadow-amber-500/10 animate-in fade-in slide-in-from-top-2 duration-200">
                 <div className="flex items-center gap-2">
                   <span className="text-amber-400 text-xs">⚠️</span>
-                  <span className="text-[11px] sm:text-xs">
+                  <span className="text-[10px] sm:text-xs">
                     {activeSubjects.length === 0 ? 'Please add a subject before starting.' : 'Please select a subject before starting.'}
                   </span>
                 </div>
@@ -1157,7 +1157,7 @@ export function StudyTimer() {
                   </div>
 
                   {/* Status */}
-                  <div className="h-6 text-[11px] uppercase tracking-[0.2em] text-neutral-400 font-medium flex items-center justify-center gap-2 mt-2">
+                  <div className="h-6 text-[10px] uppercase tracking-[0.2em] text-neutral-400 font-medium flex items-center justify-center gap-2 mt-2">
                     <div className={`w-1.5 h-1.5 rounded-full ${isStudying && !isPaused ? 'bg-green-500 animate-pulse' : isPaused ? 'bg-amber-500' : 'bg-neutral-500'}`} />
                     {!selectedSubject ? 'SELECT A SUBJECT' : isStudying && !isPaused ? 'RUNNING' : isPaused ? 'PAUSED' : 'READY TO START'}
                   </div>
@@ -1188,7 +1188,7 @@ export function StudyTimer() {
                   </div>
                   <div>
                     <div className="text-sm font-hud font-black text-white tracking-wide">FOCUS BLOCK COMPLETE</div>
-                    <div className="text-[11px] text-slate-300 font-normal">
+                    <div className="text-[10px] text-slate-300 font-normal">
                       Save session to trigger rank settlement and pause for break, or skip.
                     </div>
                   </div>
@@ -1205,7 +1205,7 @@ export function StudyTimer() {
                   </div>
                   <div>
                     <div className="text-sm font-hud font-black text-white tracking-wide">BREAK OVER // READY TO STUDY?</div>
-                    <div className="text-[11px] text-amber-300/90 font-normal">
+                    <div className="text-[10px] text-amber-300/90 font-normal">
                       Timer switched back to focus mode. Click start when ready.
                     </div>
                   </div>
@@ -1496,7 +1496,7 @@ export function StudyTimer() {
 
         {/* 2. Unified HUD Stat Readout Panel */}
         <div
-          className="rounded-2xl bg-[var(--surface)] backdrop-blur-xl border border-[var(--border)] p-5 shadow-xl space-y-4 transition-all relative overflow-hidden"
+          className="rounded-2xl bg-[var(--surface)] backdrop-blur-xl border border-[var(--border)] py-3 px-4 shadow-xl space-y-2.5 transition-all relative overflow-hidden"
           style={{ borderTop: "1px solid rgba(99, 102, 241, 0.4)" }}
         >
           <div className="hud-corner-bracket hud-corner-tl" />
@@ -1510,7 +1510,7 @@ export function StudyTimer() {
             style={{ backgroundColor: 'var(--accent)' }}
           />
 
-          <div className="flex items-center justify-between pb-3 border-b border-[var(--border)] relative z-10">
+          <div className="flex items-center justify-between pb-2.5 border-b border-[var(--border)] relative z-10">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-amber-400/80" />
               <span className="text-sm font-bold tracking-wider text-neutral-200 uppercase">
@@ -1555,10 +1555,10 @@ export function StudyTimer() {
 
           {/* Unified HUD Stat Readout Strip */}
           <div className="rounded-xl bg-[var(--bg)] border border-[var(--border)] p-3 relative z-10">
-            <div className="flex items-center justify-between py-2.5 sm:py-3 border-b border-white/[0.04]">
+            <div className="flex items-center justify-between py-2 border-b border-white/[0.04]">
               <div>
                 <div className="text-xs font-semibold tracking-wide text-neutral-200">TOTAL FOCUS</div>
-                <div className="text-[11px] text-neutral-400/80">Recorded study duration</div>
+                <div className="text-[10px] text-neutral-400/80">Recorded study duration</div>
               </div>
               <div
                 className="text-base md:text-lg font-bold text-white tracking-tight tabular-nums font-mono"
@@ -1571,10 +1571,10 @@ export function StudyTimer() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between py-2.5 sm:py-3 border-b border-white/[0.04]">
+            <div className="flex items-center justify-between py-2 border-b border-white/[0.04]">
               <div>
                 <div className="text-xs font-semibold tracking-wide text-neutral-200">SESSIONS</div>
-                <div className="text-[11px] text-neutral-400/80">Completed study blocks</div>
+                <div className="text-[10px] text-neutral-400/80">Completed study blocks</div>
               </div>
               <div className="text-base md:text-lg font-bold text-white tracking-tight tabular-nums">
                 {(isLoading || isLoadingSessions) && !hasHydrated ? (
@@ -1585,10 +1585,10 @@ export function StudyTimer() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between py-2.5 sm:py-3 border-b border-white/[0.04]">
+            <div className="flex items-center justify-between py-2 border-b border-white/[0.04]">
               <div>
                 <div className="text-xs font-semibold tracking-wide text-neutral-200">ACTIVE STREAK</div>
-                <div className="text-[11px] text-neutral-400/80">Daily consistency multiplier</div>
+                <div className="text-[10px] text-neutral-400/80">Daily consistency multiplier</div>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-4 h-4 flex items-center justify-center animate-ember-glow">
@@ -1604,7 +1604,7 @@ export function StudyTimer() {
 
         {/* 3. Daily Directive / Motivation Card */}
         <div
-          className="rounded-2xl bg-[var(--surface)] backdrop-blur-xl border border-[var(--border)] p-5 shadow-xl space-y-3 transition-all relative overflow-hidden"
+          className="rounded-2xl bg-[var(--surface)] backdrop-blur-xl border border-[var(--border)] py-2.5 px-3.5 shadow-xl space-y-3 transition-all relative overflow-hidden"
           style={{ borderTop: "1px solid rgba(255, 255, 255, 0.1)" }}
         >
           <div className="hud-corner-bracket hud-corner-tl" />

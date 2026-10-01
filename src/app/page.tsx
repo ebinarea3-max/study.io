@@ -156,7 +156,7 @@ export default function Home() {
       )}
 
       {/* Main Content Area with Mobile Swipe Navigation */}
-      <main className="min-h-screen w-full flex flex-col items-center px-4 md:px-8 relative z-10">
+      <main className="min-h-screen w-full flex flex-col items-center pt-3.5 px-4 md:px-8 relative z-10">
         <SwipeTabContainer activeTab={activeTab} onChangeTab={setActiveTab}>
           {{
             timer: (
