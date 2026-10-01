@@ -168,37 +168,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const supabase = getSupabase();
-    let channel: any = null;
-    if (supabase && user?.id && !user.id.startsWith('user-scholar') && !user.id.startsWith('guest')) {
-      channel = supabase.channel('public:profiles:' + user.id)
-        .on('postgres_changes' as never, { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${user.id}` }, (payload: any) => {
-          if (payload.new) {
-            setUser(prev => {
-              const updated = {
-                ...prev,
-                displayName: payload.new.name || prev.displayName,
-                avatarUrl: payload.new.avatar_url || prev.avatarUrl,
-                dailyGoalHours: payload.new.daily_goal_hours ?? prev.dailyGoalHours,
-                streakDays: payload.new.streak_days ?? prev.streakDays,
-                level: payload.new.level ?? prev.level,
-                rp: payload.new.rp ?? prev.rp,
-                seasonRp: payload.new.season_rp ?? payload.new.rp ?? prev.seasonRp,
-                totalStudySeconds: payload.new.total_study_seconds ?? prev.totalStudySeconds,
-                levelTitle: payload.new.rank_title || payload.new.level_title || prev.levelTitle,
-                user_metadata: {
-                  ...(prev.user_metadata || {}),
-                  level: payload.new.level ?? prev.level,
-                  levelTitle: payload.new.rank_title || payload.new.level_title || prev.levelTitle
-                }
-              };
-              try { localStorage.setItem('studypulse_active_user', JSON.stringify(updated)); } catch {}
-              return updated;
-            });
-          }
-        }).subscribe();
-    }
+    if (!supabase || !user?.id || user.id.startsWith('user-scholar') || user.id.startsWith('guest')) return;
+
+    const fetchProfile = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        if (data && !error) {
+          setUser(prev => {
+            const updated = {
+              ...prev,
+              displayName: data.name || prev.displayName,
+              avatarUrl: data.avatar_url || prev.avatarUrl,
+              dailyGoalHours: data.daily_goal_hours ?? prev.dailyGoalHours,
+              streakDays: data.streak_days ?? prev.streakDays,
+              level: data.level ?? prev.level,
+              rp: data.rp ?? prev.rp,
+              seasonRp: data.season_rp ?? data.rp ?? prev.seasonRp,
+              totalStudySeconds: data.total_study_seconds ?? prev.totalStudySeconds,
+              levelTitle: data.rank_title || data.level_title || prev.levelTitle,
+              user_metadata: {
+                ...(prev.user_metadata || {}),
+                level: data.level ?? prev.level,
+                levelTitle: data.rank_title || data.level_title || prev.levelTitle
+              }
+            };
+            try { localStorage.setItem('studypulse_active_user', JSON.stringify(updated)); } catch {}
+            return updated;
+          });
+        }
+      } catch (err) {
+      }
+    };
+
+    fetchProfile();
+
+    const interval = setInterval(() => {
+      fetchProfile();
+    }, 30000);
+
+    const handleFocus = () => {
+      if (typeof document !== 'undefined' && !document.hidden) {
+        fetchProfile();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleFocus);
+
     return () => {
-      if (supabase && channel) supabase.removeChannel(channel);
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
     };
   }, [user?.id]);
 

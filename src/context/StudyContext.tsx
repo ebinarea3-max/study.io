@@ -1380,7 +1380,6 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     const supabase = getSupabase();
     if (!supabase) return;
 
-    // Only initialize the channel when user?.id is fully loaded
     const userId = user?.id;
     if (!userId || userId.startsWith('user-scholar') || userId.startsWith('guest')) {
       setRealtimeStatus('WAITING_AUTH');
@@ -1390,22 +1389,12 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    setRealtimeStatus('CONNECTING...');
-
-    let pollingTimer: NodeJS.Timeout | null = null;
-    let isSubscribed = false;
-
-    const stopPolling = () => {
-      if (pollingTimer) {
-        clearTimeout(pollingTimer);
-        pollingTimer = null;
-      }
-    };
+    setRealtimeStatus('HTTP_POLLING');
+    setIsUsingPollingFallback(true);
+    isUsingPollingFallbackRef.current = true;
+    setIsSyncConnected(true);
 
     const runPoll = async () => {
-      // If WebSocket is active and subscribed, do not run fallback polling
-      if (isSubscribed) return;
-
       try {
         const { data, error } = await supabase
           .from('active_sessions')
@@ -1414,108 +1403,31 @@ export function StudyProvider({ children }: { children: ReactNode }) {
           .maybeSingle();
 
         if (!error && handleRemoteSyncRef.current) {
-          realtimeEventCountRef.current++;
-          setRealtimeEventsCount(realtimeEventCountRef.current);
           handleRemoteSyncRef.current(data || null);
         }
       } catch (err) {
-        console.warn('[HTTP Fallback Polling] Error:', err);
-      } finally {
-        scheduleNextPoll();
       }
     };
 
-    const scheduleNextPoll = () => {
-      stopPolling();
-      if (isSubscribed) return;
-      // 3.5s while tab is active/visible, 12s if document is hidden (battery/data conservation)
-      const delay = (typeof document !== 'undefined' && document.hidden) ? 12000 : 3500;
-      pollingTimer = setTimeout(runPoll, delay);
-    };
+    runPoll();
 
-    const startPolling = () => {
-      setIsUsingPollingFallback(true);
-      isUsingPollingFallbackRef.current = true;
-      setIsSyncConnected(true);
-      // Run an immediate fetch, then schedule the loop
+    const interval = setInterval(() => {
       runPoll();
-    };
+    }, 25000);
 
-    const handleSessionChange = (payload: any) => {
-      realtimeEventCountRef.current++;
-      setRealtimeEventsCount(realtimeEventCountRef.current);
-      console.log(`[Realtime Event #${realtimeEventCountRef.current} postgres_changes]`, payload);
-      if (handleRemoteSyncRef.current) {
-        if (payload.eventType === 'DELETE') {
-          handleRemoteSyncRef.current(null);
-        } else {
-          handleRemoteSyncRef.current(payload.new);
-        }
-      }
-    };
-
-    const channel = supabase.channel(`active-session-${userId}`)
-      .on(
-        'postgres_changes' as never,
-        {
-          event: '*',
-          schema: 'public',
-          table: 'active_sessions',
-          filter: `user_id=eq.${userId}`,
-        },
-        (payload: any) => handleSessionChange(payload)
-      )
-      .on(
-        'postgres_changes' as never,
-        {
-          event: '*',
-          schema: 'public',
-          table: 'study_sessions',
-          filter: `user_id=eq.${userId}`,
-        },
-        (payload: any) => {
-          console.log('[Realtime study_sessions]', payload);
-          refetchSessions();
-        }
-      )
-      .subscribe((status: string) => {
-        setRealtimeStatus(status);
-        if (status === 'SUBSCRIBED') {
-          isSubscribed = true;
-          setIsUsingPollingFallback(false);
-          isUsingPollingFallbackRef.current = false;
-          setIsSyncConnected(true);
-          stopPolling();
-          refetchActiveSession();
-        } else if (status === 'CHANNEL_ERROR' || status === 'CLOSED' || status === 'TIMED_OUT') {
-          isSubscribed = false;
-          console.log(`[Realtime Status: ${status}] Network/Firewall blocks WebSockets. Activating HTTP fallback polling...`);
-          startPolling();
-        }
-      });
-
-    activeChannelRef.current = channel;
-
-    // Mobile backgrounding & Window focus safeguard:
-    // When user focuses or tabs back into the window, immediately fire one fetch for instant resync after device wake
-    const handleVisibilityOrFocus = () => {
+    const handleFocus = () => {
       if (typeof document !== 'undefined' && !document.hidden) {
-        refetchActiveSession();
-        if (isUsingPollingFallbackRef.current) {
-          scheduleNextPoll();
-        }
+        runPoll();
       }
     };
 
-    document.addEventListener('visibilitychange', handleVisibilityOrFocus);
-    window.addEventListener('focus', handleVisibilityOrFocus);
+    document.addEventListener('visibilitychange', handleFocus);
+    window.addEventListener('focus', handleFocus);
 
     return () => {
-      stopPolling();
-      document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
-      window.removeEventListener('focus', handleVisibilityOrFocus);
-      supabase.removeChannel(channel);
-      activeChannelRef.current = null;
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleFocus);
+      window.removeEventListener('focus', handleFocus);
     };
   }, [user?.id, refetchActiveSession]);
 
