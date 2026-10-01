@@ -1587,8 +1587,29 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
           const merged = deduplicateSubjects([...mappedSubjects, ...localCached]);
           saveSubjects(merged);
-
+          
           const activeSubs = merged.filter(s => !s.is_archived);
+          
+          // Fix: Sync any local cached subjects that are missing in Supabase
+          const missingSubjects = localCached.filter(l => !mappedSubjects.some(m => m.id === l.id || m.name === l.name));
+          if (missingSubjects.length > 0) {
+            missingSubjects.forEach(async (cachedSub) => {
+              try {
+                if (!cachedSub.name) return;
+                await supabase.from('subjects').insert({
+                  id: cachedSub.id && cachedSub.id.length === 36 ? cachedSub.id : undefined,
+                  user_id: uid,
+                  name: cachedSub.name,
+                  color: cachedSub.color || '#10B981',
+                  daily_goal_minutes: cachedSub.daily_goal_minutes || 60,
+                  is_archived: Boolean(cachedSub.is_archived),
+                });
+              } catch (e) {
+                console.warn("Error syncing cached subject to Supabase:", e);
+              }
+            });
+          }
+
           // Subjects loaded; keep selectedSubjectId empty so user is prompted to select a subject
         } else if (subError) {
           console.warn("Supabase subjects fetch error, retaining local cached subjects:", subError);
@@ -1879,8 +1900,17 @@ export function StudyProvider({ children }: { children: ReactNode }) {
               notes: item.notes || null,
               mode: item.mode || 'stopwatch',
             }));
-            supabase.from('study_sessions').insert(inserts).then(({error}) => {
-                if (error) console.error('Error migrating local sessions:', error);
+            
+            // Insert one by one to avoid whole batch failing due to one FK violation (e.g. missing subject_id)
+            inserts.forEach(insert => {
+               supabase.from('study_sessions').insert(insert).then(({error}) => {
+                  if (error) {
+                     console.warn('Error migrating local session (retrying without subject_id):', error);
+                     if (insert.subject_id) {
+                        supabase.from('study_sessions').insert({ ...insert, subject_id: null }).then();
+                     }
+                  }
+               });
             });
           }
 
