@@ -81,14 +81,10 @@ export function FocusModeModal() {
   const glowColor = isBreak ? 'rgba(59, 130, 246, 0.15)' : 'rgba(255, 255, 255, 0.1)';
 
   return (
-    <div 
-      className={`fixed inset-0 z-50 flex flex-col items-center justify-center select-none overflow-hidden animate-in fade-in duration-500 transition-colors ${
+    <div
+      className={`fixed inset-0 z-50 flex flex-col items-center justify-center select-none overflow-hidden animate-in fade-in duration-500 transition-colors bg-black ${
         isIdle ? 'cursor-none' : 'cursor-default'
       }`}
-      style={{
-        backgroundColor: '#050505',
-        backgroundImage: `radial-gradient(circle at 50% 50%, ${glowColor} 0%, transparent 70%)`
-      }}
     >
       
       {/* Invisible overlay that can be clicked to exit if they don't know ESC */}
