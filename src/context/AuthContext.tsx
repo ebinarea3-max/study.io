@@ -713,6 +713,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     if (supabase && user.id) {
       try {
+        await supabase.auth.updateUser({ data: { display_name: '', name: '', full_name: '', avatar_url: '', picture: '' } });
         await Promise.allSettled([
           supabase.from('study_sessions').delete().eq('user_id', user.id),
           supabase.from('todos').delete().eq('user_id', user.id),
