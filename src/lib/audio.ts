@@ -165,48 +165,7 @@ class AudioEngine {
     return audioBuffer;
   }
 
-  private getNoiseBuffer(ctx: AudioContext, type: 'whitenoise' | 'pinknoise' | 'brownnoise'): AudioBuffer {
-    const key = `generated-${type}`;
-    if (this.audioBuffers.has(key)) {
-      return this.audioBuffers.get(key)!;
-    }
-    
-    // Generate 30 seconds of noise
-    const bufferSize = ctx.sampleRate * 30;
-    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-    const output = buffer.getChannelData(0);
 
-    if (type === 'whitenoise') {
-      for (let i = 0; i < bufferSize; i++) {
-        output[i] = Math.random() * 2 - 1;
-      }
-    } else if (type === 'brownnoise') {
-      let lastOut = 0;
-      for (let i = 0; i < bufferSize; i++) {
-        const white = Math.random() * 2 - 1;
-        output[i] = (lastOut + (0.02 * white)) / 1.02;
-        lastOut = output[i];
-        output[i] *= 3.5; 
-      }
-    } else if (type === 'pinknoise') {
-      let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
-      for (let i = 0; i < bufferSize; i++) {
-        const white = Math.random() * 2 - 1;
-        b0 = 0.99886 * b0 + white * 0.0555179;
-        b1 = 0.99332 * b1 + white * 0.0750759;
-        b2 = 0.96900 * b2 + white * 0.1538520;
-        b3 = 0.86650 * b3 + white * 0.3104856;
-        b4 = 0.55000 * b4 + white * 0.5329522;
-        b5 = -0.7616 * b5 - white * 0.0168980;
-        output[i] = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362;
-        output[i] *= 0.11; 
-        b6 = white * 0.115926;
-      }
-    }
-    
-    this.audioBuffers.set(key, buffer);
-    return buffer;
-  }
 
   // Volume compensation factors to ensure consistent perceived loudness across all files
   private volumeCompensation: Record<AmbientSoundType, number> = {
@@ -241,8 +200,17 @@ class AudioEngine {
       masterGain.connect(ctx.destination);
       this.ambientGain = masterGain;
 
-      if (type === 'whitenoise' || type === 'pinknoise' || type === 'brownnoise') {
-        const buffer = this.getNoiseBuffer(ctx, type);
+      const urls: Record<string, string> = {
+        'rain': '/audio/ambience/rain.mp3',
+        'campfire': '/audio/ambience/fireplace.mp3',
+        'whitenoise': '/audio/ambience/white-noise.mp3',
+        'pinknoise': '/audio/ambience/pink-noise.mp3',
+        'brownnoise': '/audio/ambience/brown-noise.mp3',
+      };
+      
+      const url = urls[type];
+      if (url) {
+        const buffer = await this.getAmbientBuffer(ctx, url);
         const source = ctx.createBufferSource();
         source.buffer = buffer;
         source.loop = true;
@@ -250,22 +218,6 @@ class AudioEngine {
         source.start(0);
         this.activeNodes.push(source);
         this.ambientSource = source;
-      } else {
-        const urls: Record<string, string> = {
-          'rain': '/audio/ambience/rain.mp3',
-          'campfire': '/audio/ambience/fireplace.mp3',
-        };
-        const url = urls[type];
-        if (url) {
-          const buffer = await this.getAmbientBuffer(ctx, url);
-          const source = ctx.createBufferSource();
-          source.buffer = buffer;
-          source.loop = true;
-          source.connect(masterGain);
-          source.start(0);
-          this.activeNodes.push(source);
-          this.ambientSource = source;
-        }
       }
     } catch (e) {
       console.error("Audio Engine Error in startAmbient:", e);
