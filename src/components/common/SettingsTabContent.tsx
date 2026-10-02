@@ -49,7 +49,9 @@ export function SettingsTabContent() {
   };
 
   const targetEmail = (user.email || '').trim().toLowerCase();
-  const canDelete = targetEmail.length > 0 && typedEmail.trim().toLowerCase() === targetEmail;
+  const hasEmail = targetEmail.length > 0;
+  const targetString = hasEmail ? targetEmail : 'delete';
+  const canDelete = typedEmail.trim().toLowerCase() === targetString;
 
   const handleDeleteAccount = async () => {
     if (!canDelete) return;
@@ -260,7 +262,7 @@ export function SettingsTabContent() {
               className="px-3.5 py-1.5 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/35 text-rose-300 text-xs font-hud font-bold tracking-wider transition-all active:scale-95 flex items-center gap-2 cursor-pointer self-start sm:self-auto"
             >
               <Trash2 className="w-3.5 h-3.5" />
-              <span>PURGE ACCOUNT</span>
+              <span>DELETE ACCOUNT</span>
             </button>
           )}
         </div>
@@ -268,14 +270,18 @@ export function SettingsTabContent() {
         {showDeleteConfirmation && (
           <div className="pt-3 border-t border-rose-500/20 space-y-3">
             <p className="text-xs text-rose-200 font-medium">
-              Confirm by typing your email address <span className="font-mono text-white font-bold">{user.email}</span>:
+              {hasEmail ? (
+                <>Confirm by typing your email address <span className="font-mono text-white font-bold">{user.email}</span>:</>
+              ) : (
+                <>Confirm by typing <span className="font-mono text-white font-bold">DELETE</span>:</>
+              )}
             </p>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
               <input
-                type="email"
+                type={hasEmail ? "email" : "text"}
                 value={typedEmail}
                 onChange={(e) => setTypedEmail(e.target.value)}
-                placeholder={user.email || ''}
+                placeholder={hasEmail ? user.email || '' : 'DELETE'}
                 className="flex-1 px-3 py-2 rounded-xl bg-black/50 border border-rose-500/30 text-white text-xs font-mono focus:outline-none focus:border-rose-400"
               />
               <button
@@ -285,7 +291,7 @@ export function SettingsTabContent() {
                 className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-hud font-bold tracking-wider transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2"
               >
                 {isDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-                <span>CONFIRM PURGE</span>
+                <span>CONFIRM DELETE</span>
               </button>
               <button
                 type="button"
