@@ -969,6 +969,72 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     };
   }, [isStudying, isPaused, timerMode, pomodoroPhase, pomodoroWorkDuration, pomodoroBreakDuration]);
 
+  // Auto-pause timer on tab close (pagehide) using a reliable keepalive fetch
+  useEffect(() => {
+    const handlePageHide = () => {
+      if (isStudying && !isPaused && startTimeRef.current !== null) {
+        // We are closing the tab while the timer is running. We MUST pause it!
+        const actualElapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
+        const finalAccumulated = actualElapsed; // Since we recalculate from startTimeRef
+        
+        const uid = realtimeUserId || userRef.current?.id || user?.id;
+        const deviceId = getDeviceId();
+        
+        if (!uid || uid.startsWith('user-scholar') || uid.startsWith('guest')) return;
+        
+        // Prepare the payload to immediately force the session into a paused state
+        const payload = {
+          user_id: uid,
+          device_id: deviceId,
+          status: 'paused',
+          started_at: null,
+          accumulated_seconds: finalAccumulated,
+          updated_at: new Date().toISOString()
+        };
+
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+        
+        if (!supabaseUrl || !supabaseAnonKey) return;
+        
+        // Use navigator.sendBeacon or fetch with keepalive to ensure it fires during unload
+        const url = `${supabaseUrl}/rest/v1/active_sessions`;
+        
+        // We do a POST with upsert headers
+        try {
+          // Attempt to get the session token synchronously if possible, or fallback to anon key (which RLS might reject, but it's worth trying if we have a cached token).
+          // Actually, we can get the auth token from local storage directly to be fully synchronous!
+          const authItem = localStorage.getItem(`sb-${new URL(supabaseUrl).hostname.split('.')[0]}-auth-token`);
+          let token = supabaseAnonKey;
+          if (authItem) {
+            try {
+              const authData = JSON.parse(authItem);
+              if (authData?.access_token) {
+                token = authData.access_token;
+              }
+            } catch (e) {}
+          }
+          
+          fetch(url, {
+            method: 'POST',
+            headers: {
+              'apikey': supabaseAnonKey,
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+              'Prefer': 'resolution=merge-duplicates'
+            },
+            body: JSON.stringify(payload),
+            keepalive: true
+          }).catch(() => {});
+        } catch (e) {}
+      }
+    };
+    
+    window.addEventListener('pagehide', handlePageHide);
+    return () => window.removeEventListener('pagehide', handlePageHide);
+  }, [isStudying, isPaused]);
+
+
   // Cleanly wipe any persisted timer state from localStorage
   const clearPersistedTimer = useCallback(() => {
     try {
