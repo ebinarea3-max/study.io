@@ -793,18 +793,6 @@ export function StudyTimer() {
                   <span className="hidden sm:inline">STOPWATCH</span><span className="sm:hidden">STOP</span>
                 </button>
                 <button
-                  onClick={() => { if (!isStudying) setTimerMode('pomodoro'); }}
-                  disabled={isStudying}
-                  className={`px-2 sm:px-4 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-hud font-bold tracking-wider transition-all active:scale-95 ${
-                    timerMode === 'pomodoro'
-                      ? 'text-slate-950 shadow-sm'
-                      : 'text-neutral-400 hover:text-white'
-                  } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
-                  style={timerMode === 'pomodoro' ? { backgroundColor: 'rgba(255, 255, 255, 0.1)', color: '#FFFFFF', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' } : { color: '#94A3B8' }}
-                >
-                  <span className="hidden sm:inline">POMODORO</span><span className="sm:hidden">POMO</span>
-                </button>
-                <button
                   onClick={() => { if (!isStudying) setTimerMode('countdown'); }}
                   disabled={isStudying}
                   className={`px-2 sm:px-4 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-hud font-bold tracking-wider transition-all active:scale-95 ${
@@ -815,6 +803,18 @@ export function StudyTimer() {
                   style={timerMode === 'countdown' ? { backgroundColor: 'rgba(255, 255, 255, 0.1)', color: '#FFFFFF', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' } : { color: '#94A3B8' }}
                 >
                   <span className="hidden sm:inline">COUNTDOWN</span><span className="sm:hidden">TIMER</span>
+                </button>
+                <button
+                  onClick={() => { if (!isStudying) setTimerMode('pomodoro'); }}
+                  disabled={isStudying}
+                  className={`px-2 sm:px-4 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-hud font-bold tracking-wider transition-all active:scale-95 ${
+                    timerMode === 'pomodoro'
+                      ? 'text-slate-950 shadow-sm'
+                      : 'text-neutral-400 hover:text-white'
+                  } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+                  style={timerMode === 'pomodoro' ? { backgroundColor: 'rgba(255, 255, 255, 0.1)', color: '#FFFFFF', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' } : { color: '#94A3B8' }}
+                >
+                  <span className="hidden sm:inline">POMODORO</span><span className="sm:hidden">POMO</span>
                 </button>
               </div>
 
