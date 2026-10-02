@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useStudy } from '../../context/StudyContext';
+import { toast } from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
 import { DailyTodoList } from '../todo/DailyTodoList';
 import { SubjectManagerModal, SubjectManager } from './SubjectManagerModal';
@@ -572,6 +573,20 @@ export function StudyTimer() {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, [isRunning, isStudying, elapsedSeconds]);
+
+  // Handle Countdown Completion
+  useEffect(() => {
+    if (timerMode === 'countdown' && isStudying && elapsedSeconds >= countdownTarget) {
+      soundFx.playMilestoneBell();
+      toast.success('Countdown completed! Great focus! 🚀', { duration: 5000 });
+      if (typeof document !== 'undefined' && document.hidden && 'Notification' in window && Notification.permission === 'granted') {
+        const iconUrl = typeof window !== 'undefined' ? `${window.location.origin}/icon-192.png` : '/icon-192.png';
+        new Notification('Countdown completed! 🚀', { body: 'Your timer is up!', icon: iconUrl });
+      }
+      confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 } });
+      handleStopAndSave();
+    }
+  }, [timerMode, isStudying, elapsedSeconds, countdownTarget, handleStopAndSave]);
 
   // Filtered sessions for Today (browser-local timezone)
   const todaySessions = useMemo(() => {
