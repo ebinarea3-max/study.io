@@ -83,6 +83,7 @@ export function ProfileSetupModal() {
     try {
       await updateProfile({
         name: name.trim(),
+        displayName: name.trim(),
         username: cleanedHandle,
       });
     } catch (err) {
@@ -116,7 +117,6 @@ export function ProfileSetupModal() {
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Ebin"
                 className="w-full bg-[#131822] border border-white/10 rounded-lg px-4 py-3 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 transition-all font-mono"
                 maxLength={30}
                 required
@@ -133,7 +133,6 @@ export function ProfileSetupModal() {
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value.replace(/^@/, '').toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-                  placeholder="e.g. ebin_k"
                   className="w-full bg-[#131822] border border-white/10 rounded-lg pl-9 pr-12 py-3 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 transition-all font-mono"
                   maxLength={20}
                   required

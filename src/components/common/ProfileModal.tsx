@@ -111,6 +111,7 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
       // Refresh profile context so header updates immediately
       await updateProfile({
         name: updatePayload.name,
+        displayName: updatePayload.name,
         username: updatePayload.username || user.username,
         dailyGoalHours: updatePayload.daily_goal_hours,
         ...(updatePayload.username_changed_at ? { username_changed_at: updatePayload.username_changed_at } : {})
@@ -181,7 +182,6 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                 maxLength={30}
                 value={displayName}
                 onChange={e => setDisplayName(e.target.value)}
-                placeholder="e.g. Ebin"
                 className="w-full bg-[#131822] border border-white/10 rounded-lg px-4 py-3 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 transition-all font-mono"
               />
             </div>
@@ -200,7 +200,6 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                   value={username}
                   disabled={isCooldownActive}
                   onChange={(e) => setUsername(e.target.value.replace(/^@/, '').toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-                  placeholder="e.g. ebin_k"
                   className="w-full bg-[#131822] border border-white/10 rounded-lg pl-9 pr-4 py-3 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 transition-all font-mono disabled:opacity-50 disabled:cursor-not-allowed"
                 />
               </div>
