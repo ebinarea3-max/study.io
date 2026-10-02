@@ -211,13 +211,38 @@ class AudioEngine {
       const url = urls[type];
       if (url) {
         const buffer = await this.getAmbientBuffer(ctx, url);
-        const source = ctx.createBufferSource();
-        source.buffer = buffer;
-        source.loop = true;
-        source.connect(masterGain);
-        source.start(0);
-        this.activeNodes.push(source);
-        this.ambientSource = source;
+        
+        // Primary track
+        const source1 = ctx.createBufferSource();
+        source1.buffer = buffer;
+        source1.loop = true;
+        // Trim 100ms from ends to skip MP3 encoder silence padding, creating a flawless loop
+        source1.loopStart = 0.1;
+        source1.loopEnd = Math.max(0.2, buffer.duration - 0.1);
+        source1.connect(masterGain);
+        source1.start(0);
+        this.activeNodes.push(source1);
+        
+        // Secondary generative track
+        // Played at 0.92x speed and offset, it constantly drifts out of phase with the primary track.
+        // This entirely eliminates the feeling of "repetition" since the combination never repeats.
+        const source2 = ctx.createBufferSource();
+        source2.buffer = buffer;
+        source2.loop = true;
+        source2.loopStart = 0.1;
+        source2.loopEnd = Math.max(0.2, buffer.duration - 0.1);
+        source2.playbackRate.value = 0.92; // Slightly pitched down and slower
+        
+        const subGain = ctx.createGain();
+        subGain.gain.value = 0.7; // Blend slightly underneath
+        source2.connect(subGain);
+        subGain.connect(masterGain);
+        
+        // Start halfway through to ensure it's immediately out of phase
+        source2.start(0, buffer.duration * 0.5);
+        this.activeNodes.push(source2);
+
+        this.ambientSource = source1; // Reference for stopping
       }
     } catch (e) {
       console.error("Audio Engine Error in startAmbient:", e);
