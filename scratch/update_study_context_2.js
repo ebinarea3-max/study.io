@@ -1,1 +1,0 @@
-const fs = require('fs'); const path = './src/context/StudyContext.tsx'; let content = fs.readFileSync(path, 'utf8'); content = content.replace(/const localSessions = getStoredSessions\\(uid, subjects, user\\);[\\s\\S]*?setTodos\\(JSON\\.parse\\(savedTodos\\)\\);\\s*\\}/, ''); fs.writeFileSync(path, content, 'utf8'); console.log('StudyContext updated successfully 2.');
