@@ -1486,6 +1486,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     const fetchSupabaseData = async () => {
       try {
         const uid = user.id;
+        let latestSubjects = Array.isArray(subjects) ? subjects : [];
         // Fetch Subjects
         const { data: dbSubjects, error: subError } = await supabase
           .from('subjects')
@@ -1520,6 +1521,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
           const merged = deduplicateSubjects([...mappedSubjects, ...localCached]);
           saveSubjects(merged);
+          latestSubjects = merged;
           
           const activeSubs = merged.filter(s => !s.is_archived);
           
@@ -1549,12 +1551,14 @@ export function StudyProvider({ children }: { children: ReactNode }) {
           // Retain cached subjects! Do NOT reset to []
           if (localCached.length > 0) {
             saveSubjects(localCached);
+            latestSubjects = localCached;
           }
         } else {
           // Supabase returned 0 rows. Check if we have cached subjects created locally:
           if (localCached.length > 0) {
             console.log("Supabase subjects empty but cached subjects found; preserving and syncing to cloud:", localCached);
             saveSubjects(localCached);
+            latestSubjects = localCached;
             // Sync local cached subjects to Supabase
             localCached.forEach(async (cachedSub) => {
               try {
@@ -1592,7 +1596,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
           if (sessError) {
             console.error("Failed to fetch initial study sessions:", sessError);
           } else if (dbSessions) {
-            const subjectList = Array.isArray(subjects) ? subjects : [];
+            const subjectList = latestSubjects;
             const mappedSessions = normalizeStudySessions(dbSessions, subjectList, user);
             const localStored = getStoredSessions(activeUserId, subjectList, user);
             const merged = mergeAndDeduplicateSessions(localStored, mappedSessions);
