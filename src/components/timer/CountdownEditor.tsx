@@ -45,7 +45,6 @@ export function CountdownEditor({ initialSeconds, onSave, onCancel }: CountdownE
     
     const preventScroll = (e: globalThis.WheelEvent) => {
       e.preventDefault();
-      e.stopPropagation();
     };
     
     el.addEventListener('wheel', preventScroll, { passive: false });
