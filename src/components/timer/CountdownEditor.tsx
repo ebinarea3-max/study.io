@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { ChevronUp, ChevronDown, Check } from 'lucide-react';
+import React, { useState, useEffect, useRef, WheelEvent } from 'react';
+import { ChevronUp, ChevronDown } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface CountdownEditorProps {
   initialSeconds: number;
@@ -11,6 +12,9 @@ export function CountdownEditor({ initialSeconds, onSave, onCancel }: CountdownE
   const [hours, setHours] = useState(Math.floor(initialSeconds / 3600));
   const [minutes, setMinutes] = useState(Math.floor((initialSeconds % 3600) / 60));
   const [seconds, setSeconds] = useState(initialSeconds % 60);
+
+  // Direction state for the sliding animation (1 for up, -1 for down)
+  const [direction, setDirection] = useState<'up' | 'down'>('up');
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -26,6 +30,17 @@ export function CountdownEditor({ initialSeconds, onSave, onCancel }: CountdownE
     };
   }, [hours, minutes, seconds]);
 
+  // Also allow pressing Enter to save
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        handleSave();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [hours, minutes, seconds]);
+
   const handleSave = () => {
     const total = hours * 3600 + minutes * 60 + seconds;
     if (total > 0) {
@@ -36,6 +51,8 @@ export function CountdownEditor({ initialSeconds, onSave, onCancel }: CountdownE
   };
 
   const updateSegment = (segment: 'h' | 'm' | 's', increment: boolean) => {
+    setDirection(increment ? 'up' : 'down');
+    
     if (segment === 'h') {
       setHours(prev => Math.max(0, Math.min(99, prev + (increment ? 1 : -1))));
     } else if (segment === 'm') {
@@ -55,26 +72,48 @@ export function CountdownEditor({ initialSeconds, onSave, onCancel }: CountdownE
     }
   };
 
+  const handleWheel = (e: WheelEvent, type: 'h' | 'm' | 's') => {
+    // Prevent default scroll
+    e.preventDefault();
+    if (e.deltaY < 0) {
+      updateSegment(type, true);
+    } else if (e.deltaY > 0) {
+      updateSegment(type, false);
+    }
+  };
+
   const Segment = ({ val, type }: { val: number, type: 'h' | 'm' | 's' }) => (
     <div className="flex flex-col items-center group">
       <button 
         type="button" 
         onClick={() => updateSegment(type, true)}
-        className="text-neutral-500 hover:text-white transition-colors p-0.5 sm:p-1"
+        className="text-neutral-600 hover:text-white active:text-sky-400 active:scale-90 transition-all p-0.5 sm:p-1 outline-none"
       >
         <ChevronUp className="w-5 h-5 sm:w-6 sm:h-6" />
       </button>
       
-      <div className="w-14 h-16 sm:w-20 sm:h-20 bg-white/[0.02] hover:bg-white/[0.06] rounded-xl flex items-center justify-center transition-colors border border-white/[0.02] hover:border-white/10 group-focus-within:bg-white/[0.08]">
-        <span className="font-mono text-4xl sm:text-5xl font-bold text-neutral-300 transition-colors">
-          {val.toString().padStart(2, '0')}
-        </span>
+      <div 
+        className="relative overflow-hidden w-16 h-20 sm:w-24 sm:h-24 bg-white/[0.02] hover:bg-white/[0.05] rounded-2xl flex items-center justify-center transition-all border border-white/[0.02] hover:border-white/10 group-focus-within:bg-white/[0.08]"
+        onWheel={(e) => handleWheel(e, type)}
+      >
+        <AnimatePresence mode="popLayout" initial={false}>
+          <motion.div
+            key={val}
+            initial={{ y: direction === 'up' ? 40 : -40, opacity: 0, scale: 0.8 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            exit={{ y: direction === 'up' ? -40 : 40, opacity: 0, scale: 0.8 }}
+            transition={{ type: "spring", stiffness: 400, damping: 30 }}
+            className="absolute font-mono tabular-nums text-4xl sm:text-5xl font-bold tracking-tight text-white/95"
+          >
+            {val.toString().padStart(2, '0')}
+          </motion.div>
+        </AnimatePresence>
       </div>
 
       <button 
         type="button" 
         onClick={() => updateSegment(type, false)}
-        className="text-neutral-500 hover:text-white transition-colors p-0.5 sm:p-1"
+        className="text-neutral-600 hover:text-white active:text-sky-400 active:scale-90 transition-all p-0.5 sm:p-1 outline-none"
       >
         <ChevronDown className="w-5 h-5 sm:w-6 sm:h-6" />
       </button>
@@ -82,22 +121,20 @@ export function CountdownEditor({ initialSeconds, onSave, onCancel }: CountdownE
   );
 
   return (
-    <div ref={containerRef} className="flex flex-col items-center bg-[#0c0d12]/95 backdrop-blur-md p-3 sm:p-4 rounded-3xl shadow-2xl border border-white/[0.08] relative pointer-events-auto">
+    <div ref={containerRef} className="flex flex-col items-center bg-[#0c0d12]/95 backdrop-blur-md p-3 sm:p-5 rounded-3xl shadow-2xl border border-white/[0.08] relative pointer-events-auto">
       {/* Accent Highlight Line at Bottom matching screenshot */}
-      <div className="absolute bottom-0 left-4 right-4 h-[2px] bg-sky-400 rounded-t-full shadow-[0_0_8px_rgba(56,189,248,0.5)]" />
+      <div className="absolute bottom-0 left-6 right-6 h-[2px] bg-sky-400 rounded-t-full shadow-[0_0_12px_rgba(56,189,248,0.6)]" />
       
-      <div className="flex items-center gap-1 sm:gap-3 mb-1">
+      <div className="flex items-center gap-1 sm:gap-4 mb-2">
         <Segment val={hours} type="h" />
-        <span className="text-3xl sm:text-4xl font-mono font-bold text-neutral-500 pb-1 sm:pb-2">:</span>
+        <span className="text-3xl sm:text-4xl font-mono tabular-nums font-bold text-neutral-600 pb-1 sm:pb-2 -translate-y-0.5">:</span>
         <Segment val={minutes} type="m" />
-        <span className="text-3xl sm:text-4xl font-mono font-bold text-neutral-500 pb-1 sm:pb-2">:</span>
+        <span className="text-3xl sm:text-4xl font-mono tabular-nums font-bold text-neutral-600 pb-1 sm:pb-2 -translate-y-0.5">:</span>
         <Segment val={seconds} type="s" />
       </div>
-
-      <div className="absolute top-3 right-3 flex items-center">
-         <button onClick={handleSave} className="p-1.5 bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 rounded-lg transition-colors border border-sky-500/20">
-            <Check className="w-4 h-4" />
-         </button>
+      
+      <div className="text-[10px] uppercase tracking-widest text-neutral-500 font-bold mt-1">
+        Scroll or Click
       </div>
     </div>
   );
