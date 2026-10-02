@@ -512,6 +512,41 @@ export function StudyTimer() {
     refetchSessions();
   }, [refetchSessions]);
 
+  // 1. State Persistence Strategy: Persist timer state in localStorage on every tick while running or state change
+  useEffect(() => {
+    if (isStudying && elapsedSeconds > 0) {
+      try {
+        localStorage.setItem('studyio_timer_seconds', String(elapsedSeconds));
+        const subIdOrName = selectedSubject?.id || selectedSubject?.name || selectedSubjectId;
+        if (subIdOrName) {
+          localStorage.setItem('studyio_timer_subject', subIdOrName);
+        }
+        localStorage.setItem('studyio_timer_mode', timerMode || 'stopwatch');
+      } catch (e) {
+        console.warn('Failed to persist timer state to localStorage:', e);
+      }
+    }
+  }, [isStudying, elapsedSeconds, selectedSubject, selectedSubjectId, timerMode]);
+
+  // 2. On Component Mount / Page Load: Check localStorage and recover session in Paused state
+  useEffect(() => {
+    try {
+      const savedSecondsStr = localStorage.getItem('studyio_timer_seconds');
+      if (savedSecondsStr) {
+        const savedSeconds = parseInt(savedSecondsStr, 10);
+        if (!isNaN(savedSeconds) && savedSeconds > 0) {
+          const savedSubject = localStorage.getItem('studyio_timer_subject') || undefined;
+          const savedMode = localStorage.getItem('studyio_timer_mode') as TimerMode | null;
+          const validatedMode = savedMode === 'pomodoro' || savedMode === 'stopwatch' ? savedMode : undefined;
+
+          restoreTimerSession(savedSeconds, validatedMode, savedSubject);
+          setShowRecoveryBanner(true);
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to restore timer from localStorage:', e);
+    }
+  }, [restoreTimerSession]);
 
   // Auto-dismiss recovery banner after 8 seconds
   useEffect(() => {
