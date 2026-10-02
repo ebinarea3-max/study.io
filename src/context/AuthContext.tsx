@@ -720,7 +720,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           supabase.from('room_presence').delete().eq('user_id', user.id),
           supabase.from('profiles').delete().eq('id', user.id)
         ]);
-        supabase.auth.signOut().then();
+        await supabase.auth.signOut();
       } catch {
         // ignore
       }
