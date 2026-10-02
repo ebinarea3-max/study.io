@@ -998,9 +998,9 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         if (!supabaseUrl || !supabaseAnonKey) return;
         
         // Use navigator.sendBeacon or fetch with keepalive to ensure it fires during unload
-        const url = `${supabaseUrl}/rest/v1/active_sessions`;
+        const url = `${supabaseUrl}/rest/v1/active_sessions?user_id=eq.${uid}`;
         
-        // We do a POST with upsert headers
+        // We do a PATCH update
         try {
           // Attempt to get the session token synchronously if possible, or fallback to anon key (which RLS might reject, but it's worth trying if we have a cached token).
           // Actually, we can get the auth token from local storage directly to be fully synchronous!
@@ -1016,12 +1016,11 @@ export function StudyProvider({ children }: { children: ReactNode }) {
           }
           
           fetch(url, {
-            method: 'POST',
+            method: 'PATCH',
             headers: {
               'apikey': supabaseAnonKey,
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json',
-              'Prefer': 'resolution=merge-duplicates'
             },
             body: JSON.stringify(payload),
             keepalive: true
