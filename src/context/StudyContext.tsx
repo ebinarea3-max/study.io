@@ -442,12 +442,28 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     }
   }, [subjects]);
 
-  const [timerMode, setTimerMode] = useState<TimerMode>('stopwatch');
+  const [timerMode, setTimerMode] = useState<TimerMode>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('studyio_timer_mode');
+        if (saved === 'stopwatch' || saved === 'pomodoro' || saved === 'countdown') return saved as TimerMode;
+      } catch (e) {}
+    }
+    return 'stopwatch';
+  });
   
   const [isStudying, setIsStudying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [pomodoroPhase, setPomodoroPhase] = useState<PomodoroPhase>('work');
+  const [pomodoroPhase, setPomodoroPhase] = useState<PomodoroPhase>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('studyio_timer_pomodoro_phase');
+        if (saved === 'work' || saved === 'shortBreak' || saved === 'longBreak') return saved as PomodoroPhase;
+      } catch (e) {}
+    }
+    return 'work';
+  });
   const [pomodoroPreset, setPomodoroPresetState] = useState<PomodoroPreset>(() => {
     if (typeof window !== 'undefined') {
       try {
