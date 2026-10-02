@@ -78,6 +78,7 @@ export function StudyTimer() {
     pomodoroPreset,
     setPomodoroPreset,
     pomodoroCompletedPhase,
+    setPomodoroPhase,
     setPomodoroCompletedPhase,
     saveAndStartBreak,
     skipPomodoroBreak,
@@ -524,6 +525,8 @@ export function StudyTimer() {
         localStorage.setItem('studyio_timer_mode', timerMode || 'stopwatch');
         if (timerMode === 'countdown') {
           localStorage.setItem('studyio_timer_countdown_target', String(countdownTarget));
+        } else if (timerMode === 'pomodoro') {
+          localStorage.setItem('studyio_timer_pomodoro_phase', pomodoroPhase);
         }
       } catch (e) {
         console.warn('Failed to persist timer state to localStorage:', e);
@@ -549,6 +552,11 @@ export function StudyTimer() {
                if (!isNaN(savedTarget) && savedTarget > 0) {
                  setCountdownTarget(savedTarget);
                }
+             }
+          } else if (validatedMode === 'pomodoro') {
+             const savedPhase = localStorage.getItem('studyio_timer_pomodoro_phase') as any;
+             if (savedPhase === 'work' || savedPhase === 'shortBreak' || savedPhase === 'longBreak') {
+                setPomodoroPhase(savedPhase);
              }
           }
 

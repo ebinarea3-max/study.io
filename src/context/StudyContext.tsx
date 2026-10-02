@@ -1044,6 +1044,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem('studyio_timer_subject');
       localStorage.removeItem('studyio_timer_mode');
       localStorage.removeItem('studyio_timer_countdown_target');
+      localStorage.removeItem('studyio_timer_pomodoro_phase');
     } catch (e) {
       console.warn('Failed to clear timer state from localStorage:', e);
     }
@@ -2264,7 +2265,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     setElapsedSeconds(seconds);
     setIsStudying(true);
     setIsPaused(true);
-    if (mode && (mode === 'stopwatch' || mode === 'pomodoro')) {
+    if (mode && (mode === 'stopwatch' || mode === 'pomodoro' || mode === 'countdown')) {
       setTimerMode(mode);
     }
     if (subjectIdOrName) {
