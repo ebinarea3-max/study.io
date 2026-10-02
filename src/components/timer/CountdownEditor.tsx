@@ -13,9 +13,7 @@ export function CountdownEditor({ initialSeconds, onSave, onCancel }: CountdownE
   const [minutes, setMinutes] = useState(Math.floor((initialSeconds % 3600) / 60));
   const [seconds, setSeconds] = useState(initialSeconds % 60);
 
-  // Direction state for the sliding animation (1 for up, -1 for down)
   const [direction, setDirection] = useState<'up' | 'down'>('up');
-
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -30,7 +28,6 @@ export function CountdownEditor({ initialSeconds, onSave, onCancel }: CountdownE
     };
   }, [hours, minutes, seconds]);
 
-  // Also allow pressing Enter to save
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Enter') {
@@ -40,6 +37,20 @@ export function CountdownEditor({ initialSeconds, onSave, onCancel }: CountdownE
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [hours, minutes, seconds]);
+  
+  // Attach non-passive wheel listener to prevent body scroll natively
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    
+    const preventScroll = (e: globalThis.WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+    };
+    
+    el.addEventListener('wheel', preventScroll, { passive: false });
+    return () => el.removeEventListener('wheel', preventScroll);
+  }, []);
 
   const handleSave = () => {
     const total = hours * 3600 + minutes * 60 + seconds;
@@ -73,8 +84,7 @@ export function CountdownEditor({ initialSeconds, onSave, onCancel }: CountdownE
   };
 
   const handleWheel = (e: WheelEvent, type: 'h' | 'm' | 's') => {
-    // Prevent default scroll
-    e.preventDefault();
+    e.stopPropagation();
     if (e.deltaY < 0) {
       updateSegment(type, true);
     } else if (e.deltaY > 0) {
@@ -93,7 +103,7 @@ export function CountdownEditor({ initialSeconds, onSave, onCancel }: CountdownE
       </button>
       
       <div 
-        className="relative overflow-hidden w-16 h-20 sm:w-24 sm:h-24 bg-white/[0.02] hover:bg-white/[0.05] rounded-2xl flex items-center justify-center transition-all border border-white/[0.02] hover:border-white/10 group-focus-within:bg-white/[0.08]"
+        className="relative overflow-hidden w-16 h-20 sm:w-20 sm:h-20 bg-white/[0.02] hover:bg-white/[0.05] rounded-2xl flex items-center justify-center transition-all border border-white/[0.02] hover:border-white/10 group-focus-within:bg-white/[0.08]"
         onWheel={(e) => handleWheel(e, type)}
       >
         <AnimatePresence mode="popLayout" initial={false}>
@@ -121,15 +131,15 @@ export function CountdownEditor({ initialSeconds, onSave, onCancel }: CountdownE
   );
 
   return (
-    <div ref={containerRef} className="flex flex-col items-center bg-[#0c0d12]/95 backdrop-blur-md p-3 sm:p-5 rounded-3xl shadow-2xl border border-white/[0.08] relative pointer-events-auto">
+    <div ref={containerRef} className="flex flex-col items-center bg-[#0c0d12]/95 backdrop-blur-md p-3 sm:p-4 rounded-[2rem] shadow-2xl border border-white/[0.08] relative pointer-events-auto mx-auto scale-90 sm:scale-100 origin-center max-w-[95%]">
       {/* Accent Highlight Line at Bottom matching screenshot */}
-      <div className="absolute bottom-0 left-6 right-6 h-[2px] bg-sky-400 rounded-t-full shadow-[0_0_12px_rgba(56,189,248,0.6)]" />
+      <div className="absolute bottom-0 left-6 right-6 h-[3px] bg-sky-400 rounded-t-full shadow-[0_0_12px_rgba(56,189,248,0.6)]" />
       
-      <div className="flex items-center gap-1 sm:gap-4 mb-2">
+      <div className="flex items-center gap-1 sm:gap-2 mb-2">
         <Segment val={hours} type="h" />
-        <span className="text-3xl sm:text-4xl font-mono tabular-nums font-bold text-neutral-600 pb-1 sm:pb-2 -translate-y-0.5">:</span>
+        <span className="text-2xl sm:text-3xl font-mono tabular-nums font-bold text-neutral-600 pb-1 sm:pb-2 -translate-y-0.5">:</span>
         <Segment val={minutes} type="m" />
-        <span className="text-3xl sm:text-4xl font-mono tabular-nums font-bold text-neutral-600 pb-1 sm:pb-2 -translate-y-0.5">:</span>
+        <span className="text-2xl sm:text-3xl font-mono tabular-nums font-bold text-neutral-600 pb-1 sm:pb-2 -translate-y-0.5">:</span>
         <Segment val={seconds} type="s" />
       </div>
       

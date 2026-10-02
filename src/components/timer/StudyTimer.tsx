@@ -1185,7 +1185,7 @@ export function StudyTimer() {
                   <div className="h-6 mt-2" aria-hidden="true" />
                   
                   {/* Big Technical Digital Numbers */}
-                  <div className="font-mono tabular-nums text-5xl md:text-6xl font-bold tracking-tight text-white/95 drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)] w-full text-center -translate-x-1.5 md:-translate-x-2">
+                  <div className={`font-mono tabular-nums text-5xl md:text-6xl font-bold tracking-tight text-white/95 drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)] w-full text-center flex justify-center ${isEditingCountdown ? '' : '-translate-x-1.5 md:-translate-x-2'}`}>
                     {timerMode === 'countdown' && !isStudying ? (
                       isEditingCountdown ? (
                         <CountdownEditor 
