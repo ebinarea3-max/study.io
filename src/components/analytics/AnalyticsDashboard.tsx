@@ -319,8 +319,9 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
             (sessionSubjectName && sub.name && sub.name.trim().toLowerCase() === sessionSubjectName.toLowerCase())
           )
       );
+      if (!matchedSubject) return;
 
-      const subjectLabel = matchedSubject?.name || sessionSubjectName || 'General Focus';
+      const subjectLabel = matchedSubject?.name || sessionSubjectName || 'Unknown';
       const rawSessionColor = (s.subjectColor && s.subjectColor !== '#5A6B6A' ? s.subjectColor : null) || (s as any).subject_color;
       const displayColor = matchedSubject?.color || rawSessionColor || '#10b981';
 

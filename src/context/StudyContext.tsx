@@ -143,13 +143,9 @@ export function normalizeStudySessions(
       const duration = Number(s.durationSeconds ?? (s as any).duration_seconds ?? (s as any).duration ?? (s as any).seconds ?? 0);
       if (duration <= 0) return false;
       const rawName = ((s as any).subject_name || s.subjectName || (s as any).subject?.name || (s as any).subject || '').trim().toLowerCase();
-      // Only filter out legacy dummy unassigned sessions with no matched subject
-      if (rawName === 'unassigned') {
-        const subId = (s.subjectId || (s as any).subject_id || '').trim();
-        const hasMatchedSub = validSubjects.some(sub => sub && sub.id === subId && sub.name.toLowerCase() !== 'unassigned');
-        if (!hasMatchedSub) return false;
-      }
-      return true;
+      const subId = (s.subjectId || (s as any).subject_id || '').trim();
+      const hasMatchedSub = validSubjects.some(sub => sub && ((subId && sub.id === subId) || (rawName && sub.name && sub.name.trim().toLowerCase() === rawName)));
+      return hasMatchedSub;
     })
     .map((s, idx): StudySession => {
       const subjectId = (s.subjectId || (s as any).subject_id || '').trim();
@@ -162,7 +158,7 @@ export function normalizeStudySessions(
         )
       );
 
-      const resolvedName = matchedSub?.name || (rawSubjectName && rawSubjectName.toLowerCase() !== 'unassigned' ? rawSubjectName : 'General Focus');
+      const resolvedName = matchedSub?.name || (rawSubjectName && rawSubjectName.toLowerCase() !== 'unassigned' ? rawSubjectName : 'Unknown');
       const resolvedColor =
         matchedSub?.color ||
         (s.subjectColor && s.subjectColor !== '#5A6B6A' ? s.subjectColor : null) ||
@@ -1452,7 +1448,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       let currentLoadedSubjects: Subject[] = [];
       if (savedSubjects) {
         const parsed = JSON.parse(savedSubjects).map((s: Subject) =>
-          s.name === 'General Focus' && (s.color === '#3B82F6' || !s.color) ? { ...s, color: '#5A6B6A' } : s
+          s
         );
         currentLoadedSubjects = deduplicateSubjects(parsed);
         if (currentLoadedSubjects.length > 0) {
@@ -2016,7 +2012,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
               .map((s: any): StudySession | null => {
                 const subjectList = Array.isArray(subjects) ? subjects : [];
                 const localSub = subjectList.find(sub => sub && sub.id === s.subject_id);
-                const resolvedName = localSub?.name || 'General Focus';
+                const resolvedName = localSub?.name || 'Unknown';
                 if (!resolvedName || resolvedName.trim().toLowerCase() === 'unassigned' || !s.subject_id) {
                   return null;
                 }
@@ -2377,9 +2373,9 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       userName: currentUser.displayName,
       userAvatar: currentUser.avatarUrl,
       subjectId: sessionPayload.subject_id || activeSubject.id,
-      subjectName: activeSubject.name || 'General Focus',
+      subjectName: activeSubject.name || 'Unknown',
       subjectColor: activeSubject.color || '#10b981',
-      subject_name: activeSubject.name || 'General Focus',
+      subject_name: activeSubject.name || 'Unknown',
       startTime: startedAt,
       endTime: endedAt,
       durationSeconds: sessionPayload.duration_seconds,

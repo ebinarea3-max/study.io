@@ -19,13 +19,7 @@ export const INITIAL_USER: UserProfile = {
 };
 
 export const INITIAL_SUBJECTS: Subject[] = [
-  {
-    id: 'sub-1',
-    name: 'General Focus',
-    color: '#5A6B6A', // Muted Teal-Gray
-    targetMinutesPerDay: 60,
-    createdAt: new Date().toISOString(),
-  },
+
   {
     id: 'sub-2',
     name: 'Deep Work',

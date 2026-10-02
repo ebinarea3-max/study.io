@@ -109,7 +109,7 @@ export function RoomSelectorModal({ isOpen, onClose }: RoomSelectorModalProps) {
                   onChange={e => setCategory(e.target.value as StudyRoom['category'])}
                   className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-emerald-500"
                 >
-                  <option value="general">General Focus</option>
+                  <option value="general">General</option>
                   <option value="stem">STEM & Coding</option>
                   <option value="medical">Medical / MCAT</option>
                   <option value="pomodoro">Pomodoro Sprints</option>

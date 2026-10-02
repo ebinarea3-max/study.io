@@ -653,8 +653,6 @@ export function StudyTimer() {
   // Muted teal-gray (#5A6B6A) for General Focus, neutral slate-gray (#64748B) when no subject is selected
   const subjectColor = !selectedSubject
     ? '#64748B'
-    : selectedSubject?.name === 'General Focus' && (selectedSubject?.color === '#3B82F6' || !selectedSubject?.color)
-    ? '#5A6B6A'
     : selectedSubject?.color || '#10B981';
 
   // Recent 4 sessions (filtering unassigned / null-subject sessions)
@@ -959,9 +957,7 @@ export function StudyTimer() {
                     <div className="max-h-60 overflow-y-auto space-y-1">
                       {activeSubjects.map(sub => {
                         const itemColor =
-                          sub?.name === 'General Focus' && (sub?.color === '#3B82F6' || !sub?.color)
-                            ? '#5A6B6A'
-                            : sub?.color || 'var(--accent)';
+                          sub?.color || 'var(--accent)';
 
                         return (
                           <button
