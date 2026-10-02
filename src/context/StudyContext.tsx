@@ -982,13 +982,13 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         
         if (!uid || uid.startsWith('user-scholar') || uid.startsWith('guest')) return;
         
-        // Prepare the payload to immediately force the session into a paused state
+        // Prepare the payload to immediately force the session into a stopped state so it gets discarded
         const payload = {
           user_id: uid,
           device_id: deviceId,
-          status: 'paused',
+          status: 'stopped',
           started_at: null,
-          accumulated_seconds: finalAccumulated,
+          accumulated_seconds: 0,
           updated_at: new Date().toISOString()
         };
 
