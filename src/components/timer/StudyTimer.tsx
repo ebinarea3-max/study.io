@@ -767,8 +767,7 @@ export function StudyTimer() {
       <div className="w-full h-full flex flex-col justify-between max-md:overflow-hidden md:overflow-visible space-y-0 md:space-y-3">
         {/* Main Timer Game-HUD Card with Targeting Reticle Corner Brackets */}
         <div
-          className="relative w-full h-full rounded-3xl bg-[var(--surface)] backdrop-blur-xl border border-[var(--border)] p-5 sm:p-6 shadow-xl max-md:overflow-hidden md:overflow-hidden flex flex-col transition-all"
-          
+          className="bg-[#0b0e14]/90 border border-white/[0.07] rounded-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden backdrop-blur-xl w-full h-full flex flex-col transition-all"
         >
           {/* Angular Targeting Reticle Corner Brackets */}
           <div className="hud-corner-bracket hud-corner-tl" />
@@ -800,40 +799,37 @@ export function StudyTimer() {
           <div className="w-full flex flex-wrap items-center max-md:justify-center justify-between gap-2.5 sm:gap-4 relative z-10 pb-4 max-md:border-b-0 border-b border-[var(--border)] flex-shrink-0">
             <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
               {/* Mode Pill Toggle */}
-              <div className="grid grid-cols-3 gap-1 p-0.5 sm:p-1 rounded-2xl bg-[var(--bg)] border border-[var(--border)]">
+              <div className="grid grid-cols-3 gap-1 p-1 rounded-xl bg-[#05070a] border border-white/[0.06]">
                 <button
                   onClick={() => { if (!isStudying) setTimerMode('stopwatch'); }}
                   disabled={isStudying}
-                  className={`px-2 sm:px-4 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-hud font-bold tracking-wider transition-all active:scale-95 ${
+                  className={`px-2 sm:px-4 py-1.5 rounded-lg text-[10px] sm:text-xs font-hud tracking-wider transition-all active:scale-95 ${
                     timerMode === 'stopwatch'
-                      ? 'text-slate-950 shadow-sm'
-                      : 'text-neutral-400 hover:text-white'
+                      ? 'bg-neutral-800 text-white font-medium shadow-sm'
+                      : 'text-neutral-400 hover:text-neutral-200'
                   } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
-                  style={timerMode === 'stopwatch' ? { backgroundColor: 'rgba(255, 255, 255, 0.1)', color: '#FFFFFF', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' } : { color: '#94A3B8' }}
                 >
                   <span className="hidden sm:inline">STOPWATCH</span><span className="sm:hidden">STOP</span>
                 </button>
                 <button
                   onClick={() => { if (!isStudying) setTimerMode('countdown'); }}
                   disabled={isStudying}
-                  className={`px-2 sm:px-4 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-hud font-bold tracking-wider transition-all active:scale-95 ${
+                  className={`px-2 sm:px-4 py-1.5 rounded-lg text-[10px] sm:text-xs font-hud tracking-wider transition-all active:scale-95 ${
                     timerMode === 'countdown'
-                      ? 'text-slate-950 shadow-sm'
-                      : 'text-neutral-400 hover:text-white'
+                      ? 'bg-neutral-800 text-white font-medium shadow-sm'
+                      : 'text-neutral-400 hover:text-neutral-200'
                   } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
-                  style={timerMode === 'countdown' ? { backgroundColor: 'rgba(255, 255, 255, 0.1)', color: '#FFFFFF', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' } : { color: '#94A3B8' }}
                 >
                   <span className="hidden sm:inline">COUNTDOWN</span><span className="sm:hidden">TIMER</span>
                 </button>
                 <button
                   onClick={() => { if (!isStudying) setTimerMode('pomodoro'); }}
                   disabled={isStudying}
-                  className={`px-2 sm:px-4 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-hud font-bold tracking-wider transition-all active:scale-95 ${
+                  className={`px-2 sm:px-4 py-1.5 rounded-lg text-[10px] sm:text-xs font-hud tracking-wider transition-all active:scale-95 ${
                     timerMode === 'pomodoro'
-                      ? 'text-slate-950 shadow-sm'
-                      : 'text-neutral-400 hover:text-white'
+                      ? 'bg-neutral-800 text-white font-medium shadow-sm'
+                      : 'text-neutral-400 hover:text-neutral-200'
                   } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
-                  style={timerMode === 'pomodoro' ? { backgroundColor: 'rgba(255, 255, 255, 0.1)', color: '#FFFFFF', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' } : { color: '#94A3B8' }}
                 >
                   <span className="hidden sm:inline">POMODORO</span><span className="sm:hidden">POMO</span>
                 </button>
@@ -843,7 +839,7 @@ export function StudyTimer() {
               {/* Clean Pill/Segment Preset Selector (25/5 and 50/10) */}
               {timerMode === 'pomodoro' && (
                 <div
-                  className="flex items-center gap-1 p-0.5 sm:p-1 rounded-2xl bg-black/60 border border-[var(--border)] animate-in fade-in zoom-in-95 duration-200"
+                  className="flex items-center gap-1 p-1 rounded-xl bg-[#121620]/60 border border-white/[0.06] animate-in fade-in zoom-in-95 duration-200"
                   title={isStudying ? "Interval presets are locked while session is running" : "Choose focus / break interval preset"}
                 >
                   <button
@@ -851,10 +847,10 @@ export function StudyTimer() {
                       if (!isStudying) setPomodoroPreset('25/5');
                     }}
                     disabled={isStudying}
-                    className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 active:scale-95 ${
+                    className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg font-mono text-xs transition-all flex items-center gap-1 active:scale-95 border ${
                       pomodoroPreset === '25/5'
-                        ? 'bg-white/10 text-white border-white/20 shadow-sm'
-                        : 'text-neutral-400 hover:text-white border border-transparent'
+                        ? 'border-amber-500/70 bg-amber-500/10 text-amber-400 font-semibold shadow-[0_0_12px_rgba(245,158,11,0.2)]'
+                        : 'border-transparent text-neutral-300 hover:border-amber-500/40 hover:text-amber-300'
                     } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
                     title="25m Focus / 5m Break (Standard)"
                   >
@@ -866,10 +862,10 @@ export function StudyTimer() {
                       if (!isStudying) setPomodoroPreset('50/10');
                     }}
                     disabled={isStudying}
-                    className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 active:scale-95 ${
+                    className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg font-mono text-xs transition-all flex items-center gap-1 active:scale-95 border ${
                       pomodoroPreset === '50/10'
-                        ? 'bg-white/10 text-white border-white/20 shadow-sm'
-                        : 'text-neutral-400 hover:text-white border border-transparent'
+                        ? 'border-amber-500/70 bg-amber-500/10 text-amber-400 font-semibold shadow-[0_0_12px_rgba(245,158,11,0.2)]'
+                        : 'border-transparent text-neutral-300 hover:border-amber-500/40 hover:text-amber-300'
                     } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
                     title="50m Focus / 10m Break (Deep Work)"
                   >
@@ -1117,9 +1113,9 @@ export function StudyTimer() {
           <div className="relative z-10 flex flex-col items-center justify-center py-4 sm:py-8 my-auto w-full">
             <div className="relative flex items-center justify-center group p-2 sm:p-4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 mx-auto aspect-square rounded-full flex-shrink-0">
               {/* Outer Tier Accent Ambient Halo */}
-              <div
-                className="absolute inset-[-10%] rounded-full blur-3xl pointer-events-none opacity-[0.05] bg-[radial-gradient(circle_at_center,rgba(var(--tier-accent-rgb),0.08)_0%,transparent_70%)]"
-              />
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none -z-0">
+                <div className="w-80 h-80 rounded-full bg-amber-500/[0.05] blur-3xl" />
+              </div>
 
               {/* Segmented Radar / Reactor Core SVG Ring */}
               <svg
@@ -1206,7 +1202,7 @@ export function StudyTimer() {
                   <div className="h-6 mt-2" aria-hidden="true" />
                   
                   {/* Big Technical Digital Numbers */}
-                  <div className={`font-mono tabular-nums text-5xl md:text-6xl font-bold tracking-tight text-white/95 drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)] w-full text-center flex justify-center ${isEditingCountdown ? '' : '-translate-x-1.5 md:-translate-x-2'}`}>
+                  <div className={`font-mono tabular-nums tracking-tight font-bold text-white drop-shadow-[0_0_24px_rgba(255,255,255,0.12)] text-5xl md:text-6xl w-full text-center flex justify-center ${isEditingCountdown ? '' : '-translate-x-1.5 md:-translate-x-2'}`}>
                     {timerMode === 'countdown' && !isStudying ? (
                       isEditingCountdown ? (
                         <CountdownEditor 
@@ -1393,9 +1389,9 @@ export function StudyTimer() {
                 <button
                   onClick={handleStartSession}
                   disabled={!selectedSubject?.id || isSaving || isRemoteTransitioning}
-                  className={`group relative overflow-hidden bg-gradient-to-r from-amber-500 via-amber-600 to-orange-500 hover:brightness-110 text-black font-semibold text-sm tracking-wide px-8 py-3.5 rounded-xl shadow-[0_4px_24px_rgba(245,158,11,0.25)] transition-all flex items-center justify-center gap-2 w-full xs:w-auto hover:scale-[1.01] active:scale-[0.99] ${
+                  className={`flex items-center justify-center gap-2 w-full xs:w-auto min-w-[200px] py-4 rounded-xl font-bold font-mono tracking-wider uppercase text-black bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 shadow-[0_0_25px_rgba(245,158,11,0.25)] hover:shadow-[0_0_35px_rgba(245,158,11,0.4)] hover:brightness-105 active:scale-[0.99] transition-all duration-200 ${
                     !selectedSubject?.id || isRemoteTransitioning
-                      ? 'opacity-40 cursor-not-allowed shadow-none hover:scale-100'
+                      ? 'opacity-40 cursor-not-allowed shadow-none hover:shadow-none hover:brightness-100 hover:scale-100'
                       : 'cursor-pointer'
                   }`}
                   title={!selectedSubject?.id ? 'Please select a subject before starting the timer' : 'Start Focus Session'}
@@ -1564,34 +1560,21 @@ export function StudyTimer() {
         
       </div>
 
-      {/* Right Secondary Column (Todo List, Daily Overview & Today's Boost - Home Page Sidebar, exclusively rendered in Tasks tab on mobile) */}
-      <div className="hidden lg:flex w-full flex-col justify-start h-full space-y-4 pr-2 md:overflow-visible">
-        {/* 1. Todo List Card - Google Notes / Keep Checklist */}
-        <DailyTodoList />
+      {/* Right Secondary Column (Unified Obsidian Panel - Home Page Sidebar) */}
+      <div className="hidden lg:flex w-full flex-col justify-start h-full pr-2 md:overflow-visible">
+        <div className="bg-[#0b0e14]/90 border border-white/[0.07] rounded-2xl p-5 sm:p-6 shadow-2xl backdrop-blur-xl flex flex-col gap-5">
+          {/* 1. Todo List */}
+          <DailyTodoList />
 
-        {/* 2. Unified HUD Stat Readout Panel */}
-        <div
-          className="rounded-2xl bg-[var(--surface)] backdrop-blur-xl border border-[var(--border)] py-3 px-4 shadow-xl space-y-2.5 transition-all relative overflow-hidden"
-          style={{ borderTop: "1px solid rgba(99, 102, 241, 0.4)" }}
-        >
-          <div className="hud-corner-bracket hud-corner-tl" />
-          <div className="hud-corner-bracket hud-corner-tr" />
-          <div className="hud-corner-bracket hud-corner-bl" />
-          <div className="hud-corner-bracket hud-corner-br" />
+          <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-white/[0.08] to-transparent" />
 
-          {/* Ambient Tier Glow */}
-          <div
-            className="absolute -top-12 -right-12 w-32 h-32 rounded-full blur-2xl pointer-events-none opacity-20"
-            style={{ backgroundColor: 'var(--accent)' }}
-          />
-
-          <div className="flex items-center justify-between pb-2.5 border-b border-[var(--border)] relative z-10">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-amber-400/80" />
-              <span className="text-sm font-bold tracking-wider text-neutral-200 uppercase">
-                DAILY OVERVIEW
-              </span>
-            </div>
+          {/* 2. Unified HUD Stat Readout Panel */}
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between relative z-10">
+              <div className="text-[11px] font-mono tracking-[0.18em] uppercase text-neutral-400 font-semibold flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-amber-400/80" />
+                <span>DAILY OVERVIEW</span>
+              </div>
             {/* Today vs Yesterday Toggle */}
             <div className="flex items-center gap-1 p-0.5 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-xs">
               <button
@@ -1628,16 +1611,12 @@ export function StudyTimer() {
             </span>
           </div>
 
-          {/* Unified HUD Stat Readout Strip */}
-          <div className="rounded-xl bg-[var(--bg)] border border-[var(--border)] p-3 relative z-10">
-            <div className="flex items-center justify-between py-2 border-b border-white/[0.04]">
+          <div className="flex flex-col gap-2 relative z-10">
+            <div className="flex items-center justify-between py-1">
               <div>
-                <div className="text-xs font-semibold tracking-wide text-neutral-200">TOTAL FOCUS</div>
-                <div className="text-[10px] text-neutral-400/80">Recorded study duration</div>
+                <div className="text-[10px] tracking-wider uppercase text-neutral-400 font-medium">TOTAL FOCUS</div>
               </div>
-              <div
-                className="text-base md:text-lg font-bold text-white tracking-tight tabular-nums font-mono"
-              >
+              <div className="text-2xl font-mono font-bold text-neutral-100 tabular-nums">
                 {(isLoading || isLoadingSessions) && !hasHydrated ? (
                   <Skeleton className="h-6 w-20 bg-slate-800" />
                 ) : (
@@ -1646,12 +1625,11 @@ export function StudyTimer() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between py-2 border-b border-white/[0.04]">
+            <div className="flex items-center justify-between py-1">
               <div>
-                <div className="text-xs font-semibold tracking-wide text-neutral-200">SESSIONS</div>
-                <div className="text-[10px] text-neutral-400/80">Completed study blocks</div>
+                <div className="text-[10px] tracking-wider uppercase text-neutral-400 font-medium">SESSIONS</div>
               </div>
-              <div className="text-base md:text-lg font-bold text-white tracking-tight tabular-nums">
+              <div className="text-2xl font-mono font-bold text-neutral-100 tabular-nums">
                 {(isLoading || isLoadingSessions) && !hasHydrated ? (
                   <Skeleton className="h-6 w-12 bg-slate-800" />
                 ) : (
@@ -1660,46 +1638,35 @@ export function StudyTimer() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between py-2 border-b border-white/[0.04]">
+            <div className="flex items-center justify-between py-1">
               <div>
-                <div className="text-xs font-semibold tracking-wide text-neutral-200">ACTIVE STREAK</div>
-                <div className="text-[10px] text-neutral-400/80">Daily consistency multiplier</div>
+                <div className="text-[10px] tracking-wider uppercase text-neutral-400 font-medium">ACTIVE STREAK</div>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-4 h-4 flex items-center justify-center animate-ember-glow">
                   <Flame className="w-full h-full text-orange-500 fill-orange-500" style={{ color: "#f97316" }} />
                 </div>
-                <span className="text-base md:text-lg font-bold text-white tracking-tight">
+                <span className="text-2xl font-mono font-bold text-neutral-100 tabular-nums">
                   {user?.streakDays ?? 0}
                 </span>
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* 3. Daily Directive / Motivation Card */}
-        <div
-          className="rounded-2xl bg-[var(--surface)] backdrop-blur-xl border border-[var(--border)] py-2.5 px-3.5 shadow-xl space-y-3 transition-all relative overflow-hidden"
-          style={{ borderTop: "1px solid rgba(255, 255, 255, 0.1)" }}
-        >
-          <div className="hud-corner-bracket hud-corner-tl" />
-          <div className="hud-corner-bracket hud-corner-tr" />
-          <div className="hud-corner-bracket hud-corner-bl" />
-          <div className="hud-corner-bracket hud-corner-br" />
-
-          <div className="flex items-center gap-2 pb-2.5 border-b border-[var(--border)] relative z-10">
-            <Target className="w-4 h-4" style={{ color: "var(--accent)" }} />
-            <span className="text-xs font-semibold tracking-wider text-neutral-300 uppercase">
-              DAILY DIRECTIVE
-            </span>
+            </div>
           </div>
 
-          <div className="min-h-[40px] flex flex-col justify-center relative z-10">
-            <div className="flex flex-col gap-1.5 mt-1">
-              <p className="text-[13px] italic font-medium text-[#E2E8F0] leading-snug tracking-wide">
+          <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-white/[0.08] to-transparent" />
+
+          {/* 3. Daily Directive / Motivation */}
+          <div className="flex flex-col gap-3 relative z-10">
+            <div className="text-[11px] font-mono tracking-[0.18em] uppercase text-neutral-400 font-semibold flex items-center gap-2">
+              <Target className="w-4 h-4 text-amber-500/80" />
+              <span>DAILY DIRECTIVE</span>
+            </div>
+            <div className="border-l-2 border-amber-500/40 pl-3.5 text-xs text-neutral-300 italic flex flex-col gap-1.5">
+              <p className="leading-snug">
                 &ldquo;{dailyQuote.text}&rdquo;
               </p>
-              <p className="text-[10px] uppercase font-bold text-neutral-400 tracking-widest text-right">
+              <p className="text-[10px] uppercase font-bold text-neutral-500 tracking-widest">
                 — {dailyQuote.author}
               </p>
             </div>
