@@ -125,9 +125,9 @@ export default function Home() {
 
   // Authenticated: Full StudyPulse focus dashboard
   return (
-    <div className="min-h-screen w-full overflow-y-auto pb-24 px-4 md:px-8 bg-[#07090e] text-slate-100 flex flex-col relative selection:bg-amber-500/30 selection:text-amber-400">
+    <div className="min-h-screen w-full overflow-y-auto pb-24 px-4 md:px-8 bg-[var(--bg)] text-slate-100 flex flex-col relative selection:bg-emerald-500/30 selection:text-emerald-400">
       {/* Drifting Ambient HUD Grid Overlay */}
-      <div className="fixed inset-0 pointer-events-none bg-hud-grid opacity-[0.03] z-0" />
+      <div className="fixed inset-0 pointer-events-none bg-hud-grid z-0" />
 
       {/* Floating Animated Cheers */}
       <FloatingReactions />

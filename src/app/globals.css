@@ -4,8 +4,8 @@
   /* Unified Permanent Premium UI Palette */
   --bg: #0A0D14;
   --background: #0A0D14;
-  --surface: rgba(15, 19, 28, 0.78);
-  --border: rgba(255, 255, 255, 0.08);
+  --surface: rgba(255, 255, 255, 0.03);
+  --border: rgba(255, 255, 255, 0.1);
   
   --text-primary: #FFFFFF;
   --foreground: #FFFFFF;
@@ -19,7 +19,7 @@
   /* Fallbacks for older variables */
   --card-bg: var(--surface);
   --card-border: var(--border);
-  --surface-high: rgba(30, 35, 51, 0.8);
+  --surface-high: rgba(255, 255, 255, 0.08);
 }
 
 /* Dynamic Card Texture Backgrounds Removed */
