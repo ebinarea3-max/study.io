@@ -711,70 +711,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     const supabase = getSupabase();
     
-    if (supabase && user.id) {
-      try {
-        await supabase.auth.updateUser({ data: { display_name: '', name: '', full_name: '', avatar_url: '', picture: '' } });
-        await supabase.from('profiles').update({
-          name: '',
-          username: null,
-          avatar_url: null,
-          rp: 0,
-          season_rp: 0,
-          total_study_seconds: 0,
-          level: 1,
-          daily_goal_hours: 4.0,
-          streak_days: 0
-        }).eq('id', user.id);
-        await Promise.allSettled([
-          supabase.from('study_sessions').delete().eq('user_id', user.id),
-          supabase.from('todos').delete().eq('user_id', user.id),
-          supabase.from('subjects').delete().eq('user_id', user.id),
-          supabase.from('room_presence').delete().eq('user_id', user.id),
-          supabase.from('profiles').delete().eq('id', user.id)
-        ]);
-        await supabase.auth.signOut();
-      } catch {
-        // ignore
-      }
-    }
-    
-    if (user.email) {
-      const accounts = getStoredAccounts();
-      if (accounts[user.email.toLowerCase()]) {
-        delete accounts[user.email.toLowerCase()];
-        try {
-          localStorage.setItem('studyio_registered_accounts', JSON.stringify(accounts));
-        } catch {}
-      }
-    }
-
     try {
-      if (user.id) {
-        localStorage.removeItem(`study_io_sessions_${user.id}`);
-        localStorage.removeItem(`study_io_subjects_${user.id}`);
-        localStorage.removeItem(`study_io_selected_subject_${user.id}`);
-      }
-      localStorage.removeItem('studypulse_active_user');
-      localStorage.removeItem('studypulse_is_authenticated');
-      localStorage.removeItem('studypulse_sessions');
-      localStorage.removeItem('studypulse_todos');
-      localStorage.removeItem('studypulse_subjects');
-      localStorage.removeItem('studypulse_selected_subject');
-      localStorage.removeItem('studypulse_custom_rooms');
-    } catch {
-      // ignore
-    }
+      if (supabase && user.id && !user.id.startsWith('guest') && !user.id.startsWith('user-scholar')) {
+        // 1. Call the Postgres RPC function to purge auth.users and all cascading tables
+        const { error } = await supabase.rpc('delete_user');
+        if (error) throw error;
 
-    saveUser(INITIAL_USER);
-    setIsAuthenticated(false);
-    setIsLoading(false);
-
-    if (typeof window !== 'undefined') {
-      if (window.location.pathname === '/') {
-        window.location.reload();
-      } else {
-        window.location.href = '/';
+        // 2. Sign out the local session completely
+        await supabase.auth.signOut();
       }
+
+      // 3. Clear all local application state and cached auth tokens
+      localStorage.clear();
+      sessionStorage.clear();
+
+      saveUser(INITIAL_USER);
+      setIsAuthenticated(false);
+      setIsLoading(false);
+
+      // 4. Redirect cleanly to login or landing page
+      window.location.href = '/';
+    } catch (err: any) {
+      console.error("Account deletion failed:", err);
+      alert(err.message || "Failed to completely delete account. Please try again.");
+      setIsLoading(false);
     }
   }, [saveUser, user]);
 
