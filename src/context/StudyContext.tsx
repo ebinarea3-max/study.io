@@ -1367,6 +1367,12 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         return;
       }
 
+      // Prevent ghost sessions from overriding locally recovered pause state from this same device
+      if (startTimeRef.current === null && accumulatedSecondsRef.current > 0 && remoteSession.device_id === getDeviceId()) {
+        console.warn('[StudyContext] Ignoring remote running state from this device because local state is explicitly paused (ghost session).');
+        return;
+      }
+
       const startedAtMs = started_at ? new Date(started_at).getTime() : Date.now();
       const runningSeconds = Math.max(0, Math.floor((Date.now() - startedAtMs) / 1000));
       const calculatedElapsed = baseAccumulated + runningSeconds;
