@@ -40,6 +40,7 @@ import {
 Target, Settings } from 'lucide-react';
 import { soundFx, AmbientSoundType } from '../../lib/audio';
 import confetti from 'canvas-confetti';
+import { CountdownEditor } from './CountdownEditor';
 import { getSupabase } from '../../lib/supabase';
 import { getDailyQuote } from '../../lib/quotes';
 import { StudySession, Subject, TimerMode, UserProfile } from '../../types';
@@ -1187,38 +1188,13 @@ export function StudyTimer() {
                   <div className="font-mono tabular-nums text-5xl md:text-6xl font-bold tracking-tight text-white/95 drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)] w-full text-center -translate-x-1.5 md:-translate-x-2">
                     {timerMode === 'countdown' && !isStudying ? (
                       isEditingCountdown ? (
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          autoFocus
-                          spellCheck={false}
-                          autoComplete="off"
-                          className="bg-transparent border-none text-center outline-none w-full text-white/95 placeholder:text-white/20 selection:bg-amber-500/40"
-                          defaultValue={displayTime}
-                          placeholder="HH:MM:SS (or just 45 for mins)"
-                          onBlur={(e) => {
+                        <CountdownEditor 
+                          initialSeconds={countdownTarget}
+                          onSave={(seconds) => {
+                            setCountdownTarget(seconds);
                             setIsEditingCountdown(false);
-                            const val = e.target.value.trim();
-                            if (val) {
-                              const parts = val.split(':').map(n => parseInt(n.trim()) || 0);
-                              let secs = 0;
-                              if (parts.length === 3) {
-                                secs = parts[0] * 3600 + parts[1] * 60 + parts[2];
-                              } else if (parts.length === 2) {
-                                secs = parts[0] * 60 + parts[1]; // mm:ss
-                              } else if (parts.length === 1) {
-                                secs = parts[0] * 60; // just minutes
-                              }
-                              if (secs > 0) {
-                                setCountdownTarget(secs);
-                              }
-                            }
                           }}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.currentTarget.blur();
-                            }
-                          }}
+                          onCancel={() => setIsEditingCountdown(false)}
                         />
                       ) : (
                         <span 
