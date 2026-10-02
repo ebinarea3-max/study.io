@@ -367,6 +367,19 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     userRef.current = user;
   }, [user]);
 
+  const accessTokenRef = useRef<string | null>(null);
+  useEffect(() => {
+    const supabase = getSupabase();
+    if (!supabase) return;
+    supabase.auth.getSession().then(({ data }) => {
+      accessTokenRef.current = data.session?.access_token || null;
+    });
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      accessTokenRef.current = session?.access_token || null;
+    });
+    return () => authListener.subscription.unsubscribe();
+  }, []);
+
   // Request native notification permissions
   useEffect(() => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
@@ -1002,18 +1015,8 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         
         // We do a PATCH update
         try {
-          // Attempt to get the session token synchronously if possible, or fallback to anon key (which RLS might reject, but it's worth trying if we have a cached token).
-          // Actually, we can get the auth token from local storage directly to be fully synchronous!
-          const authItem = localStorage.getItem(`sb-${new URL(supabaseUrl).hostname.split('.')[0]}-auth-token`);
-          let token = supabaseAnonKey;
-          if (authItem) {
-            try {
-              const authData = JSON.parse(authItem);
-              if (authData?.access_token) {
-                token = authData.access_token;
-              }
-            } catch (e) {}
-          }
+          // Use the synchronously tracked access token (avoids RLS rejection on tab close)
+          const token = accessTokenRef.current || supabaseAnonKey;
           
           fetch(url, {
             method: 'PATCH',
