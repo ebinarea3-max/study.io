@@ -1043,6 +1043,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem('studyio_timer_seconds');
       localStorage.removeItem('studyio_timer_subject');
       localStorage.removeItem('studyio_timer_mode');
+      localStorage.removeItem('studyio_timer_countdown_target');
     } catch (e) {
       console.warn('Failed to clear timer state from localStorage:', e);
     }
@@ -1336,9 +1337,13 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     } = remoteSession;
 
     const effectiveMode = mode || timer_mode || 'stopwatch';
-    if (effectiveMode === 'stopwatch' || effectiveMode === 'pomodoro') {
-      setTimerMode(effectiveMode);
-    }
+    setTimerMode(prev => {
+      // Countdown is mapped to stopwatch in the DB schema.
+      // So if the DB says stopwatch, but we locally know we are in countdown mode, we preserve the local state.
+      if (effectiveMode === 'stopwatch' && prev === 'countdown') return prev;
+      if (effectiveMode === 'stopwatch' || effectiveMode === 'pomodoro' || effectiveMode === 'countdown') return effectiveMode as TimerMode;
+      return prev;
+    });
 
     if (pomodoro_phase) {
       if (pomodoro_phase === 'focus' || pomodoro_phase === 'work') {

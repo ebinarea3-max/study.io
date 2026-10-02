@@ -522,6 +522,9 @@ export function StudyTimer() {
           localStorage.setItem('studyio_timer_subject', subIdOrName);
         }
         localStorage.setItem('studyio_timer_mode', timerMode || 'stopwatch');
+        if (timerMode === 'countdown') {
+          localStorage.setItem('studyio_timer_countdown_target', String(countdownTarget));
+        }
       } catch (e) {
         console.warn('Failed to persist timer state to localStorage:', e);
       }
@@ -537,7 +540,17 @@ export function StudyTimer() {
         if (!isNaN(savedSeconds) && savedSeconds > 0) {
           const savedSubject = localStorage.getItem('studyio_timer_subject') || undefined;
           const savedMode = localStorage.getItem('studyio_timer_mode') as TimerMode | null;
-          const validatedMode = savedMode === 'pomodoro' || savedMode === 'stopwatch' ? savedMode : undefined;
+          const validatedMode = savedMode === 'pomodoro' || savedMode === 'stopwatch' || savedMode === 'countdown' ? savedMode : undefined;
+
+          if (validatedMode === 'countdown') {
+             const savedTargetStr = localStorage.getItem('studyio_timer_countdown_target');
+             if (savedTargetStr) {
+               const savedTarget = parseInt(savedTargetStr, 10);
+               if (!isNaN(savedTarget) && savedTarget > 0) {
+                 setCountdownTarget(savedTarget);
+               }
+             }
+          }
 
           restoreTimerSession(savedSeconds, validatedMode, savedSubject);
           setShowRecoveryBanner(true);
