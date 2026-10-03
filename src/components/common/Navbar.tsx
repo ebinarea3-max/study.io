@@ -561,7 +561,7 @@ export function Navbar({
           aria-label="Leaderboard"
         >
           <Trophy className="w-5 h-5" />
-          <span className="text-[9px] font-hud font-bold tracking-widest uppercase mt-0.5">Ranks</span>
+          <span className="text-[9px] font-hud font-bold tracking-widest uppercase mt-0.5">Rankings</span>
         </button>
 
         {/* Tab 5: Settings */}
