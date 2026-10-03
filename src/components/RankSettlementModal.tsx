@@ -9,7 +9,7 @@ import {
   RankTierDetails,
 } from '../lib/rankedSystem';
 import { RankSettlementData } from '../types';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, X } from 'lucide-react';
 import { TierIcon } from './common/TierIcon';
 import { RankCrestBadge } from './common/RankCrestBadge';
 import Image from 'next/image';
@@ -150,11 +150,11 @@ export function RankSettlementModal({
     }));
   }, []);
 
-  // Keyboard navigation (Spacebar or Enter to dismiss)
+  // Keyboard navigation (Spacebar, Enter, or Escape to dismiss)
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.code === 'Space' || e.key === ' ' || e.code === 'Enter' || e.key === 'Enter') {
+      if (e.code === 'Space' || e.key === ' ' || e.code === 'Enter' || e.key === 'Enter' || e.code === 'Escape' || e.key === 'Escape') {
         e.preventDefault();
         soundFx.resumeContext();
         onContinue();
@@ -520,8 +520,28 @@ export function RankSettlementModal({
 
 
   return (
-    <div className="fixed inset-0 z-50 bg-[var(--bg)]/95 backdrop-blur-md flex flex-col items-center justify-center select-none overflow-hidden animate-in fade-in duration-300">
-      
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          soundFx.resumeContext();
+          onContinue();
+        }
+      }}
+      className="fixed inset-0 z-50 bg-[var(--bg)]/95 backdrop-blur-md flex flex-col items-center justify-center select-none overflow-hidden animate-in fade-in duration-300"
+    >
+      {/* Close button in top-right */}
+      <button
+        onClick={() => {
+          soundFx.resumeContext();
+          onContinue();
+        }}
+        className="absolute top-6 right-6 sm:top-8 sm:right-8 z-30 p-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-slate-400 hover:text-white transition-all cursor-pointer"
+        title="Close (Esc)"
+        aria-label="Close modal"
+      >
+        <X className="w-5 h-5" />
+      </button>
+
       {/* 1. Backdrop Vignette: Darkening at screen edges to push focus to center */}
       <div
         className="absolute inset-0 pointer-events-none z-0"
@@ -581,8 +601,9 @@ export function RankSettlementModal({
         </span>
       </div>
 
-      {/* 5. Main Container with Dedicated Screen-Shake Translation (Text remains crisp on separate layers) */}
+      {/* 5. Main Container with Dedicated Screen-Shake Translation */}
       <div
+        onClick={(e) => e.stopPropagation()}
         className="relative z-10 w-full max-w-xl flex flex-col items-center text-center px-4"
         style={{
           transform: `translate3d(${shakeOffset.x}px, ${shakeOffset.y}px, 0)`,
