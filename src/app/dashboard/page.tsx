@@ -21,7 +21,7 @@ export default function DashboardPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[var(--bg)] flex flex-col items-center justify-center text-slate-100 relative">
-        <div className="fixed inset-0 pointer-events-none bg-[radial-gradient(#ffffff0a_1px,transparent_1px)] [background-size:16px_16px] z-0" />
+        <div className="fixed inset-0 pointer-events-none bg-dot-grid z-0" />
         <div className="relative z-10 flex flex-col items-center">
           <div className="mb-4 animate-pulse">
             <Logo className="w-14 h-14" />

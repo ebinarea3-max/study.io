@@ -109,7 +109,8 @@ export default function Home() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[var(--bg)] flex flex-col items-center justify-center text-slate-100 relative">
-        <div className="fixed inset-0 pointer-events-none bg-hud-grid z-0" />
+        <div className="fixed inset-0 pointer-events-none bg-dot-grid z-0" />
+        <div className="fixed inset-0 pointer-events-none bg-hud-grid opacity-[0.03] z-0" />
         <div className="relative z-10 flex flex-col items-center">
           <div className="mb-4 animate-pulse">
             <Logo className="w-14 h-14" />
@@ -129,7 +130,10 @@ export default function Home() {
 
   // Authenticated: Full StudyPulse focus dashboard
   return (
-    <div className="min-h-screen w-full overflow-y-auto pb-24 px-4 md:px-8 bg-[#07090e] text-slate-100 flex flex-col relative selection:bg-amber-500/30 selection:text-amber-400">
+    <div className="min-h-screen w-full overflow-y-auto pb-24 px-4 md:px-8 bg-[#07090e] bg-dot-grid text-slate-100 flex flex-col relative selection:bg-amber-500/30 selection:text-amber-400">
+      {/* Subtle Background Dot Grid Texture */}
+      <div className="fixed inset-0 pointer-events-none bg-dot-grid z-0" />
+
       {/* Drifting Ambient HUD Grid Overlay */}
       <div className="fixed inset-0 pointer-events-none bg-hud-grid opacity-[0.03] z-0" />
 

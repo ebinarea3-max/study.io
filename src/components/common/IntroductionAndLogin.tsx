@@ -15,7 +15,7 @@ export function IntroductionAndLogin() {
   return (
     <div className="min-h-screen bg-[var(--bg)] text-slate-100 flex flex-col justify-between relative overflow-hidden selection:bg-emerald-500/30 selection:text-emerald-200">
       {/* Subtle Developer-grade Dot Grid Overlay */}
-      <div className="fixed inset-0 pointer-events-none bg-[radial-gradient(#ffffff0a_1px,transparent_1px)] [background-size:16px_16px] z-0" />
+      <div className="fixed inset-0 pointer-events-none bg-dot-grid z-0" />
 
       {/* Background ambient lighting */}
       <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-emerald-500/10 rounded-full blur-[140px] pointer-events-none" />
