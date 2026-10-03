@@ -227,7 +227,6 @@ export function Navbar({
               }`}
               style={activeTab === 'leaderboard' ? { background: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#FFFFFF', fontWeight: 600 } : undefined}
             >
-              <Trophy className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
               <span>LEADERBOARD</span>
             </button>
 

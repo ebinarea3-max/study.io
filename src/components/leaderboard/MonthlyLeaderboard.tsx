@@ -310,7 +310,7 @@ export function MonthlyLeaderboard({ isEmbedded = false }: MonthlyLeaderboardPro
               {trackerText}
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white uppercase">
-              MONTHLY LEADERBOARD
+              LEADERBOARD
             </h1>
             <p className="text-xs sm:text-sm text-zinc-400 mt-1 leading-relaxed">
               {subtext}
