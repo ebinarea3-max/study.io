@@ -1051,9 +1051,9 @@ export function StudyTimer() {
               <div className="relative hidden sm:block flex-shrink-0">
                 <button
                   onClick={() => setIsAmbientMenuOpen(!isAmbientMenuOpen)}
-                  className="bg-white/[0.04] border border-white/10 hover:border-[var(--tier-border)] text-neutral-300 text-xs px-3.5 py-2.5 rounded-2xl flex items-center gap-2 transition-all cursor-pointer select-none h-full"
+                  className="bg-white/[0.05] border border-white/15 hover:border-[var(--tier-border)] text-zinc-100 font-medium text-xs px-3.5 py-2.5 rounded-2xl flex items-center gap-2 transition-all cursor-pointer select-none h-full shadow-sm"
                 >
-                  <Music className={`w-3.5 h-3.5 ${ambientSound !== 'none' ? 'text-[var(--tier-accent)]' : 'text-neutral-400'}`} />
+                  <Music className={`w-3.5 h-3.5 ${ambientSound !== 'none' ? 'text-[var(--tier-accent)]' : 'text-zinc-300'}`} />
                   <span className="tracking-tight hidden sm:inline">
                     Atmosphere: {
                       ambientSound === 'pinknoise' ? 'Pink Noise' :
@@ -1250,9 +1250,9 @@ export function StudyTimer() {
                   </div>
 
                   {/* Status */}
-                  <div className="h-6 text-[10px] uppercase tracking-[0.2em] text-neutral-400 font-medium flex items-center justify-center gap-2 mt-2">
-                    <div className={`w-1.5 h-1.5 rounded-full ${isStudying && !isPaused ? 'bg-green-500 animate-pulse' : isPaused ? 'bg-amber-500' : 'bg-neutral-500'}`} />
-                    {!selectedSubject ? 'SELECT A SUBJECT' : isStudying && !isPaused ? 'RUNNING' : isPaused ? 'PAUSED' : 'READY TO START'}
+                  <div className="h-6 text-[11px] uppercase tracking-[0.2em] text-white/70 font-semibold flex items-center justify-center gap-2 mt-2">
+                    <div className={`w-1.5 h-1.5 rounded-full ${isStudying && !isPaused ? 'bg-green-500 animate-pulse' : isPaused ? 'bg-amber-400' : 'bg-white/50'}`} />
+                    <span>{!selectedSubject ? 'SELECT A SUBJECT' : isStudying && !isPaused ? 'RUNNING' : isPaused ? 'PAUSED' : 'READY TO START'}</span>
                   </div>
 
                   {/* Sleek Progress Line on Mobile when active */}
@@ -1510,9 +1510,9 @@ export function StudyTimer() {
               <div className="relative sm:hidden mt-3 flex justify-center w-full">
                 <button
                   onClick={() => setIsAmbientMenuOpen(!isAmbientMenuOpen)}
-                  className="bg-white/[0.04] border border-white/10 hover:border-[var(--tier-border)] text-neutral-300 text-xs px-3.5 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer select-none"
+                  className="bg-white/[0.05] border border-white/15 hover:border-[var(--tier-border)] text-zinc-100 font-medium text-xs px-3.5 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer select-none shadow-sm"
                 >
-                  <Music className={`w-3.5 h-3.5 ${ambientSound !== 'none' ? 'text-[var(--tier-accent)]' : 'text-neutral-400'}`} />
+                  <Music className={`w-3.5 h-3.5 ${ambientSound !== 'none' ? 'text-[var(--tier-accent)]' : 'text-zinc-300'}`} />
                   <span className="tracking-tight hidden sm:inline">
                     Atmosphere: {
                       ambientSound === 'pinknoise' ? 'Pink Noise' :
@@ -1642,14 +1642,19 @@ export function StudyTimer() {
               </span>
             </div>
 
-            {/* Metrics Strip */}
-            <div className="rounded-xl bg-[#05070a]/60 border border-white/[0.05] p-3 flex flex-col gap-2.5">
-              <div className="flex items-center justify-between py-1.5 border-b border-white/[0.04]">
-                <div>
-                  <div className="text-[10px] tracking-wider uppercase text-neutral-400 font-medium">TOTAL FOCUS</div>
-                  <div className="text-[10px] text-neutral-500">Recorded study duration</div>
+            {/* Metrics Strip - Single Plain List (No inner box/card-within-a-card) */}
+            <div className="flex flex-col divide-y divide-white/[0.07] mt-1">
+              {/* Row 1: Total Focus */}
+              <div className="flex items-center justify-between py-2.5 sm:py-3">
+                <div className="flex flex-col">
+                  <span className="text-[11px] font-mono tracking-wider uppercase text-zinc-300 font-semibold">
+                    TOTAL FOCUS
+                  </span>
+                  <span className="text-[11px] text-zinc-400 font-normal mt-0.5">
+                    Recorded study duration
+                  </span>
                 </div>
-                <div className="text-xl sm:text-2xl font-mono font-bold text-neutral-100 tabular-nums">
+                <div className="text-xl sm:text-2xl font-mono font-bold text-white tabular-nums">
                   {(isLoading || isLoadingSessions) && !hasHydrated ? (
                     <Skeleton className="h-6 w-20 bg-neutral-800" />
                   ) : (
@@ -1658,12 +1663,17 @@ export function StudyTimer() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between py-1.5 border-b border-white/[0.04]">
-                <div>
-                  <div className="text-[10px] tracking-wider uppercase text-neutral-400 font-medium">SESSIONS</div>
-                  <div className="text-[10px] text-neutral-500">Completed study blocks</div>
+              {/* Row 2: Sessions */}
+              <div className="flex items-center justify-between py-2.5 sm:py-3">
+                <div className="flex flex-col">
+                  <span className="text-[11px] font-mono tracking-wider uppercase text-zinc-300 font-semibold">
+                    SESSIONS
+                  </span>
+                  <span className="text-[11px] text-zinc-400 font-normal mt-0.5">
+                    Completed study blocks
+                  </span>
                 </div>
-                <div className="text-xl sm:text-2xl font-mono font-bold text-neutral-100 tabular-nums">
+                <div className="text-xl sm:text-2xl font-mono font-bold text-white tabular-nums">
                   {(isLoading || isLoadingSessions) && !hasHydrated ? (
                     <Skeleton className="h-6 w-12 bg-neutral-800" />
                   ) : (
@@ -1672,16 +1682,21 @@ export function StudyTimer() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between py-1.5">
-                <div>
-                  <div className="text-[10px] tracking-wider uppercase text-neutral-400 font-medium">ACTIVE STREAK</div>
-                  <div className="text-[10px] text-neutral-500">Daily consistency multiplier</div>
+              {/* Row 3: Active Streak */}
+              <div className="flex items-center justify-between py-2.5 sm:py-3">
+                <div className="flex flex-col">
+                  <span className="text-[11px] font-mono tracking-wider uppercase text-zinc-300 font-semibold">
+                    ACTIVE STREAK
+                  </span>
+                  <span className="text-[11px] text-zinc-400 font-normal mt-0.5">
+                    Daily consistency multiplier
+                  </span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <div className="w-4 h-4 flex items-center justify-center">
                     <Flame className="w-full h-full text-amber-500 fill-amber-500" />
                   </div>
-                  <span className="text-xl sm:text-2xl font-mono font-bold text-neutral-100 tabular-nums">
+                  <span className="text-xl sm:text-2xl font-mono font-bold text-white tabular-nums">
                     {user?.streakDays ?? 0}
                   </span>
                 </div>

@@ -431,7 +431,7 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
               type="button"
               onClick={() => handleToggleTask(item.id, item.is_completed)}
               aria-label="Mark task complete"
-              className="w-[18px] h-[18px] rounded-[4px] border-[1.5px] border-neutral-600 bg-black/40 transition-all flex items-center justify-center flex-shrink-0 cursor-pointer group-hover:border-neutral-400 active:scale-95"
+              className="w-[18px] h-[18px] rounded-[5px] border-2 border-white/40 hover:border-amber-400 bg-white/[0.04] transition-all flex items-center justify-center flex-shrink-0 cursor-pointer group-hover:border-white/70 active:scale-95 shadow-sm"
             />
 
             {/* Inline Editable Task Title */}
@@ -439,7 +439,7 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
               type="text"
               value={item.task}
               onChange={e => handleUpdateTaskText(item.id, e.target.value)}
-              className="w-full bg-transparent text-xs text-neutral-200 focus:text-white focus:outline-none py-0.5 tracking-wide leading-relaxed font-sans"
+              className="w-full bg-transparent text-xs sm:text-[13px] text-white/95 font-medium focus:text-white focus:outline-none py-0.5 tracking-normal leading-relaxed font-sans"
             />
 
             {/* Delete button on hover */}
@@ -509,7 +509,7 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
                     >
                       <Check className="w-3 h-3 stroke-[3]" />
                     </button>
-                    <span className="w-full text-xs text-neutral-500 line-through py-0.5 tracking-wide leading-relaxed truncate font-sans">
+                    <span className="w-full text-xs text-zinc-400 line-through py-0.5 tracking-normal leading-relaxed truncate font-sans">
                       {item.task}
                     </span>
                     <button

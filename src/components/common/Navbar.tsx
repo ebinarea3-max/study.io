@@ -26,6 +26,7 @@ import { TierIcon } from './TierIcon';
 import { RankCrestBadge } from './RankCrestBadge';
 import Image from 'next/image';
 import { getRankIconPath } from '../../utils/rankIcons';
+import { FacetedTrophyIcon, FacetedGearIcon } from './GeometricIcons';
 
 export type NavTabType = 'timer' | 'tasks' | 'analytics' | 'leaderboard' | 'settings';
 
@@ -227,7 +228,7 @@ export function Navbar({
               }`}
               style={activeTab === 'leaderboard' ? { background: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#FFFFFF', fontWeight: 600 } : undefined}
             >
-              <Trophy className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <FacetedTrophyIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>LEADERBOARD</span>
             </button>
           </nav>
@@ -462,7 +463,7 @@ export function Navbar({
                     onClick={() => { onOpenSettings(); setShowPersonaMenu(false); }}
                     className="w-full text-left px-3 py-2 rounded-xl text-xs font-hud font-semibold tracking-wider text-zinc-300 hover:text-white hover:bg-white/[0.06] border border-transparent hover:border-white/10 transition-all flex items-center gap-2.5 cursor-pointer active:scale-[0.99]"
                   >
-                    <Settings className="w-3.5 h-3.5 text-zinc-400" />
+                    <FacetedGearIcon className="w-3.5 h-3.5 text-zinc-400" />
                     <span>SETTINGS &amp; PREFERENCES</span>
                   </button>
 
@@ -561,7 +562,7 @@ export function Navbar({
           }`}
           aria-label="Leaderboard"
         >
-          <Trophy className="w-5 h-5" />
+          <FacetedTrophyIcon className="w-5 h-5" />
           <span className="text-[9px] font-hud font-bold tracking-widest uppercase mt-0.5">Rankings</span>
         </button>
       </div>
