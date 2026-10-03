@@ -259,3 +259,160 @@ $$ language plpgsql security definer;
 create or replace trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
+
+-- ====================================================================
+-- Model 2 Monthly Rank Soft-Reset RPC Function
+-- ====================================================================
+
+-- Migration columns for rank soft-reset tracking
+alter table public.profiles add column if not exists rp integer default 0;
+alter table public.profiles add column if not exists rank_title text default 'Bronze I';
+alter table public.profiles add column if not exists season_base_rp integer default 0;
+alter table public.profiles add column if not exists current_season_id text default to_char(now(), 'YYYY-MM');
+
+-- RPC: check_and_apply_season_reset()
+create or replace function public.check_and_apply_season_reset()
+returns jsonb
+language plpgsql
+security definer
+as $$
+declare
+  current_user_id uuid;
+  user_profile record;
+  current_month text;
+  current_month_name text;
+  prev_rp integer;
+  prev_rank text;
+  new_rank text;
+  starting_rp integer;
+begin
+  -- Resolve calling authenticated user
+  current_user_id := auth.uid();
+  if current_user_id is null then
+    return jsonb_build_object('needs_reset', false, 'error', 'Not authenticated');
+  end if;
+
+  -- Get current user profile
+  select * into user_profile from public.profiles where id = current_user_id;
+  if not found then
+    return jsonb_build_object('needs_reset', false, 'error', 'Profile not found');
+  end if;
+
+  current_month := to_char(now(), 'YYYY-MM');
+  current_month_name := trim(to_char(now(), 'Month'));
+
+  -- If user has no current_season_id, initialize it
+  if user_profile.current_season_id is null then
+    update public.profiles
+    set current_season_id = current_month,
+        rp = coalesce(rp, season_rp, 0),
+        season_rp = coalesce(season_rp, rp, 0),
+        season_base_rp = coalesce(season_base_rp, 0),
+        rank_title = coalesce(rank_title, 'Bronze I')
+    where id = current_user_id;
+    return jsonb_build_object('needs_reset', false);
+  end if;
+
+  -- If already in current season, no reset needed
+  if user_profile.current_season_id = current_month then
+    return jsonb_build_object('needs_reset', false);
+  end if;
+
+  -- Season rollover detected! Determine Model 2 soft reset thresholds:
+  prev_rp := coalesce(user_profile.season_rp, user_profile.rp, 0);
+
+  -- Determine previous rank title
+  if prev_rp >= 18000 then
+    prev_rank := 'Grandmaster';
+  elsif prev_rp >= 16200 then
+    prev_rank := 'Master';
+  elsif prev_rp >= 14400 then
+    prev_rank := 'Champion';
+  elsif prev_rp >= 12900 then
+    prev_rank := 'Diamond IV';
+  elsif prev_rp >= 11700 then
+    prev_rank := 'Diamond III';
+  elsif prev_rp >= 10500 then
+    prev_rank := 'Diamond II';
+  elsif prev_rp >= 9300 then
+    prev_rank := 'Diamond I';
+  elsif prev_rp >= 8100 then
+    prev_rank := 'Platinum IV';
+  elsif prev_rp >= 7200 then
+    prev_rank := 'Platinum III';
+  elsif prev_rp >= 6300 then
+    prev_rank := 'Platinum II';
+  elsif prev_rp >= 5400 then
+    prev_rank := 'Platinum I';
+  elsif prev_rp >= 4560 then
+    prev_rank := 'Gold IV';
+  elsif prev_rp >= 3900 then
+    prev_rank := 'Gold III';
+  elsif prev_rp >= 3300 then
+    prev_rank := 'Gold II';
+  elsif prev_rp >= 2700 then
+    prev_rank := 'Gold I';
+  elsif prev_rp >= 2160 then
+    prev_rank := 'Silver IV';
+  elsif prev_rp >= 1800 then
+    prev_rank := 'Silver III';
+  elsif prev_rp >= 1260 then
+    prev_rank := 'Silver II';
+  elsif prev_rp >= 900 then
+    prev_rank := 'Silver I';
+  elsif prev_rp >= 600 then
+    prev_rank := 'Bronze IV';
+  elsif prev_rp >= 360 then
+    prev_rank := 'Bronze III';
+  elsif prev_rp >= 180 then
+    prev_rank := 'Bronze II';
+  else
+    prev_rank := 'Bronze I';
+  end if;
+
+  -- Model 2 Monthly Soft-Reset Rules:
+  -- - Grandmaster / Master / Champion (>= 14400 RP) -> Gold II (3,300 RP)
+  -- - Diamond I-IV (9300-12900 RP) -> Gold I (2,700 RP)
+  -- - Platinum I-IV (5400-8100 RP) -> Silver II (1,260 RP)
+  -- - Gold I-IV (2700-4560 RP) -> Silver I (900 RP)
+  -- - Silver I-IV (900-2160 RP) -> Bronze II (180 RP)
+  -- - Bronze I-IV (0-600 RP) -> Bronze I (0 RP)
+  if prev_rp >= 14400 then
+    new_rank := 'Gold II';
+    starting_rp := 3300;
+  elsif prev_rp >= 9300 then
+    new_rank := 'Gold I';
+    starting_rp := 2700;
+  elsif prev_rp >= 5400 then
+    new_rank := 'Silver II';
+    starting_rp := 1260;
+  elsif prev_rp >= 2700 then
+    new_rank := 'Silver I';
+    starting_rp := 900;
+  elsif prev_rp >= 900 then
+    new_rank := 'Bronze II';
+    starting_rp := 180;
+  else
+    new_rank := 'Bronze I';
+    starting_rp := 0;
+  end if;
+
+  -- Apply soft-reset mutations to profile
+  update public.profiles
+  set current_season_id = current_month,
+      season_rp = starting_rp,
+      rp = starting_rp,
+      season_base_rp = starting_rp,
+      rank_title = new_rank
+  where id = current_user_id;
+
+  -- Return payload
+  return jsonb_build_object(
+    'needs_reset', true,
+    'previous_rank', prev_rank,
+    'new_rank', new_rank,
+    'starting_rp', starting_rp,
+    'month_name', current_month_name
+  );
+end;
+$$;

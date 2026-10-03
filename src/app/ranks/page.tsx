@@ -6,10 +6,23 @@ import { ArrowLeft, Sparkles, Play, Zap, Shield } from 'lucide-react';
 import { RANK_TIERS, getRankTier, RankTierConfig } from '../../lib/rankedSystem';
 import { RankCrestBadge } from '../../components/common/RankCrestBadge';
 import { RankSettlementModal } from '../../components/RankSettlementModal';
-import { RankSettlementData } from '../../types';
+import { SeasonResetAlertModal } from '../../components/gamification/SeasonResetAlertModal';
+import { RankSettlementData, SeasonResetData } from '../../types';
 
 export default function RanksShowcasePage() {
   const [activeModalData, setActiveModalData] = useState<RankSettlementData | null>(null);
+  const [simulatedSeasonResetData, setSimulatedSeasonResetData] = useState<SeasonResetData | null>(null);
+
+  const handleSimulateSeasonReset = () => {
+    const currentMonthName = new Date().toLocaleString('en-US', { month: 'long' });
+    setSimulatedSeasonResetData({
+      needs_reset: true,
+      previous_rank: 'Gold 2',
+      new_rank: 'Silver 2',
+      starting_rp: 1260,
+      month_name: currentMonthName,
+    });
+  };
 
   // Quick Controls Bar State
   const [selectedRankIdx, setSelectedRankIdx] = useState<number>(0);
@@ -189,11 +202,22 @@ export default function RanksShowcasePage() {
         
         {/* Quick Testing Controls Toolbar */}
         <section className="bg-[#0b0e14]/90 border border-white/[0.08] rounded-2xl p-5 sm:p-6 backdrop-blur-xl shadow-2xl relative overflow-hidden">
-          <div className="flex items-center gap-2 mb-4 pb-3 border-b border-white/[0.06]">
-            <Sparkles className="w-4 h-4 text-amber-500" />
-            <h2 className="text-sm font-bold tracking-widest uppercase text-white font-mono">
-              QUICK TESTING TOOLBAR
-            </h2>
+          <div className="flex items-center justify-between gap-4 mb-4 pb-3 border-b border-white/[0.06] flex-wrap">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-amber-500" />
+              <h2 className="text-sm font-bold tracking-widest uppercase text-white font-mono">
+                QUICK TESTING TOOLBAR
+              </h2>
+            </div>
+
+            <button
+              onClick={handleSimulateSeasonReset}
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 font-mono font-bold text-xs uppercase tracking-wider transition-all active:scale-95 cursor-pointer shadow-sm shadow-amber-500/10"
+              title="Preview Season Reset Alert Card with mock data (Gold 2 -> Silver 2, 1,260 RP)"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Simulate Season Reset</span>
+            </button>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
@@ -370,6 +394,13 @@ export default function RanksShowcasePage() {
         isOpen={Boolean(activeModalData)}
         data={activeModalData}
         onContinue={() => setActiveModalData(null)}
+      />
+
+      {/* Dev Preview / Simulation of Season Reset Alert Card Modal */}
+      <SeasonResetAlertModal
+        isOpen={Boolean(simulatedSeasonResetData)}
+        data={simulatedSeasonResetData}
+        onDismiss={() => setSimulatedSeasonResetData(null)}
       />
     </div>
   );

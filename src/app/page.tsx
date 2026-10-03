@@ -17,6 +17,7 @@ import { LevelUpModal } from '../components/gamification/LevelUpModal';
 import { XpFloatingNotification } from '../components/gamification/XpFloatingNotification';
 import { RankSettlementModal } from '../components/RankSettlementModal';
 import { SeasonRecapBanner } from '../components/gamification/SeasonRecapBanner';
+import { SeasonResetAlertModal } from '../components/gamification/SeasonResetAlertModal';
 import { TasksOverview } from '../components/todo/TasksOverview';
 import { DailyBoostModal } from '../components/common/DailyBoostModal';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
@@ -40,6 +41,8 @@ export default function Home() {
     dismissRankSettlement,
     seasonRecap,
     dismissSeasonRecap,
+    seasonResetAlert,
+    dismissSeasonResetAlert,
   } = useStudy();
 
   // Navigation tabs: Timer, Tasks, Analytics, and Settings
@@ -225,6 +228,13 @@ export default function Home() {
         onStartFocusing={handleDismissDailyBoost}
         streakDays={user?.streakDays ?? 0}
         dailyGoalHours={user?.dailyGoalHours ?? 3}
+      />
+
+      {/* Monthly Season Soft-Reset Alert Card Modal */}
+      <SeasonResetAlertModal
+        isOpen={Boolean(seasonResetAlert)}
+        data={seasonResetAlert}
+        onDismiss={dismissSeasonResetAlert}
       />
     </div>
   );

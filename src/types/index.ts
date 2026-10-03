@@ -74,6 +74,8 @@ export type UserProfile = {
   last_acknowledged_season?: string;
   username_changed_at?: string;
   rp?: number;
+  rank_title?: string;
+  season_base_rp?: number;
   last_streak_bonus_date?: string; // YYYY-MM-DD
   lastStreakBonusDate?: string;     // alias for convenience
   last_seen_level?: number;
@@ -85,6 +87,14 @@ export type UserProfile = {
     display_name?: string;
     [key: string]: unknown;
   };
+};
+
+export type SeasonResetData = {
+  needs_reset: boolean;
+  previous_rank?: string;
+  new_rank?: string;
+  starting_rp?: number;
+  month_name?: string;
 };
 
 export type RankSettlementBreakdown = {

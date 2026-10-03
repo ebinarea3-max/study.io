@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useRef, useCallback, useMemo } from 'react';
-import { Subject, StudySession, TodoItem, TimerMode, PomodoroPhase, PomodoroPreset, PomodoroCompletedPhase, RankSettlementData, SeasonRecapData, UserProfile, ActiveSession } from '../types';
+import { Subject, StudySession, TodoItem, TimerMode, PomodoroPhase, PomodoroPreset, PomodoroCompletedPhase, RankSettlementData, SeasonRecapData, SeasonResetData, UserProfile, ActiveSession } from '../types';
 import { INITIAL_TODOS, getTodayDateString, calculateStreak, cleanupLegacyDemoData } from '../lib/mockData';
 import { getLocalStartOfDay, getLocalEndOfDay, getLocalDateString } from '../lib/dateUtils';
 import { useAuth } from './AuthContext';
@@ -40,6 +40,9 @@ interface StudyContextType {
   seasonRecap: SeasonRecapData | null;
   dismissSeasonRecap: () => void;
   simulateSeasonReset: () => void;
+  seasonResetAlert: SeasonResetData | null;
+  dismissSeasonResetAlert: () => void;
+  simulateSeasonResetModal: (mockData?: Partial<SeasonResetData>) => void;
   lastXpEarned: { id: string; amount: number; reason: string; type?: 'focus' | 'todo' | 'streak' | 'general' } | null;
   levelUpData: { newLevel: number; oldLevel: number; title: string } | null;
   dismissLevelUpModal: () => void;
@@ -618,52 +621,97 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     } catch {}
   }, [user?.seasonRp, updateProfile]);
 
-  // Monthly Ranked Season Check on app launch
-  useEffect(() => {
-    const currentMonth = getCurrentSeasonId();
+  const [seasonResetAlert, setSeasonResetAlert] = useState<SeasonResetData | null>(null);
 
+  const dismissSeasonResetAlert = useCallback(() => {
+    setSeasonResetAlert(null);
     try {
-      const savedRecap = localStorage.getItem('studypulse_season_recap');
-      if (savedRecap) {
-        const parsedRecap = JSON.parse(savedRecap);
-        const safeKey = parsedRecap.newSeasonId ? parsedRecap.newSeasonId.replace('-', '_') : '';
-        const isAcknowledged = localStorage.getItem(`season_settlement_acknowledged_${safeKey}`) === 'true';
-        if (!isAcknowledged && user?.last_acknowledged_season !== parsedRecap.newSeasonId) {
-          setSeasonRecap(parsedRecap);
-        } else {
-          localStorage.removeItem('studypulse_season_recap');
+      const currentMonth = getCurrentSeasonId();
+      const safeKey = currentMonth.replace('-', '_');
+      localStorage.setItem(`season_reset_alert_acknowledged_${safeKey}`, 'true');
+    } catch {}
+  }, []);
+
+  const simulateSeasonResetModal = useCallback((mockData?: Partial<SeasonResetData>) => {
+    const currentMonthName = new Date().toLocaleString('en-US', { month: 'long' });
+    const payload: SeasonResetData = {
+      needs_reset: true,
+      previous_rank: mockData?.previous_rank || 'Gold 2',
+      new_rank: mockData?.new_rank || 'Silver 2',
+      starting_rp: mockData?.starting_rp ?? 1260,
+      month_name: mockData?.month_name || currentMonthName,
+    };
+    setSeasonResetAlert(payload);
+  }, []);
+
+  // Database Integration & Lazy Monthly Season Reset Check on app launch
+  useEffect(() => {
+    let isMounted = true;
+
+    const performSeasonResetCheck = async () => {
+      const currentMonth = getCurrentSeasonId();
+      const safeKey = currentMonth.replace('-', '_');
+
+      // Check if user already dismissed/acknowledged this month's alert in local cache
+      try {
+        const isAcknowledged = localStorage.getItem(`season_reset_alert_acknowledged_${safeKey}`) === 'true';
+        if (isAcknowledged) return;
+      } catch {}
+
+      if (!user?.id) return;
+
+      const supabase = getSupabase();
+
+      // 1. Supabase RPC check_and_apply_season_reset()
+      if (supabase && !user.id.startsWith('user-scholar') && !user.id.startsWith('guest')) {
+        try {
+          const { data, error } = await supabase.rpc('check_and_apply_season_reset');
+          if (!error && data) {
+            const parsedData: SeasonResetData =
+              typeof data === 'string' ? JSON.parse(data) : (data as SeasonResetData);
+
+            if (parsedData && parsedData.needs_reset) {
+              if (isMounted) {
+                updateProfile({
+                  rp: parsedData.starting_rp,
+                  seasonRp: parsedData.starting_rp,
+                  rank_title: parsedData.new_rank,
+                  season_base_rp: parsedData.starting_rp,
+                  currentSeasonId: currentMonth,
+                });
+                setSeasonResetAlert(parsedData);
+              }
+              return;
+            }
+          }
+        } catch (rpcErr) {
+          console.warn('[StudyContext] Supabase check_and_apply_season_reset RPC call:', rpcErr);
         }
       }
-    } catch {}
 
-    if (user && user.id && !user.id.startsWith('user-scholar')) {
+      // 2. Client-side Model 2 check (graceful fallback for local dev, offline, or prior to RPC migration)
       if (user.currentSeasonId && user.currentSeasonId !== currentMonth) {
-        const safeKey = currentMonth.replace('-', '_');
-        const isAcknowledged = localStorage.getItem(`season_settlement_acknowledged_${safeKey}`) === 'true';
-        
-        const prevSeason = user.currentSeasonId;
         const prevRP = user.seasonRp ?? user.rp ?? 0;
         const reset = calculateSeasonReset(prevRP);
+        const currentMonthName = new Date().toLocaleString('en-US', { month: 'long' });
 
-        const recap: SeasonRecapData = {
-          previousSeasonId: prevSeason,
-          newSeasonId: currentMonth,
-          previousRP: prevRP,
-          previousTierTitle: reset.previousTier.fullTitle,
-          newRP: reset.newRP,
-          newTierTitle: reset.newTier.fullTitle,
+        const resetAlertData: SeasonResetData = {
+          needs_reset: true,
+          previous_rank: reset.previousTier.fullTitle,
+          new_rank: reset.newTier.fullTitle,
+          starting_rp: reset.newRP,
+          month_name: currentMonthName,
         };
 
-        updateProfile({
-          currentSeasonId: currentMonth,
-          seasonRp: reset.newRP,
-        });
-
-        if (!isAcknowledged && user.last_acknowledged_season !== currentMonth) {
-          setSeasonRecap(recap);
-          try {
-            localStorage.setItem('studypulse_season_recap', JSON.stringify(recap));
-          } catch {}
+        if (isMounted) {
+          updateProfile({
+            rp: reset.newRP,
+            seasonRp: reset.newRP,
+            rank_title: reset.newTier.fullTitle,
+            season_base_rp: reset.newRP,
+            currentSeasonId: currentMonth,
+          });
+          setSeasonResetAlert(resetAlertData);
         }
       } else if (!user.currentSeasonId) {
         updateProfile({
@@ -671,8 +719,14 @@ export function StudyProvider({ children }: { children: ReactNode }) {
           seasonRp: user.seasonRp ?? user.rp ?? 0,
         });
       }
-    }
-  }, [user?.id, user?.currentSeasonId, user?.seasonRp, user?.last_acknowledged_season, updateProfile]);
+    };
+
+    performSeasonResetCheck();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id, user?.currentSeasonId, user?.seasonRp, updateProfile]);
 
   // Compute total focus time in seconds from all saved sessions
   const totalStudySeconds = useMemo(() => {
@@ -3185,6 +3239,9 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         seasonRecap,
         dismissSeasonRecap,
         simulateSeasonReset,
+        seasonResetAlert,
+        dismissSeasonResetAlert,
+        simulateSeasonResetModal,
         lastXpEarned,
         levelUpData,
         dismissLevelUpModal,

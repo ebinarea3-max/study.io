@@ -568,3 +568,81 @@ export function getSeasonDisplayName(seasonId: string): string {
   const monthName = monthNames[mIndex] || month;
   return `Season ${monthName} ${year}`;
 }
+
+/**
+ * Resolve rank badge image path from rank name/title (e.g. "Gold 2", "GOLD II", "Silver II")
+ */
+export function getRankBadgePath(rankTitleOrTier?: string): string {
+  if (!rankTitleOrTier) return '/images/ranks/bronze-1.png';
+  const str = rankTitleOrTier.trim();
+
+  if (str.startsWith('/images/ranks/')) return str;
+  if (str.startsWith('/ranks/')) {
+    return str.replace('/ranks/', '/images/ranks/');
+  }
+
+  const clean = str.toLowerCase().replace(/_/g, ' ').replace(/-/g, ' ');
+
+  // Direct match against RANK_TIERS fullTitle or tier
+  const directMatch = RANK_TIERS.find(
+    (t) =>
+      t.fullTitle.toLowerCase() === clean ||
+      t.tier.toLowerCase() === clean ||
+      `${t.tier.toLowerCase()} ${t.division.toLowerCase()}`.trim() === clean
+  );
+  if (directMatch?.imagePath) return directMatch.imagePath;
+
+  const romanToNum: Record<string, string> = {
+    iv: '4',
+    '4': '4',
+    iii: '3',
+    '3': '3',
+    ii: '2',
+    '2': '2',
+    i: '1',
+    '1': '1',
+  };
+
+  const tiers = [
+    'grandmaster',
+    'master',
+    'champion',
+    'diamond',
+    'platinum',
+    'gold',
+    'silver',
+    'bronze',
+  ];
+
+  for (const tier of tiers) {
+    if (clean.includes(tier)) {
+      if (['grandmaster', 'master', 'champion'].includes(tier)) {
+        return `/images/ranks/${tier}.png`;
+      }
+      for (const [key, num] of Object.entries(romanToNum)) {
+        const regex = new RegExp(`(^|\\s|-)(${key})($|\\s|-)`, 'i');
+        if (regex.test(clean)) {
+          return `/images/ranks/${tier}-${num}.png`;
+        }
+      }
+      return `/images/ranks/${tier}-1.png`;
+    }
+  }
+
+  return '/images/ranks/bronze-1.png';
+}
+
+/**
+ * Resolve rank configuration by title or tier
+ */
+export function getRankConfigByTitle(rankTitleOrTier?: string): RankTierConfig {
+  if (!rankTitleOrTier) return RANK_TIERS[0];
+  const clean = rankTitleOrTier.trim().toLowerCase();
+  const found = RANK_TIERS.find(
+    (t) =>
+      t.fullTitle.toLowerCase() === clean ||
+      t.tier.toLowerCase() === clean ||
+      `${t.tier.toLowerCase()} ${t.division.toLowerCase()}`.trim() === clean
+  );
+  return found || RANK_TIERS[0];
+}

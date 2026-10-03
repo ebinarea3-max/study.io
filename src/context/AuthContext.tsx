@@ -630,6 +630,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (updates.level !== undefined && Number(updates.level) !== Number(prev.level)) {
           payload.level = Number(updates.level);
         }
+        if (updates.rp !== undefined) {
+          payload.rp = Number(updates.rp);
+        }
+        if (updates.seasonRp !== undefined) {
+          payload.season_rp = Number(updates.seasonRp);
+        }
+        if (updates.rank_title !== undefined) {
+          payload.rank_title = updates.rank_title;
+        }
+        if (updates.season_base_rp !== undefined) {
+          payload.season_base_rp = Number(updates.season_base_rp);
+        }
+        if (updates.currentSeasonId !== undefined) {
+          payload.current_season_id = updates.currentSeasonId;
+        }
 
         if (Object.keys(payload).length > 0) {
           supabase
