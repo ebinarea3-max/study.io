@@ -73,9 +73,10 @@ function getFilterStartDate(timeframe: LeaderboardTimeframe): Date | null {
 
 interface MonthlyLeaderboardProps {
   isEmbedded?: boolean;
+  isActiveTab?: boolean;
 }
 
-export function MonthlyLeaderboard({ isEmbedded = false }: MonthlyLeaderboardProps) {
+export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: MonthlyLeaderboardProps) {
   const { user } = useAuth();
   const { sessions } = useStudy();
 
@@ -267,6 +268,11 @@ export function MonthlyLeaderboard({ isEmbedded = false }: MonthlyLeaderboardPro
 
   // Setup IntersectionObserver on current user's row in the list
   useEffect(() => {
+    if (!isActiveTab) {
+      setIsCurrentUserRowVisible(true);
+      return;
+    }
+
     const target = currentUserRowRef.current;
     if (!target) {
       setIsCurrentUserRowVisible(true);
@@ -284,7 +290,7 @@ export function MonthlyLeaderboard({ isEmbedded = false }: MonthlyLeaderboardPro
 
     observer.observe(target);
     return () => observer.disconnect();
-  }, [leaderboard, currentUserEntry]);
+  }, [leaderboard, currentUserEntry, isActiveTab]);
 
   // Smooth scroll to user row when clicking the sticky bottom bar
   const scrollToCurrentUser = () => {
@@ -486,8 +492,8 @@ export function MonthlyLeaderboard({ isEmbedded = false }: MonthlyLeaderboardPro
           )}
         </div>
 
-        {/* Sticky Pinned User Standing Strip (Displays when user's row is not in viewport) */}
-        {!isCurrentUserRowVisible && currentUserEntry && (
+        {/* Sticky Pinned User Standing Strip (Displays ONLY when actively viewing Leaderboard AND user's row is not in viewport) */}
+        {isActiveTab && !isCurrentUserRowVisible && currentUserEntry && (
           <div className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-4xl z-30 animate-in slide-in-from-bottom-3 duration-200">
             <div className="w-full flex flex-col">
               <div className="text-[10px] font-mono uppercase tracking-widest text-amber-400 mb-1.5 pl-3 font-semibold flex items-center gap-1.5">
