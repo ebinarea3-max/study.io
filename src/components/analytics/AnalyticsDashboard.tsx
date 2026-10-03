@@ -626,19 +626,16 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
   return (
     <div className="w-full space-y-5 sm:space-y-6 text-slate-100">
       {/* 1. Top Row — 3 Focus Time Metric Cards (Chronological Granularity: Today -> Week -> Month) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-4">
+      <div className="grid grid-cols-3 md:grid-cols-3 gap-2 md:gap-4 w-full">
         {/* Card 1 (Left): Focus Time of Today */}
-        <div className="hud-surface border border-[var(--border)] rounded-2xl p-3.5 sm:p-4 relative flex flex-col justify-between overflow-hidden group">
-          <div
-            className="h-1 w-8 rounded-full mb-2.5 transition-all"
-            style={{ backgroundColor: theme.accent, boxShadow: `0 0 10px ${theme.glow}` }}
-          />
-          <div className="font-hud-mono text-[10px] uppercase font-bold tracking-wider text-neutral-400 leading-tight">
-            Focus Time // Today
-          </div>
-          <div className="font-hud font-bold text-2xl sm:text-3xl text-white tracking-wide mt-1 truncate tabular-nums">
+        <div className="p-2.5 md:p-4 rounded-xl md:rounded-2xl bg-[#0b0e14]/90 border border-white/[0.07] flex flex-col justify-between relative overflow-hidden group">
+          <div className="w-4 md:w-6 h-0.5 md:h-1 bg-amber-500 rounded-full mb-1.5" />
+          <span className="text-[9px] sm:text-xs md:text-sm font-mono tracking-wider uppercase text-neutral-400 font-medium truncate leading-tight">
+            <span className="hidden md:inline">FOCUS TIME // </span>TODAY
+          </span>
+          <div className="text-sm sm:text-lg md:text-2xl font-mono font-bold text-neutral-100 tabular-nums mt-1 truncate">
             {(isLoading || isLoadingSessions) && !hasHydrated ? (
-              <Skeleton className="h-7 w-24 my-0.5 bg-neutral-800" />
+              <Skeleton className="h-5 sm:h-6 md:h-7 w-12 sm:w-16 md:w-24 my-0.5 bg-neutral-800" />
             ) : (
               formatHoursAndMins(topMetrics.todayFocusSec)
             )}
@@ -646,17 +643,14 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
         </div>
 
         {/* Card 2 (Center): Focus Time of This Week */}
-        <div className="hud-surface border border-[var(--border)] rounded-2xl p-3.5 sm:p-4 relative flex flex-col justify-between overflow-hidden group">
-          <div
-            className="h-1 w-8 rounded-full mb-2.5 transition-all"
-            style={{ backgroundColor: theme.accent, boxShadow: `0 0 10px ${theme.glow}` }}
-          />
-          <div className="font-hud-mono text-[10px] uppercase font-bold tracking-wider text-neutral-400 leading-tight">
-            Focus Time // This Week
-          </div>
-          <div className="font-hud font-bold text-2xl sm:text-3xl text-white tracking-wide mt-1 truncate tabular-nums">
+        <div className="p-2.5 md:p-4 rounded-xl md:rounded-2xl bg-[#0b0e14]/90 border border-white/[0.07] flex flex-col justify-between relative overflow-hidden group">
+          <div className="w-4 md:w-6 h-0.5 md:h-1 bg-amber-500 rounded-full mb-1.5" />
+          <span className="text-[9px] sm:text-xs md:text-sm font-mono tracking-wider uppercase text-neutral-400 font-medium truncate leading-tight">
+            <span className="hidden md:inline">FOCUS TIME // </span>THIS WEEK
+          </span>
+          <div className="text-sm sm:text-lg md:text-2xl font-mono font-bold text-neutral-100 tabular-nums mt-1 truncate">
             {(isLoading || isLoadingSessions) && !hasHydrated ? (
-              <Skeleton className="h-7 w-24 my-0.5 bg-neutral-800" />
+              <Skeleton className="h-5 sm:h-6 md:h-7 w-12 sm:w-16 md:w-24 my-0.5 bg-neutral-800" />
             ) : (
               formatHoursAndMins(topMetrics.thisWeekFocusSec)
             )}
@@ -664,17 +658,14 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
         </div>
 
         {/* Card 3 (Right): Focus Time of This Month */}
-        <div className="hud-surface border border-[var(--border)] rounded-2xl p-3.5 sm:p-4 relative flex flex-col justify-between overflow-hidden group">
-          <div
-            className="h-1 w-8 rounded-full mb-2.5 transition-all"
-            style={{ backgroundColor: theme.accent, boxShadow: `0 0 10px ${theme.glow}` }}
-          />
-          <div className="font-hud-mono text-[10px] uppercase font-bold tracking-wider text-neutral-400 leading-tight">
-            Focus Time // This Month
-          </div>
-          <div className="font-hud font-bold text-2xl sm:text-3xl text-white tracking-wide mt-1 truncate tabular-nums">
+        <div className="p-2.5 md:p-4 rounded-xl md:rounded-2xl bg-[#0b0e14]/90 border border-white/[0.07] flex flex-col justify-between relative overflow-hidden group">
+          <div className="w-4 md:w-6 h-0.5 md:h-1 bg-amber-500 rounded-full mb-1.5" />
+          <span className="text-[9px] sm:text-xs md:text-sm font-mono tracking-wider uppercase text-neutral-400 font-medium truncate leading-tight">
+            <span className="hidden md:inline">FOCUS TIME // </span>THIS MONTH
+          </span>
+          <div className="text-sm sm:text-lg md:text-2xl font-mono font-bold text-neutral-100 tabular-nums mt-1 truncate">
             {(isLoading || isLoadingSessions) && !hasHydrated ? (
-              <Skeleton className="h-7 w-24 my-0.5 bg-neutral-800" />
+              <Skeleton className="h-5 sm:h-6 md:h-7 w-12 sm:w-16 md:w-24 my-0.5 bg-neutral-800" />
             ) : (
               formatHoursAndMins(topMetrics.thisMonthFocusSec)
             )}

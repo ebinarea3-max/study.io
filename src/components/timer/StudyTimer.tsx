@@ -767,16 +767,18 @@ export function StudyTimer() {
       <div className="w-full h-full flex flex-col justify-between max-md:overflow-hidden md:overflow-visible space-y-0 md:space-y-3">
         {/* Main Timer Game-HUD Card with Targeting Reticle Corner Brackets */}
         <div
-          className="relative w-full h-full rounded-3xl bg-[var(--surface)] backdrop-blur-xl border border-[var(--border)] p-5 sm:p-6 shadow-xl max-md:overflow-hidden md:overflow-hidden flex flex-col transition-all"
-          
+          className="relative w-full h-full rounded-2xl bg-[#0b0e14]/90 border border-white/[0.07] p-5 sm:p-8 shadow-2xl relative overflow-hidden backdrop-blur-xl flex flex-col justify-between transition-all"
         >
+          {/* Dial Backlight Illumination */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none -z-0">
+            <div className="w-80 h-80 rounded-full bg-amber-500/[0.05] blur-3xl" />
+          </div>
+
           {/* Angular Targeting Reticle Corner Brackets */}
           <div className="hud-corner-bracket hud-corner-tl" />
           <div className="hud-corner-bracket hud-corner-tr" />
           <div className="hud-corner-bracket hud-corner-bl" />
           <div className="hud-corner-bracket hud-corner-br" />
-
-          {/* Subtle Ambient Glow */}
 
           {/* Session Resumed Alert Banner */}
           {showRecoveryBanner && (
@@ -797,53 +799,82 @@ export function StudyTimer() {
 
           <div className="flex flex-col items-center gap-2 w-full relative z-20">
           {/* Top Controls: Mode Switcher, Preset Selector & Focus Mode Button */}
-          <div className="w-full flex flex-wrap items-center max-md:justify-center justify-between gap-2.5 sm:gap-4 relative z-10 pb-4 max-md:border-b-0 border-b border-[var(--border)] flex-shrink-0">
+          <div className="w-full flex flex-wrap items-center max-md:justify-center justify-between gap-2.5 sm:gap-4 relative z-10 pb-4 max-md:border-b-0 border-b border-white/[0.06] flex-shrink-0">
             <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-              {/* Mode Pill Toggle */}
-              <div className="grid grid-cols-3 gap-1 p-0.5 sm:p-1 rounded-2xl bg-[var(--bg)] border border-[var(--border)]">
+              {/* Mode Pill Toggle - Sleek recessed capsule */}
+              <div className="flex items-center gap-1 bg-[#05070a] border border-white/[0.06] p-1 rounded-xl">
                 <button
                   onClick={() => { if (!isStudying) setTimerMode('stopwatch'); }}
                   disabled={isStudying}
-                  className={`px-2 sm:px-4 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-hud font-bold tracking-wider transition-all active:scale-95 ${
+                  className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-mono font-medium tracking-wider uppercase transition-all ${
                     timerMode === 'stopwatch'
-                      ? 'text-slate-950 shadow-sm'
-                      : 'text-neutral-400 hover:text-white'
+                      ? 'bg-neutral-800 text-white font-medium shadow-sm'
+                      : 'text-neutral-400 hover:text-neutral-200 transition-colors'
                   } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
-                  style={timerMode === 'stopwatch' ? { backgroundColor: 'rgba(255, 255, 255, 0.1)', color: '#FFFFFF', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' } : { color: '#94A3B8' }}
                 >
                   <span className="hidden sm:inline">STOPWATCH</span><span className="sm:hidden">STOP</span>
                 </button>
                 <button
                   onClick={() => { if (!isStudying) setTimerMode('countdown'); }}
                   disabled={isStudying}
-                  className={`px-2 sm:px-4 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-hud font-bold tracking-wider transition-all active:scale-95 ${
+                  className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-mono font-medium tracking-wider uppercase transition-all ${
                     timerMode === 'countdown'
-                      ? 'text-slate-950 shadow-sm'
-                      : 'text-neutral-400 hover:text-white'
+                      ? 'bg-neutral-800 text-white font-medium shadow-sm'
+                      : 'text-neutral-400 hover:text-neutral-200 transition-colors'
                   } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
-                  style={timerMode === 'countdown' ? { backgroundColor: 'rgba(255, 255, 255, 0.1)', color: '#FFFFFF', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' } : { color: '#94A3B8' }}
                 >
                   <span className="hidden sm:inline">COUNTDOWN</span><span className="sm:hidden">TIMER</span>
                 </button>
                 <button
                   onClick={() => { if (!isStudying) setTimerMode('pomodoro'); }}
                   disabled={isStudying}
-                  className={`px-2 sm:px-4 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-hud font-bold tracking-wider transition-all active:scale-95 ${
+                  className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-mono font-medium tracking-wider uppercase transition-all ${
                     timerMode === 'pomodoro'
-                      ? 'text-slate-950 shadow-sm'
-                      : 'text-neutral-400 hover:text-white'
+                      ? 'bg-neutral-800 text-white font-medium shadow-sm'
+                      : 'text-neutral-400 hover:text-neutral-200 transition-colors'
                   } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
-                  style={timerMode === 'pomodoro' ? { backgroundColor: 'rgba(255, 255, 255, 0.1)', color: '#FFFFFF', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' } : { color: '#94A3B8' }}
                 >
                   <span className="hidden sm:inline">POMODORO</span><span className="sm:hidden">POMO</span>
                 </button>
               </div>
 
-              
-              {/* Clean Pill/Segment Preset Selector (25/5 and 50/10) */}
+              {/* Countdown Preset Pills */}
+              {timerMode === 'countdown' && (
+                <div
+                  className="flex items-center gap-1 p-0.5 sm:p-1 rounded-xl bg-[#05070a] border border-white/[0.06] animate-in fade-in zoom-in-95 duration-200"
+                  title={isStudying ? "Countdown presets are locked while session is running" : "Choose timer duration preset"}
+                >
+                  {[
+                    { label: '15m', sec: 15 * 60 },
+                    { label: '30m', sec: 30 * 60 },
+                    { label: '45m', sec: 45 * 60 },
+                    { label: '60m', sec: 60 * 60 },
+                  ].map(preset => {
+                    const isActive = countdownTarget === preset.sec;
+                    return (
+                      <button
+                        key={preset.sec}
+                        onClick={() => {
+                          if (!isStudying) setCountdownTarget(preset.sec);
+                        }}
+                        disabled={isStudying}
+                        className={`px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg font-mono text-xs transition-all ${
+                          isActive
+                            ? 'border border-amber-500/70 bg-amber-500/10 text-amber-400 font-semibold shadow-[0_0_12px_rgba(245,158,11,0.2)]'
+                            : 'bg-[#121620]/60 border border-white/[0.06] text-neutral-300 hover:border-amber-500/40 hover:text-amber-300'
+                        } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+                      >
+                        {preset.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Pomodoro Preset Pills */}
               {timerMode === 'pomodoro' && (
                 <div
-                  className="flex items-center gap-1 p-0.5 sm:p-1 rounded-2xl bg-black/60 border border-[var(--border)] animate-in fade-in zoom-in-95 duration-200"
+                  className="flex items-center gap-1 p-0.5 sm:p-1 rounded-xl bg-[#05070a] border border-white/[0.06] animate-in fade-in zoom-in-95 duration-200"
                   title={isStudying ? "Interval presets are locked while session is running" : "Choose focus / break interval preset"}
                 >
                   <button
@@ -851,10 +882,10 @@ export function StudyTimer() {
                       if (!isStudying) setPomodoroPreset('25/5');
                     }}
                     disabled={isStudying}
-                    className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 active:scale-95 ${
+                    className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg font-mono text-xs transition-all flex items-center gap-1 ${
                       pomodoroPreset === '25/5'
-                        ? 'bg-white/10 text-white border-white/20 shadow-sm'
-                        : 'text-neutral-400 hover:text-white border border-transparent'
+                        ? 'border border-amber-500/70 bg-amber-500/10 text-amber-400 font-semibold shadow-[0_0_12px_rgba(245,158,11,0.2)]'
+                        : 'bg-[#121620]/60 border border-white/[0.06] text-neutral-300 hover:border-amber-500/40 hover:text-amber-300'
                     } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
                     title="25m Focus / 5m Break (Standard)"
                   >
@@ -866,17 +897,15 @@ export function StudyTimer() {
                       if (!isStudying) setPomodoroPreset('50/10');
                     }}
                     disabled={isStudying}
-                    className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 active:scale-95 ${
+                    className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg font-mono text-xs transition-all flex items-center gap-1 ${
                       pomodoroPreset === '50/10'
-                        ? 'bg-white/10 text-white border-white/20 shadow-sm'
-                        : 'text-neutral-400 hover:text-white border border-transparent'
+                        ? 'border border-amber-500/70 bg-amber-500/10 text-amber-400 font-semibold shadow-[0_0_12px_rgba(245,158,11,0.2)]'
+                        : 'bg-[#121620]/60 border border-white/[0.06] text-neutral-300 hover:border-amber-500/40 hover:text-amber-300'
                     } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
                     title="50m Focus / 10m Break (Deep Work)"
                   >
                     <span>50 / 10</span>
                   </button>
-
-
                 </div>
               )}
             </div>
@@ -1115,16 +1144,16 @@ export function StudyTimer() {
 
           {/* Center Timer Display - Game HUD Radar / Reactor Core Display */}
           <div className="relative z-10 flex flex-col items-center justify-center py-4 sm:py-8 my-auto w-full">
-            <div className="relative flex items-center justify-center group p-2 sm:p-4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 mx-auto aspect-square rounded-full flex-shrink-0">
-              {/* Outer Tier Accent Ambient Halo */}
+            <div className="relative flex items-center justify-center group p-0 sm:p-4 w-full sm:w-80 sm:h-80 md:w-96 md:h-96 mx-auto sm:aspect-square sm:rounded-full flex-shrink-0">
+              {/* Outer Tier Accent Ambient Halo (Desktop) */}
               <div
-                className="absolute inset-[-10%] rounded-full blur-3xl pointer-events-none opacity-[0.05] bg-[radial-gradient(circle_at_center,rgba(var(--tier-accent-rgb),0.08)_0%,transparent_70%)]"
+                className="hidden sm:block absolute inset-[-10%] rounded-full blur-3xl pointer-events-none opacity-[0.05] bg-[radial-gradient(circle_at_center,rgba(var(--tier-accent-rgb),0.08)_0%,transparent_70%)]"
               />
 
-              {/* Segmented Radar / Reactor Core SVG Ring */}
+              {/* Segmented Radar / Reactor Core SVG Ring (Desktop) */}
               <svg
                 viewBox="0 0 300 300"
-                className="absolute inset-0 w-full h-full pointer-events-none select-none"
+                className="hidden sm:block absolute inset-0 w-full h-full pointer-events-none select-none"
               >
                 <defs>
                   <linearGradient id="timerTierGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -1190,23 +1219,21 @@ export function StudyTimer() {
                 />
               </svg>
 
+              {/* Inner Dial (Border and background removed on mobile to eliminate oval appearance) */}
+              <div className="w-full sm:w-64 sm:h-64 md:w-80 md:h-80 border-0 sm:border sm:border-white/[0.08] bg-transparent sm:bg-[#0c0d12]/60 sm:backdrop-blur-sm sm:rounded-full relative sm:shadow-[inset_0_1px_1px_rgba(255,255,255,0.06),0_12px_40px_rgba(0,0,0,0.6)] flex-shrink-0 flex flex-col items-center justify-center">
+                {/* Minimal Tick Marks (12, 3, 6, 9) - Desktop only */}
+                <div className="hidden sm:block absolute top-4 left-1/2 -translate-x-1/2 w-0.5 h-2 bg-white/10 rounded-full" />
+                <div className="hidden sm:block absolute bottom-4 left-1/2 -translate-x-1/2 w-0.5 h-2 bg-white/10 rounded-full" />
+                <div className="hidden sm:block absolute left-4 top-1/2 -translate-y-1/2 w-2 h-0.5 bg-white/10 rounded-full" />
+                <div className="hidden sm:block absolute right-4 top-1/2 -translate-y-1/2 w-2 h-0.5 bg-white/10 rounded-full" />
 
-
-              {/* Inner Dial */}
-              <div className="w-72 h-72 md:w-80 md:h-80 rounded-full border border-white/[0.08] bg-[#0c0d12]/60 backdrop-blur-sm relative shadow-[inset_0_1px_1px_rgba(255,255,255,0.06),0_12px_40px_rgba(0,0,0,0.6)]">
-                {/* Minimal Tick Marks (12, 3, 6, 9) properly anchored */}
-                <div className="absolute top-4 left-1/2 -translate-x-1/2 w-0.5 h-2 bg-white/10 rounded-full" />
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-0.5 h-2 bg-white/10 rounded-full" />
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 w-2 h-0.5 bg-white/10 rounded-full" />
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 w-2 h-0.5 bg-white/10 rounded-full" />
-
-                {/* Absolute Centered Content Wrapper */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10 [&>div]:pointer-events-auto">
-                  {/* Spacer to mathematically balance the vertical flex center against the status pill below */}
-                  <div className="h-6 mt-2" aria-hidden="true" />
+                {/* Centered Content Wrapper */}
+                <div className="relative sm:absolute sm:inset-0 flex flex-col items-center justify-center pointer-events-none z-10 [&>div]:pointer-events-auto py-2 sm:py-0 w-full">
+                  {/* Spacer to mathematically balance the vertical flex center against the status pill below on desktop */}
+                  <div className="hidden sm:block h-6 mt-2" aria-hidden="true" />
                   
                   {/* Big Technical Digital Numbers */}
-                  <div className={`font-mono tabular-nums text-5xl md:text-6xl font-bold tracking-tight text-white/95 drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)] w-full text-center flex justify-center ${isEditingCountdown ? '' : '-translate-x-1.5 md:-translate-x-2'}`}>
+                  <div className={`font-mono tabular-nums tracking-tight font-bold text-white drop-shadow-[0_0_24px_rgba(255,255,255,0.12)] text-5xl md:text-6xl w-full text-center flex justify-center ${isEditingCountdown ? '' : '-translate-x-1.5 md:-translate-x-2'}`}>
                     {timerMode === 'countdown' && !isStudying ? (
                       isEditingCountdown ? (
                         <CountdownEditor 
@@ -1236,6 +1263,16 @@ export function StudyTimer() {
                     <div className={`w-1.5 h-1.5 rounded-full ${isStudying && !isPaused ? 'bg-green-500 animate-pulse' : isPaused ? 'bg-amber-500' : 'bg-neutral-500'}`} />
                     {!selectedSubject ? 'SELECT A SUBJECT' : isStudying && !isPaused ? 'RUNNING' : isPaused ? 'PAUSED' : 'READY TO START'}
                   </div>
+
+                  {/* Sleek Progress Line on Mobile when active */}
+                  {isStudying && progressPercent > 0 && (
+                    <div className="sm:hidden w-36 h-1 bg-white/10 rounded-full overflow-hidden mt-3">
+                      <div
+                        className="h-full bg-[var(--accent)] transition-all duration-300 rounded-full"
+                        style={{ width: `${progressPercent}%` }}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -1389,13 +1426,13 @@ export function StudyTimer() {
                   <span>START FOCUS SESSION</span>
                 </button>
               ) : !isStudying ? (
-                /* 1. IDLE State: Beveled HUD Button */
+                /* 1. IDLE State: Primary Tactical Amber CTA Button */
                 <button
                   onClick={handleStartSession}
                   disabled={!selectedSubject?.id || isSaving || isRemoteTransitioning}
-                  className={`group relative overflow-hidden bg-gradient-to-r from-amber-500 via-amber-600 to-orange-500 hover:brightness-110 text-black font-semibold text-sm tracking-wide px-8 py-3.5 rounded-xl shadow-[0_4px_24px_rgba(245,158,11,0.25)] transition-all flex items-center justify-center gap-2 w-full xs:w-auto hover:scale-[1.01] active:scale-[0.99] ${
+                  className={`w-full py-4 rounded-xl font-bold font-mono tracking-wider uppercase text-black bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 shadow-[0_0_25px_rgba(245,158,11,0.25)] hover:shadow-[0_0_35px_rgba(245,158,11,0.4)] hover:brightness-105 active:scale-[0.99] transition-all duration-200 flex items-center justify-center gap-2 ${
                     !selectedSubject?.id || isRemoteTransitioning
-                      ? 'opacity-40 cursor-not-allowed shadow-none hover:scale-100'
+                      ? 'opacity-40 cursor-not-allowed shadow-none hover:brightness-100 hover:shadow-none'
                       : 'cursor-pointer'
                   }`}
                   title={!selectedSubject?.id ? 'Please select a subject before starting the timer' : 'Start Focus Session'}
@@ -1564,142 +1601,116 @@ export function StudyTimer() {
         
       </div>
 
-      {/* Right Secondary Column (Todo List, Daily Overview & Today's Boost - Home Page Sidebar, exclusively rendered in Tasks tab on mobile) */}
-      <div className="hidden lg:flex w-full flex-col justify-start h-full space-y-4 pr-2 md:overflow-visible">
-        {/* 1. Todo List Card - Google Notes / Keep Checklist */}
-        <DailyTodoList />
+      {/* Right Secondary Column - Continuous Unified Obsidian Panel */}
+      <div className="hidden lg:flex w-full flex-col justify-start h-full pr-2 md:overflow-visible">
+        <div className="bg-[#0b0e14]/90 border border-white/[0.07] rounded-2xl p-5 sm:p-6 shadow-2xl backdrop-blur-xl flex flex-col gap-5 relative overflow-hidden">
+          {/* Section 1: Todo List */}
+          <DailyTodoList isEmbedded={true} />
 
-        {/* 2. Unified HUD Stat Readout Panel */}
-        <div
-          className="rounded-2xl bg-[var(--surface)] backdrop-blur-xl border border-[var(--border)] py-3 px-4 shadow-xl space-y-2.5 transition-all relative overflow-hidden"
-          style={{ borderTop: "1px solid rgba(99, 102, 241, 0.4)" }}
-        >
-          <div className="hud-corner-bracket hud-corner-tl" />
-          <div className="hud-corner-bracket hud-corner-tr" />
-          <div className="hud-corner-bracket hud-corner-bl" />
-          <div className="hud-corner-bracket hud-corner-br" />
+          {/* Hairline Section Divider */}
+          <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-white/[0.08] to-transparent" />
 
-          {/* Ambient Tier Glow */}
-          <div
-            className="absolute -top-12 -right-12 w-32 h-32 rounded-full blur-2xl pointer-events-none opacity-20"
-            style={{ backgroundColor: 'var(--accent)' }}
-          />
+          {/* Section 2: Daily Overview */}
+          <div className="flex flex-col gap-3 relative z-10">
+            <div className="flex items-center justify-between pb-2 border-b border-white/[0.06]">
+              <div className="text-[11px] font-mono tracking-[0.18em] uppercase text-neutral-400 font-semibold flex items-center gap-2">
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                <span>DAILY OVERVIEW</span>
+              </div>
+              {/* Today vs Yesterday Toggle */}
+              <div className="flex items-center gap-1 p-0.5 rounded-lg bg-[#05070a] border border-white/[0.06] text-xs font-mono">
+                <button
+                  onClick={() => setOverviewView('today')}
+                  className={`px-2.5 py-1 rounded-md tracking-wider uppercase transition-all cursor-pointer ${
+                    overviewView === 'today'
+                      ? 'bg-neutral-800 text-white font-medium shadow-sm'
+                      : 'text-neutral-400 hover:text-neutral-200'
+                  }`}
+                >
+                  TODAY
+                </button>
+                <button
+                  onClick={() => setOverviewView('yesterday')}
+                  className={`px-2.5 py-1 rounded-md tracking-wider uppercase transition-all cursor-pointer ${
+                    overviewView === 'yesterday'
+                      ? 'bg-neutral-800 text-white font-medium shadow-sm'
+                      : 'text-neutral-400 hover:text-neutral-200'
+                  }`}
+                >
+                  YESTERDAY
+                </button>
+              </div>
+            </div>
 
-          <div className="flex items-center justify-between pb-2.5 border-b border-[var(--border)] relative z-10">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-amber-400/80" />
-              <span className="text-sm font-bold tracking-wider text-neutral-200 uppercase">
-                DAILY OVERVIEW
+            <div className="flex items-center justify-between text-[10px] font-mono tracking-wider text-neutral-400">
+              <span>{overviewView === 'today' ? "TODAY'S METRICS" : "YESTERDAY'S METRICS"}</span>
+              <span>
+                {overviewView === 'today'
+                  ? new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+                  : new Date(Date.now() - 86400000).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
               </span>
             </div>
-            {/* Today vs Yesterday Toggle */}
-            <div className="flex items-center gap-1 p-0.5 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-xs">
-              <button
-                onClick={() => setOverviewView('today')}
-                className={`px-3 py-1.5 rounded-lg font-hud font-bold tracking-wider uppercase transition-all cursor-pointer ${
-                  overviewView === 'today'
-                    ? 'text-slate-950 shadow-sm'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-                style={overviewView === "today" ? { backgroundColor: "rgba(255,255,255,0.1)", color: "#FFFFFF", boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.1)" } : undefined}
-              >
-                TODAY
-              </button>
-              <button
-                onClick={() => setOverviewView('yesterday')}
-                className={`px-3 py-1.5 rounded-lg font-hud font-bold tracking-wider uppercase transition-all cursor-pointer ${
-                  overviewView === 'yesterday'
-                    ? 'text-slate-950 shadow-sm'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-                style={overviewView === "yesterday" ? { backgroundColor: "rgba(255,255,255,0.1)", color: "#FFFFFF", boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.1)" } : undefined}
-              >
-                YESTERDAY
-              </button>
-            </div>
-          </div>
 
-          <div className="flex items-center justify-between text-xs font-medium text-neutral-400 relative z-10">
-            <span>{overviewView === 'today' ? "TODAY'S METRICS" : "YESTERDAY'S METRICS"}</span>
-            <span>
-              {overviewView === 'today'
-                ? new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
-                : new Date(Date.now() - 86400000).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-            </span>
-          </div>
-
-          {/* Unified HUD Stat Readout Strip */}
-          <div className="rounded-xl bg-[var(--bg)] border border-[var(--border)] p-3 relative z-10">
-            <div className="flex items-center justify-between py-2 border-b border-white/[0.04]">
-              <div>
-                <div className="text-xs font-semibold tracking-wide text-neutral-200">TOTAL FOCUS</div>
-                <div className="text-[10px] text-neutral-400/80">Recorded study duration</div>
-              </div>
-              <div
-                className="text-base md:text-lg font-bold text-white tracking-tight tabular-nums font-mono"
-              >
-                {(isLoading || isLoadingSessions) && !hasHydrated ? (
-                  <Skeleton className="h-6 w-20 bg-slate-800" />
-                ) : (
-                  formatHoursAndMins(overviewView === 'today' ? overviewTodaySeconds : yesterdayTotalSeconds)
-                )}
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between py-2 border-b border-white/[0.04]">
-              <div>
-                <div className="text-xs font-semibold tracking-wide text-neutral-200">SESSIONS</div>
-                <div className="text-[10px] text-neutral-400/80">Completed study blocks</div>
-              </div>
-              <div className="text-base md:text-lg font-bold text-white tracking-tight tabular-nums">
-                {(isLoading || isLoadingSessions) && !hasHydrated ? (
-                  <Skeleton className="h-6 w-12 bg-slate-800" />
-                ) : (
-                  overviewView === 'today' ? overviewTodaySessionsCount : yesterdaySessionsCount
-                )}
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between py-2 border-b border-white/[0.04]">
-              <div>
-                <div className="text-xs font-semibold tracking-wide text-neutral-200">ACTIVE STREAK</div>
-                <div className="text-[10px] text-neutral-400/80">Daily consistency multiplier</div>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-4 h-4 flex items-center justify-center animate-ember-glow">
-                  <Flame className="w-full h-full text-orange-500 fill-orange-500" style={{ color: "#f97316" }} />
+            {/* Metrics Strip */}
+            <div className="rounded-xl bg-[#05070a]/60 border border-white/[0.05] p-3 flex flex-col gap-2.5">
+              <div className="flex items-center justify-between py-1.5 border-b border-white/[0.04]">
+                <div>
+                  <div className="text-[10px] tracking-wider uppercase text-neutral-400 font-medium">TOTAL FOCUS</div>
+                  <div className="text-[10px] text-neutral-500">Recorded study duration</div>
                 </div>
-                <span className="text-base md:text-lg font-bold text-white tracking-tight">
-                  {user?.streakDays ?? 0}
-                </span>
+                <div className="text-xl sm:text-2xl font-mono font-bold text-neutral-100 tabular-nums">
+                  {(isLoading || isLoadingSessions) && !hasHydrated ? (
+                    <Skeleton className="h-6 w-20 bg-neutral-800" />
+                  ) : (
+                    formatHoursAndMins(overviewView === 'today' ? overviewTodaySeconds : yesterdayTotalSeconds)
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between py-1.5 border-b border-white/[0.04]">
+                <div>
+                  <div className="text-[10px] tracking-wider uppercase text-neutral-400 font-medium">SESSIONS</div>
+                  <div className="text-[10px] text-neutral-500">Completed study blocks</div>
+                </div>
+                <div className="text-xl sm:text-2xl font-mono font-bold text-neutral-100 tabular-nums">
+                  {(isLoading || isLoadingSessions) && !hasHydrated ? (
+                    <Skeleton className="h-6 w-12 bg-neutral-800" />
+                  ) : (
+                    overviewView === 'today' ? overviewTodaySessionsCount : yesterdaySessionsCount
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between py-1.5">
+                <div>
+                  <div className="text-[10px] tracking-wider uppercase text-neutral-400 font-medium">ACTIVE STREAK</div>
+                  <div className="text-[10px] text-neutral-500">Daily consistency multiplier</div>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-4 h-4 flex items-center justify-center">
+                    <Flame className="w-full h-full text-amber-500 fill-amber-500" />
+                  </div>
+                  <span className="text-xl sm:text-2xl font-mono font-bold text-neutral-100 tabular-nums">
+                    {user?.streakDays ?? 0}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* 3. Daily Directive / Motivation Card */}
-        <div
-          className="rounded-2xl bg-[var(--surface)] backdrop-blur-xl border border-[var(--border)] py-2.5 px-3.5 shadow-xl space-y-3 transition-all relative overflow-hidden"
-          style={{ borderTop: "1px solid rgba(255, 255, 255, 0.1)" }}
-        >
-          <div className="hud-corner-bracket hud-corner-tl" />
-          <div className="hud-corner-bracket hud-corner-tr" />
-          <div className="hud-corner-bracket hud-corner-bl" />
-          <div className="hud-corner-bracket hud-corner-br" />
+          {/* Hairline Section Divider */}
+          <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-white/[0.08] to-transparent" />
 
-          <div className="flex items-center gap-2 pb-2.5 border-b border-[var(--border)] relative z-10">
-            <Target className="w-4 h-4" style={{ color: "var(--accent)" }} />
-            <span className="text-xs font-semibold tracking-wider text-neutral-300 uppercase">
-              DAILY DIRECTIVE
-            </span>
-          </div>
+          {/* Section 3: Daily Directive */}
+          <div className="flex flex-col gap-2 relative z-10">
+            <div className="text-[11px] font-mono tracking-[0.18em] uppercase text-neutral-400 font-semibold flex items-center gap-2">
+              <Target className="w-3.5 h-3.5 text-amber-500" />
+              <span>DAILY DIRECTIVE</span>
+            </div>
 
-          <div className="min-h-[40px] flex flex-col justify-center relative z-10">
-            <div className="flex flex-col gap-1.5 mt-1">
-              <p className="text-[13px] italic font-medium text-[#E2E8F0] leading-snug tracking-wide">
-                &ldquo;{dailyQuote.text}&rdquo;
-              </p>
-              <p className="text-[10px] uppercase font-bold text-neutral-400 tracking-widest text-right">
+            <div className="border-l-2 border-amber-500/40 pl-3.5 text-xs text-neutral-300 italic flex flex-col gap-1 mt-1">
+              <p className="leading-relaxed">&ldquo;{dailyQuote.text}&rdquo;</p>
+              <p className="text-[10px] uppercase font-mono tracking-widest text-neutral-400 not-italic text-right">
                 — {dailyQuote.author}
               </p>
             </div>

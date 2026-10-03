@@ -33,7 +33,7 @@ function normalizeTodo(t: any): DailyTodo {
   };
 }
 
-export function DailyTodoList() {
+export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } = {}) {
   const [todos, setTodos] = useState<DailyTodo[]>([]);
   const [taskInput, setTaskInput] = useState('');
   const [isCompletedOpen, setIsCompletedOpen] = useState(true);
@@ -353,20 +353,30 @@ export function DailyTodoList() {
   const progressPercent = todos.length > 0 ? Math.round((completedTodos.length / todos.length) * 100) : 0;
 
   return (
-    <div className="hud-surface border border-[var(--border)] rounded-2xl p-4 sm:p-5 space-y-3 relative overflow-hidden group"
-      style={{ borderTop: "1px solid rgba(245, 158, 11, 0.4)" }}>
+    <div
+      className={
+        isEmbedded
+          ? "space-y-3 relative z-10 w-full"
+          : "hud-surface border border-[var(--border)] rounded-2xl p-4 sm:p-5 space-y-3 relative overflow-hidden group"
+      }
+      style={isEmbedded ? undefined : { borderTop: "1px solid rgba(245, 158, 11, 0.4)" }}
+    >
       {/* Header Row */}
       <div className="flex items-center justify-between pb-2.5 border-b border-white/[0.06] relative z-10">
-        <div className="flex items-center gap-2">
-          <CheckSquare className="w-4 h-4 text-[#F59E0B]" />
-          <span className="font-hud-mono text-xs uppercase font-bold text-white tracking-wider">
+        <div className={isEmbedded ? "text-[11px] font-mono tracking-[0.18em] uppercase text-neutral-400 font-semibold flex items-center gap-2" : "flex items-center gap-2"}>
+          <CheckSquare className="w-3.5 h-3.5 text-amber-500" />
+          <span className={isEmbedded ? "" : "font-hud-mono text-xs uppercase font-bold text-white tracking-wider"}>
             TODO LIST
           </span>
         </div>
         <span
-          className="px-2.5 py-0.5 rounded font-hud-mono text-xs font-bold border shadow-sm bg-white/[0.04] border-white/10 text-neutral-300"
+          className={
+            isEmbedded
+              ? "px-2 py-0.5 rounded font-mono text-[10px] font-bold border bg-white/[0.04] border-white/10 text-neutral-300"
+              : "px-2.5 py-0.5 rounded font-hud-mono text-xs font-bold border shadow-sm bg-white/[0.04] border-white/10 text-neutral-300"
+          }
         >
-          <span className="font-bold">{completedTodos.length}</span> / {todos.length} COMPLETED
+          <span className="font-bold text-amber-400">{completedTodos.length}</span> / {todos.length} COMPLETED
         </span>
       </div>
 
