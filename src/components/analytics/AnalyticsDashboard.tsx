@@ -622,6 +622,37 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
     setFocusChartAnchorDate(getLocalDateString(current));
   };
 
+  const currentDateLabel = useMemo(() => {
+    const anchor = parseLocalDateString(focusChartAnchorDate);
+
+    if (focusChartTimeframe === 'daily') {
+      // 7 Days of the Week containing the anchor date
+      const dayOfWeek = anchor.getDay();
+      const diffToMon = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+      const mon = new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate() + diffToMon);
+      const sun = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + 6);
+
+      const monMonth = mon.toLocaleDateString('en-US', { month: 'short' });
+      const sunMonth = sun.toLocaleDateString('en-US', { month: 'short' });
+      const monDay = mon.getDate();
+      const sunDay = sun.getDate();
+      const year = sun.getFullYear();
+
+      if (monMonth === sunMonth) {
+        return `${monMonth} ${monDay} – ${sunDay}, ${year}`;
+      } else if (mon.getFullYear() === sun.getFullYear()) {
+        return `${monMonth} ${monDay} – ${sunMonth} ${sunDay}, ${year}`;
+      } else {
+        return `${monMonth} ${monDay}, ${mon.getFullYear()} – ${sunMonth} ${sunDay}, ${year}`;
+      }
+    } else if (focusChartTimeframe === 'weekly' || focusChartTimeframe === 'monthly') {
+      return anchor.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    } else if (focusChartTimeframe === 'yearly') {
+      return `${anchor.getFullYear()}`;
+    }
+    return '';
+  }, [focusChartAnchorDate, focusChartTimeframe]);
+
 
   return (
     <div className="w-full space-y-5 sm:space-y-6 text-slate-100">
@@ -1026,7 +1057,10 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
           </div>
 
           {/* Controls */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 flex-wrap sm:flex-nowrap">
+            <span className="text-xs sm:text-sm font-mono text-neutral-300 font-medium mr-2 sm:mr-3 select-none">
+              {currentDateLabel}
+            </span>
             <div className="flex items-center bg-black/60 border border-[var(--border)] rounded-xl p-0.5">
               <button
                 onClick={() => handleFocusChartStep('prev')}
