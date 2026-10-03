@@ -1581,8 +1581,8 @@ export function StudyTimer() {
           {/* Section 2: Daily Overview */}
           <div className="flex flex-col gap-3 relative z-10">
             <div className="flex items-center justify-between pb-2 border-b border-white/[0.06]">
-              <div className="text-[11px] font-mono tracking-[0.18em] uppercase text-neutral-400 font-semibold flex items-center gap-2">
-                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+              <div className="text-sm sm:text-base font-bold font-mono tracking-widest uppercase text-white flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-amber-500" />
                 <span>DAILY OVERVIEW</span>
               </div>
               {/* Today vs Yesterday Toggle */}
@@ -1671,14 +1671,14 @@ export function StudyTimer() {
 
           {/* Section 3: Daily Directive */}
           <div className="flex flex-col gap-2 relative z-10">
-            <div className="text-[11px] font-mono tracking-[0.18em] uppercase text-neutral-400 font-semibold flex items-center gap-2">
-              <Target className="w-3.5 h-3.5 text-amber-500" />
+            <div className="text-sm sm:text-base font-bold font-mono tracking-widest uppercase text-white flex items-center gap-2">
+              <Target className="w-4 h-4 text-amber-500" />
               <span>DAILY DIRECTIVE</span>
             </div>
 
-            <div className="border-l-2 border-amber-500/40 pl-3.5 text-xs text-neutral-300 italic flex flex-col gap-1 mt-1">
-              <p className="leading-relaxed">&ldquo;{dailyQuote.text}&rdquo;</p>
-              <p className="text-[10px] uppercase font-mono tracking-widest text-neutral-400 not-italic text-right">
+            <div className="border-l-[3px] border-amber-500/70 pl-4 text-sm sm:text-base text-neutral-100 italic flex flex-col gap-2 mt-1.5">
+              <p className="leading-relaxed font-semibold">&ldquo;{dailyQuote.text}&rdquo;</p>
+              <p className="text-xs uppercase font-mono font-bold tracking-widest text-neutral-300 not-italic text-right">
                 — {dailyQuote.author}
               </p>
             </div>

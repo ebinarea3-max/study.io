@@ -363,17 +363,15 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
     >
       {/* Header Row */}
       <div className="flex items-center justify-between pb-2.5 border-b border-white/[0.06] relative z-10">
-        <div className={isEmbedded ? "text-[11px] font-mono tracking-[0.18em] uppercase text-neutral-400 font-semibold flex items-center gap-2" : "flex items-center gap-2"}>
-          <CheckSquare className="w-3.5 h-3.5 text-amber-500" />
-          <span className={isEmbedded ? "" : "font-hud-mono text-xs uppercase font-bold text-white tracking-wider"}>
-            TODO LIST
-          </span>
+        <div className="flex items-center gap-2 text-sm sm:text-base font-bold font-mono tracking-widest uppercase text-white">
+          <CheckSquare className="w-4 h-4 text-amber-500" />
+          <span>TODO LIST</span>
         </div>
         <span
           className={
             isEmbedded
-              ? "px-2 py-0.5 rounded font-mono text-[10px] font-bold border bg-white/[0.04] border-white/10 text-neutral-300"
-              : "px-2.5 py-0.5 rounded font-hud-mono text-xs font-bold border shadow-sm bg-white/[0.04] border-white/10 text-neutral-300"
+              ? "px-2.5 py-0.5 rounded font-mono text-xs font-bold border bg-white/[0.04] border-white/10 text-neutral-200"
+              : "px-2.5 py-0.5 rounded font-hud-mono text-xs font-bold border shadow-sm bg-white/[0.04] border-white/10 text-neutral-200"
           }
         >
           <span className="font-bold text-amber-400">{completedTodos.length}</span> / {todos.length} COMPLETED
