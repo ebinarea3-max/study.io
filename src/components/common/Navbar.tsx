@@ -230,19 +230,6 @@ export function Navbar({
               <Trophy className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>LEADERBOARD</span>
             </button>
-
-            <button
-              onClick={() => setActiveTab('settings')}
-              className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-xl text-xs font-hud font-bold tracking-wider transition-all cursor-pointer ${
-                activeTab === 'settings'
-                  ? 'text-white shadow-sm'
-                  : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
-              }`}
-              style={activeTab === 'settings' ? { background: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#FFFFFF', fontWeight: 600 } : undefined}
-            >
-              <Settings className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span>SETTINGS</span>
-            </button>
           </nav>
         </div>
 
@@ -465,6 +452,14 @@ export function Navbar({
                     <span>Edit Profile & Goals</span>
                   </button>
 
+                  <button
+                    onClick={() => { onOpenSettings(); setShowPersonaMenu(false); }}
+                    className="w-full text-left px-2.5 py-2 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-950 dark:hover:text-white transition-colors flex items-center gap-2.5 cursor-pointer"
+                  >
+                    <Settings className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                    <span>Settings & Preferences</span>
+                  </button>
+
                   {!isAuthenticated ? (
                     <button
                       onClick={() => { onOpenAuth(); setShowPersonaMenu(false); }}
@@ -562,20 +557,6 @@ export function Navbar({
         >
           <Trophy className="w-5 h-5" />
           <span className="text-[9px] font-hud font-bold tracking-widest uppercase mt-0.5">Rankings</span>
-        </button>
-
-        {/* Tab 5: Settings */}
-        <button
-          onClick={() => setActiveTab('settings')}
-          className={`relative z-10 flex-1 flex flex-col items-center justify-center py-2 rounded-full transition-all active:scale-95 cursor-pointer ${
-            activeTab === 'settings'
-              ? 'text-slate-950 font-bold'
-              : 'text-slate-400 hover:text-white'
-          }`}
-          aria-label="Settings"
-        >
-          <Settings className="w-5 h-5" />
-          <span className="text-[9px] font-hud font-bold tracking-widest uppercase mt-0.5">Config</span>
         </button>
       </div>
     </nav>

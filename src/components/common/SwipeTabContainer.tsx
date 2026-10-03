@@ -3,7 +3,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { NavTabType } from './Navbar';
 
-const TABS: NavTabType[] = ['timer', 'tasks', 'analytics', 'leaderboard', 'settings'];
+const TABS: NavTabType[] = ['timer', 'tasks', 'analytics', 'leaderboard'];
 
 interface SwipeTabContainerProps {
   activeTab: NavTabType;
@@ -13,7 +13,7 @@ interface SwipeTabContainerProps {
     tasks: React.ReactNode;
     analytics: React.ReactNode;
     leaderboard?: React.ReactNode;
-    settings: React.ReactNode;
+    settings?: React.ReactNode;
   };
 }
 
