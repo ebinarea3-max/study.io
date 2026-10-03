@@ -838,38 +838,6 @@ export function StudyTimer() {
                 </button>
               </div>
 
-              {/* Countdown Preset Pills */}
-              {timerMode === 'countdown' && (
-                <div
-                  className="flex items-center gap-1 p-0.5 sm:p-1 rounded-xl bg-[#05070a] border border-white/[0.06] animate-in fade-in zoom-in-95 duration-200"
-                  title={isStudying ? "Countdown presets are locked while session is running" : "Choose timer duration preset"}
-                >
-                  {[
-                    { label: '15m', sec: 15 * 60 },
-                    { label: '30m', sec: 30 * 60 },
-                    { label: '45m', sec: 45 * 60 },
-                    { label: '60m', sec: 60 * 60 },
-                  ].map(preset => {
-                    const isActive = countdownTarget === preset.sec;
-                    return (
-                      <button
-                        key={preset.sec}
-                        onClick={() => {
-                          if (!isStudying) setCountdownTarget(preset.sec);
-                        }}
-                        disabled={isStudying}
-                        className={`px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg font-mono text-xs transition-all ${
-                          isActive
-                            ? 'border border-amber-500/70 bg-amber-500/10 text-amber-400 font-semibold shadow-[0_0_12px_rgba(245,158,11,0.2)]'
-                            : 'bg-[#121620]/60 border border-white/[0.06] text-neutral-300 hover:border-amber-500/40 hover:text-amber-300'
-                        } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
-                      >
-                        {preset.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
 
               {/* Pomodoro Preset Pills */}
               {timerMode === 'pomodoro' && (
