@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { useAuth } from '../../context/AuthContext';
 import { useStudy } from '../../context/StudyContext';
 import { getSupabase } from '../../lib/supabase';
-import { getRankBadgePath } from '../../lib/rankedSystem';
+import { getRankBadgePath, getRankTier, getRankConfigByTitle } from '../../lib/rankedSystem';
 import { getLevelFromLifetimeXP } from '../../lib/gamification';
 import { LeaderboardEntry } from '../../types';
 import { Trophy, Clock, ArrowUp, Sparkles, AlertCircle } from 'lucide-react';
@@ -15,6 +15,35 @@ export function formatStudyTime(totalSeconds: number): string {
   const hours = Math.floor(safeSeconds / 3600);
   const minutes = Math.floor((safeSeconds % 3600) / 60);
   return `${hours}h ${minutes}m`;
+}
+
+/**
+ * Resolves the display rank tier label from row data.
+ * Prevents scholar titles (e.g. "Novice Scholar") from appearing in the rank shield label,
+ * ensuring valid 23-rank monthly tiers (e.g. "BRONZE I", "SILVER II", "GOLD I").
+ */
+export function getMonthlyRankTierTitle(rankTitle?: string, totalSeconds?: number): string {
+  const clean = (rankTitle || '').trim().toLowerCase();
+  
+  // If the stored title was accidentally a scholar prestige title rather than a monthly rank
+  const isScholarTitle =
+    clean.includes('scholar') ||
+    clean.includes('mind') ||
+    clean.includes('inquirer') ||
+    clean.includes('polymath') ||
+    clean.includes('philosopher') ||
+    clean.includes('archon') ||
+    clean.includes('sage') ||
+    clean.includes('myth');
+
+  if (isScholarTitle || !clean) {
+    // 1 min focus = 1 RP
+    const rpFromMinutes = totalSeconds ? Math.floor(totalSeconds / 60) : 0;
+    return getRankTier(rpFromMinutes).fullTitle;
+  }
+
+  // Resolve against 23-rank hierarchy (e.g. "Bronze 1" -> "BRONZE I", "Diamond 2" -> "DIAMOND II")
+  return getRankConfigByTitle(clean).fullTitle;
 }
 
 interface MonthlyLeaderboardProps {
@@ -261,7 +290,14 @@ export function MonthlyLeaderboard({ isEmbedded = false }: MonthlyLeaderboardPro
             /* Leaderboard Row List */
             <div className="flex flex-col gap-2.5 pb-20">
               {leaderboard.map((row, index) => {
-                const isCurrentUser = Boolean(row.is_current_user || (user?.id && row.user_id === user.id));
+                const isCurrentUser = Boolean(
+                  row.is_current_user ||
+                  (user?.id && String(row.user_id) === String(user.id)) ||
+                  (user?.username && row.username && user.username.toLowerCase() === row.username.toLowerCase())
+                );
+
+                const rankTierTitle = getMonthlyRankTierTitle(row.rank_title, row.total_seconds);
+                const rankBadgePath = getRankBadgePath(rankTierTitle);
 
                 return (
                   <div
@@ -269,7 +305,7 @@ export function MonthlyLeaderboard({ isEmbedded = false }: MonthlyLeaderboardPro
                     ref={isCurrentUser ? currentUserRowRef : undefined}
                     className={`w-full flex items-center justify-between p-3.5 sm:p-4 rounded-2xl transition-all ${
                       isCurrentUser
-                        ? 'border border-amber-500/40 bg-amber-500/5 shadow-lg shadow-amber-500/10'
+                        ? 'border border-amber-500/40 bg-amber-500/[0.04] shadow-[0_0_20px_rgba(245,158,11,0.08)] ring-1 ring-amber-500/20'
                         : 'border border-white/[0.06] bg-[#0c0f17]/80 hover:bg-[#121622]/90'
                     }`}
                   >
@@ -296,8 +332,15 @@ export function MonthlyLeaderboard({ isEmbedded = false }: MonthlyLeaderboardPro
 
                     {/* MIDDLE-LEFT: Identity Block (Identity + Level below it) */}
                     <div className="flex-1 min-w-0 pr-3 sm:pr-4 flex flex-col justify-center">
-                      <div className="font-semibold text-white text-sm sm:text-base truncate leading-snug">
-                        {row.name || 'Scholar'}
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-white text-sm sm:text-base truncate leading-snug">
+                          {row.name || 'Scholar'}
+                        </span>
+                        {isCurrentUser && (
+                          <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20 shrink-0">
+                            YOU
+                          </span>
+                        )}
                       </div>
                       <div className="text-xs text-zinc-400 font-mono flex items-center gap-1.5 truncate mt-0.5">
                         <span>@{row.username || (row.name ? row.name.toLowerCase().replace(/\s+/g, '') : 'scholar')}</span>
@@ -312,15 +355,15 @@ export function MonthlyLeaderboard({ isEmbedded = false }: MonthlyLeaderboardPro
                     <div className="flex-shrink-0 flex flex-col items-center justify-center px-2 sm:px-6">
                       <div className="relative w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center filter drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]">
                         <Image
-                          src={getRankBadgePath(row.rank_title)}
-                          alt={row.rank_title || 'Rank'}
+                          src={rankBadgePath}
+                          alt={rankTierTitle}
                           width={40}
                           height={40}
                           className="object-contain max-h-full"
                         />
                       </div>
                       <span className="text-[10px] sm:text-xs font-mono font-bold tracking-wider text-neutral-300 uppercase truncate mt-0.5">
-                        {row.rank_title || 'BRONZE I'}
+                        {rankTierTitle}
                       </span>
                     </div>
 
@@ -371,8 +414,13 @@ export function MonthlyLeaderboard({ isEmbedded = false }: MonthlyLeaderboardPro
 
                 {/* MIDDLE-LEFT: Identity Block (Identity + Level below it) */}
                 <div className="flex-1 min-w-0 pr-3 sm:pr-4 flex flex-col justify-center">
-                  <div className="font-semibold text-white text-sm sm:text-base truncate leading-snug">
-                    {currentUserEntry.entry.name || 'Scholar'}
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-white text-sm sm:text-base truncate leading-snug">
+                      {currentUserEntry.entry.name || 'Scholar'}
+                    </span>
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20 shrink-0">
+                      YOU
+                    </span>
                   </div>
                   <div className="text-xs text-zinc-400 font-mono flex items-center gap-1.5 truncate mt-0.5">
                     <span>
@@ -387,18 +435,29 @@ export function MonthlyLeaderboard({ isEmbedded = false }: MonthlyLeaderboardPro
 
                 {/* MIDDLE-RIGHT: Rank Shield & Tier */}
                 <div className="flex-shrink-0 flex flex-col items-center justify-center px-2 sm:px-6">
-                  <div className="relative w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center filter drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]">
-                    <Image
-                      src={getRankBadgePath(currentUserEntry.entry.rank_title)}
-                      alt={currentUserEntry.entry.rank_title || 'Rank'}
-                      width={40}
-                      height={40}
-                      className="object-contain max-h-full"
-                    />
-                  </div>
-                  <span className="text-[10px] sm:text-xs font-mono font-bold tracking-wider text-neutral-300 uppercase truncate mt-0.5">
-                    {currentUserEntry.entry.rank_title || 'BRONZE I'}
-                  </span>
+                  {(() => {
+                    const currentRankTitle = getMonthlyRankTierTitle(
+                      currentUserEntry.entry.rank_title,
+                      currentUserEntry.entry.total_seconds
+                    );
+                    const currentBadgePath = getRankBadgePath(currentRankTitle);
+                    return (
+                      <>
+                        <div className="relative w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center filter drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]">
+                          <Image
+                            src={currentBadgePath}
+                            alt={currentRankTitle}
+                            width={40}
+                            height={40}
+                            className="object-contain max-h-full"
+                          />
+                        </div>
+                        <span className="text-[10px] sm:text-xs font-mono font-bold tracking-wider text-neutral-300 uppercase truncate mt-0.5">
+                          {currentRankTitle}
+                        </span>
+                      </>
+                    );
+                  })()}
                 </div>
 
                 {/* FAR RIGHT: Study Time */}

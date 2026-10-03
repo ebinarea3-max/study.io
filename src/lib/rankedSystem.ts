@@ -637,12 +637,58 @@ export function getRankBadgePath(rankTitleOrTier?: string): string {
  */
 export function getRankConfigByTitle(rankTitleOrTier?: string): RankTierConfig {
   if (!rankTitleOrTier) return RANK_TIERS[0];
-  const clean = rankTitleOrTier.trim().toLowerCase();
-  const found = RANK_TIERS.find(
+  const clean = rankTitleOrTier.trim().toLowerCase().replace(/_/g, ' ').replace(/-/g, ' ');
+
+  // Direct match
+  const directMatch = RANK_TIERS.find(
     (t) =>
       t.fullTitle.toLowerCase() === clean ||
       t.tier.toLowerCase() === clean ||
       `${t.tier.toLowerCase()} ${t.division.toLowerCase()}`.trim() === clean
   );
-  return found || RANK_TIERS[0];
+  if (directMatch) return directMatch;
+
+  const numToRoman: Record<string, string> = {
+    '1': 'i',
+    '2': 'ii',
+    '3': 'iii',
+    '4': 'iv',
+    'i': 'i',
+    'ii': 'ii',
+    'iii': 'iii',
+    'iv': 'iv',
+  };
+
+  const tiers = [
+    'grandmaster',
+    'master',
+    'champion',
+    'diamond',
+    'platinum',
+    'gold',
+    'silver',
+    'bronze',
+  ];
+
+  for (const tier of tiers) {
+    if (clean.includes(tier)) {
+      if (['grandmaster', 'master', 'champion'].includes(tier)) {
+        return RANK_TIERS.find((t) => t.tier.toLowerCase() === tier) || RANK_TIERS[0];
+      }
+      for (const [key, roman] of Object.entries(numToRoman)) {
+        const regex = new RegExp(`(^|\\s|-)(${key})($|\\s|-)`, 'i');
+        if (regex.test(clean)) {
+          const match = RANK_TIERS.find(
+            (t) => t.tier.toLowerCase() === tier && t.division.toLowerCase() === roman
+          );
+          if (match) return match;
+        }
+      }
+      const defaultDiv = RANK_TIERS.find((t) => t.tier.toLowerCase() === tier);
+      if (defaultDiv) return defaultDiv;
+    }
+  }
+
+  return RANK_TIERS[0];
 }
+
