@@ -1219,12 +1219,12 @@ export function StudyTimer() {
                 <div className="hidden sm:block absolute right-4 top-1/2 -translate-y-1/2 w-2 h-0.5 bg-white/10 rounded-full" />
 
                 {/* Centered Content Wrapper */}
-                <div className="relative sm:absolute sm:inset-0 flex flex-col items-center justify-center pointer-events-none z-10 [&>div]:pointer-events-auto py-2 sm:py-0 w-full">
+                <div className="relative sm:absolute sm:inset-0 flex flex-col items-center justify-center pointer-events-none z-10 [&>div]:pointer-events-auto py-2 sm:py-0 w-full h-full">
                   {/* Spacer to mathematically balance the vertical flex center against the status pill below on desktop */}
                   <div className="hidden sm:block h-6 mt-2" aria-hidden="true" />
                   
-                  {/* Big Technical Digital Numbers */}
-                  <div className={`font-mono tabular-nums tracking-tight font-bold text-white drop-shadow-[0_0_24px_rgba(255,255,255,0.12)] text-5xl md:text-6xl w-full text-center flex justify-center ${isEditingCountdown ? '' : '-translate-x-1.5 md:-translate-x-2'}`}>
+                  {/* Big Technical Digital Numbers - Exactly centered on horizontal and vertical axes */}
+                  <div className="font-mono tabular-nums font-bold text-white drop-shadow-[0_0_24px_rgba(255,255,255,0.12)] text-5xl md:text-6xl w-full text-center flex items-center justify-center select-none tracking-normal">
                     {timerMode === 'countdown' && !isStudying ? (
                       isEditingCountdown ? (
                         <CountdownEditor 
@@ -1238,21 +1238,24 @@ export function StudyTimer() {
                       ) : (
                         <span 
                           onClick={() => setIsEditingCountdown(true)} 
-                          className="cursor-pointer hover:text-amber-400 transition-colors pointer-events-auto"
+                          className="cursor-pointer hover:text-amber-400 transition-colors pointer-events-auto font-mono tabular-nums inline-block text-center"
                           title="Click to edit duration"
                         >
                           {displayTime}
                         </span>
                       )
                     ) : (
-                      displayTime
+                      <span className="font-mono tabular-nums inline-block text-center">
+                        {displayTime}
+                      </span>
                     )}
                   </div>
 
-                  {/* Status */}
+                  {/* Status Row with Symmetrical Spacing */}
                   <div className="h-6 text-[11px] uppercase tracking-[0.2em] text-white/70 font-semibold flex items-center justify-center gap-2 mt-2">
-                    <div className={`w-1.5 h-1.5 rounded-full ${isStudying && !isPaused ? 'bg-green-500 animate-pulse' : isPaused ? 'bg-amber-400' : 'bg-white/50'}`} />
-                    <span>{!selectedSubject ? 'SELECT A SUBJECT' : isStudying && !isPaused ? 'RUNNING' : isPaused ? 'PAUSED' : 'READY TO START'}</span>
+                    <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isStudying && !isPaused ? 'bg-green-500 animate-pulse' : isPaused ? 'bg-amber-400' : 'bg-white/50'}`} />
+                    <span className="text-center">{!selectedSubject ? 'SELECT A SUBJECT' : isStudying && !isPaused ? 'RUNNING' : isPaused ? 'PAUSED' : 'READY TO START'}</span>
+                    <div className="w-1.5 h-1.5 rounded-full flex-shrink-0 opacity-0 pointer-events-none" aria-hidden="true" />
                   </div>
 
                   {/* Sleek Progress Line on Mobile when active */}
