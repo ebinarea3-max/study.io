@@ -90,6 +90,14 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
   const currentUserRowRef = useRef<HTMLDivElement | null>(null);
   const [isCurrentUserRowVisible, setIsCurrentUserRowVisible] = useState<boolean>(true);
 
+  const userRef = useRef(user);
+  userRef.current = user;
+
+  const sessionsRef = useRef(sessions);
+  sessionsRef.current = sessions;
+
+  const inFlightRef = useRef(false);
+
   // Compute seasonal tracker line and subtext dynamically based on timeframe
   const { trackerText, subtext, emptyText } = useMemo(() => {
     const now = new Date();
@@ -126,6 +134,9 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
 
   // Fetch leaderboard data based on selected timeframe
   const fetchLeaderboard = useCallback(async () => {
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
+
     if (leaderboard.length === 0) {
       setIsLoading(true);
     }
@@ -135,125 +146,145 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
     const supabase = getSupabase();
     let entries: LeaderboardEntry[] = [];
     let rpcSucceeded = false;
+    const currentUser = userRef.current;
+    const currentSessions = sessionsRef.current;
 
-    if (supabase) {
-      try {
-        // Call RPC get_leaderboard with timeframe parameter
-        let res = await supabase.rpc('get_leaderboard', { timeframe });
-        if (res.error && timeframe === 'month') {
-          // Backward compatibility fallback to get_monthly_leaderboard if get_leaderboard is not yet deployed
-          res = await supabase.rpc('get_monthly_leaderboard');
-        }
-
-        if (!res.error && Array.isArray(res.data)) {
-          rpcSucceeded = true;
-          entries = res.data.map((row: any) => ({
-            user_id: String(row.user_id),
-            name: String(row.display_name || row.name || 'Scholar'),
-            display_name: row.display_name || row.name || null,
-            username: row.username ? String(row.username) : null,
-            avatar_url: row.avatar_url ? String(row.avatar_url) : null,
-            level: row.level ? Number(row.level) : undefined,
-            lifetime_xp: Number(row.lifetime_xp || 0),
-            rank_title: String(row.rank_title || 'Bronze I'),
-            total_seconds: Number(row.total_seconds || 0),
-            is_current_user: Boolean(row.is_current_user || (user?.id && row.user_id === user.id)),
-          }));
-        } else if (res.error) {
-          console.warn('[Leaderboard] RPC get_leaderboard notice:', res.error.message);
-        }
-      } catch (err: any) {
-        console.warn('[Leaderboard] RPC get_leaderboard call error:', err);
-      }
-    }
-
-    // Graceful fallback for local development, offline mode, or unmigrated Supabase database:
-    if (!rpcSucceeded) {
-      try {
-        if (supabase && user?.id && !user.id.startsWith('user-scholar')) {
-          const filterStartDate = getFilterStartDate(timeframe);
-
-          let query = supabase
-            .from('study_sessions')
-            .select('user_id, duration_seconds, started_at');
-
-          if (filterStartDate) {
-            query = query.gte('started_at', filterStartDate.toISOString());
+    try {
+      if (supabase) {
+        try {
+          // Call RPC get_leaderboard with timeframe parameter
+          let res = await supabase.rpc('get_leaderboard', { timeframe });
+          if (res.error && timeframe === 'month') {
+            // Backward compatibility fallback to get_monthly_leaderboard if get_leaderboard is not yet deployed
+            res = await supabase.rpc('get_monthly_leaderboard');
           }
 
-          const { data: dbSessions } = await query;
+          if (!res.error && Array.isArray(res.data)) {
+            rpcSucceeded = true;
+            entries = res.data.map((row: any) => ({
+              user_id: String(row.user_id),
+              name: String(row.display_name || row.name || 'Scholar'),
+              display_name: row.display_name || row.name || null,
+              username: row.username ? String(row.username) : null,
+              avatar_url: row.avatar_url ? String(row.avatar_url) : null,
+              level: row.level ? Number(row.level) : undefined,
+              lifetime_xp: Number(row.lifetime_xp || 0),
+              rank_title: String(row.rank_title || 'Bronze I'),
+              total_seconds: Number(row.total_seconds || 0),
+              is_current_user: Boolean(row.is_current_user || (currentUser?.id && row.user_id === currentUser.id)),
+            }));
+          } else if (res.error) {
+            console.warn('[Leaderboard] RPC get_leaderboard notice:', res.error.message);
+          }
+        } catch (err: any) {
+          console.warn('[Leaderboard] RPC get_leaderboard call error:', err);
+        }
+      }
 
-          if (dbSessions && dbSessions.length > 0) {
-            // Aggregate totals by user_id
-            const userTotals: Record<string, number> = {};
-            dbSessions.forEach((s: any) => {
-              if (s.user_id) {
-                userTotals[s.user_id] = (userTotals[s.user_id] || 0) + Number(s.duration_seconds || 0);
+      // Graceful fallback for local development, offline mode, or unmigrated Supabase database:
+      if (!rpcSucceeded) {
+        try {
+          if (supabase && currentUser?.id && !currentUser.id.startsWith('user-scholar')) {
+            const filterStartDate = getFilterStartDate(timeframe);
+
+            let query = supabase
+              .from('study_sessions')
+              .select('user_id, duration_seconds, started_at');
+
+            if (filterStartDate) {
+              query = query.gte('started_at', filterStartDate.toISOString());
+            }
+
+            const { data: dbSessions } = await query;
+
+            if (dbSessions && dbSessions.length > 0) {
+              // Aggregate totals by user_id
+              const userTotals: Record<string, number> = {};
+              dbSessions.forEach((s: any) => {
+                if (s.user_id) {
+                  userTotals[s.user_id] = (userTotals[s.user_id] || 0) + Number(s.duration_seconds || 0);
+                }
+              });
+
+              const uids = Object.keys(userTotals);
+              const { data: dbProfiles } = await supabase
+                .from('profiles')
+                .select('id, name, username, avatar_url, lifetime_xp, xp, rank_title, level')
+                .in('id', uids);
+
+              if (dbProfiles) {
+                entries = dbProfiles.map((p: any) => ({
+                  user_id: p.id,
+                  name: p.name || 'Scholar',
+                  display_name: p.name || 'Scholar',
+                  username: p.username || null,
+                  avatar_url: p.avatar_url || null,
+                  level: p.level ? Number(p.level) : undefined,
+                  lifetime_xp: Number(p.lifetime_xp ?? p.xp ?? 0),
+                  rank_title: p.rank_title || 'Bronze I',
+                  total_seconds: userTotals[p.id] || 0,
+                  is_current_user: p.id === currentUser?.id,
+                }));
+                entries.sort((a, b) => b.total_seconds - a.total_seconds);
               }
-            });
-
-            const uids = Object.keys(userTotals);
-            const { data: dbProfiles } = await supabase
-              .from('profiles')
-              .select('id, name, username, avatar_url, lifetime_xp, xp, rank_title, level')
-              .in('id', uids);
-
-            if (dbProfiles) {
-              entries = dbProfiles.map((p: any) => ({
-                user_id: p.id,
-                name: p.name || 'Scholar',
-                display_name: p.name || 'Scholar',
-                username: p.username || null,
-                avatar_url: p.avatar_url || null,
-                level: p.level ? Number(p.level) : undefined,
-                lifetime_xp: Number(p.lifetime_xp ?? p.xp ?? 0),
-                rank_title: p.rank_title || 'Bronze I',
-                total_seconds: userTotals[p.id] || 0,
-                is_current_user: p.id === user?.id,
-              }));
-              entries.sort((a, b) => b.total_seconds - a.total_seconds);
             }
           }
+        } catch (fallbackErr) {
+          console.warn('[Leaderboard] Fallback query error:', fallbackErr);
         }
-      } catch (fallbackErr) {
-        console.warn('[Leaderboard] Fallback query error:', fallbackErr);
+
+        // If still empty and user has logged sessions in current state, include user's local sessions
+        if (entries.length === 0 && currentUser?.id) {
+          const filterStartDate = getFilterStartDate(timeframe);
+
+          const currentPeriodSeconds = currentSessions
+            .filter((s) => !filterStartDate || new Date(s.startTime).getTime() >= filterStartDate.getTime())
+            .reduce((sum, s) => sum + (s.durationSeconds || 0), 0);
+
+          if (currentPeriodSeconds > 0) {
+            entries = [
+              {
+                user_id: currentUser.id,
+                name: currentUser.displayName || currentUser.name || 'You',
+                display_name: currentUser.displayName || currentUser.name || 'You',
+                username: currentUser.username || null,
+                avatar_url: currentUser.avatarUrl || null,
+                level: currentUser.level,
+                lifetime_xp: Number(currentUser.lifetime_xp ?? currentUser.lifetimeXp ?? currentUser.xp ?? 0),
+                rank_title: currentUser.rank_title || 'Bronze I',
+                total_seconds: currentPeriodSeconds,
+                is_current_user: true,
+              },
+            ];
+          }
+        }
       }
 
-      // If still empty and user has logged sessions in current state, include user's local sessions
-      if (entries.length === 0 && user?.id) {
-        const filterStartDate = getFilterStartDate(timeframe);
+      setLeaderboard(entries);
+    } finally {
+      setIsLoading(false);
+      setIsFetching(false);
+      inFlightRef.current = false;
+    }
+  }, [timeframe]);
 
-        const currentPeriodSeconds = sessions
-          .filter((s) => !filterStartDate || new Date(s.startTime).getTime() >= filterStartDate.getTime())
-          .reduce((sum, s) => sum + (s.durationSeconds || 0), 0);
+  // Fetch only when active tab is showing or timeframe changes
+  useEffect(() => {
+    if (isActiveTab) {
+      fetchLeaderboard();
+    }
+  }, [fetchLeaderboard, isActiveTab]);
 
-        if (currentPeriodSeconds > 0) {
-          entries = [
-            {
-              user_id: user.id,
-              name: user.displayName || user.name || 'You',
-              display_name: user.displayName || user.name || 'You',
-              username: user.username || null,
-              avatar_url: user.avatarUrl || null,
-              level: user.level,
-              lifetime_xp: Number(user.lifetime_xp ?? user.lifetimeXp ?? user.xp ?? 0),
-              rank_title: user.rank_title || 'Bronze I',
-              total_seconds: currentPeriodSeconds,
-              is_current_user: true,
-            },
-          ];
-        }
+  // If a session completes, refresh leaderboard if currently on active tab
+  const prevSessionsCountRef = useRef(sessions.length);
+  useEffect(() => {
+    if (sessions.length !== prevSessionsCountRef.current) {
+      prevSessionsCountRef.current = sessions.length;
+      if (isActiveTab) {
+        fetchLeaderboard();
       }
     }
-
-    setLeaderboard(entries);
-    setIsLoading(false);
-    setIsFetching(false);
-  }, [timeframe, user?.id, user?.displayName, user?.name, user?.username, user?.avatarUrl, user?.lifetime_xp, user?.lifetimeXp, user?.xp, user?.rank_title, user?.level, sessions]);
-
-  useEffect(() => {
-    fetchLeaderboard();
-  }, [fetchLeaderboard]);
+  }, [sessions.length, isActiveTab, fetchLeaderboard]);
 
   // Find current user's entry and ranking index
   const currentUserEntry = useMemo(() => {

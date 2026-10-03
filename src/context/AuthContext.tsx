@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode, useCallback } from 'react';
 import { UserProfile } from '../types';
 import { INITIAL_USER, cleanupLegacyDemoData } from '../lib/mockData';
 import { getSupabase } from '../lib/supabase';
@@ -175,9 +175,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const hasFetchedProfileRef = useRef<string | null>(null);
+
   useEffect(() => {
     const supabase = getSupabase();
     if (!supabase || !user?.id || user.id.startsWith('user-scholar') || user.id.startsWith('guest')) return;
+    if (hasFetchedProfileRef.current === user.id) return;
+    hasFetchedProfileRef.current = user.id;
 
     const fetchProfile = async () => {
       try {
@@ -198,6 +202,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               level: data.level ?? prev.level,
               rp: data.rp ?? prev.rp,
               seasonRp: data.season_rp ?? data.rp ?? prev.seasonRp,
+              xp: data.lifetime_xp ?? data.xp ?? prev.xp,
+              lifetime_xp: data.lifetime_xp ?? data.xp ?? prev.lifetime_xp,
+              lifetimeXp: data.lifetime_xp ?? data.xp ?? prev.lifetimeXp,
               totalStudySeconds: data.total_study_seconds ?? prev.totalStudySeconds,
               levelTitle: data.rank_title || data.level_title || prev.levelTitle,
               user_metadata: {
@@ -215,25 +222,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     fetchProfile();
-
-    const interval = setInterval(() => {
-      fetchProfile();
-    }, 30000);
-
-    const handleFocus = () => {
-      if (typeof document !== 'undefined' && !document.hidden) {
-        fetchProfile();
-      }
-    };
-
-    window.addEventListener('focus', handleFocus);
-    document.addEventListener('visibilitychange', handleFocus);
-
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener('focus', handleFocus);
-      document.removeEventListener('visibilitychange', handleFocus);
-    };
   }, [user?.id]);
 
   // Clean legacy demo data and setup Supabase Auth Listener
