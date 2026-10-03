@@ -76,7 +76,7 @@ export function RankSettlementModal({
   const taskBonus = data?.breakdown.taskBonus ?? 0;
   const durationSeconds = data?.breakdown.durationSeconds ?? 0;
   const streakBonusClaimedToday = Boolean(data?.breakdown.streakBonusClaimedToday);
-  const isUnderMinDuration = Boolean(data?.breakdown.isUnderMinDuration ?? (durationSeconds < 300));
+  const isUnderMinDuration = Boolean(data?.breakdown.isUnderMinDuration ?? (durationSeconds < 60));
 
   const prevRankDetails = useMemo(() => getRankTier(prevRP), [prevRP]);
   const newRankDetails = useMemo(() => getRankTier(newRP), [newRP]);
@@ -218,21 +218,22 @@ export function RankSettlementModal({
 
     const timers: NodeJS.Timeout[] = [];
 
-    // Initial setup for the active tier
-    const initialTier = isRankUp ? prevRankDetails : newRankDetails;
-    setDisplayRank(initialTier);
-    setActiveBarColor(initialTier.config.badgeAccent);
+    // Always start with prevRankDetails on initial display
+    setDisplayRank(prevRankDetails);
+    setActiveBarColor(prevRankDetails.config.badgeAccent);
 
-    const initialTierMin = initialTier.minRP;
-    const initialTierMax = initialTier.maxRP;
-    const initialInTier = Math.max(0, prevRP - initialTierMin);
-    const initialNeeded = Math.max(1, initialTierMax - initialTierMin);
-    setProgressRatio(Math.min(1, initialInTier / initialNeeded));
+    const prevTierMin = prevRankDetails.minRP;
+    const prevTierMax = prevRankDetails.maxRP;
+    const prevInTier = Math.max(0, prevRP - prevTierMin);
+    const prevNeeded = Math.max(1, prevTierMax - prevTierMin);
+    const initialRatio = Math.min(1, prevInTier / prevNeeded);
+
+    setProgressRatio(initialRatio);
     setAnimatingRP(prevRP);
     setDisplayedGain(0);
 
     // ==========================================
-    // STAGE 1 -> 2: IMPACT MOMENT at ~0.35s (340ms)
+    // STAGE 1: IMPACT MOMENT at ~0.35s (340ms)
     // ==========================================
     timers.push(
       setTimeout(() => {
@@ -274,7 +275,7 @@ export function RankSettlementModal({
             rot: Math.random() * 540 - 270,
             size: 3 + Math.random() * 4,
             opacity: 0.75 + Math.random() * 0.25,
-            color: (i % 3 === 0) ? '#FFFFFF' : initialTier.config.badgeAccent,
+            color: (i % 3 === 0) ? '#FFFFFF' : prevRankDetails.config.badgeAccent,
           };
         });
         setParticles(generatedParticles);
@@ -290,144 +291,21 @@ export function RankSettlementModal({
 
         // Particles unmount after 950ms
         timers.push(setTimeout(() => setParticles([]), 950));
-
-        // TRANSFORMATION SEQUENCE (if rank up)
-        if (isRankUp) {
-          if (!isMajorTierUp) {
-            // ==========================================
-            // SUB-RANK-UP: Quick Hit
-            // ==========================================
-            setDisplayRank(newRankDetails); // Base rank becomes new rank
-            setPunchMode('small');
-            
-            
-
-            // Screen shake
-            const shakeAmpBase = 6;
-            const shakeStart = performance.now();
-            const shakeDur = 200;
-            const runShake = (now: number) => {
-              const elapsed = now - shakeStart;
-              const p = Math.min(1, elapsed / shakeDur);
-              if (p < 1) {
-                const amp = shakeAmpBase * Math.pow(1 - p, 2);
-                setShakeOffset({
-                  x: (Math.random() * 2 - 1) * amp,
-                  y: (Math.random() * 2 - 1) * amp
-                });
-                shakeFrameRef.current = requestAnimationFrame(runShake);
-              } else {
-                setShakeOffset({ x: 0, y: 0 });
-              }
-            };
-            shakeFrameRef.current = requestAnimationFrame(runShake);
-            
-            // Sound: quiet low thud
-            soundFx.playShatterCrack(0.5); 
-            
-            // Settle
-            timers.push(setTimeout(() => {
-              setActiveBarColor(newRankDetails.config.badgeAccent);
-              setPunchMode('idle');
-            }, 300));
-            
-          } else {
-            // ==========================================
-            // MAJOR-TIER-UP: Big Hit + Decorative Shards
-            // ==========================================
-            
-            // 0.2s pre-hit audio build
-            soundFx.playCinematicPromotionSound(intensity, 200);
-
-            timers.push(setTimeout(() => {
-              setDisplayRank(newRankDetails);
-              setPunchMode('large');
-
-              // At T+200 (low point of scale punch), we trigger shards, shake, and heavy audio
-              timers.push(setTimeout(() => {
-                // Shake
-                const shakeAmpBase = 12 + (intensity - 1) * 1.5;
-                const shakeStart = performance.now();
-                const shakeDur = 400;
-                const runShake = (now: number) => {
-                  const elapsed = now - shakeStart;
-                  const p = Math.min(1, elapsed / shakeDur);
-                  if (p < 1) {
-                    const amp = shakeAmpBase * Math.pow(1 - p, 2);
-                    setShakeOffset({
-                      x: (Math.random() * 2 - 1) * amp,
-                      y: (Math.random() * 2 - 1) * amp
-                    });
-                    shakeFrameRef.current = requestAnimationFrame(runShake);
-                  } else {
-                    setShakeOffset({ x: 0, y: 0 });
-                  }
-                };
-                shakeFrameRef.current = requestAnimationFrame(runShake);
-                
-                // Sound: big hit thud
-                soundFx.playShatterCrack(intensity);
-
-                // Shards (flying OUTWARD)
-                const numShards = Math.round(14 + (intensity - 1) * (10 / 7));
-                const outShards = Array.from({ length: numShards }).map((_, i) => {
-                  const angle = (i / numShards) * 2 * Math.PI + (Math.random() * 0.5 - 0.25);
-                  const dist = 140 + Math.random() * 80;
-                  return {
-                    id: `shed-${i}`,
-                    x: Math.cos(angle) * dist,
-                    y: Math.sin(angle) * dist,
-                    rot: (Math.random() - 0.5) * 720,
-                    size: 8 + Math.random() * 14,
-                    delay: 0,
-                    dur: 600,
-                    color: prevRankDetails.config.badgeAccent,
-                  };
-                });
-                setShatterShards(outShards);
-
-                
-
-                
-                
-              }, 200)); // wait 200ms to hit low point of scale
-              
-              // Settle at end of punch
-              timers.push(setTimeout(() => {
-                setPunchMode('idle');
-                setActiveBarColor(newRankDetails.config.badgeAccent);
-                setShatterShards([]);
-              }, 600));
-
-            }, 200));
-          }
-        }
-
       }, 340)
     );
 
-    // Calculate delay offset to wait for sequence to finish before showing title & progress
-    const getDelayOffset = () => {
-      if (!isRankUp) return 0;
-      if (!isMajorTierUp) return 650;
-      const timeScale = 1 + (intensity - 1) * (1 / 7);
-      const shatterTotal = (200 + 800) * timeScale;
-      return shatterTotal;
-    };
-    const delayOffset = getDelayOffset();
-
     // ==========================================
-    // STAGE 3: TEXT STAMP at 0.52s + offset
+    // STAGE 2: TITLE APPEARS at 520ms
     // ==========================================
     timers.push(
       setTimeout(() => {
         setShowTitle(true);
         setAnimPhase('title');
-      }, 520 + delayOffset)
+      }, 520)
     );
 
     // ==========================================
-    // STAGE 4: EARNED RP BAR PROGRESS at 0.85s + offset
+    // STAGE 3: TIER PROGRESS BAR ANIMATION at 750ms
     // ==========================================
     timers.push(
       setTimeout(() => {
@@ -436,71 +314,203 @@ export function RankSettlementModal({
 
         const lastPoppedRef = { current: -1 };
 
-        // Standard single tier fill logic (used for both normal and rank-ups now)
-        const startTime = performance.now();
-        const duration = 1200; // 1.2s smooth roll-up
-        const tierMin = newRankDetails.minRP;
-        const tierMax = newRankDetails.maxRP;
-        const needed = Math.max(1, tierMax - tierMin);
-        // If prevRP is below tierMin, startRatio is 0 (which is correct for rank up)
-        const startRatio = Math.min(1, Math.max(0, prevRP - tierMin) / needed);
-        const targetRatio = Math.min(1, Math.max(0, newRP - tierMin) / needed);
+        if (!isRankUp) {
+          // Standard single tier fill logic
+          const startTime = performance.now();
+          const duration = 1200; // 1.2s smooth roll-up
+          const targetInTier = Math.max(0, newRP - prevTierMin);
+          const targetRatio = Math.min(1, targetInTier / prevNeeded);
 
-        const runProgress = (now: number) => {
-          const elapsed = now - startTime;
-          const progress = Math.min(1, elapsed / duration);
-          const ease = cubicBezierEase(progress);
+          const runProgress = (now: number) => {
+            const elapsed = now - startTime;
+            const progress = Math.min(1, elapsed / duration);
+            const ease = cubicBezierEase(progress);
 
-          const curRP = Math.round(prevRP + (newRP - prevRP) * ease);
-          const curGain = Math.round(totalGained * ease);
-          const curRatio = startRatio + (targetRatio - startRatio) * ease;
+            const curRP = Math.round(prevRP + (newRP - prevRP) * ease);
+            const curGain = Math.round(totalGained * ease);
+            const curRatio = initialRatio + (targetRatio - initialRatio) * ease;
 
-          setAnimatingRP(curRP);
-          setDisplayedGain(curGain);
-          setProgressRatio(curRatio);
+            setAnimatingRP(curRP);
+            setDisplayedGain(curGain);
+            setProgressRatio(curRatio);
 
-          // Check segment pop (5 segments: 0.2 each)
-          const currentSegment = Math.floor(curRatio / 0.2);
-          if (currentSegment > lastPoppedRef.current && currentSegment < 5) {
-            lastPoppedRef.current = currentSegment;
-            setPoppedSegment(currentSegment);
-            soundFx.playSegmentTick(curRatio);
-            setTimeout(() => setPoppedSegment(null), 160);
-          }
+            // Check segment pop (5 segments: 0.2 each)
+            const currentSegment = Math.floor(curRatio / 0.2);
+            if (currentSegment > lastPoppedRef.current && currentSegment < 5) {
+              lastPoppedRef.current = currentSegment;
+              setPoppedSegment(currentSegment);
+              soundFx.playSegmentTick(curRatio);
+              setTimeout(() => setPoppedSegment(null), 160);
+            }
 
-          if (progress < 1) {
-            animFrameRef.current = requestAnimationFrame(runProgress);
-          } else {
-            setAnimatingRP(newRP);
-            setDisplayedGain(totalGained);
-            setProgressRatio(targetRatio);
+            if (progress < 1) {
+              animFrameRef.current = requestAnimationFrame(runProgress);
+            } else {
+              setAnimatingRP(newRP);
+              setDisplayedGain(totalGained);
+              setProgressRatio(targetRatio);
 
-            // Final tick: scale counter and play completion chime
-            setCounterPopped(true);
-            setTimeout(() => setCounterPopped(false), 250);
-            soundFx.playRankFillCompletion();
-          }
-        };
+              // Final tick: scale counter and play completion chime
+              setCounterPopped(true);
+              setTimeout(() => setCounterPopped(false), 250);
+              soundFx.playRankFillCompletion();
 
-        animFrameRef.current = requestAnimationFrame(runProgress);
-      }, 850 + delayOffset)
+              timers.push(
+                setTimeout(() => {
+                  setShowContinue(true);
+                  setAnimPhase('ready');
+                }, 400)
+              );
+            }
+          };
+
+          animFrameRef.current = requestAnimationFrame(runProgress);
+        } else {
+          // ==========================================
+          // RANK-UP THRESHOLD CROSSED:
+          // Phase 1: Fill bar from prevRP to 100% of prevTier
+          // ==========================================
+          const startTime = performance.now();
+          const p1Duration = 800;
+          const targetRatioP1 = 1.0;
+          const rpToCap = Math.max(0, prevTierMax - prevRP);
+          const totalRPDelta = Math.max(1, newRP - prevRP);
+          const p1GainTarget = Math.round(totalGained * (rpToCap / totalRPDelta));
+
+          const runPhase1 = (now: number) => {
+            const elapsed = now - startTime;
+            const p = Math.min(1, elapsed / p1Duration);
+            const ease = cubicBezierEase(p);
+
+            const curRP = Math.round(prevRP + rpToCap * ease);
+            const curGain = Math.round(p1GainTarget * ease);
+            const curRatio = initialRatio + (targetRatioP1 - initialRatio) * ease;
+
+            setAnimatingRP(curRP);
+            setDisplayedGain(curGain);
+            setProgressRatio(curRatio);
+
+            const currentSegment = Math.floor(curRatio / 0.2);
+            if (currentSegment > lastPoppedRef.current && currentSegment < 5) {
+              lastPoppedRef.current = currentSegment;
+              setPoppedSegment(currentSegment);
+              soundFx.playSegmentTick(curRatio);
+              setTimeout(() => setPoppedSegment(null), 160);
+            }
+
+            if (p < 1) {
+              animFrameRef.current = requestAnimationFrame(runPhase1);
+            } else {
+              // 1. Fill bar to 100%
+              setAnimatingRP(prevTierMax);
+              setDisplayedGain(p1GainTarget);
+              setProgressRatio(1.0);
+              setIsBarFlashing(true);
+
+              // 2. Rank-up audio & celebration effects
+              if (isMajorTierUp) {
+                soundFx.playCinematicPromotionSound(intensity, 200);
+              } else {
+                soundFx.playShatterCrack(0.6);
+              }
+              confetti({
+                particleCount: 90,
+                spread: 75,
+                origin: { y: 0.55 },
+              });
+
+              // 3. Trigger rank-up state transition: update badge image and title
+              setDisplayRank(newRankDetails);
+              setActiveBarColor(newRankDetails.config.badgeAccent);
+              setPunchMode(isMajorTierUp ? 'large' : 'small');
+
+              // Rank-up screen shake
+              const shakeStart = performance.now();
+              const shakeDur = 350;
+              const runShake2 = (tNow: number) => {
+                const el = tNow - shakeStart;
+                const sp = Math.min(1, el / shakeDur);
+                if (sp < 1) {
+                  const amp = (isMajorTierUp ? 12 : 7) * Math.pow(1 - sp, 2);
+                  setShakeOffset({
+                    x: (Math.random() * 2 - 1) * amp,
+                    y: (Math.random() * 2 - 1) * amp,
+                  });
+                  shakeFrameRef.current = requestAnimationFrame(runShake2);
+                } else {
+                  setShakeOffset({ x: 0, y: 0 });
+                }
+              };
+              shakeFrameRef.current = requestAnimationFrame(runShake2);
+
+              // 4. Continue animating remainder RP into the new tier
+              timers.push(
+                setTimeout(() => {
+                  setIsBarFlashing(false);
+                  setPunchMode('idle');
+                  setProgressRatio(0);
+
+                  const newTierMin = newRankDetails.minRP;
+                  const newTierMax = newRankDetails.maxRP;
+                  const newNeeded = Math.max(1, newTierMax - newTierMin);
+                  const remainderRP = Math.max(0, newRP - newTierMin);
+                  const targetRatioP2 = Math.min(1, remainderRP / newNeeded);
+
+                  const p2StartTime = performance.now();
+                  const p2Duration = 800;
+                  const p2PoppedRef = { current: -1 };
+
+                  const runPhase2 = (now2: number) => {
+                    const elapsed2 = now2 - p2StartTime;
+                    const p2 = Math.min(1, elapsed2 / p2Duration);
+                    const ease2 = cubicBezierEase(p2);
+
+                    const curRP2 = Math.round(newTierMin + remainderRP * ease2);
+                    const curGain2 = Math.round(p1GainTarget + (totalGained - p1GainTarget) * ease2);
+                    const curRatio2 = targetRatioP2 * ease2;
+
+                    setAnimatingRP(curRP2);
+                    setDisplayedGain(curGain2);
+                    setProgressRatio(curRatio2);
+
+                    const currentSeg2 = Math.floor(curRatio2 / 0.2);
+                    if (currentSeg2 > p2PoppedRef.current && currentSeg2 < 5) {
+                      p2PoppedRef.current = currentSeg2;
+                      setPoppedSegment(currentSeg2);
+                      soundFx.playSegmentTick(curRatio2);
+                      setTimeout(() => setPoppedSegment(null), 160);
+                    }
+
+                    if (p2 < 1) {
+                      animFrameRef.current = requestAnimationFrame(runPhase2);
+                    } else {
+                      setAnimatingRP(newRP);
+                      setDisplayedGain(totalGained);
+                      setProgressRatio(targetRatioP2);
+
+                      setCounterPopped(true);
+                      setTimeout(() => setCounterPopped(false), 250);
+                      soundFx.playRankFillCompletion();
+
+                      timers.push(
+                        setTimeout(() => {
+                          setShowContinue(true);
+                          setAnimPhase('ready');
+                        }, 400)
+                      );
+                    }
+                  };
+
+                  animFrameRef.current = requestAnimationFrame(runPhase2);
+                }, 350)
+              );
+            }
+          };
+
+          animFrameRef.current = requestAnimationFrame(runPhase1);
+        }
+      }, 750)
     );
-
-    // ==========================================
-    // STAGE 5: CONTINUE BUTTON at 2.35s + offset
-    // ==========================================
-    timers.push(
-      setTimeout(() => {
-        setShowContinue(true);
-        setAnimPhase('ready');
-      }, 2350 + delayOffset)
-    );
-
-    return () => {
-      timers.forEach(clearTimeout);
-      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
-      if (shakeFrameRef.current) cancelAnimationFrame(shakeFrameRef.current);
-    };
   }, [isOpen, data, prevRP, newRP, totalGained, isRankUp, newRankDetails, prevRankDetails, prefersReducedMotion]);
 
   if (!isOpen || !data) return null;
@@ -802,7 +812,7 @@ export function RankSettlementModal({
               <span className={`font-mono ${sessionRP > 0 ? 'text-emerald-400/90' : 'text-slate-400'}`}>+{sessionRP} RP</span>
               {isUnderMinDuration && (
                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-300/90 border border-rose-500/20 font-sans font-medium">
-                  &lt; 5m min
+                  &lt; 1m min
                 </span>
               )}
             </span>
@@ -943,8 +953,7 @@ export function RankSettlementModal({
               willChange: 'box-shadow',
             }}
           >
-            <span>CONTINUE</span>
-            <ChevronRight className="w-3.5 h-3.5 text-slate-300 stroke-[2.5]" />
+            <span>CONTINUE &gt;</span>
           </button>
 
           {/* Keyboard Hint */}
