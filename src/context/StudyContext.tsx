@@ -14,6 +14,8 @@ import {
   getLevelProgress,
   calculateFocusXP,
   getLevelTitle,
+  getLevelFromLifetimeXP,
+  getScholarTitle,
   LevelProgress,
 } from '../lib/gamification';
 import {
@@ -738,10 +740,12 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     return todos.filter(t => t.completed).length;
   }, [todos]);
 
-  // Derive real-time Gamification level progress
+  // Derive real-time Gamification level progress from lifetime XP (Uncapped 7-Year Exponential Engine)
   const gamification = useMemo(() => {
-    return getLevelProgress(totalStudySeconds, completedTodosCount, user.streakDays || 0);
-  }, [totalStudySeconds, completedTodosCount, user.streakDays]);
+    const fallbackXP = Math.floor(totalStudySeconds / 60) * 10;
+    const currentLifetimeXP = Number(user?.lifetime_xp ?? user?.lifetimeXp ?? user?.xp ?? fallbackXP);
+    return getLevelProgress(currentLifetimeXP);
+  }, [user?.lifetime_xp, user?.lifetimeXp, user?.xp, totalStudySeconds]);
 
   // Monitor level changes to trigger celebratory modal and keep profile state synced
   const hasHydratedLevelRef = useRef(false);
@@ -2537,11 +2541,6 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     // Immediately append the new session to the current day's session array
     addSession(newSession);
 
-      const earnedXP = calculateFocusXP(secondsToSave);
-      if (earnedXP > 0) {
-        triggerXpEarned(earnedXP, `${Math.max(1, Math.round(secondsToSave / 60))} min Focus Session`, 'focus');
-      }
-
       const todayStart = getLocalStartOfDay(new Date());
       const todayEnd = getLocalEndOfDay(new Date());
       const allSessionsNow = [newSession, ...sessions.filter(s => s.id !== newSession.id)];
@@ -2580,12 +2579,41 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       const prevRP = Number((currentUser as any)?.rp ?? currentUser?.seasonRp ?? 0);
       const newRP = prevRP + rpBreakdown.totalGained;
 
+      // XP Calculation & Anti-Exploit Rules:
+      // Award rate: 10 XP per full minute of recorded focus time: Math.floor(duration_seconds / 60) * 10
+      // Duration gate: If session duration is under 60 seconds (< 1 min), earned focus XP is strictly 0.
+      // Daily consistency streak bonus (+100 XP): First valid session (>= 60s) of the day
+      const isValidSession = secondsToSave >= 60;
+      const focusXP = isValidSession ? Math.floor(secondsToSave / 60) * 10 : 0;
+      const appliedStreakBonus = isValidSession && (lastStreakBonusDate !== todayString);
+      const totalEarnedXP = focusXP + (appliedStreakBonus ? 100 : 0);
+
+      // Permanently increment lifetime_xp (never resets across seasons)
+      const prevLifetimeXP = Number(currentUser?.lifetime_xp ?? currentUser?.lifetimeXp ?? currentUser?.xp ?? 0);
+      const newLifetimeXP = prevLifetimeXP + totalEarnedXP;
+      const newLevel = getLevelFromLifetimeXP(newLifetimeXP);
+      const newScholarTitle = getScholarTitle(newLevel);
+
+      // Trigger celebratory XP gain notification
+      if (totalEarnedXP > 0) {
+        const mins = Math.floor(secondsToSave / 60);
+        const reason = appliedStreakBonus
+          ? `${mins} min Focus (+100 Daily Streak)`
+          : `${mins} min Focus Session`;
+        triggerXpEarned(totalEarnedXP, reason, 'focus');
+      }
+
       const profileUpdates: Partial<UserProfile> = {
         seasonRp: newRP,
         rp: newRP,
+        lifetime_xp: newLifetimeXP,
+        lifetimeXp: newLifetimeXP,
+        xp: newLifetimeXP,
+        level: newLevel,
+        levelTitle: newScholarTitle,
       };
 
-      if (rpBreakdown.goalStreakBonus > 0) {
+      if (appliedStreakBonus || rpBreakdown.goalStreakBonus > 0) {
         profileUpdates.last_streak_bonus_date = todayString;
         profileUpdates.lastStreakBonusDate = todayString;
         try {
@@ -3109,7 +3137,6 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       nextCompleted = !target.completed;
       if (nextCompleted) {
         soundFx.playReactionPop();
-        triggerXpEarned(25, 'Task Completed', 'todo');
       }
 
       const updated = prev.map(t => {

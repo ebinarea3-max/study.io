@@ -1,34 +1,27 @@
 /**
- * StudyPulse - Gamification & Level Progression Engine
+ * StudyPulse - 7-Year Exponential, Uncapped Lifetime Level & XP Progression Engine
  * 
  * XP Rules:
- * - Focus Time: 1 minute of focus = 10 XP (0.167 XP per second)
- * - Todo Item: +25 XP per completed task
- * - Daily Streak: +50 XP bonus per streak day
+ * - Focus Time: Purely tied to focus time. Award 10 XP per full minute of recorded focus time:
+ *   Math.floor(duration_seconds / 60) * 10
+ * - Duration gate: If session duration is under 60 seconds (< 1 min), earned focus XP is strictly 0.
+ * - Tasks: Completing/checking off tasks awards 0 XP.
+ * - Daily consistency streak bonus: +100 XP on user's first valid session (>= 60s) of the day.
+ * - Lifetime XP: Uncapped, permanently accumulated in database/profile state. Never resets across seasons.
  * 
  * Level Formula:
- * - Level = Math.floor(Math.sqrt(total_xp / 100)) + 1
- * - Level 1: 0 XP
- * - Level 2: 100 XP
- * - Level 3: 400 XP
- * - Level 4: 900 XP
- * - Level 5: 1,600 XP ...
- * 
- * Tier Badges:
- * - Level 1–3: "Novice Scholar"
- * - Level 4–7: "Deep Worker"
- * - Level 8–12: "Focus Master"
- * - Level 13+: "Grandmaster"
+ * - Calibrated so Level 100 requires ~3.9M XP (~6,500 hours / ~7 years of daily study)
+ * - Cumulative XP for Level L: Math.floor(60 * Math.pow(level - 1, 2.4))
+ * - Level from Cumulative XP: Math.floor(Math.pow(lifetimeXP / 60, 1 / 2.4)) + 1
  */
 
 import React from 'react';
-import { Sprout, Zap, Hexagon, Trophy } from 'lucide-react';
+import { Sprout, Zap, Hexagon, Sparkles, BookOpen, Shield, Star, Trophy } from 'lucide-react';
 
 export const GAMIFICATION_CONFIG = {
   XP_PER_MINUTE: 10,
-  XP_PER_SECOND: 10 / 60,
-  XP_PER_TODO: 25,
-  XP_PER_STREAK_DAY: 50,
+  DAILY_STREAK_BONUS_XP: 100,
+  MIN_SESSION_SECONDS_FOR_XP: 60,
 } as const;
 
 export type TierBadge = {
@@ -44,6 +37,13 @@ export type TierBadge = {
 
 export interface LevelProgress {
   level: number;
+  scholarTitle: string;
+  currentProgressXP: number;
+  xpNeededForNext: number;
+  progressPercent: number; // 0 to 100
+  displayText: string;
+
+  // Compatible aliases for existing UI components (Navbar, LevelUpModal)
   title: string;
   tierBadge: TierBadge;
   totalXP: number;
@@ -55,82 +55,136 @@ export interface LevelProgress {
   xpInCurrentLevel: number;
   xpNeededForNextLevel: number;
   xpRemaining: number;
-  progressPercent: number; // 0 to 100
+}
+
+/**
+ * Cumulative XP required to reach Level L (L >= 1)
+ * Calibrated so Level 100 requires ~3.9M XP (~6,500 hours / ~7 years of daily study)
+ */
+export function getCumulativeXPForLevel(level: number): number {
+  if (level <= 1) return 0;
+  return Math.floor(60 * Math.pow(level - 1, 2.4));
+}
+
+/**
+ * Exact level calculation from cumulative lifetime XP (Infinite / Uncapped)
+ */
+export function getLevelFromLifetimeXP(lifetimeXP: number): number {
+  if (!lifetimeXP || lifetimeXP <= 0) return 1;
+  const calculatedLevel = Math.floor(Math.pow(lifetimeXP / 60, 1 / 2.4)) + 1;
+  return Math.max(1, calculatedLevel);
+}
+
+/**
+ * Uncapped prestige scholar titles
+ */
+export function getScholarTitle(level: number): string {
+  if (level >= 200) return "Transcendent Myth";
+  if (level >= 150) return "Cosmic Sage";
+  if (level >= 100) return "Eternal Archon";
+  if (level >= 75) return "Grand Philosopher";
+  if (level >= 50) return "Master Polymath";
+  if (level >= 25) return "Adept Inquirer";
+  if (level >= 10) return "Apprentice Mind";
+  return "Novice Scholar";
+}
+
+/**
+ * Dynamic XP progress for the circular SVG ring and counters
+ */
+export function getLevelProgress(
+  lifetimeXPOrTotalSeconds: number,
+  _completedTodosCount?: number,
+  _streakDays?: number
+): LevelProgress {
+  const safeXP = Math.max(0, lifetimeXPOrTotalSeconds || 0);
+  const currentLevel = getLevelFromLifetimeXP(safeXP);
+  const currentLevelBaseXP = getCumulativeXPForLevel(currentLevel);
+  const nextLevelBaseXP = getCumulativeXPForLevel(currentLevel + 1);
+
+  const bracketSpan = nextLevelBaseXP - currentLevelBaseXP;
+  const currentProgressXP = safeXP - currentLevelBaseXP;
+
+  const progressPercent = bracketSpan > 0
+    ? Math.min(100, Math.max(0, (currentProgressXP / bracketSpan) * 100))
+    : 0;
+
+  const scholarTitle = getScholarTitle(currentLevel);
+  const tierBadge = getTierBadge(currentLevel);
+
+  return {
+    level: currentLevel,
+    scholarTitle,
+    currentProgressXP,
+    xpNeededForNext: bracketSpan,
+    progressPercent,
+    displayText: `${currentProgressXP.toLocaleString()} / ${bracketSpan.toLocaleString()} XP`,
+
+    // Compatible aliases for existing UI components
+    title: scholarTitle,
+    tierBadge,
+    totalXP: safeXP,
+    focusXP: safeXP,
+    todoXP: 0,
+    streakXP: 0,
+    currentLevelBaseXP,
+    nextLevelXP: nextLevelBaseXP,
+    xpInCurrentLevel: currentProgressXP,
+    xpNeededForNextLevel: bracketSpan,
+    xpRemaining: Math.max(0, bracketSpan - currentProgressXP),
+  };
 }
 
 /**
  * Calculate XP earned from focus time
+ * Anti-exploit rule: Under 60s (< 1 min) awards strictly 0 XP.
+ * Rate: 10 XP per full minute of recorded focus time.
  */
 export function calculateFocusXP(durationSeconds: number): number {
-  if (!durationSeconds || durationSeconds <= 0) return 0;
-  return Math.round(durationSeconds * GAMIFICATION_CONFIG.XP_PER_SECOND);
+  if (!durationSeconds || durationSeconds < GAMIFICATION_CONFIG.MIN_SESSION_SECONDS_FOR_XP) {
+    return 0;
+  }
+  return Math.floor(durationSeconds / 60) * GAMIFICATION_CONFIG.XP_PER_MINUTE;
 }
 
 /**
- * Calculate XP earned from completed todos
+ * Calculate XP earned from completed todos (Rule: Tasks award 0 XP)
  */
-export function calculateTodoXP(completedCount: number): number {
-  if (!completedCount || completedCount <= 0) return 0;
-  return completedCount * GAMIFICATION_CONFIG.XP_PER_TODO;
+export function calculateTodoXP(_completedCount?: number): number {
+  return 0;
 }
 
 /**
- * Calculate XP earned from maintaining a daily streak
- */
-export function calculateStreakXP(streakDays: number): number {
-  if (!streakDays || streakDays <= 0) return 0;
-  return streakDays * GAMIFICATION_CONFIG.XP_PER_STREAK_DAY;
-}
-
-/**
- * Calculate total XP derived from all activities
- */
-export function calculateTotalXP(
-  totalDurationSeconds: number,
-  completedTodosCount: number,
-  streakDays: number
-): number {
-  const focus = calculateFocusXP(totalDurationSeconds);
-  const todo = calculateTodoXP(completedTodosCount);
-  const streak = calculateStreakXP(streakDays);
-  return focus + todo + streak;
-}
-
-/**
- * Calculate Level from Total XP
- * Formula: Level = Math.floor(Math.sqrt(total_xp / 100)) + 1
+ * Calculate Level from Total XP (Alias for getLevelFromLifetimeXP)
  */
 export function calculateLevel(totalXP: number): number {
-  const safeXP = Math.max(0, totalXP || 0);
-  return Math.max(1, Math.floor(Math.sqrt(safeXP / 100)) + 1);
+  return getLevelFromLifetimeXP(totalXP);
 }
 
 /**
- * Get min XP required to reach a specific level
+ * Get min XP required to reach a specific level (Alias for getCumulativeXPForLevel)
  */
 export function getXPForLevel(level: number): number {
-  const safeLevel = Math.max(1, level);
-  return Math.pow(safeLevel - 1, 2) * 100;
+  return getCumulativeXPForLevel(level);
 }
 
 /**
- * Get Tier title for a given level
+ * Get Tier title for a given level (Alias for getScholarTitle)
  */
 export function getLevelTitle(level: number): string {
-  if (level <= 3) return 'Novice Scholar';
-  if (level <= 7) return 'Deep Worker';
-  if (level <= 12) return 'Focus Master';
-  return 'Grandmaster';
+  return getScholarTitle(level);
 }
 
 /**
- * Get badge styling and metadata for a given level
+ * Get badge styling and metadata for prestige levels
  */
 export function getTierBadge(level: number): TierBadge {
-  if (level <= 3) {
+  const title = getScholarTitle(level);
+
+  if (level < 10) {
     return {
       tier: 'novice',
-      title: 'Novice Scholar',
+      title,
       icon: React.createElement(Sprout, { className: "w-[1em] h-[1em]" }),
       badgeClass: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
       glowClass: 'shadow-emerald-500/20',
@@ -139,10 +193,11 @@ export function getTierBadge(level: number): TierBadge {
       bgGradient: 'from-emerald-500 to-teal-500',
     };
   }
-  if (level <= 7) {
+
+  if (level < 25) {
     return {
       tier: 'worker',
-      title: 'Deep Worker',
+      title,
       icon: React.createElement(Zap, { className: "w-[1em] h-[1em]" }),
       badgeClass: 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30',
       glowClass: 'shadow-cyan-500/20',
@@ -151,68 +206,80 @@ export function getTierBadge(level: number): TierBadge {
       bgGradient: 'from-cyan-500 to-blue-500',
     };
   }
-  if (level <= 12) {
+
+  if (level < 50) {
+    return {
+      tier: 'worker',
+      title,
+      icon: React.createElement(Hexagon, { className: "w-[1em] h-[1em]" }),
+      badgeClass: 'bg-blue-500/15 text-blue-300 border-blue-500/30',
+      glowClass: 'shadow-blue-500/20',
+      textColor: 'text-blue-400',
+      borderColor: 'border-blue-500/40',
+      bgGradient: 'from-blue-500 to-indigo-500',
+    };
+  }
+
+  if (level < 75) {
     return {
       tier: 'master',
-      title: 'Focus Master',
-      icon: React.createElement(Hexagon, { className: "w-[1em] h-[1em]" }),
+      title,
+      icon: React.createElement(Sparkles, { className: "w-[1em] h-[1em]" }),
       badgeClass: 'bg-purple-500/15 text-purple-300 border-purple-500/30',
       glowClass: 'shadow-purple-500/20',
       textColor: 'text-purple-400',
       borderColor: 'border-purple-500/40',
-      bgGradient: 'from-purple-500 to-indigo-500',
+      bgGradient: 'from-purple-500 to-fuchsia-500',
     };
   }
+
+  if (level < 100) {
+    return {
+      tier: 'master',
+      title,
+      icon: React.createElement(BookOpen, { className: "w-[1em] h-[1em]" }),
+      badgeClass: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
+      glowClass: 'shadow-amber-500/25',
+      textColor: 'text-amber-400',
+      borderColor: 'border-amber-500/40',
+      bgGradient: 'from-amber-400 to-orange-500',
+    };
+  }
+
+  if (level < 150) {
+    return {
+      tier: 'grandmaster',
+      title,
+      icon: React.createElement(Shield, { className: "w-[1em] h-[1em]" }),
+      badgeClass: 'bg-rose-500/15 text-rose-300 border-rose-500/30',
+      glowClass: 'shadow-rose-500/25',
+      textColor: 'text-rose-400',
+      borderColor: 'border-rose-500/40',
+      bgGradient: 'from-rose-500 to-pink-500',
+    };
+  }
+
+  if (level < 200) {
+    return {
+      tier: 'grandmaster',
+      title,
+      icon: React.createElement(Star, { className: "w-[1em] h-[1em]" }),
+      badgeClass: 'bg-violet-500/15 text-violet-300 border-violet-500/30',
+      glowClass: 'shadow-violet-500/25',
+      textColor: 'text-violet-400',
+      borderColor: 'border-violet-500/40',
+      bgGradient: 'from-violet-500 to-cyan-500',
+    };
+  }
+
   return {
     tier: 'grandmaster',
-    title: 'Grandmaster',
-    icon: React.createElement(Trophy, { className: "w-[1em] h-[1em]" }),
-    badgeClass: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
-    glowClass: 'shadow-amber-500/25',
-    textColor: 'text-amber-400',
-    borderColor: 'border-amber-500/40',
-    bgGradient: 'from-amber-400 to-orange-500',
-  };
-}
-
-/**
- * Calculate comprehensive level progression data
- */
-export function getLevelProgress(
-  totalSeconds: number,
-  completedTodosCount: number,
-  streakDays: number
-): LevelProgress {
-  const focusXP = calculateFocusXP(totalSeconds);
-  const todoXP = calculateTodoXP(completedTodosCount);
-  const streakXP = calculateStreakXP(streakDays);
-  const totalXP = focusXP + todoXP + streakXP;
-
-  const level = calculateLevel(totalXP);
-  const title = getLevelTitle(level);
-  const tierBadge = getTierBadge(level);
-
-  const currentLevelBaseXP = getXPForLevel(level);
-  const nextLevelXP = getXPForLevel(level + 1);
-  const xpNeededForNextLevel = Math.max(1, nextLevelXP - currentLevelBaseXP);
-  const xpInCurrentLevel = Math.max(0, totalXP - currentLevelBaseXP);
-  const xpRemaining = Math.max(0, nextLevelXP - totalXP);
-
-  const progressPercent = Math.min(100, Math.max(0, (xpInCurrentLevel / xpNeededForNextLevel) * 100));
-
-  return {
-    level,
     title,
-    tierBadge,
-    totalXP,
-    focusXP,
-    todoXP,
-    streakXP,
-    currentLevelBaseXP,
-    nextLevelXP,
-    xpInCurrentLevel,
-    xpNeededForNextLevel,
-    xpRemaining,
-    progressPercent,
+    icon: React.createElement(Trophy, { className: "w-[1em] h-[1em]" }),
+    badgeClass: 'bg-yellow-500/15 text-yellow-300 border-yellow-500/30',
+    glowClass: 'shadow-yellow-500/30',
+    textColor: 'text-yellow-400',
+    borderColor: 'border-yellow-500/50',
+    bgGradient: 'from-yellow-400 via-amber-300 to-orange-500',
   };
 }

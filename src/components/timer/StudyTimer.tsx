@@ -44,7 +44,7 @@ import { CountdownEditor } from './CountdownEditor';
 import { getSupabase } from '../../lib/supabase';
 import { getDailyQuote } from '../../lib/quotes';
 import { StudySession, Subject, TimerMode, UserProfile } from '../../types';
-import { calculateFocusXP } from '../../lib/gamification';
+import { calculateFocusXP, getLevelFromLifetimeXP, getScholarTitle } from '../../lib/gamification';
 import { calculateSessionRP } from '../../lib/rankedSystem';
 import { getLocalDateString, isSessionToday, isSessionYesterday } from '../../lib/dateUtils';
 import { Skeleton } from '../common/Skeleton';
@@ -393,12 +393,6 @@ export function StudyTimer() {
       // Immediately update local Daily Overview and Analytics stats state
       addSession(newSession);
 
-      // Trigger celebratory XP gain notification
-      const earnedXP = calculateFocusXP(seconds);
-      if (earnedXP > 0) {
-        triggerXpEarned(earnedXP, `${Math.max(1, Math.round(seconds / 60))} min Focus Session`, 'focus');
-      }
-
       soundFx.playStopChime();
       const todayStart = getLocalStartOfDay(new Date());
       const todayEnd = getLocalEndOfDay(new Date());
@@ -439,13 +433,42 @@ export function StudyTimer() {
       const prevRP = Number((user as any)?.rp ?? user?.seasonRp ?? 0);
       const newRP = prevRP + rpBreakdown.totalGained;
 
-      // Persist new RP and streak bonus date in profile
+      // XP Calculation & Anti-Exploit Rules:
+      // Award rate: 10 XP per full minute of recorded focus time: Math.floor(duration_seconds / 60) * 10
+      // Duration gate: If session duration is under 60 seconds (< 1 min), earned focus XP is strictly 0.
+      // Daily consistency streak bonus (+100 XP): First valid session (>= 60s) of the day
+      const isValidSession = seconds >= 60;
+      const focusXP = isValidSession ? Math.floor(seconds / 60) * 10 : 0;
+      const appliedStreakBonus = isValidSession && (lastStreakBonusDate !== todayString);
+      const totalEarnedXP = focusXP + (appliedStreakBonus ? 100 : 0);
+
+      // Permanently increment lifetime_xp (never resets across seasons)
+      const prevLifetimeXP = Number(user?.lifetime_xp ?? user?.lifetimeXp ?? user?.xp ?? 0);
+      const newLifetimeXP = prevLifetimeXP + totalEarnedXP;
+      const newLevel = getLevelFromLifetimeXP(newLifetimeXP);
+      const newScholarTitle = getScholarTitle(newLevel);
+
+      // Trigger celebratory XP gain notification
+      if (totalEarnedXP > 0) {
+        const mins = Math.floor(seconds / 60);
+        const reason = appliedStreakBonus
+          ? `${mins} min Focus (+100 Daily Streak)`
+          : `${mins} min Focus Session`;
+        triggerXpEarned(totalEarnedXP, reason, 'focus');
+      }
+
+      // Persist new RP, lifetime XP, level, and streak bonus date in profile
       const profileUpdates: Partial<UserProfile> = {
         seasonRp: newRP,
         rp: newRP,
+        lifetime_xp: newLifetimeXP,
+        lifetimeXp: newLifetimeXP,
+        xp: newLifetimeXP,
+        level: newLevel,
+        levelTitle: newScholarTitle,
       };
 
-      if (rpBreakdown.goalStreakBonus > 0) {
+      if (appliedStreakBonus || rpBreakdown.goalStreakBonus > 0) {
         profileUpdates.last_streak_bonus_date = todayString;
         profileUpdates.lastStreakBonusDate = todayString;
         try {

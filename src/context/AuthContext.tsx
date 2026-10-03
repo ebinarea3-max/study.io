@@ -5,6 +5,7 @@ import { UserProfile } from '../types';
 import { INITIAL_USER, cleanupLegacyDemoData } from '../lib/mockData';
 import { getSupabase } from '../lib/supabase';
 import { getCurrentSeasonId } from '../lib/rankedSystem';
+import { getLevelFromLifetimeXP, getScholarTitle } from '../lib/gamification';
 
 export type StoredAccount = {
   id: string;
@@ -97,11 +98,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const syncedRP = Math.max(calculatedRP, currentProfileRP);
-      const calculatedLevel = Math.max(1, Math.floor(Math.sqrt(Math.max(0, syncedRP) / 100)) + 1);
+      let currentLifetimeXP = Number(profile?.lifetime_xp ?? profile?.xp ?? 0);
+      if (currentLifetimeXP === 0 && totalStudySeconds > 0) {
+        currentLifetimeXP = Math.floor(totalStudySeconds / 60) * 10;
+      }
+      const calculatedLevel = getLevelFromLifetimeXP(currentLifetimeXP);
+      const calculatedTitle = getScholarTitle(calculatedLevel);
 
       if ((needsRepair || calculatedLevel > (profile?.level || 1)) && authUser.id && !authUser.id.startsWith('user-scholar')) {
         try {
-          const updatePayload: any = { level: calculatedLevel };
+          const updatePayload: any = { level: calculatedLevel, lifetime_xp: currentLifetimeXP };
           if (needsRepair) {
             updatePayload.rp = syncedRP;
             updatePayload.season_rp = syncedRP;
@@ -131,8 +137,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             avatarUrl: profile.avatar_url || metaAvatar || prev.avatarUrl,
             dailyGoalHours: Number(profile.daily_goal_hours ?? prev.dailyGoalHours ?? 4.0),
             streakDays: Number(profile.streak_days ?? prev.streakDays ?? 0),
-            level: Number(profile.level ?? prev.level ?? 1),
-            xp: Number(profile.xp ?? prev.xp ?? 0),
+            level: Number(profile.level ?? calculatedLevel),
+            levelTitle: profile.level_title || calculatedTitle || prev.levelTitle,
+            xp: currentLifetimeXP,
+            lifetime_xp: currentLifetimeXP,
+            lifetimeXp: currentLifetimeXP,
             currentSeasonId: profile.current_season_id || prev.currentSeasonId || getCurrentSeasonId(),
             seasonRp: syncedRP,
             rp: syncedRP,
@@ -145,7 +154,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             user_metadata: {
               ...(authUser.user_metadata || {}),
               level: Number(profile.level ?? calculatedLevel),
-              levelTitle: profile.level_title || prev.levelTitle,
+              levelTitle: profile.level_title || calculatedTitle || prev.levelTitle,
             },
           };
           try { localStorage.setItem('studypulse_active_user', JSON.stringify(synced)); } catch {}
@@ -587,9 +596,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (updates.level !== undefined) {
         updated.level = updates.level;
-      } else if (updates.xp !== undefined) {
-        updated.level = Math.max(1, Math.floor(Math.sqrt(Math.max(0, updates.xp) / 100)) + 1);
+      } else if (updates.lifetime_xp !== undefined || updates.xp !== undefined) {
+        const xpVal = Number(updates.lifetime_xp ?? updates.xp ?? 0);
+        updated.level = getLevelFromLifetimeXP(xpVal);
       }
+      updated.levelTitle = updates.levelTitle || getScholarTitle(updated.level);
 
       updated.user_metadata = {
         ...(prev.user_metadata || {}),
@@ -603,7 +614,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch {}
 
       // Only send valid columns in the update payload to Supabase:
-      // (name, avatar_url, daily_goal_hours, streak_days, level)
+      // (name, avatar_url, daily_goal_hours, streak_days, level, lifetime_xp, xp, rp, ...)
       // and query against 'id' as the primary key: .from('profiles').update(updates).eq('id', user.id)
       const supabase = getSupabase();
       if (supabase && prev.id && !prev.id.startsWith('user-scholar') && !prev.id.startsWith('guest')) {
@@ -629,6 +640,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         if (updates.level !== undefined && Number(updates.level) !== Number(prev.level)) {
           payload.level = Number(updates.level);
+        }
+        if (updates.lifetime_xp !== undefined) {
+          payload.lifetime_xp = Number(updates.lifetime_xp);
+        }
+        if (updates.lifetimeXp !== undefined) {
+          payload.lifetime_xp = Number(updates.lifetimeXp);
+        }
+        if (updates.xp !== undefined) {
+          payload.xp = Number(updates.xp);
         }
         if (updates.rp !== undefined) {
           payload.rp = Number(updates.rp);
