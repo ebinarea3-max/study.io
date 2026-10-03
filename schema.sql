@@ -417,3 +417,52 @@ begin
   );
 end;
 $$;
+
+-- ====================================================================
+-- 8. Monthly Leaderboard RPC
+-- Calculates total focus seconds logged in the current calendar month
+-- ====================================================================
+create or replace function public.get_monthly_leaderboard()
+returns table (
+  rank_position bigint,
+  user_id uuid,
+  display_name text,
+  username text,
+  lifetime_xp bigint,
+  rank_title text,
+  total_seconds bigint,
+  is_current_user boolean
+)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  curr_user_id uuid := auth.uid();
+  month_start timestamp with time zone := date_trunc('month', now());
+begin
+  return query
+  with monthly_stats as (
+    select
+      s.user_id,
+      coalesce(sum(s.duration_seconds), 0)::bigint as total_seconds
+    from public.study_sessions s
+    where s.started_at >= month_start
+    group by s.user_id
+  )
+  select
+    row_number() over (order by coalesce(m.total_seconds, 0) desc, coalesce(p.lifetime_xp, 0) desc)::bigint as rank_position,
+    p.id as user_id,
+    coalesce(nullif(p.name, ''), 'Anonymous Scholar') as display_name,
+    coalesce(nullif(p.username, ''), split_part(coalesce(nullif(p.name, ''), 'user'), ' ', 1)) as username,
+    coalesce(p.lifetime_xp, p.xp, 0)::bigint as lifetime_xp,
+    coalesce(p.rank_title, 'BRONZE I') as rank_title,
+    coalesce(m.total_seconds, 0)::bigint as total_seconds,
+    (curr_user_id is not null and p.id = curr_user_id) as is_current_user
+  from monthly_stats m
+  join public.profiles p on p.id = m.user_id
+  where m.total_seconds > 0
+  order by rank_position asc;
+end;
+$$;
+

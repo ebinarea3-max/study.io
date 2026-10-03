@@ -3,7 +3,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { NavTabType } from './Navbar';
 
-const TABS: NavTabType[] = ['timer', 'tasks', 'analytics', 'settings'];
+const TABS: NavTabType[] = ['timer', 'tasks', 'analytics', 'leaderboard', 'settings'];
 
 interface SwipeTabContainerProps {
   activeTab: NavTabType;
@@ -12,6 +12,7 @@ interface SwipeTabContainerProps {
     timer: React.ReactNode;
     tasks: React.ReactNode;
     analytics: React.ReactNode;
+    leaderboard?: React.ReactNode;
     settings: React.ReactNode;
   };
 }
@@ -138,12 +139,12 @@ export function SwipeTabContainer({
       onTouchEnd={handleTouchEnd}
       onTouchCancel={handleTouchEnd}
     >
-      {/* 4-Column Sliding Track */}
+      {/* Dynamic Sliding Track */}
       <div
         className="flex w-full flex-1"
         style={{
-          width: '400%',
-          transform: `translateX(calc(-${currentIndex * 25}% + ${dragX}px))`,
+          width: `${TABS.length * 100}%`,
+          transform: `translateX(calc(-${currentIndex * (100 / TABS.length)}% + ${dragX}px))`,
           transition: isDragging ? 'none' : 'transform 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
           willChange: 'transform',
         }}
@@ -151,8 +152,9 @@ export function SwipeTabContainer({
         {TABS.map((tab, idx) => (
           <div
             key={tab}
-            className={`w-1/4 flex-shrink-0 flex flex-col transition-opacity duration-300 h-full ${currentIndex === idx ? 'overflow-y-auto pb-24' : 'overflow-hidden pointer-events-none'}`}
+            className={`flex-shrink-0 flex flex-col transition-opacity duration-300 h-full ${currentIndex === idx ? 'overflow-y-auto pb-24' : 'overflow-hidden pointer-events-none'}`}
             style={{
+              width: `${100 / TABS.length}%`,
               opacity: isDragging
                 ? Math.max(0.6, 1 - Math.abs(dragX) / 300)
                 : currentIndex === idx

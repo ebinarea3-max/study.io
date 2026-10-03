@@ -27,7 +27,7 @@ import { RankCrestBadge } from './RankCrestBadge';
 import Image from 'next/image';
 import { getRankIconPath } from '../../utils/rankIcons';
 
-export type NavTabType = 'timer' | 'tasks' | 'analytics' | 'settings';
+export type NavTabType = 'timer' | 'tasks' | 'analytics' | 'leaderboard' | 'settings';
 
 interface NavbarProps {
   activeTab: NavTabType;
@@ -216,6 +216,19 @@ export function Navbar({
             >
               <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>STATS</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('leaderboard')}
+              className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-xl text-xs font-hud font-bold tracking-wider transition-all cursor-pointer ${
+                activeTab === 'leaderboard'
+                  ? 'text-white shadow-sm'
+                  : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
+              }`}
+              style={activeTab === 'leaderboard' ? { background: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#FFFFFF', fontWeight: 600 } : undefined}
+            >
+              <Trophy className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
+              <span>LEADERBOARD</span>
             </button>
 
             <button
@@ -537,7 +550,21 @@ export function Navbar({
           <span className="text-[9px] font-hud font-bold tracking-widest uppercase mt-0.5">Stats</span>
         </button>
 
-        {/* Tab 4: Settings */}
+        {/* Tab 4: Leaderboard */}
+        <button
+          onClick={() => setActiveTab('leaderboard')}
+          className={`relative z-10 flex-1 flex flex-col items-center justify-center py-2 rounded-full transition-all active:scale-95 cursor-pointer ${
+            activeTab === 'leaderboard'
+              ? 'text-slate-950 font-bold'
+              : 'text-slate-400 hover:text-white'
+          }`}
+          aria-label="Leaderboard"
+        >
+          <Trophy className="w-5 h-5" />
+          <span className="text-[9px] font-hud font-bold tracking-widest uppercase mt-0.5">Ranks</span>
+        </button>
+
+        {/* Tab 5: Settings */}
         <button
           onClick={() => setActiveTab('settings')}
           className={`relative z-10 flex-1 flex flex-col items-center justify-center py-2 rounded-full transition-all active:scale-95 cursor-pointer ${

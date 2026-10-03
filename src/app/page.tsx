@@ -25,6 +25,7 @@ import { Logo } from '../components/Logo';
 import { NavTabType } from '../components/common/Navbar';
 import { SwipeTabContainer } from '../components/common/SwipeTabContainer';
 import { SettingsTabContent } from '../components/common/SettingsTabContent';
+import { MonthlyLeaderboard } from '../components/leaderboard/MonthlyLeaderboard';
 import { useRankTheme } from '../hooks/useRankTheme';
 
 export default function Home() {
@@ -175,6 +176,11 @@ export default function Home() {
             analytics: (
               <ErrorBoundary fallbackTitle="Analytics Dashboard">
                 <AnalyticsDashboard onStartSession={() => setActiveTab('timer')} />
+              </ErrorBoundary>
+            ),
+            leaderboard: (
+              <ErrorBoundary fallbackTitle="Monthly Leaderboard">
+                <MonthlyLeaderboard isEmbedded />
               </ErrorBoundary>
             ),
             settings: (

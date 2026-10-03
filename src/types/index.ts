@@ -197,3 +197,14 @@ export type ActiveSession = {
   target_duration: number | null;
   updated_at: string;
 };
+
+export type LeaderboardEntry = {
+  user_id: string;
+  name: string;
+  username?: string | null;
+  avatar_url?: string | null;
+  lifetime_xp: number;
+  rank_title: string;
+  total_seconds: number;
+  is_current_user?: boolean;
+};
