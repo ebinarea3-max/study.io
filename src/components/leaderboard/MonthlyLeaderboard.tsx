@@ -46,6 +46,31 @@ export function getMonthlyRankTierTitle(rankTitle?: string, totalSeconds?: numbe
   return getRankConfigByTitle(clean).fullTitle;
 }
 
+export type LeaderboardTimeframe = 'today' | 'week' | 'month' | 'all';
+
+function getFilterStartDate(timeframe: LeaderboardTimeframe): Date | null {
+  const now = new Date();
+  if (timeframe === 'today') {
+    const d = new Date(now);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+  if (timeframe === 'week') {
+    const d = new Date(now);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Monday as start of week
+    d.setDate(diff);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+  if (timeframe === 'month') {
+    const d = new Date(now.getFullYear(), now.getMonth(), 1);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+  return null;
+}
+
 interface MonthlyLeaderboardProps {
   isEmbedded?: boolean;
 }
@@ -54,25 +79,56 @@ export function MonthlyLeaderboard({ isEmbedded = false }: MonthlyLeaderboardPro
   const { user } = useAuth();
   const { sessions } = useStudy();
 
+  const [timeframe, setTimeframe] = useState<LeaderboardTimeframe>('month');
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isFetching, setIsFetching] = useState<boolean>(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
   // Intersection observer state to detect whether current user's row is visible in the viewport
   const currentUserRowRef = useRef<HTMLDivElement | null>(null);
   const [isCurrentUserRowVisible, setIsCurrentUserRowVisible] = useState<boolean>(true);
 
-  // Compute seasonal tracker line (e.g. "// SEASONAL STANDINGS · OCTOBER 2026")
-  const seasonalTracker = useMemo(() => {
+  // Compute seasonal tracker line and subtext dynamically based on timeframe
+  const { trackerText, subtext, emptyText } = useMemo(() => {
     const now = new Date();
     const m = now.toLocaleString('en-US', { month: 'long' }).toUpperCase();
     const y = now.getFullYear();
-    return `// SEASONAL STANDINGS · ${m} ${y}`;
-  }, []);
 
-  // Fetch monthly leaderboard from Supabase RPC get_monthly_leaderboard()
+    switch (timeframe) {
+      case 'today':
+        return {
+          trackerText: '// DAILY STANDINGS',
+          subtext: 'Rankings determined by focus hours logged today.',
+          emptyText: 'No sessions recorded today yet. Start the timer to claim #1!',
+        };
+      case 'week':
+        return {
+          trackerText: '// WEEKLY SPRINT',
+          subtext: 'Rankings determined by focus hours logged this week.',
+          emptyText: 'No sessions recorded this week yet. Start the timer to claim #1!',
+        };
+      case 'month':
+        return {
+          trackerText: `// SEASONAL STANDINGS · ${m} ${y}`,
+          subtext: 'Rankings determined strictly by focus hours logged this calendar month.',
+          emptyText: 'No sessions recorded this month yet. Start the timer to claim #1!',
+        };
+      case 'all':
+        return {
+          trackerText: '// HALL OF FAME · ALL-TIME',
+          subtext: 'Rankings determined by total lifetime focus hours.',
+          emptyText: 'No sessions recorded yet. Start the timer to claim #1!',
+        };
+    }
+  }, [timeframe]);
+
+  // Fetch leaderboard data based on selected timeframe
   const fetchLeaderboard = useCallback(async () => {
-    setIsLoading(true);
+    if (leaderboard.length === 0) {
+      setIsLoading(true);
+    }
+    setIsFetching(true);
     setFetchError(null);
 
     const supabase = getSupabase();
@@ -81,10 +137,16 @@ export function MonthlyLeaderboard({ isEmbedded = false }: MonthlyLeaderboardPro
 
     if (supabase) {
       try {
-        const { data, error } = await supabase.rpc('get_monthly_leaderboard');
-        if (!error && Array.isArray(data)) {
+        // Call RPC get_leaderboard with timeframe parameter
+        let res = await supabase.rpc('get_leaderboard', { timeframe });
+        if (res.error && timeframe === 'month') {
+          // Backward compatibility fallback to get_monthly_leaderboard if get_leaderboard is not yet deployed
+          res = await supabase.rpc('get_monthly_leaderboard');
+        }
+
+        if (!res.error && Array.isArray(res.data)) {
           rpcSucceeded = true;
-          entries = data.map((row: any) => ({
+          entries = res.data.map((row: any) => ({
             user_id: String(row.user_id),
             name: String(row.display_name || row.name || 'Scholar'),
             display_name: row.display_name || row.name || null,
@@ -96,27 +158,29 @@ export function MonthlyLeaderboard({ isEmbedded = false }: MonthlyLeaderboardPro
             total_seconds: Number(row.total_seconds || 0),
             is_current_user: Boolean(row.is_current_user || (user?.id && row.user_id === user.id)),
           }));
-        } else if (error) {
-          console.warn('[Leaderboard] RPC get_monthly_leaderboard notice:', error.message);
+        } else if (res.error) {
+          console.warn('[Leaderboard] RPC get_leaderboard notice:', res.error.message);
         }
       } catch (err: any) {
-        console.warn('[Leaderboard] RPC get_monthly_leaderboard call error:', err);
+        console.warn('[Leaderboard] RPC get_leaderboard call error:', err);
       }
     }
 
-    // Graceful fallback for local development, offline mode, or if RPC is not yet executed in remote Supabase:
+    // Graceful fallback for local development, offline mode, or unmigrated Supabase database:
     if (!rpcSucceeded) {
       try {
         if (supabase && user?.id && !user.id.startsWith('user-scholar')) {
-          // Query study_sessions directly for current month
-          const startOfMonth = new Date();
-          startOfMonth.setDate(1);
-          startOfMonth.setHours(0, 0, 0, 0);
+          const filterStartDate = getFilterStartDate(timeframe);
 
-          const { data: dbSessions } = await supabase
+          let query = supabase
             .from('study_sessions')
-            .select('user_id, duration_seconds, started_at')
-            .gte('started_at', startOfMonth.toISOString());
+            .select('user_id, duration_seconds, started_at');
+
+          if (filterStartDate) {
+            query = query.gte('started_at', filterStartDate.toISOString());
+          }
+
+          const { data: dbSessions } = await query;
 
           if (dbSessions && dbSessions.length > 0) {
             // Aggregate totals by user_id
@@ -156,15 +220,13 @@ export function MonthlyLeaderboard({ isEmbedded = false }: MonthlyLeaderboardPro
 
       // If still empty and user has logged sessions in current state, include user's local sessions
       if (entries.length === 0 && user?.id) {
-        const startOfMonth = new Date();
-        startOfMonth.setDate(1);
-        startOfMonth.setHours(0, 0, 0, 0);
+        const filterStartDate = getFilterStartDate(timeframe);
 
-        const currentMonthSeconds = sessions
-          .filter((s) => new Date(s.startTime).getTime() >= startOfMonth.getTime())
+        const currentPeriodSeconds = sessions
+          .filter((s) => !filterStartDate || new Date(s.startTime).getTime() >= filterStartDate.getTime())
           .reduce((sum, s) => sum + (s.durationSeconds || 0), 0);
 
-        if (currentMonthSeconds > 0) {
+        if (currentPeriodSeconds > 0) {
           entries = [
             {
               user_id: user.id,
@@ -175,7 +237,7 @@ export function MonthlyLeaderboard({ isEmbedded = false }: MonthlyLeaderboardPro
               level: user.level,
               lifetime_xp: Number(user.lifetime_xp ?? user.lifetimeXp ?? user.xp ?? 0),
               rank_title: user.rank_title || 'Bronze I',
-              total_seconds: currentMonthSeconds,
+              total_seconds: currentPeriodSeconds,
               is_current_user: true,
             },
           ];
@@ -185,7 +247,8 @@ export function MonthlyLeaderboard({ isEmbedded = false }: MonthlyLeaderboardPro
 
     setLeaderboard(entries);
     setIsLoading(false);
-  }, [user?.id, user?.displayName, user?.name, user?.username, user?.avatarUrl, user?.lifetime_xp, user?.lifetimeXp, user?.xp, user?.rank_title, user?.level, sessions]);
+    setIsFetching(false);
+  }, [timeframe, user?.id, user?.displayName, user?.name, user?.username, user?.avatarUrl, user?.lifetime_xp, user?.lifetimeXp, user?.xp, user?.rank_title, user?.level, sessions]);
 
   useEffect(() => {
     fetchLeaderboard();
@@ -241,20 +304,54 @@ export function MonthlyLeaderboard({ isEmbedded = false }: MonthlyLeaderboardPro
     >
       <div className="w-full max-w-4xl flex flex-col gap-6 relative">
         {/* Header */}
-        <header className="flex flex-col gap-1 pb-2 border-b border-white/[0.06]">
-          <div className="text-xs font-mono text-amber-500/90 tracking-widest uppercase">
-            {seasonalTracker}
+        <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-2 border-b border-white/[0.06]">
+          <div className="flex flex-col gap-1">
+            <div className="text-xs font-mono text-amber-500/90 tracking-widest uppercase">
+              {trackerText}
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white uppercase">
+              MONTHLY LEADERBOARD
+            </h1>
+            <p className="text-xs sm:text-sm text-zinc-400 mt-1 leading-relaxed">
+              {subtext}
+            </p>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white uppercase">
-            MONTHLY LEADERBOARD
-          </h1>
-          <p className="text-xs sm:text-sm text-zinc-400 mt-1 leading-relaxed">
-            Rankings determined strictly by focus hours logged this calendar month.
-          </p>
+
+          {/* Timeframe Selector Tabs */}
+          <div className="inline-flex items-center p-1 bg-white/[0.03] border border-white/[0.08] rounded-lg gap-1 self-start sm:self-auto flex-shrink-0">
+            {(
+              [
+                { label: 'TODAY', value: 'today' },
+                { label: 'THIS WEEK', value: 'week' },
+                { label: 'THIS MONTH', value: 'month' },
+                { label: 'ALL TIME', value: 'all' },
+              ] as const
+            ).map((tab) => {
+              const isActive = timeframe === tab.value;
+              return (
+                <button
+                  key={tab.value}
+                  type="button"
+                  onClick={() => setTimeframe(tab.value)}
+                  className={
+                    isActive
+                      ? 'px-3 py-1.5 text-xs font-mono font-medium text-white bg-white/[0.08] border border-white/[0.1] rounded-md shadow-sm transition-all cursor-pointer'
+                      : 'px-3 py-1.5 text-xs font-mono font-medium text-zinc-400 hover:text-white transition-colors rounded-md cursor-pointer'
+                  }
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
         </header>
 
         {/* Single Unified Container (Like TODO LIST panel) */}
-        <div className="w-full bg-[#0c0e14] border border-white/[0.08] rounded-xl overflow-hidden shadow-2xl divide-y divide-white/[0.05]">
+        <div
+          className={`w-full bg-[#0c0e14] border border-white/[0.08] rounded-xl overflow-hidden shadow-2xl divide-y divide-white/[0.05] transition-opacity duration-200 ${
+            isFetching ? 'opacity-60' : 'opacity-100'
+          }`}
+        >
           {/* Table Header Bar */}
           <div className="px-6 py-2.5 bg-white/[0.02] text-[11px] font-mono uppercase tracking-wider text-zinc-500 flex items-center justify-between">
             <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -304,7 +401,7 @@ export function MonthlyLeaderboard({ isEmbedded = false }: MonthlyLeaderboardPro
                 NO SESSIONS RECORDED
               </h3>
               <p className="text-xs text-zinc-400 max-w-md">
-                No sessions recorded this month yet. Start the timer to claim #1!
+                {emptyText}
               </p>
             </div>
           ) : (

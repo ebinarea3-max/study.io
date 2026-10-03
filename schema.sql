@@ -466,3 +466,62 @@ begin
 end;
 $$;
 
+-- ====================================================================
+-- 9. General Timeframe Leaderboard RPC
+-- Calculates focus seconds filtered by timeframe: 'today' | 'week' | 'month' | 'all'
+-- ====================================================================
+create or replace function public.get_leaderboard(timeframe text default 'month')
+returns table (
+  rank_position bigint,
+  user_id uuid,
+  display_name text,
+  username text,
+  lifetime_xp bigint,
+  rank_title text,
+  total_seconds bigint,
+  is_current_user boolean
+)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  curr_user_id uuid := auth.uid();
+  filter_start timestamp with time zone;
+begin
+  if timeframe = 'today' then
+    filter_start := date_trunc('day', now());
+  elsif timeframe = 'week' then
+    filter_start := date_trunc('week', now());
+  elsif timeframe = 'month' then
+    filter_start := date_trunc('month', now());
+  else
+    filter_start := null;
+  end if;
+
+  return query
+  with period_stats as (
+    select
+      s.user_id,
+      coalesce(sum(s.duration_seconds), 0)::bigint as total_seconds
+    from public.study_sessions s
+    where (filter_start is null or s.started_at >= filter_start)
+    group by s.user_id
+  )
+  select
+    row_number() over (order by coalesce(m.total_seconds, 0) desc, coalesce(p.lifetime_xp, 0) desc)::bigint as rank_position,
+    p.id as user_id,
+    coalesce(nullif(p.name, ''), 'Anonymous Scholar') as display_name,
+    coalesce(nullif(p.username, ''), split_part(coalesce(nullif(p.name, ''), 'user'), ' ', 1)) as username,
+    coalesce(p.lifetime_xp, p.xp, 0)::bigint as lifetime_xp,
+    coalesce(p.rank_title, 'BRONZE I') as rank_title,
+    coalesce(m.total_seconds, 0)::bigint as total_seconds,
+    (curr_user_id is not null and p.id = curr_user_id) as is_current_user
+  from period_stats m
+  join public.profiles p on p.id = m.user_id
+  where m.total_seconds > 0
+  order by rank_position asc;
+end;
+$$;
+
+
