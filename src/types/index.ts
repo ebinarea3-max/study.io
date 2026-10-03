@@ -201,8 +201,10 @@ export type ActiveSession = {
 export type LeaderboardEntry = {
   user_id: string;
   name: string;
+  display_name?: string | null;
   username?: string | null;
   avatar_url?: string | null;
+  level?: number;
   lifetime_xp: number;
   rank_title: string;
   total_seconds: number;
