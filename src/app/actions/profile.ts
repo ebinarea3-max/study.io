@@ -18,30 +18,51 @@ export async function updateScholarProfile(formData: {
       return { success: false, error: 'Session expired or not found. Please log in again.' };
     }
 
-    const cleanHandle = formData.username.trim().toLowerCase();
-
-    // Check username uniqueness against other scholars
-    const { data: existing } = await supabase
+    // Fetch the user's existing profile to check if username is changing and verify cooldown
+    const { data: currentProfile } = await supabase
       .from('profiles')
-      .select('id')
-      .eq('username', cleanHandle)
-      .neq('id', user.id)
-      .maybeSingle();
+      .select('username, username_updated_at')
+      .eq('id', user.id)
+      .single();
 
-    if (existing) {
-      return { success: false, error: 'Handle already claimed. Try another.' };
+    const cleanHandle = formData.username.trim().toLowerCase();
+    const isUsernameChanging = currentProfile && currentProfile.username !== cleanHandle;
+    const updatePayload: any = {
+      name: formData.name.trim(),
+      username: cleanHandle,
+      avatar_url: formData.avatar_url,
+      daily_goal_minutes: formData.daily_goal_minutes,
+      is_onboarded: true,
+    };
+
+    if (isUsernameChanging) {
+      if (currentProfile?.username_updated_at) {
+        const daysSinceUpdate = (Date.now() - new Date(currentProfile.username_updated_at).getTime()) / (1000 * 60 * 60 * 24);
+        if (daysSinceUpdate < 30) {
+          const daysLeft = Math.ceil(30 - daysSinceUpdate);
+          return { success: false, error: `Cooldown active: Editable in ${daysLeft} day${daysLeft > 1 ? 's' : ''}.` };
+        }
+      }
+
+      // Check username uniqueness against other scholars
+      const { data: existing } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('username', cleanHandle)
+        .neq('id', user.id)
+        .maybeSingle();
+
+      if (existing) {
+        return { success: false, error: 'Handle already claimed. Try another.' };
+      }
+
+      updatePayload.username_updated_at = new Date().toISOString();
     }
 
     // Update the profiles table
     const { error: updateError } = await supabase
       .from('profiles')
-      .update({
-        name: formData.name.trim(),
-        username: cleanHandle,
-        avatar_url: formData.avatar_url,
-        daily_goal_minutes: formData.daily_goal_minutes,
-        is_onboarded: true,
-      })
+      .update(updatePayload)
       .eq('id', user.id);
 
     if (updateError) {

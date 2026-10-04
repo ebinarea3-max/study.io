@@ -175,15 +175,15 @@ export function ProfileModal({ isOpen, onClose, user: parentUser, profile }: Pro
   const trimmedDisplayName = displayName.trim();
   const displayNameIsAppropriate = trimmedDisplayName === '' || isAppropriateHandle(trimmedDisplayName);
 
-  let cooldownDaysLeft = 0;
-  let isCooldownActive = false;
-
-  if (user.username_changed_at) {
-    cooldownDaysLeft = 30 - differenceInDays(new Date(), new Date(user.username_changed_at));
-    if (cooldownDaysLeft > 0) {
-      isCooldownActive = true;
-    }
-  }
+  const getCooldownDays = () => {
+    const timestamp = user?.username_updated_at || user?.username_changed_at;
+    if (!timestamp) return 0;
+    const diffDays = (Date.now() - new Date(timestamp).getTime()) / (1000 * 60 * 60 * 24);
+    return diffDays < 30 ? Math.ceil(30 - diffDays) : 0;
+  };
+  
+  const cooldownDaysLeft = getCooldownDays();
+  const isCooldownActive = cooldownDaysLeft > 0;
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -281,7 +281,7 @@ export function ProfileModal({ isOpen, onClose, user: parentUser, profile }: Pro
         dailyGoalHours: Number(dailyGoalHours),
         avatarUrl: avatarUrl || undefined,
         is_onboarded: true,
-        ...(usernameChanged ? { username_changed_at: new Date().toISOString() } : {})
+        ...(usernameChanged ? { username_updated_at: new Date().toISOString() } : {})
       });
       onClose(); // Only close AFTER successful write
       window.location.reload(); // Also trigger a full page reload to sync server actions and data fetching
@@ -459,7 +459,7 @@ export function ProfileModal({ isOpen, onClose, user: parentUser, profile }: Pro
                 {!handleIsAppropriate ? (
                   <span className="text-amber-500">Handle contains restricted or inappropriate terms. Please choose a different identity.</span>
                 ) : isCooldownActive ? (
-                  <span className="text-amber-400">Cooldown active: Editable in {cooldownDaysLeft} days</span>
+                  <span className="text-amber-400">Cooldown active: Editable in {cooldownDaysLeft} day{cooldownDaysLeft > 1 ? 's' : ''}</span>
                 ) : (
                   <span className="text-neutral-500">Can only be changed once every 30 days.</span>
                 )}
