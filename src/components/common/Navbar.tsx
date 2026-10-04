@@ -131,12 +131,12 @@ export function Navbar({
   // Memoize user session avatar & display name extraction to prevent flickering
   const avatarUrl = useMemo(() => {
     return (
+      user?.avatarUrl ||
       user?.user_metadata?.avatar_url ||
       (user as any)?.user_metadata?.picture ||
-      user?.avatarUrl ||
       ''
     );
-  }, [user?.user_metadata?.avatar_url, (user as any)?.user_metadata?.picture, user?.avatarUrl]);
+  }, [user?.avatarUrl, user?.user_metadata?.avatar_url, (user as any)?.user_metadata?.picture]);
 
   const displayName = useMemo(() => {
     return (

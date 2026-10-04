@@ -48,9 +48,9 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
       setDailyGoalHours(user.dailyGoalHours);
       
       const effectiveAvatarUrl =
+        user.avatarUrl ||
         (user.user_metadata?.avatar_url as string) ||
         (user.user_metadata?.picture as string) ||
-        user.avatarUrl ||
         '';
       setAvatarUrl(effectiveAvatarUrl);
       
