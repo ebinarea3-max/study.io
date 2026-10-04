@@ -523,9 +523,9 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
           )}
         </div>
 
-        {/* Sticky Pinned User Standing Strip (Displays ONLY when actively viewing Leaderboard AND user's row is not in viewport) */}
+        {/* Sticky Pinned User Standing Strip (Displays ONLY on desktop when actively viewing Leaderboard AND user's row is not in viewport) */}
         {isActiveTab && !isCurrentUserRowVisible && currentUserEntry && (
-          <div className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-4xl z-30 animate-in slide-in-from-bottom-3 duration-200">
+          <div className="hidden md:block fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-4xl z-30 animate-in slide-in-from-bottom-3 duration-200">
             <div className="w-full flex flex-col">
               <div className="text-[10px] font-mono uppercase tracking-widest text-amber-400 mb-1.5 pl-3 font-semibold flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
