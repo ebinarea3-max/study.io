@@ -24,25 +24,28 @@ export function CountdownEditor({ initialSeconds, onSave, onCancel }: CountdownE
     stateRef.current = { hours, minutes, seconds };
   }, [hours, minutes, seconds]);
 
+  const propsRef = useRef({ onSave, onCancel });
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+    propsRef.current = { onSave, onCancel };
+  }, [onSave, onCancel]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: PointerEvent) => {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         const { hours, minutes, seconds } = stateRef.current;
         const total = hours * 3600 + minutes * 60 + seconds;
         if (total > 0) {
-          onSave(total);
+          propsRef.current.onSave(total);
         } else {
-          onCancel();
+          propsRef.current.onCancel();
         }
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('touchstart', handleClickOutside);
+    document.addEventListener('pointerdown', handleClickOutside, true);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('touchstart', handleClickOutside);
+      document.removeEventListener('pointerdown', handleClickOutside, true);
     };
-  }, [onSave, onCancel]);
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -50,15 +53,15 @@ export function CountdownEditor({ initialSeconds, onSave, onCancel }: CountdownE
         const { hours, minutes, seconds } = stateRef.current;
         const total = hours * 3600 + minutes * 60 + seconds;
         if (total > 0) {
-          onSave(total);
+          propsRef.current.onSave(total);
         } else {
-          onCancel();
+          propsRef.current.onCancel();
         }
       }
     };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [onSave, onCancel]);
+    document.addEventListener('keydown', handleKeyDown, true);
+    return () => document.removeEventListener('keydown', handleKeyDown, true);
+  }, []);
   
   // Attach non-passive wheel listener to prevent body scroll natively
   useEffect(() => {
@@ -173,23 +176,44 @@ export function CountdownEditor({ initialSeconds, onSave, onCancel }: CountdownE
   );
 
   return (
-    <div ref={containerRef} className="flex flex-col items-center bg-white/[0.03] backdrop-blur-3xl p-4 sm:p-5 rounded-[2.5rem] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/10 relative pointer-events-auto mx-auto scale-90 sm:scale-100 origin-center max-w-[95%]">
-      {/* Accent Highlight Line at Bottom matching screenshot */}
-      <div 
-        className="absolute bottom-0 left-8 right-8 h-[3px] rounded-t-full transition-colors duration-500" 
-        style={{ backgroundColor: theme.accent, boxShadow: `0 0 12px ${theme.accent}80` }}
-      />
-      
-      <div className="flex items-center gap-1 sm:gap-2 mb-2">
-        <Segment val={hours} type="h" />
-        <span className="text-2xl sm:text-3xl font-mono tabular-nums font-bold text-neutral-600 pb-1 sm:pb-2 -translate-y-0.5">:</span>
-        <Segment val={minutes} type="m" />
-        <span className="text-2xl sm:text-3xl font-mono tabular-nums font-bold text-neutral-600 pb-1 sm:pb-2 -translate-y-0.5">:</span>
-        <Segment val={seconds} type="s" />
-      </div>
-      
-      <div className="text-[10px] uppercase tracking-widest text-neutral-500 font-bold mt-1">
-        Scroll or Click
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+      <div ref={containerRef} className="relative w-full max-w-sm bg-white/[0.03] backdrop-blur-3xl border border-white/10 rounded-[2.5rem] shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-8 overflow-hidden mx-auto flex flex-col items-center">
+        {/* Decorative ambient illumination */}
+        <div className="absolute -top-24 -right-24 w-52 h-52 rounded-full blur-3xl pointer-events-none opacity-20" style={{ backgroundColor: theme.accent }} />
+        <div className="absolute -bottom-24 -left-24 w-52 h-52 bg-white/5 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="text-xs font-hud font-bold tracking-widest text-neutral-400 mb-8 uppercase">Edit Focus Time</div>
+        
+        {/* Accent Highlight Line at Bottom */}
+        <div 
+          className="absolute bottom-0 left-8 right-8 h-[3px] rounded-t-full transition-colors duration-500" 
+          style={{ backgroundColor: theme.accent, boxShadow: `0 0 12px ${theme.accent}80` }}
+        />
+        
+        <div className="flex items-center gap-1 sm:gap-2 mb-4 relative z-10">
+          <Segment val={hours} type="h" />
+          <span className="text-2xl sm:text-3xl font-mono tabular-nums font-bold text-neutral-600 pb-1 sm:pb-2 -translate-y-0.5">:</span>
+          <Segment val={minutes} type="m" />
+          <span className="text-2xl sm:text-3xl font-mono tabular-nums font-bold text-neutral-600 pb-1 sm:pb-2 -translate-y-0.5">:</span>
+          <Segment val={seconds} type="s" />
+        </div>
+        
+        <div className="text-[10px] uppercase tracking-widest text-neutral-500 font-bold mt-2 relative z-10">
+          Scroll or Click
+        </div>
+
+        <button 
+          onClick={() => {
+            const { hours, minutes, seconds } = stateRef.current;
+            const total = hours * 3600 + minutes * 60 + seconds;
+            if (total > 0) propsRef.current.onSave(total);
+            else propsRef.current.onCancel();
+          }}
+          className="mt-8 px-8 py-3 rounded-xl font-hud font-bold text-sm tracking-wider text-black transition-all hover:scale-105 active:scale-95 shadow-lg relative z-10"
+          style={{ backgroundColor: theme.accent, boxShadow: `0 4px 14px ${theme.accent}60` }}
+        >
+          SAVE TIMER
+        </button>
       </div>
     </div>
   );
