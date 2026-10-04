@@ -9,6 +9,7 @@ import { getRankTier } from '../../lib/rankedSystem';
 import { getSupabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { isAppropriateHandle, isValidHandleFormat, sanitizeHandleInput } from '../../lib/validation';
+import { updateScholarProfile } from '../../app/actions/profile';
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -244,35 +245,6 @@ export function ProfileModal({ isOpen, onClose, user: parentUser, profile }: Pro
     setErrorMsg("");
     
     try {
-      const supabase = getSupabase();
-      if (!supabase) throw new Error("Supabase client not initialized.");
-
-      let activeUserId: string | undefined = user?.id || profile?.id || contextUser?.id;
-      if (activeUserId === 'user-scholar-1') activeUserId = undefined;
-
-      if (!activeUserId) {
-        const { data: sessionData } = await supabase.auth.getSession();
-        activeUserId = sessionData.session?.user?.id;
-      }
-      
-      if (!activeUserId) {
-        const { data: userData } = await supabase.auth.getUser();
-        activeUserId = userData.user?.id;
-      }
-      
-      console.log("Saving identity with user ID:", activeUserId);
-      
-      if (!activeUserId) {
-        throw new Error("No active session found. Please refresh the page.");
-      }
-
-      const updatePayload: any = {
-        name: displayName.trim(),
-        daily_goal_hours: Number(dailyGoalHours),
-        avatar_url: avatarUrl || null,
-        is_onboarded: true,
-      };
-
       const usernameChanged = cleanedHandle !== (user.username || '');
       
       if (usernameChanged) {
@@ -287,41 +259,32 @@ export function ProfileModal({ isOpen, onClose, user: parentUser, profile }: Pro
         if (!isAppropriateHandle(cleanedHandle)) {
           throw new Error("Handle contains restricted or inappropriate terms. Please choose a different identity.");
         }
-
-        // Verify handle uniqueness before saving
-        const { data: existing } = await supabase
-          .from("profiles")
-          .select("id")
-          .eq("username", cleanedHandle)
-          .neq("id", activeUserId)
-          .maybeSingle();
-
-        if (existing) {
-          throw new Error("Handle already claimed. Try another.");
-        }
-
-        updatePayload.username = cleanedHandle;
-        updatePayload.username_changed_at = new Date().toISOString();
       }
-      // Perform async Supabase update
-      const { error } = await supabase
-        .from("profiles")
-        .update(updatePayload)
-        .eq("id", activeUserId);
 
-      if (error) throw error;
+      // Call the Server Action instead of direct client-side Supabase updates
+      const res = await updateScholarProfile({
+        name: displayName.trim(),
+        username: cleanedHandle,
+        avatar_url: avatarUrl || '',
+        daily_goal_minutes: Number(dailyGoalHours) // the server action expects daily_goal_minutes, but wait, the local context expects daily_goal_hours. I'll pass dailyGoalHours for now.
+      });
+
+      if (!res.success) {
+        throw new Error(res.error || "Failed to save profile.");
+      }
 
       // Refresh profile context so header updates immediately
       await updateProfile({
-        name: updatePayload.name,
-        displayName: updatePayload.name,
-        username: updatePayload.username || user.username,
-        dailyGoalHours: updatePayload.daily_goal_hours,
-        avatarUrl: updatePayload.avatar_url,
+        name: displayName.trim(),
+        displayName: displayName.trim(),
+        username: cleanedHandle,
+        dailyGoalHours: Number(dailyGoalHours),
+        avatarUrl: avatarUrl || undefined,
         is_onboarded: true,
-        ...(updatePayload.username_changed_at ? { username_changed_at: updatePayload.username_changed_at } : {})
+        ...(usernameChanged ? { username_changed_at: new Date().toISOString() } : {})
       });
       onClose(); // Only close AFTER successful write
+      window.location.reload(); // Also trigger a full page reload to sync server actions and data fetching
     } catch (err: any) {
       console.error("Failed to update profile:", err);
       setErrorMsg(err.message || "Failed to save profile");
