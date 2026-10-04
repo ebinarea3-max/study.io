@@ -19,49 +19,63 @@ export function CountdownEditor({ initialSeconds, onSave, onCancel }: CountdownE
   const [direction, setDirection] = useState<'up' | 'down'>('up');
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const stateRef = useRef({ hours, minutes, seconds });
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    stateRef.current = { hours, minutes, seconds };
+  }, [hours, minutes, seconds]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        handleSave();
+        const { hours, minutes, seconds } = stateRef.current;
+        const total = hours * 3600 + minutes * 60 + seconds;
+        if (total > 0) {
+          onSave(total);
+        } else {
+          onCancel();
+        }
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
     };
-  }, [hours, minutes, seconds]);
+  }, [onSave, onCancel]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Enter') {
-        handleSave();
+        const { hours, minutes, seconds } = stateRef.current;
+        const total = hours * 3600 + minutes * 60 + seconds;
+        if (total > 0) {
+          onSave(total);
+        } else {
+          onCancel();
+        }
       }
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [hours, minutes, seconds]);
+  }, [onSave, onCancel]);
   
   // Attach non-passive wheel listener to prevent body scroll natively
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
     
-    const preventScroll = (e: globalThis.WheelEvent) => {
+    const preventScroll = (e: Event) => {
       e.preventDefault();
     };
     
     el.addEventListener('wheel', preventScroll, { passive: false });
-    return () => el.removeEventListener('wheel', preventScroll);
+    el.addEventListener('touchmove', preventScroll, { passive: false });
+    return () => {
+      el.removeEventListener('wheel', preventScroll);
+      el.removeEventListener('touchmove', preventScroll);
+    };
   }, []);
-
-  const handleSave = () => {
-    const total = hours * 3600 + minutes * 60 + seconds;
-    if (total > 0) {
-      onSave(total);
-    } else {
-      onCancel();
-    }
-  };
 
   const updateSegment = (segment: 'h' | 'm' | 's', increment: boolean) => {
     setDirection(increment ? 'up' : 'down');
@@ -94,6 +108,28 @@ export function CountdownEditor({ initialSeconds, onSave, onCancel }: CountdownE
     }
   };
 
+  const touchStartY = useRef<{ [key: string]: number }>({});
+
+  const handleTouchStart = (e: React.TouchEvent, type: 'h' | 'm' | 's') => {
+    touchStartY.current[type] = e.touches[0].clientY;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent, type: 'h' | 'm' | 's') => {
+    if (touchStartY.current[type] === undefined) return;
+    const currentY = e.touches[0].clientY;
+    const diff = touchStartY.current[type] - currentY;
+    
+    // Swipe threshold
+    if (Math.abs(diff) > 20) {
+      updateSegment(type, diff > 0);
+      touchStartY.current[type] = currentY;
+    }
+  };
+
+  const handleTouchEnd = (type: 'h' | 'm' | 's') => {
+    delete touchStartY.current[type];
+  };
+
   const Segment = ({ val, type }: { val: number, type: 'h' | 'm' | 's' }) => (
     <div className="flex flex-col items-center group">
       <button 
@@ -105,8 +141,12 @@ export function CountdownEditor({ initialSeconds, onSave, onCancel }: CountdownE
       </button>
       
       <div 
-        className="relative overflow-hidden w-16 h-20 sm:w-20 sm:h-20 bg-white/[0.03] hover:bg-white/[0.06] rounded-2xl flex items-center justify-center transition-all border border-white/[0.05] hover:border-white/10 group-focus-within:bg-white/[0.08]"
+        className="relative overflow-hidden w-16 h-20 sm:w-20 sm:h-20 bg-white/[0.03] hover:bg-white/[0.06] rounded-2xl flex items-center justify-center transition-all border border-white/[0.05] hover:border-white/10 group-focus-within:bg-white/[0.08] cursor-ns-resize"
         onWheel={(e) => handleWheel(e, type)}
+        onTouchStart={(e) => handleTouchStart(e, type)}
+        onTouchMove={(e) => handleTouchMove(e, type)}
+        onTouchEnd={() => handleTouchEnd(type)}
+        onTouchCancel={() => handleTouchEnd(type)}
       >
         <AnimatePresence mode="popLayout" initial={false}>
           <motion.div
