@@ -488,7 +488,7 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
           <div className="w-full flex flex-col gap-6">
             {/* Table Skeleton */}
             {/* Table Skeleton */}
-            <div className="w-full bg-[#090c12]/90 border border-white/[0.07] rounded-xl overflow-hidden divide-y divide-white/[0.04]">
+            <div className="w-full bg-white/[0.03] backdrop-blur-2xl border border-white/[0.1] rounded-2xl overflow-hidden divide-y divide-white/[0.04] shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
               {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="px-6 py-3.5 flex items-center justify-between animate-pulse">
                   <div className="flex items-center gap-3">
@@ -503,7 +503,7 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
           </div>
         ) : leaderboard.length === 0 ? (
           /* Empty State */
-          <div className="w-full bg-[#0c0e14] border border-white/[0.08] rounded-2xl p-12 text-center flex flex-col items-center justify-center gap-3">
+          <div className="w-full bg-white/[0.02] backdrop-blur-2xl border border-white/[0.1] rounded-2xl p-12 text-center flex flex-col items-center justify-center gap-3 shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
             <div className="w-12 h-12 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 mb-1">
               <Clock className="w-6 h-6 stroke-[2]" />
             </div>
@@ -561,7 +561,7 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
             {/* RANKED LIST                                                */}
             {/* ══════════════════════════════════════════════════════════ */}
             {contenders.length > 0 && (
-              <div className="w-full bg-[#090c12]/90 backdrop-blur-md border border-white/[0.07] rounded-2xl overflow-hidden divide-y divide-white/[0.04] shadow-2xl">
+              <div className="w-full bg-white/[0.03] backdrop-blur-2xl border border-white/[0.1] rounded-2xl overflow-hidden divide-y divide-white/[0.04] shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
                 {/* Column Header Row */}
                 <div className="px-4 sm:px-6 py-3 bg-white/[0.02] text-[10px] font-mono uppercase tracking-widest text-zinc-500 flex items-center justify-between">
                   <div className="flex items-center gap-3 flex-1 min-w-0">
