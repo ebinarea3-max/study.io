@@ -6,7 +6,6 @@ import { useStudy } from '../context/StudyContext';
 import { Navbar } from '../components/common/Navbar';
 import { AuthModal } from '../components/common/AuthModal';
 import { ProfileModal } from '../components/common/ProfileModal';
-import { ProfileSetupModal } from '../components/common/ProfileSetupModal';
 import { SettingsModal } from '../components/common/SettingsModal';
 import { FloatingReactions } from '../components/common/FloatingReactions';
 import { StudyTimer } from '../components/timer/StudyTimer';
@@ -65,12 +64,16 @@ export default function Home() {
 
     if (isAuthenticated && !hasTriggeredBoostRef.current) {
       hasTriggeredBoostRef.current = true;
-      setShowDailyBoost(true);
+      if (user && user.is_onboarded !== true) {
+        setIsProfileOpen(true);
+      } else {
+        setShowDailyBoost(true);
+      }
       try {
         localStorage.removeItem('last_daily_boost_date');
       } catch {}
     }
-  }, [isLoading, isAuthenticated]);
+  }, [isLoading, isAuthenticated, user]);
 
   const handleDismissDailyBoost = useCallback(() => {
     setShowDailyBoost(false);
@@ -197,9 +200,6 @@ export default function Home() {
       </main>
 
       {/* Modals & Celebrations */}
-      <ErrorBoundary fallbackTitle="Profile Setup">
-        <ProfileSetupModal />
-      </ErrorBoundary>
       <ErrorBoundary fallbackTitle="Authentication">
         <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
       </ErrorBoundary>

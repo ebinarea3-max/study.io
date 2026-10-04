@@ -3,10 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useStudy } from '../../context/StudyContext';
-import { X, Target, User, Loader2, Save } from 'lucide-react';
+import { X, Target, User, Loader2, Save, Camera, Upload } from 'lucide-react';
 import { UserAvatar } from './UserAvatar';
 import { getRankTier } from '../../lib/rankedSystem';
 import { getSupabase } from '../../lib/supabase';
+import { toast } from 'react-hot-toast';
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -14,6 +15,15 @@ interface ProfileModalProps {
 }
 
 const differenceInDays = (d1: Date, d2: Date) => Math.floor((d1.getTime() - d2.getTime()) / (1000 * 3600 * 24));
+
+const PRESET_AVATARS = [
+  'https://api.dicebear.com/7.x/bottts/svg?seed=ScholarAlpha',
+  'https://api.dicebear.com/7.x/bottts/svg?seed=CyberFocus',
+  'https://api.dicebear.com/7.x/bottts/svg?seed=NeonSamurai',
+  'https://api.dicebear.com/7.x/bottts/svg?seed=Quantum',
+  'https://api.dicebear.com/7.x/bottts/svg?seed=Aero',
+  'https://api.dicebear.com/7.x/bottts/svg?seed=Vortex',
+];
 
 export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   const { user, updateProfile } = useAuth();
@@ -24,7 +34,10 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   const [displayName, setDisplayName] = useState(user.name || user.displayName || '');
   const [username, setUsername] = useState(user.username || '');
   const [dailyGoalHours, setDailyGoalHours] = useState(user.dailyGoalHours);
+  const [avatarUrl, setAvatarUrl] = useState('');
+  
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
   // Sync state whenever user or modal open status changes
@@ -33,19 +46,19 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
       setDisplayName(user.name || user.displayName || '');
       setUsername(user.username || '');
       setDailyGoalHours(user.dailyGoalHours);
+      
+      const effectiveAvatarUrl =
+        (user.user_metadata?.avatar_url as string) ||
+        (user.user_metadata?.picture as string) ||
+        user.avatarUrl ||
+        '';
+      setAvatarUrl(effectiveAvatarUrl);
+      
       setErrorMsg('');
     }
-  }, [isOpen, user.name, user.displayName, user.username, user.dailyGoalHours]);
+  }, [isOpen, user.name, user.displayName, user.username, user.dailyGoalHours, user.avatarUrl, user.user_metadata]);
 
   if (!isOpen) return null;
-
-  // Profile avatar automatically defaults to authenticated Google profile picture
-  // (from Supabase Auth metadata: avatar_url or picture) or user's existing avatarUrl
-  const effectiveAvatarUrl =
-    (user.user_metadata?.avatar_url as string) ||
-    (user.user_metadata?.picture as string) ||
-    user.avatarUrl ||
-    '';
 
   const cleanedHandle = username.replace(/^@/, '').toLowerCase().trim();
 
@@ -59,6 +72,53 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     }
   }
 
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Image must be under 2MB');
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const supabase = getSupabase();
+      if (!supabase) throw new Error('Supabase not initialized');
+
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${user.id}/${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      setAvatarUrl(publicUrl);
+      toast.success('Avatar uploaded! Save profile to apply.');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to upload avatar');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleClose = async () => {
+    if (!user.is_onboarded) {
+      try {
+        await updateProfile({ is_onboarded: true });
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    onClose();
+  };
+
   const handleSave = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (isSaving) return;
@@ -69,7 +129,9 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     try {
       const updatePayload: any = {
         name: displayName.trim(),
-        daily_goal_hours: Number(dailyGoalHours)
+        daily_goal_hours: Number(dailyGoalHours),
+        avatar_url: avatarUrl || null,
+        is_onboarded: true,
       };
 
       const usernameChanged = cleanedHandle !== (user.username || '');
@@ -114,6 +176,8 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
         displayName: updatePayload.name,
         username: updatePayload.username || user.username,
         dailyGoalHours: updatePayload.daily_goal_hours,
+        avatarUrl: updatePayload.avatar_url,
+        is_onboarded: true,
         ...(updatePayload.username_changed_at ? { username_changed_at: updatePayload.username_changed_at } : {})
       });
       onClose(); // Only close AFTER successful write
@@ -136,12 +200,16 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
               <User className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-lg text-white leading-tight uppercase tracking-wider">Edit Profile</h3>
-              <p className="text-xs text-neutral-400 font-mono tracking-tight mt-0.5">Customize your identity & targets</p>
+              <h3 className="font-bold text-lg text-white leading-tight uppercase tracking-wider">
+                {!user.is_onboarded ? "// WELCOME SCHOLAR" : "Edit Profile"}
+              </h3>
+              <p className="text-xs text-neutral-400 font-mono tracking-tight mt-0.5">
+                {!user.is_onboarded ? "Set your identity" : "Customize your identity & targets"}
+              </p>
             </div>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="p-2 text-neutral-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors cursor-pointer"
             aria-label="Close modal"
           >
@@ -150,22 +218,61 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
         </div>
 
         <div className="p-6 space-y-6">
-          {/* Compact Top Header */}
-          <div className="flex items-center gap-4 bg-[#131822] border border-white/5 p-4 rounded-xl">
-            <UserAvatar
-              src={effectiveAvatarUrl}
-              name={displayName || user.displayName || 'S'}
-              size={56}
-              className="w-14 h-14 rounded-full border-2 border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.2)] shrink-0"
-            />
-            <div className="min-w-0">
-              <div className="font-bold text-base text-white truncate">{displayName || user.displayName || 'Scholar'}</div>
-              <div className="text-sm text-neutral-400 font-mono truncate mt-0.5">@{cleanedHandle || 'handle'}</div>
-              
-              <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-0.5 rounded border bg-[#0c1017]" style={{ borderColor: userRank.config.badgeAccent, color: userRank.config.badgeAccent }}>
-                <span className="text-[10px] font-black uppercase tracking-wider">
-                  {userRank.fullTitle}
-                </span>
+          {/* Compact Top Header with Avatar Picker */}
+          <div className="flex flex-col gap-3 bg-[#131822] border border-white/5 p-4 rounded-xl">
+            <div className="flex items-center gap-4">
+              <label className="relative group cursor-pointer shrink-0 rounded-full">
+                <UserAvatar
+                  src={avatarUrl}
+                  name={displayName || user.displayName || 'S'}
+                  size={56}
+                  className="w-14 h-14 rounded-full border-2 border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.2)] transition-opacity group-hover:opacity-75"
+                />
+                <div className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  {isUploading ? (
+                    <Loader2 className="w-5 h-5 text-white animate-spin" />
+                  ) : (
+                    <Camera className="w-5 h-5 text-white" />
+                  )}
+                </div>
+                <input
+                  type="file"
+                  accept="image/png, image/jpeg, image/webp"
+                  className="hidden"
+                  onChange={handleAvatarUpload}
+                  disabled={isUploading}
+                />
+              </label>
+              <div className="min-w-0">
+                <div className="font-bold text-base text-white truncate">{displayName || user.displayName || 'Scholar'}</div>
+                <div className="text-sm text-neutral-400 font-mono truncate mt-0.5">@{cleanedHandle || 'handle'}</div>
+                
+                <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-0.5 rounded border bg-[#0c1017]" style={{ borderColor: userRank.config.badgeAccent, color: userRank.config.badgeAccent }}>
+                  <span className="text-[10px] font-black uppercase tracking-wider">
+                    {userRank.fullTitle}
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            {/* Presets Row */}
+            <div className="pt-2 mt-2 border-t border-white/5 overflow-x-auto pb-1 scrollbar-none">
+              <div className="flex items-center gap-2 w-max">
+                {PRESET_AVATARS.map((url, i) => (
+                  <button
+                    type="button"
+                    key={i}
+                    onClick={() => setAvatarUrl(url)}
+                    disabled={isUploading}
+                    className={`relative w-10 h-10 rounded-lg border flex items-center justify-center overflow-hidden transition-all shrink-0 ${
+                      avatarUrl === url
+                        ? 'border-cyan-400 bg-cyan-500/20 ring-1 ring-cyan-400'
+                        : 'border-white/10 bg-white/[0.03] hover:border-cyan-500/40 hover:bg-cyan-500/10'
+                    }`}
+                  >
+                    <img src={url} alt={`Preset ${i}`} className="w-full h-full object-cover" />
+                  </button>
+                ))}
               </div>
             </div>
           </div>
@@ -248,7 +355,7 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
             <div className="pt-4 flex gap-3 border-t border-white/5">
               <button
                 type="button"
-                onClick={onClose}
+                onClick={handleClose}
                 disabled={isSaving}
                 className="flex-1 py-3 px-4 rounded-lg border border-white/10 bg-[#131822] hover:bg-white/5 text-neutral-300 text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50"
               >
@@ -265,7 +372,7 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                   </>
                 ) : (
                   <>
-                    <Save className="w-4 h-4" /> SAVE PROFILE
+                    <Save className="w-4 h-4" /> {!user.is_onboarded ? "SAVE IDENTITY" : "SAVE PROFILE"}
                   </>
                 )}
               </button>
