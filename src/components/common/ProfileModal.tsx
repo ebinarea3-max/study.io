@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useStudy } from '../../context/StudyContext';
-import { X, Target, User, Loader2, Save, Camera, Upload } from 'lucide-react';
+import { X, Target, User, Loader2, Save, Camera, Upload, Plus } from 'lucide-react';
 import { UserAvatar } from './UserAvatar';
 import { getRankTier } from '../../lib/rankedSystem';
 import { getSupabase } from '../../lib/supabase';
@@ -17,12 +17,45 @@ interface ProfileModalProps {
 const differenceInDays = (d1: Date, d2: Date) => Math.floor((d1.getTime() - d2.getTime()) / (1000 * 3600 * 24));
 
 const PRESET_AVATARS = [
-  'https://api.dicebear.com/7.x/bottts/svg?seed=ScholarAlpha',
-  'https://api.dicebear.com/7.x/bottts/svg?seed=CyberFocus',
-  'https://api.dicebear.com/7.x/bottts/svg?seed=NeonSamurai',
-  'https://api.dicebear.com/7.x/bottts/svg?seed=Quantum',
-  'https://api.dicebear.com/7.x/bottts/svg?seed=Aero',
-  'https://api.dicebear.com/7.x/bottts/svg?seed=Vortex',
+  'https://api.dicebear.com/9.x/micah/svg?seed=ScholarA&backgroundColor=0d1117',
+  'https://api.dicebear.com/9.x/adventurer/svg?seed=Archivist&backgroundColor=0d1117',
+  'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=Nexus&backgroundColor=0d1117',
+  'https://api.dicebear.com/9.x/shapes/svg?seed=FocusSigil&backgroundColor=0d1117',
+  'https://api.dicebear.com/9.x/micah/svg?seed=Nocturne&backgroundColor=0d1117',
+];
+
+const VAULT_CATEGORIES = [
+  {
+    name: 'SCHOLARS & ARCHIVISTS',
+    avatars: [
+      'https://api.dicebear.com/9.x/micah/svg?seed=Sage1',
+      'https://api.dicebear.com/9.x/micah/svg?seed=Cipher',
+      'https://api.dicebear.com/9.x/micah/svg?seed=Aura',
+      'https://api.dicebear.com/9.x/micah/svg?seed=Raven',
+      'https://api.dicebear.com/9.x/micah/svg?seed=Atlas',
+      'https://api.dicebear.com/9.x/micah/svg?seed=Zenith',
+    ]
+  },
+  {
+    name: 'ADVENTURERS & STRATEGISTS',
+    avatars: [
+      'https://api.dicebear.com/9.x/adventurer/svg?seed=Alchemist',
+      'https://api.dicebear.com/9.x/adventurer/svg?seed=Novelist',
+      'https://api.dicebear.com/9.x/adventurer/svg?seed=Tactician',
+      'https://api.dicebear.com/9.x/adventurer/svg?seed=Oracle',
+      'https://api.dicebear.com/9.x/adventurer/svg?seed=Vanguard',
+      'https://api.dicebear.com/9.x/adventurer/svg?seed=Chronos',
+    ]
+  },
+  {
+    name: 'MINIMALIST SIGILS',
+    avatars: [
+      'https://api.dicebear.com/9.x/shapes/svg?seed=Focus',
+      'https://api.dicebear.com/9.x/shapes/svg?seed=Catalyst',
+      'https://api.dicebear.com/9.x/shapes/svg?seed=Vector',
+      'https://api.dicebear.com/9.x/shapes/svg?seed=Prism',
+    ]
+  }
 ];
 
 export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
@@ -38,6 +71,7 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isVaultOpen, setIsVaultOpen] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
   // Sync state whenever user or modal open status changes
@@ -226,7 +260,7 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                   src={avatarUrl}
                   name={displayName || user.displayName || 'S'}
                   size={56}
-                  className="w-14 h-14 rounded-full border-2 border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.2)] transition-opacity group-hover:opacity-75"
+                  className="w-14 h-14 rounded-full border-2 border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.2)] transition-opacity group-hover:opacity-75 ring-2 ring-amber-500 scale-105"
                 />
                 <div className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                   {isUploading ? (
@@ -256,23 +290,36 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
             </div>
             
             {/* Presets Row */}
-            <div className="pt-2 mt-2 border-t border-white/5 overflow-x-auto pb-1 scrollbar-none">
-              <div className="flex items-center gap-2 w-max">
-                {PRESET_AVATARS.map((url, i) => (
-                  <button
-                    type="button"
-                    key={i}
-                    onClick={() => setAvatarUrl(url)}
-                    disabled={isUploading}
-                    className={`relative w-10 h-10 rounded-lg border flex items-center justify-center overflow-hidden transition-all shrink-0 ${
-                      avatarUrl === url
-                        ? 'border-cyan-400 bg-cyan-500/20 ring-1 ring-cyan-400'
-                        : 'border-white/10 bg-white/[0.03] hover:border-cyan-500/40 hover:bg-cyan-500/10'
-                    }`}
-                  >
-                    <img src={url} alt={`Preset ${i}`} className="w-full h-full object-cover" />
-                  </button>
-                ))}
+            <div className="pt-2 mt-2 border-t border-white/5 pb-1">
+              <div className="flex items-center gap-2.5 w-max p-2 bg-white/[0.02] border border-white/[0.06] rounded-xl overflow-x-auto scrollbar-none">
+                {PRESET_AVATARS.map((url, i) => {
+                  const isActive = avatarUrl === url;
+                  return (
+                    <button
+                      type="button"
+                      key={i}
+                      onClick={() => setAvatarUrl(url)}
+                      disabled={isUploading}
+                      className={`relative w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden transition-all shrink-0 cursor-pointer ${
+                        isActive
+                          ? 'ring-2 ring-amber-500 scale-105 z-10 shadow-[0_0_15px_rgba(245,158,11,0.3)]'
+                          : 'border border-white/10 opacity-70 hover:opacity-100 hover:scale-105 hover:border-amber-500/50 hover:bg-amber-500/10'
+                      }`}
+                    >
+                      <img src={url} alt={`Preset ${i}`} className="w-full h-full object-cover" />
+                    </button>
+                  );
+                })}
+                
+                {/* Vault Trigger */}
+                <button
+                  type="button"
+                  onClick={() => setIsVaultOpen(true)}
+                  className="w-10 h-10 rounded-xl border border-dashed border-white/20 bg-white/[0.03] flex items-center justify-center text-zinc-400 hover:text-amber-400 hover:border-amber-400/50 hover:bg-amber-500/[0.05] transition-all cursor-pointer shrink-0"
+                  title="More Avatars"
+                >
+                  <Plus className="w-5 h-5" />
+                </button>
               </div>
             </div>
           </div>
@@ -380,6 +427,95 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
           </form>
         </div>
       </div>
+      
+      {/* Avatar Vault Modal */}
+      {isVaultOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="bg-[#0c1017] border border-amber-500/20 rounded-2xl w-full max-w-xl overflow-hidden shadow-[0_0_50px_rgba(245,158,11,0.1)] relative flex flex-col max-h-[85vh]">
+            {/* Vault Header */}
+            <div className="flex items-center justify-between px-6 py-5 border-b border-white/10 shrink-0 bg-white/[0.02]">
+              <div>
+                <h3 className="font-bold text-lg text-white leading-tight uppercase tracking-wider">
+                  CHOOSE SCHOLAR AVATAR
+                </h3>
+                <p className="text-xs text-neutral-400 font-mono tracking-tight mt-1">
+                  Select an avatar that matches your study persona or upload your own.
+                </p>
+              </div>
+              <button
+                onClick={() => setIsVaultOpen(false)}
+                className="p-2 text-neutral-400 hover:text-amber-400 rounded-lg hover:bg-white/5 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            {/* Vault Content */}
+            <div className="p-6 overflow-y-auto space-y-8 scrollbar-thin scrollbar-thumb-white/10">
+              
+              {/* Custom Upload Section */}
+              <div className="bg-white/[0.03] border border-white/10 p-4 rounded-xl flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500 border border-amber-500/20">
+                    <Upload className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold text-white uppercase tracking-wider">Custom Photo</div>
+                    <div className="text-[10px] font-mono text-neutral-500 mt-0.5">PNG, JPG, WEBP (Max 2MB)</div>
+                  </div>
+                </div>
+                <label className="px-4 py-2 bg-white/[0.05] hover:bg-amber-500/10 border border-white/10 hover:border-amber-500/50 rounded-lg text-xs font-bold text-neutral-300 hover:text-amber-400 transition-all cursor-pointer uppercase tracking-wider flex items-center gap-2">
+                  {isUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
+                  <span>Upload</span>
+                  <input
+                    type="file"
+                    accept="image/png, image/jpeg, image/webp"
+                    className="hidden"
+                    onChange={(e) => {
+                      handleAvatarUpload(e);
+                      setIsVaultOpen(false);
+                    }}
+                    disabled={isUploading}
+                  />
+                </label>
+              </div>
+
+              {/* Preset Categories */}
+              <div className="space-y-6">
+                {VAULT_CATEGORIES.map((category, idx) => (
+                  <div key={idx} className="space-y-3">
+                    <h4 className="text-[11px] font-mono font-bold text-neutral-500 uppercase tracking-widest pl-1">
+                      {category.name}
+                    </h4>
+                    <div className="grid grid-cols-4 sm:grid-cols-6 gap-3">
+                      {category.avatars.map((url, i) => {
+                        const isActive = avatarUrl === url;
+                        return (
+                          <button
+                            key={i}
+                            onClick={() => {
+                              setAvatarUrl(url);
+                              setIsVaultOpen(false);
+                            }}
+                            className={`aspect-square rounded-xl flex items-center justify-center overflow-hidden transition-all cursor-pointer border ${
+                              isActive
+                                ? 'ring-2 ring-amber-500 border-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.2)] scale-105 z-10'
+                                : 'border-white/10 bg-white/[0.03] hover:scale-105 hover:border-amber-500/50 hover:bg-amber-500/10'
+                            }`}
+                          >
+                            <img src={url} alt={`Vault ${idx}-${i}`} className="w-full h-full object-cover" />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
