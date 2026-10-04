@@ -122,6 +122,32 @@ class AudioEngine {
     } catch {
       // ignore
     }
+  }  // Play subtle rising chime for leaderboard podium reveal (low gain)
+  public playPodiumReveal() {
+    try {
+      const ctx = this.getContext();
+      const now = ctx.currentTime;
+      const notes = [587.33, 739.99, 880.00, 1174.66]; // D5, F#5, A5, D6 (Crystal rising celestial shimmer)
+
+      notes.forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now + idx * 0.09);
+
+        gain.gain.setValueAtTime(0, now + idx * 0.09);
+        gain.gain.linearRampToValueAtTime(0.04, now + idx * 0.09 + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.09 + 0.6);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(now + idx * 0.09);
+        osc.stop(now + idx * 0.09 + 0.65);
+      });
+    } catch {
+      // Audio not permitted or user hasn't interacted
+    }
   }
 
   // Play cheer reaction pop

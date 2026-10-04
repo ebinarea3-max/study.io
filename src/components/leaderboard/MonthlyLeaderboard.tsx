@@ -9,6 +9,7 @@ import { getRankBadgePath, getRankTier, getRankConfigByTitle } from '../../lib/r
 import { getLevelFromLifetimeXP } from '../../lib/gamification';
 import { LeaderboardEntry } from '../../types';
 import { Crown, Clock } from 'lucide-react';
+import { soundFx } from '../../lib/audio';
 
 export function formatStudyTime(totalSeconds: number): string {
   const safeSeconds = Math.max(0, Math.round(totalSeconds || 0));
@@ -24,7 +25,55 @@ function parseTimeHoursMinutes(totalSeconds: number) {
   return {
     h: String(hours).padStart(2, '0'),
     m: String(minutes).padStart(2, '0'),
+    hNum: hours,
+    mNum: minutes,
   };
+}
+
+/**
+ * Animated number component for smooth dopamine count-up on page/tab load.
+ */
+function AnimatedDigit({
+  target,
+  durationMs = 800,
+  delayMs = 0,
+}: {
+  target: number;
+  durationMs?: number;
+  delayMs?: number;
+}) {
+  const [current, setCurrent] = useState(0);
+
+  useEffect(() => {
+    let startTimestamp: number | null = null;
+    let animationFrameId: number;
+
+    const timeoutId = setTimeout(() => {
+      const step = (timestamp: number) => {
+        if (!startTimestamp) startTimestamp = timestamp;
+        const progress = Math.min((timestamp - startTimestamp) / durationMs, 1);
+        // Exponential ease-out
+        const easeOut = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+        const val = Math.floor(easeOut * target);
+        setCurrent(val);
+
+        if (progress < 1) {
+          animationFrameId = requestAnimationFrame(step);
+        } else {
+          setCurrent(target);
+        }
+      };
+
+      animationFrameId = requestAnimationFrame(step);
+    }, delayMs);
+
+    return () => {
+      clearTimeout(timeoutId);
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    };
+  }, [target, durationMs, delayMs]);
+
+  return <>{String(current).padStart(2, '0')}</>;
 }
 
 /**
@@ -135,6 +184,7 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isFetching, setIsFetching] = useState<boolean>(false);
+  const [animationKey, setAnimationKey] = useState<number>(0);
 
   const userRef = useRef(user);
   userRef.current = user;
@@ -143,6 +193,7 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
   sessionsRef.current = sessions;
 
   const inFlightRef = useRef(false);
+  const hasPlayedRevealRef = useRef(false);
 
   // Compute seasonal tracker line and subtext dynamically based on timeframe
   const { trackerText, subtext, emptyText } = useMemo(() => {
@@ -301,6 +352,7 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
       }
 
       setLeaderboard(entries);
+      setAnimationKey((prev) => prev + 1);
     } finally {
       setIsLoading(false);
       setIsFetching(false);
@@ -323,6 +375,17 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
       }
     }
   }, [sessions.length, isActiveTab, fetchLeaderboard]);
+
+  // Subtle rising chime sound on podium reveal
+  useEffect(() => {
+    if (!isLoading && leaderboard.length > 0 && !hasPlayedRevealRef.current) {
+      hasPlayedRevealRef.current = true;
+      const soundTimer = setTimeout(() => {
+        soundFx.playPodiumReveal();
+      }, 550);
+      return () => clearTimeout(soundTimer);
+    }
+  }, [isLoading, leaderboard.length]);
 
   // Split top 3 scholars for Olympic stepped podium vs contenders (#4 and beyond)
   const { top1, top2, top3, contenders } = useMemo(() => {
@@ -354,6 +417,92 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
           : 'bg-[#05070a] min-h-screen p-4 sm:p-8 flex flex-col items-center'
       }`}
     >
+      {/* Keyframe Animations for bespoke tactical podium */}
+      <style>{`
+        @keyframes podiumSlideUp {
+          0% {
+            opacity: 0;
+            transform: translateY(28px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes championSlamIn {
+          0% {
+            opacity: 0;
+            transform: translateY(36px) scale(1.08);
+          }
+          60% {
+            opacity: 1;
+            transform: translateY(-6px) scale(1.02);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0) scale(1.0);
+          }
+        }
+
+        @keyframes crownFloat {
+          0%, 100% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(-4px);
+          }
+        }
+
+        @keyframes ambientGlowPulse {
+          0%, 100% {
+            opacity: 0.35;
+            transform: scale(0.98);
+          }
+          50% {
+            opacity: 0.75;
+            transform: scale(1.04);
+          }
+        }
+
+        @keyframes borderLightSweep {
+          0% {
+            transform: rotate(0deg);
+          }
+          100% {
+            transform: rotate(360deg);
+          }
+        }
+
+        @keyframes sparkRise {
+          0% {
+            transform: translateY(0) scale(0.6);
+            opacity: 0;
+          }
+          25% {
+            opacity: 1;
+          }
+          75% {
+            opacity: 0.8;
+          }
+          100% {
+            transform: translateY(-44px) scale(1.2);
+            opacity: 0;
+          }
+        }
+
+        @keyframes listRowFadeSlide {
+          0% {
+            opacity: 0;
+            transform: translateY(14px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
+
       <div className="w-full max-w-5xl flex flex-col gap-6 relative">
         {/* Header */}
         <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-2 border-b border-white/[0.06]">
@@ -402,12 +551,12 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
         {isLoading ? (
           <div className="w-full flex flex-col gap-6">
             {/* Podium Skeleton */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-4 items-end">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5 items-end">
               {[1, 2, 3].map((i) => (
                 <div
                   key={i}
                   className={`rounded-2xl border border-white/[0.06] bg-[#0c0e14] p-5 animate-pulse ${
-                    i === 2 ? 'h-80 md:-translate-y-3' : 'h-72'
+                    i === 2 ? 'h-96 md:-translate-y-5' : 'h-72'
                   }`}
                 />
               ))}
@@ -447,23 +596,30 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
             }`}
           >
             {/* 1. THE OLYMPIC STEPPED PODIUM (Top 3) */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-4 items-end">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5 items-end">
               {/* #2 SILVER (Left on Desktop, Mid-Height min-h-[300px]) */}
-              <div className="order-2 md:order-1 h-full">
+              <div
+                key={`podium-2-${animationKey}`}
+                className="order-2 md:order-1 flex flex-col justify-end w-full"
+                style={{
+                  animation: 'podiumSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both',
+                }}
+              >
                 {top2 ? (
                   (() => {
                     const rankTierTitle = getMonthlyRankTierTitle(top2.rank_title, top2.total_seconds);
                     const rankBadgePath = getRankBadgePath(rankTierTitle);
+                    const tierConfig = getRankConfigByTitle(rankTierTitle);
                     const displayName = top2.display_name || top2.name || 'Scholar';
                     const handle = top2.username || displayName.toLowerCase().replace(/\s+/g, '');
                     const level = top2.level ?? getLevelFromLifetimeXP(top2.lifetime_xp || 0);
                     const isUser = checkIsCurrentUser(top2);
-                    const { h, m } = parseTimeHoursMinutes(top2.total_seconds);
+                    const { h, m, hNum, mNum } = parseTimeHoursMinutes(top2.total_seconds);
 
                     return (
                       <div
-                        className={`h-full min-h-[260px] md:min-h-[300px] bg-gradient-to-b from-slate-400/[0.08] via-[#0d1017]/80 to-[#080a0f] border border-slate-400/20 rounded-2xl relative overflow-hidden p-5 sm:p-6 flex flex-col items-center justify-between text-center transition-all duration-200 hover:border-slate-300/40 shadow-lg ${
-                          isUser ? 'ring-1 ring-amber-400/60' : ''
+                        className={`w-full min-h-[300px] md:min-h-[310px] bg-gradient-to-b from-slate-400/[0.08] via-[#0d1017]/80 to-[#080a0f] border border-slate-400/20 rounded-2xl relative overflow-hidden p-5 sm:p-6 flex flex-col items-center justify-between text-center transition-all duration-200 hover:border-slate-300/40 shadow-lg ${
+                          isUser ? 'ring-2 ring-amber-400/80 shadow-[0_0_25px_rgba(245,158,11,0.2)]' : ''
                         }`}
                       >
                         {/* Corner Crosshairs */}
@@ -492,13 +648,19 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                             </div>
                           </div>
                           {/* Floating tier shield at bottom-right intersection */}
-                          <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-[#090c12] border border-white/20 p-0.5 flex items-center justify-center shadow-md">
+                          <div
+                            className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-[#090c12] border p-0.5 flex items-center justify-center shadow-md transition-all"
+                            style={{
+                              borderColor: `${tierConfig.badgeAccent}80`,
+                              boxShadow: `0 0 10px ${tierConfig.glowColor}`,
+                            }}
+                          >
                             <Image
                               src={rankBadgePath}
                               alt={rankTierTitle}
-                              width={22}
-                              height={22}
-                              className="w-4 h-4 object-contain"
+                              width={20}
+                              height={20}
+                              className="w-4 h-4 object-contain drop-shadow-[0_0_4px_rgba(255,255,255,0.2)]"
                             />
                           </div>
                         </div>
@@ -513,19 +675,22 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                           </div>
                         </div>
 
-                        {/* Focus Time Display */}
+                        {/* Focus Time Display with animated count-up */}
                         <div className="mt-4 pt-3 border-t border-white/[0.06] w-full flex flex-col items-center">
                           <div className="flex items-baseline justify-center font-mono">
                             <span className="text-3xl font-mono font-bold tracking-tight text-white drop-shadow-[0_2px_10px_rgba(255,255,255,0.2)]">
-                              {h}
+                              <AnimatedDigit target={hNum} durationMs={800} delayMs={150} key={`h-${top2.user_id}-${animationKey}`} />
                             </span>
                             <span className="text-xs text-zinc-500 font-mono ml-1 mr-2">H</span>
                             <span className="text-2xl font-mono font-bold text-zinc-300">
-                              {m}
+                              <AnimatedDigit target={mNum} durationMs={800} delayMs={150} key={`m-${top2.user_id}-${animationKey}`} />
                             </span>
                             <span className="text-xs text-zinc-500 font-mono ml-1">M</span>
                           </div>
-                          <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider mt-0.5">
+                          <span
+                            className="text-[10px] font-mono uppercase tracking-wider mt-0.5 font-medium"
+                            style={{ color: tierConfig.badgeAccent }}
+                          >
                             {rankTierTitle}
                           </span>
                         </div>
@@ -533,124 +698,192 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                     );
                   })()
                 ) : (
-                  <div className="h-full min-h-[220px] rounded-2xl border border-white/[0.06] bg-[#0c0e14] p-5 flex items-center justify-center text-zinc-600 font-mono text-xs">
+                  <div className="w-full min-h-[300px] md:min-h-[310px] rounded-2xl border border-white/[0.06] bg-[#0c0e14] p-5 flex items-center justify-center text-zinc-600 font-mono text-xs">
                     // 02 UNCLAIMED
                   </div>
                 )}
               </div>
 
-              {/* #1 CHAMPION (Center on Desktop, Taller min-h-[340px], Elevated -translate-y-3 with Golden Atmospheric Bloom) */}
-              <div className="order-1 md:order-2 h-full md:-translate-y-3">
+              {/* #1 CHAMPION (Center on Desktop, Taller min-h-[370px], Elevated md:-translate-y-5 with Golden Atmospheric Bloom) */}
+              <div
+                key={`podium-1-${animationKey}`}
+                className="order-1 md:order-2 flex flex-col justify-end w-full md:-translate-y-5 relative"
+                style={{
+                  animation: 'championSlamIn 0.65s cubic-bezier(0.34, 1.3, 0.64, 1) 0.45s both',
+                }}
+              >
                 {top1 ? (
                   (() => {
                     const rankTierTitle = getMonthlyRankTierTitle(top1.rank_title, top1.total_seconds);
                     const rankBadgePath = getRankBadgePath(rankTierTitle);
+                    const tierConfig = getRankConfigByTitle(rankTierTitle);
                     const displayName = top1.display_name || top1.name || 'Scholar';
                     const handle = top1.username || displayName.toLowerCase().replace(/\s+/g, '');
                     const level = top1.level ?? getLevelFromLifetimeXP(top1.lifetime_xp || 0);
                     const isUser = checkIsCurrentUser(top1);
-                    const { h, m } = parseTimeHoursMinutes(top1.total_seconds);
+                    const { h, m, hNum, mNum } = parseTimeHoursMinutes(top1.total_seconds);
 
                     return (
-                      <div
-                        className={`h-full min-h-[290px] md:min-h-[340px] bg-gradient-to-b from-amber-500/[0.12] via-[#0d1017]/90 to-[#080a0f] border border-amber-500/40 shadow-[0_0_40px_rgba(245,158,11,0.12)] rounded-2xl relative overflow-hidden p-5 sm:p-6 flex flex-col items-center justify-between text-center transition-all duration-200 hover:border-amber-400/80 ${
-                          isUser ? 'ring-1 ring-amber-400' : ''
-                        }`}
-                      >
-                        {/* Corner Crosshairs */}
-                        <span className="absolute top-2.5 left-2.5 text-[10px] font-mono text-zinc-600 select-none pointer-events-none">+</span>
-                        <span className="absolute bottom-2.5 right-2.5 text-[10px] font-mono text-zinc-600 select-none pointer-events-none">+</span>
+                      <div className="relative w-full">
+                        {/* Slow ambient gold glow pulse behind champion card (breathing 3s cycle) */}
+                        <div
+                          className="absolute -inset-1 rounded-3xl bg-gradient-to-b from-amber-500/25 via-yellow-500/15 to-amber-600/25 blur-xl pointer-events-none -z-10"
+                          style={{ animation: 'ambientGlowPulse 3s ease-in-out infinite' }}
+                        />
 
-                        {/* Top Indicator */}
-                        <div className="flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 font-mono text-[10px] font-bold tracking-widest uppercase">
-                          <span>// 01 · CHAMPION</span>
-                          {isUser && (
-                            <span className="text-[9px] text-amber-200 font-mono font-bold ml-1">
-                              [YOU]
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Avatar with Luminous Laurel/Crown Floating Above & Golden Double-Ring */}
-                        <div className="relative my-3 flex flex-col items-center">
-                          {/* Luminous Gold Crown Floating Above Avatar */}
-                          <div className="-mb-2.5 z-10 w-7 h-7 rounded-full bg-amber-500/20 border border-amber-400/60 flex items-center justify-center shadow-[0_0_15px_rgba(245,158,11,0.4)]">
-                            <Crown className="w-3.5 h-3.5 text-amber-300 fill-amber-300 drop-shadow-[0_0_6px_rgba(245,158,11,0.9)]" />
+                        <div
+                          className={`w-full min-h-[370px] md:min-h-[390px] bg-gradient-to-b from-amber-500/[0.12] via-[#0d1017]/90 to-[#080a0f] border border-amber-500/40 shadow-[0_0_40px_rgba(245,158,11,0.12)] rounded-2xl relative overflow-hidden p-6 sm:p-7 flex flex-col items-center justify-between text-center transition-all duration-200 hover:border-amber-400/80 ${
+                            isUser ? 'ring-2 ring-amber-400 shadow-[0_0_30px_rgba(245,158,11,0.3)]' : ''
+                          }`}
+                        >
+                          {/* Subtle Rotating Light Sweep Border */}
+                          <div className="absolute inset-0 rounded-2xl pointer-events-none overflow-hidden -z-0">
+                            <div
+                              className="absolute -inset-[100%] opacity-40"
+                              style={{
+                                background: 'conic-gradient(from 0deg, transparent 0deg, rgba(245, 158, 11, 0.4) 60deg, transparent 120deg)',
+                                animation: 'borderLightSweep 6s linear infinite',
+                              }}
+                            />
+                            <div className="absolute inset-[1px] rounded-2xl bg-[#090c12]/95 backdrop-blur-xl" />
                           </div>
 
-                          <div className="p-1 rounded-full border border-amber-500/50 bg-gradient-to-tr from-amber-500/20 via-yellow-400/20 to-transparent">
-                            <div className="p-0.5 rounded-full border border-amber-400/80 bg-[#090c12] shadow-[0_0_20px_rgba(245,158,11,0.3)] flex items-center justify-center">
-                              <ScholarAvatar
-                                name={displayName}
-                                avatarUrl={top1.avatar_url}
-                                sizeClass="w-18 h-18 sm:w-20 sm:h-20 text-lg"
+                          {/* Soft particle drift: tiny gold sparks rising slowly near top */}
+                          <div className="absolute inset-x-0 top-0 h-32 pointer-events-none overflow-hidden z-20">
+                            {[
+                              { left: '20%', delay: '0s', duration: '2.8s', size: 'w-1 h-1' },
+                              { left: '46%', delay: '0.8s', duration: '3.2s', size: 'w-1.5 h-1.5' },
+                              { left: '72%', delay: '1.6s', duration: '2.6s', size: 'w-1 h-1' },
+                              { left: '34%', delay: '2.2s', duration: '3.0s', size: 'w-1 h-1' },
+                            ].map((spark, i) => (
+                              <span
+                                key={i}
+                                className={`absolute bottom-4 ${spark.size} rounded-full bg-amber-300 shadow-[0_0_6px_#f59e0b]`}
+                                style={{
+                                  left: spark.left,
+                                  animation: `sparkRise ${spark.duration} ease-out infinite`,
+                                  animationDelay: spark.delay,
+                                }}
+                              />
+                            ))}
+                          </div>
+
+                          {/* Corner Crosshairs */}
+                          <span className="absolute top-2.5 left-2.5 text-[10px] font-mono text-zinc-600 select-none pointer-events-none z-10">+</span>
+                          <span className="absolute bottom-2.5 right-2.5 text-[10px] font-mono text-zinc-600 select-none pointer-events-none z-10">+</span>
+
+                          {/* Top Rank Badge */}
+                          <div className="relative z-10 flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 font-mono text-[10px] font-bold tracking-widest uppercase">
+                            <span>// 01 · CHAMPION</span>
+                            {isUser && (
+                              <span className="text-[9px] text-amber-200 font-mono font-bold ml-1">
+                                [YOU]
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Avatar with Floating Bobbing Crown & Noticeably Larger Luminous Double-Ring */}
+                          <div className="relative my-3 flex flex-col items-center z-10">
+                            {/* Gentle Bobbing Crown (~2s cycle) */}
+                            <div
+                              className="-mb-3 z-20 w-8 h-8 rounded-full bg-amber-500/20 border border-amber-400/70 flex items-center justify-center shadow-[0_0_16px_rgba(245,158,11,0.5)]"
+                              style={{ animation: 'crownFloat 2s ease-in-out infinite' }}
+                            >
+                              <Crown className="w-4 h-4 text-amber-300 fill-amber-300 drop-shadow-[0_0_8px_rgba(245,158,11,0.9)]" />
+                            </div>
+
+                            {/* Noticeably Larger Avatar Ring */}
+                            <div className="p-1.5 rounded-full border border-amber-500/50 bg-gradient-to-tr from-amber-500/25 via-yellow-400/25 to-transparent">
+                              <div className="p-1 rounded-full border border-amber-400/80 bg-[#090c12] shadow-[0_0_25px_rgba(245,158,11,0.35)] flex items-center justify-center">
+                                <ScholarAvatar
+                                  name={displayName}
+                                  avatarUrl={top1.avatar_url}
+                                  sizeClass="w-20 h-20 sm:w-24 sm:h-24 text-xl sm:text-2xl"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Floating tier shield with ambient glow */}
+                            <div
+                              className="absolute -bottom-1 -right-1 w-9 h-9 rounded-full bg-[#090c12] border p-0.5 flex items-center justify-center shadow-lg transition-all"
+                              style={{
+                                borderColor: `${tierConfig.badgeAccent}90`,
+                                boxShadow: `0 0 12px ${tierConfig.glowColor}`,
+                              }}
+                            >
+                              <Image
+                                src={rankBadgePath}
+                                alt={rankTierTitle}
+                                width={28}
+                                height={28}
+                                className="w-5 h-5 sm:w-6 sm:h-6 object-contain drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]"
                               />
                             </div>
                           </div>
-                          {/* Floating tier shield with ambient glow */}
-                          <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-[#090c12] border border-amber-500/60 p-0.5 flex items-center justify-center shadow-lg drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]">
-                            <Image
-                              src={rankBadgePath}
-                              alt={rankTierTitle}
-                              width={26}
-                              height={26}
-                              className="w-5 h-5 object-contain"
-                            />
-                          </div>
-                        </div>
 
-                        {/* Scholar Name + Handle */}
-                        <div className="w-full px-2">
-                          <div className="font-bold text-white text-base sm:text-lg truncate flex items-center justify-center gap-1">
-                            <span className="truncate">{displayName}</span>
+                          {/* Scholar Name + Handle */}
+                          <div className="w-full px-2 z-10">
+                            <div className="font-bold text-white text-base sm:text-lg truncate flex items-center justify-center gap-1">
+                              <span className="truncate">{displayName}</span>
+                            </div>
+                            <div className="text-xs font-mono text-zinc-400 truncate mt-0.5">
+                              @{handle} · Lv. {level}
+                            </div>
                           </div>
-                          <div className="text-xs font-mono text-zinc-400 truncate mt-0.5">
-                            @{handle} · Lv. {level}
-                          </div>
-                        </div>
 
-                        {/* Prominent High-Contrast Digital Monospace Time */}
-                        <div className="mt-4 pt-3 border-t border-amber-500/20 w-full flex flex-col items-center">
-                          <div className="flex items-baseline justify-center font-mono">
-                            <span className="text-3xl sm:text-4xl font-mono font-bold tracking-tight text-white drop-shadow-[0_2px_10px_rgba(255,255,255,0.2)]">
-                              {h}
+                          {/* Prominent High-Contrast Digital Monospace Time with animated count-up */}
+                          <div className="mt-4 pt-3 border-t border-amber-500/20 w-full flex flex-col items-center z-10">
+                            <div className="flex items-baseline justify-center font-mono">
+                              <span className="text-3xl sm:text-4xl font-mono font-bold tracking-tight text-white drop-shadow-[0_2px_12px_rgba(255,255,255,0.25)]">
+                                <AnimatedDigit target={hNum} durationMs={800} delayMs={450} key={`h-${top1.user_id}-${animationKey}`} />
+                              </span>
+                              <span className="text-xs text-amber-400 font-mono font-bold ml-1 mr-2">H</span>
+                              <span className="text-2xl sm:text-3xl font-mono font-bold text-zinc-200">
+                                <AnimatedDigit target={mNum} durationMs={800} delayMs={450} key={`m-${top1.user_id}-${animationKey}`} />
+                              </span>
+                              <span className="text-xs text-amber-400 font-mono font-bold ml-1">M</span>
+                            </div>
+                            <span
+                              className="text-[10px] font-mono uppercase tracking-wider mt-0.5 font-bold"
+                              style={{ color: tierConfig.badgeAccent }}
+                            >
+                              {rankTierTitle}
                             </span>
-                            <span className="text-xs text-amber-400 font-mono font-bold ml-1 mr-2">H</span>
-                            <span className="text-2xl sm:text-3xl font-mono font-bold text-zinc-200">
-                              {m}
-                            </span>
-                            <span className="text-xs text-amber-400 font-mono font-bold ml-1">M</span>
                           </div>
-                          <span className="text-[10px] font-mono text-amber-400 uppercase tracking-wider mt-0.5 font-medium">
-                            {rankTierTitle}
-                          </span>
                         </div>
                       </div>
                     );
                   })()
                 ) : (
-                  <div className="h-full min-h-[250px] rounded-2xl border border-white/[0.06] bg-[#0c0e14] p-5 flex items-center justify-center text-zinc-600 font-mono text-xs">
+                  <div className="w-full min-h-[370px] md:min-h-[390px] rounded-2xl border border-white/[0.06] bg-[#0c0e14] p-5 flex items-center justify-center text-zinc-600 font-mono text-xs">
                     // 01 UNCLAIMED
                   </div>
                 )}
               </div>
 
-              {/* #3 BRONZE (Right on Desktop, Lower Height min-h-[280px]) */}
-              <div className="order-3 h-full">
+              {/* #3 BRONZE (Right on Desktop, Mid-Height min-h-[300px]) */}
+              <div
+                key={`podium-3-${animationKey}`}
+                className="order-3 md:order-3 flex flex-col justify-end w-full"
+                style={{
+                  animation: 'podiumSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both',
+                }}
+              >
                 {top3 ? (
                   (() => {
                     const rankTierTitle = getMonthlyRankTierTitle(top3.rank_title, top3.total_seconds);
                     const rankBadgePath = getRankBadgePath(rankTierTitle);
+                    const tierConfig = getRankConfigByTitle(rankTierTitle);
                     const displayName = top3.display_name || top3.name || 'Scholar';
                     const handle = top3.username || displayName.toLowerCase().replace(/\s+/g, '');
                     const level = top3.level ?? getLevelFromLifetimeXP(top3.lifetime_xp || 0);
                     const isUser = checkIsCurrentUser(top3);
-                    const { h, m } = parseTimeHoursMinutes(top3.total_seconds);
+                    const { h, m, hNum, mNum } = parseTimeHoursMinutes(top3.total_seconds);
 
                     return (
                       <div
-                        className={`h-full min-h-[240px] md:min-h-[280px] bg-gradient-to-b from-amber-800/[0.08] via-[#0d1017]/80 to-[#080a0f] border border-amber-700/20 rounded-2xl relative overflow-hidden p-5 sm:p-6 flex flex-col items-center justify-between text-center transition-all duration-200 hover:border-amber-600/40 shadow-lg ${
-                          isUser ? 'ring-1 ring-amber-400/60' : ''
+                        className={`w-full min-h-[300px] md:min-h-[310px] bg-gradient-to-b from-amber-800/[0.08] via-[#0d1017]/80 to-[#080a0f] border border-amber-700/20 rounded-2xl relative overflow-hidden p-5 sm:p-6 flex flex-col items-center justify-between text-center transition-all duration-200 hover:border-amber-600/40 shadow-lg ${
+                          isUser ? 'ring-2 ring-amber-400/80 shadow-[0_0_25px_rgba(245,158,11,0.2)]' : ''
                         }`}
                       >
                         {/* Corner Crosshairs */}
@@ -679,13 +912,19 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                             </div>
                           </div>
                           {/* Floating tier shield at bottom-right intersection */}
-                          <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-[#090c12] border border-white/20 p-0.5 flex items-center justify-center shadow-md">
+                          <div
+                            className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-[#090c12] border p-0.5 flex items-center justify-center shadow-md transition-all"
+                            style={{
+                              borderColor: `${tierConfig.badgeAccent}80`,
+                              boxShadow: `0 0 10px ${tierConfig.glowColor}`,
+                            }}
+                          >
                             <Image
                               src={rankBadgePath}
                               alt={rankTierTitle}
-                              width={22}
-                              height={22}
-                              className="w-4 h-4 object-contain"
+                              width={20}
+                              height={20}
+                              className="w-4 h-4 object-contain drop-shadow-[0_0_4px_rgba(255,255,255,0.2)]"
                             />
                           </div>
                         </div>
@@ -700,19 +939,22 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                           </div>
                         </div>
 
-                        {/* Focus Time Display */}
+                        {/* Focus Time Display with animated count-up */}
                         <div className="mt-4 pt-3 border-t border-white/[0.06] w-full flex flex-col items-center">
                           <div className="flex items-baseline justify-center font-mono">
                             <span className="text-3xl font-mono font-bold tracking-tight text-white drop-shadow-[0_2px_10px_rgba(255,255,255,0.2)]">
-                              {h}
+                              <AnimatedDigit target={hNum} durationMs={800} delayMs={300} key={`h-${top3.user_id}-${animationKey}`} />
                             </span>
                             <span className="text-xs text-zinc-500 font-mono ml-1 mr-2">H</span>
                             <span className="text-2xl font-mono font-bold text-zinc-300">
-                              {m}
+                              <AnimatedDigit target={mNum} durationMs={800} delayMs={300} key={`m-${top3.user_id}-${animationKey}`} />
                             </span>
                             <span className="text-xs text-zinc-500 font-mono ml-1">M</span>
                           </div>
-                          <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider mt-0.5">
+                          <span
+                            className="text-[10px] font-mono uppercase tracking-wider mt-0.5 font-medium"
+                            style={{ color: tierConfig.badgeAccent }}
+                          >
                             {rankTierTitle}
                           </span>
                         </div>
@@ -720,7 +962,7 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                     );
                   })()
                 ) : (
-                  <div className="h-full min-h-[200px] rounded-2xl border border-white/[0.06] bg-[#0c0e14] p-5 flex items-center justify-center text-zinc-600 font-mono text-xs">
+                  <div className="w-full min-h-[300px] md:min-h-[310px] rounded-2xl border border-white/[0.06] bg-[#0c0e14] p-5 flex items-center justify-center text-zinc-600 font-mono text-xs">
                     // 03 UNCLAIMED
                   </div>
                 )}
@@ -738,12 +980,13 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                   <span className="w-28 sm:w-32 text-right">RECORDED FOCUS</span>
                 </div>
 
-                {/* Roster Rows */}
+                {/* Roster Rows with Staggered Entrance and Micro-interactions */}
                 {contenders.map((row, idx) => {
                   const actualRank = idx + 4;
                   const isCurrentUser = checkIsCurrentUser(row);
                   const rankTierTitle = getMonthlyRankTierTitle(row.rank_title, row.total_seconds);
                   const rankBadgePath = getRankBadgePath(rankTierTitle);
+                  const tierConfig = getRankConfigByTitle(rankTierTitle);
                   const displayName = row.display_name || row.name || row.username || 'Scholar';
                   const handle = row.username || displayName.toLowerCase().replace(/\s+/g, '');
                   const level = row.level ?? getLevelFromLifetimeXP(row.lifetime_xp || 0);
@@ -752,11 +995,16 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                   return (
                     <div
                       key={row.user_id || actualRank}
-                      className={`px-6 py-3 flex items-center transition-all duration-150 group hover:bg-white/[0.03] ${
+                      className={`px-6 py-3 flex items-center transition-all duration-200 group border-l-2 relative cursor-default ${
                         isCurrentUser
-                          ? 'border-l-2 border-l-amber-400 bg-amber-500/[0.04]'
-                          : ''
+                          ? 'border-l-amber-400 bg-amber-500/[0.06] shadow-[inset_0_0_24px_rgba(245,158,11,0.06)]'
+                          : 'border-l-transparent hover:border-l-[var(--row-tier-color)] hover:bg-white/[0.04]'
                       }`}
+                      style={{
+                        '--row-tier-color': tierConfig.badgeAccent || '#D97706',
+                        animation: 'listRowFadeSlide 0.4s ease-out both',
+                        animationDelay: `${600 + idx * 40}ms`,
+                      } as React.CSSProperties}
                     >
                       {/* POS */}
                       <span className="w-12 text-left text-zinc-500 font-mono text-xs group-hover:text-zinc-300">
@@ -786,16 +1034,22 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                         </div>
                       </div>
 
-                      {/* Tier Column */}
+                      {/* Tier Column with per-user authentic styling */}
                       <div className="w-36 sm:w-44 flex items-center justify-center flex-shrink-0 gap-2">
                         <Image
                           src={rankBadgePath}
                           alt={rankTierTitle}
                           width={22}
                           height={22}
-                          className="w-5 h-5 object-contain flex-shrink-0 drop-shadow-[0_0_4px_rgba(255,255,255,0.1)]"
+                          className="w-5 h-5 object-contain flex-shrink-0"
+                          style={{
+                            filter: `drop-shadow(0 0 6px ${tierConfig.glowColor || 'rgba(255,255,255,0.1)'})`,
+                          }}
                         />
-                        <span className="text-xs text-zinc-400 font-mono tracking-wider uppercase truncate">
+                        <span
+                          className="text-xs font-mono tracking-wider uppercase truncate font-semibold"
+                          style={{ color: tierConfig.badgeAccent }}
+                        >
                           {rankTierTitle}
                         </span>
                       </div>
