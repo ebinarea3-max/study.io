@@ -204,7 +204,7 @@ export default function Home() {
         <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
       </ErrorBoundary>
       <ErrorBoundary fallbackTitle="Profile">
-        <ProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
+        <ProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} user={user} />
       </ErrorBoundary>
       <ErrorBoundary fallbackTitle="Settings">
         <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />

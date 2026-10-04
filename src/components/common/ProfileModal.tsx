@@ -13,6 +13,8 @@ import { isAppropriateHandle, isValidHandleFormat, sanitizeHandleInput } from '.
 interface ProfileModalProps {
   isOpen: boolean;
   onClose: () => void;
+  user?: any;
+  profile?: any;
 }
 
 const differenceInDays = (d1: Date, d2: Date) => Math.floor((d1.getTime() - d2.getTime()) / (1000 * 3600 * 24));
@@ -79,8 +81,9 @@ const VAULT_CATEGORIES = [
   }
 ];
 
-export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
-  const { user, updateProfile } = useAuth();
+export function ProfileModal({ isOpen, onClose, user: parentUser, profile }: ProfileModalProps) {
+  const { user: contextUser, updateProfile } = useAuth();
+  const user = parentUser || contextUser; // Use parentUser if provided, fallback to contextUser
   const { gamification } = useStudy();
 
   const userRank = getRankTier(user.seasonRp || 0);
@@ -244,7 +247,7 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
       const supabase = getSupabase();
       if (!supabase) throw new Error("Supabase client not initialized.");
 
-      let activeUserId: string | undefined = user?.id;
+      let activeUserId: string | undefined = user?.id || profile?.id || contextUser?.id;
       if (activeUserId === 'user-scholar-1') activeUserId = undefined;
 
       if (!activeUserId) {
@@ -256,6 +259,8 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
         const { data: userData } = await supabase.auth.getUser();
         activeUserId = userData.user?.id;
       }
+      
+      console.log("Saving identity with user ID:", activeUserId);
       
       if (!activeUserId) {
         throw new Error("No active session found. Please refresh the page.");
