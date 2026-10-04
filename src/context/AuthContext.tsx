@@ -61,7 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         id: authUser.id,
         email: authUser.email || prev.email || '',
         displayName: metaName || prev.displayName || (authUser.email ? authUser.email.split('@')[0] : 'Focus Scholar'),
-        avatarUrl: metaAvatar || prev.avatarUrl,
+        avatarUrl: prev.avatarUrl,
         user_metadata: authUser.user_metadata,
       };
       try { localStorage.setItem('studypulse_active_user', JSON.stringify(merged)); } catch {}
@@ -134,7 +134,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             username: profile.username || prev.username,
             name: profile.name || prev.name,
             displayName: profile.name || metaName || prev.displayName || (authUser.email ? authUser.email.split('@')[0] : 'Focus Scholar'),
-            avatarUrl: profile.avatar_url || metaAvatar || prev.avatarUrl,
+            avatarUrl: profile.avatar_url || prev.avatarUrl,
             dailyGoalHours: Number(profile.daily_goal_hours ?? prev.dailyGoalHours ?? 4.0),
             streakDays: Number(profile.streak_days ?? prev.streakDays ?? 0),
             level: Number(profile.level ?? calculatedLevel),

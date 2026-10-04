@@ -41,47 +41,48 @@ export function getAvatarGradient(name?: string): string {
 
 export function UserAvatar({ src, name, size = 36, className = '' }: UserAvatarProps) {
   const [hasError, setHasError] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   // Reset error state if the src changes
   useEffect(() => {
     setHasError(false);
+    setIsLoaded(false);
   }, [src]);
 
   const initials = getInitials(name);
   const gradient = getAvatarGradient(name);
   const roundedClass = className.includes('rounded-') ? '' : 'rounded-xl';
 
-  // If no source provided or loading failed, display the gradient initials avatar
-  if (!src || hasError) {
-    return (
+  return (
+    <div className={`relative ${roundedClass} ${className}`} style={{ width: size, height: size }}>
+      {/* Background Fallback (Initials) */}
       <div
-        className={`${roundedClass} bg-gradient-to-tr ${gradient} flex items-center justify-center font-black text-slate-950 tracking-wider select-none shadow-md ${className}`}
-        style={{
-          width: size,
-          height: size,
-          fontSize: Math.max(10, Math.floor(size * 0.38)),
-        }}
+        className={`absolute inset-0 bg-gradient-to-tr ${gradient} flex items-center justify-center font-black text-slate-950 tracking-wider select-none shadow-md ${roundedClass}`}
+        style={{ fontSize: Math.max(10, Math.floor(size * 0.38)) }}
         title={name || 'User Profile'}
       >
         {initials}
       </div>
-    );
-  }
 
-  return (
-    <img
-      src={src}
-      alt={name || 'User Avatar'}
-      width={size}
-      height={size}
-      loading="lazy"
-      referrerPolicy="no-referrer"
-      onError={() => setHasError(true)}
-      className={`${roundedClass} object-cover ${className}`}
-      style={{
-        width: size,
-        height: size,
-      }}
-    />
+      {/* Foreground Avatar Image with Smooth Fade */}
+      {src && !hasError && (
+        <img
+          src={src}
+          alt={name || 'User Avatar'}
+          width={size}
+          height={size}
+          loading="lazy"
+          referrerPolicy="no-referrer"
+          onLoad={() => setIsLoaded(true)}
+          onError={() => {
+            setHasError(true);
+            setIsLoaded(false);
+          }}
+          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ease-in-out ${
+            isLoaded ? 'opacity-100' : 'opacity-0'
+          } ${roundedClass}`}
+        />
+      )}
+    </div>
   );
 }

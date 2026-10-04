@@ -45,7 +45,7 @@ export function Navbar({
   onOpenProfile,
   onOpenSettings,
 }: NavbarProps) {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, isLoading, logout } = useAuth();
   const { isStudying, setIsFocusModeOpen, gamification, sessions } = useStudy();
   const { theme, userRank, totalRP } = useRankTheme();
 
@@ -128,15 +128,10 @@ export function Navbar({
     }
   }, []);
 
-  // Memoize user session avatar & display name extraction to prevent flickering
   const avatarUrl = useMemo(() => {
-    return (
-      user?.avatarUrl ||
-      user?.user_metadata?.avatar_url ||
-      (user as any)?.user_metadata?.picture ||
-      ''
-    );
-  }, [user?.avatarUrl, user?.user_metadata?.avatar_url, (user as any)?.user_metadata?.picture]);
+    if (isLoading) return '';
+    return user?.avatarUrl || '';
+  }, [user?.avatarUrl, isLoading]);
 
   const displayName = useMemo(() => {
     return (
