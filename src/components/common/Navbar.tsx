@@ -166,7 +166,7 @@ export function Navbar({
   return (
     <>
     <header className="sticky top-0 z-40 w-full border-b border-[var(--border)] bg-[var(--bg)]/90 backdrop-blur-xl transition-colors">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 h-16 flex items-center justify-between gap-2 sm:gap-4">
+      <div className="max-w-7xl mx-auto px-4 py-3 sm:px-6 h-auto sm:h-16 flex items-center justify-between gap-2 sm:gap-4">
         {/* Logo & Brand */}
         <div className="flex items-center gap-2.5 sm:gap-6">
           <div className="flex items-center gap-2.5 cursor-pointer select-none group" onClick={() => setActiveTab('timer')}>
@@ -260,21 +260,29 @@ export function Navbar({
 
               {/* Rank Status Pill */}
               <div
-                className="relative flex items-center h-8 sm:h-9 pl-1 pr-3 sm:pr-4 bg-[var(--surface)] border border-slate-800 text-slate-100 cursor-default select-none rounded-xl"
+                className="relative flex items-center h-8 sm:h-9 pl-1 pr-2 sm:pr-4 bg-[var(--surface)] border border-slate-800 text-slate-100 cursor-default select-none rounded-xl"
                 title={`Ranked Season RP: ${userRank.rp.toLocaleString()} RP (${userRank.fullTitle})`}
               >
-                <div className="flex items-center gap-1.5 sm:gap-2">
+                <div className="flex items-center gap-1 sm:gap-2">
                   <RankCrestBadge
                     tier={userRank.tier}
                     division={userRank.division}
-                    size={36}
-                    className="-ml-3"
+                    size={32}
+                    className="-ml-2.5 sm:-ml-3"
                   />
+                  {/* Desktop: Full Title */}
                   <span
-                    className="text-xs font-bold tracking-wider font-hud uppercase truncate max-w-[80px] sm:max-w-none"
+                    className="hidden sm:inline text-xs font-bold tracking-wider font-hud uppercase"
                     style={{ color: theme.accent }}
                   >
                     {userRank.fullTitle}
+                  </span>
+                  {/* Mobile: Compact Tier Numeral */}
+                  <span
+                    className="sm:hidden text-[10px] font-bold tracking-wider font-hud uppercase"
+                    style={{ color: theme.accent }}
+                  >
+                    {userRank.division ? userRank.division : userRank.tier.slice(0, 3)}
                   </span>
                   <span className="hidden sm:inline text-[11px] text-slate-500 font-mono ml-1">
                     {userRank.rp.toLocaleString()} RP
@@ -495,7 +503,7 @@ export function Navbar({
     {/* Mobile Floating Dock Navigation: 4 Dedicated Tabs with Sliding Tier Indicator */}
     <nav
       aria-label="Mobile Floating Dock Navigation"
-      className="fixed bottom-4 left-3 right-3 max-w-sm mx-auto z-40 hud-glass-overlay rounded-full p-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.7)] md:hidden transition-all"
+      className="fixed bottom-3 sm:bottom-4 pb-[env(safe-area-inset-bottom,16px)] left-3 right-3 max-w-sm mx-auto z-40 hud-glass-overlay rounded-full p-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.7)] md:hidden transition-all"
       style={{
         borderColor: `${theme.accent}35`,
       }}

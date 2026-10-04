@@ -771,7 +771,7 @@ export function StudyTimer() {
   }, [isLoading, user?.streakDays, overviewTodaySeconds, todaySessions.length, lockedEmptyQuote]);
 
   return (
-    <div className="w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6 items-start justify-center max-md:h-[calc(100dvh-8.5rem)] max-md:overflow-hidden md:overflow-visible px-0 max-md:px-2 max-md:py-2">
+    <div className="w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6 items-start justify-center px-3 sm:px-6 py-2 sm:py-4 pb-24 md:pb-12">
       {/* Subject Manager Modal - Conditionally mounted strictly when open (Stop Background Rendering) */}
       {isManageSubjectsOpen && (
         <ErrorBoundary
@@ -787,10 +787,10 @@ export function StudyTimer() {
       )}
 
       {/* Main Left Column (Timer & Subject Goal Progress) */}
-      <div className="w-full h-full flex flex-col justify-between max-md:overflow-hidden md:overflow-visible space-y-0 md:space-y-3">
+      <div className="w-full flex flex-col space-y-4">
         {/* Main Timer Game-HUD Card with Targeting Reticle Corner Brackets */}
         <div
-          className="relative w-full h-full rounded-2xl bg-[#0b0e14]/90 border border-white/[0.07] p-5 sm:p-8 shadow-2xl relative overflow-hidden backdrop-blur-xl flex flex-col justify-between transition-all"
+          className="relative w-full rounded-2xl bg-[#0b0e14]/90 border border-white/[0.07] p-4 sm:p-7 shadow-2xl overflow-hidden backdrop-blur-xl flex flex-col gap-3 sm:gap-5 transition-all"
         >
           {/* Dial Backlight Illumination */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none -z-0">
@@ -820,9 +820,9 @@ export function StudyTimer() {
             </div>
           )}
 
-          <div className="flex flex-col items-center gap-2 w-full relative z-20">
+          <div className="flex flex-col items-center gap-3 w-full relative z-20">
           {/* Top Controls: Mode Switcher, Preset Selector & Focus Mode Button */}
-          <div className="w-full flex flex-wrap items-center max-md:justify-center justify-between gap-2.5 sm:gap-4 relative z-10 pb-4 max-md:border-b-0 border-b border-white/[0.06] flex-shrink-0">
+          <div className="w-full flex flex-wrap items-center justify-between gap-2.5 sm:gap-4 relative z-10 pb-3 border-b border-white/[0.06] flex-shrink-0">
             <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
               {/* Mode Pill Toggle - Sleek recessed capsule */}
               <div className="flex items-center gap-1 bg-[#05070a] border border-white/[0.06] p-1 rounded-xl">
@@ -932,7 +932,7 @@ export function StudyTimer() {
           </div>
 
           {/* Subject Selection Bar - Compact on Mobile */}
-          <div className="relative z-20 w-full sm:my-5 flex-shrink-0">
+          <div className="relative z-20 w-full mt-1 sm:mt-2 flex-shrink-0">
             {/* Subject warning banner */}
             {subjectWarning && (
               <div className="mb-2 sm:mb-3 flex items-center justify-between gap-2.5 px-3 py-2 rounded-2xl bg-amber-500/15 border border-amber-500/40 text-amber-200 text-xs font-semibold backdrop-blur-md shadow-lg shadow-amber-500/10 animate-in fade-in slide-in-from-top-2 duration-200">
@@ -1251,12 +1251,14 @@ export function StudyTimer() {
                     )}
                   </div>
 
-                  {/* Status Row with Symmetrical Spacing */}
-                  <div className="h-6 text-[11px] uppercase tracking-[0.2em] text-white/70 font-semibold flex items-center justify-center gap-2 mt-2">
-                    <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isStudying && !isPaused ? 'bg-green-500 animate-pulse' : isPaused ? 'bg-amber-400' : 'bg-white/50'}`} />
-                    <span className="text-center">{!selectedSubject ? 'SELECT A SUBJECT' : isStudying && !isPaused ? 'RUNNING' : isPaused ? 'PAUSED' : 'READY TO START'}</span>
-                    <div className="w-1.5 h-1.5 rounded-full flex-shrink-0 opacity-0 pointer-events-none" aria-hidden="true" />
-                  </div>
+                  {/* Dynamic Status: Only render active metadata once session starts */}
+                  {isStudying ? (
+                    <div className="h-6 text-[11px] uppercase tracking-[0.2em] text-white/70 font-semibold flex items-center justify-center gap-2 mt-2 animate-in fade-in duration-200">
+                      <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${!isPaused ? 'bg-green-500 animate-pulse' : 'bg-amber-400'}`} />
+                      <span className="text-center">{isPaused ? 'PAUSED' : 'RUNNING'}</span>
+                      <div className="w-1.5 h-1.5 rounded-full flex-shrink-0 opacity-0 pointer-events-none" aria-hidden="true" />
+                    </div>
+                  ) : null}
 
                   {/* Sleek Progress Line on Mobile when active */}
                   {isStudying && progressPercent > 0 && (
@@ -1509,24 +1511,20 @@ export function StudyTimer() {
               )}
             </div>
           </div>
-              {/* Atmosphere UI (Mobile) */}
-              <div className="relative sm:hidden mt-3 flex justify-center w-full">
+              {/* Atmosphere UI (Mobile - Secondary Accessory under Action Buttons) */}
+              <div className="relative sm:hidden mt-2.5 flex justify-center w-full">
                 <button
+                  type="button"
                   onClick={() => setIsAmbientMenuOpen(!isAmbientMenuOpen)}
-                  className="bg-white/[0.05] border border-white/15 hover:border-[var(--tier-border)] text-zinc-100 font-medium text-xs px-3.5 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer select-none shadow-sm"
+                  className="bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-zinc-300 font-mono text-xs px-3.5 py-1.5 rounded-xl flex items-center gap-2 transition-all cursor-pointer select-none active:scale-95 shadow-sm"
                 >
-                  <Music className={`w-3.5 h-3.5 ${ambientSound !== 'none' ? 'text-[var(--tier-accent)]' : 'text-zinc-300'}`} />
-                  <span className="tracking-tight hidden sm:inline">
-                    Atmosphere: {
-                      ambientSound === 'pinknoise' ? 'Pink Noise' :
-                      ambientSound === 'brownnoise' ? 'Brown Noise' :
-                      ambientSound === 'whitenoise' ? 'White Noise' :
-                      ambientSound === 'rain' ? 'Rain' :
-                      ambientSound === 'campfire' ? 'Fireplace' : 'Silent'
-                    }
-                  </span>
-                  <span className="tracking-tight sm:hidden">
-                    Sound
+                  <Music className={`w-3.5 h-3.5 ${ambientSound !== 'none' ? 'text-[var(--tier-accent)]' : 'text-zinc-400'}`} />
+                  <span className="tracking-tight text-xs">
+                    {ambientSound === 'pinknoise' ? 'Pink Noise' :
+                     ambientSound === 'brownnoise' ? 'Brown Noise' :
+                     ambientSound === 'whitenoise' ? 'White Noise' :
+                     ambientSound === 'rain' ? 'Rain' :
+                     ambientSound === 'campfire' ? 'Fireplace' : 'Sound: Off'}
                   </span>
                   {ambientSound !== 'none' && <span className="w-1.5 h-1.5 rounded-full bg-[var(--tier-accent)] animate-pulse ml-0.5" />}
                   <ChevronUp className={`w-3.5 h-3.5 text-neutral-500 transition-transform ${isAmbientMenuOpen ? 'rotate-180' : ''}`} />
