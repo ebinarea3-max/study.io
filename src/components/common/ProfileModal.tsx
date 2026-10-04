@@ -158,6 +158,9 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
 
   const cleanedHandle = sanitizeHandleInput(username.replace(/^@/, ''));
   const handleIsAppropriate = cleanedHandle === '' || isAppropriateHandle(cleanedHandle);
+  
+  const trimmedDisplayName = displayName.trim();
+  const displayNameIsAppropriate = trimmedDisplayName === '' || isAppropriateHandle(trimmedDisplayName);
 
   let cooldownDaysLeft = 0;
   let isCooldownActive = false;
@@ -219,6 +222,11 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   const handleSave = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (isSaving) return;
+    
+    if (!displayNameIsAppropriate || !handleIsAppropriate) {
+      setErrorMsg("Display name or handle contains restricted or inappropriate terms.");
+      return;
+    }
     
     setIsSaving(true);
     setErrorMsg("");
@@ -421,8 +429,17 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                 maxLength={30}
                 value={displayName}
                 onChange={e => setDisplayName(e.target.value)}
-                className="w-full bg-white/[0.05] backdrop-blur-xl border border-white/10 rounded-lg px-4 py-3 text-sm text-white placeholder:text-neutral-500 focus:outline-none focus:border-cyan-500/80 focus:ring-1 focus:ring-cyan-500/80 transition-all font-mono shadow-[inset_0_2px_4px_rgba(0,0,0,0.2)]"
+                className={`w-full bg-white/[0.05] backdrop-blur-xl border rounded-lg px-4 py-3 text-sm text-white placeholder:text-neutral-500 focus:outline-none focus:ring-1 transition-all font-mono shadow-[inset_0_2px_4px_rgba(0,0,0,0.2)] ${
+                  !displayNameIsAppropriate
+                    ? 'border-amber-500/80 focus:border-amber-500 focus:ring-amber-500'
+                    : 'border-white/10 focus:border-cyan-500/80 focus:ring-cyan-500/80'
+                }`}
               />
+              {!displayNameIsAppropriate && (
+                <div className="mt-1.5 text-[10px] font-mono text-amber-500">
+                  Display name contains restricted or inappropriate terms. Please choose a different identity.
+                </div>
+              )}
             </div>
 
             {/* Handle */}
@@ -497,7 +514,7 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
               </button>
               <button
                 type="submit"
-                disabled={isSaving || displayName.trim().length < 2 || cleanedHandle.length < 3 || (cleanedHandle !== (user.username || '') && isCooldownActive) || !handleIsAppropriate}
+                disabled={isSaving || displayName.trim().length < 2 || cleanedHandle.length < 3 || (cleanedHandle !== (user.username || '') && isCooldownActive) || !handleIsAppropriate || !displayNameIsAppropriate}
                 className="flex-1 py-3 px-4 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black text-xs font-bold uppercase tracking-wider transition-all shadow-[0_0_20px_rgba(245,158,11,0.2)] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSaving ? (
