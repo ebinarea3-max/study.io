@@ -101,44 +101,13 @@ export function TasksOverview() {
 
   return (
     <div className="w-full max-w-3xl mx-auto space-y-4 px-3.5 sm:px-6 py-4 pb-24 md:pb-12 animate-in fade-in duration-200">
-      {/* 1. Operational Directive (Top of Tasks View) */}
-      <div className="hud-surface  border border-[var(--border)] rounded-2xl p-4 sm:p-4.5 space-y-2 relative overflow-hidden group">
-        <div className="flex items-center justify-between pb-2 border-b border-white/[0.06] relative z-10">
-          <div className="flex items-center gap-2">
-            <Radio className="w-3.5 h-3.5 text-tier" />
-            <span className="font-hud-mono text-[11px] font-bold uppercase tracking-wider text-neutral-300">
-              TODAY'S BOOST // Objectives
-            </span>
-          </div>
-          <span
-            className="font-hud-mono text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded border text-tier border-tier-muted bg-tier-muted"
-          >
-            ACTIVE DISPATCH
-          </span>
-        </div>
-
-        <div className="min-h-[34px] flex flex-col justify-center relative z-10">
-          <p className="text-xs sm:text-[13px] font-medium text-neutral-200 leading-snug flex items-center gap-1.5">
-            {(user?.streakDays ?? 0) >= 1 && (
-              <Flame className="w-3.5 h-3.5 text-tier flex-shrink-0" />
-            )}
-            <span>{primaryBoostMessage}</span>
-          </p>
-          {secondaryBoostMessage && (
-            <p className="text-[11px] font-hud-mono mt-1 leading-normal text-tier">
-              {secondaryBoostMessage}
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* 2. Interactive To-Do List Checklist (Center) */}
+      {/* 1. Interactive To-Do List Checklist (Top) */}
       <div className="relative z-10">
         <DailyTodoList />
       </div>
 
-      {/* 3. Daily Telemetry Overview (Below To-Do List) */}
-      <div className="hud-surface  border border-[var(--border)] rounded-2xl p-4 sm:p-5 space-y-3.5 relative overflow-hidden">
+      {/* 2. Daily Telemetry Overview (Center) */}
+      <div className="hud-surface border border-[var(--border)] rounded-2xl p-4 sm:p-5 space-y-3.5 relative overflow-hidden">
         {/* Header Row */}
         <div className="flex items-center justify-between pb-2 border-b border-white/[0.06]">
           <div className="flex items-center gap-2">
@@ -247,6 +216,37 @@ export function TasksOverview() {
               {(user?.streakDays ?? 0) > 0 ? `${(user?.streakDays ?? 0) % 7}/7 to next multiplier` : 'Start your streak'}
             </span>
           </div>
+        </div>
+      </div>
+
+      {/* 3. Operational Directive (Under Daily Overview) */}
+      <div className="hud-surface border border-[var(--border)] rounded-2xl p-4 sm:p-4.5 space-y-2 relative overflow-hidden group">
+        <div className="flex items-center justify-between pb-2 border-b border-white/[0.06] relative z-10">
+          <div className="flex items-center gap-2">
+            <Radio className="w-3.5 h-3.5 text-tier" />
+            <span className="font-hud-mono text-[11px] font-bold uppercase tracking-wider text-neutral-300">
+              TODAY'S BOOST // Objectives
+            </span>
+          </div>
+          <span
+            className="font-hud-mono text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded border text-tier border-tier-muted bg-tier-muted"
+          >
+            ACTIVE DISPATCH
+          </span>
+        </div>
+
+        <div className="min-h-[34px] flex flex-col justify-center relative z-10">
+          <p className="text-xs sm:text-[13px] font-medium text-neutral-200 leading-snug flex items-center gap-1.5">
+            {(user?.streakDays ?? 0) >= 1 && (
+              <Flame className="w-3.5 h-3.5 text-tier flex-shrink-0" />
+            )}
+            <span>{primaryBoostMessage}</span>
+          </p>
+          {secondaryBoostMessage && (
+            <p className="text-[11px] font-hud-mono mt-1 leading-normal text-tier">
+              {secondaryBoostMessage}
+            </p>
+          )}
         </div>
       </div>
     </div>
