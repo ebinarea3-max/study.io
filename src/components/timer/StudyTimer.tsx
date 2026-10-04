@@ -790,7 +790,7 @@ export function StudyTimer() {
       <div className="w-full h-full flex flex-col justify-between max-md:overflow-hidden md:overflow-visible space-y-0 md:space-y-3">
         {/* Main Timer Game-HUD Card with Targeting Reticle Corner Brackets */}
         <div
-          className="relative w-full h-full rounded-2xl bg-[#0b0e14]/90 border border-white/[0.07] p-5 sm:p-8 shadow-2xl relative overflow-hidden backdrop-blur-xl flex flex-col justify-between transition-all"
+          className="relative w-full h-full rounded-2xl bg-[#0b0e14]/90 border-2 border-white/[0.15] p-5 sm:p-8 shadow-2xl relative overflow-hidden backdrop-blur-xl flex flex-col justify-between transition-all"
         >
           {/* Dial Backlight Illumination */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none -z-0">
@@ -1174,7 +1174,7 @@ export function StudyTimer() {
           {/* Center Timer Display - Game HUD Radar / Reactor Core Display */}
           <div className="relative z-10 flex flex-col items-center justify-center py-2 sm:py-8 my-auto w-full">
             {/* ── Mobile Circular Dial Wrapper (< sm) ── */}
-            <div className="relative sm:hidden flex items-center justify-center mx-auto flex-shrink-0" style={{ width: 'min(82vw, 300px)', height: 'min(82vw, 300px)' }}>
+            <div className="relative sm:hidden flex items-center justify-center mx-auto flex-shrink-0 w-full max-w-[280px] aspect-square">
               {/* Mobile Ambient Glow */}
               <div className="absolute inset-0 rounded-full blur-3xl pointer-events-none" style={{ background: 'radial-gradient(circle at center, rgba(var(--tier-accent-rgb), 0.10) 0%, transparent 70%)' }} />
 
@@ -1227,7 +1227,7 @@ export function StudyTimer() {
 
               {/* Mobile Clock Content */}
               <div className="relative z-10 flex flex-col items-center justify-center w-full h-full">
-                <div className="font-mono tabular-nums font-bold text-white drop-shadow-[0_0_24px_rgba(255,255,255,0.15)] text-[clamp(2.2rem,10vw,3.2rem)] text-center select-none tracking-normal">
+                <div className="font-mono tabular-nums font-bold text-white drop-shadow-[0_0_24px_rgba(255,255,255,0.15)] text-[clamp(2.5rem,10vw,3.2rem)] text-center select-none tracking-normal leading-none">
                   {timerMode === 'countdown' && !isStudying ? (
                     isEditingCountdown ? (
                       <CountdownEditor

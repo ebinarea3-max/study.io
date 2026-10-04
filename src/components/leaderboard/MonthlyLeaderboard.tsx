@@ -449,14 +449,9 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
     }
   }, [isLoading, leaderboard.length]);
 
-  // Split #1 Hero Champion, #2 and #3 Runners-up, and #4+ Ranked List (limited to top 50)
-  const { hero, top2, top3, contenders } = useMemo(() => {
-    return {
-      hero: leaderboard[0] || null,
-      top2: leaderboard[1] || null,
-      top3: leaderboard[2] || null,
-      contenders: leaderboard.slice(3, 53),
-    };
+  // Keep the list limited to the top 50
+  const contenders = useMemo(() => {
+    return leaderboard.slice(0, 50);
   }, [leaderboard]);
 
   const checkIsCurrentUser = useCallback(
@@ -471,55 +466,6 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
     [user?.id, user?.username]
   );
 
-  // ── Motivational message for the currently-logged-in user ──────────────
-  const motivationalMessage = useMemo(() => {
-    if (!user?.id || leaderboard.length === 0) return null;
-    const myIdx = leaderboard.findIndex(
-      (e) =>
-        e.is_current_user ||
-        (user.id && String(e.user_id) === String(user.id)) ||
-        (user.username && e.username && user.username.toLowerCase() === e.username.toLowerCase())
-    );
-    if (myIdx === -1) {
-      // User exists but has zero recorded seconds this period
-      const hasAny = leaderboard.some(
-        (e) => String(e.user_id) === String(user.id)
-      );
-      return hasAny ? null : 'Start a session to enter the rankings.';
-    }
-    const myPos = myIdx + 1; // 1-indexed
-    const me = leaderboard[myIdx];
-    if (myPos === 1) {
-      return '👑 You\'re #1 this period — defend your spot.';
-    }
-    if (myPos <= 3) {
-      const gapSecs = (leaderboard[myIdx - 1]?.total_seconds ?? 0) - (me.total_seconds ?? 0);
-      const gapMins = Math.round(gapSecs / 60);
-      const gapLabel = gapMins >= 60
-        ? `${Math.floor(gapMins / 60)}h ${gapMins % 60}m`
-        : `${gapMins}m`;
-      return `So close — ${gapLabel} behind #${myPos - 1}. You've got this.`;
-    }
-    if (myPos <= 10) {
-      return `Climbing — ${myPos - 3} spot${myPos - 3 !== 1 ? 's' : ''} from the podium.`;
-    }
-    if (me.total_seconds === 0) {
-      return 'Start a session to enter the rankings.';
-    }
-    return 'Every session counts. Keep showing up.';
-  }, [user?.id, user?.username, leaderboard]);
-
-  // ── Find current user's position for banner placement ──────────────────
-  const myRankPosition = useMemo(() => {
-    if (!user?.id) return -1;
-    return leaderboard.findIndex(
-      (e) =>
-        e.is_current_user ||
-        (user.id && String(e.user_id) === String(user.id)) ||
-        (user.username && e.username && user.username.toLowerCase() === e.username.toLowerCase())
-    ) + 1; // 1-indexed, 0 if not found
-  }, [user?.id, user?.username, leaderboard]);
-
   return (
     <div
       className={`w-full text-white font-sans ${
@@ -530,39 +476,8 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
     >
       {/* Keyframe Animations */}
       <style>{`
-        @keyframes podiumSlideUp {
-          0% { opacity: 0; transform: translateY(24px); }
-          100% { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes championSlamIn {
-          0%   { opacity: 0; transform: translateY(28px) scale(1.08); }
-          65%  { opacity: 1; transform: translateY(-4px) scale(1.02); }
-          100% { opacity: 1; transform: translateY(0) scale(1.0); }
-        }
-        @keyframes ambientGlowPulse {
-          0%, 100% { opacity: 0.2; transform: scale(0.96); }
-          50%       { opacity: 0.45; transform: scale(1.04); }
-        }
-        @keyframes borderLightSweep {
-          0%   { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
         @keyframes listRowFadeSlide {
           0%   { opacity: 0; transform: translateY(12px); }
-          100% { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes crownBob {
-          0%, 100% { transform: translateY(0px); }
-          50%       { transform: translateY(-5px); }
-        }
-        @keyframes particleDrift {
-          0%   { transform: translateY(0px) translateX(0px); opacity: 0; }
-          15%  { opacity: 1; }
-          85%  { opacity: 0.6; }
-          100% { transform: translateY(-60px) translateX(var(--drift-x, 8px)); opacity: 0; }
-        }
-        @keyframes motiveBannerIn {
-          0%   { opacity: 0; transform: translateY(6px); }
           100% { opacity: 1; transform: translateY(0); }
         }
       `}</style>
@@ -571,13 +486,7 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
         {/* Loading State */}
         {isLoading ? (
           <div className="w-full flex flex-col gap-6">
-            {/* Hero Skeleton */}
-            <div className="w-full h-72 rounded-3xl border border-white/[0.06] bg-[#0c0e14] p-6 animate-pulse" />
-            {/* Runners-up Skeleton */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
-              <div className="h-32 rounded-2xl border border-white/[0.06] bg-[#0c0e14] animate-pulse" />
-              <div className="h-32 rounded-2xl border border-white/[0.06] bg-[#0c0e14] animate-pulse" />
-            </div>
+            {/* Table Skeleton */}
             {/* Table Skeleton */}
             <div className="w-full bg-[#090c12]/90 border border-white/[0.07] rounded-xl overflow-hidden divide-y divide-white/[0.04]">
               {[1, 2, 3, 4].map((i) => (
@@ -612,432 +521,44 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
             }`}
           >
             {/* ══════════════════════════════════════════════════════════ */}
-            {/* 1. HERO CHAMPION BLOCK (#1 only)                           */}
+            {/* HEADER & PERIOD SELECTOR                                   */}
             {/* ══════════════════════════════════════════════════════════ */}
-            {hero &&
-              (() => {
-                const rankTierTitle = getMonthlyRankTierTitle(hero.rank_title, hero.total_seconds);
-                const tierConfig = getRankConfigByTitle(rankTierTitle);
-                const displayName = hero.display_name || hero.name || 'Scholar';
-                const handle = hero.username || displayName.toLowerCase().replace(/\s+/g, '');
-                const level = hero.level ?? getLevelFromLifetimeXP(hero.lifetime_xp || 0);
-                const isUser = checkIsCurrentUser(hero);
-                const { h, m, hNum, mNum } = parseTimeHoursMinutes(hero.total_seconds);
-                const periodLabel = timeframe === 'all' ? 'ALL TIME' : `THIS ${timeframe.toUpperCase()}`;
-
-                return (
-                  <div
-                    key={`hero-${hero.user_id}-${animationKey}`}
-                    className="relative w-full"
-                    style={{
-                      animation: 'championSlamIn 0.65s cubic-bezier(0.34, 1.3, 0.64, 1) 0.4s both',
-                    }}
-                  >
-                    {/* Radial glow in champion's tier accent color — breathing pulse */}
-                    <div
-                      className="absolute -inset-1 rounded-3xl blur-2xl pointer-events-none -z-10"
-                      style={{
-                        background: `radial-gradient(ellipse at center, ${tierConfig.badgeAccent}55 0%, ${tierConfig.badgeAccent}18 45%, transparent 75%)`,
-                        animation: 'ambientGlowPulse 3s ease-in-out infinite',
-                      }}
-                    />
-
-                    {/* Floating accent particles (3–5 drifting upward) */}
-                    {[...Array(5)].map((_, pi) => (
-                      <div
-                        key={pi}
-                        className="absolute top-6 pointer-events-none rounded-full -z-0"
-                        style={{
-                          left: `${15 + pi * 16}%`,
-                          width: `${4 + (pi % 3)}px`,
-                          height: `${4 + (pi % 3)}px`,
-                          background: tierConfig.badgeAccent,
-                          opacity: 0,
-                          ['--drift-x' as string]: `${(pi % 2 === 0 ? 1 : -1) * (4 + pi * 3)}px`,
-                          animation: `particleDrift ${2.8 + pi * 0.6}s ease-in-out ${pi * 0.55}s infinite`,
-                          filter: `blur(${pi % 2}px) drop-shadow(0 0 3px ${tierConfig.badgeAccent})`,
-                        }}
-                      />
-                    ))}
-
-                    {/* Full-Width Hero Card */}
-                    <div
-                      className={`relative w-full rounded-3xl overflow-hidden p-6 sm:p-8 border bg-[#090c12]/90 backdrop-blur-xl shadow-2xl transition-all duration-200 ${
-                        isUser
-                          ? 'border-amber-400 ring-2 ring-amber-400/80 shadow-[0_0_35px_rgba(245,158,11,0.25)]'
-                          : 'border-white/[0.1] hover:border-white/[0.18]'
-                      }`}
-                    >
-                      {/* Subtle Rotating Conic Light Sweep Border */}
-                      <div className="absolute inset-0 rounded-3xl pointer-events-none overflow-hidden -z-0">
-                        <div
-                          className="absolute -inset-[100%] opacity-30"
-                          style={{
-                            background: `conic-gradient(from 0deg, transparent 0deg, ${tierConfig.badgeAccent} 60deg, transparent 120deg)`,
-                            animation: 'borderLightSweep 8s linear infinite',
-                          }}
-                        />
-                        <div className="absolute inset-[1px] rounded-3xl bg-[#090c12]/95 backdrop-blur-xl" />
-                      </div>
-
-                      {/* Header Row: Champion Badge on Left, Timeframe Tabs on Right */}
-                      <div className="relative z-10 w-full flex flex-wrap items-center justify-between gap-3 pb-5 border-b border-white/[0.08]">
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border text-xs font-mono font-bold tracking-widest uppercase shadow-md"
-                            style={{
-                              backgroundColor: `${tierConfig.badgeAccent}18`,
-                              borderColor: `${tierConfig.badgeAccent}50`,
-                              color: tierConfig.badgeAccent,
-                            }}
-                          >
-                            <span style={{ display: 'inline-block', animation: 'crownBob 2s ease-in-out infinite' }}>👑</span>
-                            {' CHAMPION'}
-                            {isUser && (
-                              <span className="text-[10px] text-amber-300 font-mono font-bold ml-1">
-                                (you)
-                              </span>
-                            )}
-                          </div>
-                          <span className="text-[11px] font-mono text-zinc-500 uppercase tracking-wider hidden sm:inline">
-                            {trackerText}
-                          </span>
-                        </div>
-
-                        {/* Period Selector Tabs (Today / Week / Month / All Time) */}
-                        <div className="inline-flex items-center p-1 bg-white/[0.04] border border-white/[0.08] rounded-xl gap-1">
-                          {(
-                            [
-                              { label: 'TODAY', value: 'today' },
-                              { label: 'THIS WEEK', value: 'week' },
-                              { label: 'THIS MONTH', value: 'month' },
-                              { label: 'ALL TIME', value: 'all' },
-                            ] as const
-                          ).map((tab) => {
-                            const isActive = timeframe === tab.value;
-                            return (
-                              <button
-                                key={tab.value}
-                                type="button"
-                                onClick={() => setTimeframe(tab.value)}
-                                className={
-                                  isActive
-                                    ? 'px-3 py-1.5 text-xs font-mono font-semibold text-white bg-white/[0.1] border border-white/[0.15] rounded-lg shadow-sm transition-all cursor-pointer'
-                                    : 'px-3 py-1.5 text-xs font-mono font-medium text-zinc-400 hover:text-white transition-colors rounded-lg cursor-pointer'
-                                }
-                              >
-                                {tab.label}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      {/* Hero Content: Scholar Identity + Kinetic Time Display */}
-                      <div className="relative z-10 w-full pt-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                        {/* Scholar Identity Group */}
-                        <div className="flex items-center gap-4 sm:gap-6 min-w-0">
-                          {/* Large Avatar Circle in Champion's Own Tier Color */}
-                          <div className="relative flex-shrink-0">
-                            <div
-                              className="p-1 rounded-full border transition-all duration-300 shadow-xl"
-                              style={{
-                                borderColor: `${tierConfig.badgeAccent}80`,
-                                background: `radial-gradient(circle, ${tierConfig.badgeAccent}25 0%, transparent 70%)`,
-                              }}
-                            >
-                              <ScholarAvatar
-                                name={displayName}
-                                avatarUrl={hero.avatar_url}
-                                tier={tierConfig.tier}
-                                sizeClass="w-20 h-20 sm:w-28 sm:h-28 text-2xl sm:text-3xl"
-                              />
-                            </div>
-                          </div>
-
-                          {/* Name, Handle, and Rank Crest */}
-                          <div className="flex flex-col min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <h2 className="text-xl sm:text-3xl font-extrabold text-white tracking-tight truncate">
-                                {displayName}
-                              </h2>
-                              {isUser && (
-                                <span className="text-[10px] font-mono font-bold text-amber-400 uppercase px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500/40 shadow-[0_0_8px_rgba(245,158,11,0.25)] shrink-0">
-                                  [YOU]
-                                </span>
-                              )}
-                            </div>
-                            <div className="text-xs sm:text-sm font-mono text-zinc-400 truncate mt-1">
-                              @{handle} · Lv. {level}
-                            </div>
-
-                            {/* Rank Tier Badge + Title Prominently Displayed */}
-                            <div className="flex items-center gap-2.5 mt-2.5 flex-wrap">
-                              <div className="flex-shrink-0">
-                                <RankCrestBadge
-                                  tier={tierConfig.tier as RankTierName}
-                                  division={tierConfig.division as RankDivision}
-                                  size={44}
-                                  isSettled={true}
-                                />
-                              </div>
-                              <span
-                                className="font-mono text-xs sm:text-sm font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-md border"
-                                style={{
-                                  color: tierConfig.badgeAccent,
-                                  borderColor: `${tierConfig.badgeAccent}50`,
-                                  backgroundColor: `${tierConfig.badgeAccent}15`,
-                                }}
-                              >
-                                {rankTierTitle}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Large Kinetic Focus Time Display */}
-                        <div className="flex flex-col md:items-end justify-center pt-2 md:pt-0 border-t md:border-t-0 border-white/[0.06] flex-shrink-0">
-                          <div className="flex items-baseline font-mono">
-                            {hero.total_seconds >= 3600 ? (
-                              <>
-                                <span className="text-4xl sm:text-6xl font-mono font-black tracking-tight bg-gradient-to-r from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent">
-                                  <AnimatedDigit target={hNum} durationMs={800} delayMs={450} key={`h-${hero.user_id}-${animationKey}`} />
-                                </span>
-                                <span className="text-xs sm:text-sm font-mono text-zinc-400 font-bold ml-1 mr-3">HR</span>
-                                <span className="text-3xl sm:text-5xl font-mono font-extrabold text-zinc-300">
-                                  <AnimatedDigit target={mNum} durationMs={800} delayMs={450} key={`m-${hero.user_id}-${animationKey}`} />
-                                </span>
-                                <span className="text-xs sm:text-sm font-mono text-zinc-400 font-bold ml-1">MIN</span>
-                              </>
-                            ) : (
-                              <>
-                                <span className="text-4xl sm:text-6xl font-mono font-black tracking-tight bg-gradient-to-r from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent">
-                                  <AnimatedDigit target={mNum} durationMs={800} delayMs={450} key={`m-${hero.user_id}-${animationKey}`} />
-                                </span>
-                                <span className="text-xs sm:text-sm font-mono text-zinc-400 font-bold ml-1.5">MIN</span>
-                              </>
-                            )}
-                          </div>
-                          <span className="text-[11px] font-mono text-zinc-400 uppercase tracking-widest mt-1">
-                            RECORDED FOCUS {periodLabel}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    {/* ── Motivational Banner for current user as champion ── */}
-                    {isUser && motivationalMessage && (
-                      <div
-                        className="relative z-20 mt-3 px-4 py-2 rounded-xl flex items-center gap-2 text-xs font-mono font-semibold"
-                        style={{
-                          backgroundColor: `${tierConfig.badgeAccent}18`,
-                          borderLeft: `3px solid ${tierConfig.badgeAccent}`,
-                          color: tierConfig.badgeAccent,
-                          animation: 'motiveBannerIn 0.4s ease-out 1s both',
-                        }}
-                      >
-                        {motivationalMessage}
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
-
-            {/* ══════════════════════════════════════════════════════════ */}
-            {/* 2. RUNNERS-UP STRIP (#2 and #3)                             */}
-            {/* ══════════════════════════════════════════════════════════ */}
-            {(top2 || top3) && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
-                {/* #2 Runner-Up Card */}
-                {top2 &&
-                  (() => {
-                    const rankTierTitle = getMonthlyRankTierTitle(top2.rank_title, top2.total_seconds);
-                    const tierConfig = getRankConfigByTitle(rankTierTitle);
-                    const displayName = top2.display_name || top2.name || 'Scholar';
-                    const handle = top2.username || displayName.toLowerCase().replace(/\s+/g, '');
-                    const level = top2.level ?? getLevelFromLifetimeXP(top2.lifetime_xp || 0);
-                    const isUser = checkIsCurrentUser(top2);
-                    const { h: _h2, m: _m2, hNum, mNum } = parseTimeHoursMinutes(top2.total_seconds);
-                    const movement = getRankDelta(top2.user_id, 2, timeframe);
-
-                    return (
-                      <div
-                        key={`runner2-${top2.user_id}-${animationKey}`}
-                        style={{ animation: 'podiumSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both' }}
-                        className={`relative p-4 sm:p-5 rounded-2xl bg-[#090c12]/80 border backdrop-blur-md flex flex-col gap-2 transition-all duration-200 hover:border-slate-300/40 shadow-lg ${
-                          isUser
-                            ? 'border-amber-400/80 ring-1 ring-amber-400/60 bg-amber-500/[0.05]'
-                            : 'border-white/[0.08]'
-                        }`}
-                      >
-                        {/* Main row: position, avatar, info, time */}
-                        <div className="flex items-center justify-between gap-4">
-                          {/* Left Info: Position Tag, Avatar, Name & Crest */}
-                          <div className="flex items-center gap-3.5 min-w-0">
-                            {/* Rank Position */}
-                            <div className="flex flex-col items-center justify-center flex-shrink-0">
-                              <span className="font-mono text-xs font-bold text-slate-300 px-2 py-0.5 rounded bg-slate-400/10 border border-slate-400/20">
-                                #02
-                              </span>
-                              {/* Movement indicator */}
-                              <span className="mt-1">
-                                {movement.delta > 0 ? (
-                                  <span className="text-emerald-400 font-mono text-[10px] font-bold">▲ +{movement.delta}</span>
-                                ) : movement.delta < 0 ? (
-                                  <span className="text-rose-400 font-mono text-[10px] font-bold">▼ {Math.abs(movement.delta)}</span>
-                                ) : movement.isNew ? (
-                                  <span className="text-amber-400 font-mono text-[9px] font-bold">NEW</span>
-                                ) : (
-                                  <span className="text-zinc-600 font-mono text-[10px]">—</span>
-                                )}
-                              </span>
-                            </div>
-                            {/* Avatar */}
-                            <ScholarAvatar name={displayName} avatarUrl={top2.avatar_url} tier={tierConfig.tier} sizeClass="w-12 h-12 text-sm" />
-                            {/* Identity & Rank Crest */}
-                            <div className="flex flex-col min-w-0">
-                              <div className="flex items-center gap-1.5 truncate">
-                                <span className="font-bold text-white text-sm truncate">{displayName}</span>
-                                {isUser && (
-                                  <span className="text-[9px] font-mono font-bold text-amber-400 uppercase px-1.5 py-0.5 rounded bg-amber-500/20 border border-amber-500/40">(you)</span>
-                                )}
-                              </div>
-                              <span className="text-xs font-mono text-zinc-400 truncate">@{handle} · Lv. {level}</span>
-                              <div className="flex items-center gap-1.5 mt-1">
-                                <RankCrestBadge tier={tierConfig.tier as RankTierName} division={tierConfig.division as RankDivision} size={28} />
-                                <span className="text-[11px] font-mono font-bold tracking-wider uppercase" style={{ color: tierConfig.badgeAccent }}>{rankTierTitle}</span>
-                              </div>
-                            </div>
-                          </div>
-                          {/* Right: Recorded Focus Time */}
-                          <div className="flex flex-col items-end justify-center font-mono flex-shrink-0">
-                            <div className="flex items-baseline font-mono text-right">
-                              <span className="text-xl sm:text-2xl font-mono font-bold text-white">
-                                <AnimatedDigit target={hNum} durationMs={800} delayMs={150} key={`h-${top2.user_id}-${animationKey}`} />
-                              </span>
-                              <span className="text-[10px] text-zinc-500 font-mono ml-0.5 mr-1.5">H</span>
-                              <span className="text-lg sm:text-xl font-mono font-bold text-zinc-300">
-                                <AnimatedDigit target={mNum} durationMs={800} delayMs={150} key={`m-${top2.user_id}-${animationKey}`} />
-                              </span>
-                              <span className="text-[10px] text-zinc-500 font-mono ml-0.5">M</span>
-                            </div>
-                            <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-wider">RECORDED FOCUS</span>
-                          </div>
-                        </div>
-                        {/* Motivational banner for #2 when this is the current user */}
-                        {isUser && motivationalMessage && (
-                          <div
-                            className="px-3 py-1.5 rounded-lg text-[11px] font-mono font-semibold"
-                            style={{
-                              backgroundColor: `${tierConfig.badgeAccent}18`,
-                              borderLeft: `2px solid ${tierConfig.badgeAccent}`,
-                              color: tierConfig.badgeAccent,
-                              animation: 'motiveBannerIn 0.4s ease-out 0.8s both',
-                              opacity: 0,
-                            }}
-                          >
-                            {motivationalMessage}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })()}
-
-                {/* #3 Runner-Up Card */}
-                {top3 &&
-                  (() => {
-                    const rankTierTitle = getMonthlyRankTierTitle(top3.rank_title, top3.total_seconds);
-                    const tierConfig = getRankConfigByTitle(rankTierTitle);
-                    const displayName = top3.display_name || top3.name || 'Scholar';
-                    const handle = top3.username || displayName.toLowerCase().replace(/\s+/g, '');
-                    const level = top3.level ?? getLevelFromLifetimeXP(top3.lifetime_xp || 0);
-                    const isUser = checkIsCurrentUser(top3);
-                    const { h, m, hNum, mNum } = parseTimeHoursMinutes(top3.total_seconds);
-                    const movement = getRankDelta(top3.user_id, 3, timeframe);
-
-                    return (
-                      <div
-                        key={`runner3-${top3.user_id}-${animationKey}`}
-                        style={{ animation: 'podiumSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.22s both' }}
-                        className={`relative p-4 sm:p-5 rounded-2xl bg-[#090c12]/80 border backdrop-blur-md flex flex-col gap-2 transition-all duration-200 hover:border-amber-700/40 shadow-lg ${
-                          isUser
-                            ? 'border-amber-400/80 ring-1 ring-amber-400/60 bg-amber-500/[0.05]'
-                            : 'border-white/[0.08]'
-                        }`}
-                      >
-                        {/* Main content row */}
-                        <div className="flex items-center justify-between gap-4">
-                          {/* Left Info */}
-                          <div className="flex items-center gap-3.5 min-w-0">
-                            {/* Rank Position */}
-                            <div className="flex flex-col items-center justify-center flex-shrink-0">
-                              <span className="font-mono text-xs font-bold text-amber-400 px-2 py-0.5 rounded bg-amber-700/10 border border-amber-700/20">#03</span>
-                              <span className="mt-1">
-                                {movement.delta > 0 ? (
-                                  <span className="text-emerald-400 font-mono text-[10px] font-bold">▲ +{movement.delta}</span>
-                                ) : movement.delta < 0 ? (
-                                  <span className="text-rose-400 font-mono text-[10px] font-bold">▼ {Math.abs(movement.delta)}</span>
-                                ) : movement.isNew ? (
-                                  <span className="text-amber-400 font-mono text-[9px] font-bold">NEW</span>
-                                ) : (
-                                  <span className="text-zinc-600 font-mono text-[10px]">—</span>
-                                )}
-                              </span>
-                            </div>
-                            {/* Avatar */}
-                            <ScholarAvatar name={displayName} avatarUrl={top3.avatar_url} tier={tierConfig.tier} sizeClass="w-12 h-12 text-sm" />
-                            {/* Identity & Crest */}
-                            <div className="flex flex-col min-w-0">
-                              <div className="flex items-center gap-1.5 truncate">
-                                <span className="font-bold text-white text-sm truncate">{displayName}</span>
-                                {isUser && (
-                                  <span className="text-[9px] font-mono font-bold text-amber-400 uppercase px-1.5 py-0.5 rounded bg-amber-500/20 border border-amber-500/40">(you)</span>
-                                )}
-                              </div>
-                              <span className="text-xs font-mono text-zinc-400 truncate">@{handle} · Lv. {level}</span>
-                              <div className="flex items-center gap-1.5 mt-1">
-                                <RankCrestBadge tier={tierConfig.tier as RankTierName} division={tierConfig.division as RankDivision} size={28} />
-                                <span className="text-[11px] font-mono font-bold tracking-wider uppercase" style={{ color: tierConfig.badgeAccent }}>{rankTierTitle}</span>
-                              </div>
-                            </div>
-                          </div>
-                          {/* Right: Recorded Focus Time */}
-                          <div className="flex flex-col items-end justify-center font-mono flex-shrink-0">
-                            <div className="flex items-baseline font-mono text-right">
-                              <span className="text-xl sm:text-2xl font-mono font-bold text-white">
-                                <AnimatedDigit target={hNum} durationMs={800} delayMs={250} key={`h-${top3.user_id}-${animationKey}`} />
-                              </span>
-                              <span className="text-[10px] text-zinc-500 font-mono ml-0.5 mr-1.5">H</span>
-                              <span className="text-lg sm:text-xl font-mono font-bold text-zinc-300">
-                                <AnimatedDigit target={mNum} durationMs={800} delayMs={250} key={`m-${top3.user_id}-${animationKey}`} />
-                              </span>
-                              <span className="text-[10px] text-zinc-500 font-mono ml-0.5">M</span>
-                            </div>
-                            <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-wider">RECORDED FOCUS</span>
-                          </div>
-                        </div>
-                        {/* Motivational banner for current user at #3 */}
-                        {isUser && motivationalMessage && (
-                          <div
-                            className="px-3 py-1.5 rounded-lg text-[11px] font-mono font-semibold"
-                            style={{
-                              backgroundColor: `${tierConfig.badgeAccent}18`,
-                              borderLeft: `2px solid ${tierConfig.badgeAccent}`,
-                              color: tierConfig.badgeAccent,
-                              animation: 'motiveBannerIn 0.4s ease-out 0.8s both',
-                              opacity: 0,
-                            }}
-                          >
-                            {motivationalMessage}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })()}
+            <div className="w-full flex flex-wrap items-center justify-between gap-3 pb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-mono text-zinc-400 uppercase tracking-wider font-bold">
+                  {trackerText}
+                </span>
               </div>
-            )}
+              <div className="inline-flex items-center p-1 bg-white/[0.04] border border-white/[0.08] rounded-xl gap-1">
+                {(
+                  [
+                    { label: 'TODAY', value: 'today' },
+                    { label: 'THIS WEEK', value: 'week' },
+                    { label: 'THIS MONTH', value: 'month' },
+                    { label: 'ALL TIME', value: 'all' },
+                  ] as const
+                ).map((tab) => {
+                  const isActive = timeframe === tab.value;
+                  return (
+                    <button
+                      key={tab.value}
+                      type="button"
+                      onClick={() => setTimeframe(tab.value)}
+                      className={
+                        isActive
+                          ? 'px-3 py-1.5 text-xs font-mono font-semibold text-white bg-white/[0.1] border border-white/[0.15] rounded-lg shadow-sm transition-all cursor-pointer'
+                          : 'px-3 py-1.5 text-xs font-mono font-medium text-zinc-400 hover:text-white transition-colors rounded-lg cursor-pointer'
+                      }
+                    >
+                      {tab.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
             {/* ══════════════════════════════════════════════════════════ */}
-            {/* 3. RANKED LIST (#4 and below, limited to 50 rows)          */}
+            {/* RANKED LIST                                                */}
             {/* ══════════════════════════════════════════════════════════ */}
             {contenders.length > 0 && (
               <div className="w-full bg-[#090c12]/90 backdrop-blur-md border border-white/[0.07] rounded-2xl overflow-hidden divide-y divide-white/[0.04] shadow-2xl">
@@ -1058,7 +579,7 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
 
                 {/* Roster Rows */}
                 {contenders.map((row, idx) => {
-                  const actualRank = idx + 4;
+                  const actualRank = idx + 1;
                   const isCurrentUser = checkIsCurrentUser(row);
                   const rankTierTitle = getMonthlyRankTierTitle(row.rank_title, row.total_seconds);
                   const tierConfig = getRankConfigByTitle(rankTierTitle);
@@ -1119,8 +640,11 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                               <span className="font-semibold text-white text-sm tracking-tight truncate">
                                 {displayName}
                               </span>
+                              {actualRank === 1 && (
+                                <span className="text-[14px]" title="Champion">👑</span>
+                              )}
                               {isCurrentUser && (
-                                <span className="text-[9px] font-mono font-bold text-amber-400 uppercase px-1.5 py-0.2 rounded bg-amber-500/20 border border-amber-500/40 shadow-[0_0_8px_rgba(245,158,11,0.25)]">
+                                <span className="text-[9px] font-mono font-bold text-amber-400 uppercase px-1.5 py-0.2 rounded bg-amber-500/20 border border-amber-500/40 shadow-[0_0_8px_rgba(245,158,11,0.25)] flex-shrink-0">
                                   (you)
                                 </span>
                               )}
@@ -1154,24 +678,6 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                           <span className="text-[10px] text-zinc-500 font-mono ml-0.5">M</span>
                         </div>
                       </div>
-                      {/* Motivational banner for current user in ranked list */}
-                      {isCurrentUser && motivationalMessage && (
-                        <div
-                          className="px-6 py-2 border-t border-white/[0.03]"
-                        >
-                          <div
-                            className="px-3 py-1.5 rounded-md text-[11px] font-mono font-semibold"
-                            style={{
-                              backgroundColor: `${tierConfig.badgeAccent}15`,
-                              borderLeft: `2px solid ${tierConfig.badgeAccent}`,
-                              color: tierConfig.badgeAccent,
-                              animation: 'motiveBannerIn 0.4s ease-out both',
-                            }}
-                          >
-                            {motivationalMessage}
-                          </div>
-                        </div>
-                      )}
                     </div>
                   );
                 })}
