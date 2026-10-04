@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, WheelEvent } from 'react';
-import { ChevronUp, ChevronDown } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { ChevronUp, ChevronDown, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRankTheme } from '../../hooks/useRankTheme';
 
@@ -138,13 +139,13 @@ export function CountdownEditor({ initialSeconds, onSave, onCancel }: CountdownE
       <button 
         type="button" 
         onClick={() => updateSegment(type, true)}
-        className="text-neutral-500 hover:text-white active:scale-90 transition-all p-0.5 sm:p-1 outline-none"
+        className="text-zinc-500 hover:text-white active:scale-90 transition-all p-1 sm:p-2 outline-none cursor-pointer"
       >
         <ChevronUp className="w-5 h-5 sm:w-6 sm:h-6" />
       </button>
       
       <div 
-        className="relative overflow-hidden w-16 h-20 sm:w-20 sm:h-20 bg-white/[0.03] hover:bg-white/[0.06] rounded-2xl flex items-center justify-center transition-all border border-white/[0.05] hover:border-white/10 group-focus-within:bg-white/[0.08] cursor-ns-resize"
+        className="relative overflow-hidden w-20 h-24 sm:w-24 sm:h-28 bg-[#151822] hover:bg-[#1a1e2a] rounded-2xl flex items-center justify-center transition-all border border-white/[0.08] hover:border-white/20 group-focus-within:border-white/30 cursor-ns-resize shadow-inner"
         onWheel={(e) => handleWheel(e, type)}
         onTouchStart={(e) => handleTouchStart(e, type)}
         onTouchMove={(e) => handleTouchMove(e, type)}
@@ -158,7 +159,7 @@ export function CountdownEditor({ initialSeconds, onSave, onCancel }: CountdownE
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: direction === 'up' ? -40 : 40, opacity: 0, scale: 0.8 }}
             transition={{ type: "spring", stiffness: 400, damping: 30 }}
-            className="absolute font-mono tabular-nums text-4xl sm:text-5xl font-bold tracking-tight text-white/95"
+            className="absolute font-mono tabular-nums text-5xl sm:text-6xl font-black tracking-tight text-white drop-shadow-md"
           >
             {val.toString().padStart(2, '0')}
           </motion.div>
@@ -168,37 +169,46 @@ export function CountdownEditor({ initialSeconds, onSave, onCancel }: CountdownE
       <button 
         type="button" 
         onClick={() => updateSegment(type, false)}
-        className="text-neutral-500 hover:text-white active:scale-90 transition-all p-0.5 sm:p-1 outline-none"
+        className="text-zinc-500 hover:text-white active:scale-90 transition-all p-1 sm:p-2 outline-none cursor-pointer"
       >
         <ChevronDown className="w-5 h-5 sm:w-6 sm:h-6" />
       </button>
     </div>
   );
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div ref={containerRef} className="relative w-full max-w-sm bg-white/[0.03] backdrop-blur-3xl border border-white/10 rounded-[2.5rem] shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-8 overflow-hidden mx-auto flex flex-col items-center">
-        {/* Decorative ambient illumination */}
-        <div className="absolute -top-24 -right-24 w-52 h-52 rounded-full blur-3xl pointer-events-none opacity-20" style={{ backgroundColor: theme.accent }} />
-        <div className="absolute -bottom-24 -left-24 w-52 h-52 bg-white/5 rounded-full blur-3xl pointer-events-none" />
+  const accentColor = theme?.accent || '#f59e0b';
+  
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
-        <div className="text-xs font-hud font-bold tracking-widest text-neutral-400 mb-8 uppercase">Edit Focus Time</div>
+  if (!mounted) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200" style={{ position: 'fixed' }}>
+      <div ref={containerRef} className="relative w-full max-w-lg bg-[#0a0c10] border border-white/10 rounded-[2.5rem] shadow-2xl p-8 overflow-hidden mx-auto flex flex-col items-center animate-in zoom-in-95 duration-200">
+        {/* Decorative ambient illumination */}
+        <div className="absolute -top-32 -right-32 w-64 h-64 rounded-full blur-[80px] pointer-events-none opacity-30" style={{ backgroundColor: accentColor }} />
+        <div className="absolute -bottom-32 -left-32 w-64 h-64 bg-white/10 rounded-full blur-[80px] pointer-events-none" />
+
+        <div className="text-sm font-bold tracking-[0.2em] text-zinc-400 mb-8 uppercase flex items-center gap-2">
+          <span>Edit Focus Time</span>
+        </div>
         
         {/* Accent Highlight Line at Bottom */}
         <div 
-          className="absolute bottom-0 left-8 right-8 h-[3px] rounded-t-full transition-colors duration-500" 
-          style={{ backgroundColor: theme.accent, boxShadow: `0 0 12px ${theme.accent}80` }}
+          className="absolute bottom-0 left-12 right-12 h-1 rounded-t-full transition-colors duration-500 opacity-80" 
+          style={{ backgroundColor: accentColor, boxShadow: `0 -4px 20px ${accentColor}` }}
         />
         
-        <div className="flex items-center gap-1 sm:gap-2 mb-4 relative z-10">
+        <div className="flex items-center gap-2 sm:gap-4 mb-4 relative z-10">
           <Segment val={hours} type="h" />
-          <span className="text-2xl sm:text-3xl font-mono tabular-nums font-bold text-neutral-600 pb-1 sm:pb-2 -translate-y-0.5">:</span>
+          <span className="text-3xl sm:text-4xl font-mono tabular-nums font-bold text-white/20 pb-1 sm:pb-2 -translate-y-1">:</span>
           <Segment val={minutes} type="m" />
-          <span className="text-2xl sm:text-3xl font-mono tabular-nums font-bold text-neutral-600 pb-1 sm:pb-2 -translate-y-0.5">:</span>
+          <span className="text-3xl sm:text-4xl font-mono tabular-nums font-bold text-white/20 pb-1 sm:pb-2 -translate-y-1">:</span>
           <Segment val={seconds} type="s" />
         </div>
         
-        <div className="text-[10px] uppercase tracking-widest text-neutral-500 font-bold mt-2 relative z-10">
+        <div className="text-xs uppercase tracking-widest text-zinc-500 font-bold mt-4 mb-6 relative z-10">
           Scroll or Click
         </div>
 
@@ -209,12 +219,14 @@ export function CountdownEditor({ initialSeconds, onSave, onCancel }: CountdownE
             if (total > 0) propsRef.current.onSave(total);
             else propsRef.current.onCancel();
           }}
-          className="mt-8 px-8 py-3 rounded-xl font-hud font-bold text-sm tracking-wider text-black transition-all hover:scale-105 active:scale-95 shadow-lg relative z-10"
-          style={{ backgroundColor: theme.accent, boxShadow: `0 4px 14px ${theme.accent}60` }}
+          className="mt-4 px-10 py-4 rounded-2xl font-bold text-sm tracking-widest text-black transition-all hover:scale-105 active:scale-95 shadow-xl relative z-10 flex items-center gap-2 cursor-pointer"
+          style={{ backgroundColor: accentColor, boxShadow: `0 8px 30px ${accentColor}80` }}
         >
+          <Check className="w-5 h-5" />
           SAVE TIMER
         </button>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
