@@ -233,6 +233,9 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
   const [isFetching, setIsFetching] = useState<boolean>(false);
   const [animationKey, setAnimationKey] = useState<number>(0);
 
+  const [currentUserRowVisible, setCurrentUserRowVisible] = useState(true);
+  const myRowRef = useRef<HTMLDivElement | null>(null);
+
   const userRef = useRef(user);
   userRef.current = user;
 
@@ -452,6 +455,39 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
     [user?.id, user?.username]
   );
 
+  const currentUserEntry = useMemo(() => {
+    if (!contenders || contenders.length === 0) return null;
+    const idx = contenders.findIndex(row => checkIsCurrentUser(row));
+    if (idx === -1) return null;
+    
+    const row = contenders[idx];
+    const actualRank = idx + 1;
+    const rankTierTitle = getMonthlyRankTierTitle(row.rank_title, row.total_seconds);
+    const tierConfig = getRankConfigByTitle(rankTierTitle);
+    const { h, m } = parseTimeHoursMinutes(row.total_seconds);
+    
+    return { rank: actualRank, row, h, m, tierConfig };
+  }, [contenders, checkIsCurrentUser]);
+
+  useEffect(() => {
+    if (isLoading || isFetching) return;
+    
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]) {
+          setCurrentUserRowVisible(entries[0].isIntersecting);
+        }
+      },
+      { threshold: 0, rootMargin: '-10px 0px -10px 0px' }
+    );
+
+    if (myRowRef.current) {
+      observer.observe(myRowRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [isLoading, isFetching, leaderboard, contenders]);
+
   return (
     <div
       className={`w-full text-white font-sans ${
@@ -578,7 +614,8 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                   return (
                     <div
                       key={row.user_id || actualRank}
-                      className="flex flex-col"
+                      ref={isCurrentUser ? myRowRef : null}
+                      className="flex flex-col transition-all duration-500 rounded-lg"
                       style={{
                         animation: 'listRowFadeSlide 0.4s ease-out both',
                         animationDelay: `${550 + idx * 40}ms`,
@@ -725,6 +762,48 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
           </div>
         )}
       </div>
+
+      {/* Floating Current User Sticky Bar */}
+      {currentUserEntry && !currentUserRowVisible && !isLoading && (
+        <div className="fixed bottom-24 sm:bottom-8 left-1/2 -translate-x-1/2 z-20 w-[90%] max-w-lg animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="bg-[#0c0e14]/80 backdrop-blur-md border border-amber-500/30 rounded-xl px-4 py-2.5 shadow-2xl flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)] animate-pulse" />
+              <span className="text-xs font-mono font-medium text-zinc-400">
+                YOUR RANK: <span className="text-amber-400 font-bold text-sm">#{currentUserEntry.rank}</span>
+              </span>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <div className="hidden sm:flex items-center gap-1.5">
+                <RankCrestBadge
+                  tier={currentUserEntry.tierConfig.tier as RankTierName}
+                  division={currentUserEntry.tierConfig.division as RankDivision}
+                  size={24}
+                />
+                <span className="text-xs font-mono tracking-wider uppercase font-semibold text-zinc-300">
+                  {currentUserEntry.h}h {currentUserEntry.m}m
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (myRowRef.current) {
+                    myRowRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    myRowRef.current.classList.add('ring-2', 'ring-amber-500', 'bg-amber-500/10');
+                    setTimeout(() => {
+                      myRowRef.current?.classList.remove('ring-2', 'ring-amber-500', 'bg-amber-500/10');
+                    }, 1500);
+                  }
+                }}
+                className="text-[11px] font-mono px-2.5 py-1 rounded-md bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:bg-amber-500/20 transition-all cursor-pointer whitespace-nowrap shadow-sm"
+              >
+                Jump to You ↓
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
