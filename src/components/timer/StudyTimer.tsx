@@ -37,7 +37,7 @@ import {
   Radio,
   Headphones,
   ChevronUp,
-Target, Settings } from 'lucide-react';
+Settings } from 'lucide-react';
 import { soundFx, AmbientSoundType } from '../../lib/audio';
 import confetti from 'canvas-confetti';
 import { CountdownEditor } from './CountdownEditor';
@@ -771,7 +771,7 @@ export function StudyTimer() {
   }, [isLoading, user?.streakDays, overviewTodaySeconds, todaySessions.length, lockedEmptyQuote]);
 
   return (
-    <div className="w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6 items-start justify-center max-md:h-[calc(100dvh-8.5rem)] max-md:overflow-hidden md:overflow-visible px-0 max-md:px-2 max-md:py-2">
+    <div className="max-w-3xl w-full mx-auto flex flex-col items-center justify-center py-6 px-4 max-md:h-[calc(100dvh-8.5rem)] max-md:overflow-hidden md:overflow-visible">
       {/* Subject Manager Modal - Conditionally mounted strictly when open (Stop Background Rendering) */}
       {isManageSubjectsOpen && (
         <ErrorBoundary
@@ -1670,138 +1670,6 @@ export function StudyTimer() {
         
       </div>
 
-      {/* Right Secondary Column - Continuous Unified Obsidian Panel */}
-      <div className="hidden lg:flex w-full flex-col justify-start h-full pr-2 md:overflow-visible">
-        <div className="bg-[#0b0e14]/90 border border-white/[0.07] rounded-2xl p-5 sm:p-6 shadow-2xl backdrop-blur-xl flex flex-col gap-5 relative overflow-hidden">
-          {/* Section 1: Todo List */}
-          <DailyTodoList isEmbedded={true} />
-
-          {/* Hairline Section Divider */}
-          <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-white/[0.08] to-transparent" />
-
-          {/* Section 2: Daily Overview */}
-          <div className="flex flex-col gap-3 relative z-10">
-            <div className="flex items-center justify-between pb-2 border-b border-white/[0.06]">
-              <div className="text-sm sm:text-base font-bold font-mono tracking-widest uppercase text-white flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-amber-500" />
-                <span>DAILY OVERVIEW</span>
-              </div>
-              {/* Today vs Yesterday Toggle */}
-              <div className="flex items-center gap-1 p-0.5 rounded-lg bg-[#05070a] border border-white/[0.06] text-xs font-mono">
-                <button
-                  onClick={() => setOverviewView('today')}
-                  className={`px-2.5 py-1 rounded-md tracking-wider uppercase transition-all cursor-pointer ${
-                    overviewView === 'today'
-                      ? 'bg-neutral-800 text-white font-medium shadow-sm'
-                      : 'text-neutral-400 hover:text-neutral-200'
-                  }`}
-                >
-                  TODAY
-                </button>
-                <button
-                  onClick={() => setOverviewView('yesterday')}
-                  className={`px-2.5 py-1 rounded-md tracking-wider uppercase transition-all cursor-pointer ${
-                    overviewView === 'yesterday'
-                      ? 'bg-neutral-800 text-white font-medium shadow-sm'
-                      : 'text-neutral-400 hover:text-neutral-200'
-                  }`}
-                >
-                  YESTERDAY
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between text-[10px] font-mono tracking-wider text-neutral-400">
-              <span>{overviewView === 'today' ? "TODAY'S METRICS" : "YESTERDAY'S METRICS"}</span>
-              <span>
-                {overviewView === 'today'
-                  ? new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
-                  : new Date(Date.now() - 86400000).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-              </span>
-            </div>
-
-            {/* Metrics Strip - Single Plain List (No inner box/card-within-a-card) */}
-            <div className="flex flex-col divide-y divide-white/[0.07] mt-1">
-              {/* Row 1: Total Focus */}
-              <div className="flex items-center justify-between py-2.5 sm:py-3">
-                <div className="flex flex-col">
-                  <span className="text-[11px] font-mono tracking-wider uppercase text-zinc-300 font-semibold">
-                    TOTAL FOCUS
-                  </span>
-                  <span className="text-[11px] text-zinc-400 font-normal mt-0.5">
-                    Recorded study duration
-                  </span>
-                </div>
-                <div className="text-xl sm:text-2xl font-mono font-bold text-white tabular-nums">
-                  {(isLoading || isLoadingSessions) && !hasHydrated ? (
-                    <Skeleton className="h-6 w-20 bg-neutral-800" />
-                  ) : (
-                    formatHoursAndMins(overviewView === 'today' ? overviewTodaySeconds : yesterdayTotalSeconds)
-                  )}
-                </div>
-              </div>
-
-              {/* Row 2: Sessions */}
-              <div className="flex items-center justify-between py-2.5 sm:py-3">
-                <div className="flex flex-col">
-                  <span className="text-[11px] font-mono tracking-wider uppercase text-zinc-300 font-semibold">
-                    SESSIONS
-                  </span>
-                  <span className="text-[11px] text-zinc-400 font-normal mt-0.5">
-                    Completed study blocks
-                  </span>
-                </div>
-                <div className="text-xl sm:text-2xl font-mono font-bold text-white tabular-nums">
-                  {(isLoading || isLoadingSessions) && !hasHydrated ? (
-                    <Skeleton className="h-6 w-12 bg-neutral-800" />
-                  ) : (
-                    overviewView === 'today' ? overviewTodaySessionsCount : yesterdaySessionsCount
-                  )}
-                </div>
-              </div>
-
-              {/* Row 3: Active Streak */}
-              <div className="flex items-center justify-between py-2.5 sm:py-3">
-                <div className="flex flex-col">
-                  <span className="text-[11px] font-mono tracking-wider uppercase text-zinc-300 font-semibold">
-                    ACTIVE STREAK
-                  </span>
-                  <span className="text-[11px] text-zinc-400 font-normal mt-0.5">
-                    Daily consistency multiplier
-                  </span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-4 h-4 flex items-center justify-center">
-                    <Flame className="w-full h-full text-amber-500 fill-amber-500" />
-                  </div>
-                  <span className="text-xl sm:text-2xl font-mono font-bold text-white tabular-nums">
-                    {user?.streakDays ?? 0}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Hairline Section Divider */}
-          <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-white/[0.08] to-transparent" />
-
-          {/* Section 3: Daily Directive */}
-          <div className="flex flex-col gap-2 relative z-10">
-            <div className="text-sm sm:text-base font-bold font-mono tracking-widest uppercase text-white flex items-center gap-2">
-              <Target className="w-4 h-4 text-amber-500" />
-              <span>DAILY DIRECTIVE</span>
-            </div>
-
-            <div className="border-l-[3px] border-amber-500/70 pl-4 text-sm sm:text-base text-neutral-100 italic flex flex-col gap-2 mt-1.5">
-              <p className="leading-relaxed font-semibold">&ldquo;{dailyQuote.text}&rdquo;</p>
-              <p className="text-xs uppercase font-mono font-bold tracking-widest text-neutral-300 not-italic text-right">
-                — {dailyQuote.author}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
-
