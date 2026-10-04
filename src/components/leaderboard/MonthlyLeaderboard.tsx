@@ -644,7 +644,7 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                             division={tierConfig.division as RankDivision}
                             size={20}
                           />
-                          <span className="text-xs font-mono font-bold text-zinc-200">
+                          <span className="text-sm font-mono font-black text-white">
                             {h}h {m}m
                           </span>
                         </div>
@@ -724,11 +724,11 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                         </div>
 
                         {/* Recorded Focus Column */}
-                        <div className="w-28 sm:w-32 text-right flex-shrink-0 font-mono">
-                          <span className="text-sm font-bold text-white tracking-tight">{h}</span>
-                          <span className="text-[10px] text-zinc-500 font-mono ml-0.5 mr-1.5">H</span>
-                          <span className="text-xs font-semibold text-zinc-300">{m}</span>
-                          <span className="text-[10px] text-zinc-500 font-mono ml-0.5">M</span>
+                        <div className="w-28 sm:w-32 text-right flex-shrink-0 font-mono flex items-baseline justify-end">
+                          <span className="text-lg sm:text-xl font-black text-white tracking-tighter drop-shadow-sm">{h}</span>
+                          <span className="text-[10px] sm:text-xs font-bold text-zinc-500 font-mono ml-0.5 mr-1.5">H</span>
+                          <span className="text-base sm:text-lg font-black text-zinc-200 tracking-tight drop-shadow-sm">{m}</span>
+                          <span className="text-[10px] sm:text-xs font-bold text-zinc-500 font-mono ml-0.5">M</span>
                         </div>
                       </div>
                     </div>
