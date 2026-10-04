@@ -821,118 +821,122 @@ export function StudyTimer() {
           )}
 
           <div className="flex flex-col items-center gap-2 w-full relative z-20">
-          {/* Top Controls: Mode Switcher, Preset Selector & Focus Mode Button */}
-          <div className="w-full flex flex-wrap items-center max-md:justify-center justify-between gap-2.5 sm:gap-4 relative z-10 pb-4 max-md:border-b-0 border-b border-white/[0.06] flex-shrink-0">
-            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-              {/* Mode Pill Toggle - Sleek recessed capsule */}
-              <div className="flex items-center gap-1 bg-[#05070a] border border-white/[0.06] p-1 rounded-xl">
+          {/* Top Controls: Mode Switcher & Compact Focus Mode on Single Balanced Row */}
+          <div className="w-full flex items-center justify-between px-2 pt-2 pb-1 relative z-10 flex-shrink-0">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              {/* Mode Segmented Pill */}
+              <div className="inline-flex items-center p-0.5 bg-white/[0.04] border border-white/[0.08] rounded-lg gap-0.5">
                 <button
+                  type="button"
                   onClick={() => { if (!isStudying) setTimerMode('stopwatch'); }}
                   disabled={isStudying}
-                  className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-mono font-medium tracking-wider uppercase transition-all ${
+                  className={`px-2.5 py-1 text-xs font-mono font-medium rounded-md transition-colors ${
                     timerMode === 'stopwatch'
-                      ? 'bg-neutral-800 text-white font-medium shadow-sm'
-                      : 'text-neutral-400 hover:text-neutral-200 transition-colors'
+                      ? 'bg-white/[0.08] text-white shadow-sm border border-white/[0.06]'
+                      : 'text-zinc-500 hover:text-zinc-300'
                   } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
                 >
-                  <span className="hidden sm:inline">STOPWATCH</span><span className="sm:hidden">STOP</span>
+                  <span className="hidden sm:inline">STOPWATCH</span>
+                  <span className="sm:hidden">STOP</span>
                 </button>
                 <button
+                  type="button"
                   onClick={() => { if (!isStudying) setTimerMode('countdown'); }}
                   disabled={isStudying}
-                  className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-mono font-medium tracking-wider uppercase transition-all ${
+                  className={`px-2.5 py-1 text-xs font-mono font-medium rounded-md transition-colors ${
                     timerMode === 'countdown'
-                      ? 'bg-neutral-800 text-white font-medium shadow-sm'
-                      : 'text-neutral-400 hover:text-neutral-200 transition-colors'
+                      ? 'bg-white/[0.08] text-white shadow-sm border border-white/[0.06]'
+                      : 'text-zinc-500 hover:text-zinc-300'
                   } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
                 >
-                  <span className="hidden sm:inline">COUNTDOWN</span><span className="sm:hidden">TIMER</span>
+                  <span className="hidden sm:inline">COUNTDOWN</span>
+                  <span className="sm:hidden">TIMER</span>
                 </button>
                 <button
+                  type="button"
                   onClick={() => { if (!isStudying) setTimerMode('pomodoro'); }}
                   disabled={isStudying}
-                  className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-mono font-medium tracking-wider uppercase transition-all ${
+                  className={`px-2.5 py-1 text-xs font-mono font-medium rounded-md transition-colors ${
                     timerMode === 'pomodoro'
-                      ? 'bg-neutral-800 text-white font-medium shadow-sm'
-                      : 'text-neutral-400 hover:text-neutral-200 transition-colors'
+                      ? 'bg-white/[0.08] text-white shadow-sm border border-white/[0.06]'
+                      : 'text-zinc-500 hover:text-zinc-300'
                   } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
                 >
-                  <span className="hidden sm:inline">POMODORO</span><span className="sm:hidden">POMO</span>
+                  <span className="hidden sm:inline">POMODORO</span>
+                  <span className="sm:hidden">POMO</span>
                 </button>
               </div>
-
 
               {/* Pomodoro Preset Pills */}
               {timerMode === 'pomodoro' && (
                 <div
-                  className="flex items-center gap-1 p-0.5 sm:p-1 rounded-xl bg-[#05070a] border border-white/[0.06] animate-in fade-in zoom-in-95 duration-200"
+                  className="inline-flex items-center p-0.5 bg-white/[0.04] border border-white/[0.08] rounded-lg gap-0.5 animate-in fade-in zoom-in-95 duration-200"
                   title={isStudying ? "Interval presets are locked while session is running" : "Choose focus / break interval preset"}
                 >
                   <button
+                    type="button"
                     onClick={() => {
                       if (!isStudying) setPomodoroPreset('25/5');
                     }}
                     disabled={isStudying}
-                    className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg font-mono text-xs transition-all flex items-center gap-1 ${
+                    className={`px-2 py-1 rounded-md font-mono text-xs transition-colors ${
                       pomodoroPreset === '25/5'
-                        ? 'border border-amber-500/70 bg-amber-500/10 text-amber-400 font-semibold shadow-[0_0_12px_rgba(245,158,11,0.2)]'
-                        : 'bg-[#121620]/60 border border-white/[0.06] text-neutral-300 hover:border-amber-500/40 hover:text-amber-300'
+                        ? 'bg-amber-500/15 text-amber-400 font-semibold border border-amber-500/30'
+                        : 'text-zinc-500 hover:text-zinc-300'
                     } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
-                    title="25m Focus / 5m Break (Standard)"
+                    title="25m Focus / 5m Break"
                   >
-                    <span>25 / 5</span>
+                    <span>25/5</span>
                   </button>
 
                   <button
+                    type="button"
                     onClick={() => {
                       if (!isStudying) setPomodoroPreset('50/10');
                     }}
                     disabled={isStudying}
-                    className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg font-mono text-xs transition-all flex items-center gap-1 ${
+                    className={`px-2 py-1 rounded-md font-mono text-xs transition-colors ${
                       pomodoroPreset === '50/10'
-                        ? 'border border-amber-500/70 bg-amber-500/10 text-amber-400 font-semibold shadow-[0_0_12px_rgba(245,158,11,0.2)]'
-                        : 'bg-[#121620]/60 border border-white/[0.06] text-neutral-300 hover:border-amber-500/40 hover:text-amber-300'
+                        ? 'bg-amber-500/15 text-amber-400 font-semibold border border-amber-500/30'
+                        : 'text-zinc-500 hover:text-zinc-300'
                     } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
-                    title="50m Focus / 10m Break (Deep Work)"
+                    title="50m Focus / 10m Break"
                   >
-                    <span>50 / 10</span>
+                    <span>50/10</span>
                   </button>
                 </div>
               )}
             </div>
 
-            <div className="flex items-center gap-2 sm:gap-3">
-
-
-              {/* High-Contrast Fullscreen Focus Mode Button */}
-              <button
-                onClick={() => {
-                  setIsFocusModeOpen(true);
-                  const el = document.documentElement;
-                  const lockLandscape = () => {
-                    const orientation = window.screen?.orientation as any;
-                    if (orientation && orientation.lock) {
-                      orientation.lock('landscape').catch(() => {});
-                    }
-                  };
-                  if (el.requestFullscreen) {
-                    el.requestFullscreen().then(lockLandscape).catch(() => {});
-                  } else if ((el as any).webkitRequestFullscreen) {
-                    (el as any).webkitRequestFullscreen();
-                    setTimeout(lockLandscape, 100);
+            {/* Compact Focus Mode Action */}
+            <button
+              type="button"
+              onClick={() => {
+                setIsFocusModeOpen(true);
+                const el = document.documentElement;
+                const lockLandscape = () => {
+                  const orientation = window.screen?.orientation as any;
+                  if (orientation && orientation.lock) {
+                    orientation.lock('landscape').catch(() => {});
                   }
-                }}
-                className="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-primary-muted hover:bg-[rgba(var(--tier-accent-rgb),0.25)] border border-primary-muted text-primary-bright text-[10px] sm:text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer w-full md:w-auto"
-              >
-                <Maximize2 className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-primary" />
-                <span className="hidden sm:inline">Fullscreen Focus Mode</span>
-                <span className="sm:hidden">Focus Mode</span>
-              </button>
-            </div>
+                };
+                if (el.requestFullscreen) {
+                  el.requestFullscreen().then(lockLandscape).catch(() => {});
+                } else if ((el as any).webkitRequestFullscreen) {
+                  (el as any).webkitRequestFullscreen();
+                  setTimeout(lockLandscape, 100);
+                }
+              }}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-white/[0.08] bg-white/[0.03] text-zinc-400 hover:text-white hover:bg-white/[0.06] transition-colors text-xs font-mono cursor-pointer shrink-0"
+              title="Fullscreen Focus Mode"
+            >
+              <Maximize2 className="w-3.5 h-3.5" />
+              <span className="hidden min-[380px]:inline">Focus</span>
+            </button>
           </div>
 
           {/* Subject Selection Bar - Compact on Mobile */}
-          <div className="relative z-20 w-full sm:my-5 flex-shrink-0">
+          <div className="relative z-20 w-full mt-2 sm:mt-4 sm:mb-5 flex-shrink-0">
             {/* Subject warning banner */}
             {subjectWarning && (
               <div className="mb-2 sm:mb-3 flex items-center justify-between gap-2.5 px-3 py-2 rounded-2xl bg-amber-500/15 border border-amber-500/40 text-amber-200 text-xs font-semibold backdrop-blur-md shadow-lg shadow-amber-500/10 animate-in fade-in slide-in-from-top-2 duration-200">
