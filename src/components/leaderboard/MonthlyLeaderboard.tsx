@@ -8,7 +8,7 @@ import { getSupabase } from '../../lib/supabase';
 import { getRankBadgePath, getRankTier, getRankConfigByTitle } from '../../lib/rankedSystem';
 import { getLevelFromLifetimeXP } from '../../lib/gamification';
 import { LeaderboardEntry } from '../../types';
-import { Trophy, Clock, ArrowUp, Sparkles, AlertCircle } from 'lucide-react';
+import { Crown, Clock } from 'lucide-react';
 
 export function formatStudyTime(totalSeconds: number): string {
   const safeSeconds = Math.max(0, Math.round(totalSeconds || 0));
@@ -19,13 +19,11 @@ export function formatStudyTime(totalSeconds: number): string {
 
 /**
  * Resolves the display rank tier label from row data.
- * Prevents scholar titles (e.g. "Novice Scholar") from appearing in the rank shield label,
- * ensuring valid 23-rank monthly tiers (e.g. "BRONZE I", "SILVER II", "GOLD I").
+ * Ensures valid 23-rank monthly tiers (e.g. "BRONZE I", "SILVER II", "GOLD I").
  */
 export function getMonthlyRankTierTitle(rankTitle?: string, totalSeconds?: number): string {
   const clean = (rankTitle || '').trim().toLowerCase();
-  
-  // If the stored title was accidentally a scholar prestige title rather than a monthly rank
+
   const isScholarTitle =
     clean.includes('scholar') ||
     clean.includes('mind') ||
@@ -37,12 +35,10 @@ export function getMonthlyRankTierTitle(rankTitle?: string, totalSeconds?: numbe
     clean.includes('myth');
 
   if (isScholarTitle || !clean) {
-    // 1 min focus = 1 RP
     const rpFromMinutes = totalSeconds ? Math.floor(totalSeconds / 60) : 0;
     return getRankTier(rpFromMinutes).fullTitle;
   }
 
-  // Resolve against 23-rank hierarchy (e.g. "Bronze 1" -> "BRONZE I", "Diamond 2" -> "DIAMOND II")
   return getRankConfigByTitle(clean).fullTitle;
 }
 
@@ -58,7 +54,7 @@ function getFilterStartDate(timeframe: LeaderboardTimeframe): Date | null {
   if (timeframe === 'week') {
     const d = new Date(now);
     const day = d.getDay();
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Monday as start of week
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
     d.setDate(diff);
     d.setHours(0, 0, 0, 0);
     return d;
@@ -69,6 +65,51 @@ function getFilterStartDate(timeframe: LeaderboardTimeframe): Date | null {
     return d;
   }
   return null;
+}
+
+function ScholarAvatar({
+  name,
+  avatarUrl,
+  sizeClass = 'w-9 h-9 text-xs',
+}: {
+  name: string;
+  avatarUrl?: string | null;
+  sizeClass?: string;
+}) {
+  const initial = (name || 'S').trim().charAt(0).toUpperCase();
+  const gradients = [
+    'from-amber-600 to-amber-900',
+    'from-zinc-600 to-zinc-900',
+    'from-amber-700 to-yellow-900',
+    'from-slate-700 to-slate-900',
+  ];
+  let hash = 0;
+  for (let i = 0; i < (name || '').length; i++) {
+    hash = (name || '').charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const gradient = gradients[Math.abs(hash) % gradients.length];
+
+  return (
+    <div
+      className={`${sizeClass} rounded-full overflow-hidden bg-[#0c0e14] flex-shrink-0 flex items-center justify-center relative border border-white/10`}
+    >
+      {avatarUrl ? (
+        <img
+          src={avatarUrl}
+          alt={name}
+          className="w-full h-full object-cover absolute inset-0"
+          onError={(e) => {
+            (e.target as HTMLElement).style.display = 'none';
+          }}
+        />
+      ) : null}
+      <div
+        className={`w-full h-full flex items-center justify-center font-mono font-bold bg-gradient-to-br ${gradient} text-white`}
+      >
+        {initial}
+      </div>
+    </div>
+  );
 }
 
 interface MonthlyLeaderboardProps {
@@ -84,11 +125,6 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isFetching, setIsFetching] = useState<boolean>(false);
-  const [fetchError, setFetchError] = useState<string | null>(null);
-
-  // Intersection observer state to detect whether current user's row is visible in the viewport
-  const currentUserRowRef = useRef<HTMLDivElement | null>(null);
-  const [isCurrentUserRowVisible, setIsCurrentUserRowVisible] = useState<boolean>(true);
 
   const userRef = useRef(user);
   userRef.current = user;
@@ -141,7 +177,6 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
       setIsLoading(true);
     }
     setIsFetching(true);
-    setFetchError(null);
 
     const supabase = getSupabase();
     let entries: LeaderboardEntry[] = [];
@@ -152,10 +187,8 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
     try {
       if (supabase) {
         try {
-          // Call RPC get_leaderboard with timeframe parameter
           let res = await supabase.rpc('get_leaderboard', { timeframe });
           if (res.error && timeframe === 'month') {
-            // Backward compatibility fallback to get_monthly_leaderboard if get_leaderboard is not yet deployed
             res = await supabase.rpc('get_monthly_leaderboard');
           }
 
@@ -181,7 +214,7 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
         }
       }
 
-      // Graceful fallback for local development, offline mode, or unmigrated Supabase database:
+      // Fallback for local development or offline mode
       if (!rpcSucceeded) {
         try {
           if (supabase && currentUser?.id && !currentUser.id.startsWith('user-scholar')) {
@@ -198,7 +231,6 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
             const { data: dbSessions } = await query;
 
             if (dbSessions && dbSessions.length > 0) {
-              // Aggregate totals by user_id
               const userTotals: Record<string, number> = {};
               dbSessions.forEach((s: any) => {
                 if (s.user_id) {
@@ -233,10 +265,8 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
           console.warn('[Leaderboard] Fallback query error:', fallbackErr);
         }
 
-        // If still empty and user has logged sessions in current state, include user's local sessions
         if (entries.length === 0 && currentUser?.id) {
           const filterStartDate = getFilterStartDate(timeframe);
-
           const currentPeriodSeconds = currentSessions
             .filter((s) => !filterStartDate || new Date(s.startTime).getTime() >= filterStartDate.getTime())
             .reduce((sum, s) => sum + (s.durationSeconds || 0), 0);
@@ -268,14 +298,12 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
     }
   }, [timeframe]);
 
-  // Fetch only when active tab is showing or timeframe changes
   useEffect(() => {
     if (isActiveTab) {
       fetchLeaderboard();
     }
   }, [fetchLeaderboard, isActiveTab]);
 
-  // If a session completes, refresh leaderboard if currently on active tab
   const prevSessionsCountRef = useRef(sessions.length);
   useEffect(() => {
     if (sessions.length !== prevSessionsCountRef.current) {
@@ -286,56 +314,33 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
     }
   }, [sessions.length, isActiveTab, fetchLeaderboard]);
 
-  // Find current user's entry and ranking index
-  const currentUserEntry = useMemo(() => {
-    if (!user?.id) return null;
-    const index = leaderboard.findIndex((item) => item.is_current_user || item.user_id === user.id);
-    if (index === -1) return null;
+  // Split top 3 scholars for Olympic podium vs contenders (#4 and beyond)
+  const { top1, top2, top3, contenders } = useMemo(() => {
     return {
-      entry: leaderboard[index],
-      rankIndex: index,
+      top1: leaderboard[0] || null,
+      top2: leaderboard[1] || null,
+      top3: leaderboard[2] || null,
+      contenders: leaderboard.slice(3),
     };
-  }, [leaderboard, user?.id]);
+  }, [leaderboard]);
 
-  // Setup IntersectionObserver on current user's row in the list
-  useEffect(() => {
-    if (!isActiveTab) {
-      setIsCurrentUserRowVisible(true);
-      return;
-    }
-
-    const target = currentUserRowRef.current;
-    if (!target) {
-      setIsCurrentUserRowVisible(true);
-      return;
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIsCurrentUserRowVisible(entry.isIntersecting);
-      },
-      {
-        threshold: 0.1,
-      }
-    );
-
-    observer.observe(target);
-    return () => observer.disconnect();
-  }, [leaderboard, currentUserEntry, isActiveTab]);
-
-  // Smooth scroll to user row when clicking the sticky bottom bar
-  const scrollToCurrentUser = () => {
-    currentUserRowRef.current?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'center',
-    });
-  };
+  const checkIsCurrentUser = useCallback(
+    (row: LeaderboardEntry | null) => {
+      if (!row) return false;
+      return Boolean(
+        row.is_current_user ||
+          (user?.id && String(row.user_id) === String(user.id)) ||
+          (user?.username && row.username && user.username.toLowerCase() === row.username.toLowerCase())
+      );
+    },
+    [user?.id, user?.username]
+  );
 
   return (
     <div
       className={`w-full text-white font-sans ${
         isEmbedded
-          ? 'max-w-4xl mx-auto flex flex-col gap-5 py-4'
+          ? 'max-w-4xl mx-auto flex flex-col gap-6 py-4'
           : 'bg-[#05070a] min-h-screen p-6 sm:p-10 flex flex-col items-center'
       }`}
     >
@@ -383,192 +388,346 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
           </div>
         </header>
 
-        {/* Single Unified Container (Like TODO LIST panel) */}
-        <div
-          className={`w-full bg-[#0c0e14] border border-white/[0.08] rounded-xl overflow-hidden shadow-2xl divide-y divide-white/[0.05] transition-opacity duration-200 ${
-            isFetching ? 'opacity-60' : 'opacity-100'
-          }`}
-        >
-          {/* Table Header Bar */}
-          <div className="px-6 py-2.5 bg-white/[0.02] text-[11px] font-mono uppercase tracking-wider text-zinc-500 flex items-center justify-between">
-            <div className="flex items-center gap-3 flex-1 min-w-0">
-              <span className="w-10 flex-shrink-0 text-left">#</span>
-              <span>SCHOLAR</span>
-            </div>
-            <div className="w-36 sm:w-44 flex items-center justify-center flex-shrink-0">
-              <span>TIER</span>
-            </div>
-            <div className="w-20 sm:w-24 text-right flex-shrink-0">
-              <span>TIME</span>
-            </div>
-          </div>
-
-          {/* Loading Skeleton */}
-          {isLoading ? (
-            <div className="divide-y divide-white/[0.05]">
-              {[1, 2, 3, 4, 5].map((i) => (
+        {/* Loading State */}
+        {isLoading ? (
+          <div className="w-full flex flex-col gap-6">
+            {/* Podium Skeleton */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 items-end">
+              {[1, 2, 3].map((i) => (
                 <div
                   key={i}
-                  className="px-6 py-3.5 flex items-center justify-between animate-pulse"
-                >
-                  <div className="flex items-center gap-3 flex-1 min-w-0 pr-3">
-                    <div className="w-10 h-4 bg-white/[0.05] rounded" />
-                    <div className="flex flex-col gap-1.5 min-w-0">
-                      <div className="w-28 sm:w-36 h-4 bg-white/[0.05] rounded" />
-                      <div className="w-20 sm:w-24 h-3 bg-white/[0.03] rounded" />
-                    </div>
+                  className={`rounded-xl border border-white/[0.06] bg-[#0c0e14] p-5 animate-pulse ${
+                    i === 2 ? 'h-72 -mt-2' : 'h-60'
+                  }`}
+                />
+              ))}
+            </div>
+
+            {/* Table Skeleton */}
+            <div className="w-full bg-[#0c0e14] border border-white/[0.08] rounded-xl overflow-hidden divide-y divide-white/[0.04]">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="px-6 py-4 flex items-center justify-between animate-pulse">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-4 bg-white/[0.05] rounded" />
+                    <div className="w-9 h-9 rounded-full bg-white/[0.05]" />
+                    <div className="w-28 h-4 bg-white/[0.05] rounded" />
                   </div>
-                  <div className="w-36 sm:w-44 flex items-center justify-center gap-2">
-                    <div className="w-7 h-7 bg-white/[0.05] rounded" />
-                    <div className="w-16 h-3 bg-white/[0.04] rounded" />
-                  </div>
-                  <div className="w-20 sm:w-24 flex justify-end">
-                    <div className="w-14 h-4 bg-white/[0.05] rounded" />
-                  </div>
+                  <div className="w-20 h-4 bg-white/[0.05] rounded" />
                 </div>
               ))}
             </div>
-          ) : leaderboard.length === 0 ? (
-            /* Empty State */
-            <div className="p-10 text-center flex flex-col items-center justify-center gap-2.5">
-              <div className="w-10 h-10 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 mb-1">
-                <Clock className="w-5 h-5 stroke-[2]" />
-              </div>
-              <h3 className="text-sm font-bold text-white font-mono uppercase tracking-wider">
-                NO SESSIONS RECORDED
-              </h3>
-              <p className="text-xs text-zinc-400 max-w-md">
-                {emptyText}
-              </p>
+          </div>
+        ) : leaderboard.length === 0 ? (
+          /* Empty State */
+          <div className="w-full bg-[#0c0e14] border border-white/[0.08] rounded-xl p-12 text-center flex flex-col items-center justify-center gap-2.5">
+            <div className="w-10 h-10 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 mb-1">
+              <Clock className="w-5 h-5 stroke-[2]" />
             </div>
-          ) : (
-            /* Row Design & Alignment */
-            leaderboard.map((row, index) => {
-              const isCurrentUser = Boolean(
-                row.is_current_user ||
-                (user?.id && String(row.user_id) === String(user.id)) ||
-                (user?.username && row.username && user.username.toLowerCase() === row.username.toLowerCase())
-              );
+            <h3 className="text-sm font-bold text-white font-mono uppercase tracking-wider">
+              NO SESSIONS RECORDED
+            </h3>
+            <p className="text-xs text-zinc-400 max-w-md">
+              {emptyText}
+            </p>
+          </div>
+        ) : (
+          <div
+            className={`w-full flex flex-col gap-6 transition-opacity duration-200 ${
+              isFetching ? 'opacity-70' : 'opacity-100'
+            }`}
+          >
+            {/* 1. THE TOP 3 PODIUM HERO SECTION */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 items-end">
+              {/* #2 CONTENDER (Left Column on Desktop, Silver Accent) */}
+              <div className="order-2 sm:order-1 h-full">
+                {top2 ? (
+                  (() => {
+                    const rankTierTitle = getMonthlyRankTierTitle(top2.rank_title, top2.total_seconds);
+                    const rankBadgePath = getRankBadgePath(rankTierTitle);
+                    const displayName = top2.display_name || top2.name || 'Scholar';
+                    const handle = top2.username || displayName.toLowerCase().replace(/\s+/g, '');
+                    const level = top2.level ?? getLevelFromLifetimeXP(top2.lifetime_xp || 0);
+                    const isUser = checkIsCurrentUser(top2);
 
-              const rankTierTitle = getMonthlyRankTierTitle(row.rank_title, row.total_seconds);
-              const rankBadgePath = getRankBadgePath(rankTierTitle);
-              const displayName = row.display_name || row.name || row.username || 'Scholar';
-              const handle = row.username || displayName.toLowerCase().replace(/\s+/g, '');
-              const level = row.level ?? getLevelFromLifetimeXP(row.lifetime_xp || 0);
-
-              return (
-                <div
-                  key={row.user_id || index}
-                  ref={isCurrentUser ? currentUserRowRef : undefined}
-                  className={`px-6 py-3.5 flex items-center justify-between transition-colors ${
-                    isCurrentUser
-                      ? 'bg-amber-500/[0.05] border-l-2 border-l-amber-500 hover:bg-amber-500/[0.08]'
-                      : 'hover:bg-white/[0.02]'
-                  }`}
-                >
-                  {/* LEFT SECTION: Rank + Identity */}
-                  <div className="flex items-center gap-3 flex-1 min-w-0 pr-3">
-                    {/* Rank Number */}
-                    <div className="w-10 flex-shrink-0 text-left">
-                      {index === 0 ? (
-                        <span className="text-amber-400 font-mono font-bold text-base">#1</span>
-                      ) : index === 1 ? (
-                        <span className="text-zinc-300 font-mono font-semibold text-sm">#2</span>
-                      ) : index === 2 ? (
-                        <span className="text-amber-600 font-mono font-semibold text-sm">#3</span>
-                      ) : (
-                        <span className="text-zinc-500 font-mono text-sm">#{index + 1}</span>
-                      )}
-                    </div>
-
-                    {/* Identity Group (Display Name + handle & level) */}
-                    <div className="flex flex-col min-w-0 justify-center">
-                      <div className="flex items-center gap-1.5 truncate">
-                        <span className="font-medium text-white text-sm tracking-tight truncate">
-                          {displayName}
-                        </span>
-                        {isCurrentUser && (
-                          <span className="text-[10px] font-mono text-amber-400/80 uppercase ml-2 shrink-0">
-                            (YOU)
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-xs font-mono text-zinc-500 truncate mt-0.5">
-                        @{handle} · Lv. {level}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* CENTER SECTION (Tier & Badge) */}
-                  <div className="w-36 sm:w-44 flex items-center justify-center flex-shrink-0">
-                    <Image
-                      src={rankBadgePath}
-                      alt={rankTierTitle}
-                      width={28}
-                      height={28}
-                      className="w-7 h-7 object-contain flex-shrink-0"
-                    />
-                    <span className="text-[11px] font-mono text-zinc-400 tracking-wider uppercase ml-2.5 truncate">
-                      {rankTierTitle}
-                    </span>
-                  </div>
-
-                  {/* RIGHT SECTION (Focus Time) */}
-                  <div className="w-20 sm:w-24 text-right flex-shrink-0 text-sm font-mono font-medium text-zinc-200 tracking-wide">
-                    {formatStudyTime(row.total_seconds)}
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
-
-        {/* Sticky Pinned User Standing Strip (Displays ONLY on desktop when actively viewing Leaderboard AND user's row is not in viewport) */}
-        {isActiveTab && !isCurrentUserRowVisible && currentUserEntry && (
-          <div className="hidden md:block fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-4xl z-30 animate-in slide-in-from-bottom-3 duration-200">
-            <div className="w-full flex flex-col">
-              <div className="text-[10px] font-mono uppercase tracking-widest text-amber-400 mb-1.5 pl-3 font-semibold flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                <span>YOUR CURRENT STANDING · CLICK TO JUMP</span>
-              </div>
-              <div
-                onClick={scrollToCurrentUser}
-                className="w-full bg-[#0c0e14] border border-amber-500/40 rounded-xl overflow-hidden shadow-2xl cursor-pointer hover:border-amber-400 transition-all"
-                title="Click to jump to your row"
-              >
-                {(() => {
-                  const entry = currentUserEntry.entry;
-                  const rankIndex = currentUserEntry.rankIndex;
-                  const rankTierTitle = getMonthlyRankTierTitle(entry.rank_title, entry.total_seconds);
-                  const rankBadgePath = getRankBadgePath(rankTierTitle);
-                  const displayName = entry.display_name || entry.name || entry.username || 'Scholar';
-                  const handle = entry.username || displayName.toLowerCase().replace(/\s+/g, '');
-                  const level = entry.level ?? getLevelFromLifetimeXP(entry.lifetime_xp || 0);
-
-                  return (
-                    <div className="px-6 py-3.5 flex items-center justify-between bg-amber-500/[0.05] border-l-2 border-l-amber-500">
-                      {/* LEFT SECTION */}
-                      <div className="flex items-center gap-3 flex-1 min-w-0 pr-3">
-                        <div className="w-10 flex-shrink-0 text-left">
-                          {rankIndex === 0 ? (
-                            <span className="text-amber-400 font-mono font-bold text-base">#1</span>
-                          ) : rankIndex === 1 ? (
-                            <span className="text-zinc-300 font-mono font-semibold text-sm">#2</span>
-                          ) : rankIndex === 2 ? (
-                            <span className="text-amber-600 font-mono font-semibold text-sm">#3</span>
-                          ) : (
-                            <span className="text-zinc-500 font-mono text-sm">#{rankIndex + 1}</span>
+                    return (
+                      <div
+                        className={`h-full min-h-[250px] border border-zinc-400/30 bg-gradient-to-b from-zinc-400/10 via-[#0c0e14] to-[#0c0e14] rounded-xl p-5 flex flex-col items-center justify-between text-center relative overflow-hidden transition-all duration-200 hover:border-zinc-300 shadow-lg ${
+                          isUser ? 'ring-1 ring-amber-500/50' : ''
+                        }`}
+                      >
+                        {/* Top Monospace Rank Indicator */}
+                        <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-zinc-400/15 border border-zinc-400/30 text-zinc-300 font-mono text-[10px] font-bold tracking-widest uppercase">
+                          <span>2ND</span>
+                          {isUser && (
+                            <span className="text-[9px] text-amber-400 font-mono font-bold ml-1">
+                              (YOU)
+                            </span>
                           )}
                         </div>
 
+                        {/* Avatar with Silver Ring */}
+                        <div className="relative my-2.5">
+                          <div className="w-16 h-16 rounded-full p-0.5 bg-gradient-to-tr from-zinc-400 via-zinc-200 to-zinc-500 shadow-[0_0_15px_rgba(200,200,200,0.15)] flex items-center justify-center">
+                            <ScholarAvatar
+                              name={displayName}
+                              avatarUrl={top2.avatar_url}
+                              sizeClass="w-full h-full text-base"
+                            />
+                          </div>
+                          {/* Rank badge thumbnail */}
+                          <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#0c0e14] border border-white/20 p-0.5 flex items-center justify-center shadow-md">
+                            <Image
+                              src={rankBadgePath}
+                              alt={rankTierTitle}
+                              width={20}
+                              height={20}
+                              className="w-4 h-4 object-contain"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Scholar Name + Handle */}
+                        <div className="w-full px-2">
+                          <div className="font-semibold text-white text-sm truncate">{displayName}</div>
+                          <div className="text-[11px] font-mono text-zinc-400 truncate mt-0.5">
+                            @{handle} · Lv. {level}
+                          </div>
+                        </div>
+
+                        {/* Big Formatted Study Time */}
+                        <div className="mt-3 pt-2.5 border-t border-white/[0.06] w-full flex flex-col items-center">
+                          <span className="font-mono text-xl sm:text-2xl font-bold tracking-tight text-white">
+                            {formatStudyTime(top2.total_seconds)}
+                          </span>
+                          <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider mt-0.5">
+                            {rankTierTitle}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })()
+                ) : (
+                  <div className="h-full min-h-[220px] rounded-xl border border-white/[0.06] bg-[#0c0e14] p-5 flex items-center justify-center text-zinc-600 font-mono text-xs">
+                    2ND UNCLAIMED
+                  </div>
+                )}
+              </div>
+
+              {/* #1 CHAMPION (Center Column on Desktop, Elevated, Taller Card with Golden Glow) */}
+              <div className="order-1 sm:order-2 h-full sm:-mt-3">
+                {top1 ? (
+                  (() => {
+                    const rankTierTitle = getMonthlyRankTierTitle(top1.rank_title, top1.total_seconds);
+                    const rankBadgePath = getRankBadgePath(rankTierTitle);
+                    const displayName = top1.display_name || top1.name || 'Scholar';
+                    const handle = top1.username || displayName.toLowerCase().replace(/\s+/g, '');
+                    const level = top1.level ?? getLevelFromLifetimeXP(top1.lifetime_xp || 0);
+                    const isUser = checkIsCurrentUser(top1);
+
+                    return (
+                      <div
+                        className={`h-full min-h-[285px] border border-amber-500/40 bg-gradient-to-b from-amber-500/10 via-[#0c0e14] to-[#0c0e14] rounded-xl p-5 sm:p-6 flex flex-col items-center justify-between text-center relative overflow-hidden transition-all duration-200 hover:border-amber-400 shadow-[0_0_30px_rgba(245,158,11,0.15)] ${
+                          isUser ? 'ring-1 ring-amber-400' : ''
+                        }`}
+                      >
+                        {/* Crown & 1ST Indicator */}
+                        <div className="flex flex-col items-center gap-1">
+                          <Crown className="w-5 h-5 text-amber-400 fill-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.6)]" />
+                          <div className="flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 font-mono text-[10px] font-bold tracking-widest uppercase">
+                            <span>1ST</span>
+                            {isUser && (
+                              <span className="text-[9px] text-amber-200 font-mono font-bold ml-1">
+                                (YOU)
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Larger Avatar with Golden Ring */}
+                        <div className="relative my-2.5">
+                          <div className="w-20 h-20 rounded-full p-1 bg-gradient-to-tr from-amber-500 via-yellow-400 to-amber-600 shadow-[0_0_20px_rgba(245,158,11,0.35)] flex items-center justify-center">
+                            <ScholarAvatar
+                              name={displayName}
+                              avatarUrl={top1.avatar_url}
+                              sizeClass="w-full h-full text-lg"
+                            />
+                          </div>
+                          {/* Rank emblem with ambient glow */}
+                          <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-[#0c0e14] border border-amber-500/50 p-0.5 flex items-center justify-center shadow-lg">
+                            <Image
+                              src={rankBadgePath}
+                              alt={rankTierTitle}
+                              width={24}
+                              height={24}
+                              className="w-5 h-5 object-contain drop-shadow-[0_0_6px_rgba(245,158,11,0.5)]"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Scholar Name + Handle */}
+                        <div className="w-full px-2">
+                          <div className="font-bold text-white text-base truncate">{displayName}</div>
+                          <div className="text-xs font-mono text-zinc-400 truncate mt-0.5">
+                            @{handle} · Lv. {level}
+                          </div>
+                        </div>
+
+                        {/* Prominent Gold Focus Time */}
+                        <div className="mt-3 pt-2.5 border-t border-white/[0.08] w-full flex flex-col items-center">
+                          <span className="font-mono text-xl sm:text-2xl font-bold tracking-tight text-amber-300 drop-shadow-[0_0_10px_rgba(245,158,11,0.4)]">
+                            {formatStudyTime(top1.total_seconds)}
+                          </span>
+                          <span className="text-[10px] font-mono text-amber-400/90 uppercase tracking-wider mt-0.5 font-medium">
+                            {rankTierTitle}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })()
+                ) : (
+                  <div className="h-full min-h-[250px] rounded-xl border border-white/[0.06] bg-[#0c0e14] p-5 flex items-center justify-center text-zinc-600 font-mono text-xs">
+                    1ST UNCLAIMED
+                  </div>
+                )}
+              </div>
+
+              {/* #3 CONTENDER (Right Column on Desktop, Bronze Accent) */}
+              <div className="order-3 h-full">
+                {top3 ? (
+                  (() => {
+                    const rankTierTitle = getMonthlyRankTierTitle(top3.rank_title, top3.total_seconds);
+                    const rankBadgePath = getRankBadgePath(rankTierTitle);
+                    const displayName = top3.display_name || top3.name || 'Scholar';
+                    const handle = top3.username || displayName.toLowerCase().replace(/\s+/g, '');
+                    const level = top3.level ?? getLevelFromLifetimeXP(top3.lifetime_xp || 0);
+                    const isUser = checkIsCurrentUser(top3);
+
+                    return (
+                      <div
+                        className={`h-full min-h-[250px] border border-amber-700/30 bg-gradient-to-b from-amber-700/10 via-[#0c0e14] to-[#0c0e14] rounded-xl p-5 flex flex-col items-center justify-between text-center relative overflow-hidden transition-all duration-200 hover:border-amber-600 shadow-lg ${
+                          isUser ? 'ring-1 ring-amber-500/50' : ''
+                        }`}
+                      >
+                        {/* Top Monospace Rank Indicator */}
+                        <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-700/20 border border-amber-700/40 text-amber-400 font-mono text-[10px] font-bold tracking-widest uppercase">
+                          <span>3RD</span>
+                          {isUser && (
+                            <span className="text-[9px] text-amber-200 font-mono font-bold ml-1">
+                              (YOU)
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Avatar with Bronze Ring */}
+                        <div className="relative my-2.5">
+                          <div className="w-16 h-16 rounded-full p-0.5 bg-gradient-to-tr from-amber-700 via-amber-600 to-yellow-800 shadow-[0_0_15px_rgba(180,83,9,0.2)] flex items-center justify-center">
+                            <ScholarAvatar
+                              name={displayName}
+                              avatarUrl={top3.avatar_url}
+                              sizeClass="w-full h-full text-base"
+                            />
+                          </div>
+                          {/* Rank badge thumbnail */}
+                          <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#0c0e14] border border-white/20 p-0.5 flex items-center justify-center shadow-md">
+                            <Image
+                              src={rankBadgePath}
+                              alt={rankTierTitle}
+                              width={20}
+                              height={20}
+                              className="w-4 h-4 object-contain"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Scholar Name + Handle */}
+                        <div className="w-full px-2">
+                          <div className="font-semibold text-white text-sm truncate">{displayName}</div>
+                          <div className="text-[11px] font-mono text-zinc-400 truncate mt-0.5">
+                            @{handle} · Lv. {level}
+                          </div>
+                        </div>
+
+                        {/* Big Formatted Study Time */}
+                        <div className="mt-3 pt-2.5 border-t border-white/[0.06] w-full flex flex-col items-center">
+                          <span className="font-mono text-xl sm:text-2xl font-bold tracking-tight text-white">
+                            {formatStudyTime(top3.total_seconds)}
+                          </span>
+                          <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider mt-0.5">
+                            {rankTierTitle}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })()
+                ) : (
+                  <div className="h-full min-h-[220px] rounded-xl border border-white/[0.06] bg-[#0c0e14] p-5 flex items-center justify-center text-zinc-600 font-mono text-xs">
+                    3RD UNCLAIMED
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* 2. CONTENDERS LIST (#4 AND BEYOND) */}
+            {contenders.length > 0 && (
+              <div className="w-full bg-[#0c0e14] border border-white/[0.08] rounded-xl overflow-hidden shadow-2xl divide-y divide-white/[0.04]">
+                {/* Table Header Bar */}
+                <div className="px-6 py-2.5 bg-white/[0.02] text-[11px] font-mono uppercase tracking-wider text-zinc-500 flex items-center justify-between">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <span className="w-10 flex-shrink-0 text-left">#</span>
+                    <span>SCHOLAR</span>
+                  </div>
+                  <div className="w-36 sm:w-44 flex items-center justify-center flex-shrink-0">
+                    <span>TIER</span>
+                  </div>
+                  <div className="w-20 sm:w-24 text-right flex-shrink-0">
+                    <span>TIME</span>
+                  </div>
+                </div>
+
+                {/* Rows */}
+                {contenders.map((row, idx) => {
+                  const actualRank = idx + 4;
+                  const isCurrentUser = checkIsCurrentUser(row);
+                  const rankTierTitle = getMonthlyRankTierTitle(row.rank_title, row.total_seconds);
+                  const rankBadgePath = getRankBadgePath(rankTierTitle);
+                  const displayName = row.display_name || row.name || row.username || 'Scholar';
+                  const handle = row.username || displayName.toLowerCase().replace(/\s+/g, '');
+                  const level = row.level ?? getLevelFromLifetimeXP(row.lifetime_xp || 0);
+
+                  return (
+                    <div
+                      key={row.user_id || actualRank}
+                      className={`px-6 py-3.5 flex items-center justify-between transition-all duration-200 ${
+                        isCurrentUser
+                          ? 'bg-amber-500/[0.06] border-l-2 border-l-amber-500 hover:bg-amber-500/[0.1]'
+                          : 'hover:bg-white/[0.02]'
+                      }`}
+                    >
+                      {/* # Column + Scholar Column */}
+                      <div className="flex items-center gap-3 flex-1 min-w-0 pr-3">
+                        {/* # Column */}
+                        <span className="w-10 flex-shrink-0 text-left text-xs font-mono text-zinc-500">
+                          #{actualRank}
+                        </span>
+
+                        {/* Scholar Avatar */}
+                        <ScholarAvatar
+                          name={displayName}
+                          avatarUrl={row.avatar_url}
+                          sizeClass="w-8 h-8 text-[11px]"
+                        />
+
+                        {/* Identity Group */}
                         <div className="flex flex-col min-w-0 justify-center">
                           <div className="flex items-center gap-1.5 truncate">
                             <span className="font-medium text-white text-sm tracking-tight truncate">
                               {displayName}
                             </span>
-                            <span className="text-[10px] font-mono text-amber-400/80 uppercase ml-2 shrink-0">
-                              (YOU)
-                            </span>
+                            {isCurrentUser && (
+                              <span className="text-[10px] font-mono font-bold text-amber-400 uppercase px-1.5 py-0.5 rounded bg-amber-500/20 border border-amber-500/30 ml-2 shrink-0">
+                                YOU
+                              </span>
+                            )}
                           </div>
                           <span className="text-xs font-mono text-zinc-500 truncate mt-0.5">
                             @{handle} · Lv. {level}
@@ -576,29 +735,29 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                         </div>
                       </div>
 
-                      {/* CENTER SECTION */}
-                      <div className="w-36 sm:w-44 flex items-center justify-center flex-shrink-0">
+                      {/* Tier Column */}
+                      <div className="w-36 sm:w-44 flex items-center justify-center flex-shrink-0 gap-2">
                         <Image
                           src={rankBadgePath}
                           alt={rankTierTitle}
-                          width={28}
-                          height={28}
-                          className="w-7 h-7 object-contain flex-shrink-0"
+                          width={24}
+                          height={24}
+                          className="w-6 h-6 object-contain flex-shrink-0 drop-shadow-[0_0_4px_rgba(255,255,255,0.1)]"
                         />
-                        <span className="text-[11px] font-mono text-zinc-400 tracking-wider uppercase ml-2.5 truncate">
+                        <span className="text-xs text-zinc-400 font-mono tracking-wider uppercase truncate">
                           {rankTierTitle}
                         </span>
                       </div>
 
-                      {/* RIGHT SECTION */}
-                      <div className="w-20 sm:w-24 text-right flex-shrink-0 text-sm font-mono font-medium text-zinc-200 tracking-wide">
-                        {formatStudyTime(entry.total_seconds)}
+                      {/* Time Column */}
+                      <div className="w-20 sm:w-24 text-right flex-shrink-0 text-sm font-mono text-zinc-200 font-semibold tracking-wide">
+                        {formatStudyTime(row.total_seconds)}
                       </div>
                     </div>
                   );
-                })()}
+                })}
               </div>
-            </div>
+            )}
           </div>
         )}
       </div>
