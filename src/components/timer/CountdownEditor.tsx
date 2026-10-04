@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, WheelEvent } from 'react';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useRankTheme } from '../../hooks/useRankTheme';
 
 interface CountdownEditorProps {
   initialSeconds: number;
@@ -12,6 +13,8 @@ export function CountdownEditor({ initialSeconds, onSave, onCancel }: CountdownE
   const [hours, setHours] = useState(Math.floor(initialSeconds / 3600));
   const [minutes, setMinutes] = useState(Math.floor((initialSeconds % 3600) / 60));
   const [seconds, setSeconds] = useState(initialSeconds % 60);
+
+  const { theme } = useRankTheme();
 
   const [direction, setDirection] = useState<'up' | 'down'>('up');
   const containerRef = useRef<HTMLDivElement>(null);
@@ -96,13 +99,13 @@ export function CountdownEditor({ initialSeconds, onSave, onCancel }: CountdownE
       <button 
         type="button" 
         onClick={() => updateSegment(type, true)}
-        className="text-neutral-600 hover:text-white active:text-sky-400 active:scale-90 transition-all p-0.5 sm:p-1 outline-none"
+        className="text-neutral-500 hover:text-white active:scale-90 transition-all p-0.5 sm:p-1 outline-none"
       >
         <ChevronUp className="w-5 h-5 sm:w-6 sm:h-6" />
       </button>
       
       <div 
-        className="relative overflow-hidden w-16 h-20 sm:w-20 sm:h-20 bg-white/[0.02] hover:bg-white/[0.05] rounded-2xl flex items-center justify-center transition-all border border-white/[0.02] hover:border-white/10 group-focus-within:bg-white/[0.08]"
+        className="relative overflow-hidden w-16 h-20 sm:w-20 sm:h-20 bg-white/[0.03] hover:bg-white/[0.06] rounded-2xl flex items-center justify-center transition-all border border-white/[0.05] hover:border-white/10 group-focus-within:bg-white/[0.08]"
         onWheel={(e) => handleWheel(e, type)}
       >
         <AnimatePresence mode="popLayout" initial={false}>
@@ -122,7 +125,7 @@ export function CountdownEditor({ initialSeconds, onSave, onCancel }: CountdownE
       <button 
         type="button" 
         onClick={() => updateSegment(type, false)}
-        className="text-neutral-600 hover:text-white active:text-sky-400 active:scale-90 transition-all p-0.5 sm:p-1 outline-none"
+        className="text-neutral-500 hover:text-white active:scale-90 transition-all p-0.5 sm:p-1 outline-none"
       >
         <ChevronDown className="w-5 h-5 sm:w-6 sm:h-6" />
       </button>
@@ -130,9 +133,12 @@ export function CountdownEditor({ initialSeconds, onSave, onCancel }: CountdownE
   );
 
   return (
-    <div ref={containerRef} className="flex flex-col items-center bg-[#0c0d12]/95 backdrop-blur-md p-3 sm:p-4 rounded-[2rem] shadow-2xl border border-white/[0.08] relative pointer-events-auto mx-auto scale-90 sm:scale-100 origin-center max-w-[95%]">
+    <div ref={containerRef} className="flex flex-col items-center bg-white/[0.03] backdrop-blur-3xl p-4 sm:p-5 rounded-[2.5rem] shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/10 relative pointer-events-auto mx-auto scale-90 sm:scale-100 origin-center max-w-[95%]">
       {/* Accent Highlight Line at Bottom matching screenshot */}
-      <div className="absolute bottom-0 left-6 right-6 h-[3px] bg-sky-400 rounded-t-full shadow-[0_0_12px_rgba(56,189,248,0.6)]" />
+      <div 
+        className="absolute bottom-0 left-8 right-8 h-[3px] rounded-t-full transition-colors duration-500" 
+        style={{ backgroundColor: theme.accent, boxShadow: `0 0 12px ${theme.accent}80` }}
+      />
       
       <div className="flex items-center gap-1 sm:gap-2 mb-2">
         <Segment val={hours} type="h" />
