@@ -191,7 +191,7 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-300">
-      <div className="bg-[#0c1017] border border-white/10 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl shadow-black/80 relative">
+      <div className="bg-[#0c1017]/80 backdrop-blur-2xl border border-white/10 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl shadow-black/80 relative">
         
         {/* Header */}
         <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-white/10 shrink-0">
@@ -219,7 +219,7 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
 
         <div className="p-6 space-y-6">
           {/* Compact Top Header with Avatar Picker */}
-          <div className="flex flex-col gap-3 bg-[#131822] border border-white/5 p-4 rounded-xl">
+          <div className="flex flex-col gap-3 bg-white/[0.03] backdrop-blur-md border border-white/5 p-4 rounded-xl">
             <div className="flex items-center gap-4">
               <label className="relative group cursor-pointer shrink-0 rounded-full">
                 <UserAvatar
@@ -247,7 +247,7 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                 <div className="font-bold text-base text-white truncate">{displayName || user.displayName || 'Scholar'}</div>
                 <div className="text-sm text-neutral-400 font-mono truncate mt-0.5">@{cleanedHandle || 'handle'}</div>
                 
-                <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-0.5 rounded border bg-[#0c1017]" style={{ borderColor: userRank.config.badgeAccent, color: userRank.config.badgeAccent }}>
+                <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-0.5 rounded border bg-white/[0.05] backdrop-blur-sm" style={{ borderColor: userRank.config.badgeAccent, color: userRank.config.badgeAccent }}>
                   <span className="text-[10px] font-black uppercase tracking-wider">
                     {userRank.fullTitle}
                   </span>
@@ -289,7 +289,7 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                 maxLength={30}
                 value={displayName}
                 onChange={e => setDisplayName(e.target.value)}
-                className="w-full bg-[#131822] border border-white/10 rounded-lg px-4 py-3 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 transition-all font-mono"
+                className="w-full bg-white/[0.03] backdrop-blur-md border border-white/10 rounded-lg px-4 py-3 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 transition-all font-mono"
               />
             </div>
 
@@ -307,7 +307,7 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                   value={username}
                   disabled={isCooldownActive}
                   onChange={(e) => setUsername(e.target.value.replace(/^@/, '').toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-                  className="w-full bg-[#131822] border border-white/10 rounded-lg pl-9 pr-4 py-3 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 transition-all font-mono disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-white/[0.03] backdrop-blur-md border border-white/10 rounded-lg pl-9 pr-4 py-3 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 transition-all font-mono disabled:opacity-50 disabled:cursor-not-allowed"
                 />
               </div>
               <div className="mt-1.5 text-[10px] font-mono">
@@ -335,7 +335,7 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                 step="0.5"
                 value={dailyGoalHours}
                 onChange={e => setDailyGoalHours(parseFloat(e.target.value))}
-                className="w-full accent-cyan-500 bg-[#131822] border border-white/5 cursor-pointer h-2 rounded-lg appearance-none"
+                className="w-full accent-cyan-500 bg-white/[0.05] border border-white/5 cursor-pointer h-2 rounded-lg appearance-none"
               />
               <div className="flex justify-between text-[10px] text-neutral-500 mt-2 font-mono">
                 <span>1h Light</span>
@@ -357,7 +357,7 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                 type="button"
                 onClick={handleClose}
                 disabled={isSaving}
-                className="flex-1 py-3 px-4 rounded-lg border border-white/10 bg-[#131822] hover:bg-white/5 text-neutral-300 text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50"
+                className="flex-1 py-3 px-4 rounded-lg border border-white/10 bg-white/[0.03] hover:bg-white/[0.08] backdrop-blur-md text-neutral-300 text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50"
               >
                 Cancel
               </button>
