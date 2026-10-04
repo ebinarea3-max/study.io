@@ -241,6 +241,26 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     setErrorMsg("");
     
     try {
+      const supabase = getSupabase();
+      if (!supabase) throw new Error("Supabase client not initialized.");
+
+      let activeUserId: string | undefined = user?.id;
+      if (activeUserId === 'user-scholar-1') activeUserId = undefined;
+
+      if (!activeUserId) {
+        const { data: sessionData } = await supabase.auth.getSession();
+        activeUserId = sessionData.session?.user?.id;
+      }
+      
+      if (!activeUserId) {
+        const { data: userData } = await supabase.auth.getUser();
+        activeUserId = userData.user?.id;
+      }
+      
+      if (!activeUserId) {
+        throw new Error("No active session found. Please refresh the page.");
+      }
+
       const updatePayload: any = {
         name: displayName.trim(),
         daily_goal_hours: Number(dailyGoalHours),
@@ -263,26 +283,13 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
           throw new Error("Handle contains restricted or inappropriate terms. Please choose a different identity.");
         }
 
-        const supabase = getSupabase();
-        if (!supabase) throw new Error("Supabase client not initialized.");
-
-        // Get the real authenticated user UUID
-        const { data: { user: authUser } } = await supabase.auth.getUser();
-        if (!authUser?.id) {
-          throw new Error("No active user session found.");
-        }
-
         // Verify handle uniqueness before saving
-        let query = supabase
+        const { data: existing } = await supabase
           .from("profiles")
           .select("id")
-          .eq("username", cleanedHandle);
-          
-        if (authUser?.id) {
-          query = query.neq("id", authUser.id);
-        }
-        
-        const { data: existing } = await query.maybeSingle();
+          .eq("username", cleanedHandle)
+          .neq("id", activeUserId)
+          .maybeSingle();
 
         if (existing) {
           throw new Error("Handle already claimed. Try another.");
@@ -291,20 +298,11 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
         updatePayload.username = cleanedHandle;
         updatePayload.username_changed_at = new Date().toISOString();
       }
-      
-      const supabase = getSupabase();
-      if (!supabase) throw new Error("Supabase client not initialized.");
-      
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (!authUser?.id) {
-        throw new Error("No active user session found.");
-      }
-
       // Perform async Supabase update
       const { error } = await supabase
         .from("profiles")
         .update(updatePayload)
-        .eq("id", authUser.id);
+        .eq("id", activeUserId);
 
       if (error) throw error;
 
