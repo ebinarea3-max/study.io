@@ -582,7 +582,7 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
             {/* ══════════════════════════════════════════════════════════ */}
             {/* RANKED LIST                                                */}
             {/* ══════════════════════════════════════════════════════════ */}
-            {currentUserEntry && (
+            {currentUserEntry && !currentUserRowVisible && (
               <div className="sticky top-2 z-30 mb-4 flex items-center justify-between rounded-xl border border-amber-500/30 bg-[#0c0e14]/90 px-4 py-2 text-xs font-mono text-zinc-300 backdrop-blur-md shadow-lg">
                 <span>YOUR RANK: <strong className="text-amber-400">#{currentUserEntry.rank}</strong></span>
                 <button 
@@ -625,7 +625,7 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                   if (level >= 3 && (computedRankTitle === 'BRONZE I' || computedRankTitle === 'BRONZE II')) computedRankTitle = 'BRONZE III';
 
                   const tierConfig = getRankConfigByTitle(computedRankTitle);
-                  const displayTierTitle = `[TEST] ${tierConfig.fullTitle}`;
+                  const displayTierTitle = tierConfig.fullTitle;
                   
                   const displayName = row.display_name || row.name || row.username || 'Scholar';
                   const handle = row.username || displayName.toLowerCase().replace(/\s+/g, '');
