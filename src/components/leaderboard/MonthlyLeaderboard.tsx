@@ -81,8 +81,9 @@ function AnimatedDigit({
  */
 export function getMonthlyRankTierTitle(rankTitle?: string, totalSeconds?: number): string {
   // Dynamically calculate tier based on recorded seconds to avoid stale DB values.
-  const rpFromMinutes = totalSeconds ? Math.floor(totalSeconds / 60) : 0;
-  return getRankTier(rpFromMinutes).fullTitle;
+  // In the global ranked system, users earn 10 RP per minute of focus time.
+  const focusRP = totalSeconds ? Math.floor(totalSeconds / 60) * 10 : 0;
+  return getRankTier(focusRP).fullTitle;
 }
 
 export type LeaderboardTimeframe = 'today' | 'week' | 'month' | 'all';
