@@ -13,8 +13,6 @@ import {
   Trash2,
   Smartphone,
   CheckCircle2,
-  Image as ImageIcon,
-  Upload,
 } from 'lucide-react';
 import { soundFx } from '../../lib/audio';
 import { useAuth } from '../../context/AuthContext';
@@ -39,67 +37,6 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
   const [showInstallInstructions, setShowInstallInstructions] = useState(false);
-  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
-  const [showAvatarPresets, setShowAvatarPresets] = useState(false);
-
-  const PRESET_AVATARS = [
-    'https://api.dicebear.com/7.x/bottts/svg?seed=scholar1',
-    'https://api.dicebear.com/7.x/bottts/svg?seed=scholar2',
-    'https://api.dicebear.com/7.x/identicon/svg?seed=tactical1',
-    'https://api.dicebear.com/7.x/identicon/svg?seed=tactical2',
-    'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix',
-    'https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka',
-    'https://api.dicebear.com/7.x/micah/svg?seed=Oliver',
-    'https://api.dicebear.com/7.x/micah/svg?seed=Abby'
-  ];
-
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error('Image must be under 2MB');
-      return;
-    }
-
-    setIsUploadingAvatar(true);
-    try {
-      const supabase = getSupabase();
-      if (!supabase) throw new Error('Supabase not initialized');
-
-      const fileExt = file.name.split('.').pop();
-      const filePath = `${user.id}/${Date.now()}.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file, { upsert: true });
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
-
-      updateProfile({ avatarUrl: publicUrl });
-      toast.success('Avatar updated successfully');
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to upload avatar');
-    } finally {
-      setIsUploadingAvatar(false);
-    }
-  };
-
-  const handlePresetSelect = (url: string) => {
-    setIsUploadingAvatar(true);
-    try {
-      updateProfile({ avatarUrl: url });
-      toast.success('Avatar updated successfully');
-    } catch (err: any) {
-      toast.error('Failed to update avatar');
-    } finally {
-      setIsUploadingAvatar(false);
-    }
-  };
 
   if (!isOpen) return null;
 
@@ -136,9 +73,9 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
       <div
-        className="relative w-full max-w-lg bg-[#0c1017]/90 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-[0_25px_60px_rgba(0,0,0,0.9)] p-6 sm:p-7 overflow-hidden max-h-[90vh] overflow-y-auto"
+        className="relative w-full max-w-lg bg-white/[0.07] backdrop-blur-3xl border border-white/20 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.7)] p-6 sm:p-7 overflow-hidden max-h-[90vh] overflow-y-auto"
         style={{ borderColor: `${theme.accent}30` }}
       >
         {/* Ambient background lighting */}
@@ -192,11 +129,6 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     ) : (
                       <User className="w-6 h-6" />
                     )}
-                    {isUploadingAvatar && (
-                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm">
-                        <Loader2 className="w-5 h-5 text-white animate-spin" />
-                      </div>
-                    )}
                   </div>
                 </div>
                 <div className="min-w-0">
@@ -210,51 +142,6 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   <span>Cloud Synced</span>
                 </span>
               </div>
-            </div>
-
-            {/* Avatar Selection Controls */}
-            <div className="pt-3 border-t border-white/10 flex flex-col gap-3">
-              <div className="flex items-center gap-2">
-                <label className="flex-1 py-1.5 px-3 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 text-xs font-hud font-bold tracking-wider text-white transition-colors cursor-pointer text-center flex items-center justify-center gap-1.5">
-                  <Upload className="w-3.5 h-3.5" style={{ color: theme.accent }} />
-                  <span>UPLOAD CUSTOM</span>
-                  <input
-                    type="file"
-                    accept="image/png, image/jpeg, image/webp"
-                    className="hidden"
-                    onChange={handleAvatarUpload}
-                    disabled={isUploadingAvatar}
-                  />
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setShowAvatarPresets(!showAvatarPresets)}
-                  className="flex-1 py-1.5 px-3 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 text-xs font-hud font-bold tracking-wider text-white transition-colors cursor-pointer text-center flex items-center justify-center gap-1.5"
-                >
-                  <ImageIcon className="w-3.5 h-3.5" style={{ color: theme.accent }} />
-                  <span>PRESETS</span>
-                </button>
-              </div>
-
-              {/* Preset Grid */}
-              {showAvatarPresets && (
-                <div className="grid grid-cols-4 gap-2 pt-2 animate-in fade-in slide-in-from-top-1 duration-200">
-                  {PRESET_AVATARS.map((url, i) => (
-                    <button
-                      key={i}
-                      onClick={() => handlePresetSelect(url)}
-                      disabled={isUploadingAvatar}
-                      className={`relative aspect-square rounded-lg border flex items-center justify-center overflow-hidden transition-all ${
-                        user.avatarUrl === url
-                          ? 'border-white bg-white/10 ring-2 ring-white/20'
-                          : 'border-white/10 bg-white/[0.03] hover:border-white/30 hover:bg-white/[0.08]'
-                      }`}
-                    >
-                      <img src={url} alt={`Preset ${i}`} className="w-full h-full object-cover" />
-                    </button>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
 
