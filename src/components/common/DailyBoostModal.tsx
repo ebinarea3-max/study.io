@@ -28,10 +28,10 @@ export function DailyBoostModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-300">
       <div 
-        className="relative w-full max-w-md bg-[#0c0d12] border backdrop-blur-xl rounded-3xl shadow-2xl p-6 sm:p-8 text-center overflow-hidden animate-in zoom-in-95 duration-300"
-        style={{ borderColor: `${theme.accent}30` }}
+        className="relative w-full max-w-md bg-[#0c0d12]/40 border backdrop-blur-3xl rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.7)] p-6 sm:p-8 text-center overflow-hidden animate-in zoom-in-95 duration-300"
+        style={{ borderColor: `${theme.accent}40` }}
       >
         {/* Background glow effects */}
         <div
