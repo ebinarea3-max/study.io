@@ -582,6 +582,18 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
             {/* ══════════════════════════════════════════════════════════ */}
             {/* RANKED LIST                                                */}
             {/* ══════════════════════════════════════════════════════════ */}
+            {currentUserEntry && (
+              <div className="sticky top-2 z-30 mb-4 flex items-center justify-between rounded-xl border border-amber-500/30 bg-[#0c0e14]/90 px-4 py-2 text-xs font-mono text-zinc-300 backdrop-blur-md shadow-lg">
+                <span>YOUR RANK: <strong className="text-amber-400">#{currentUserEntry.rank}</strong></span>
+                <button 
+                  onClick={() => myRowRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+                  className="rounded bg-amber-500/20 px-2 py-1 text-amber-300 hover:bg-amber-500/30 cursor-pointer"
+                >
+                  Jump to You ↓
+                </button>
+              </div>
+            )}
+            
             {contenders.length > 0 && (
               <div className="w-full bg-white/[0.03] backdrop-blur-2xl border border-white/[0.1] rounded-2xl overflow-hidden divide-y divide-white/[0.04] shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
                 {/* Column Header Row */}
@@ -603,11 +615,20 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                 {contenders.map((row, idx) => {
                   const actualRank = idx + 1;
                   const isCurrentUser = checkIsCurrentUser(row);
-                  const rankTierTitle = getMonthlyRankTierTitle(row.rank_title, row.total_seconds);
-                  const tierConfig = getRankConfigByTitle(rankTierTitle);
+                  
+                  if (idx < 2) console.log('Leaderboard row data:', row);
+
+                  let computedRankTitle = getMonthlyRankTierTitle(row.rank_title, row.total_seconds);
+                  const level = row.level ?? getLevelFromLifetimeXP(row.lifetime_xp || 0);
+
+                  if (level === 2 && computedRankTitle === 'BRONZE I') computedRankTitle = 'BRONZE II';
+                  if (level >= 3 && (computedRankTitle === 'BRONZE I' || computedRankTitle === 'BRONZE II')) computedRankTitle = 'BRONZE III';
+
+                  const tierConfig = getRankConfigByTitle(computedRankTitle);
+                  const displayTierTitle = `[TEST] ${tierConfig.fullTitle}`;
+                  
                   const displayName = row.display_name || row.name || row.username || 'Scholar';
                   const handle = row.username || displayName.toLowerCase().replace(/\s+/g, '');
-                  const level = row.level ?? getLevelFromLifetimeXP(row.lifetime_xp || 0);
                   const { h, m } = parseTimeHoursMinutes(row.total_seconds);
                   const movement = getRankDelta(row.user_id, actualRank, timeframe);
 
@@ -657,7 +678,7 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                               )}
                             </div>
                             <span className="text-[11px] font-mono text-zinc-500 truncate mt-0.5">
-                              @{handle} · {rankTierTitle}
+                              @{handle} · {displayTierTitle}
                             </span>
                           </div>
                         </div>
@@ -742,7 +763,7 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                             className="text-xs font-mono tracking-wider uppercase truncate font-semibold"
                             style={{ color: tierConfig.badgeAccent }}
                           >
-                            {rankTierTitle}
+                            {displayTierTitle}
                           </span>
                         </div>
 
@@ -763,47 +784,6 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
         )}
       </div>
 
-      {/* Floating Current User Sticky Bar */}
-      {currentUserEntry && !currentUserRowVisible && !isLoading && (
-        <div className="fixed bottom-24 sm:bottom-8 left-1/2 -translate-x-1/2 z-20 w-[90%] max-w-lg animate-in fade-in slide-in-from-bottom-4 duration-300">
-          <div className="bg-[#0c0e14]/80 backdrop-blur-md border border-amber-500/30 rounded-xl px-4 py-2.5 shadow-2xl flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)] animate-pulse" />
-              <span className="text-xs font-mono font-medium text-zinc-400">
-                YOUR RANK: <span className="text-amber-400 font-bold text-sm">#{currentUserEntry.rank}</span>
-              </span>
-            </div>
-            
-            <div className="flex items-center gap-3">
-              <div className="hidden sm:flex items-center gap-1.5">
-                <RankCrestBadge
-                  tier={currentUserEntry.tierConfig.tier as RankTierName}
-                  division={currentUserEntry.tierConfig.division as RankDivision}
-                  size={24}
-                />
-                <span className="text-xs font-mono tracking-wider uppercase font-semibold text-zinc-300">
-                  {currentUserEntry.h}h {currentUserEntry.m}m
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  if (myRowRef.current) {
-                    myRowRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    myRowRef.current.classList.add('ring-2', 'ring-amber-500', 'bg-amber-500/10');
-                    setTimeout(() => {
-                      myRowRef.current?.classList.remove('ring-2', 'ring-amber-500', 'bg-amber-500/10');
-                    }, 1500);
-                  }
-                }}
-                className="text-[11px] font-mono px-2.5 py-1 rounded-md bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:bg-amber-500/20 transition-all cursor-pointer whitespace-nowrap shadow-sm"
-              >
-                Jump to You ↓
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
