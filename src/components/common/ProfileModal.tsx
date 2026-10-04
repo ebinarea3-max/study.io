@@ -143,6 +143,17 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, user.name, user.displayName, user.username, user.dailyGoalHours, user.avatarUrl, user.is_onboarded]);
 
+  // Scroll lock effect for the background page when the modal is open
+  useEffect(() => {
+    if (isOpen) {
+      const originalStyle = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalStyle || '';
+      };
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const cleanedHandle = sanitizeHandleInput(username.replace(/^@/, ''));
@@ -285,8 +296,8 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-300">
-      <div className="bg-white/[0.07] backdrop-blur-3xl border border-white/20 rounded-2xl w-full max-w-md overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.7)] relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-300 overflow-y-auto">
+      <div className="bg-white/[0.07] backdrop-blur-3xl border border-white/20 rounded-2xl w-full max-w-md my-auto max-h-[90vh] overflow-y-auto shadow-[0_8px_32px_rgba(0,0,0,0.7)] relative">
         
         {/* Header */}
         <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-white/10 shrink-0 bg-white/[0.02]">
@@ -506,8 +517,8 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
       
       {/* Avatar Vault Modal */}
       {isVaultOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-white/[0.07] backdrop-blur-3xl border border-amber-500/20 rounded-2xl w-full max-w-xl overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.7)] relative flex flex-col max-h-[85vh]">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-300 overflow-y-auto">
+          <div className="bg-white/[0.07] backdrop-blur-3xl border border-amber-500/20 rounded-2xl w-full max-w-xl my-auto max-h-[85vh] overflow-y-auto shadow-[0_8px_32px_rgba(0,0,0,0.7)] relative flex flex-col">
             {/* Vault Header */}
             <div className="flex items-center justify-between px-6 py-5 border-b border-white/10 shrink-0 bg-white/[0.02]">
               <div>
