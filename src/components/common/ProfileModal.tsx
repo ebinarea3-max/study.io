@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useStudy } from '../../context/StudyContext';
 import { X, Target, User, Loader2, Save, Camera, Upload, Plus, Dices } from 'lucide-react';
-import { UserAvatar } from './UserAvatar';
+
 import { getRankTier } from '../../lib/rankedSystem';
 import { getSupabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
@@ -26,6 +26,15 @@ const generateThematicIdentity = () => {
     displayName: `${adj} ${noun}`,
     baseHandle: `${adj.toLowerCase()}${noun.toLowerCase()}`,
   };
+};
+
+const getInitials = (name: string) => {
+  if (!name) return 'S';
+  const parts = name.trim().split(' ');
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+  return name.substring(0, 2).toUpperCase();
 };
 
 const PRESET_AVATARS = [
@@ -350,13 +359,19 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
           {/* Compact Top Header with Avatar Picker */}
           <div className="flex flex-col gap-3 bg-white/[0.05] backdrop-blur-xl border border-white/10 p-4 rounded-xl shadow-[inset_0_1px_10px_rgba(255,255,255,0.02)]">
             <div className="flex items-center gap-4">
-              <label className="relative group cursor-pointer shrink-0 rounded-full">
-                <UserAvatar
-                  src={avatarUrl}
-                  name={displayName || user.displayName || 'S'}
-                  size={56}
-                  className="w-14 h-14 rounded-full border-2 border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.2)] transition-opacity group-hover:opacity-75 ring-2 ring-amber-500 scale-105"
-                />
+              <label className="relative group cursor-pointer shrink-0 rounded-full w-16 h-16 overflow-hidden flex items-center justify-center border-2 border-amber-500/80 shadow-lg shadow-amber-500/10 transition-transform hover:scale-105">
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt="Selected Avatar"
+                    className="w-full h-full object-cover rounded-full"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <div className="w-full h-full rounded-full bg-gradient-to-br from-violet-600 to-indigo-700 flex items-center justify-center font-bold text-lg text-white">
+                    {getInitials(displayName || user.displayName || 'Scholar')}
+                  </div>
+                )}
                 <div className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                   {isUploading ? (
                     <Loader2 className="w-5 h-5 text-white animate-spin" />
