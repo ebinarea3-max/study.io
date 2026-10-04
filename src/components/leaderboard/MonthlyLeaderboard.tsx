@@ -17,6 +17,16 @@ export function formatStudyTime(totalSeconds: number): string {
   return `${hours}h ${minutes}m`;
 }
 
+function parseTimeHoursMinutes(totalSeconds: number) {
+  const safe = Math.max(0, Math.round(totalSeconds || 0));
+  const hours = Math.floor(safe / 3600);
+  const minutes = Math.floor((safe % 3600) / 60);
+  return {
+    h: String(hours).padStart(2, '0'),
+    m: String(minutes).padStart(2, '0'),
+  };
+}
+
 /**
  * Resolves the display rank tier label from row data.
  * Ensures valid 23-rank monthly tiers (e.g. "BRONZE I", "SILVER II", "GOLD I").
@@ -78,10 +88,10 @@ function ScholarAvatar({
 }) {
   const initial = (name || 'S').trim().charAt(0).toUpperCase();
   const gradients = [
-    'from-amber-600 to-amber-900',
-    'from-zinc-600 to-zinc-900',
-    'from-amber-700 to-yellow-900',
-    'from-slate-700 to-slate-900',
+    'from-amber-600 to-amber-950',
+    'from-zinc-600 to-zinc-950',
+    'from-amber-700 to-yellow-950',
+    'from-slate-700 to-slate-950',
   ];
   let hash = 0;
   for (let i = 0; i < (name || '').length; i++) {
@@ -91,7 +101,7 @@ function ScholarAvatar({
 
   return (
     <div
-      className={`${sizeClass} rounded-full overflow-hidden bg-[#0c0e14] flex-shrink-0 flex items-center justify-center relative border border-white/10`}
+      className={`${sizeClass} rounded-full overflow-hidden bg-[#0c0e14] flex-shrink-0 flex items-center justify-center relative`}
     >
       {avatarUrl ? (
         <img
@@ -144,7 +154,7 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
       case 'today':
         return {
           trackerText: '// DAILY STANDINGS',
-          subtext: 'Rankings determined by focus hours logged today.',
+          subtext: 'Rankings determined strictly by focus hours logged today.',
           emptyText: 'No sessions recorded today yet. Start the timer to claim #1!',
         };
       case 'week':
@@ -314,7 +324,7 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
     }
   }, [sessions.length, isActiveTab, fetchLeaderboard]);
 
-  // Split top 3 scholars for Olympic podium vs contenders (#4 and beyond)
+  // Split top 3 scholars for Olympic stepped podium vs contenders (#4 and beyond)
   const { top1, top2, top3, contenders } = useMemo(() => {
     return {
       top1: leaderboard[0] || null,
@@ -340,11 +350,11 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
     <div
       className={`w-full text-white font-sans ${
         isEmbedded
-          ? 'max-w-4xl mx-auto flex flex-col gap-6 py-4'
-          : 'bg-[#05070a] min-h-screen p-6 sm:p-10 flex flex-col items-center'
+          ? 'max-w-5xl mx-auto flex flex-col gap-6 py-4'
+          : 'bg-[#05070a] min-h-screen p-4 sm:p-8 flex flex-col items-center'
       }`}
     >
-      <div className="w-full max-w-4xl flex flex-col gap-6 relative">
+      <div className="w-full max-w-5xl flex flex-col gap-6 relative">
         {/* Header */}
         <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-2 border-b border-white/[0.06]">
           <div className="flex flex-col gap-1">
@@ -392,21 +402,21 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
         {isLoading ? (
           <div className="w-full flex flex-col gap-6">
             {/* Podium Skeleton */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 items-end">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-4 items-end">
               {[1, 2, 3].map((i) => (
                 <div
                   key={i}
-                  className={`rounded-xl border border-white/[0.06] bg-[#0c0e14] p-5 animate-pulse ${
-                    i === 2 ? 'h-72 -mt-2' : 'h-60'
+                  className={`rounded-2xl border border-white/[0.06] bg-[#0c0e14] p-5 animate-pulse ${
+                    i === 2 ? 'h-80 md:-translate-y-3' : 'h-72'
                   }`}
                 />
               ))}
             </div>
 
             {/* Table Skeleton */}
-            <div className="w-full bg-[#0c0e14] border border-white/[0.08] rounded-xl overflow-hidden divide-y divide-white/[0.04]">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="px-6 py-4 flex items-center justify-between animate-pulse">
+            <div className="w-full bg-[#090c12]/90 border border-white/[0.07] rounded-xl overflow-hidden divide-y divide-white/[0.04]">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="px-6 py-3.5 flex items-center justify-between animate-pulse">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-4 bg-white/[0.05] rounded" />
                     <div className="w-9 h-9 rounded-full bg-white/[0.05]" />
@@ -436,10 +446,10 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
               isFetching ? 'opacity-70' : 'opacity-100'
             }`}
           >
-            {/* 1. THE TOP 3 PODIUM HERO SECTION */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 items-end">
-              {/* #2 CONTENDER (Left Column on Desktop, Silver Accent) */}
-              <div className="order-2 sm:order-1 h-full">
+            {/* 1. THE OLYMPIC STEPPED PODIUM (Top 3) */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-4 items-end">
+              {/* #2 SILVER (Left on Desktop, Mid-Height min-h-[300px]) */}
+              <div className="order-2 md:order-1 h-full">
                 {top2 ? (
                   (() => {
                     const rankTierTitle = getMonthlyRankTierTitle(top2.rank_title, top2.total_seconds);
@@ -448,39 +458,46 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                     const handle = top2.username || displayName.toLowerCase().replace(/\s+/g, '');
                     const level = top2.level ?? getLevelFromLifetimeXP(top2.lifetime_xp || 0);
                     const isUser = checkIsCurrentUser(top2);
+                    const { h, m } = parseTimeHoursMinutes(top2.total_seconds);
 
                     return (
                       <div
-                        className={`h-full min-h-[250px] border border-zinc-400/30 bg-gradient-to-b from-zinc-400/10 via-[#0c0e14] to-[#0c0e14] rounded-xl p-5 flex flex-col items-center justify-between text-center relative overflow-hidden transition-all duration-200 hover:border-zinc-300 shadow-lg ${
-                          isUser ? 'ring-1 ring-amber-500/50' : ''
+                        className={`h-full min-h-[260px] md:min-h-[300px] bg-gradient-to-b from-slate-400/[0.08] via-[#0d1017]/80 to-[#080a0f] border border-slate-400/20 rounded-2xl relative overflow-hidden p-5 sm:p-6 flex flex-col items-center justify-between text-center transition-all duration-200 hover:border-slate-300/40 shadow-lg ${
+                          isUser ? 'ring-1 ring-amber-400/60' : ''
                         }`}
                       >
-                        {/* Top Monospace Rank Indicator */}
-                        <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-zinc-400/15 border border-zinc-400/30 text-zinc-300 font-mono text-[10px] font-bold tracking-widest uppercase">
-                          <span>2ND</span>
+                        {/* Corner Crosshairs */}
+                        <span className="absolute top-2.5 left-2.5 text-[10px] font-mono text-zinc-600 select-none pointer-events-none">+</span>
+                        <span className="absolute bottom-2.5 right-2.5 text-[10px] font-mono text-zinc-600 select-none pointer-events-none">+</span>
+
+                        {/* Top Sleek Silver Numeral Tag */}
+                        <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-slate-400/10 border border-slate-400/30 text-slate-300 font-mono text-[10px] font-bold tracking-widest uppercase">
+                          <span>// 02</span>
                           {isUser && (
                             <span className="text-[9px] text-amber-400 font-mono font-bold ml-1">
-                              (YOU)
+                              [YOU]
                             </span>
                           )}
                         </div>
 
-                        {/* Avatar with Silver Ring */}
-                        <div className="relative my-2.5">
-                          <div className="w-16 h-16 rounded-full p-0.5 bg-gradient-to-tr from-zinc-400 via-zinc-200 to-zinc-500 shadow-[0_0_15px_rgba(200,200,200,0.15)] flex items-center justify-center">
-                            <ScholarAvatar
-                              name={displayName}
-                              avatarUrl={top2.avatar_url}
-                              sizeClass="w-full h-full text-base"
-                            />
+                        {/* Avatar with Luminous Double-Ring */}
+                        <div className="relative my-3">
+                          <div className="p-1 rounded-full border border-slate-400/30 bg-gradient-to-tr from-slate-400/20 via-zinc-200/10 to-transparent">
+                            <div className="p-0.5 rounded-full border border-slate-400/70 bg-[#090c12] shadow-[0_0_15px_rgba(200,200,200,0.15)] flex items-center justify-center">
+                              <ScholarAvatar
+                                name={displayName}
+                                avatarUrl={top2.avatar_url}
+                                sizeClass="w-14 h-14 sm:w-16 sm:h-16 text-base"
+                              />
+                            </div>
                           </div>
-                          {/* Rank badge thumbnail */}
-                          <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#0c0e14] border border-white/20 p-0.5 flex items-center justify-center shadow-md">
+                          {/* Floating tier shield at bottom-right intersection */}
+                          <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-[#090c12] border border-white/20 p-0.5 flex items-center justify-center shadow-md">
                             <Image
                               src={rankBadgePath}
                               alt={rankTierTitle}
-                              width={20}
-                              height={20}
+                              width={22}
+                              height={22}
                               className="w-4 h-4 object-contain"
                             />
                           </div>
@@ -488,17 +505,26 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
 
                         {/* Scholar Name + Handle */}
                         <div className="w-full px-2">
-                          <div className="font-semibold text-white text-sm truncate">{displayName}</div>
+                          <div className="font-semibold text-white text-sm sm:text-base truncate flex items-center justify-center gap-1">
+                            <span className="truncate">{displayName}</span>
+                          </div>
                           <div className="text-[11px] font-mono text-zinc-400 truncate mt-0.5">
                             @{handle} · Lv. {level}
                           </div>
                         </div>
 
-                        {/* Big Formatted Study Time */}
-                        <div className="mt-3 pt-2.5 border-t border-white/[0.06] w-full flex flex-col items-center">
-                          <span className="font-mono text-xl sm:text-2xl font-bold tracking-tight text-white">
-                            {formatStudyTime(top2.total_seconds)}
-                          </span>
+                        {/* Focus Time Display */}
+                        <div className="mt-4 pt-3 border-t border-white/[0.06] w-full flex flex-col items-center">
+                          <div className="flex items-baseline justify-center font-mono">
+                            <span className="text-3xl font-mono font-bold tracking-tight text-white drop-shadow-[0_2px_10px_rgba(255,255,255,0.2)]">
+                              {h}
+                            </span>
+                            <span className="text-xs text-zinc-500 font-mono ml-1 mr-2">H</span>
+                            <span className="text-2xl font-mono font-bold text-zinc-300">
+                              {m}
+                            </span>
+                            <span className="text-xs text-zinc-500 font-mono ml-1">M</span>
+                          </div>
                           <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider mt-0.5">
                             {rankTierTitle}
                           </span>
@@ -507,14 +533,14 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                     );
                   })()
                 ) : (
-                  <div className="h-full min-h-[220px] rounded-xl border border-white/[0.06] bg-[#0c0e14] p-5 flex items-center justify-center text-zinc-600 font-mono text-xs">
-                    2ND UNCLAIMED
+                  <div className="h-full min-h-[220px] rounded-2xl border border-white/[0.06] bg-[#0c0e14] p-5 flex items-center justify-center text-zinc-600 font-mono text-xs">
+                    // 02 UNCLAIMED
                   </div>
                 )}
               </div>
 
-              {/* #1 CHAMPION (Center Column on Desktop, Elevated, Taller Card with Golden Glow) */}
-              <div className="order-1 sm:order-2 h-full sm:-mt-3">
+              {/* #1 CHAMPION (Center on Desktop, Taller min-h-[340px], Elevated -translate-y-3 with Golden Atmospheric Bloom) */}
+              <div className="order-1 md:order-2 h-full md:-translate-y-3">
                 {top1 ? (
                   (() => {
                     const rankTierTitle = getMonthlyRankTierTitle(top1.rank_title, top1.total_seconds);
@@ -523,61 +549,79 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                     const handle = top1.username || displayName.toLowerCase().replace(/\s+/g, '');
                     const level = top1.level ?? getLevelFromLifetimeXP(top1.lifetime_xp || 0);
                     const isUser = checkIsCurrentUser(top1);
+                    const { h, m } = parseTimeHoursMinutes(top1.total_seconds);
 
                     return (
                       <div
-                        className={`h-full min-h-[285px] border border-amber-500/40 bg-gradient-to-b from-amber-500/10 via-[#0c0e14] to-[#0c0e14] rounded-xl p-5 sm:p-6 flex flex-col items-center justify-between text-center relative overflow-hidden transition-all duration-200 hover:border-amber-400 shadow-[0_0_30px_rgba(245,158,11,0.15)] ${
+                        className={`h-full min-h-[290px] md:min-h-[340px] bg-gradient-to-b from-amber-500/[0.12] via-[#0d1017]/90 to-[#080a0f] border border-amber-500/40 shadow-[0_0_40px_rgba(245,158,11,0.12)] rounded-2xl relative overflow-hidden p-5 sm:p-6 flex flex-col items-center justify-between text-center transition-all duration-200 hover:border-amber-400/80 ${
                           isUser ? 'ring-1 ring-amber-400' : ''
                         }`}
                       >
-                        {/* Crown & 1ST Indicator */}
-                        <div className="flex flex-col items-center gap-1">
-                          <Crown className="w-5 h-5 text-amber-400 fill-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.6)]" />
-                          <div className="flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 font-mono text-[10px] font-bold tracking-widest uppercase">
-                            <span>1ST</span>
-                            {isUser && (
-                              <span className="text-[9px] text-amber-200 font-mono font-bold ml-1">
-                                (YOU)
-                              </span>
-                            )}
-                          </div>
+                        {/* Corner Crosshairs */}
+                        <span className="absolute top-2.5 left-2.5 text-[10px] font-mono text-zinc-600 select-none pointer-events-none">+</span>
+                        <span className="absolute bottom-2.5 right-2.5 text-[10px] font-mono text-zinc-600 select-none pointer-events-none">+</span>
+
+                        {/* Top Indicator */}
+                        <div className="flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 font-mono text-[10px] font-bold tracking-widest uppercase">
+                          <span>// 01 · CHAMPION</span>
+                          {isUser && (
+                            <span className="text-[9px] text-amber-200 font-mono font-bold ml-1">
+                              [YOU]
+                            </span>
+                          )}
                         </div>
 
-                        {/* Larger Avatar with Golden Ring */}
-                        <div className="relative my-2.5">
-                          <div className="w-20 h-20 rounded-full p-1 bg-gradient-to-tr from-amber-500 via-yellow-400 to-amber-600 shadow-[0_0_20px_rgba(245,158,11,0.35)] flex items-center justify-center">
-                            <ScholarAvatar
-                              name={displayName}
-                              avatarUrl={top1.avatar_url}
-                              sizeClass="w-full h-full text-lg"
-                            />
+                        {/* Avatar with Luminous Laurel/Crown Floating Above & Golden Double-Ring */}
+                        <div className="relative my-3 flex flex-col items-center">
+                          {/* Luminous Gold Crown Floating Above Avatar */}
+                          <div className="-mb-2.5 z-10 w-7 h-7 rounded-full bg-amber-500/20 border border-amber-400/60 flex items-center justify-center shadow-[0_0_15px_rgba(245,158,11,0.4)]">
+                            <Crown className="w-3.5 h-3.5 text-amber-300 fill-amber-300 drop-shadow-[0_0_6px_rgba(245,158,11,0.9)]" />
                           </div>
-                          {/* Rank emblem with ambient glow */}
-                          <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-[#0c0e14] border border-amber-500/50 p-0.5 flex items-center justify-center shadow-lg">
+
+                          <div className="p-1 rounded-full border border-amber-500/50 bg-gradient-to-tr from-amber-500/20 via-yellow-400/20 to-transparent">
+                            <div className="p-0.5 rounded-full border border-amber-400/80 bg-[#090c12] shadow-[0_0_20px_rgba(245,158,11,0.3)] flex items-center justify-center">
+                              <ScholarAvatar
+                                name={displayName}
+                                avatarUrl={top1.avatar_url}
+                                sizeClass="w-18 h-18 sm:w-20 sm:h-20 text-lg"
+                              />
+                            </div>
+                          </div>
+                          {/* Floating tier shield with ambient glow */}
+                          <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-[#090c12] border border-amber-500/60 p-0.5 flex items-center justify-center shadow-lg drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]">
                             <Image
                               src={rankBadgePath}
                               alt={rankTierTitle}
-                              width={24}
-                              height={24}
-                              className="w-5 h-5 object-contain drop-shadow-[0_0_6px_rgba(245,158,11,0.5)]"
+                              width={26}
+                              height={26}
+                              className="w-5 h-5 object-contain"
                             />
                           </div>
                         </div>
 
                         {/* Scholar Name + Handle */}
                         <div className="w-full px-2">
-                          <div className="font-bold text-white text-base truncate">{displayName}</div>
+                          <div className="font-bold text-white text-base sm:text-lg truncate flex items-center justify-center gap-1">
+                            <span className="truncate">{displayName}</span>
+                          </div>
                           <div className="text-xs font-mono text-zinc-400 truncate mt-0.5">
                             @{handle} · Lv. {level}
                           </div>
                         </div>
 
-                        {/* Prominent Gold Focus Time */}
-                        <div className="mt-3 pt-2.5 border-t border-white/[0.08] w-full flex flex-col items-center">
-                          <span className="font-mono text-xl sm:text-2xl font-bold tracking-tight text-amber-300 drop-shadow-[0_0_10px_rgba(245,158,11,0.4)]">
-                            {formatStudyTime(top1.total_seconds)}
-                          </span>
-                          <span className="text-[10px] font-mono text-amber-400/90 uppercase tracking-wider mt-0.5 font-medium">
+                        {/* Prominent High-Contrast Digital Monospace Time */}
+                        <div className="mt-4 pt-3 border-t border-amber-500/20 w-full flex flex-col items-center">
+                          <div className="flex items-baseline justify-center font-mono">
+                            <span className="text-3xl sm:text-4xl font-mono font-bold tracking-tight text-white drop-shadow-[0_2px_10px_rgba(255,255,255,0.2)]">
+                              {h}
+                            </span>
+                            <span className="text-xs text-amber-400 font-mono font-bold ml-1 mr-2">H</span>
+                            <span className="text-2xl sm:text-3xl font-mono font-bold text-zinc-200">
+                              {m}
+                            </span>
+                            <span className="text-xs text-amber-400 font-mono font-bold ml-1">M</span>
+                          </div>
+                          <span className="text-[10px] font-mono text-amber-400 uppercase tracking-wider mt-0.5 font-medium">
                             {rankTierTitle}
                           </span>
                         </div>
@@ -585,13 +629,13 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                     );
                   })()
                 ) : (
-                  <div className="h-full min-h-[250px] rounded-xl border border-white/[0.06] bg-[#0c0e14] p-5 flex items-center justify-center text-zinc-600 font-mono text-xs">
-                    1ST UNCLAIMED
+                  <div className="h-full min-h-[250px] rounded-2xl border border-white/[0.06] bg-[#0c0e14] p-5 flex items-center justify-center text-zinc-600 font-mono text-xs">
+                    // 01 UNCLAIMED
                   </div>
                 )}
               </div>
 
-              {/* #3 CONTENDER (Right Column on Desktop, Bronze Accent) */}
+              {/* #3 BRONZE (Right on Desktop, Lower Height min-h-[280px]) */}
               <div className="order-3 h-full">
                 {top3 ? (
                   (() => {
@@ -601,39 +645,46 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                     const handle = top3.username || displayName.toLowerCase().replace(/\s+/g, '');
                     const level = top3.level ?? getLevelFromLifetimeXP(top3.lifetime_xp || 0);
                     const isUser = checkIsCurrentUser(top3);
+                    const { h, m } = parseTimeHoursMinutes(top3.total_seconds);
 
                     return (
                       <div
-                        className={`h-full min-h-[250px] border border-amber-700/30 bg-gradient-to-b from-amber-700/10 via-[#0c0e14] to-[#0c0e14] rounded-xl p-5 flex flex-col items-center justify-between text-center relative overflow-hidden transition-all duration-200 hover:border-amber-600 shadow-lg ${
-                          isUser ? 'ring-1 ring-amber-500/50' : ''
+                        className={`h-full min-h-[240px] md:min-h-[280px] bg-gradient-to-b from-amber-800/[0.08] via-[#0d1017]/80 to-[#080a0f] border border-amber-700/20 rounded-2xl relative overflow-hidden p-5 sm:p-6 flex flex-col items-center justify-between text-center transition-all duration-200 hover:border-amber-600/40 shadow-lg ${
+                          isUser ? 'ring-1 ring-amber-400/60' : ''
                         }`}
                       >
-                        {/* Top Monospace Rank Indicator */}
-                        <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-700/20 border border-amber-700/40 text-amber-400 font-mono text-[10px] font-bold tracking-widest uppercase">
-                          <span>3RD</span>
+                        {/* Corner Crosshairs */}
+                        <span className="absolute top-2.5 left-2.5 text-[10px] font-mono text-zinc-600 select-none pointer-events-none">+</span>
+                        <span className="absolute bottom-2.5 right-2.5 text-[10px] font-mono text-zinc-600 select-none pointer-events-none">+</span>
+
+                        {/* Top Bronze Numeral Tag */}
+                        <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-700/10 border border-amber-700/30 text-amber-400 font-mono text-[10px] font-bold tracking-widest uppercase">
+                          <span>// 03</span>
                           {isUser && (
                             <span className="text-[9px] text-amber-200 font-mono font-bold ml-1">
-                              (YOU)
+                              [YOU]
                             </span>
                           )}
                         </div>
 
-                        {/* Avatar with Bronze Ring */}
-                        <div className="relative my-2.5">
-                          <div className="w-16 h-16 rounded-full p-0.5 bg-gradient-to-tr from-amber-700 via-amber-600 to-yellow-800 shadow-[0_0_15px_rgba(180,83,9,0.2)] flex items-center justify-center">
-                            <ScholarAvatar
-                              name={displayName}
-                              avatarUrl={top3.avatar_url}
-                              sizeClass="w-full h-full text-base"
-                            />
+                        {/* Avatar with Luminous Double-Ring */}
+                        <div className="relative my-3">
+                          <div className="p-1 rounded-full border border-amber-700/30 bg-gradient-to-tr from-amber-700/20 via-yellow-700/10 to-transparent">
+                            <div className="p-0.5 rounded-full border border-amber-700/70 bg-[#090c12] shadow-[0_0_15px_rgba(180,83,9,0.15)] flex items-center justify-center">
+                              <ScholarAvatar
+                                name={displayName}
+                                avatarUrl={top3.avatar_url}
+                                sizeClass="w-14 h-14 sm:w-16 sm:h-16 text-base"
+                              />
+                            </div>
                           </div>
-                          {/* Rank badge thumbnail */}
-                          <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#0c0e14] border border-white/20 p-0.5 flex items-center justify-center shadow-md">
+                          {/* Floating tier shield at bottom-right intersection */}
+                          <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-[#090c12] border border-white/20 p-0.5 flex items-center justify-center shadow-md">
                             <Image
                               src={rankBadgePath}
                               alt={rankTierTitle}
-                              width={20}
-                              height={20}
+                              width={22}
+                              height={22}
                               className="w-4 h-4 object-contain"
                             />
                           </div>
@@ -641,17 +692,26 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
 
                         {/* Scholar Name + Handle */}
                         <div className="w-full px-2">
-                          <div className="font-semibold text-white text-sm truncate">{displayName}</div>
+                          <div className="font-semibold text-white text-sm sm:text-base truncate flex items-center justify-center gap-1">
+                            <span className="truncate">{displayName}</span>
+                          </div>
                           <div className="text-[11px] font-mono text-zinc-400 truncate mt-0.5">
                             @{handle} · Lv. {level}
                           </div>
                         </div>
 
-                        {/* Big Formatted Study Time */}
-                        <div className="mt-3 pt-2.5 border-t border-white/[0.06] w-full flex flex-col items-center">
-                          <span className="font-mono text-xl sm:text-2xl font-bold tracking-tight text-white">
-                            {formatStudyTime(top3.total_seconds)}
-                          </span>
+                        {/* Focus Time Display */}
+                        <div className="mt-4 pt-3 border-t border-white/[0.06] w-full flex flex-col items-center">
+                          <div className="flex items-baseline justify-center font-mono">
+                            <span className="text-3xl font-mono font-bold tracking-tight text-white drop-shadow-[0_2px_10px_rgba(255,255,255,0.2)]">
+                              {h}
+                            </span>
+                            <span className="text-xs text-zinc-500 font-mono ml-1 mr-2">H</span>
+                            <span className="text-2xl font-mono font-bold text-zinc-300">
+                              {m}
+                            </span>
+                            <span className="text-xs text-zinc-500 font-mono ml-1">M</span>
+                          </div>
                           <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider mt-0.5">
                             {rankTierTitle}
                           </span>
@@ -660,31 +720,25 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                     );
                   })()
                 ) : (
-                  <div className="h-full min-h-[220px] rounded-xl border border-white/[0.06] bg-[#0c0e14] p-5 flex items-center justify-center text-zinc-600 font-mono text-xs">
-                    3RD UNCLAIMED
+                  <div className="h-full min-h-[200px] rounded-2xl border border-white/[0.06] bg-[#0c0e14] p-5 flex items-center justify-center text-zinc-600 font-mono text-xs">
+                    // 03 UNCLAIMED
                   </div>
                 )}
               </div>
             </div>
 
-            {/* 2. CONTENDERS LIST (#4 AND BEYOND) */}
+            {/* 2. CONTENDERS FLIGHT-BOARD (#4 to #100) */}
             {contenders.length > 0 && (
-              <div className="w-full bg-[#0c0e14] border border-white/[0.08] rounded-xl overflow-hidden shadow-2xl divide-y divide-white/[0.04]">
-                {/* Table Header Bar */}
-                <div className="px-6 py-2.5 bg-white/[0.02] text-[11px] font-mono uppercase tracking-wider text-zinc-500 flex items-center justify-between">
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <span className="w-10 flex-shrink-0 text-left">#</span>
-                    <span>SCHOLAR</span>
-                  </div>
-                  <div className="w-36 sm:w-44 flex items-center justify-center flex-shrink-0">
-                    <span>TIER</span>
-                  </div>
-                  <div className="w-20 sm:w-24 text-right flex-shrink-0">
-                    <span>TIME</span>
-                  </div>
+              <div className="w-full bg-[#090c12]/90 backdrop-blur-md border border-white/[0.07] rounded-xl overflow-hidden divide-y divide-white/[0.04] shadow-2xl">
+                {/* Header Row */}
+                <div className="px-6 py-2.5 bg-white/[0.02] text-[10px] font-mono uppercase tracking-widest text-zinc-500 flex items-center">
+                  <span className="w-12 text-left">POS</span>
+                  <span className="flex-1 min-w-0">SCHOLAR</span>
+                  <span className="w-36 sm:w-44 text-center">TIER</span>
+                  <span className="w-28 sm:w-32 text-right">RECORDED FOCUS</span>
                 </div>
 
-                {/* Rows */}
+                {/* Roster Rows */}
                 {contenders.map((row, idx) => {
                   const actualRank = idx + 4;
                   const isCurrentUser = checkIsCurrentUser(row);
@@ -693,45 +747,42 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                   const displayName = row.display_name || row.name || row.username || 'Scholar';
                   const handle = row.username || displayName.toLowerCase().replace(/\s+/g, '');
                   const level = row.level ?? getLevelFromLifetimeXP(row.lifetime_xp || 0);
+                  const { h, m } = parseTimeHoursMinutes(row.total_seconds);
 
                   return (
                     <div
                       key={row.user_id || actualRank}
-                      className={`px-6 py-3.5 flex items-center justify-between transition-all duration-200 ${
+                      className={`px-6 py-3 flex items-center transition-all duration-150 group hover:bg-white/[0.03] ${
                         isCurrentUser
-                          ? 'bg-amber-500/[0.06] border-l-2 border-l-amber-500 hover:bg-amber-500/[0.1]'
-                          : 'hover:bg-white/[0.02]'
+                          ? 'border-l-2 border-l-amber-400 bg-amber-500/[0.04]'
+                          : ''
                       }`}
                     >
-                      {/* # Column + Scholar Column */}
-                      <div className="flex items-center gap-3 flex-1 min-w-0 pr-3">
-                        {/* # Column */}
-                        <span className="w-10 flex-shrink-0 text-left text-xs font-mono text-zinc-500">
-                          #{actualRank}
-                        </span>
+                      {/* POS */}
+                      <span className="w-12 text-left text-zinc-500 font-mono text-xs group-hover:text-zinc-300">
+                        #{actualRank < 10 ? `0${actualRank}` : actualRank}
+                      </span>
 
-                        {/* Scholar Avatar */}
+                      {/* Scholar Column */}
+                      <div className="flex items-center gap-3 flex-1 min-w-0 pr-3">
                         <ScholarAvatar
                           name={displayName}
                           avatarUrl={row.avatar_url}
                           sizeClass="w-8 h-8 text-[11px]"
                         />
 
-                        {/* Identity Group */}
                         <div className="flex flex-col min-w-0 justify-center">
-                          <div className="flex items-center gap-1.5 truncate">
-                            <span className="font-medium text-white text-sm tracking-tight truncate">
-                              {displayName}
-                            </span>
+                          <span className="font-semibold text-white text-sm tracking-tight truncate">
+                            {displayName}
+                          </span>
+                          <div className="flex items-center gap-1.5 text-xs font-mono text-zinc-500 truncate mt-0.5">
+                            <span>@{handle} · Lv. {level}</span>
                             {isCurrentUser && (
-                              <span className="text-[10px] font-mono font-bold text-amber-400 uppercase px-1.5 py-0.5 rounded bg-amber-500/20 border border-amber-500/30 ml-2 shrink-0">
-                                YOU
+                              <span className="text-[9px] font-mono font-bold text-amber-400 uppercase px-1 py-0.2 rounded bg-amber-500/20 border border-amber-500/40 shadow-[0_0_8px_rgba(245,158,11,0.25)]">
+                                [YOU]
                               </span>
                             )}
                           </div>
-                          <span className="text-xs font-mono text-zinc-500 truncate mt-0.5">
-                            @{handle} · Lv. {level}
-                          </span>
                         </div>
                       </div>
 
@@ -740,18 +791,21 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                         <Image
                           src={rankBadgePath}
                           alt={rankTierTitle}
-                          width={24}
-                          height={24}
-                          className="w-6 h-6 object-contain flex-shrink-0 drop-shadow-[0_0_4px_rgba(255,255,255,0.1)]"
+                          width={22}
+                          height={22}
+                          className="w-5 h-5 object-contain flex-shrink-0 drop-shadow-[0_0_4px_rgba(255,255,255,0.1)]"
                         />
                         <span className="text-xs text-zinc-400 font-mono tracking-wider uppercase truncate">
                           {rankTierTitle}
                         </span>
                       </div>
 
-                      {/* Time Column */}
-                      <div className="w-20 sm:w-24 text-right flex-shrink-0 text-sm font-mono text-zinc-200 font-semibold tracking-wide">
-                        {formatStudyTime(row.total_seconds)}
+                      {/* Recorded Focus Column */}
+                      <div className="w-28 sm:w-32 text-right flex-shrink-0 font-mono">
+                        <span className="text-sm font-bold text-white tracking-tight">{h}</span>
+                        <span className="text-[10px] text-zinc-500 font-mono ml-0.5 mr-1.5">H</span>
+                        <span className="text-xs font-semibold text-zinc-300">{m}</span>
+                        <span className="text-[10px] text-zinc-500 font-mono ml-0.5">M</span>
                       </div>
                     </div>
                   );
