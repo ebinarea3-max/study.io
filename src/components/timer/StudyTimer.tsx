@@ -1309,7 +1309,7 @@ export function StudyTimer() {
               </svg>
 
               {/* Inner Dial */}
-              <div className="w-64 h-64 md:w-80 md:h-80 border border-white/[0.08] bg-[#0c0d12]/60 backdrop-blur-sm rounded-full relative shadow-[inset_0_1px_1px_rgba(255,255,255,0.06),0_12px_40px_rgba(0,0,0,0.6)] flex-shrink-0 flex flex-col items-center justify-center">
+              <div className="w-64 h-64 md:w-80 md:h-80 bg-[#0c0d12]/60 backdrop-blur-sm rounded-full relative shadow-[0_12px_40px_rgba(0,0,0,0.6)] flex-shrink-0 flex flex-col items-center justify-center">
                 <div className="absolute top-4 left-1/2 -translate-x-1/2 w-0.5 h-2 bg-white/10 rounded-full" />
                 <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-0.5 h-2 bg-white/10 rounded-full" />
                 <div className="absolute left-4 top-1/2 -translate-y-1/2 w-2 h-0.5 bg-white/10 rounded-full" />
