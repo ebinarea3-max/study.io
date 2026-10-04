@@ -257,13 +257,23 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
         const supabase = getSupabase();
         if (!supabase) throw new Error("Supabase client not initialized.");
 
+        // Get the real authenticated user UUID
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (!authUser?.id) {
+          throw new Error("No active user session found.");
+        }
+
         // Verify handle uniqueness before saving
-        const { data: existing } = await supabase
+        let query = supabase
           .from("profiles")
           .select("id")
-          .eq("username", cleanedHandle)
-          .neq("id", user.id)
-          .maybeSingle();
+          .eq("username", cleanedHandle);
+          
+        if (authUser?.id) {
+          query = query.neq("id", authUser.id);
+        }
+        
+        const { data: existing } = await query.maybeSingle();
 
         if (existing) {
           throw new Error("Handle already claimed. Try another.");
@@ -275,12 +285,17 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
       
       const supabase = getSupabase();
       if (!supabase) throw new Error("Supabase client not initialized.");
+      
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser?.id) {
+        throw new Error("No active user session found.");
+      }
 
       // Perform async Supabase update
       const { error } = await supabase
         .from("profiles")
         .update(updatePayload)
-        .eq("id", user.id);
+        .eq("id", authUser.id);
 
       if (error) throw error;
 
