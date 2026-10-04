@@ -493,13 +493,14 @@ export function Navbar({
     </header>
 
     {/* Mobile Floating Dock Navigation: 4 Dedicated Tabs with Sliding Tier Indicator */}
-    <nav
-      aria-label="Mobile Floating Dock Navigation"
-      className="fixed bottom-3 sm:bottom-4 pb-[env(safe-area-inset-bottom,16px)] left-3 right-3 max-w-sm mx-auto z-40 hud-glass-overlay rounded-full p-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.7)] md:hidden transition-all"
-      style={{
-        borderColor: `${theme.accent}35`,
-      }}
-    >
+    <div className="fixed bottom-3 sm:bottom-4 left-0 right-0 z-40 md:hidden flex justify-center px-3 pb-[env(safe-area-inset-bottom,16px)] pointer-events-none">
+      <nav
+        aria-label="Mobile Floating Dock Navigation"
+        className="w-full max-w-sm hud-glass-overlay rounded-full p-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.7)] transition-all pointer-events-auto"
+        style={{
+          borderColor: `${theme.accent}35`,
+        }}
+      >
       <div className="relative flex items-center justify-between w-full">
         {/* Sliding active indicator pill in Tier Accent */}
         <div
@@ -566,7 +567,8 @@ export function Navbar({
           <span className="text-[9px] font-hud font-bold tracking-widest uppercase mt-0.5">Rankings</span>
         </button>
       </div>
-    </nav>
+      </nav>
+    </div>
     </>
   );
 }
