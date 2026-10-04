@@ -39,8 +39,47 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
   const [isCompletedOpen, setIsCompletedOpen] = useState(true);
   const { theme } = useRankTheme();
 
+  // Drag and drop reordering states
+  const [draggableRowId, setDraggableRowId] = useState<string | null>(null);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const [dragOverPosition, setDragOverPosition] = useState<'above' | 'below'>('above');
+
   const inFlightOpsRef = useRef<number>(0);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleItemDrop = (targetId: string) => {
+    const sourceId = draggingId;
+    if (!sourceId || sourceId === targetId) {
+      setDraggingId(null);
+      setDragOverId(null);
+      setDraggableRowId(null);
+      return;
+    }
+
+    setTodos(prev => {
+      const sourceIndex = prev.findIndex(t => t.id === sourceId);
+      const targetIndex = prev.findIndex(t => t.id === targetId);
+      if (sourceIndex === -1 || targetIndex === -1) return prev;
+
+      const next = [...prev];
+      const [moved] = next.splice(sourceIndex, 1);
+
+      let insertIndex = next.findIndex(t => t.id === targetId);
+      if (dragOverPosition === 'below') {
+        insertIndex += 1;
+      }
+      next.splice(insertIndex, 0, moved);
+
+      saveLocal(next);
+      soundFx.playReactionPop();
+      return next;
+    });
+
+    setDraggingId(null);
+    setDragOverId(null);
+    setDraggableRowId(null);
+  };
 
   // Local storage persistence helper
   const saveLocal = (items: DailyTodo[]) => {
@@ -108,12 +147,24 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
         if (data) {
           const remoteTodos = data.map(normalizeTodo);
           setTodos(prev => {
-            // Keep pending optimistic items (prefixed with temp-) or unsynced local items
             const pendingLocal = prev.filter(t => t.id.startsWith('temp-') || t.id.startsWith('local-'));
 
             // If remote returned 0 items but local has items, do not wipe existing tasks
             if (remoteTodos.length === 0 && prev.length > 0) {
               return prev;
+            }
+
+            if (prev.length > 0) {
+              const remoteMap = new Map(remoteTodos.map(r => [r.id, r]));
+              const updatedExisting = prev.map(p => {
+                const remote = remoteMap.get(p.id);
+                return remote ? { ...p, ...remote } : p;
+              });
+              const existingIds = new Set(prev.map(p => p.id));
+              const newFromRemote = remoteTodos.filter(r => !existingIds.has(r.id));
+              const merged = [...updatedExisting, ...newFromRemote];
+              saveLocal(merged);
+              return merged;
             }
 
             const merged = [
@@ -422,9 +473,101 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
         {activeTodos.map(item => (
           <div
             key={item.id}
-            className="group flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/[0.04] transition-colors"
+            data-todo-id={item.id}
+            draggable={draggableRowId === item.id}
+            onDragStart={e => {
+              if (
+                (e.target as HTMLElement).tagName === 'INPUT' ||
+                (e.target as HTMLElement).tagName === 'BUTTON'
+              ) {
+                e.preventDefault();
+                return;
+              }
+              setDraggingId(item.id);
+              e.dataTransfer.effectAllowed = 'move';
+              e.dataTransfer.setData('text/plain', item.id);
+            }}
+            onDragOver={e => {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = 'move';
+              if (draggingId && draggingId !== item.id) {
+                setDragOverId(item.id);
+                const rect = e.currentTarget.getBoundingClientRect();
+                const offset = e.clientY - rect.top;
+                setDragOverPosition(offset < rect.height / 2 ? 'above' : 'below');
+              }
+            }}
+            onDragLeave={e => {
+              if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                if (dragOverId === item.id) {
+                  setDragOverId(null);
+                }
+              }
+            }}
+            onDrop={e => {
+              e.preventDefault();
+              handleItemDrop(item.id);
+            }}
+            onDragEnd={() => {
+              setDraggingId(null);
+              setDragOverId(null);
+              setDraggableRowId(null);
+            }}
+            className={`group flex items-center gap-2 px-2 py-1.5 rounded-lg transition-all duration-150 relative ${
+              draggingId === item.id
+                ? 'opacity-30 bg-amber-500/10 border border-dashed border-amber-500/50'
+                : dragOverId === item.id
+                ? dragOverPosition === 'above'
+                  ? 'border-t-2 border-t-amber-400 bg-white/[0.05]'
+                  : 'border-b-2 border-b-amber-400 bg-white/[0.05]'
+                : 'hover:bg-white/[0.04]'
+            }`}
           >
-            <GripVertical className="w-3.5 h-3.5 text-neutral-600 opacity-0 group-hover:opacity-40 transition-opacity flex-shrink-0 cursor-grab" />
+            {/* Grip Drag Handle */}
+            <div
+              role="button"
+              aria-label="Drag to reorder"
+              title="Drag to reorder"
+              draggable={true}
+              onMouseEnter={() => setDraggableRowId(item.id)}
+              onMouseLeave={() => {
+                if (!draggingId) setDraggableRowId(null);
+              }}
+              onDragStart={e => {
+                setDraggingId(item.id);
+                setDraggableRowId(item.id);
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', item.id);
+              }}
+              onTouchStart={e => {
+                setDraggingId(item.id);
+              }}
+              onTouchMove={e => {
+                const touch = e.touches[0];
+                const targetElem = document.elementFromPoint(touch.clientX, touch.clientY);
+                const rowElem = targetElem?.closest('[data-todo-id]');
+                if (rowElem) {
+                  const targetId = rowElem.getAttribute('data-todo-id');
+                  if (targetId && targetId !== item.id) {
+                    setDragOverId(targetId);
+                    const rect = rowElem.getBoundingClientRect();
+                    setDragOverPosition(touch.clientY - rect.top < rect.height / 2 ? 'above' : 'below');
+                  }
+                }
+              }}
+              onTouchEnd={() => {
+                if (dragOverId && draggingId && dragOverId !== draggingId) {
+                  handleItemDrop(dragOverId);
+                } else {
+                  setDraggingId(null);
+                  setDragOverId(null);
+                  setDraggableRowId(null);
+                }
+              }}
+              className="p-1 -ml-1 rounded cursor-grab active:cursor-grabbing text-neutral-500 hover:text-amber-400 opacity-60 group-hover:opacity-100 transition-all hover:bg-white/[0.08] flex-shrink-0"
+            >
+              <GripVertical className="w-3.5 h-3.5" />
+            </div>
 
             {/* Checkbox */}
             <button

@@ -184,11 +184,7 @@ export default function Home() {
             ),
             leaderboard: (
               <ErrorBoundary fallbackTitle="Monthly Leaderboard">
-                <MonthlyLeaderboard
-                  isEmbedded
-                  isActiveTab={activeTab === 'leaderboard'}
-                  onStartTimer={() => setActiveTab('timer')}
-                />
+                <MonthlyLeaderboard isEmbedded isActiveTab={activeTab === 'leaderboard'} />
               </ErrorBoundary>
             ),
             settings: (
