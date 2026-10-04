@@ -1669,7 +1669,13 @@ export function StudyTimer() {
 
         
       </div>
-
+      {isEditingCountdown && (
+        <CountdownEditor
+          initialSeconds={countdownTarget}
+          onSave={(seconds) => { setCountdownTarget(seconds); setIsEditingCountdown(false); }}
+          onCancel={() => setIsEditingCountdown(false)}
+        />
+      )}
     </div>
   );
 }
