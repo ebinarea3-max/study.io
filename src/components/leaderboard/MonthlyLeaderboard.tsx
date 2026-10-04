@@ -634,7 +634,7 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
 
                   return (
                     <div
-                      key={row.user_id || actualRank}
+                      key={row.user_id}
                       ref={isCurrentUser ? myRowRef : null}
                       className="flex flex-col transition-all duration-500 rounded-lg"
                       style={{
@@ -653,33 +653,42 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                           '--row-tier-color': tierConfig.badgeAccent || '#D97706',
                         } as React.CSSProperties}
                       >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <span className={`w-8 text-xs font-mono font-bold ${
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          {/* Rank Column */}
+                          <span className={`w-9 font-mono text-xs font-bold text-center shrink-0 ${
                             actualRank === 1 ? 'text-amber-400' :
                             actualRank === 2 ? 'text-slate-300' :
                             actualRank === 3 ? 'text-amber-700' :
-                            'text-zinc-500'
+                            'text-zinc-400'
                           }`}>
                             #{actualRank < 10 ? `0${actualRank}` : actualRank}
                           </span>
-                          <ScholarAvatar
-                            name={displayName}
-                            avatarUrl={row.avatar_url}
-                            tier={tierConfig.tier}
-                            sizeClass="w-8 h-8 shrink-0 text-[11px]"
-                          />
-                          <div className="flex flex-col min-w-0 justify-center">
-                            <div className="flex items-center gap-1.5 truncate max-w-[140px]">
-                              <span className="font-semibold text-white text-sm tracking-tight truncate">
-                                {displayName}
-                              </span>
-                              {actualRank === 1 && (
-                                <span className="text-[14px] shrink-0" title="Champion">👑</span>
-                              )}
+
+                          {/* Fixed Avatar Slot */}
+                          <div className="relative w-9 h-9 rounded-full overflow-hidden shrink-0 flex items-center justify-center border border-white/10 bg-[#0c0e14] shadow-md">
+                            {row.avatar_url ? (
+                              <img
+                                src={row.avatar_url}
+                                alt={displayName}
+                                className="w-full h-full object-cover rounded-full"
+                                referrerPolicy="no-referrer"
+                              />
+                            ) : (
+                               <div className={`w-full h-full flex items-center justify-center font-mono font-bold bg-gradient-to-br ${getTierAvatarGradient(tierConfig.tier)} text-white text-[11px]`}>
+                                {(displayName || 'S').trim().charAt(0).toUpperCase()}
+                               </div>
+                            )}
+                          </div>
+
+                          {/* User Details (Truncated) */}
+                          <div className="min-w-0 flex-1">
+                            <div className="text-sm font-semibold text-white truncate flex items-center gap-1.5">
+                              <span className="truncate">{displayName}</span>
+                              {actualRank === 1 && <span className="shrink-0">👑</span>}
                             </div>
-                            <span className="text-[11px] font-mono text-zinc-500 truncate mt-0.5">
+                            <div className="text-[11px] text-zinc-500 font-mono truncate">
                               @{handle} · {displayTierTitle}
-                            </span>
+                            </div>
                           </div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0 pl-2">
