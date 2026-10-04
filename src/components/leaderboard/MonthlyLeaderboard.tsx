@@ -472,7 +472,7 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
         isEmbedded
           ? 'max-w-5xl mx-auto flex flex-col gap-6 py-4'
           : 'bg-[#05070a] min-h-screen p-4 sm:p-8 flex flex-col items-center'
-      }`}
+      } pb-28 sm:pb-12`}
     >
       {/* Keyframe Animations */}
       <style>{`
@@ -563,16 +563,16 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
             {contenders.length > 0 && (
               <div className="w-full bg-[#090c12]/90 backdrop-blur-md border border-white/[0.07] rounded-2xl overflow-hidden divide-y divide-white/[0.04] shadow-2xl">
                 {/* Column Header Row */}
-                <div className="px-6 py-3 bg-white/[0.02] text-[10px] font-mono uppercase tracking-widest text-zinc-500 flex items-center justify-between">
+                <div className="px-4 sm:px-6 py-3 bg-white/[0.02] text-[10px] font-mono uppercase tracking-widest text-zinc-500 flex items-center justify-between">
                   <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <span className="w-10 text-left">POS</span>
-                    <span className="w-10 text-center">DELTA</span>
+                    <span className="hidden sm:inline-block w-10 text-left">POS</span>
+                    <span className="hidden sm:inline-block w-10 text-center">DELTA</span>
                     <span>SCHOLAR</span>
                   </div>
-                  <div className="w-40 sm:w-48 text-center flex-shrink-0">
+                  <div className="hidden sm:block w-40 sm:w-48 text-center flex-shrink-0">
                     <span>TIER</span>
                   </div>
-                  <div className="w-28 sm:w-32 text-right flex-shrink-0">
+                  <div className="text-right flex-shrink-0 sm:w-32">
                     <span>RECORDED FOCUS</span>
                   </div>
                 </div>
@@ -598,8 +598,61 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                         animationDelay: `${550 + idx * 40}ms`,
                       }}
                     >
+                      {/* Mobile Row (< sm) */}
                       <div
-                        className={`px-6 py-3.5 flex items-center transition-all duration-200 group border-l-2 relative cursor-default ${
+                        className={`sm:hidden px-4 py-3 flex items-center justify-between transition-all duration-200 group border-l-2 relative cursor-default ${
+                          isCurrentUser
+                            ? 'border-l-amber-400 bg-amber-500/[0.08] shadow-[inset_0_0_24px_rgba(245,158,11,0.08)]'
+                            : 'border-l-transparent hover:border-l-[var(--row-tier-color)] hover:bg-white/[0.04]'
+                        }`}
+                        style={{
+                          '--row-tier-color': tierConfig.badgeAccent || '#D97706',
+                        } as React.CSSProperties}
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <span className={`w-8 text-xs font-mono font-bold ${
+                            actualRank === 1 ? 'text-amber-400' :
+                            actualRank === 2 ? 'text-slate-300' :
+                            actualRank === 3 ? 'text-amber-700' :
+                            'text-zinc-500'
+                          }`}>
+                            #{actualRank < 10 ? `0${actualRank}` : actualRank}
+                          </span>
+                          <ScholarAvatar
+                            name={displayName}
+                            avatarUrl={row.avatar_url}
+                            tier={tierConfig.tier}
+                            sizeClass="w-8 h-8 shrink-0 text-[11px]"
+                          />
+                          <div className="flex flex-col min-w-0 justify-center">
+                            <div className="flex items-center gap-1.5 truncate max-w-[140px]">
+                              <span className="font-semibold text-white text-sm tracking-tight truncate">
+                                {displayName}
+                              </span>
+                              {actualRank === 1 && (
+                                <span className="text-[14px] shrink-0" title="Champion">👑</span>
+                              )}
+                            </div>
+                            <span className="text-[11px] font-mono text-zinc-500 truncate mt-0.5">
+                              @{handle} · {rankTierTitle}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0 pl-2">
+                          <RankCrestBadge
+                            tier={tierConfig.tier as RankTierName}
+                            division={tierConfig.division as RankDivision}
+                            size={20}
+                          />
+                          <span className="text-xs font-mono font-bold text-zinc-200">
+                            {h}h {m}m
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Desktop Row (>= sm) */}
+                      <div
+                        className={`hidden sm:flex px-6 py-3.5 items-center transition-all duration-200 group border-l-2 relative cursor-default ${
                           isCurrentUser
                             ? 'border-l-amber-400 bg-amber-500/[0.08] shadow-[inset_0_0_24px_rgba(245,158,11,0.08)]'
                             : 'border-l-transparent hover:border-l-[var(--row-tier-color)] hover:bg-white/[0.04]'

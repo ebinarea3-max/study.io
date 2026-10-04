@@ -151,6 +151,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             totalStudySeconds: totalStudySeconds,
             status: prev.status || 'resting',
             createdAt: profile.created_at || prev.createdAt || new Date().toISOString(),
+            is_onboarded: profile.is_onboarded ?? prev.is_onboarded,
             user_metadata: {
               ...(authUser.user_metadata || {}),
               level: Number(profile.level ?? calculatedLevel),
@@ -207,6 +208,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               lifetimeXp: data.lifetime_xp ?? data.xp ?? prev.lifetimeXp,
               totalStudySeconds: data.total_study_seconds ?? prev.totalStudySeconds,
               levelTitle: data.rank_title || data.level_title || prev.levelTitle,
+              is_onboarded: data.is_onboarded ?? prev.is_onboarded,
               user_metadata: {
                 ...(prev.user_metadata || {}),
                 level: data.level ?? prev.level,
@@ -652,6 +654,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         if (updates.currentSeasonId !== undefined) {
           payload.current_season_id = updates.currentSeasonId;
+        }
+        if (updates.is_onboarded !== undefined) {
+          payload.is_onboarded = updates.is_onboarded;
         }
 
         if (Object.keys(payload).length > 0) {

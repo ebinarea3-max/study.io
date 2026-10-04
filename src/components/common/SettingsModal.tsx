@@ -13,12 +13,16 @@ import {
   Trash2,
   Smartphone,
   CheckCircle2,
+  Image as ImageIcon,
+  Upload,
 } from 'lucide-react';
 import { soundFx } from '../../lib/audio';
 import { useAuth } from '../../context/AuthContext';
 import { usePwaInstall } from '../../hooks/usePwaInstall';
 import { InstallInstructionModal } from './InstallInstructionModal';
 import { useRankTheme } from '../../hooks/useRankTheme';
+import { getSupabase } from '../../lib/supabase';
+import { toast } from 'react-hot-toast';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -26,7 +30,7 @@ interface SettingsModalProps {
 }
 
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
-  const { user, deleteAccount } = useAuth();
+  const { user, deleteAccount, updateProfile } = useAuth();
   const { canInstall, isInstalled, isPrompting, deferredPrompt, triggerInstall } = usePwaInstall();
   const { theme } = useRankTheme();
 
@@ -35,6 +39,67 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
   const [showInstallInstructions, setShowInstallInstructions] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [showAvatarPresets, setShowAvatarPresets] = useState(false);
+
+  const PRESET_AVATARS = [
+    'https://api.dicebear.com/7.x/bottts/svg?seed=scholar1',
+    'https://api.dicebear.com/7.x/bottts/svg?seed=scholar2',
+    'https://api.dicebear.com/7.x/identicon/svg?seed=tactical1',
+    'https://api.dicebear.com/7.x/identicon/svg?seed=tactical2',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka',
+    'https://api.dicebear.com/7.x/micah/svg?seed=Oliver',
+    'https://api.dicebear.com/7.x/micah/svg?seed=Abby'
+  ];
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Image must be under 2MB');
+      return;
+    }
+
+    setIsUploadingAvatar(true);
+    try {
+      const supabase = getSupabase();
+      if (!supabase) throw new Error('Supabase not initialized');
+
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${user.id}/${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      updateProfile({ avatarUrl: publicUrl });
+      toast.success('Avatar updated successfully');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to upload avatar');
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
+  const handlePresetSelect = (url: string) => {
+    setIsUploadingAvatar(true);
+    try {
+      updateProfile({ avatarUrl: url });
+      toast.success('Avatar updated successfully');
+    } catch (err: any) {
+      toast.error('Failed to update avatar');
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -111,25 +176,85 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         </div>
 
         <div className="py-4 space-y-4 relative z-10">
-          {/* Section 1: Account & Profile Status */}
-          <div className="p-4 rounded-xl bg-white/[0.03] backdrop-blur-md border border-white/[0.08] flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <div
-                className="w-10 h-10 rounded-xl border border-white/15 flex items-center justify-center font-bold text-slate-950 text-sm flex-shrink-0 shadow-md"
-                style={{ background: theme.accent }}
-              >
-                {user.displayName ? user.displayName.slice(0, 2).toUpperCase() : <User className="w-5 h-5" />}
+          {/* Section 1: Account & Avatar */}
+          <div className="p-4 rounded-xl bg-white/[0.03] backdrop-blur-md border border-white/[0.08] flex flex-col gap-4">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="relative">
+                  <div
+                    className="w-12 h-12 rounded-xl border border-white/15 flex items-center justify-center font-bold text-slate-950 text-lg flex-shrink-0 shadow-md overflow-hidden relative"
+                    style={{ background: theme.accent }}
+                  >
+                    {user.avatarUrl ? (
+                      <img src={user.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                    ) : user.displayName ? (
+                      user.displayName.slice(0, 2).toUpperCase()
+                    ) : (
+                      <User className="w-6 h-6" />
+                    )}
+                    {isUploadingAvatar && (
+                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm">
+                        <Loader2 className="w-5 h-5 text-white animate-spin" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="min-w-0">
+                  <div className="text-sm font-bold text-white truncate tracking-tight">{user.displayName || 'Scholar'}</div>
+                  <div className="text-xs text-neutral-400 font-mono truncate">{user.email}</div>
+                </div>
               </div>
-              <div className="min-w-0">
-                <div className="text-sm font-bold text-white truncate tracking-tight">{user.displayName || 'Scholar'}</div>
-                <div className="text-xs text-neutral-400 font-mono truncate">{user.email}</div>
+              <div className="flex-shrink-0 self-start">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.05] border border-white/10 text-[11px] font-mono text-zinc-300">
+                  <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: theme.accent }} />
+                  <span>Cloud Synced</span>
+                </span>
               </div>
             </div>
-            <div className="flex-shrink-0">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.05] border border-white/10 text-[11px] font-mono text-zinc-300">
-                <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: theme.accent }} />
-                <span>Cloud Synced</span>
-              </span>
+
+            {/* Avatar Selection Controls */}
+            <div className="pt-3 border-t border-white/10 flex flex-col gap-3">
+              <div className="flex items-center gap-2">
+                <label className="flex-1 py-1.5 px-3 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 text-xs font-hud font-bold tracking-wider text-white transition-colors cursor-pointer text-center flex items-center justify-center gap-1.5">
+                  <Upload className="w-3.5 h-3.5" style={{ color: theme.accent }} />
+                  <span>UPLOAD CUSTOM</span>
+                  <input
+                    type="file"
+                    accept="image/png, image/jpeg, image/webp"
+                    className="hidden"
+                    onChange={handleAvatarUpload}
+                    disabled={isUploadingAvatar}
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowAvatarPresets(!showAvatarPresets)}
+                  className="flex-1 py-1.5 px-3 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 text-xs font-hud font-bold tracking-wider text-white transition-colors cursor-pointer text-center flex items-center justify-center gap-1.5"
+                >
+                  <ImageIcon className="w-3.5 h-3.5" style={{ color: theme.accent }} />
+                  <span>PRESETS</span>
+                </button>
+              </div>
+
+              {/* Preset Grid */}
+              {showAvatarPresets && (
+                <div className="grid grid-cols-4 gap-2 pt-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                  {PRESET_AVATARS.map((url, i) => (
+                    <button
+                      key={i}
+                      onClick={() => handlePresetSelect(url)}
+                      disabled={isUploadingAvatar}
+                      className={`relative aspect-square rounded-lg border flex items-center justify-center overflow-hidden transition-all ${
+                        user.avatarUrl === url
+                          ? 'border-white bg-white/10 ring-2 ring-white/20'
+                          : 'border-white/10 bg-white/[0.03] hover:border-white/30 hover:bg-white/[0.08]'
+                      }`}
+                    >
+                      <img src={url} alt={`Preset ${i}`} className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 

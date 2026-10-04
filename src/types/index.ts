@@ -89,6 +89,7 @@ export type UserProfile = {
     display_name?: string;
     [key: string]: unknown;
   };
+  is_onboarded?: boolean;
 };
 
 export type SeasonResetData = {
