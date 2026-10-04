@@ -1,15 +1,15 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import Image from 'next/image';
 import { useAuth } from '../../context/AuthContext';
 import { useStudy } from '../../context/StudyContext';
 import { getSupabase } from '../../lib/supabase';
-import { getRankBadgePath, getRankTier, getRankConfigByTitle } from '../../lib/rankedSystem';
+import { getRankBadgePath, getRankTier, getRankConfigByTitle, RankTierName, RankDivision } from '../../lib/rankedSystem';
 import { getLevelFromLifetimeXP } from '../../lib/gamification';
 import { LeaderboardEntry } from '../../types';
-import { Crown, Clock } from 'lucide-react';
+import { Clock } from 'lucide-react';
 import { soundFx } from '../../lib/audio';
+import { RankCrestBadge } from '../common/RankCrestBadge';
 
 export function formatStudyTime(totalSeconds: number): string {
   const safeSeconds = Math.max(0, Math.round(totalSeconds || 0));
@@ -31,7 +31,7 @@ function parseTimeHoursMinutes(totalSeconds: number) {
 }
 
 /**
- * Animated number component for smooth dopamine count-up on page/tab load.
+ * Animated number component for smooth dopamine count-up on load.
  */
 function AnimatedDigit({
   target,
@@ -52,7 +52,6 @@ function AnimatedDigit({
       const step = (timestamp: number) => {
         if (!startTimestamp) startTimestamp = timestamp;
         const progress = Math.min((timestamp - startTimestamp) / durationMs, 1);
-        // Exponential ease-out
         const easeOut = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
         const val = Math.floor(easeOut * target);
         setCurrent(val);
@@ -126,31 +125,46 @@ function getFilterStartDate(timeframe: LeaderboardTimeframe): Date | null {
   return null;
 }
 
+function getTierAvatarGradient(tier: string): string {
+  switch (tier.toLowerCase()) {
+    case 'bronze':
+      return 'from-amber-700 via-amber-800 to-stone-900';
+    case 'silver':
+      return 'from-slate-400 via-slate-600 to-zinc-900';
+    case 'gold':
+      return 'from-yellow-400 via-amber-500 to-stone-900';
+    case 'platinum':
+      return 'from-cyan-400 via-teal-600 to-zinc-900';
+    case 'diamond':
+      return 'from-purple-400 via-fuchsia-600 to-zinc-900';
+    case 'champion':
+      return 'from-fuchsia-500 via-purple-600 to-slate-900';
+    case 'master':
+      return 'from-indigo-400 via-blue-600 to-zinc-900';
+    case 'grandmaster':
+      return 'from-rose-500 via-red-600 to-zinc-900';
+    default:
+      return 'from-amber-600 via-amber-700 to-stone-900';
+  }
+}
+
 function ScholarAvatar({
   name,
   avatarUrl,
-  sizeClass = 'w-9 h-9 text-xs',
+  tier = 'Bronze',
+  sizeClass = 'w-10 h-10 text-xs',
 }: {
   name: string;
   avatarUrl?: string | null;
+  tier?: string;
   sizeClass?: string;
 }) {
   const initial = (name || 'S').trim().charAt(0).toUpperCase();
-  const gradients = [
-    'from-amber-600 to-amber-950',
-    'from-zinc-600 to-zinc-950',
-    'from-amber-700 to-yellow-950',
-    'from-slate-700 to-slate-950',
-  ];
-  let hash = 0;
-  for (let i = 0; i < (name || '').length; i++) {
-    hash = (name || '').charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const gradient = gradients[Math.abs(hash) % gradients.length];
+  const gradient = getTierAvatarGradient(tier);
 
   return (
     <div
-      className={`${sizeClass} rounded-full overflow-hidden bg-[#0c0e14] flex-shrink-0 flex items-center justify-center relative`}
+      className={`${sizeClass} rounded-full overflow-hidden bg-[#0c0e14] flex-shrink-0 flex items-center justify-center relative shadow-md`}
     >
       {avatarUrl ? (
         <img
@@ -169,6 +183,53 @@ function ScholarAvatar({
       </div>
     </div>
   );
+}
+
+interface RankSnapshot {
+  timestamp: number;
+  ranks: Record<string, number>;
+}
+
+function getRankDelta(
+  userId: string,
+  currentRank: number,
+  timeframe: string
+): { delta: number; isNew: boolean } {
+  if (typeof window === 'undefined') return { delta: 0, isNew: false };
+  try {
+    const key = `studypulse_rank_snap_${timeframe}`;
+    const raw = localStorage.getItem(key);
+    if (!raw) return { delta: 0, isNew: true };
+    const snapshot: RankSnapshot = JSON.parse(raw);
+    if (!snapshot.ranks || typeof snapshot.ranks !== 'object') return { delta: 0, isNew: true };
+    const prevRank = snapshot.ranks[userId];
+    if (prevRank === undefined) return { delta: 0, isNew: true };
+    return { delta: prevRank - currentRank, isNew: false };
+  } catch {
+    return { delta: 0, isNew: false };
+  }
+}
+
+function saveRankSnapshot(entries: LeaderboardEntry[], timeframe: string) {
+  if (typeof window === 'undefined' || entries.length === 0) return;
+  try {
+    const key = `studypulse_rank_snap_${timeframe}`;
+    const existing = localStorage.getItem(key);
+    if (existing) {
+      const parsed = JSON.parse(existing);
+      // Keep baseline for 2 hours so users see rank movement during active sessions
+      if (Date.now() - parsed.timestamp < 2 * 60 * 60 * 1000) {
+        return;
+      }
+    }
+    const ranks: Record<string, number> = {};
+    entries.forEach((e, i) => {
+      ranks[e.user_id] = i + 1;
+    });
+    localStorage.setItem(key, JSON.stringify({ timestamp: Date.now(), ranks }));
+  } catch {
+    // Ignore quota issues
+  }
 }
 
 interface MonthlyLeaderboardProps {
@@ -352,6 +413,7 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
       }
 
       setLeaderboard(entries);
+      saveRankSnapshot(entries, timeframe);
       setAnimationKey((prev) => prev + 1);
     } finally {
       setIsLoading(false);
@@ -382,18 +444,18 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
       hasPlayedRevealRef.current = true;
       const soundTimer = setTimeout(() => {
         soundFx.playPodiumReveal();
-      }, 550);
+      }, 500);
       return () => clearTimeout(soundTimer);
     }
   }, [isLoading, leaderboard.length]);
 
-  // Split top 3 scholars for Olympic stepped podium vs contenders (#4 and beyond)
-  const { top1, top2, top3, contenders } = useMemo(() => {
+  // Split #1 Hero Champion, #2 and #3 Runners-up, and #4+ Ranked List (limited to top 50)
+  const { hero, top2, top3, contenders } = useMemo(() => {
     return {
-      top1: leaderboard[0] || null,
+      hero: leaderboard[0] || null,
       top2: leaderboard[1] || null,
       top3: leaderboard[2] || null,
-      contenders: leaderboard.slice(3),
+      contenders: leaderboard.slice(3, 53),
     };
   }, [leaderboard]);
 
@@ -417,12 +479,12 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
           : 'bg-[#05070a] min-h-screen p-4 sm:p-8 flex flex-col items-center'
       }`}
     >
-      {/* Keyframe Animations for bespoke tactical podium */}
+      {/* Keyframe Animations */}
       <style>{`
         @keyframes podiumSlideUp {
           0% {
             opacity: 0;
-            transform: translateY(28px);
+            transform: translateY(24px);
           }
           100% {
             opacity: 1;
@@ -433,24 +495,15 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
         @keyframes championSlamIn {
           0% {
             opacity: 0;
-            transform: translateY(36px) scale(1.08);
+            transform: translateY(28px) scale(1.08);
           }
-          60% {
+          65% {
             opacity: 1;
-            transform: translateY(-6px) scale(1.02);
+            transform: translateY(-4px) scale(1.02);
           }
           100% {
             opacity: 1;
             transform: translateY(0) scale(1.0);
-          }
-        }
-
-        @keyframes crownFloat {
-          0%, 100% {
-            transform: translateY(0);
-          }
-          50% {
-            transform: translateY(-4px);
           }
         }
 
@@ -460,8 +513,8 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
             transform: scale(0.98);
           }
           50% {
-            opacity: 0.75;
-            transform: scale(1.04);
+            opacity: 0.7;
+            transform: scale(1.03);
           }
         }
 
@@ -474,27 +527,10 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
           }
         }
 
-        @keyframes sparkRise {
-          0% {
-            transform: translateY(0) scale(0.6);
-            opacity: 0;
-          }
-          25% {
-            opacity: 1;
-          }
-          75% {
-            opacity: 0.8;
-          }
-          100% {
-            transform: translateY(-44px) scale(1.2);
-            opacity: 0;
-          }
-        }
-
         @keyframes listRowFadeSlide {
           0% {
             opacity: 0;
-            transform: translateY(14px);
+            transform: translateY(12px);
           }
           100% {
             opacity: 1;
@@ -504,64 +540,16 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
       `}</style>
 
       <div className="w-full max-w-5xl flex flex-col gap-6 relative">
-        {/* Header */}
-        <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-2 border-b border-white/[0.06]">
-          <div className="flex flex-col gap-1">
-            <div className="text-xs font-mono text-amber-500/90 tracking-widest uppercase">
-              {trackerText}
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white uppercase">
-              LEADERBOARD
-            </h1>
-            <p className="text-xs sm:text-sm text-zinc-400 mt-1 leading-relaxed">
-              {subtext}
-            </p>
-          </div>
-
-          {/* Timeframe Selector Tabs */}
-          <div className="inline-flex items-center p-1 bg-white/[0.03] border border-white/[0.08] rounded-lg gap-1 self-start sm:self-auto flex-shrink-0">
-            {(
-              [
-                { label: 'TODAY', value: 'today' },
-                { label: 'THIS WEEK', value: 'week' },
-                { label: 'THIS MONTH', value: 'month' },
-                { label: 'ALL TIME', value: 'all' },
-              ] as const
-            ).map((tab) => {
-              const isActive = timeframe === tab.value;
-              return (
-                <button
-                  key={tab.value}
-                  type="button"
-                  onClick={() => setTimeframe(tab.value)}
-                  className={
-                    isActive
-                      ? 'px-3 py-1.5 text-xs font-mono font-medium text-white bg-white/[0.08] border border-white/[0.1] rounded-md shadow-sm transition-all cursor-pointer'
-                      : 'px-3 py-1.5 text-xs font-mono font-medium text-zinc-400 hover:text-white transition-colors rounded-md cursor-pointer'
-                  }
-                >
-                  {tab.label}
-                </button>
-              );
-            })}
-          </div>
-        </header>
-
         {/* Loading State */}
         {isLoading ? (
           <div className="w-full flex flex-col gap-6">
-            {/* Podium Skeleton */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5 items-end">
-              {[1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className={`rounded-2xl border border-white/[0.06] bg-[#0c0e14] p-5 animate-pulse ${
-                    i === 2 ? 'h-96 md:-translate-y-5' : 'h-72'
-                  }`}
-                />
-              ))}
+            {/* Hero Skeleton */}
+            <div className="w-full h-72 rounded-3xl border border-white/[0.06] bg-[#0c0e14] p-6 animate-pulse" />
+            {/* Runners-up Skeleton */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
+              <div className="h-32 rounded-2xl border border-white/[0.06] bg-[#0c0e14] animate-pulse" />
+              <div className="h-32 rounded-2xl border border-white/[0.06] bg-[#0c0e14] animate-pulse" />
             </div>
-
             {/* Table Skeleton */}
             <div className="w-full bg-[#090c12]/90 border border-white/[0.07] rounded-xl overflow-hidden divide-y divide-white/[0.04]">
               {[1, 2, 3, 4].map((i) => (
@@ -578,11 +566,11 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
           </div>
         ) : leaderboard.length === 0 ? (
           /* Empty State */
-          <div className="w-full bg-[#0c0e14] border border-white/[0.08] rounded-xl p-12 text-center flex flex-col items-center justify-center gap-2.5">
-            <div className="w-10 h-10 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 mb-1">
-              <Clock className="w-5 h-5 stroke-[2]" />
+          <div className="w-full bg-[#0c0e14] border border-white/[0.08] rounded-2xl p-12 text-center flex flex-col items-center justify-center gap-3">
+            <div className="w-12 h-12 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 mb-1">
+              <Clock className="w-6 h-6 stroke-[2]" />
             </div>
-            <h3 className="text-sm font-bold text-white font-mono uppercase tracking-wider">
+            <h3 className="text-base font-bold text-white font-mono uppercase tracking-wider">
               NO SESSIONS RECORDED
             </h3>
             <p className="text-xs text-zinc-400 max-w-md">
@@ -595,456 +583,511 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
               isFetching ? 'opacity-70' : 'opacity-100'
             }`}
           >
-            {/* 1. THE OLYMPIC STEPPED PODIUM (Top 3) */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5 items-end">
-              {/* #2 SILVER (Left on Desktop, Mid-Height min-h-[300px]) */}
-              <div
-                key={`podium-2-${animationKey}`}
-                className="order-2 md:order-1 flex flex-col justify-end w-full"
-                style={{
-                  animation: 'podiumSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both',
-                }}
-              >
-                {top2 ? (
+            {/* ══════════════════════════════════════════════════════════ */}
+            {/* 1. HERO CHAMPION BLOCK (#1 only)                           */}
+            {/* ══════════════════════════════════════════════════════════ */}
+            {hero &&
+              (() => {
+                const rankTierTitle = getMonthlyRankTierTitle(hero.rank_title, hero.total_seconds);
+                const tierConfig = getRankConfigByTitle(rankTierTitle);
+                const displayName = hero.display_name || hero.name || 'Scholar';
+                const handle = hero.username || displayName.toLowerCase().replace(/\s+/g, '');
+                const level = hero.level ?? getLevelFromLifetimeXP(hero.lifetime_xp || 0);
+                const isUser = checkIsCurrentUser(hero);
+                const { h, m, hNum, mNum } = parseTimeHoursMinutes(hero.total_seconds);
+                const periodLabel = timeframe === 'all' ? 'ALL TIME' : `THIS ${timeframe.toUpperCase()}`;
+
+                return (
+                  <div
+                    key={`hero-${hero.user_id}-${animationKey}`}
+                    className="relative w-full"
+                    style={{
+                      animation: 'championSlamIn 0.65s cubic-bezier(0.34, 1.3, 0.64, 1) 0.4s both',
+                    }}
+                  >
+                    {/* Radial glow in champion's tier accent color */}
+                    <div
+                      className="absolute -inset-1 rounded-3xl blur-2xl pointer-events-none -z-10 transition-all duration-700 opacity-60"
+                      style={{
+                        background: `radial-gradient(ellipse at center, ${tierConfig.badgeAccent}50 0%, ${tierConfig.badgeAccent}15 45%, transparent 75%)`,
+                        animation: 'ambientGlowPulse 3s ease-in-out infinite',
+                      }}
+                    />
+
+                    {/* Full-Width Hero Card */}
+                    <div
+                      className={`relative w-full rounded-3xl overflow-hidden p-6 sm:p-8 border bg-[#090c12]/90 backdrop-blur-xl shadow-2xl transition-all duration-200 ${
+                        isUser
+                          ? 'border-amber-400 ring-2 ring-amber-400/80 shadow-[0_0_35px_rgba(245,158,11,0.25)]'
+                          : 'border-white/[0.1] hover:border-white/[0.18]'
+                      }`}
+                    >
+                      {/* Subtle Rotating Conic Light Sweep Border */}
+                      <div className="absolute inset-0 rounded-3xl pointer-events-none overflow-hidden -z-0">
+                        <div
+                          className="absolute -inset-[100%] opacity-30"
+                          style={{
+                            background: `conic-gradient(from 0deg, transparent 0deg, ${tierConfig.badgeAccent} 60deg, transparent 120deg)`,
+                            animation: 'borderLightSweep 8s linear infinite',
+                          }}
+                        />
+                        <div className="absolute inset-[1px] rounded-3xl bg-[#090c12]/95 backdrop-blur-xl" />
+                      </div>
+
+                      {/* Header Row: Champion Badge on Left, Timeframe Tabs on Right */}
+                      <div className="relative z-10 w-full flex flex-wrap items-center justify-between gap-3 pb-5 border-b border-white/[0.08]">
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border text-xs font-mono font-bold tracking-widest uppercase shadow-md"
+                            style={{
+                              backgroundColor: `${tierConfig.badgeAccent}18`,
+                              borderColor: `${tierConfig.badgeAccent}50`,
+                              color: tierConfig.badgeAccent,
+                            }}
+                          >
+                            <span>👑 CHAMPION</span>
+                            {isUser && (
+                              <span className="text-[10px] text-amber-300 font-mono font-bold ml-1">
+                                (you)
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[11px] font-mono text-zinc-500 uppercase tracking-wider hidden sm:inline">
+                            {trackerText}
+                          </span>
+                        </div>
+
+                        {/* Period Selector Tabs (Today / Week / Month / All Time) */}
+                        <div className="inline-flex items-center p-1 bg-white/[0.04] border border-white/[0.08] rounded-xl gap-1">
+                          {(
+                            [
+                              { label: 'TODAY', value: 'today' },
+                              { label: 'THIS WEEK', value: 'week' },
+                              { label: 'THIS MONTH', value: 'month' },
+                              { label: 'ALL TIME', value: 'all' },
+                            ] as const
+                          ).map((tab) => {
+                            const isActive = timeframe === tab.value;
+                            return (
+                              <button
+                                key={tab.value}
+                                type="button"
+                                onClick={() => setTimeframe(tab.value)}
+                                className={
+                                  isActive
+                                    ? 'px-3 py-1.5 text-xs font-mono font-semibold text-white bg-white/[0.1] border border-white/[0.15] rounded-lg shadow-sm transition-all cursor-pointer'
+                                    : 'px-3 py-1.5 text-xs font-mono font-medium text-zinc-400 hover:text-white transition-colors rounded-lg cursor-pointer'
+                                }
+                              >
+                                {tab.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Hero Content: Scholar Identity + Kinetic Time Display */}
+                      <div className="relative z-10 w-full pt-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        {/* Scholar Identity Group */}
+                        <div className="flex items-center gap-4 sm:gap-6 min-w-0">
+                          {/* Large Avatar Circle in Champion's Own Tier Color */}
+                          <div className="relative flex-shrink-0">
+                            <div
+                              className="p-1 rounded-full border transition-all duration-300 shadow-xl"
+                              style={{
+                                borderColor: `${tierConfig.badgeAccent}80`,
+                                background: `radial-gradient(circle, ${tierConfig.badgeAccent}25 0%, transparent 70%)`,
+                              }}
+                            >
+                              <ScholarAvatar
+                                name={displayName}
+                                avatarUrl={hero.avatar_url}
+                                tier={tierConfig.tier}
+                                sizeClass="w-20 h-20 sm:w-28 sm:h-28 text-2xl sm:text-3xl"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Name, Handle, and Rank Crest */}
+                          <div className="flex flex-col min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h2 className="text-xl sm:text-3xl font-extrabold text-white tracking-tight truncate">
+                                {displayName}
+                              </h2>
+                              {isUser && (
+                                <span className="text-[10px] font-mono font-bold text-amber-400 uppercase px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500/40 shadow-[0_0_8px_rgba(245,158,11,0.25)] shrink-0">
+                                  [YOU]
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-xs sm:text-sm font-mono text-zinc-400 truncate mt-1">
+                              @{handle} · Lv. {level}
+                            </div>
+
+                            {/* Rank Tier Badge + Title Prominently Displayed */}
+                            <div className="flex items-center gap-2.5 mt-2.5 flex-wrap">
+                              <div className="flex-shrink-0">
+                                <RankCrestBadge
+                                  tier={tierConfig.tier as RankTierName}
+                                  division={tierConfig.division as RankDivision}
+                                  size={44}
+                                  isSettled={true}
+                                />
+                              </div>
+                              <span
+                                className="font-mono text-xs sm:text-sm font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-md border"
+                                style={{
+                                  color: tierConfig.badgeAccent,
+                                  borderColor: `${tierConfig.badgeAccent}50`,
+                                  backgroundColor: `${tierConfig.badgeAccent}15`,
+                                }}
+                              >
+                                {rankTierTitle}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Large Kinetic Focus Time Display */}
+                        <div className="flex flex-col md:items-end justify-center pt-2 md:pt-0 border-t md:border-t-0 border-white/[0.06] flex-shrink-0">
+                          <div className="flex items-baseline font-mono">
+                            {hero.total_seconds >= 3600 ? (
+                              <>
+                                <span className="text-4xl sm:text-6xl font-mono font-black tracking-tight bg-gradient-to-r from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent">
+                                  <AnimatedDigit target={hNum} durationMs={800} delayMs={450} key={`h-${hero.user_id}-${animationKey}`} />
+                                </span>
+                                <span className="text-xs sm:text-sm font-mono text-zinc-400 font-bold ml-1 mr-3">HR</span>
+                                <span className="text-3xl sm:text-5xl font-mono font-extrabold text-zinc-300">
+                                  <AnimatedDigit target={mNum} durationMs={800} delayMs={450} key={`m-${hero.user_id}-${animationKey}`} />
+                                </span>
+                                <span className="text-xs sm:text-sm font-mono text-zinc-400 font-bold ml-1">MIN</span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="text-4xl sm:text-6xl font-mono font-black tracking-tight bg-gradient-to-r from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent">
+                                  <AnimatedDigit target={mNum} durationMs={800} delayMs={450} key={`m-${hero.user_id}-${animationKey}`} />
+                                </span>
+                                <span className="text-xs sm:text-sm font-mono text-zinc-400 font-bold ml-1.5">MIN</span>
+                              </>
+                            )}
+                          </div>
+                          <span className="text-[11px] font-mono text-zinc-400 uppercase tracking-widest mt-1">
+                            RECORDED FOCUS {periodLabel}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+            {/* ══════════════════════════════════════════════════════════ */}
+            {/* 2. RUNNERS-UP STRIP (#2 and #3)                             */}
+            {/* ══════════════════════════════════════════════════════════ */}
+            {(top2 || top3) && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
+                {/* #2 Runner-Up Card */}
+                {top2 &&
                   (() => {
                     const rankTierTitle = getMonthlyRankTierTitle(top2.rank_title, top2.total_seconds);
-                    const rankBadgePath = getRankBadgePath(rankTierTitle);
                     const tierConfig = getRankConfigByTitle(rankTierTitle);
                     const displayName = top2.display_name || top2.name || 'Scholar';
                     const handle = top2.username || displayName.toLowerCase().replace(/\s+/g, '');
                     const level = top2.level ?? getLevelFromLifetimeXP(top2.lifetime_xp || 0);
                     const isUser = checkIsCurrentUser(top2);
                     const { h, m, hNum, mNum } = parseTimeHoursMinutes(top2.total_seconds);
+                    const movement = getRankDelta(top2.user_id, 2, timeframe);
 
                     return (
                       <div
-                        className={`w-full min-h-[300px] md:min-h-[310px] bg-gradient-to-b from-slate-400/[0.08] via-[#0d1017]/80 to-[#080a0f] border border-slate-400/20 rounded-2xl relative overflow-hidden p-5 sm:p-6 flex flex-col items-center justify-between text-center transition-all duration-200 hover:border-slate-300/40 shadow-lg ${
-                          isUser ? 'ring-2 ring-amber-400/80 shadow-[0_0_25px_rgba(245,158,11,0.2)]' : ''
+                        key={`runner2-${top2.user_id}-${animationKey}`}
+                        style={{ animation: 'podiumSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both' }}
+                        className={`relative p-4 sm:p-5 rounded-2xl bg-[#090c12]/80 border backdrop-blur-md flex items-center justify-between gap-4 transition-all duration-200 hover:border-slate-300/40 shadow-lg ${
+                          isUser
+                            ? 'border-amber-400/80 ring-1 ring-amber-400/60 bg-amber-500/[0.05]'
+                            : 'border-white/[0.08]'
                         }`}
                       >
-                        {/* Corner Crosshairs */}
-                        <span className="absolute top-2.5 left-2.5 text-[10px] font-mono text-zinc-600 select-none pointer-events-none">+</span>
-                        <span className="absolute bottom-2.5 right-2.5 text-[10px] font-mono text-zinc-600 select-none pointer-events-none">+</span>
-
-                        {/* Top Sleek Silver Numeral Tag */}
-                        <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-slate-400/10 border border-slate-400/30 text-slate-300 font-mono text-[10px] font-bold tracking-widest uppercase">
-                          <span>// 02</span>
-                          {isUser && (
-                            <span className="text-[9px] text-amber-400 font-mono font-bold ml-1">
-                              [YOU]
+                        {/* Left Info: Position Tag, Avatar, Name & Crest */}
+                        <div className="flex items-center gap-3.5 min-w-0">
+                          {/* Rank Position */}
+                          <div className="flex flex-col items-center justify-center flex-shrink-0">
+                            <span className="font-mono text-xs font-bold text-slate-300 px-2 py-0.5 rounded bg-slate-400/10 border border-slate-400/20">
+                              #02
                             </span>
-                          )}
-                        </div>
+                            {/* Movement indicator */}
+                            <span className="mt-1">
+                              {movement.delta > 0 ? (
+                                <span className="text-emerald-400 font-mono text-[10px] font-bold">▲ +{movement.delta}</span>
+                              ) : movement.delta < 0 ? (
+                                <span className="text-rose-400 font-mono text-[10px] font-bold">▼ {Math.abs(movement.delta)}</span>
+                              ) : movement.isNew ? (
+                                <span className="text-amber-400 font-mono text-[9px] font-bold">NEW</span>
+                              ) : (
+                                <span className="text-zinc-600 font-mono text-[10px]">—</span>
+                              )}
+                            </span>
+                          </div>
 
-                        {/* Avatar with Luminous Double-Ring */}
-                        <div className="relative my-3">
-                          <div className="p-1 rounded-full border border-slate-400/30 bg-gradient-to-tr from-slate-400/20 via-zinc-200/10 to-transparent">
-                            <div className="p-0.5 rounded-full border border-slate-400/70 bg-[#090c12] shadow-[0_0_15px_rgba(200,200,200,0.15)] flex items-center justify-center">
-                              <ScholarAvatar
-                                name={displayName}
-                                avatarUrl={top2.avatar_url}
-                                sizeClass="w-14 h-14 sm:w-16 sm:h-16 text-base"
+                          {/* Avatar with Tier Gradient */}
+                          <ScholarAvatar
+                            name={displayName}
+                            avatarUrl={top2.avatar_url}
+                            tier={tierConfig.tier}
+                            sizeClass="w-12 h-12 text-sm"
+                          />
+
+                          {/* Identity & Rank Crest */}
+                          <div className="flex flex-col min-w-0">
+                            <div className="flex items-center gap-1.5 truncate">
+                              <span className="font-bold text-white text-sm truncate">
+                                {displayName}
+                              </span>
+                              {isUser && (
+                                <span className="text-[9px] font-mono font-bold text-amber-400 uppercase px-1.5 py-0.2 rounded bg-amber-500/20 border border-amber-500/40">
+                                  (you)
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-xs font-mono text-zinc-400 truncate">
+                              @{handle} · Lv. {level}
+                            </span>
+                            <div className="flex items-center gap-1.5 mt-1">
+                              <RankCrestBadge
+                                tier={tierConfig.tier as RankTierName}
+                                division={tierConfig.division as RankDivision}
+                                size={28}
                               />
+                              <span
+                                className="text-[11px] font-mono font-bold tracking-wider uppercase"
+                                style={{ color: tierConfig.badgeAccent }}
+                              >
+                                {rankTierTitle}
+                              </span>
                             </div>
                           </div>
-                          {/* Floating tier shield at bottom-right intersection */}
-                          <div
-                            className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-[#090c12] border p-0.5 flex items-center justify-center shadow-md transition-all"
-                            style={{
-                              borderColor: `${tierConfig.badgeAccent}80`,
-                              boxShadow: `0 0 10px ${tierConfig.glowColor}`,
-                            }}
-                          >
-                            <Image
-                              src={rankBadgePath}
-                              alt={rankTierTitle}
-                              width={20}
-                              height={20}
-                              className="w-4 h-4 object-contain drop-shadow-[0_0_4px_rgba(255,255,255,0.2)]"
-                            />
-                          </div>
                         </div>
 
-                        {/* Scholar Name + Handle */}
-                        <div className="w-full px-2">
-                          <div className="font-semibold text-white text-sm sm:text-base truncate flex items-center justify-center gap-1">
-                            <span className="truncate">{displayName}</span>
-                          </div>
-                          <div className="text-[11px] font-mono text-zinc-400 truncate mt-0.5">
-                            @{handle} · Lv. {level}
-                          </div>
-                        </div>
-
-                        {/* Focus Time Display with animated count-up */}
-                        <div className="mt-4 pt-3 border-t border-white/[0.06] w-full flex flex-col items-center">
-                          <div className="flex items-baseline justify-center font-mono">
-                            <span className="text-3xl font-mono font-bold tracking-tight text-white drop-shadow-[0_2px_10px_rgba(255,255,255,0.2)]">
+                        {/* Right: Recorded Focus Time */}
+                        <div className="flex flex-col items-end justify-center font-mono flex-shrink-0">
+                          <div className="flex items-baseline font-mono text-right">
+                            <span className="text-xl sm:text-2xl font-mono font-bold text-white">
                               <AnimatedDigit target={hNum} durationMs={800} delayMs={150} key={`h-${top2.user_id}-${animationKey}`} />
                             </span>
-                            <span className="text-xs text-zinc-500 font-mono ml-1 mr-2">H</span>
-                            <span className="text-2xl font-mono font-bold text-zinc-300">
+                            <span className="text-[10px] text-zinc-500 font-mono ml-0.5 mr-1.5">H</span>
+                            <span className="text-lg sm:text-xl font-mono font-bold text-zinc-300">
                               <AnimatedDigit target={mNum} durationMs={800} delayMs={150} key={`m-${top2.user_id}-${animationKey}`} />
                             </span>
-                            <span className="text-xs text-zinc-500 font-mono ml-1">M</span>
+                            <span className="text-[10px] text-zinc-500 font-mono ml-0.5">M</span>
                           </div>
-                          <span
-                            className="text-[10px] font-mono uppercase tracking-wider mt-0.5 font-medium"
-                            style={{ color: tierConfig.badgeAccent }}
-                          >
-                            {rankTierTitle}
+                          <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-wider">
+                            RECORDED FOCUS
                           </span>
                         </div>
                       </div>
                     );
-                  })()
-                ) : (
-                  <div className="w-full min-h-[300px] md:min-h-[310px] rounded-2xl border border-white/[0.06] bg-[#0c0e14] p-5 flex items-center justify-center text-zinc-600 font-mono text-xs">
-                    // 02 UNCLAIMED
-                  </div>
-                )}
-              </div>
+                  })()}
 
-              {/* #1 CHAMPION (Center on Desktop, Taller min-h-[370px], Elevated md:-translate-y-5 with Golden Atmospheric Bloom) */}
-              <div
-                key={`podium-1-${animationKey}`}
-                className="order-1 md:order-2 flex flex-col justify-end w-full md:-translate-y-5 relative"
-                style={{
-                  animation: 'championSlamIn 0.65s cubic-bezier(0.34, 1.3, 0.64, 1) 0.45s both',
-                }}
-              >
-                {top1 ? (
-                  (() => {
-                    const rankTierTitle = getMonthlyRankTierTitle(top1.rank_title, top1.total_seconds);
-                    const rankBadgePath = getRankBadgePath(rankTierTitle);
-                    const tierConfig = getRankConfigByTitle(rankTierTitle);
-                    const displayName = top1.display_name || top1.name || 'Scholar';
-                    const handle = top1.username || displayName.toLowerCase().replace(/\s+/g, '');
-                    const level = top1.level ?? getLevelFromLifetimeXP(top1.lifetime_xp || 0);
-                    const isUser = checkIsCurrentUser(top1);
-                    const { h, m, hNum, mNum } = parseTimeHoursMinutes(top1.total_seconds);
-
-                    return (
-                      <div className="relative w-full">
-                        {/* Slow ambient gold glow pulse behind champion card (breathing 3s cycle) */}
-                        <div
-                          className="absolute -inset-1 rounded-3xl bg-gradient-to-b from-amber-500/25 via-yellow-500/15 to-amber-600/25 blur-xl pointer-events-none -z-10"
-                          style={{ animation: 'ambientGlowPulse 3s ease-in-out infinite' }}
-                        />
-
-                        <div
-                          className={`w-full min-h-[370px] md:min-h-[390px] bg-gradient-to-b from-amber-500/[0.12] via-[#0d1017]/90 to-[#080a0f] border border-amber-500/40 shadow-[0_0_40px_rgba(245,158,11,0.12)] rounded-2xl relative overflow-hidden p-6 sm:p-7 flex flex-col items-center justify-between text-center transition-all duration-200 hover:border-amber-400/80 ${
-                            isUser ? 'ring-2 ring-amber-400 shadow-[0_0_30px_rgba(245,158,11,0.3)]' : ''
-                          }`}
-                        >
-                          {/* Subtle Rotating Light Sweep Border */}
-                          <div className="absolute inset-0 rounded-2xl pointer-events-none overflow-hidden -z-0">
-                            <div
-                              className="absolute -inset-[100%] opacity-40"
-                              style={{
-                                background: 'conic-gradient(from 0deg, transparent 0deg, rgba(245, 158, 11, 0.4) 60deg, transparent 120deg)',
-                                animation: 'borderLightSweep 6s linear infinite',
-                              }}
-                            />
-                            <div className="absolute inset-[1px] rounded-2xl bg-[#090c12]/95 backdrop-blur-xl" />
-                          </div>
-
-                          {/* Soft particle drift: tiny gold sparks rising slowly near top */}
-                          <div className="absolute inset-x-0 top-0 h-32 pointer-events-none overflow-hidden z-20">
-                            {[
-                              { left: '20%', delay: '0s', duration: '2.8s', size: 'w-1 h-1' },
-                              { left: '46%', delay: '0.8s', duration: '3.2s', size: 'w-1.5 h-1.5' },
-                              { left: '72%', delay: '1.6s', duration: '2.6s', size: 'w-1 h-1' },
-                              { left: '34%', delay: '2.2s', duration: '3.0s', size: 'w-1 h-1' },
-                            ].map((spark, i) => (
-                              <span
-                                key={i}
-                                className={`absolute bottom-4 ${spark.size} rounded-full bg-amber-300 shadow-[0_0_6px_#f59e0b]`}
-                                style={{
-                                  left: spark.left,
-                                  animation: `sparkRise ${spark.duration} ease-out infinite`,
-                                  animationDelay: spark.delay,
-                                }}
-                              />
-                            ))}
-                          </div>
-
-                          {/* Corner Crosshairs */}
-                          <span className="absolute top-2.5 left-2.5 text-[10px] font-mono text-zinc-600 select-none pointer-events-none z-10">+</span>
-                          <span className="absolute bottom-2.5 right-2.5 text-[10px] font-mono text-zinc-600 select-none pointer-events-none z-10">+</span>
-
-                          {/* Top Rank Badge */}
-                          <div className="relative z-10 flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 font-mono text-[10px] font-bold tracking-widest uppercase">
-                            <span>// 01 · CHAMPION</span>
-                            {isUser && (
-                              <span className="text-[9px] text-amber-200 font-mono font-bold ml-1">
-                                [YOU]
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Avatar with Floating Bobbing Crown & Noticeably Larger Luminous Double-Ring */}
-                          <div className="relative my-3 flex flex-col items-center z-10">
-                            {/* Gentle Bobbing Crown (~2s cycle) */}
-                            <div
-                              className="-mb-3 z-20 w-8 h-8 rounded-full bg-amber-500/20 border border-amber-400/70 flex items-center justify-center shadow-[0_0_16px_rgba(245,158,11,0.5)]"
-                              style={{ animation: 'crownFloat 2s ease-in-out infinite' }}
-                            >
-                              <Crown className="w-4 h-4 text-amber-300 fill-amber-300 drop-shadow-[0_0_8px_rgba(245,158,11,0.9)]" />
-                            </div>
-
-                            {/* Noticeably Larger Avatar Ring */}
-                            <div className="p-1.5 rounded-full border border-amber-500/50 bg-gradient-to-tr from-amber-500/25 via-yellow-400/25 to-transparent">
-                              <div className="p-1 rounded-full border border-amber-400/80 bg-[#090c12] shadow-[0_0_25px_rgba(245,158,11,0.35)] flex items-center justify-center">
-                                <ScholarAvatar
-                                  name={displayName}
-                                  avatarUrl={top1.avatar_url}
-                                  sizeClass="w-20 h-20 sm:w-24 sm:h-24 text-xl sm:text-2xl"
-                                />
-                              </div>
-                            </div>
-
-                            {/* Floating tier shield with ambient glow */}
-                            <div
-                              className="absolute -bottom-1 -right-1 w-9 h-9 rounded-full bg-[#090c12] border p-0.5 flex items-center justify-center shadow-lg transition-all"
-                              style={{
-                                borderColor: `${tierConfig.badgeAccent}90`,
-                                boxShadow: `0 0 12px ${tierConfig.glowColor}`,
-                              }}
-                            >
-                              <Image
-                                src={rankBadgePath}
-                                alt={rankTierTitle}
-                                width={28}
-                                height={28}
-                                className="w-5 h-5 sm:w-6 sm:h-6 object-contain drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]"
-                              />
-                            </div>
-                          </div>
-
-                          {/* Scholar Name + Handle */}
-                          <div className="w-full px-2 z-10">
-                            <div className="font-bold text-white text-base sm:text-lg truncate flex items-center justify-center gap-1">
-                              <span className="truncate">{displayName}</span>
-                            </div>
-                            <div className="text-xs font-mono text-zinc-400 truncate mt-0.5">
-                              @{handle} · Lv. {level}
-                            </div>
-                          </div>
-
-                          {/* Prominent High-Contrast Digital Monospace Time with animated count-up */}
-                          <div className="mt-4 pt-3 border-t border-amber-500/20 w-full flex flex-col items-center z-10">
-                            <div className="flex items-baseline justify-center font-mono">
-                              <span className="text-3xl sm:text-4xl font-mono font-bold tracking-tight text-white drop-shadow-[0_2px_12px_rgba(255,255,255,0.25)]">
-                                <AnimatedDigit target={hNum} durationMs={800} delayMs={450} key={`h-${top1.user_id}-${animationKey}`} />
-                              </span>
-                              <span className="text-xs text-amber-400 font-mono font-bold ml-1 mr-2">H</span>
-                              <span className="text-2xl sm:text-3xl font-mono font-bold text-zinc-200">
-                                <AnimatedDigit target={mNum} durationMs={800} delayMs={450} key={`m-${top1.user_id}-${animationKey}`} />
-                              </span>
-                              <span className="text-xs text-amber-400 font-mono font-bold ml-1">M</span>
-                            </div>
-                            <span
-                              className="text-[10px] font-mono uppercase tracking-wider mt-0.5 font-bold"
-                              style={{ color: tierConfig.badgeAccent }}
-                            >
-                              {rankTierTitle}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })()
-                ) : (
-                  <div className="w-full min-h-[370px] md:min-h-[390px] rounded-2xl border border-white/[0.06] bg-[#0c0e14] p-5 flex items-center justify-center text-zinc-600 font-mono text-xs">
-                    // 01 UNCLAIMED
-                  </div>
-                )}
-              </div>
-
-              {/* #3 BRONZE (Right on Desktop, Mid-Height min-h-[300px]) */}
-              <div
-                key={`podium-3-${animationKey}`}
-                className="order-3 md:order-3 flex flex-col justify-end w-full"
-                style={{
-                  animation: 'podiumSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both',
-                }}
-              >
-                {top3 ? (
+                {/* #3 Runner-Up Card */}
+                {top3 &&
                   (() => {
                     const rankTierTitle = getMonthlyRankTierTitle(top3.rank_title, top3.total_seconds);
-                    const rankBadgePath = getRankBadgePath(rankTierTitle);
                     const tierConfig = getRankConfigByTitle(rankTierTitle);
                     const displayName = top3.display_name || top3.name || 'Scholar';
                     const handle = top3.username || displayName.toLowerCase().replace(/\s+/g, '');
                     const level = top3.level ?? getLevelFromLifetimeXP(top3.lifetime_xp || 0);
                     const isUser = checkIsCurrentUser(top3);
                     const { h, m, hNum, mNum } = parseTimeHoursMinutes(top3.total_seconds);
+                    const movement = getRankDelta(top3.user_id, 3, timeframe);
 
                     return (
                       <div
-                        className={`w-full min-h-[300px] md:min-h-[310px] bg-gradient-to-b from-amber-800/[0.08] via-[#0d1017]/80 to-[#080a0f] border border-amber-700/20 rounded-2xl relative overflow-hidden p-5 sm:p-6 flex flex-col items-center justify-between text-center transition-all duration-200 hover:border-amber-600/40 shadow-lg ${
-                          isUser ? 'ring-2 ring-amber-400/80 shadow-[0_0_25px_rgba(245,158,11,0.2)]' : ''
+                        key={`runner3-${top3.user_id}-${animationKey}`}
+                        style={{ animation: 'podiumSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.22s both' }}
+                        className={`relative p-4 sm:p-5 rounded-2xl bg-[#090c12]/80 border backdrop-blur-md flex items-center justify-between gap-4 transition-all duration-200 hover:border-amber-700/40 shadow-lg ${
+                          isUser
+                            ? 'border-amber-400/80 ring-1 ring-amber-400/60 bg-amber-500/[0.05]'
+                            : 'border-white/[0.08]'
                         }`}
                       >
-                        {/* Corner Crosshairs */}
-                        <span className="absolute top-2.5 left-2.5 text-[10px] font-mono text-zinc-600 select-none pointer-events-none">+</span>
-                        <span className="absolute bottom-2.5 right-2.5 text-[10px] font-mono text-zinc-600 select-none pointer-events-none">+</span>
-
-                        {/* Top Bronze Numeral Tag */}
-                        <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-700/10 border border-amber-700/30 text-amber-400 font-mono text-[10px] font-bold tracking-widest uppercase">
-                          <span>// 03</span>
-                          {isUser && (
-                            <span className="text-[9px] text-amber-200 font-mono font-bold ml-1">
-                              [YOU]
+                        {/* Left Info: Position Tag, Avatar, Name & Crest */}
+                        <div className="flex items-center gap-3.5 min-w-0">
+                          {/* Rank Position */}
+                          <div className="flex flex-col items-center justify-center flex-shrink-0">
+                            <span className="font-mono text-xs font-bold text-amber-400 px-2 py-0.5 rounded bg-amber-700/10 border border-amber-700/20">
+                              #03
                             </span>
-                          )}
-                        </div>
+                            {/* Movement indicator */}
+                            <span className="mt-1">
+                              {movement.delta > 0 ? (
+                                <span className="text-emerald-400 font-mono text-[10px] font-bold">▲ +{movement.delta}</span>
+                              ) : movement.delta < 0 ? (
+                                <span className="text-rose-400 font-mono text-[10px] font-bold">▼ {Math.abs(movement.delta)}</span>
+                              ) : movement.isNew ? (
+                                <span className="text-amber-400 font-mono text-[9px] font-bold">NEW</span>
+                              ) : (
+                                <span className="text-zinc-600 font-mono text-[10px]">—</span>
+                              )}
+                            </span>
+                          </div>
 
-                        {/* Avatar with Luminous Double-Ring */}
-                        <div className="relative my-3">
-                          <div className="p-1 rounded-full border border-amber-700/30 bg-gradient-to-tr from-amber-700/20 via-yellow-700/10 to-transparent">
-                            <div className="p-0.5 rounded-full border border-amber-700/70 bg-[#090c12] shadow-[0_0_15px_rgba(180,83,9,0.15)] flex items-center justify-center">
-                              <ScholarAvatar
-                                name={displayName}
-                                avatarUrl={top3.avatar_url}
-                                sizeClass="w-14 h-14 sm:w-16 sm:h-16 text-base"
+                          {/* Avatar with Tier Gradient */}
+                          <ScholarAvatar
+                            name={displayName}
+                            avatarUrl={top3.avatar_url}
+                            tier={tierConfig.tier}
+                            sizeClass="w-12 h-12 text-sm"
+                          />
+
+                          {/* Identity & Rank Crest */}
+                          <div className="flex flex-col min-w-0">
+                            <div className="flex items-center gap-1.5 truncate">
+                              <span className="font-bold text-white text-sm truncate">
+                                {displayName}
+                              </span>
+                              {isUser && (
+                                <span className="text-[9px] font-mono font-bold text-amber-400 uppercase px-1.5 py-0.2 rounded bg-amber-500/20 border border-amber-500/40">
+                                  (you)
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-xs font-mono text-zinc-400 truncate">
+                              @{handle} · Lv. {level}
+                            </span>
+                            <div className="flex items-center gap-1.5 mt-1">
+                              <RankCrestBadge
+                                tier={tierConfig.tier as RankTierName}
+                                division={tierConfig.division as RankDivision}
+                                size={28}
                               />
+                              <span
+                                className="text-[11px] font-mono font-bold tracking-wider uppercase"
+                                style={{ color: tierConfig.badgeAccent }}
+                              >
+                                {rankTierTitle}
+                              </span>
                             </div>
                           </div>
-                          {/* Floating tier shield at bottom-right intersection */}
-                          <div
-                            className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-[#090c12] border p-0.5 flex items-center justify-center shadow-md transition-all"
-                            style={{
-                              borderColor: `${tierConfig.badgeAccent}80`,
-                              boxShadow: `0 0 10px ${tierConfig.glowColor}`,
-                            }}
-                          >
-                            <Image
-                              src={rankBadgePath}
-                              alt={rankTierTitle}
-                              width={20}
-                              height={20}
-                              className="w-4 h-4 object-contain drop-shadow-[0_0_4px_rgba(255,255,255,0.2)]"
-                            />
-                          </div>
                         </div>
 
-                        {/* Scholar Name + Handle */}
-                        <div className="w-full px-2">
-                          <div className="font-semibold text-white text-sm sm:text-base truncate flex items-center justify-center gap-1">
-                            <span className="truncate">{displayName}</span>
-                          </div>
-                          <div className="text-[11px] font-mono text-zinc-400 truncate mt-0.5">
-                            @{handle} · Lv. {level}
-                          </div>
-                        </div>
-
-                        {/* Focus Time Display with animated count-up */}
-                        <div className="mt-4 pt-3 border-t border-white/[0.06] w-full flex flex-col items-center">
-                          <div className="flex items-baseline justify-center font-mono">
-                            <span className="text-3xl font-mono font-bold tracking-tight text-white drop-shadow-[0_2px_10px_rgba(255,255,255,0.2)]">
-                              <AnimatedDigit target={hNum} durationMs={800} delayMs={300} key={`h-${top3.user_id}-${animationKey}`} />
+                        {/* Right: Recorded Focus Time */}
+                        <div className="flex flex-col items-end justify-center font-mono flex-shrink-0">
+                          <div className="flex items-baseline font-mono text-right">
+                            <span className="text-xl sm:text-2xl font-mono font-bold text-white">
+                              <AnimatedDigit target={hNum} durationMs={800} delayMs={250} key={`h-${top3.user_id}-${animationKey}`} />
                             </span>
-                            <span className="text-xs text-zinc-500 font-mono ml-1 mr-2">H</span>
-                            <span className="text-2xl font-mono font-bold text-zinc-300">
-                              <AnimatedDigit target={mNum} durationMs={800} delayMs={300} key={`m-${top3.user_id}-${animationKey}`} />
+                            <span className="text-[10px] text-zinc-500 font-mono ml-0.5 mr-1.5">H</span>
+                            <span className="text-lg sm:text-xl font-mono font-bold text-zinc-300">
+                              <AnimatedDigit target={mNum} durationMs={800} delayMs={250} key={`m-${top3.user_id}-${animationKey}`} />
                             </span>
-                            <span className="text-xs text-zinc-500 font-mono ml-1">M</span>
+                            <span className="text-[10px] text-zinc-500 font-mono ml-0.5">M</span>
                           </div>
-                          <span
-                            className="text-[10px] font-mono uppercase tracking-wider mt-0.5 font-medium"
-                            style={{ color: tierConfig.badgeAccent }}
-                          >
-                            {rankTierTitle}
+                          <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-wider">
+                            RECORDED FOCUS
                           </span>
                         </div>
                       </div>
                     );
-                  })()
-                ) : (
-                  <div className="w-full min-h-[300px] md:min-h-[310px] rounded-2xl border border-white/[0.06] bg-[#0c0e14] p-5 flex items-center justify-center text-zinc-600 font-mono text-xs">
-                    // 03 UNCLAIMED
-                  </div>
-                )}
+                  })()}
               </div>
-            </div>
+            )}
 
-            {/* 2. CONTENDERS FLIGHT-BOARD (#4 to #100) */}
+            {/* ══════════════════════════════════════════════════════════ */}
+            {/* 3. RANKED LIST (#4 and below, limited to 50 rows)          */}
+            {/* ══════════════════════════════════════════════════════════ */}
             {contenders.length > 0 && (
-              <div className="w-full bg-[#090c12]/90 backdrop-blur-md border border-white/[0.07] rounded-xl overflow-hidden divide-y divide-white/[0.04] shadow-2xl">
-                {/* Header Row */}
-                <div className="px-6 py-2.5 bg-white/[0.02] text-[10px] font-mono uppercase tracking-widest text-zinc-500 flex items-center">
-                  <span className="w-12 text-left">POS</span>
-                  <span className="flex-1 min-w-0">SCHOLAR</span>
-                  <span className="w-36 sm:w-44 text-center">TIER</span>
-                  <span className="w-28 sm:w-32 text-right">RECORDED FOCUS</span>
+              <div className="w-full bg-[#090c12]/90 backdrop-blur-md border border-white/[0.07] rounded-2xl overflow-hidden divide-y divide-white/[0.04] shadow-2xl">
+                {/* Column Header Row */}
+                <div className="px-6 py-3 bg-white/[0.02] text-[10px] font-mono uppercase tracking-widest text-zinc-500 flex items-center justify-between">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <span className="w-10 text-left">POS</span>
+                    <span className="w-10 text-center">DELTA</span>
+                    <span>SCHOLAR</span>
+                  </div>
+                  <div className="w-40 sm:w-48 text-center flex-shrink-0">
+                    <span>TIER</span>
+                  </div>
+                  <div className="w-28 sm:w-32 text-right flex-shrink-0">
+                    <span>RECORDED FOCUS</span>
+                  </div>
                 </div>
 
-                {/* Roster Rows with Staggered Entrance and Micro-interactions */}
+                {/* Roster Rows */}
                 {contenders.map((row, idx) => {
                   const actualRank = idx + 4;
                   const isCurrentUser = checkIsCurrentUser(row);
                   const rankTierTitle = getMonthlyRankTierTitle(row.rank_title, row.total_seconds);
-                  const rankBadgePath = getRankBadgePath(rankTierTitle);
                   const tierConfig = getRankConfigByTitle(rankTierTitle);
                   const displayName = row.display_name || row.name || row.username || 'Scholar';
                   const handle = row.username || displayName.toLowerCase().replace(/\s+/g, '');
                   const level = row.level ?? getLevelFromLifetimeXP(row.lifetime_xp || 0);
                   const { h, m } = parseTimeHoursMinutes(row.total_seconds);
+                  const movement = getRankDelta(row.user_id, actualRank, timeframe);
 
                   return (
                     <div
                       key={row.user_id || actualRank}
-                      className={`px-6 py-3 flex items-center transition-all duration-200 group border-l-2 relative cursor-default ${
+                      className={`px-6 py-3.5 flex items-center transition-all duration-200 group border-l-2 relative cursor-default ${
                         isCurrentUser
-                          ? 'border-l-amber-400 bg-amber-500/[0.06] shadow-[inset_0_0_24px_rgba(245,158,11,0.06)]'
+                          ? 'border-l-amber-400 bg-amber-500/[0.08] shadow-[inset_0_0_24px_rgba(245,158,11,0.08)]'
                           : 'border-l-transparent hover:border-l-[var(--row-tier-color)] hover:bg-white/[0.04]'
                       }`}
                       style={{
                         '--row-tier-color': tierConfig.badgeAccent || '#D97706',
                         animation: 'listRowFadeSlide 0.4s ease-out both',
-                        animationDelay: `${600 + idx * 40}ms`,
+                        animationDelay: `${550 + idx * 40}ms`,
                       } as React.CSSProperties}
                     >
                       {/* POS */}
-                      <span className="w-12 text-left text-zinc-500 font-mono text-xs group-hover:text-zinc-300">
+                      <span className="w-10 text-left text-zinc-500 font-mono text-xs group-hover:text-zinc-300">
                         #{actualRank < 10 ? `0${actualRank}` : actualRank}
                       </span>
 
-                      {/* Scholar Column */}
+                      {/* Rank Movement Delta */}
+                      <div className="w-10 text-center flex-shrink-0">
+                        {movement.delta > 0 ? (
+                          <span className="text-emerald-400 font-mono text-[10px] font-bold">▲ +{movement.delta}</span>
+                        ) : movement.delta < 0 ? (
+                          <span className="text-rose-400 font-mono text-[10px] font-bold">▼ {Math.abs(movement.delta)}</span>
+                        ) : movement.isNew ? (
+                          <span className="text-amber-400 font-mono text-[9px] font-bold uppercase">NEW</span>
+                        ) : (
+                          <span className="text-zinc-600 font-mono text-xs">—</span>
+                        )}
+                      </div>
+
+                      {/* Scholar Info */}
                       <div className="flex items-center gap-3 flex-1 min-w-0 pr-3">
                         <ScholarAvatar
                           name={displayName}
                           avatarUrl={row.avatar_url}
+                          tier={tierConfig.tier}
                           sizeClass="w-8 h-8 text-[11px]"
                         />
 
                         <div className="flex flex-col min-w-0 justify-center">
-                          <span className="font-semibold text-white text-sm tracking-tight truncate">
-                            {displayName}
-                          </span>
-                          <div className="flex items-center gap-1.5 text-xs font-mono text-zinc-500 truncate mt-0.5">
-                            <span>@{handle} · Lv. {level}</span>
+                          <div className="flex items-center gap-1.5 truncate">
+                            <span className="font-semibold text-white text-sm tracking-tight truncate">
+                              {displayName}
+                            </span>
                             {isCurrentUser && (
-                              <span className="text-[9px] font-mono font-bold text-amber-400 uppercase px-1 py-0.2 rounded bg-amber-500/20 border border-amber-500/40 shadow-[0_0_8px_rgba(245,158,11,0.25)]">
-                                [YOU]
+                              <span className="text-[9px] font-mono font-bold text-amber-400 uppercase px-1.5 py-0.2 rounded bg-amber-500/20 border border-amber-500/40 shadow-[0_0_8px_rgba(245,158,11,0.25)]">
+                                (you)
                               </span>
                             )}
                           </div>
+                          <span className="text-xs font-mono text-zinc-500 truncate mt-0.5">
+                            @{handle} · Lv. {level}
+                          </span>
                         </div>
                       </div>
 
-                      {/* Tier Column with per-user authentic styling */}
-                      <div className="w-36 sm:w-44 flex items-center justify-center flex-shrink-0 gap-2">
-                        <Image
-                          src={rankBadgePath}
-                          alt={rankTierTitle}
-                          width={22}
-                          height={22}
-                          className="w-5 h-5 object-contain flex-shrink-0"
-                          style={{
-                            filter: `drop-shadow(0 0 6px ${tierConfig.glowColor || 'rgba(255,255,255,0.1)'})`,
-                          }}
+                      {/* Tier Column with actual Rank Crest Badge + Title */}
+                      <div className="w-40 sm:w-48 flex items-center justify-center flex-shrink-0 gap-2">
+                        <RankCrestBadge
+                          tier={tierConfig.tier as RankTierName}
+                          division={tierConfig.division as RankDivision}
+                          size={30}
                         />
                         <span
                           className="text-xs font-mono tracking-wider uppercase truncate font-semibold"
