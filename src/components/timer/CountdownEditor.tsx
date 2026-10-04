@@ -20,49 +20,22 @@ export function CountdownEditor({ initialSeconds, onSave, onCancel }: CountdownE
   const [direction, setDirection] = useState<'up' | 'down'>('up');
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const stateRef = useRef({ hours, minutes, seconds });
-  useEffect(() => {
-    stateRef.current = { hours, minutes, seconds };
-  }, [hours, minutes, seconds]);
-
-  const propsRef = useRef({ onSave, onCancel });
-  useEffect(() => {
-    propsRef.current = { onSave, onCancel };
-  }, [onSave, onCancel]);
-
-  useEffect(() => {
-    const handleClickOutside = (event: PointerEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        const { hours, minutes, seconds } = stateRef.current;
-        const total = hours * 3600 + minutes * 60 + seconds;
-        if (total > 0) {
-          propsRef.current.onSave(total);
-        } else {
-          propsRef.current.onCancel();
-        }
-      }
-    };
-    document.addEventListener('pointerdown', handleClickOutside, true);
-    return () => {
-      document.removeEventListener('pointerdown', handleClickOutside, true);
-    };
-  }, []);
+  // Click outside to cancel is removed as requested
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Enter') {
-        const { hours, minutes, seconds } = stateRef.current;
         const total = hours * 3600 + minutes * 60 + seconds;
         if (total > 0) {
-          propsRef.current.onSave(total);
+          onSave(total);
         } else {
-          propsRef.current.onCancel();
+          onCancel();
         }
       }
     };
     document.addEventListener('keydown', handleKeyDown, true);
     return () => document.removeEventListener('keydown', handleKeyDown, true);
-  }, []);
+  }, [hours, minutes, seconds, onSave, onCancel]);
   
   // Attach non-passive wheel listener to prevent body scroll natively
   useEffect(() => {
@@ -194,12 +167,6 @@ export function CountdownEditor({ initialSeconds, onSave, onCancel }: CountdownE
           <span>Edit Focus Time</span>
         </div>
         
-        {/* Accent Highlight Line at Bottom */}
-        <div 
-          className="absolute bottom-0 left-12 right-12 h-1 rounded-t-full transition-colors duration-500 opacity-80" 
-          style={{ backgroundColor: accentColor, boxShadow: `0 -4px 20px ${accentColor}` }}
-        />
-        
         <div className="flex items-center gap-2 sm:gap-4 mb-4 relative z-10">
           <Segment val={hours} type="h" />
           <span className="text-3xl sm:text-4xl font-mono tabular-nums font-bold text-white/20 pb-1 sm:pb-2 -translate-y-1">:</span>
@@ -214,10 +181,9 @@ export function CountdownEditor({ initialSeconds, onSave, onCancel }: CountdownE
 
         <button 
           onClick={() => {
-            const { hours, minutes, seconds } = stateRef.current;
             const total = hours * 3600 + minutes * 60 + seconds;
-            if (total > 0) propsRef.current.onSave(total);
-            else propsRef.current.onCancel();
+            if (total > 0) onSave(total);
+            else onCancel();
           }}
           className="mt-4 px-10 py-4 rounded-2xl font-bold text-sm tracking-widest text-black transition-all hover:scale-105 active:scale-95 shadow-xl relative z-10 flex items-center gap-2 cursor-pointer"
           style={{ backgroundColor: accentColor, boxShadow: `0 8px 30px ${accentColor}80` }}
