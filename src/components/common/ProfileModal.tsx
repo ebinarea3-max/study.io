@@ -430,8 +430,8 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
       
       {/* Avatar Vault Modal */}
       {isVaultOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="bg-[#0c1017] border border-amber-500/20 rounded-2xl w-full max-w-xl overflow-hidden shadow-[0_0_50px_rgba(245,158,11,0.1)] relative flex flex-col max-h-[85vh]">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white/[0.07] backdrop-blur-3xl border border-amber-500/20 rounded-2xl w-full max-w-xl overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.7)] relative flex flex-col max-h-[85vh]">
             {/* Vault Header */}
             <div className="flex items-center justify-between px-6 py-5 border-b border-white/10 shrink-0 bg-white/[0.02]">
               <div>
