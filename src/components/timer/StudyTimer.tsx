@@ -822,8 +822,9 @@ export function StudyTimer() {
 
           <div className="flex flex-col items-center gap-2 w-full relative z-20">
           {/* Top Controls: Mode Switcher & Compact Focus Mode on Single Balanced Row */}
-          <div className="w-full flex items-center justify-between px-2 pt-2 pb-1 relative z-10 flex-shrink-0">
-            <div className="flex items-center gap-1.5 sm:gap-2">
+          <div className="w-full flex flex-col px-2 pt-2 pb-1 relative z-10 flex-shrink-0 gap-1.5">
+            {/* Row 1: Mode tabs + Focus button */}
+            <div className="w-full flex items-center justify-between gap-2">
               {/* Mode Segmented Pill */}
               <div className="inline-flex items-center p-0.5 bg-white/[0.04] border border-white/[0.08] rounded-lg gap-0.5">
                 <button
@@ -867,17 +868,44 @@ export function StudyTimer() {
                 </button>
               </div>
 
-              {/* Pomodoro Preset Pills */}
-              {timerMode === 'pomodoro' && (
+              {/* Compact Focus Mode Action — always on Row 1, never pushed off */}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsFocusModeOpen(true);
+                  const el = document.documentElement;
+                  const lockLandscape = () => {
+                    const orientation = window.screen?.orientation as any;
+                    if (orientation && orientation.lock) {
+                      orientation.lock('landscape').catch(() => {});
+                    }
+                  };
+                  if (el.requestFullscreen) {
+                    el.requestFullscreen().then(lockLandscape).catch(() => {});
+                  } else if ((el as any).webkitRequestFullscreen) {
+                    (el as any).webkitRequestFullscreen();
+                    setTimeout(lockLandscape, 100);
+                  }
+                }}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-white/[0.08] bg-white/[0.03] text-zinc-400 hover:text-white hover:bg-white/[0.06] transition-colors text-xs font-mono cursor-pointer shrink-0"
+                title="Fullscreen Focus Mode"
+              >
+                <Maximize2 className="w-3.5 h-3.5" />
+                <span className="hidden min-[380px]:inline">Focus</span>
+              </button>
+            </div>
+
+            {/* Row 2 (mobile only): Pomodoro Preset Pills on their own line */}
+            {timerMode === 'pomodoro' && (
+              <div className="sm:hidden w-full flex items-center gap-1.5 animate-in fade-in zoom-in-95 duration-200">
+                <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider mr-0.5">Preset</span>
                 <div
-                  className="inline-flex items-center p-0.5 bg-white/[0.04] border border-white/[0.08] rounded-lg gap-0.5 animate-in fade-in zoom-in-95 duration-200"
+                  className="inline-flex items-center p-0.5 bg-white/[0.04] border border-white/[0.08] rounded-lg gap-0.5"
                   title={isStudying ? "Interval presets are locked while session is running" : "Choose focus / break interval preset"}
                 >
                   <button
                     type="button"
-                    onClick={() => {
-                      if (!isStudying) setPomodoroPreset('25/5');
-                    }}
+                    onClick={() => { if (!isStudying) setPomodoroPreset('25/5'); }}
                     disabled={isStudying}
                     className={`px-2 py-1 rounded-md font-mono text-xs transition-colors ${
                       pomodoroPreset === '25/5'
@@ -886,14 +914,11 @@ export function StudyTimer() {
                     } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
                     title="25m Focus / 5m Break"
                   >
-                    <span>25/5</span>
+                    25/5
                   </button>
-
                   <button
                     type="button"
-                    onClick={() => {
-                      if (!isStudying) setPomodoroPreset('50/10');
-                    }}
+                    onClick={() => { if (!isStudying) setPomodoroPreset('50/10'); }}
                     disabled={isStudying}
                     className={`px-2 py-1 rounded-md font-mono text-xs transition-colors ${
                       pomodoroPreset === '50/10'
@@ -902,37 +927,46 @@ export function StudyTimer() {
                     } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
                     title="50m Focus / 10m Break"
                   >
-                    <span>50/10</span>
+                    50/10
                   </button>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
-            {/* Compact Focus Mode Action */}
-            <button
-              type="button"
-              onClick={() => {
-                setIsFocusModeOpen(true);
-                const el = document.documentElement;
-                const lockLandscape = () => {
-                  const orientation = window.screen?.orientation as any;
-                  if (orientation && orientation.lock) {
-                    orientation.lock('landscape').catch(() => {});
-                  }
-                };
-                if (el.requestFullscreen) {
-                  el.requestFullscreen().then(lockLandscape).catch(() => {});
-                } else if ((el as any).webkitRequestFullscreen) {
-                  (el as any).webkitRequestFullscreen();
-                  setTimeout(lockLandscape, 100);
-                }
-              }}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-white/[0.08] bg-white/[0.03] text-zinc-400 hover:text-white hover:bg-white/[0.06] transition-colors text-xs font-mono cursor-pointer shrink-0"
-              title="Fullscreen Focus Mode"
-            >
-              <Maximize2 className="w-3.5 h-3.5" />
-              <span className="hidden min-[380px]:inline">Focus</span>
-            </button>
+            {/* Desktop: POMO presets inline next to mode tabs (sm+) */}
+            {timerMode === 'pomodoro' && (
+              <div
+                className="hidden sm:inline-flex items-center p-0.5 bg-white/[0.04] border border-white/[0.08] rounded-lg gap-0.5 animate-in fade-in zoom-in-95 duration-200 self-start"
+                title={isStudying ? "Interval presets are locked while session is running" : "Choose focus / break interval preset"}
+              >
+                <button
+                  type="button"
+                  onClick={() => { if (!isStudying) setPomodoroPreset('25/5'); }}
+                  disabled={isStudying}
+                  className={`px-2 py-1 rounded-md font-mono text-xs transition-colors ${
+                    pomodoroPreset === '25/5'
+                      ? 'bg-amber-500/15 text-amber-400 font-semibold border border-amber-500/30'
+                      : 'text-zinc-500 hover:text-zinc-300'
+                  } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+                  title="25m Focus / 5m Break"
+                >
+                  25/5
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { if (!isStudying) setPomodoroPreset('50/10'); }}
+                  disabled={isStudying}
+                  className={`px-2 py-1 rounded-md font-mono text-xs transition-colors ${
+                    pomodoroPreset === '50/10'
+                      ? 'bg-amber-500/15 text-amber-400 font-semibold border border-amber-500/30'
+                      : 'text-zinc-500 hover:text-zinc-300'
+                  } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+                  title="50m Focus / 10m Break"
+                >
+                  50/10
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Subject Selection Bar - Compact on Mobile */}
@@ -1138,18 +1172,100 @@ export function StudyTimer() {
                   </div>
 
           {/* Center Timer Display - Game HUD Radar / Reactor Core Display */}
-          <div className="relative z-10 flex flex-col items-center justify-center py-4 sm:py-8 my-auto w-full">
-            <div className="relative flex items-center justify-center group p-0 sm:p-4 w-full sm:w-80 sm:h-80 md:w-96 md:h-96 mx-auto sm:aspect-square sm:rounded-full flex-shrink-0">
-              {/* Outer Tier Accent Ambient Halo (Desktop) */}
-              <div
-                className="hidden sm:block absolute inset-[-10%] rounded-full blur-3xl pointer-events-none opacity-[0.05] bg-[radial-gradient(circle_at_center,rgba(var(--tier-accent-rgb),0.08)_0%,transparent_70%)]"
-              />
+          <div className="relative z-10 flex flex-col items-center justify-center py-2 sm:py-8 my-auto w-full">
+            {/* ── Mobile Circular Dial Wrapper (< sm) ── */}
+            <div className="relative sm:hidden flex items-center justify-center mx-auto flex-shrink-0" style={{ width: 'min(82vw, 300px)', height: 'min(82vw, 300px)' }}>
+              {/* Mobile Ambient Glow */}
+              <div className="absolute inset-0 rounded-full blur-3xl pointer-events-none" style={{ background: 'radial-gradient(circle at center, rgba(var(--tier-accent-rgb), 0.10) 0%, transparent 70%)' }} />
 
-              {/* Segmented Radar / Reactor Core SVG Ring (Desktop) */}
-              <svg
-                viewBox="0 0 300 300"
-                className="hidden sm:block absolute inset-0 w-full h-full pointer-events-none select-none"
-              >
+              {/* Mobile SVG Ring */}
+              <svg viewBox="0 0 300 300" className="absolute inset-0 w-full h-full pointer-events-none select-none">
+                <defs>
+                  <linearGradient id="mobileTimerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="var(--accent)" />
+                    <stop offset="100%" stopColor="var(--accent)" />
+                  </linearGradient>
+                </defs>
+                {/* Tick marks */}
+                <g opacity="0.7">
+                  {Array.from({ length: 12 }).map((_, i) => {
+                    const angle = (i * 30 - 90) * (Math.PI / 180);
+                    const isActiveTick = (i / 12) * 100 <= progressPercent && progressPercent > 0;
+                    const rOuter = 144;
+                    const rInner = isActiveTick ? 133 : 137;
+                    return (
+                      <line
+                        key={i}
+                        x1={150 + rOuter * Math.cos(angle)}
+                        y1={150 + rOuter * Math.sin(angle)}
+                        x2={150 + rInner * Math.cos(angle)}
+                        y2={150 + rInner * Math.sin(angle)}
+                        stroke={isActiveTick ? 'var(--accent)' : 'rgba(255,255,255,0.06)'}
+                        strokeWidth={isActiveTick ? 2.5 : 1}
+                        strokeLinecap="round"
+                      />
+                    );
+                  })}
+                </g>
+                {/* Background ring */}
+                <circle cx="150" cy="150" r="124" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="2.5" />
+                {/* Progress arc */}
+                <circle
+                  cx="150" cy="150" r="124"
+                  fill="none"
+                  stroke="url(#mobileTimerGrad)"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeDasharray={2 * Math.PI * 124}
+                  strokeDashoffset={2 * Math.PI * 124 - (progressPercent / 100) * (2 * Math.PI * 124)}
+                  style={{ filter: 'drop-shadow(0 0 4px rgba(var(--tier-accent-rgb), 0.6))' }}
+                  transform="rotate(-90 150 150)"
+                />
+                {/* Inner circle backdrop */}
+                <circle cx="150" cy="150" r="116" fill="rgba(10,12,18,0.7)" />
+              </svg>
+
+              {/* Mobile Clock Content */}
+              <div className="relative z-10 flex flex-col items-center justify-center w-full h-full">
+                <div className="font-mono tabular-nums font-bold text-white drop-shadow-[0_0_24px_rgba(255,255,255,0.15)] text-[clamp(2.2rem,10vw,3.2rem)] text-center select-none tracking-normal">
+                  {timerMode === 'countdown' && !isStudying ? (
+                    isEditingCountdown ? (
+                      <CountdownEditor
+                        initialSeconds={countdownTarget}
+                        onSave={(seconds) => { setCountdownTarget(seconds); setIsEditingCountdown(false); }}
+                        onCancel={() => setIsEditingCountdown(false)}
+                      />
+                    ) : (
+                      <span onClick={() => setIsEditingCountdown(true)} className="cursor-pointer hover:text-amber-400 transition-colors pointer-events-auto" title="Click to edit duration">
+                        {displayTime}
+                      </span>
+                    )
+                  ) : (
+                    <span>{displayTime}</span>
+                  )}
+                </div>
+                {isStudying && (
+                  <div className="text-[10px] uppercase tracking-[0.25em] text-white/60 font-semibold flex items-center justify-center gap-2 mt-2 animate-in fade-in duration-200">
+                    <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${!isPaused ? 'bg-green-400 animate-pulse' : 'bg-amber-400'}`} />
+                    <span>{isPaused ? 'PAUSED' : 'RUNNING'}</span>
+                    <div className="w-1.5 h-1.5 rounded-full flex-shrink-0 opacity-0" aria-hidden />
+                  </div>
+                )}
+                {isStudying && progressPercent > 0 && (
+                  <div className="w-20 h-0.5 bg-white/10 rounded-full overflow-hidden mt-3">
+                    <div className="h-full bg-[var(--accent)] transition-all duration-300 rounded-full" style={{ width: `${progressPercent}%` }} />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* ── Desktop Circular Dial (≥ sm) ── */}
+            <div className="relative hidden sm:flex items-center justify-center group p-4 w-80 h-80 md:w-96 md:h-96 mx-auto aspect-square rounded-full flex-shrink-0">
+              {/* Outer Ambient Halo */}
+              <div className="absolute inset-[-10%] rounded-full blur-3xl pointer-events-none opacity-[0.05] bg-[radial-gradient(circle_at_center,rgba(var(--tier-accent-rgb),0.08)_0%,transparent_70%)]" />
+
+              {/* Segmented Radar / Reactor Core SVG Ring */}
+              <svg viewBox="0 0 300 300" className="absolute inset-0 w-full h-full pointer-events-none select-none">
                 <defs>
                   <linearGradient id="timerTierGrad" x1="0%" y1="0%" x2="100%" y2="100%">
                     <stop offset="0%" stopColor={'var(--accent)'} />
@@ -1157,26 +1273,19 @@ export function StudyTimer() {
                     <stop offset="100%" stopColor={'var(--accent)'} />
                   </linearGradient>
                 </defs>
-
-                {/* Outer Graduation Tick Marks (12 radial ticks) */}
                 <g opacity="0.85">
                   {Array.from({ length: 12 }).map((_, i) => {
                     const angle = (i * 30 - 90) * (Math.PI / 180);
-                    // Light up ticks progressively based on session progress
                     const isActiveTick = (i / 12) * 100 <= progressPercent && progressPercent > 0;
                     const rOuter = 144;
                     const rInner = isActiveTick ? 133 : 137;
-                    const x1 = 150 + rOuter * Math.cos(angle);
-                    const y1 = 150 + rOuter * Math.sin(angle);
-                    const x2 = 150 + rInner * Math.cos(angle);
-                    const y2 = 150 + rInner * Math.sin(angle);
                     return (
                       <line
                         key={i}
-                        x1={x1}
-                        y1={y1}
-                        x2={x2}
-                        y2={y2}
+                        x1={150 + rOuter * Math.cos(angle)}
+                        y1={150 + rOuter * Math.sin(angle)}
+                        x2={150 + rInner * Math.cos(angle)}
+                        y2={150 + rInner * Math.sin(angle)}
                         stroke={isActiveTick ? 'var(--accent)' : 'rgba(255,255,255,0.04)'}
                         strokeWidth={isActiveTick ? 2 : 1}
                         strokeLinecap="round"
@@ -1185,77 +1294,46 @@ export function StudyTimer() {
                     );
                   })}
                 </g>
-
-                {/* Background Track Circle */}
+                <circle cx="150" cy="150" r="124" fill="none" stroke="rgba(255, 255, 255, 0.04)" strokeWidth="2.5" />
                 <circle
-                  cx="150"
-                  cy="150"
-                  r="124"
-                  fill="none"
-                  stroke="rgba(255, 255, 255, 0.04)"
-                  strokeWidth="2.5"
-                />
-
-                {/* Dynamic Progress Arc */}
-                <circle
-                  cx="150"
-                  cy="150"
-                  r="124"
+                  cx="150" cy="150" r="124"
                   fill="none"
                   stroke="url(#timerTierGrad)"
                   strokeWidth="2.5"
                   strokeLinecap="round"
                   strokeDasharray={2 * Math.PI * 124}
                   strokeDashoffset={2 * Math.PI * 124 - (progressPercent / 100) * (2 * Math.PI * 124)}
-                  style={{
-                    filter: 'drop-shadow(0 0 3px rgba(var(--tier-accent-rgb), 0.5))',
-                  }}
+                  style={{ filter: 'drop-shadow(0 0 3px rgba(var(--tier-accent-rgb), 0.5))' }}
                   transform="rotate(-90 150 150)"
                 />
               </svg>
 
-              {/* Inner Dial (Border and background removed on mobile to eliminate oval appearance) */}
-              <div className="w-full sm:w-64 sm:h-64 md:w-80 md:h-80 border-0 sm:border sm:border-white/[0.08] bg-transparent sm:bg-[#0c0d12]/60 sm:backdrop-blur-sm sm:rounded-full relative sm:shadow-[inset_0_1px_1px_rgba(255,255,255,0.06),0_12px_40px_rgba(0,0,0,0.6)] flex-shrink-0 flex flex-col items-center justify-center">
-                {/* Minimal Tick Marks (12, 3, 6, 9) - Desktop only */}
-                <div className="hidden sm:block absolute top-4 left-1/2 -translate-x-1/2 w-0.5 h-2 bg-white/10 rounded-full" />
-                <div className="hidden sm:block absolute bottom-4 left-1/2 -translate-x-1/2 w-0.5 h-2 bg-white/10 rounded-full" />
-                <div className="hidden sm:block absolute left-4 top-1/2 -translate-y-1/2 w-2 h-0.5 bg-white/10 rounded-full" />
-                <div className="hidden sm:block absolute right-4 top-1/2 -translate-y-1/2 w-2 h-0.5 bg-white/10 rounded-full" />
+              {/* Inner Dial */}
+              <div className="w-64 h-64 md:w-80 md:h-80 border border-white/[0.08] bg-[#0c0d12]/60 backdrop-blur-sm rounded-full relative shadow-[inset_0_1px_1px_rgba(255,255,255,0.06),0_12px_40px_rgba(0,0,0,0.6)] flex-shrink-0 flex flex-col items-center justify-center">
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 w-0.5 h-2 bg-white/10 rounded-full" />
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-0.5 h-2 bg-white/10 rounded-full" />
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 w-2 h-0.5 bg-white/10 rounded-full" />
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 w-2 h-0.5 bg-white/10 rounded-full" />
 
-                {/* Centered Content Wrapper */}
-                <div className="relative sm:absolute sm:inset-0 flex flex-col items-center justify-center pointer-events-none z-10 [&>div]:pointer-events-auto py-2 sm:py-0 w-full h-full">
-                  {/* Spacer to mathematically balance the vertical flex center against the status pill below on desktop */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10 [&>div]:pointer-events-auto">
                   <div className="hidden sm:block h-6 mt-2" aria-hidden="true" />
-                  
-                  {/* Big Technical Digital Numbers - Exactly centered on horizontal and vertical axes */}
                   <div className="font-mono tabular-nums font-bold text-white drop-shadow-[0_0_24px_rgba(255,255,255,0.12)] text-5xl md:text-6xl w-full text-center flex items-center justify-center select-none tracking-normal">
                     {timerMode === 'countdown' && !isStudying ? (
                       isEditingCountdown ? (
-                        <CountdownEditor 
+                        <CountdownEditor
                           initialSeconds={countdownTarget}
-                          onSave={(seconds) => {
-                            setCountdownTarget(seconds);
-                            setIsEditingCountdown(false);
-                          }}
+                          onSave={(seconds) => { setCountdownTarget(seconds); setIsEditingCountdown(false); }}
                           onCancel={() => setIsEditingCountdown(false)}
                         />
                       ) : (
-                        <span 
-                          onClick={() => setIsEditingCountdown(true)} 
-                          className="cursor-pointer hover:text-amber-400 transition-colors pointer-events-auto font-mono tabular-nums inline-block text-center"
-                          title="Click to edit duration"
-                        >
+                        <span onClick={() => setIsEditingCountdown(true)} className="cursor-pointer hover:text-amber-400 transition-colors pointer-events-auto font-mono tabular-nums inline-block text-center" title="Click to edit duration">
                           {displayTime}
                         </span>
                       )
                     ) : (
-                      <span className="font-mono tabular-nums inline-block text-center">
-                        {displayTime}
-                      </span>
+                      <span className="font-mono tabular-nums inline-block text-center">{displayTime}</span>
                     )}
                   </div>
-
-                  {/* Dynamic Status: Only render active metadata once session starts */}
                   {isStudying ? (
                     <div className="h-6 text-[11px] uppercase tracking-[0.2em] text-white/70 font-semibold flex items-center justify-center gap-2 mt-2 animate-in fade-in duration-200">
                       <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${!isPaused ? 'bg-green-500 animate-pulse' : 'bg-amber-400'}`} />
@@ -1263,16 +1341,6 @@ export function StudyTimer() {
                       <div className="w-1.5 h-1.5 rounded-full flex-shrink-0 opacity-0 pointer-events-none" aria-hidden="true" />
                     </div>
                   ) : null}
-
-                  {/* Sleek Progress Line on Mobile when active */}
-                  {isStudying && progressPercent > 0 && (
-                    <div className="sm:hidden w-36 h-1 bg-white/10 rounded-full overflow-hidden mt-3">
-                      <div
-                        className="h-full bg-[var(--accent)] transition-all duration-300 rounded-full"
-                        style={{ width: `${progressPercent}%` }}
-                      />
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
