@@ -8,6 +8,7 @@ import { UserAvatar } from './UserAvatar';
 import { getRankTier } from '../../lib/rankedSystem';
 import { getSupabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
+import { isAppropriateHandle, isValidHandleFormat, sanitizeHandleInput } from '../../lib/validation';
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -93,8 +94,12 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     let candidate = '';
     let isTaken = true;
     let attempts = 0;
-    while (isTaken && attempts < 5) {
+    while (isTaken && attempts < 10) {
       candidate = `${baseHandle}_${Math.floor(1000 + Math.random() * 9000)}`;
+      if (!isAppropriateHandle(candidate)) {
+        attempts++;
+        continue;
+      }
       const { data } = await supabase.from('profiles').select('id').eq('username', candidate).maybeSingle();
       if (!data) isTaken = false;
       attempts++;
@@ -140,7 +145,8 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
 
   if (!isOpen) return null;
 
-  const cleanedHandle = username.replace(/^@/, '').toLowerCase().trim();
+  const cleanedHandle = sanitizeHandleInput(username.replace(/^@/, ''));
+  const handleIsAppropriate = cleanedHandle === '' || isAppropriateHandle(cleanedHandle);
 
   let cooldownDaysLeft = 0;
   let isCooldownActive = false;
@@ -219,6 +225,14 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
       if (usernameChanged) {
         if (isCooldownActive) {
           throw new Error(`User ID can only be changed once every 30 days. Available again in ${cooldownDaysLeft} days.`);
+        }
+        
+        if (!isValidHandleFormat(cleanedHandle)) {
+          throw new Error("Handle must be 3-24 characters, alphanumeric, dashes or underscores only, without consecutive special characters.");
+        }
+        
+        if (!isAppropriateHandle(cleanedHandle)) {
+          throw new Error("Handle contains restricted or inappropriate terms. Please choose a different identity.");
         }
 
         const supabase = getSupabase();
@@ -410,15 +424,17 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                 <input
                   type="text"
                   required
-                  maxLength={20}
+                  maxLength={24}
                   value={username}
                   disabled={isCooldownActive}
-                  onChange={(e) => setUsername(e.target.value.replace(/^@/, '').toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                  onChange={(e) => setUsername(sanitizeHandleInput(e.target.value.replace(/^@/, '')))}
                   className="w-full bg-white/[0.05] backdrop-blur-xl border border-white/10 rounded-lg pl-9 pr-4 py-3 text-sm text-white placeholder:text-neutral-500 focus:outline-none focus:border-cyan-500/80 focus:ring-1 focus:ring-cyan-500/80 transition-all font-mono disabled:opacity-50 disabled:cursor-not-allowed shadow-[inset_0_2px_4px_rgba(0,0,0,0.2)]"
                 />
               </div>
               <div className="mt-1.5 text-[10px] font-mono">
-                {isCooldownActive ? (
+                {!handleIsAppropriate ? (
+                  <span className="text-amber-500">Handle contains restricted or inappropriate terms. Please choose a different identity.</span>
+                ) : isCooldownActive ? (
                   <span className="text-amber-400">Cooldown active: Editable in {cooldownDaysLeft} days</span>
                 ) : (
                   <span className="text-neutral-500">Can only be changed once every 30 days.</span>
@@ -470,7 +486,7 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
               </button>
               <button
                 type="submit"
-                disabled={isSaving || displayName.trim().length < 2 || cleanedHandle.length < 3 || (cleanedHandle !== (user.username || '') && isCooldownActive)}
+                disabled={isSaving || displayName.trim().length < 2 || cleanedHandle.length < 3 || (cleanedHandle !== (user.username || '') && isCooldownActive) || !handleIsAppropriate}
                 className="flex-1 py-3 px-4 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black text-xs font-bold uppercase tracking-wider transition-all shadow-[0_0_20px_rgba(245,158,11,0.2)] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSaving ? (
