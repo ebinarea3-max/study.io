@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useStudy } from '../../context/StudyContext';
-import { X, Target, User, Loader2, Save, Camera, Upload, Plus } from 'lucide-react';
+import { X, Target, User, Loader2, Save, Camera, Upload, Plus, Dices } from 'lucide-react';
 import { UserAvatar } from './UserAvatar';
 import { getRankTier } from '../../lib/rankedSystem';
 import { getSupabase } from '../../lib/supabase';
@@ -15,6 +15,17 @@ interface ProfileModalProps {
 }
 
 const differenceInDays = (d1: Date, d2: Date) => Math.floor((d1.getTime() - d2.getTime()) / (1000 * 3600 * 24));
+
+const generateThematicIdentity = () => {
+  const adjectives = ['Silent', 'Astral', 'Quantum', 'Nova', 'Apex', 'Cyber', 'Zen', 'Lucid', 'Phantom', 'Chrono', 'Arcane', 'Kinetic'];
+  const nouns = ['Scholar', 'Archivist', 'Tactician', 'Monk', 'Nomad', 'Pioneer', 'Mind', 'Seeker', 'Scribe', 'Alchemist'];
+  const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
+  const noun = nouns[Math.floor(Math.random() * nouns.length)];
+  return {
+    displayName: `${adj} ${noun}`,
+    baseHandle: `${adj.toLowerCase()}${noun.toLowerCase()}`,
+  };
+};
 
 const PRESET_AVATARS = [
   'https://api.dicebear.com/9.x/micah/svg?seed=ScholarA&backgroundColor=0d1117',
@@ -73,6 +84,36 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [isVaultOpen, setIsVaultOpen] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [isGeneratingIdentity, setIsGeneratingIdentity] = useState(false);
+
+  const generateUniqueHandle = async (baseHandle: string) => {
+    const supabase = getSupabase();
+    if (!supabase) return `${baseHandle}_${Math.floor(1000 + Math.random() * 9000)}`;
+    
+    let candidate = '';
+    let isTaken = true;
+    let attempts = 0;
+    while (isTaken && attempts < 5) {
+      candidate = `${baseHandle}_${Math.floor(1000 + Math.random() * 9000)}`;
+      const { data } = await supabase.from('profiles').select('id').eq('username', candidate).maybeSingle();
+      if (!data) isTaken = false;
+      attempts++;
+    }
+    return candidate;
+  };
+
+  const rollNewIdentity = async () => {
+    setIsGeneratingIdentity(true);
+    try {
+      const { displayName: newName, baseHandle } = generateThematicIdentity();
+      setDisplayName(newName);
+      const uniqueHandle = await generateUniqueHandle(baseHandle);
+      setUsername(uniqueHandle);
+      setAvatarUrl(prev => prev || PRESET_AVATARS[0]);
+    } finally {
+      setIsGeneratingIdentity(false);
+    }
+  };
 
   // Sync state whenever user or modal open status changes
   useEffect(() => {
@@ -89,8 +130,13 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
       setAvatarUrl(effectiveAvatarUrl);
       
       setErrorMsg('');
+
+      if (!user.is_onboarded && !(user.username || '')) {
+        rollNewIdentity();
+      }
     }
-  }, [isOpen, user.name, user.displayName, user.username, user.dailyGoalHours, user.avatarUrl, user.user_metadata]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, user.name, user.displayName, user.username, user.dailyGoalHours, user.avatarUrl, user.is_onboarded]);
 
   if (!isOpen) return null;
 
@@ -183,10 +229,11 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
           .from("profiles")
           .select("id")
           .eq("username", cleanedHandle)
+          .neq("id", user.id)
           .maybeSingle();
 
         if (existing) {
-          throw new Error("This User ID is already taken. Please choose another.");
+          throw new Error("Handle already claimed. Try another.");
         }
 
         updatePayload.username = cleanedHandle;
@@ -327,9 +374,22 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
           <form onSubmit={handleSave} className="space-y-5">
             {/* Display Name */}
             <div>
-              <label className="text-[11px] font-mono uppercase tracking-widest text-neutral-400 font-semibold mb-2 block">
-                Display Name
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-[11px] font-mono uppercase tracking-widest text-neutral-400 font-semibold block">
+                  Display Name
+                </label>
+                {!user.is_onboarded && (
+                  <button
+                    type="button"
+                    onClick={rollNewIdentity}
+                    disabled={isGeneratingIdentity}
+                    className="text-[10px] flex items-center gap-1 font-mono uppercase text-amber-400 hover:text-amber-300 transition-colors cursor-pointer"
+                  >
+                    <Dices className={`w-3 h-3 ${isGeneratingIdentity ? 'animate-spin' : ''}`} />
+                    Shuffle Identity
+                  </button>
+                )}
+              </div>
               <input
                 type="text"
                 required
@@ -393,7 +453,7 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
             </div>
 
             {errorMsg && (
-              <div className="text-[11px] text-rose-500 font-mono mt-2 bg-rose-500/10 border border-rose-500/20 p-2 rounded">
+              <div className="text-[11px] text-amber-500 font-mono mt-2 bg-amber-500/10 border border-amber-500/20 p-2 rounded">
                 {errorMsg}
               </div>
             )}
