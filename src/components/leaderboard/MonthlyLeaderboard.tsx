@@ -80,24 +80,9 @@ function AnimatedDigit({
  * Ensures valid 23-rank monthly tiers (e.g. "BRONZE I", "SILVER II", "GOLD I").
  */
 export function getMonthlyRankTierTitle(rankTitle?: string, totalSeconds?: number): string {
-  const clean = (rankTitle || '').trim().toLowerCase();
-
-  const isScholarTitle =
-    clean.includes('scholar') ||
-    clean.includes('mind') ||
-    clean.includes('inquirer') ||
-    clean.includes('polymath') ||
-    clean.includes('philosopher') ||
-    clean.includes('archon') ||
-    clean.includes('sage') ||
-    clean.includes('myth');
-
-  if (isScholarTitle || !clean) {
-    const rpFromMinutes = totalSeconds ? Math.floor(totalSeconds / 60) : 0;
-    return getRankTier(rpFromMinutes).fullTitle;
-  }
-
-  return getRankConfigByTitle(clean).fullTitle;
+  // Dynamically calculate tier based on recorded seconds to avoid stale DB values.
+  const rpFromMinutes = totalSeconds ? Math.floor(totalSeconds / 60) : 0;
+  return getRankTier(rpFromMinutes).fullTitle;
 }
 
 export type LeaderboardTimeframe = 'today' | 'week' | 'month' | 'all';
