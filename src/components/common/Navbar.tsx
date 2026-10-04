@@ -17,7 +17,7 @@ import {
   Trophy,
   CheckSquare,
 } from 'lucide-react';
-import { UserAvatar } from './UserAvatar';
+
 import { Logo } from '../Logo';
 import { getRankTier } from '../../lib/rankedSystem';
 import { getTierBadge, getLevelTitle } from '../../lib/gamification';
@@ -128,10 +128,19 @@ export function Navbar({
     }
   }, []);
 
-  const avatarUrl = useMemo(() => {
-    if (isLoading) return '';
-    return user?.avatarUrl || '';
-  }, [user?.avatarUrl, isLoading]);
+  const effectiveAvatar = useMemo(() => {
+    return (
+      user?.avatarUrl ||
+      user?.user_metadata?.avatar_url ||
+      (user as any)?.user_metadata?.picture ||
+      ''
+    );
+  }, [user?.avatarUrl, user?.user_metadata?.avatar_url, (user as any)?.user_metadata?.picture]);
+
+  const [imageError, setImageError] = useState(false);
+  useEffect(() => {
+    setImageError(false);
+  }, [effectiveAvatar]);
 
   const displayName = useMemo(() => {
     return (
@@ -328,12 +337,21 @@ export function Navbar({
                 </svg>
 
                 {/* Avatar */}
-                <UserAvatar
-                  src={avatarUrl}
-                  name={displayName}
-                  size={30}
-                  className="w-[30px] h-[30px] rounded-full shadow-inner"
-                />
+                <div className="w-[30px] h-[30px] rounded-full overflow-hidden flex items-center justify-center relative shadow-inner bg-slate-800 z-10">
+                  {effectiveAvatar && !imageError ? (
+                    <img
+                      src={effectiveAvatar}
+                      alt={displayName || 'User Avatar'}
+                      className="w-full h-full object-cover transition-opacity duration-300"
+                      referrerPolicy="no-referrer"
+                      onError={() => setImageError(true)}
+                    />
+                  ) : (
+                    <div className="w-full h-full rounded-full bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 flex items-center justify-center font-bold text-[11px] uppercase">
+                      {(displayName || user?.email || 'U').charAt(0)}
+                    </div>
+                  )}
+                </div>
 
                 {/* Online/Studying status pulse */}
                 <span
