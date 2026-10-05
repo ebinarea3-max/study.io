@@ -1888,7 +1888,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
             const realStreak = calculateStreak(merged);
             const realTotalSeconds = merged.reduce((sum, s) => sum + s.durationSeconds, 0);
             const totalStudyMinutes = Math.floor(realTotalSeconds / 60);
-            const minExpectedRP = totalStudyMinutes * 10;
+            const minExpectedRP = totalStudyMinutes * 1;
             const currentRP = Number((userRef.current as any)?.rp ?? userRef.current?.seasonRp ?? 0);
             const finalRP = Math.max(minExpectedRP, currentRP);
 
@@ -2100,7 +2100,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         const realStreak = calculateStreak(sessionsToUse);
         const realTotalSeconds = sessionsToUse.reduce((sum, s) => sum + (s.durationSeconds || (s as any).duration_seconds || 0), 0);
         const totalStudyMinutes = Math.floor(realTotalSeconds / 60);
-        const minExpectedRP = totalStudyMinutes * 10;
+        const minExpectedRP = totalStudyMinutes * 1;
         const currentRP = Number((currentUser as any)?.rp ?? currentUser.seasonRp ?? 0);
         const finalRP = Math.max(minExpectedRP, currentRP);
         const computedLevel = Math.max(1, Math.floor(Math.sqrt(Math.max(0, finalRP) / 100)) + 1);
@@ -3489,6 +3489,7 @@ export function useStudy() {
   }
   return context;
 }
+
 
 
 

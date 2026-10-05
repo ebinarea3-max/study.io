@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useAuth } from '../../context/AuthContext';
 import { useStudy } from '../../context/StudyContext';
 import { getSupabase } from '../../lib/supabase';
-import { getRankFromRp, calculateRpFromSeconds, RankTierName, RankDivision, RankTier } from '../../lib/ranks';
+import { getRankFromRp, calculateRpFromSeconds, RankTierName, RankDivision, RankTier, RANKS } from '../../lib/ranks';
 import { getRankTheme } from '../../lib/rankTheme';
 import { getLevelFromLifetimeXP } from '../../lib/gamification';
 import { LeaderboardEntry } from '../../types';
@@ -85,7 +85,11 @@ export function getMonthlyRankTierTitle(rankTitle?: string, totalSeconds?: numbe
   return getRankFromRp(rp).fullTitle;
 }
 
-export function getMonthlyRankTierConfig(totalSeconds?: number): RankTier {
+export function getMonthlyRankTierConfig(totalSeconds?: number, rankTitle?: string): RankTier {
+  if (rankTitle) {
+    const found = RANKS.find(r => r.fullTitle === rankTitle.toUpperCase());
+    if (found) return found;
+  }
   const rp = calculateRpFromSeconds(totalSeconds || 0);
   return getRankFromRp(rp);
 }
@@ -466,7 +470,7 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
     
     const row = contenders[idx];
     const actualRank = idx + 1;
-    const tierConfig = getMonthlyRankTierConfig(row.total_seconds);
+    const tierConfig = getMonthlyRankTierConfig(row.total_seconds, row.rank_title);
     const { h, m } = parseTimeHoursMinutes(row.total_seconds);
     
     return { rank: actualRank, row, h, m, tierConfig };
@@ -621,7 +625,7 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                   
                   if (idx < 2) console.log('Leaderboard row data:', row);
 
-                  let tierConfig = getMonthlyRankTierConfig(row.total_seconds);
+                  let tierConfig = getMonthlyRankTierConfig(row.total_seconds, row.rank_title);
                   const level = row.level ?? getLevelFromLifetimeXP(row.lifetime_xp || 0);
 
                   const displayTierTitle = tierConfig.fullTitle;
@@ -796,4 +800,5 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
     </div>
   );
 }
+
 
