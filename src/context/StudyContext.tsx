@@ -50,6 +50,7 @@ interface StudyContextType {
   dismissLevelUpModal: () => void;
   dismissXpNotification: () => void;
   isIdleCheckActive: boolean;
+  isBlockedByOtherTab: boolean;
   confirmIdleCheck: () => void;
   triggerXpEarned: (amount: number, reason: string, type?: 'focus' | 'todo' | 'streak' | 'general') => void;
   subjects: Subject[];
@@ -507,6 +508,8 @@ export function StudyProvider({ children }: { children: ReactNode }) {
   const [currentNotes, setCurrentNotes] = useState('');
   const [isFocusModeOpen, setIsFocusModeOpen] = useState(false);
   const [isIdleCheckActive, setIsIdleCheckActive] = useState(false);
+  const [isBlockedByOtherTab, setIsBlockedByOtherTab] = useState(false);
+  const broadcastChannelRef = useRef<BroadcastChannel | null>(null);
   const idleCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const idleCheckFiredRef = useRef(false);
 
@@ -913,6 +916,51 @@ export function StudyProvider({ children }: { children: ReactNode }) {
   const realtimeEventCountRef = useRef<number>(0);
 
   const isRunning = isStudying && !isPaused;
+
+  // BroadcastChannel for Single-Active-Tab Timer Locking
+  useEffect(() => {
+    if (typeof window === "undefined" || !("BroadcastChannel" in window)) return;
+    const channel = new BroadcastChannel("studypulse_timer_channel");
+    broadcastChannelRef.current = channel;
+
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === "TIMER_STARTED") {
+        if (isRunning) {
+          setIsPaused(true);
+          if (timerIntervalRef.current) {
+            clearInterval(timerIntervalRef.current);
+            timerIntervalRef.current = null;
+          }
+          startTimeRef.current = null;
+          toast("Timer paused because another tab started a session.", { icon: "?" });
+        }
+        setIsBlockedByOtherTab(true);
+      } else if (event.data?.type === "TIMER_STOPPED") {
+        setIsBlockedByOtherTab(false);
+      } else if (event.data?.type === "PING_STATUS") {
+        if (isRunning) {
+          channel.postMessage({ type: "TIMER_STARTED" });
+        }
+      }
+    };
+
+    channel.addEventListener("message", handleMessage);
+    channel.postMessage({ type: "PING_STATUS" });
+
+    return () => {
+      channel.removeEventListener("message", handleMessage);
+      channel.close();
+    };
+  }, [isRunning]);
+
+  // Broadcast state changes
+  useEffect(() => {
+    if (isRunning) {
+      broadcastChannelRef.current?.postMessage({ type: "TIMER_STARTED" });
+    } else {
+      broadcastChannelRef.current?.postMessage({ type: "TIMER_STOPPED" });
+    }
+  }, [isRunning]);
 
   // Real-Time Delta Tracking: Synchronized interval engine running at 500ms tick to eliminate background throttling drift
   useEffect(() => {
@@ -3378,6 +3426,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         dismissLevelUpModal,
         dismissXpNotification,
       isIdleCheckActive,
+      isBlockedByOtherTab,
       confirmIdleCheck,
         triggerXpEarned,
         subjects,
@@ -3448,6 +3497,8 @@ export function useStudy() {
   }
   return context;
 }
+
+
 
 
 

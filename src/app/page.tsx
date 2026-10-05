@@ -235,7 +235,7 @@ export default function Home() {
           oldLevel={levelUpData.oldLevel}
           newLevel={levelUpData.newLevel}
           title={levelUpData.title}
-          onClose={() => setLevelUpData(null)}
+          onClose={dismissLevelUpModal}
         />
       )}
 

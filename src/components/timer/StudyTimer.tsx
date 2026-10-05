@@ -70,6 +70,7 @@ export function StudyTimer() {
     isStudying,
     isPaused,
     isRunning,
+    isBlockedByOtherTab,
     startTimeRef,
     elapsedSeconds,
     pomodoroPhase,
@@ -1667,3 +1668,4 @@ export function StudyTimer() {
     </div>
   );
 }
+
