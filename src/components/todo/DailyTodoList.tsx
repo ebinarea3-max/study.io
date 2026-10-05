@@ -505,7 +505,7 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
             value={taskInput}
             onChange={e => setTaskInput(e.target.value)}
             placeholder="Add new mission objective..."
-            className="w-full bg-transparent text-sm sm:text-base text-white placeholder:text-neutral-600 focus:outline-none font-sans py-1"
+            className="w-full bg-transparent text-sm sm:text-base text-white placeholder:text-neutral-500 focus:outline-none font-sans py-1"
           />
         </div>
 
@@ -543,9 +543,9 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
             onChange={e => setTaskSubjectId(e.target.value)}
             className="px-2 py-1.5 rounded-lg bg-white/[0.05] border border-white/10 text-neutral-300 text-[10px] font-hud-mono uppercase tracking-wider focus:outline-none focus:border-amber-500/50 cursor-pointer"
           >
-            <option value="none">General</option>
+            <option value="none" className="bg-[#0f1115] text-neutral-300">General</option>
             {subjects.map(s => (
-              <option key={s.id} value={s.id}>
+              <option key={s.id} value={s.id} className="bg-[#0f1115] text-neutral-300">
                 {s.name}
               </option>
             ))}
