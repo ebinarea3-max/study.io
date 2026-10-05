@@ -1,4 +1,4 @@
-import { clsx, type ClassValue } from 'clsx';
+﻿import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
 export function cn(...inputs: ClassValue[]) {
@@ -20,7 +20,11 @@ export function formatSeconds(totalSeconds: number): string {
 export function formatDuration(totalSeconds: number): string {
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
-  return `${hours.toString().padStart(2, '0')}h ${minutes.toString().padStart(2, '0')}m`;
+  // Skip the "00h" prefix — only show hours when there's at least 1
+  if (hours === 0) {
+    return `${minutes}m`;
+  }
+  return `${hours}h ${minutes.toString().padStart(2, '0')}m`;
 }
 
 import { getLocalDateString } from './dateUtils';
