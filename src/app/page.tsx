@@ -72,7 +72,7 @@ export default function Home() {
       }
       try {
         localStorage.removeItem('last_daily_boost_date');
-      } catch {}
+      } catch { }
     }
   }, [isLoading, isAuthenticated, user]);
 
@@ -221,10 +221,12 @@ export default function Home() {
         onContinue={dismissRankSettlement}
       />
 
+      {/* Update Notification Banner */}
+      <UpdateBannerModal />
+
       {/* Level Up Celebratory Modal */}
       {levelUpData && (
-        <UpdateBannerModal />
-      <LevelUpModal
+        <LevelUpModal
           isOpen={Boolean(levelUpData)}
           oldLevel={levelUpData.oldLevel}
           newLevel={levelUpData.newLevel}
