@@ -793,10 +793,7 @@ export function StudyTimer() {
         <div
           className="relative w-full h-full md:rounded-2xl max-md:bg-transparent md:bg-[#0b0e14]/90 max-md:p-0 sm:p-8 max-md:shadow-none md:shadow-2xl overflow-hidden max-md:backdrop-blur-none md:backdrop-blur-xl flex flex-col justify-between transition-all"
         >
-          {/* Dial Backlight Illumination */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none -z-0">
-            <div className="w-80 h-80 rounded-full bg-amber-500/[0.05] blur-3xl" />
-          </div>
+          {/* Dial Backlight Illumination (Removed for clean dot-grid background) */}
 
           {/* Angular Targeting Reticle Corner Brackets */}
           <div className="hidden md:block hud-corner-bracket hud-corner-tl" />
@@ -1176,8 +1173,7 @@ export function StudyTimer() {
           <div className="relative z-10 flex flex-col items-center justify-center max-md:py-0 py-2 sm:py-8 my-auto w-full">
             {/* ── Mobile Circular Dial Wrapper (< sm) ── */}
             <div className="relative sm:hidden flex items-center justify-center mx-auto flex-shrink-0 w-full max-w-[260px] aspect-square">
-              {/* Mobile Ambient Glow */}
-              <div className="absolute inset-0 rounded-full blur-3xl pointer-events-none" style={{ background: 'radial-gradient(circle at center, rgba(var(--tier-accent-rgb), 0.10) 0%, transparent 70%)' }} />
+              {/* Mobile Ambient Glow (Removed) */}
 
               {/* Mobile SVG Ring */}
               <svg viewBox="0 0 300 300" className="absolute inset-0 w-full h-full pointer-events-none select-none">
@@ -1250,8 +1246,7 @@ export function StudyTimer() {
 
             {/* ── Desktop Circular Dial (≥ sm) ── */}
             <div className="relative hidden sm:flex items-center justify-center group p-4 w-80 h-80 md:w-96 md:h-96 mx-auto aspect-square rounded-full flex-shrink-0">
-              {/* Outer Ambient Halo */}
-              <div className="absolute inset-[-10%] rounded-full blur-3xl pointer-events-none opacity-[0.05] bg-[radial-gradient(circle_at_center,rgba(var(--tier-accent-rgb),0.08)_0%,transparent_70%)]" />
+              {/* Outer Ambient Halo (Removed) */}
 
               {/* Segmented Radar / Reactor Core SVG Ring */}
               <svg viewBox="0 0 300 300" className="absolute inset-0 w-full h-full pointer-events-none select-none">
@@ -1573,7 +1568,7 @@ export function StudyTimer() {
             </div>
           </div>
               {/* Atmosphere UI (Mobile) */}
-              <div className="relative sm:hidden max-md:mt-1 mt-3 flex justify-center w-full">
+              <div className="relative sm:hidden max-md:mb-8 mb-6 max-md:mt-2 mt-3 flex justify-center w-full">
                 <button
                   type="button"
                   onClick={() => setIsAmbientMenuOpen(!isAmbientMenuOpen)}
