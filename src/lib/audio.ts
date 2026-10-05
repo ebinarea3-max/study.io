@@ -195,11 +195,11 @@ class AudioEngine {
 
   // Volume compensation factors to ensure consistent perceived loudness across all files
   private volumeCompensation: Record<AmbientSoundType, number> = {
-    'pinknoise': 1.5,
-    'brownnoise': 2.5,
-    'whitenoise': 1.0,
-    'rain': 2.0,
-    'campfire': 2.0,
+    'pinknoise': 3.0,
+    'brownnoise': 5.0,
+    'whitenoise': 2.0,
+    'rain': 4.0,
+    'campfire': 4.0,
   };
 
   public async startAmbient(type: AmbientSoundType, volume = 0.4) {
@@ -278,7 +278,7 @@ class AudioEngine {
   public setAmbientVolume(vol: number) {
     if (this.ambientGain && this.ctx && this.currentAmbientType) {
       const compFactor = this.volumeCompensation[this.currentAmbientType] || 1.0;
-      const target = Math.max(0, Math.min(1, vol * compFactor));
+      const target = Math.max(0, vol * compFactor);
       this.ambientGain.gain.cancelScheduledValues(this.ctx.currentTime);
       this.ambientGain.gain.setValueAtTime(this.ambientGain.gain.value, this.ctx.currentTime);
       this.ambientGain.gain.linearRampToValueAtTime(target, this.ctx.currentTime + 0.1);
