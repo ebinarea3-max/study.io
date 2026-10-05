@@ -5,8 +5,24 @@ import { useStudy } from '../../context/StudyContext';
 import { useServiceWorker } from '../../hooks/useServiceWorker';
 
 /**
+ * Detect touchscreen/mobile devices via the `pointer: coarse` media query.
+ * Returns true on phones/tablets, false on laptops/desktops with a mouse.
+ * Evaluated once at module load — device type doesn't change at runtime.
+ */
+function isMobileDevice(): boolean {
+  if (typeof window === 'undefined') return false;
+  return window.matchMedia('(pointer: coarse)').matches;
+}
+
+const IS_MOBILE = isMobileDevice();
+
+/**
  * TimerSWBridge — invisible component that bridges StudyContext timer state
  * to the Service Worker for background tracking and push notifications.
+ *
+ * Notifications are ONLY sent on mobile/touchscreen devices (pointer: coarse).
+ * On laptops/desktops the SW is still registered (for offline caching) but
+ * no notification messages are dispatched — zero popups on desktop.
  *
  * Mount this once inside StudyProvider (via Providers).
  */
@@ -43,8 +59,9 @@ export function TimerSWBridge() {
   const prevPausedRef = useRef(false);
   const permissionRequestedRef = useRef(false);
 
-  // Request notification permission on first timer start
+  // Request notification permission on first timer start — mobile only
   useEffect(() => {
+    if (!IS_MOBILE) return;
     if (isStudying && !permissionRequestedRef.current) {
       permissionRequestedRef.current = true;
       requestNotificationPermission().then((perm) => {
@@ -61,17 +78,23 @@ export function TimerSWBridge() {
     return null;
   }, [timerMode, pomodoroPhase, pomodoroWorkDuration, pomodoroBreakDuration]);
 
-  // Sync state transitions to SW
+  // Sync timer state transitions to SW — mobile only
   useEffect(() => {
     const wasRunning = prevRunningRef.current;
     const wasStudying = prevStudyingRef.current;
     const wasPaused = prevPausedRef.current;
 
+    prevRunningRef.current = isRunning;
+    prevStudyingRef.current = isStudying;
+    prevPausedRef.current = isPaused;
+
+    // Skip all notification messages on laptops / desktops
+    if (!IS_MOBILE) return;
+
     const subjectName = selectedSubject?.name || '';
     const hidden = typeof document !== 'undefined' && document.hidden;
 
     if (isRunning && !wasRunning) {
-      // Timer just started or resumed
       const isResume = wasStudying && wasPaused;
       if (isResume) {
         postToSW({
@@ -93,21 +116,15 @@ export function TimerSWBridge() {
         });
       }
     } else if (!isRunning && wasRunning && isStudying && isPaused) {
-      // Timer paused
       postToSW({ type: 'TIMER_PAUSE', elapsed: elapsedSeconds });
     } else if (!isStudying && wasStudying) {
-      // Timer stopped
       postToSW({ type: 'TIMER_STOP' });
     }
-
-    prevRunningRef.current = isRunning;
-    prevStudyingRef.current = isStudying;
-    prevPausedRef.current = isPaused;
   }, [isRunning, isStudying, isPaused]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Send TIMER_TICK to SW every 10s while running (keeps startTime anchor fresh)
+  // Send TIMER_TICK to SW every 10s while running — mobile only
   useEffect(() => {
-    if (!isRunning) return;
+    if (!IS_MOBILE || !isRunning) return;
     const id = setInterval(() => {
       postToSW({
         type: 'TIMER_TICK',
@@ -119,18 +136,16 @@ export function TimerSWBridge() {
     return () => clearInterval(id);
   }, [isRunning, elapsedSeconds, selectedSubject?.name, postToSW]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Notify SW when app visibility changes (SW keeps the notification loop running either way)
+  // Visibility change — mobile only
   useEffect(() => {
+    if (!IS_MOBILE) return;
     const handleVisibility = () => {
       if (document.hidden) {
-        // App went to background
         postToSW({ type: 'APP_HIDDEN' });
       } else {
-        // App returned to foreground — notification stays until timer stops
         postToSW({ type: 'APP_VISIBLE' });
       }
     };
-
     document.addEventListener('visibilitychange', handleVisibility);
     return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, [postToSW]);
