@@ -982,10 +982,6 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         const now = Date.now();
         if (lastTickTimeRef.current) {
           const delta = now - lastTickTimeRef.current;
-          if (delta > 30000) {
-            startTimeRef.current += delta;
-            toast('Timer auto-paused while system was asleep/inactive.', { icon: '💤' });
-          }
         }
         lastTickTimeRef.current = now;
 
@@ -1099,10 +1095,6 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         const now = Date.now();
         if (lastTickTimeRef.current) {
           const delta = now - lastTickTimeRef.current;
-          if (delta > 30000) {
-            startTimeRef.current += delta;
-            toast('Timer auto-paused while system was asleep/inactive.', { icon: '💤' });
-          }
         }
         lastTickTimeRef.current = now;
 
@@ -3497,6 +3489,7 @@ export function useStudy() {
   }
   return context;
 }
+
 
 
 

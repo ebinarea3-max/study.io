@@ -135,7 +135,7 @@ export default function Home() {
 
   // Authenticated: Full StudyPulse focus dashboard
   return (
-    <div className="min-h-screen w-full overflow-y-auto pb-24 px-4 md:px-8 bg-[#07090e] bg-dot-grid text-slate-100 flex flex-col relative selection:bg-amber-500/30 selection:text-amber-400">
+    <div className={`w-full bg-[#07090e] bg-dot-grid text-slate-100 flex flex-col relative selection:bg-amber-500/30 selection:text-amber-400 px-4 md:px-8 ${activeTab === "timer" ? "h-[100dvh] overflow-hidden md:min-h-screen md:h-auto md:overflow-y-auto pb-24" : "min-h-screen overflow-y-auto pb-24"}`}>
       {/* Subtle Background Dot Grid Texture */}
       <div className="fixed inset-0 pointer-events-none bg-dot-grid z-0" />
 
@@ -172,7 +172,7 @@ export default function Home() {
       )}
 
       {/* Main Content Area with Mobile Swipe Navigation */}
-      <main className="min-h-screen w-full flex flex-col items-center pt-3.5 px-4 md:px-8 relative z-10">
+      <main className={`w-full flex flex-col items-center pt-3.5 px-4 md:px-8 relative z-10 ${activeTab === "timer" ? "h-full md:min-h-screen" : "min-h-screen"}`}>
         <SwipeTabContainer activeTab={activeTab} onChangeTab={setActiveTab}>
           {{
             timer: (
@@ -257,4 +257,6 @@ export default function Home() {
     </div>
   );
 }
+
+
 
