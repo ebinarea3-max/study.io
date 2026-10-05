@@ -449,7 +449,7 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
           </div>
           <div>
             <h2 className="text-lg sm:text-xl font-hud font-bold tracking-widest uppercase text-white drop-shadow-md flex items-center gap-2">
-              MISSION DIRECTIVES
+              TO DO LIST
               {todos.length > 0 && progressPercent === 100 && (
                 <span className="px-1.5 py-0.5 rounded text-[10px] font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 animate-pulse">ALL CLEARED</span>
               )}
