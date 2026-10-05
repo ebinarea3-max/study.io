@@ -11,7 +11,7 @@
   --foreground: #FFFFFF;
   --text-secondary: #94A3B8;
 
-  /* Base brand accent: Electric Emerald/Cyan */
+  /* Base brand accent: permanent white/neutral — never changes with rank */
   --accent: #FFFFFF;
   --primary: #FFFFFF;
   --accent-glow: rgba(255, 255, 255, 0.3);
@@ -20,6 +20,16 @@
   --card-bg: var(--surface);
   --card-border: var(--border);
   --surface-high: rgba(255, 255, 255, 0.08);
+
+  /* Permanent fixed tier theme variables — rank-independent */
+  --tier-accent: #FFFFFF;
+  --tier-accent-rgb: 255, 255, 255;
+  --tier-accent-hover: #E2E8F0;
+  --tier-glow: rgba(255, 255, 255, 0.25);
+  --tier-border: rgba(255, 255, 255, 0.12);
+  --tier-gradient: linear-gradient(135deg, #FFFFFF 0%, #E2E8F0 50%, #94A3B8 100%);
+  --tier-badge-bg: rgba(255, 255, 255, 0.08);
+  --tier-text-accent: #FFFFFF;
 }
 
 /* Dynamic Card Texture Backgrounds Removed */

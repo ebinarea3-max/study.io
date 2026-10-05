@@ -4,9 +4,11 @@
   "description": "Gamified collaborative focus and habit tracking platform",
   "start_url": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
   "orientation": "portrait",
   "background_color": "#080b12",
   "theme_color": "#080b12",
+  "categories": ["education", "productivity"],
   "icons": [
     {
       "src": "/icon-192.png",
