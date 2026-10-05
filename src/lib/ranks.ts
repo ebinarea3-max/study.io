@@ -1,68 +1,71 @@
+export interface RankTier {
+  tier: RankTierName;
+  division: RankDivision;
+  name: string;
+  minRp: number;
+  minHours: number;
+  softResetRp: number;
+  badge: string;
+}
+
+export const RANK_TIERS: RankTier[] = [
+  { tier: 'Bronze',      division: 'I',   name: 'Bronze I',      minRp: 0,      minHours: 0,   softResetRp: 0,     badge: 'bronze-1.png' },
+  { tier: 'Bronze',      division: 'II',  name: 'Bronze II',     minRp: 300,    minHours: 3,   softResetRp: 100,   badge: 'bronze-2.png' },
+  { tier: 'Bronze',      division: 'III', name: 'Bronze III',    minRp: 700,    minHours: 7,   softResetRp: 200,   badge: 'bronze-3.png' },
+  { tier: 'Bronze',      division: 'IV',  name: 'Bronze IV',     minRp: 1200,   minHours: 12,  softResetRp: 300,   badge: 'bronze-4.png' },
+  { tier: 'Silver',      division: 'I',   name: 'Silver I',      minRp: 1800,   minHours: 18,  softResetRp: 700,   badge: 'silver-1.png' },
+  { tier: 'Silver',      division: 'II',  name: 'Silver II',     minRp: 2500,   minHours: 25,  softResetRp: 1200,  badge: 'silver-2.png' },
+  { tier: 'Silver',      division: 'III', name: 'Silver III',    minRp: 3300,   minHours: 33,  softResetRp: 1800,  badge: 'silver-3.png' },
+  { tier: 'Silver',      division: 'IV',  name: 'Silver IV',     minRp: 4200,   minHours: 42,  softResetRp: 2500,  badge: 'silver-4.png' },
+  { tier: 'Gold',        division: 'I',   name: 'Gold I',        minRp: 5200,   minHours: 52,  softResetRp: 3300,  badge: 'gold-1.png' },
+  { tier: 'Gold',        division: 'II',  name: 'Gold II',       minRp: 6300,   minHours: 63,  softResetRp: 4200,  badge: 'gold-2.png' },
+  { tier: 'Gold',        division: 'III', name: 'Gold III',      minRp: 7500,   minHours: 75,  softResetRp: 5200,  badge: 'gold-3.png' },
+  { tier: 'Gold',        division: 'IV',  name: 'Gold IV',       minRp: 8800,   minHours: 88,  softResetRp: 6300,  badge: 'gold-4.png' },
+  { tier: 'Platinum',    division: 'I',   name: 'Platinum I',    minRp: 10200,  minHours: 102, softResetRp: 7500,  badge: 'platinum-1.png' },
+  { tier: 'Platinum',    division: 'II',  name: 'Platinum II',   minRp: 11700,  minHours: 117, softResetRp: 8800,  badge: 'platinum-2.png' },
+  { tier: 'Platinum',    division: 'III', name: 'Platinum III',  minRp: 13300,  minHours: 133, softResetRp: 10200, badge: 'platinum-3.png' },
+  { tier: 'Platinum',    division: 'IV',  name: 'Platinum IV',   minRp: 15000,  minHours: 150, softResetRp: 11700, badge: 'platinum-4.png' },
+  { tier: 'Diamond',     division: 'I',   name: 'Diamond I',     minRp: 17000,  minHours: 170, softResetRp: 13300, badge: 'diamond-1.png' },
+  { tier: 'Diamond',     division: 'II',  name: 'Diamond II',    minRp: 19000,  minHours: 190, softResetRp: 15000, badge: 'diamond-2.png' },
+  { tier: 'Diamond',     division: 'III', name: 'Diamond III',   minRp: 21200,  minHours: 212, softResetRp: 17000, badge: 'diamond-3.png' },
+  { tier: 'Diamond',     division: 'IV',  name: 'Diamond IV',    minRp: 23600,  minHours: 236, softResetRp: 19000, badge: 'diamond-4.png' },
+  { tier: 'Champion',    division: '',    name: 'Champion',      minRp: 26000,  minHours: 260, softResetRp: 21200, badge: 'champion.png' },
+  { tier: 'Master',      division: '',    name: 'Master',        minRp: 29000,  minHours: 290, softResetRp: 23600, badge: 'master.png' },
+  { tier: 'Grandmaster', division: '',    name: 'Grandmaster',   minRp: 33000,  minHours: 330, softResetRp: 23600, badge: 'grandmaster.png' },
+];
+
+export function calculateSeasonRp(currentMonthSeconds: number, carryoverRp: number = 0): number {
+  const earnedRp = Math.floor(currentMonthSeconds / 36);
+  return carryoverRp + earnedRp;
+}
+
+export function getRankTier(totalRp: number): RankTier {
+  const safeRp = Math.max(0, totalRp);
+  for (let i = RANK_TIERS.length - 1; i >= 0; i--) {
+    if (safeRp >= RANK_TIERS[i].minRp) {
+      return RANK_TIERS[i];
+    }
+  }
+  return RANK_TIERS[0];
+}
+
+export function getMaxRpForTier(tierName: string): number {
+  const idx = RANK_TIERS.findIndex(r => r.name === tierName);
+  if (idx === -1 || idx === RANK_TIERS.length - 1) return 999999;
+  return RANK_TIERS[idx + 1].minRp;
+}
+
+export function getNextTier(tierName: string): RankTier | null {
+  const idx = RANK_TIERS.findIndex(r => r.name === tierName);
+  if (idx === -1 || idx === RANK_TIERS.length - 1) return null;
+  return RANK_TIERS[idx + 1];
+}
+
+// Backwards compatibility aliases
 export type RankTierName = 'Bronze' | 'Silver' | 'Gold' | 'Platinum' | 'Diamond' | 'Champion' | 'Master' | 'Grandmaster';
 export type RankDivision = 'I' | 'II' | 'III' | 'IV' | '';
 
-export interface RankTier {
-  name: string;
-  fullTitle: string;
-  tier: RankTierName;
-  division: RankDivision;
-  badge: string;
-  minRp: number;
-  maxRp: number;
-  resetRp: number;
-  rp: number; // added dynamically
-}
-
-const RAW_RANKS = [
-  { name: 'Bronze I', tier: 'Bronze', division: 'I', badge: '/images/ranks/bronze-1.png', minRp: 0, maxRp: 300, resetRp: 0 },
-  { name: 'Bronze II', tier: 'Bronze', division: 'II', badge: '/images/ranks/bronze-2.png', minRp: 300, maxRp: 700, resetRp: 100 },
-  { name: 'Bronze III', tier: 'Bronze', division: 'III', badge: '/images/ranks/bronze-3.png', minRp: 700, maxRp: 1200, resetRp: 200 },
-  { name: 'Bronze IV', tier: 'Bronze', division: 'IV', badge: '/images/ranks/bronze-4.png', minRp: 1200, maxRp: 1800, resetRp: 300 },
-  { name: 'Silver I', tier: 'Silver', division: 'I', badge: '/images/ranks/silver-1.png', minRp: 1800, maxRp: 2500, resetRp: 700 },
-  { name: 'Silver II', tier: 'Silver', division: 'II', badge: '/images/ranks/silver-2.png', minRp: 2500, maxRp: 3300, resetRp: 1200 },
-  { name: 'Silver III', tier: 'Silver', division: 'III', badge: '/images/ranks/silver-3.png', minRp: 3300, maxRp: 4200, resetRp: 1800 },
-  { name: 'Silver IV', tier: 'Silver', division: 'IV', badge: '/images/ranks/silver-4.png', minRp: 4200, maxRp: 5200, resetRp: 2500 },
-  { name: 'Gold I', tier: 'Gold', division: 'I', badge: '/images/ranks/gold-1.png', minRp: 5200, maxRp: 6300, resetRp: 3300 },
-  { name: 'Gold II', tier: 'Gold', division: 'II', badge: '/images/ranks/gold-2.png', minRp: 6300, maxRp: 7500, resetRp: 4200 },
-  { name: 'Gold III', tier: 'Gold', division: 'III', badge: '/images/ranks/gold-3.png', minRp: 7500, maxRp: 8800, resetRp: 5200 },
-  { name: 'Gold IV', tier: 'Gold', division: 'IV', badge: '/images/ranks/gold-4.png', minRp: 8800, maxRp: 10200, resetRp: 6300 },
-  { name: 'Platinum I', tier: 'Platinum', division: 'I', badge: '/images/ranks/platinum-1.png', minRp: 10200, maxRp: 11700, resetRp: 7500 },
-  { name: 'Platinum II', tier: 'Platinum', division: 'II', badge: '/images/ranks/platinum-2.png', minRp: 11700, maxRp: 13300, resetRp: 8800 },
-  { name: 'Platinum III', tier: 'Platinum', division: 'III', badge: '/images/ranks/platinum-3.png', minRp: 13300, maxRp: 15000, resetRp: 10200 },
-  { name: 'Platinum IV', tier: 'Platinum', division: 'IV', badge: '/images/ranks/platinum-4.png', minRp: 15000, maxRp: 17000, resetRp: 11700 },
-  { name: 'Diamond I', tier: 'Diamond', division: 'I', badge: '/images/ranks/diamond-1.png', minRp: 17000, maxRp: 19000, resetRp: 13300 },
-  { name: 'Diamond II', tier: 'Diamond', division: 'II', badge: '/images/ranks/diamond-2.png', minRp: 19000, maxRp: 21200, resetRp: 15000 },
-  { name: 'Diamond III', tier: 'Diamond', division: 'III', badge: '/images/ranks/diamond-3.png', minRp: 21200, maxRp: 23600, resetRp: 17000 },
-  { name: 'Diamond IV', tier: 'Diamond', division: 'IV', badge: '/images/ranks/diamond-4.png', minRp: 23600, maxRp: 26000, resetRp: 19000 },
-  { name: 'Champion', tier: 'Champion', division: '', badge: '/images/ranks/champion.png', minRp: 26000, maxRp: 29000, resetRp: 21200 },
-  { name: 'Master', tier: 'Master', division: '', badge: '/images/ranks/master.png', minRp: 29000, maxRp: 33000, resetRp: 23600 },
-  { name: 'Grandmaster', tier: 'Grandmaster', division: '', badge: '/images/ranks/grandmaster.png', minRp: 33000, maxRp: Infinity, resetRp: 23600 }
-];
-
-export const RANKS: RankTier[] = RAW_RANKS.map(r => ({
-  ...r,
-  fullTitle: r.name.toUpperCase(),
-  tier: r.tier as RankTierName,
-  division: r.division as RankDivision,
-  rp: 0
-}));
-
-export function getRankFromRp(rp: number): RankTier {
-  const currentRp = Math.max(0, rp);
-  for (const rank of RANKS) {
-    if (currentRp >= rank.minRp && currentRp < rank.maxRp) {
-      return { ...rank, rp: currentRp };
-    }
-  }
-  // Fallback to max rank
-  return { ...RANKS[RANKS.length - 1], rp: currentRp };
-}
-
-export function getSoftResetRp(currentRp: number): number {
-  const rank = getRankFromRp(currentRp);
-  return rank.resetRp;
-}
-
-export function calculateRpFromSeconds(seconds: number): number {
-  return Math.floor((seconds / 3600) * 100);
-}
+export const RANKS = RANK_TIERS as RankTier[];
+export const getRankFromRp = getRankTier;
+export const calculateRpFromSeconds = (seconds: number) => calculateSeasonRp(seconds, 0);
+export const getSoftResetRp = (rp: number) => getRankTier(rp).softResetRp;

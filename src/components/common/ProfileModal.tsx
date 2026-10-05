@@ -360,7 +360,7 @@ export function ProfileModal({ isOpen, onClose, user: parentUser, profile }: Pro
                 
                 <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-0.5 rounded border bg-white/[0.05] backdrop-blur-sm" style={{ borderColor: getRankTheme(userRank.tier).accent, color: getRankTheme(userRank.tier).accent }}>
                   <span className="text-[10px] font-black uppercase tracking-wider">
-                    {userRank.fullTitle}
+                    {userRank.name.toUpperCase()}
                   </span>
                 </div>
               </div>

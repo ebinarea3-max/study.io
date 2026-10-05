@@ -109,7 +109,7 @@ export function SettingsTabContent() {
           >
             <TierIcon size={20} className="flex-shrink-0 -ml-1 -mr-0.5 drop-shadow-sm" style={{ color: theme.accent }} />
             <span className="font-hud text-xs font-bold tracking-wider" style={{ color: theme.textAccent }}>
-              {userRank.fullTitle} // {userRank.rp} RP
+              {userRank.name.toUpperCase()} // {(user?.seasonRp || 0)} RP
             </span>
           </div>
         </div>

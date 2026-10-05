@@ -213,15 +213,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             await supabase.from('profiles').update({
               season_rp: seasonRp,
               last_reset_month: lastResetMonth,
-              rank_title: newTier.fullTitle,
+              rank_title: newTier.name.toUpperCase(),
               rank_badge: newTier.badge
             }).eq('id', user.id);
 
             data.season_rp = seasonRp;
             data.last_reset_month = lastResetMonth;
-            data.rank_title = newTier.fullTitle;
+            data.rank_title = newTier.name.toUpperCase();
             data.rank_badge = newTier.badge;
-            if (data.level_title) data.level_title = newTier.fullTitle;
+            if (data.level_title) data.level_title = newTier.name.toUpperCase();
           }
           setUser(prev => {
             const updated = {

@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { soundFx } from '../lib/audio';
 import confetti from 'canvas-confetti';
-import { getRankFromRp, RankTierName, RankTier } from '../lib/ranks';
+import { getRankFromRp, RankTierName, RankTier, getMaxRpForTier } from '../lib/ranks';
 import { getRankTheme } from '../lib/rankTheme';
 import { RankSettlementData } from '../types';
 import { ChevronRight, X } from 'lucide-react';
@@ -77,7 +77,7 @@ export function RankSettlementModal({
 
   const prevRankDetails = useMemo(() => getRankFromRp(prevRP), [prevRP]);
   const newRankDetails = useMemo(() => getRankFromRp(newRP), [newRP]);
-  const isRankUp = newRankDetails.fullTitle !== prevRankDetails.fullTitle;
+  const isRankUp = newRankDetails.name.toUpperCase() !== prevRankDetails.name.toUpperCase();
   const isMajorTierUp = newRankDetails.tier !== prevRankDetails.tier;
 
   const TIER_INTENSITY_MAP: Record<RankTierName, number> = {
@@ -203,7 +203,7 @@ export function RankSettlementModal({
       setAnimatingRP(newRP);
       setDisplayedGain(totalGained);
       const tierMin = newRankDetails.minRp;
-      const tierMax = newRankDetails.maxRp;
+      const tierMax = getMaxRpForTier(newRankDetails.name);
       const finalInTier = Math.max(0, newRP - tierMin);
       const needed = Math.max(1, tierMax - tierMin);
       setProgressRatio(Math.min(1, finalInTier / needed));
@@ -220,7 +220,7 @@ export function RankSettlementModal({
     setActiveBarColor(getRankTheme(prevRankDetails.tier).accent);
 
     const prevTierMin = prevRankDetails.minRp;
-    const prevTierMax = prevRankDetails.maxRp;
+    const prevTierMax = getMaxRpForTier(prevRankDetails.name);
     const prevInTier = Math.max(0, prevRP - prevTierMin);
     const prevNeeded = Math.max(1, prevTierMax - prevTierMin);
     const initialRatio = Math.min(1, prevInTier / prevNeeded);
@@ -448,7 +448,7 @@ export function RankSettlementModal({
                   setProgressRatio(0);
 
                   const newTierMin = newRankDetails.minRp;
-                  const newTierMax = newRankDetails.maxRp;
+                  const newTierMax = getMaxRpForTier(newRankDetails.name);
                   const newNeeded = Math.max(1, newTierMax - newTierMin);
                   const remainderRP = Math.max(0, newRP - newTierMin);
                   const targetRatioP2 = Math.min(1, remainderRP / newNeeded);
@@ -512,7 +512,7 @@ export function RankSettlementModal({
 
   if (!isOpen || !data) return null;
 
-  const remainingRP = Math.max(0, displayRank.maxRp - animatingRP);
+  const remainingRP = Math.max(0, getMaxRpForTier(displayRank.name) - animatingRP);
 
 
 
@@ -687,7 +687,7 @@ export function RankSettlementModal({
             >
               <AnimatePresence mode="popLayout">
                 <motion.div
-                  key={displayRank.fullTitle}
+                  key={displayRank.name.toUpperCase()}
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1, transition: { duration: 0.25 } }}
                   exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
@@ -778,9 +778,9 @@ export function RankSettlementModal({
 
           {/* Geometric High-Contrast Rank Title: Individual Character Stagger (0.03s apart, scale 1.3 -> 1.0) */}
           <h1 className="text-3xl sm:text-5xl font-sans font-bold tracking-[0.18em] uppercase text-white drop-shadow-[0_4px_16px_rgba(0,0,0,0.6)] flex items-center justify-center flex-wrap">
-            {displayRank.fullTitle.split('').map((char, idx) => (
+            {displayRank.name.toUpperCase().split('').map((char, idx) => (
               <span
-                key={`${displayRank.fullTitle}-${idx}`}
+                key={`${displayRank.name.toUpperCase()}-${idx}`}
                 className="inline-block"
                 style={{
                   animation: prefersReducedMotion ? 'none' : `charStamp 0.22s cubic-bezier(0.16, 1, 0.3, 1) ${idx * 30}ms both`,
@@ -808,7 +808,7 @@ export function RankSettlementModal({
           <p className="text-xs sm:text-sm font-medium tracking-wider text-slate-400 mt-0.5">
             <span className="text-xs uppercase tracking-[0.25em] text-slate-400 font-semibold">NEXT MILESTONE: </span>
             <span style={{ color: getRankTheme(displayRank.tier).accent }} className="font-semibold text-slate-200">
-              {displayRank.fullTitle}
+              {displayRank.name.toUpperCase()}
             </span>
             <span className="text-slate-500 font-mono"> ({remainingRP.toLocaleString()} RP remaining)</span>
           </p>
@@ -896,7 +896,7 @@ export function RankSettlementModal({
               style={{ willChange: 'transform' }}
             >
               <span className="text-white font-bold">{animatingRP.toLocaleString()}</span>
-              <span className="text-slate-500"> / {displayRank.maxRp.toLocaleString()} RP</span>
+              <span className="text-slate-500"> / {getMaxRpForTier(displayRank.name).toLocaleString()} RP</span>
             </div>
           </div>
 

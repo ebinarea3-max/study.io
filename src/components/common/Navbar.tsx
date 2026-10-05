@@ -271,7 +271,7 @@ export function Navbar({
               ) : (
                 <div
                   className="relative flex items-center h-8 sm:h-9 pl-1 pr-3 sm:pr-4 bg-[var(--surface)] border border-slate-800 text-slate-100 cursor-default select-none rounded-xl"
-                  title={`Ranked Season RP: ${userRank.rp.toLocaleString()} RP (${userRank.fullTitle})`}
+                  title={`Ranked Season RP: ${(user?.seasonRp || 0).toLocaleString()} RP (${userRank.name.toUpperCase()})`}
                 >
                   <div className="flex items-center gap-1.5 sm:gap-2">
                     <RankCrestBadge
@@ -284,10 +284,10 @@ export function Navbar({
                       className="text-xs font-bold tracking-wider font-hud uppercase truncate max-w-[85px] sm:max-w-none"
                       style={{ color: theme.accent }}
                     >
-                      {userRank.fullTitle}
+                      {userRank.name.toUpperCase()}
                     </span>
                     <span className="hidden sm:inline text-[11px] text-slate-500 font-mono ml-1">
-                      {userRank.rp.toLocaleString()} RP
+                      {(user?.seasonRp || 0).toLocaleString()} RP
                     </span>
                   </div>
                 </div>

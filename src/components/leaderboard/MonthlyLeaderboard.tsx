@@ -82,12 +82,12 @@ function AnimatedDigit({
  */
 export function getMonthlyRankTierTitle(rankTitle?: string, totalSeconds?: number): string {
   const rp = calculateRpFromSeconds(totalSeconds || 0);
-  return getRankFromRp(rp).fullTitle;
+  return getRankFromRp(rp).name.toUpperCase();
 }
 
 export function getMonthlyRankTierConfig(totalSeconds?: number, rankTitle?: string): RankTier {
   if (rankTitle) {
-    const found = RANKS.find(r => r.fullTitle === rankTitle.toUpperCase());
+    const found = RANKS.find(r => r.name.toUpperCase() === rankTitle.toUpperCase());
     if (found) return found;
   }
   const rp = calculateRpFromSeconds(totalSeconds || 0);
@@ -628,7 +628,7 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                   let tierConfig = getMonthlyRankTierConfig(row.total_seconds, row.rank_title);
                   const level = row.level ?? getLevelFromLifetimeXP(row.lifetime_xp || 0);
 
-                  const displayTierTitle = tierConfig.fullTitle;
+                  const displayTierTitle = tierConfig.name.toUpperCase();
                   const theme = getRankTheme(tierConfig.tier);
                   
                   const displayName = row.display_name || row.name || row.username || 'Scholar';
