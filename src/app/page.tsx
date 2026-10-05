@@ -104,9 +104,19 @@ export default function Home() {
 
     window.addEventListener('focus', handleFocus);
     document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    const handleSwitchTab = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail) {
+        setActiveTab(customEvent.detail as NavTabType);
+      }
+    };
+    window.addEventListener('switch_tab', handleSwitchTab);
+
     return () => {
       window.removeEventListener('focus', handleFocus);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('switch_tab', handleSwitchTab);
     };
   }, [isAuthenticated, refetchSessions]);
 
