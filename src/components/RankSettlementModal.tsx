@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { soundFx } from '../lib/audio';
 import confetti from 'canvas-confetti';
-import { getRankFromRp, RankTierName, RankTier, getMaxRpForTier } from '../lib/ranks';
+import { getRankFromRp, RankTierName, RankTier, getMaxRpForTier, RANK_TIERS } from '../lib/ranks';
 import { getRankTheme } from '../lib/rankTheme';
 import { RankSettlementData } from '../types';
 import { ChevronRight, X } from 'lucide-react';
@@ -513,6 +513,11 @@ export function RankSettlementModal({
   if (!isOpen || !data) return null;
 
   const remainingRP = Math.max(0, getMaxRpForTier(displayRank.name) - animatingRP);
+  const currentRankIndex = RANK_TIERS.findIndex(t => t.name === displayRank.name);
+  const nextTier = (currentRankIndex !== -1 && currentRankIndex < RANK_TIERS.length - 1)
+    ? RANK_TIERS[currentRankIndex + 1]
+    : null;
+  const nextTierName = nextTier ? nextTier.name.toUpperCase() : 'MAX RANK';
 
 
 
@@ -808,7 +813,7 @@ export function RankSettlementModal({
           <p className="text-xs sm:text-sm font-medium tracking-wider text-slate-400 mt-0.5">
             <span className="text-xs uppercase tracking-[0.25em] text-slate-400 font-semibold">NEXT MILESTONE: </span>
             <span style={{ color: getRankTheme(displayRank.tier).accent }} className="font-semibold text-slate-200">
-              {displayRank.name.toUpperCase()}
+              {nextTierName}
             </span>
             <span className="text-slate-500 font-mono"> ({remainingRP.toLocaleString()} RP remaining)</span>
           </p>
