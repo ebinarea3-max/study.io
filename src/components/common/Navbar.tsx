@@ -279,7 +279,7 @@ export function Navbar({
               </div>
 
               {/* Rank Status Pill */}
-              {isLoading ? (
+              {isLoading && (!user || user.id.startsWith('user-scholar') || user.id === 'guest') ? (
                 <div className="relative flex items-center h-8 sm:h-9 w-24 sm:w-28 bg-[var(--surface)] border border-slate-800 rounded-xl animate-pulse overflow-hidden">
                   <div className="w-6 h-6 rounded-full bg-white/10 ml-1.5"></div>
                   <div className="w-10 h-3 bg-white/10 ml-2 rounded"></div>

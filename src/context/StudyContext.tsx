@@ -1715,11 +1715,8 @@ export function StudyProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     cleanupLegacyDemoData();
 
-    // Prevent cross-account data bleed
-    setSessions([]);
-    setSubjectsState([]);
-    setTodos([]);
-    setSelectedSubjectIdState('');
+    // Prevent cross-account data bleed by relying on overwrite instead of clearing,
+    // which causes UI flickering during background re-auth.
 
     // 1. Initial load from storage
     try {
