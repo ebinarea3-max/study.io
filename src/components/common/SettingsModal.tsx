@@ -13,7 +13,10 @@ import {
   Trash2,
   Smartphone,
   CheckCircle2,
+  Bug,
+  Send,
 } from 'lucide-react';
+import { submitReport } from '../../app/actions/report';
 import { soundFx } from '../../lib/audio';
 import { useAuth } from '../../context/AuthContext';
 import { usePwaInstall } from '../../hooks/usePwaInstall';
@@ -37,6 +40,12 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
   const [showInstallInstructions, setShowInstallInstructions] = useState(false);
+  
+  const [showReportForm, setShowReportForm] = useState(false);
+  const [reportCategory, setReportCategory] = useState('Bug');
+  const [reportMessage, setReportMessage] = useState('');
+  const [isReporting, setIsReporting] = useState(false);
+  const [reportError, setReportError] = useState('');
 
   if (!isOpen) return null;
 
@@ -69,6 +78,28 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       setDeleteError('Account deletion encountered an issue. Please try again.');
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleReportSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsReporting(true);
+    setReportError('');
+
+    const formData = new FormData();
+    formData.append('category', reportCategory);
+    formData.append('message', reportMessage);
+
+    const res = await submitReport(formData);
+    setIsReporting(false);
+    
+    if (res.success) {
+      toast.success('Report sent directly to support! Thank you.');
+      setShowReportForm(false);
+      setReportMessage('');
+      setReportCategory('Bug');
+    } else {
+      setReportError(res.error || 'Failed to send report.');
     }
   };
 
@@ -216,6 +247,70 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               </button>
             )}
           </div>
+
+          {/* Section: Report a Problem */}
+          <div className="p-4 rounded-xl bg-white/[0.03] backdrop-blur-md border border-white/[0.08] flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div
+                className="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/10 flex items-center justify-center flex-shrink-0"
+                style={{ color: theme.accent }}
+              >
+                <Bug className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="text-xs font-hud font-bold tracking-wider text-white uppercase">Report a Problem</div>
+                <div className="text-[11px] text-neutral-400 font-mono">Found a bug or have feedback? Let us know.</div>
+              </div>
+            </div>
+            
+            <button
+              type="button"
+              onClick={() => setShowReportForm(!showReportForm)}
+              className="px-3.5 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-xs font-hud font-bold tracking-wider text-white transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer shadow-sm flex-shrink-0"
+            >
+              <span>{showReportForm ? 'CANCEL' : 'REPORT'}</span>
+            </button>
+          </div>
+
+          {showReportForm && (
+            <div className="p-4 rounded-xl bg-white/[0.05] border border-white/10 space-y-3 animate-in fade-in zoom-in-95 duration-200">
+              <form onSubmit={handleReportSubmit} className="space-y-3">
+                <div className="flex flex-wrap gap-2">
+                  {['Bug', 'Timer', 'UI Glitch', 'Feedback'].map(cat => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setReportCategory(cat)}
+                      className={`px-3 py-1 rounded-full text-[10px] font-hud font-bold tracking-wider transition-colors border ${reportCategory === cat ? 'bg-white/20 text-white border-white/30' : 'bg-transparent text-neutral-400 border-white/10 hover:border-white/20 hover:text-white'}`}
+                    >
+                      {cat.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+                <textarea
+                  value={reportMessage}
+                  onChange={(e) => setReportMessage(e.target.value)}
+                  placeholder="Describe the issue you encountered..."
+                  className="w-full px-3 py-2 bg-black/40 border border-white/10 rounded-xl text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white/30 transition-colors font-mono min-h-[80px]"
+                  required
+                />
+                {reportError && (
+                  <div className="text-xs text-rose-400 font-medium font-mono">{reportError}</div>
+                )}
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={isReporting || !reportMessage.trim()}
+                    className="px-4 py-2 rounded-xl text-slate-950 text-xs font-hud font-extrabold tracking-wider transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 shadow-md"
+                    style={{ background: theme.accent }}
+                  >
+                    {isReporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                    <span>{isReporting ? 'SENDING...' : 'SUBMIT REPORT'}</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
 
           {/* Section 4: High-Security Danger Zone (Delete Account) */}
           <div className="p-4 rounded-xl bg-rose-500/[0.03] border border-rose-500/20 backdrop-blur-md space-y-3">
