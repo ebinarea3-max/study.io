@@ -771,7 +771,7 @@ export function StudyTimer() {
   }, [isLoading, user?.streakDays, overviewTodaySeconds, todaySessions.length, lockedEmptyQuote]);
 
   return (
-    <div className="max-w-3xl w-full mx-auto flex flex-col items-center justify-center py-6 px-4 max-md:h-[calc(100dvh-8.5rem)] max-md:overflow-hidden md:overflow-visible">
+    <div className="max-w-3xl w-full mx-auto flex flex-col items-center justify-center max-md:py-2 py-6 px-4 max-md:h-[calc(100dvh-8.5rem)] max-md:overflow-hidden md:overflow-visible">
       {/* Subject Manager Modal - Conditionally mounted strictly when open (Stop Background Rendering) */}
       {isManageSubjectsOpen && (
         <ErrorBoundary
@@ -790,7 +790,7 @@ export function StudyTimer() {
       <div className="w-full h-full flex flex-col justify-between max-md:overflow-hidden md:overflow-visible space-y-0 md:space-y-3">
         {/* Main Timer Game-HUD Card with Targeting Reticle Corner Brackets */}
         <div
-          className="relative w-full h-full rounded-2xl bg-[#0b0e14]/90 p-5 sm:p-8 shadow-2xl overflow-hidden backdrop-blur-xl flex flex-col justify-between transition-all"
+          className="relative w-full h-full rounded-2xl bg-[#0b0e14]/90 max-md:p-3 sm:p-8 shadow-2xl overflow-hidden backdrop-blur-xl flex flex-col justify-between transition-all"
         >
           {/* Dial Backlight Illumination */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none -z-0">
@@ -820,9 +820,9 @@ export function StudyTimer() {
             </div>
           )}
 
-          <div className="flex flex-col items-center gap-2 w-full relative z-20">
+          <div className="flex flex-col items-center gap-1.5 w-full relative z-20">
           {/* Top Controls: Mode Switcher & Compact Focus Mode on Single Balanced Row */}
-          <div className="w-full flex flex-col px-2 pt-2 pb-1 relative z-10 flex-shrink-0 gap-1.5">
+          <div className="w-full flex flex-col px-1 pt-1.5 pb-0.5 relative z-10 flex-shrink-0 gap-1">
             {/* Row 1: Mode tabs + Focus button */}
             <div className="w-full flex items-center justify-between gap-2">
               {/* Mode Segmented Pill — bigger tap targets on mobile */}
@@ -970,7 +970,7 @@ export function StudyTimer() {
           </div>
 
           {/* Subject Selection Bar - Compact on Mobile */}
-          <div className="relative z-20 w-full mt-2 sm:mt-4 sm:mb-5 flex-shrink-0">
+          <div className="relative z-20 w-full max-md:mt-1 mt-2 sm:mt-4 sm:mb-5 flex-shrink-0">
             {/* Subject warning banner */}
             {subjectWarning && (
               <div className="mb-2 sm:mb-3 flex items-center justify-between gap-2.5 px-3 py-2 rounded-2xl bg-amber-500/15 border border-amber-500/40 text-amber-200 text-xs font-semibold backdrop-blur-md shadow-lg shadow-amber-500/10 animate-in fade-in slide-in-from-top-2 duration-200">
@@ -1172,9 +1172,9 @@ export function StudyTimer() {
                   </div>
 
           {/* Center Timer Display - Game HUD Radar / Reactor Core Display */}
-          <div className="relative z-10 flex flex-col items-center justify-center py-2 sm:py-8 my-auto w-full">
+          <div className="relative z-10 flex flex-col items-center justify-center max-md:py-0 py-2 sm:py-8 my-auto w-full">
             {/* ── Mobile Circular Dial Wrapper (< sm) ── */}
-            <div className="relative sm:hidden flex items-center justify-center mx-auto flex-shrink-0 w-full max-w-[300px] aspect-square">
+            <div className="relative sm:hidden flex items-center justify-center mx-auto flex-shrink-0 w-full max-w-[260px] aspect-square">
               {/* Mobile Ambient Glow */}
               <div className="absolute inset-0 rounded-full blur-3xl pointer-events-none" style={{ background: 'radial-gradient(circle at center, rgba(var(--tier-accent-rgb), 0.10) 0%, transparent 70%)' }} />
 
@@ -1227,7 +1227,7 @@ export function StudyTimer() {
 
               {/* Mobile Clock Content */}
               <div className="relative z-10 flex flex-col items-center justify-center w-full h-full">
-                <div className="font-mono tabular-nums font-black text-white drop-shadow-[0_2px_32px_rgba(255,255,255,0.18)] text-[clamp(3rem,14vw,3.8rem)] text-center select-none tracking-tight leading-none">
+                <div className="font-mono tabular-nums font-black text-white drop-shadow-[0_2px_24px_rgba(255,255,255,0.15)] text-[clamp(2.2rem,10.5vw,3rem)] text-center select-none tracking-tight leading-none">
                   {timerMode === 'countdown' && !isStudying ? (
                     isEditingCountdown ? (
                       <CountdownEditor
@@ -1401,7 +1401,7 @@ export function StudyTimer() {
             )}
 
             {/* Action Buttons: Context-aware HUD controls */}
-            <div className="max-md:mb-2 pt-4 flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 relative z-10 w-full max-w-sm flex-shrink-0 mx-auto">
+            <div className="max-md:mb-1 pt-3 flex flex-wrap items-center justify-center gap-2 sm:gap-3 relative z-10 w-full max-w-sm flex-shrink-0 mx-auto">
               {pomodoroCompletedPhase === 'work' ? (
                 /* Prompt 1: Focus Block Complete -> Save & Start Break / Skip Break */
                 <>
@@ -1584,11 +1584,11 @@ export function StudyTimer() {
             </div>
           </div>
               {/* Atmosphere UI (Mobile) */}
-              <div className="relative sm:hidden mt-3 flex justify-center w-full">
+              <div className="relative sm:hidden max-md:mt-2 mt-3 flex justify-center w-full">
                 <button
                   type="button"
                   onClick={() => setIsAmbientMenuOpen(!isAmbientMenuOpen)}
-                  className="bg-white/[0.05] border border-white/15 hover:border-[var(--tier-border)] text-zinc-100 font-medium text-xs px-3.5 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer select-none shadow-sm"
+                  className="bg-white/[0.05] border border-white/10 text-zinc-300 font-medium text-xs px-3 py-1.5 rounded-xl flex items-center gap-2 transition-all cursor-pointer select-none shadow-sm"
                 >
                   <Music className={`w-3.5 h-3.5 ${ambientSound !== 'none' ? 'text-[var(--tier-accent)]' : 'text-zinc-300'}`} />
                   <span className="tracking-tight hidden sm:inline">

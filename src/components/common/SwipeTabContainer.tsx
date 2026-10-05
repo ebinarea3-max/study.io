@@ -152,7 +152,13 @@ export function SwipeTabContainer({
         {TABS.map((tab, idx) => (
           <div
             key={tab}
-            className={`flex-shrink-0 flex flex-col transition-opacity duration-300 h-full ${currentIndex === idx ? 'overflow-y-auto pb-24' : 'overflow-hidden pointer-events-none'}`}
+            className={`flex-shrink-0 flex flex-col transition-opacity duration-300 h-full ${
+              currentIndex === idx
+                ? tab === 'timer'
+                  ? 'overflow-hidden'          // Timer tab: no scroll, fills viewport exactly
+                  : 'overflow-y-auto pb-24'    // All other tabs: scrollable with bottom nav clearance
+                : 'overflow-hidden pointer-events-none'
+            }`}
             style={{
               width: `${100 / TABS.length}%`,
               opacity: isDragging
