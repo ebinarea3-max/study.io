@@ -1225,8 +1225,8 @@ export function StudyTimer() {
                 <circle cx="150" cy="150" r="116" fill="rgba(10,12,18,0.7)" />
               </svg>
 
-              {/* Mobile Clock Content */}
-              <div className="relative z-10 flex flex-col items-center justify-center w-full h-full">
+              {/* Mobile Clock Content — only the time, nothing else */}
+              <div className="relative z-10 flex items-center justify-center w-full h-full">
                 <div className="font-mono tabular-nums font-black text-white drop-shadow-[0_2px_24px_rgba(255,255,255,0.15)] text-[clamp(2.2rem,10.5vw,3rem)] text-center select-none tracking-tight leading-none">
                   {timerMode === 'countdown' && !isStudying ? (
                     isEditingCountdown ? (
@@ -1244,18 +1244,6 @@ export function StudyTimer() {
                     <span>{displayTime}</span>
                   )}
                 </div>
-                {isStudying && (
-                  <div className="text-[11px] uppercase tracking-[0.2em] text-white/75 font-bold flex items-center justify-center gap-2 mt-3 animate-in fade-in duration-200">
-                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${!isPaused ? 'bg-green-400 animate-pulse shadow-[0_0_6px_rgba(74,222,128,0.8)]' : 'bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.8)]'}`} />
-                    <span>{isPaused ? 'PAUSED' : 'RUNNING'}</span>
-                    <div className="w-2 h-2 rounded-full flex-shrink-0 opacity-0" aria-hidden />
-                  </div>
-                )}
-                {isStudying && progressPercent > 0 && (
-                  <div className="w-24 h-0.5 bg-white/10 rounded-full overflow-hidden mt-3">
-                    <div className="h-full bg-white/80 transition-all duration-300 rounded-full" style={{ width: `${progressPercent}%` }} />
-                  </div>
-                )}
               </div>
             </div>
 
@@ -1584,7 +1572,7 @@ export function StudyTimer() {
             </div>
           </div>
               {/* Atmosphere UI (Mobile) */}
-              <div className="relative sm:hidden max-md:mt-2 mt-3 flex justify-center w-full">
+              <div className="relative sm:hidden max-md:mt-1 mt-3 flex justify-center w-full">
                 <button
                   type="button"
                   onClick={() => setIsAmbientMenuOpen(!isAmbientMenuOpen)}
