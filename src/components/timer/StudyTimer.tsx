@@ -791,7 +791,7 @@ export function StudyTimer() {
       <div className="w-full h-full flex flex-col justify-between max-md:overflow-hidden md:overflow-visible space-y-0 md:space-y-3">
         {/* Main Timer Game-HUD Card with Targeting Reticle Corner Brackets */}
         <div
-          className="relative w-full h-full rounded-2xl bg-[#0b0e14]/90 max-md:p-3 sm:p-8 shadow-2xl overflow-hidden backdrop-blur-xl flex flex-col justify-between transition-all"
+          className="relative w-full h-full md:rounded-2xl max-md:bg-transparent md:bg-[#0b0e14]/90 max-md:p-0 sm:p-8 max-md:shadow-none md:shadow-2xl overflow-hidden max-md:backdrop-blur-none md:backdrop-blur-xl flex flex-col justify-between transition-all"
         >
           {/* Dial Backlight Illumination */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none -z-0">
@@ -799,10 +799,10 @@ export function StudyTimer() {
           </div>
 
           {/* Angular Targeting Reticle Corner Brackets */}
-          <div className="hud-corner-bracket hud-corner-tl" />
-          <div className="hud-corner-bracket hud-corner-tr" />
-          <div className="hud-corner-bracket hud-corner-bl" />
-          <div className="hud-corner-bracket hud-corner-br" />
+          <div className="hidden md:block hud-corner-bracket hud-corner-tl" />
+          <div className="hidden md:block hud-corner-bracket hud-corner-tr" />
+          <div className="hidden md:block hud-corner-bracket hud-corner-bl" />
+          <div className="hidden md:block hud-corner-bracket hud-corner-br" />
 
           {/* Session Resumed Alert Banner */}
           {showRecoveryBanner && (
