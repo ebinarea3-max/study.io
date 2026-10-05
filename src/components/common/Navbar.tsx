@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 
 import { Logo } from '../Logo';
-import { getRankTier } from '../../lib/rankedSystem';
+import { getRankTier } from '../../lib/ranks';
 import { getTierBadge, getLevelTitle } from '../../lib/gamification';
 import { useRankTheme } from '../../hooks/useRankTheme';
 import { TierIcon } from './TierIcon';
@@ -167,6 +167,22 @@ export function Navbar({
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (gamification.progressPercent / 100) * circumference;
 
+  const { liveSeasonRp, liveRank } = useMemo(() => {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+
+    const currentMonthSeconds = (sessions || [])
+      .filter((s: any) => {
+        const sessionDate = new Date(s.startTime || s.started_at || s.created_at || s.date).getTime();
+        return sessionDate >= startOfMonth;
+      })
+      .reduce((total: number, s: any) => total + (s.duration || s.durationSeconds || s.duration_seconds || 0), 0);
+
+    const carryoverRp = (user as any)?.carryover_rp || (user as any)?.carryoverRp || 0;
+    const computedRp = carryoverRp + Math.floor(currentMonthSeconds / 36);
+    return { liveSeasonRp: computedRp, liveRank: getRankTier(computedRp) };
+  }, [sessions, (user as any)?.carryover_rp, (user as any)?.carryoverRp]);
+
   return (
     <>
     <header className="sticky top-0 z-40 w-full border-b border-[var(--border)] bg-[var(--bg)]/90 backdrop-blur-xl transition-colors">
@@ -271,12 +287,12 @@ export function Navbar({
               ) : (
                 <div
                   className="relative flex items-center h-8 sm:h-9 pl-1 pr-3 sm:pr-4 bg-[var(--surface)] border border-slate-800 text-slate-100 cursor-default select-none rounded-xl"
-                  title={`Ranked Season RP: ${(user?.seasonRp || 0).toLocaleString()} RP (${userRank.name.toUpperCase()})`}
+                  title={`Ranked Season RP: ${liveSeasonRp.toLocaleString()} RP (${liveRank.name.toUpperCase()})`}
                 >
                   <div className="flex items-center gap-1.5 sm:gap-2">
                     <RankCrestBadge
-                      tier={userRank.tier}
-                      division={userRank.division}
+                      tier={liveRank.tier}
+                      division={liveRank.division}
                       size={36}
                       className="-ml-3"
                     />
@@ -284,10 +300,10 @@ export function Navbar({
                       className="text-xs font-bold tracking-wider font-hud uppercase truncate max-w-[85px] sm:max-w-none"
                       style={{ color: theme.accent }}
                     >
-                      {userRank.name.toUpperCase()}
+                      {liveRank.name.toUpperCase()}
                     </span>
                     <span className="hidden sm:inline text-[11px] text-slate-500 font-mono ml-1">
-                      {(user?.seasonRp || 0).toLocaleString()} RP
+                      {liveSeasonRp.toLocaleString()} RP
                     </span>
                   </div>
                 </div>

@@ -36,8 +36,19 @@ export function useRankTheme(): {
   const { sessions } = useStudy();
 
   const totalRP = useMemo(() => {
-    return Number((user as any)?.season_rp ?? user?.seasonRp ?? (user as any)?.rp ?? 0);
-  }, [(user as any)?.season_rp, user?.seasonRp, (user as any)?.rp]);
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+
+    const currentMonthSeconds = (sessions || [])
+      .filter((s: any) => {
+        const sessionDate = new Date(s.startTime || s.started_at || s.created_at || s.date).getTime();
+        return sessionDate >= startOfMonth;
+      })
+      .reduce((total: number, s: any) => total + (s.duration || s.durationSeconds || s.duration_seconds || 0), 0);
+
+    const carryoverRp = (user as any)?.carryover_rp || (user as any)?.carryoverRp || 0;
+    return carryoverRp + Math.floor(currentMonthSeconds / 36);
+  }, [(user as any)?.carryover_rp, (user as any)?.carryoverRp, sessions]);
 
   const userRank = useMemo(() => {
     return getRankFromRp(totalRP);
