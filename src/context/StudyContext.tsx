@@ -49,6 +49,8 @@ interface StudyContextType {
   levelUpData: { newLevel: number; oldLevel: number; title: string } | null;
   dismissLevelUpModal: () => void;
   dismissXpNotification: () => void;
+  isIdleCheckActive: boolean;
+  confirmIdleCheck: () => void;
   triggerXpEarned: (amount: number, reason: string, type?: 'focus' | 'todo' | 'streak' | 'general') => void;
   subjects: Subject[];
   selectedSubject: Subject | null;
@@ -499,10 +501,22 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     } catch {}
     setElapsedSeconds(0);
     accumulatedSecondsRef.current = 0;
+    idleCheckFiredRef.current = false;
   }, [isStudying]);
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [currentNotes, setCurrentNotes] = useState('');
   const [isFocusModeOpen, setIsFocusModeOpen] = useState(false);
+  const [isIdleCheckActive, setIsIdleCheckActive] = useState(false);
+  const idleCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const idleCheckFiredRef = useRef(false);
+
+  const confirmIdleCheck = useCallback(() => {
+    setIsIdleCheckActive(false);
+    if (idleCheckTimeoutRef.current) {
+      clearTimeout(idleCheckTimeoutRef.current);
+      idleCheckTimeoutRef.current = null;
+    }
+  }, []);
   const [hasHydrated, setHasHydrated] = useState(false);
   const [isLoadingSessions, setIsLoadingSessions] = useState(true);
 
@@ -941,6 +955,28 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
         accumulatedSecondsRef.current = actualElapsed;
 
+        // 4-hour idle check
+        if (actualElapsed >= 14400 && !idleCheckFiredRef.current && timerMode !== 'pomodoro') {
+          idleCheckFiredRef.current = true;
+          setIsIdleCheckActive(true);
+          
+          if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+            const iconUrl = window.location.origin + '/icon-192.png';
+            new Notification('Are you still studying?', { body: 'Timer reached 4 hours. Confirm to keep it running.', icon: iconUrl, requireInteraction: true });
+          }
+
+          idleCheckTimeoutRef.current = setTimeout(() => {
+            setIsIdleCheckActive(false);
+            setIsPaused(true);
+            if (timerIntervalRef.current) {
+              clearInterval(timerIntervalRef.current);
+              timerIntervalRef.current = null;
+            }
+            startTimeRef.current = null;
+          }, 20000);
+        }
+
+
         if (timerMode === 'pomodoro') {
           const target = pomodoroPhase === 'work' ? pomodoroWorkDuration : pomodoroBreakDuration;
           if (actualElapsed >= target) {
@@ -1031,6 +1067,28 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         }
 
         accumulatedSecondsRef.current = actualElapsed;
+
+        // 4-hour idle check
+        if (actualElapsed >= 14400 && !idleCheckFiredRef.current && timerMode !== 'pomodoro') {
+          idleCheckFiredRef.current = true;
+          setIsIdleCheckActive(true);
+          
+          if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+            const iconUrl = window.location.origin + '/icon-192.png';
+            new Notification('Are you still studying?', { body: 'Timer reached 4 hours. Confirm to keep it running.', icon: iconUrl, requireInteraction: true });
+          }
+
+          idleCheckTimeoutRef.current = setTimeout(() => {
+            setIsIdleCheckActive(false);
+            setIsPaused(true);
+            if (timerIntervalRef.current) {
+              clearInterval(timerIntervalRef.current);
+              timerIntervalRef.current = null;
+            }
+            startTimeRef.current = null;
+          }, 20000);
+        }
+
 
         if (timerMode === 'pomodoro') {
           const target = pomodoroPhase === 'work' ? pomodoroWorkDuration : pomodoroBreakDuration;
@@ -3319,6 +3377,8 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         levelUpData,
         dismissLevelUpModal,
         dismissXpNotification,
+      isIdleCheckActive,
+      confirmIdleCheck,
         triggerXpEarned,
         subjects,
         selectedSubject,
@@ -3388,6 +3448,7 @@ export function useStudy() {
   }
   return context;
 }
+
 
 
 

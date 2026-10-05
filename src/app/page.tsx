@@ -10,6 +10,7 @@ import { SettingsModal } from '../components/common/SettingsModal';
 import { FloatingReactions } from '../components/common/FloatingReactions';
 import { StudyTimer } from '../components/timer/StudyTimer';
 import { FocusModeModal } from '../components/timer/FocusModeModal';
+import { IdleCheckModal } from '../components/timer/IdleCheckModal';
 import { AnalyticsDashboard } from '../components/analytics/AnalyticsDashboard';
 import { IntroductionAndLogin } from '../components/common/IntroductionAndLogin';
 import { LevelUpModal } from '../components/gamification/LevelUpModal';
@@ -134,7 +135,7 @@ export default function Home() {
 
   // Authenticated: Full StudyPulse focus dashboard
   return (
-    <div className="h-[100dvh] max-md:overflow-hidden w-full md:min-h-screen md:overflow-y-auto md:pb-24 px-0 md:px-8 bg-[#07090e] bg-dot-grid text-slate-100 flex flex-col relative selection:bg-amber-500/30 selection:text-amber-400">
+    <div className="min-h-screen w-full overflow-y-auto pb-24 px-4 md:px-8 bg-[#07090e] bg-dot-grid text-slate-100 flex flex-col relative selection:bg-amber-500/30 selection:text-amber-400">
       {/* Subtle Background Dot Grid Texture */}
       <div className="fixed inset-0 pointer-events-none bg-dot-grid z-0" />
 
@@ -143,6 +144,9 @@ export default function Home() {
 
       {/* Floating Animated Cheers */}
       <FloatingReactions />
+
+      {/* 4-Hour Idle Alarm Check */}
+      <IdleCheckModal />
 
       {/* Floating XP Celebrations Toast */}
       <XpFloatingNotification
@@ -168,7 +172,7 @@ export default function Home() {
       )}
 
       {/* Main Content Area with Mobile Swipe Navigation */}
-      <main className="flex-1 max-md:overflow-hidden w-full flex flex-col items-center pt-3.5 max-md:px-2 px-4 md:px-8 relative z-10">
+      <main className="min-h-screen w-full flex flex-col items-center pt-3.5 px-4 md:px-8 relative z-10">
         <SwipeTabContainer activeTab={activeTab} onChangeTab={setActiveTab}>
           {{
             timer: (
@@ -231,7 +235,7 @@ export default function Home() {
           oldLevel={levelUpData.oldLevel}
           newLevel={levelUpData.newLevel}
           title={levelUpData.title}
-          onClose={dismissLevelUpModal}
+          onClose={() => setLevelUpData(null)}
         />
       )}
 

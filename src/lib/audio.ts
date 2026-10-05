@@ -693,6 +693,28 @@ class AudioEngine {
   public getCurrentAmbient() {
     return this.currentAmbientType;
   }
+
+  public playAlarm() {
+    try {
+      const ctx = this.getContext();
+      const now = ctx.currentTime;
+      for (let i = 0; i < 4; i++) {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(880, now + i * 0.25);
+        gain.gain.setValueAtTime(0, now + i * 0.25);
+        gain.gain.linearRampToValueAtTime(0.15, now + i * 0.25 + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.25 + 0.2);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now + i * 0.25);
+        osc.stop(now + i * 0.25 + 0.22);
+      }
+    } catch {}
+  }
 }
 
 export const soundFx = new AudioEngine();
+
+
