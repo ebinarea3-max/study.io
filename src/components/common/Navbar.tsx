@@ -263,28 +263,35 @@ export function Navbar({
               </div>
 
               {/* Rank Status Pill */}
-              <div
-                className="relative flex items-center h-8 sm:h-9 pl-1 pr-3 sm:pr-4 bg-[var(--surface)] border border-slate-800 text-slate-100 cursor-default select-none rounded-xl"
-                title={`Ranked Season RP: ${userRank.rp.toLocaleString()} RP (${userRank.fullTitle})`}
-              >
-                <div className="flex items-center gap-1.5 sm:gap-2">
-                  <RankCrestBadge
-                    tier={userRank.tier}
-                    division={userRank.division}
-                    size={36}
-                    className="-ml-3"
-                  />
-                  <span
-                    className="text-xs font-bold tracking-wider font-hud uppercase truncate max-w-[85px] sm:max-w-none"
-                    style={{ color: theme.accent }}
-                  >
-                    {userRank.fullTitle}
-                  </span>
-                  <span className="hidden sm:inline text-[11px] text-slate-500 font-mono ml-1">
-                    {userRank.rp.toLocaleString()} RP
-                  </span>
+              {isLoading ? (
+                <div className="relative flex items-center h-8 sm:h-9 w-24 sm:w-28 bg-[var(--surface)] border border-slate-800 rounded-xl animate-pulse overflow-hidden">
+                  <div className="w-6 h-6 rounded-full bg-white/10 ml-1.5"></div>
+                  <div className="w-10 h-3 bg-white/10 ml-2 rounded"></div>
                 </div>
-              </div>
+              ) : (
+                <div
+                  className="relative flex items-center h-8 sm:h-9 pl-1 pr-3 sm:pr-4 bg-[var(--surface)] border border-slate-800 text-slate-100 cursor-default select-none rounded-xl"
+                  title={`Ranked Season RP: ${userRank.rp.toLocaleString()} RP (${userRank.fullTitle})`}
+                >
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <RankCrestBadge
+                      tier={userRank.tier}
+                      division={userRank.division}
+                      size={36}
+                      className="-ml-3"
+                    />
+                    <span
+                      className="text-xs font-bold tracking-wider font-hud uppercase truncate max-w-[85px] sm:max-w-none"
+                      style={{ color: theme.accent }}
+                    >
+                      {userRank.fullTitle}
+                    </span>
+                    <span className="hidden sm:inline text-[11px] text-slate-500 font-mono ml-1">
+                      {userRank.rp.toLocaleString()} RP
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -506,10 +513,10 @@ export function Navbar({
     </header>
 
     {/* Mobile Floating Dock Navigation: 4 Dedicated Tabs with Sliding Tier Indicator */}
-    <div className="fixed bottom-3 sm:bottom-4 left-0 right-0 z-40 md:hidden flex justify-center px-3 pb-[env(safe-area-inset-bottom,16px)] pointer-events-none">
+    <div className="fixed bottom-3 sm:bottom-4 left-0 right-0 z-50 md:hidden flex justify-center px-3 pb-[env(safe-area-inset-bottom,16px)] pointer-events-none">
       <nav
         aria-label="Mobile Floating Dock Navigation"
-        className="w-full max-w-sm hud-glass-overlay rounded-full p-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.7)] transition-all pointer-events-auto"
+        className="w-full max-w-sm bg-[#0d0f12]/90 backdrop-blur-xl border-t border-white/10 rounded-full p-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.7)] transition-all pointer-events-auto"
         style={{
           borderColor: `${theme.accent}35`,
         }}

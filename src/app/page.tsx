@@ -110,8 +110,14 @@ export default function Home() {
     };
   }, [isAuthenticated, refetchSessions]);
 
+  // Track if initial boot has finished so we don't show the full-screen loader on re-fetches
+  const hasInitialBootCompletedRef = useRef(false);
+  if (!isLoading) {
+    hasInitialBootCompletedRef.current = true;
+  }
+
   // Loading state while verifying stored session
-  if (isLoading) {
+  if (isLoading && !hasInitialBootCompletedRef.current) {
     return (
       <div className="min-h-screen bg-[var(--bg)] flex flex-col items-center justify-center text-slate-100 relative">
         <div className="fixed inset-0 pointer-events-none bg-dot-grid z-0" />
@@ -135,7 +141,7 @@ export default function Home() {
 
   // Authenticated: Full StudyPulse focus dashboard
   return (
-    <div className={`w-full bg-[#07090e] bg-dot-grid text-slate-100 flex flex-col relative selection:bg-amber-500/30 selection:text-amber-400 px-4 md:px-8 ${activeTab === "timer" ? "h-[100dvh] overflow-hidden md:min-h-screen md:h-auto md:overflow-y-auto pb-24" : "min-h-screen overflow-y-auto pb-24"}`}>
+    <div className={`w-full bg-[#07090e] bg-dot-grid text-slate-100 flex flex-col relative selection:bg-amber-500/30 selection:text-amber-400 px-4 md:px-8 ${activeTab === "timer" ? "h-[100dvh] overflow-hidden md:min-h-screen md:h-auto md:overflow-y-auto pb-28" : "min-h-screen overflow-y-auto pb-28"}`}>
       {/* Subtle Background Dot Grid Texture */}
       <div className="fixed inset-0 pointer-events-none bg-dot-grid z-0" />
 

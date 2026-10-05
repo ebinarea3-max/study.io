@@ -16,16 +16,37 @@ interface DailyBoostModalProps {
 export function DailyBoostModal({
   isOpen,
   onClose,
+  onStartFocusing,
   streakDays,
 }: DailyBoostModalProps) {
   const { theme } = useRankTheme();
   const [quoteData, setQuoteData] = useState({ text: '', author: '' });
 
+  const [hasDismissed, setHasDismissed] = useState(true); // default true to avoid flash
+
   useEffect(() => {
     setQuoteData(getDailyQuote());
+    const key = 'directive_dismissed_' + new Date().toISOString().slice(0, 10);
+    if (!localStorage.getItem(key)) {
+      setHasDismissed(false);
+    }
   }, []);
 
-  if (!isOpen) return null;
+  if (!isOpen || hasDismissed) return null;
+
+  const handleAcknowledge = () => {
+    const key = 'directive_dismissed_' + new Date().toISOString().slice(0, 10);
+    localStorage.setItem(key, 'true');
+    setHasDismissed(true);
+    onClose();
+  };
+
+  const handleStart = () => {
+    const key = 'directive_dismissed_' + new Date().toISOString().slice(0, 10);
+    localStorage.setItem(key, 'true');
+    setHasDismissed(true);
+    if (onStartFocusing) onStartFocusing();
+  };
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-300">
@@ -41,7 +62,7 @@ export function DailyBoostModal({
 
         {/* Close Button */}
         <button
-          onClick={onClose}
+          onClick={handleAcknowledge}
           className="absolute top-4 right-4 p-2 text-slate-500 hover:text-white rounded-xl hover:bg-white/10 transition-colors"
           title="Close"
         >
@@ -67,7 +88,7 @@ export function DailyBoostModal({
           </div>
           
           <button
-            onClick={onClose}
+            onClick={handleStart}
             className="w-full mt-6 py-3.5 px-6 rounded-2xl text-black font-black text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg active:scale-[0.98]"
             style={{ background: theme.gradient, boxShadow: `0 4px 20px ${theme.accent}40` }}
           >

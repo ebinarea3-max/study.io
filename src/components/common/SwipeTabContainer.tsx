@@ -156,7 +156,7 @@ export function SwipeTabContainer({
               currentIndex === idx
                 ? tab === 'timer'
                   ? 'overflow-hidden'          // Timer tab: no scroll, fills viewport exactly
-                  : 'overflow-y-auto pb-24'    // All other tabs: scrollable with bottom nav clearance
+                  : 'overflow-y-auto pb-28'    // All other tabs: scrollable with bottom nav clearance
                 : 'overflow-hidden pointer-events-none'
             }`}
             style={{
@@ -165,7 +165,8 @@ export function SwipeTabContainer({
                 ? Math.max(0.6, 1 - Math.abs(dragX) / 300)
                 : currentIndex === idx
                 ? 1
-                : 0.3,
+                : 0,
+              visibility: (!isDragging && currentIndex !== idx) ? 'hidden' : 'visible'
             }}
           >
             {children[tab]}

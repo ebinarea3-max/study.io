@@ -82,16 +82,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .select('id, user_id, subject_id, duration_seconds, started_at, ended_at, notes, mode')
         .eq('user_id', authUser.id);
 
-      const totalStudySeconds = dbSessions
-        ? dbSessions.reduce((acc, s: any) => acc + (Number(s.duration_seconds ?? 0)), 0)
+      const currentMonthStr = new Date().toISOString().substring(0, 7);
+      const currentMonthStudySeconds = dbSessions
+        ? dbSessions
+            .filter((s: any) => s.started_at && s.started_at.startsWith(currentMonthStr))
+            .reduce((acc: any, s: any) => acc + (Number(s.duration_seconds ?? 0)), 0)
         : 0;
-      const totalRankedMinutes = Math.floor(totalStudySeconds / 60);
-      const calculatedRP = totalRankedMinutes * 10;
+
+      const totalStudySeconds = dbSessions
+        ? dbSessions.reduce((acc: any, s: any) => acc + (Number(s.duration_seconds ?? 0)), 0)
+        : 0;
+        
+      const carryoverRp = Number(profile?.season_base_rp ?? 0);
+      const calculatedRP = carryoverRp + Math.floor(currentMonthStudySeconds / 36);
+      
       let currentProfileRP = Number(profile?.rp ?? profile?.season_rp ?? 0);
       
       // AUTO-REPAIR CORRUPTED PROFILES:
-      // If the profile RP is more than 500 points higher than what their sessions justify,
-      // they were affected by the studypulse_sessions leak. Reset their RP and Study Seconds.
       let needsRepair = false;
       if (currentProfileRP > calculatedRP + 500 || Number(profile?.total_study_seconds ?? 0) > totalStudySeconds + 3600) {
         currentProfileRP = calculatedRP; // Reset RP
