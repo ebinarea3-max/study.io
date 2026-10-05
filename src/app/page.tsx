@@ -229,7 +229,7 @@ export default function Home() {
       <UpdateBannerModal />
 
       {/* Level Up Celebratory Modal */}
-      {levelUpData && (
+      {levelUpData && !settlementData && (
         <LevelUpModal
           isOpen={Boolean(levelUpData)}
           oldLevel={levelUpData.oldLevel}
