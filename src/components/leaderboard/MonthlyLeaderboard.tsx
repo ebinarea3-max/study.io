@@ -4,7 +4,8 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useAuth } from '../../context/AuthContext';
 import { useStudy } from '../../context/StudyContext';
 import { getSupabase } from '../../lib/supabase';
-import { getRankBadgePath, getRankTier, getRankConfigByTitle, RankTierName, RankDivision } from '../../lib/rankedSystem';
+import { getRankFromRp, calculateRpFromSeconds, RankTierName, RankDivision, RankTier } from '../../lib/ranks';
+import { getRankTheme } from '../../lib/rankTheme';
 import { getLevelFromLifetimeXP } from '../../lib/gamification';
 import { LeaderboardEntry } from '../../types';
 import { Clock } from 'lucide-react';
@@ -80,10 +81,13 @@ function AnimatedDigit({
  * Ensures valid 23-rank monthly tiers (e.g. "BRONZE I", "SILVER II", "GOLD I").
  */
 export function getMonthlyRankTierTitle(rankTitle?: string, totalSeconds?: number): string {
-  // Dynamically calculate tier based on recorded seconds to avoid stale DB values.
-  // In the global ranked system, users earn 10 RP per minute of focus time.
-  const focusRP = totalSeconds ? Math.floor(totalSeconds / 60) * 10 : 0;
-  return getRankTier(focusRP).fullTitle;
+  const rp = calculateRpFromSeconds(totalSeconds || 0);
+  return getRankFromRp(rp).fullTitle;
+}
+
+export function getMonthlyRankTierConfig(totalSeconds?: number): RankTier {
+  const rp = calculateRpFromSeconds(totalSeconds || 0);
+  return getRankFromRp(rp);
 }
 
 export type LeaderboardTimeframe = 'today' | 'week' | 'month' | 'all';
@@ -462,8 +466,7 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
     
     const row = contenders[idx];
     const actualRank = idx + 1;
-    const rankTierTitle = getMonthlyRankTierTitle(row.rank_title, row.total_seconds);
-    const tierConfig = getRankConfigByTitle(rankTierTitle);
+    const tierConfig = getMonthlyRankTierConfig(row.total_seconds);
     const { h, m } = parseTimeHoursMinutes(row.total_seconds);
     
     return { rank: actualRank, row, h, m, tierConfig };
@@ -618,14 +621,11 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                   
                   if (idx < 2) console.log('Leaderboard row data:', row);
 
-                  let computedRankTitle = getMonthlyRankTierTitle(row.rank_title, row.total_seconds);
+                  let tierConfig = getMonthlyRankTierConfig(row.total_seconds);
                   const level = row.level ?? getLevelFromLifetimeXP(row.lifetime_xp || 0);
 
-                  if (level === 2 && computedRankTitle === 'BRONZE I') computedRankTitle = 'BRONZE II';
-                  if (level >= 3 && (computedRankTitle === 'BRONZE I' || computedRankTitle === 'BRONZE II')) computedRankTitle = 'BRONZE III';
-
-                  const tierConfig = getRankConfigByTitle(computedRankTitle);
                   const displayTierTitle = tierConfig.fullTitle;
+                  const theme = getRankTheme(tierConfig.tier);
                   
                   const displayName = row.display_name || row.name || row.username || 'Scholar';
                   const handle = row.username || displayName.toLowerCase().replace(/\s+/g, '');
@@ -650,7 +650,7 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                             : 'border-l-transparent hover:border-l-[var(--row-tier-color)] hover:bg-white/[0.04]'
                         }`}
                         style={{
-                          '--row-tier-color': tierConfig.badgeAccent || '#D97706',
+                          '--row-tier-color': theme.accent,
                         } as React.CSSProperties}
                       >
                         <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -711,7 +711,7 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                             : 'border-l-transparent hover:border-l-[var(--row-tier-color)] hover:bg-white/[0.04]'
                         }`}
                         style={{
-                          '--row-tier-color': tierConfig.badgeAccent || '#D97706',
+                          '--row-tier-color': theme.accent,
                         } as React.CSSProperties}
                       >
                         {/* POS */}
@@ -770,7 +770,7 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                           />
                           <span
                             className="text-xs font-mono tracking-wider uppercase truncate font-semibold"
-                            style={{ color: tierConfig.badgeAccent }}
+                            style={{ color: theme.accent }}
                           >
                             {displayTierTitle}
                           </span>
@@ -796,3 +796,4 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
     </div>
   );
 }
+

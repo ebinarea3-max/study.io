@@ -892,6 +892,8 @@ export function StudyProvider({ children }: { children: ReactNode }) {
   const accumulatedSecondsRef = useRef<number>(0);
   const sessionStartTimeRef = useRef<Date | null>(null);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const lastTickTimeRef = useRef<number | null>(null);
+  const clientSessionIdRef = useRef<string | null>(null);
   const lastLocalActionRef = useRef<{ timestamp: number; status: string } | null>(null);
   const activeChannelRef = useRef<any>(null);
   const realtimeEventCountRef = useRef<number>(0);
@@ -910,10 +912,22 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       if (startTimeRef.current === null) {
         startTimeRef.current = Date.now() - (accumulatedSecondsRef.current * 1000);
       }
+      lastTickTimeRef.current = Date.now();
 
       timerIntervalRef.current = setInterval(() => {
         if (startTimeRef.current === null) return;
-        const actualElapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
+        
+        const now = Date.now();
+        if (lastTickTimeRef.current) {
+          const delta = now - lastTickTimeRef.current;
+          if (delta > 30000) {
+            startTimeRef.current += delta;
+            toast('Timer auto-paused while system was asleep/inactive.', { icon: '💤' });
+          }
+        }
+        lastTickTimeRef.current = now;
+
+        const actualElapsed = Math.floor((now - startTimeRef.current) / 1000);
         
         const prevWaterCount = Math.floor(accumulatedSecondsRef.current / 1800);
         const newWaterCount = Math.floor(actualElapsed / 1800);
@@ -939,6 +953,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
               accumulatedSecondsRef.current = target;
               setElapsedSeconds(target);
               startTimeRef.current = null;
+    clientSessionIdRef.current = null;
               setIsPaused(true);
               setPomodoroCompletedPhase('work');
               soundFx.playMilestoneBell();
@@ -956,6 +971,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
                 timerIntervalRef.current = null;
               }
               startTimeRef.current = null;
+    clientSessionIdRef.current = null;
               accumulatedSecondsRef.current = 0;
               setElapsedSeconds(0);
               setPomodoroPhase('work');
@@ -996,7 +1012,17 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         !isPaused &&
         startTimeRef.current !== null
       ) {
-        const actualElapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
+        const now = Date.now();
+        if (lastTickTimeRef.current) {
+          const delta = now - lastTickTimeRef.current;
+          if (delta > 30000) {
+            startTimeRef.current += delta;
+            toast('Timer auto-paused while system was asleep/inactive.', { icon: '💤' });
+          }
+        }
+        lastTickTimeRef.current = now;
+
+        const actualElapsed = Math.floor((now - startTimeRef.current) / 1000);
 
         const prevWaterCount = Math.floor(accumulatedSecondsRef.current / 1800);
         const newWaterCount = Math.floor(actualElapsed / 1800);
@@ -1017,6 +1043,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
               accumulatedSecondsRef.current = target;
               setElapsedSeconds(target);
               startTimeRef.current = null;
+    clientSessionIdRef.current = null;
               setIsPaused(true);
               setPomodoroCompletedPhase('work');
               soundFx.playMilestoneBell();
@@ -1029,6 +1056,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
                 timerIntervalRef.current = null;
               }
               startTimeRef.current = null;
+    clientSessionIdRef.current = null;
               accumulatedSecondsRef.current = 0;
               setElapsedSeconds(0);
               setPomodoroPhase('work');
@@ -1363,8 +1391,10 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         timerIntervalRef.current = null;
       }
       startTimeRef.current = null;
+    clientSessionIdRef.current = null;
       accumulatedSecondsRef.current = 0;
       sessionStartTimeRef.current = null;
+    clientSessionIdRef.current = null;
       setElapsedSeconds(0);
       setIsStudying(false);
       setIsPaused(false);
@@ -1463,6 +1493,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
           timerIntervalRef.current = null;
         }
         startTimeRef.current = null;
+    clientSessionIdRef.current = null;
         accumulatedSecondsRef.current = targetDuration;
         setElapsedSeconds(targetDuration);
         setIsStudying(true);
@@ -1484,6 +1515,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       }
       accumulatedSecondsRef.current = baseAccumulated;
       startTimeRef.current = null;
+    clientSessionIdRef.current = null;
       setElapsedSeconds(baseAccumulated);
       setIsStudying(true);
       setIsPaused(true);
@@ -2277,6 +2309,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       mode: timerMode,
     });
     startTimeRef.current = null;
+    clientSessionIdRef.current = null;
     if (timerIntervalRef.current) {
       clearInterval(timerIntervalRef.current);
       timerIntervalRef.current = null;
@@ -2336,6 +2369,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     }
     accumulatedSecondsRef.current = seconds;
     startTimeRef.current = null;
+    clientSessionIdRef.current = null;
     setElapsedSeconds(seconds);
     setIsStudying(true);
     setIsPaused(true);
@@ -2485,6 +2519,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     }
 
     const sessionPayload = {
+      client_session_id: clientSessionIdRef.current || crypto.randomUUID(),
       user_id: activeUser?.id || currentUser.id,
       subject_id: subjectId || activeSubject?.id || null,
       duration_seconds: duration,
@@ -2508,7 +2543,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     if (activeUser?.id) {
       if (!supabase) return false;
       try {
-        const { data, error } = await supabase.from('study_sessions').insert([sessionPayload]).select();
+        const { data, error } = await supabase.from('study_sessions').upsert([sessionPayload], { onConflict: 'client_session_id', ignoreDuplicates: true }).select();
         if (error) {
           console.error("Supabase session insert error:", error);
           return false;
@@ -2522,7 +2557,8 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     }
 
     const newSession: StudySession = {
-      id: insertedRecordId || `sess-${Date.now()}`,
+      id: insertedRecordId || sessionPayload.client_session_id,
+      client_session_id: sessionPayload.client_session_id,
       userId: sessionPayload.user_id || 'guest',
       userName: currentUser.displayName,
       userAvatar: currentUser.avatarUrl,
@@ -2701,6 +2737,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
     if (secondsToPersist <= 0) {
       startTimeRef.current = null;
+    clientSessionIdRef.current = null;
       accumulatedSecondsRef.current = 0;
       setIsStudying(false);
       setIsPaused(false);
@@ -2708,6 +2745,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       setActiveTaskId(null);
       setCurrentNotes('');
       sessionStartTimeRef.current = null;
+    clientSessionIdRef.current = null;
       clearPersistedTimer();
       return;
     }
@@ -2717,6 +2755,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
     // Clear references and reset state to 0 on save
     startTimeRef.current = null;
+    clientSessionIdRef.current = null;
     accumulatedSecondsRef.current = 0;
     setIsStudying(false);
     setIsPaused(false);
@@ -2724,6 +2763,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     setActiveTaskId(null);
     setCurrentNotes('');
     sessionStartTimeRef.current = null;
+    clientSessionIdRef.current = null;
     clearPersistedTimer();
   }, [
     checkDebounce,
@@ -2805,7 +2845,9 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     setElapsedSeconds(0);
     accumulatedSecondsRef.current = 0;
     startTimeRef.current = null;
+    clientSessionIdRef.current = null;
     sessionStartTimeRef.current = null;
+    clientSessionIdRef.current = null;
     setIsStudying(true);
     setIsPaused(true);
     setPomodoroCompletedPhase(null);
@@ -2837,7 +2879,9 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     setElapsedSeconds(0);
     accumulatedSecondsRef.current = 0;
     startTimeRef.current = null;
+    clientSessionIdRef.current = null;
     sessionStartTimeRef.current = null;
+    clientSessionIdRef.current = null;
     setIsStudying(false);
     setIsPaused(false);
     setPomodoroCompletedPhase(null);
@@ -2889,8 +2933,10 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       timerIntervalRef.current = null;
     }
     startTimeRef.current = null;
+    clientSessionIdRef.current = null;
     accumulatedSecondsRef.current = 0;
     sessionStartTimeRef.current = null;
+    clientSessionIdRef.current = null;
     setIsStudying(false);
     setIsPaused(false);
     setElapsedSeconds(0);
@@ -3342,3 +3388,7 @@ export function useStudy() {
   }
   return context;
 }
+
+
+
+

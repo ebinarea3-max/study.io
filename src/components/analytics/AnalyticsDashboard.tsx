@@ -138,12 +138,16 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
       return rawName && rawName !== 'unassigned' && duration > 0 && Boolean(sessionDateStr);
     });
 
+    const nowUTC = new Date();
+    const startOfCurrentMonthUTC = new Date(Date.UTC(nowUTC.getUTCFullYear(), nowUTC.getUTCMonth(), 1)).getTime();
+    const endOfCurrentMonthUTC = new Date(Date.UTC(nowUTC.getUTCFullYear(), nowUTC.getUTCMonth() + 1, 0, 23, 59, 59, 999)).getTime();
+
     // 1. Focus Time of This Month
     const thisMonthFocusSec = validSessions
       .filter(s => {
         const sessionDateStr = s.startTime || (s as any).started_at || s.createdAt || (s as any).created_at;
-        const dStr = getLocalDateString(new Date(sessionDateStr));
-        return dStr.startsWith(currentMonthPrefix);
+        const sessionTime = new Date(sessionDateStr).getTime();
+        return sessionTime >= startOfCurrentMonthUTC && sessionTime <= endOfCurrentMonthUTC;
       })
       .reduce((sum, s) => sum + Number(s.durationSeconds ?? (s as any).duration_seconds ?? 0), 0);
 

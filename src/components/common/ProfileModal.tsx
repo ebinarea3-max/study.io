@@ -5,7 +5,8 @@ import { useAuth } from '../../context/AuthContext';
 import { useStudy } from '../../context/StudyContext';
 import { X, Target, User, Loader2, Save, Camera, Upload, Plus, Dices } from 'lucide-react';
 
-import { getRankTier } from '../../lib/rankedSystem';
+import { getRankFromRp } from '../../lib/ranks';
+import { getRankTheme } from '../../lib/rankTheme';
 import { getSupabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { isAppropriateHandle, isValidHandleFormat, sanitizeHandleInput } from '../../lib/validation';
@@ -87,7 +88,7 @@ export function ProfileModal({ isOpen, onClose, user: parentUser, profile }: Pro
   const user = parentUser || contextUser; // Use parentUser if provided, fallback to contextUser
   const { gamification } = useStudy();
 
-  const userRank = getRankTier(user.seasonRp || 0);
+  const userRank = getRankFromRp(user.seasonRp || 0);
 
   const [displayName, setDisplayName] = useState(user.name || user.displayName || '');
   const [username, setUsername] = useState(user.username || '');
@@ -357,7 +358,7 @@ export function ProfileModal({ isOpen, onClose, user: parentUser, profile }: Pro
                 <div className="font-bold text-base text-white truncate">{displayName || user.displayName || 'Scholar'}</div>
                 <div className="text-sm text-neutral-400 font-mono truncate mt-0.5">@{cleanedHandle || 'handle'}</div>
                 
-                <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-0.5 rounded border bg-white/[0.05] backdrop-blur-sm" style={{ borderColor: userRank.config.badgeAccent, color: userRank.config.badgeAccent }}>
+                <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-0.5 rounded border bg-white/[0.05] backdrop-blur-sm" style={{ borderColor: getRankTheme(userRank.tier).accent, color: getRankTheme(userRank.tier).accent }}>
                   <span className="text-[10px] font-black uppercase tracking-wider">
                     {userRank.fullTitle}
                   </span>
@@ -621,3 +622,4 @@ export function ProfileModal({ isOpen, onClose, user: parentUser, profile }: Pro
 }
 
 export { ProfileModal as EditProfileModal };
+

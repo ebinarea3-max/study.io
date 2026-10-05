@@ -12,6 +12,7 @@ export type Subject = {
 
 export type StudySession = {
   id: string;
+  client_session_id?: string;
   userId: string;
   userName: string;
   userAvatar?: string;

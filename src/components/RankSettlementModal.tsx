@@ -3,11 +3,8 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { soundFx } from '../lib/audio';
 import confetti from 'canvas-confetti';
-import {
-  getRankTier,
-  RankTierName,
-  RankTierDetails,
-} from '../lib/rankedSystem';
+import { getRankFromRp, RankTierName, RankTier } from '../lib/ranks';
+import { getRankTheme } from '../lib/rankTheme';
 import { RankSettlementData } from '../types';
 import { ChevronRight, X } from 'lucide-react';
 import { TierIcon } from './common/TierIcon';
@@ -78,8 +75,8 @@ export function RankSettlementModal({
   const streakBonusClaimedToday = Boolean(data?.breakdown.streakBonusClaimedToday);
   const isUnderMinDuration = Boolean(data?.breakdown.isUnderMinDuration ?? (durationSeconds < 60));
 
-  const prevRankDetails = useMemo(() => getRankTier(prevRP), [prevRP]);
-  const newRankDetails = useMemo(() => getRankTier(newRP), [newRP]);
+  const prevRankDetails = useMemo(() => getRankFromRp(prevRP), [prevRP]);
+  const newRankDetails = useMemo(() => getRankFromRp(newRP), [newRP]);
   const isRankUp = newRankDetails.fullTitle !== prevRankDetails.fullTitle;
   const isMajorTierUp = newRankDetails.tier !== prevRankDetails.tier;
 
@@ -89,7 +86,7 @@ export function RankSettlementModal({
   const intensity = isMajorTierUp ? TIER_INTENSITY_MAP[newRankDetails.tier] : (isRankUp ? 0.4 : 0);
 
   // Active crest details (morphs during tier up)
-  const [displayRank, setDisplayRank] = useState<RankTierDetails>(
+  const [displayRank, setDisplayRank] = useState<RankTier>(
     isRankUp ? prevRankDetails : newRankDetails
   );
 
@@ -116,7 +113,7 @@ export function RankSettlementModal({
   const [displayedGain, setDisplayedGain] = useState(0);
   const [progressRatio, setProgressRatio] = useState(0);
   const [activeBarColor, setActiveBarColor] = useState(
-    isRankUp ? prevRankDetails.config.badgeAccent : newRankDetails.config.badgeAccent
+    isRankUp ? getRankTheme(prevRankDetails.tier).accent : getRankTheme(newRankDetails.tier).accent
   );
   const [isBarFlashing, setIsBarFlashing] = useState(false);
   const [poppedSegment, setPoppedSegment] = useState<number | null>(null);
@@ -186,7 +183,7 @@ export function RankSettlementModal({
       setPoppedSegment(null);
       setCounterPopped(false);
       setDisplayRank(isRankUp ? prevRankDetails : newRankDetails);
-      setActiveBarColor(isRankUp ? prevRankDetails.config.badgeAccent : newRankDetails.config.badgeAccent);
+      setActiveBarColor(isRankUp ? getRankTheme(prevRankDetails.tier).accent : getRankTheme(newRankDetails.tier).accent);
       setPunchMode('idle');
       
       
@@ -202,11 +199,11 @@ export function RankSettlementModal({
     if (prefersReducedMotion) {
       setAnimPhase('ready');
       setDisplayRank(newRankDetails);
-      setActiveBarColor(newRankDetails.config.badgeAccent);
+      setActiveBarColor(getRankTheme(newRankDetails.tier).accent);
       setAnimatingRP(newRP);
       setDisplayedGain(totalGained);
-      const tierMin = newRankDetails.minRP;
-      const tierMax = newRankDetails.maxRP;
+      const tierMin = newRankDetails.minRp;
+      const tierMax = newRankDetails.maxRp;
       const finalInTier = Math.max(0, newRP - tierMin);
       const needed = Math.max(1, tierMax - tierMin);
       setProgressRatio(Math.min(1, finalInTier / needed));
@@ -220,10 +217,10 @@ export function RankSettlementModal({
 
     // Always start with prevRankDetails on initial display
     setDisplayRank(prevRankDetails);
-    setActiveBarColor(prevRankDetails.config.badgeAccent);
+    setActiveBarColor(getRankTheme(prevRankDetails.tier).accent);
 
-    const prevTierMin = prevRankDetails.minRP;
-    const prevTierMax = prevRankDetails.maxRP;
+    const prevTierMin = prevRankDetails.minRp;
+    const prevTierMax = prevRankDetails.maxRp;
     const prevInTier = Math.max(0, prevRP - prevTierMin);
     const prevNeeded = Math.max(1, prevTierMax - prevTierMin);
     const initialRatio = Math.min(1, prevInTier / prevNeeded);
@@ -275,7 +272,7 @@ export function RankSettlementModal({
             rot: Math.random() * 540 - 270,
             size: 3 + Math.random() * 4,
             opacity: 0.75 + Math.random() * 0.25,
-            color: (i % 3 === 0) ? '#FFFFFF' : prevRankDetails.config.badgeAccent,
+            color: (i % 3 === 0) ? '#FFFFFF' : getRankTheme(prevRankDetails.tier).accent,
           };
         });
         setParticles(generatedParticles);
@@ -421,7 +418,7 @@ export function RankSettlementModal({
 
               // 3. Trigger rank-up state transition: update badge image and title
               setDisplayRank(newRankDetails);
-              setActiveBarColor(newRankDetails.config.badgeAccent);
+              setActiveBarColor(getRankTheme(newRankDetails.tier).accent);
               setPunchMode(isMajorTierUp ? 'large' : 'small');
 
               // Rank-up screen shake
@@ -450,8 +447,8 @@ export function RankSettlementModal({
                   setPunchMode('idle');
                   setProgressRatio(0);
 
-                  const newTierMin = newRankDetails.minRP;
-                  const newTierMax = newRankDetails.maxRP;
+                  const newTierMin = newRankDetails.minRp;
+                  const newTierMax = newRankDetails.maxRp;
                   const newNeeded = Math.max(1, newTierMax - newTierMin);
                   const remainderRP = Math.max(0, newRP - newTierMin);
                   const targetRatioP2 = Math.min(1, remainderRP / newNeeded);
@@ -515,7 +512,7 @@ export function RankSettlementModal({
 
   if (!isOpen || !data) return null;
 
-  const remainingRP = Math.max(0, displayRank.maxRP - animatingRP);
+  const remainingRP = Math.max(0, displayRank.maxRp - animatingRP);
 
 
 
@@ -554,7 +551,7 @@ export function RankSettlementModal({
       <div
         className="absolute inset-0 pointer-events-none z-0 transition-colors duration-700"
         style={{
-          background: `radial-gradient(ellipse 65% 55% at 50% 36%, ${displayRank.config.glowColor}, rgba(6,8,15,0.98) 72%)`,
+          background: `radial-gradient(ellipse 65% 55% at 50% 36%, ${getRankTheme(displayRank.tier).glow}, rgba(6,8,15,0.98) 72%)`,
           animation: prefersReducedMotion ? 'none' : 'ffBreatheGlow 4s ease-in-out infinite',
           willChange: 'opacity, transform',
         }}
@@ -586,7 +583,7 @@ export function RankSettlementModal({
         <div
           className="absolute inset-0 pointer-events-none z-10"
           style={{
-            background: `radial-gradient(circle at 50% 36%, ${displayRank.config.badgeAccent}66 0%, ${displayRank.config.badgeAccent}22 45%, transparent 75%)`,
+            background: `radial-gradient(circle at 50% 36%, ${getRankTheme(displayRank.tier).accent}66 0%, ${getRankTheme(displayRank.tier).accent}22 45%, transparent 75%)`,
             animation: showRadialFlash ? 'radialFlashAnim 0.25s ease-out forwards' : (intensity >= 6 ? 'majorTierFlashIntense 1.8s ease-out forwards' : 'majorTierFlash 1.5s ease-out forwards'),
             willChange: 'opacity',
           }}
@@ -622,8 +619,8 @@ export function RankSettlementModal({
               <div
                 className="absolute w-56 h-56 sm:w-72 sm:h-72 rounded-full pointer-events-none"
                 style={{
-                  borderColor: displayRank.config.badgeAccent,
-                  boxShadow: `0 0 30px ${displayRank.config.badgeAccent}60`,
+                  borderColor: getRankTheme(displayRank.tier).accent,
+                  boxShadow: `0 0 30px ${getRankTheme(displayRank.tier).accent}60`,
                   animation: 'shockwaveRing1 0.7s cubic-bezier(0.1, 0.85, 0.25, 1) forwards',
                   willChange: 'transform, opacity, border-width',
                 }}
@@ -632,8 +629,8 @@ export function RankSettlementModal({
               <div
                 className="absolute w-56 h-56 sm:w-72 sm:h-72 rounded-full pointer-events-none"
                 style={{
-                  borderColor: displayRank.config.badgeAccent,
-                  boxShadow: `0 0 35px ${displayRank.config.badgeAccent}40`,
+                  borderColor: getRankTheme(displayRank.tier).accent,
+                  boxShadow: `0 0 35px ${getRankTheme(displayRank.tier).accent}40`,
                   animation: 'shockwaveRing2 1.0s cubic-bezier(0.1, 0.85, 0.25, 1) 0.08s forwards',
                   willChange: 'transform, opacity, border-width',
                 }}
@@ -672,7 +669,7 @@ export function RankSettlementModal({
           {/* Soft Centered Ambient Backlight */}
           <div
             className="absolute w-64 h-64 rounded-full blur-[80px] opacity-25 pointer-events-none transition-all duration-700"
-            style={{ backgroundColor: displayRank.config.badgeAccent }}
+            style={{ backgroundColor: getRankTheme(displayRank.tier).accent }}
           />
 
           
@@ -800,8 +797,8 @@ export function RankSettlementModal({
           <div
             className="w-32 sm:w-48 h-[1.5px] mt-2 mb-2 rounded-full"
             style={{
-              background: `linear-gradient(90deg, transparent, ${displayRank.config.badgeAccent}, transparent)`,
-              boxShadow: `0 0 10px ${displayRank.config.badgeAccent}80`,
+              background: `linear-gradient(90deg, transparent, ${getRankTheme(displayRank.tier).accent}, transparent)`,
+              boxShadow: `0 0 10px ${getRankTheme(displayRank.tier).accent}80`,
               animation: prefersReducedMotion ? 'none' : 'ruleWipeOut 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards',
               willChange: 'transform, opacity',
             }}
@@ -810,8 +807,8 @@ export function RankSettlementModal({
           {/* Milestone Countdown */}
           <p className="text-xs sm:text-sm font-medium tracking-wider text-slate-400 mt-0.5">
             <span className="text-xs uppercase tracking-[0.25em] text-slate-400 font-semibold">NEXT MILESTONE: </span>
-            <span style={{ color: displayRank.config.badgeAccent }} className="font-semibold text-slate-200">
-              {displayRank.nextTierTitle}
+            <span style={{ color: getRankTheme(displayRank.tier).accent }} className="font-semibold text-slate-200">
+              {displayRank.fullTitle}
             </span>
             <span className="text-slate-500 font-mono"> ({remainingRP.toLocaleString()} RP remaining)</span>
           </p>
@@ -899,7 +896,7 @@ export function RankSettlementModal({
               style={{ willChange: 'transform' }}
             >
               <span className="text-white font-bold">{animatingRP.toLocaleString()}</span>
-              <span className="text-slate-500"> / {displayRank.maxRP.toLocaleString()} RP</span>
+              <span className="text-slate-500"> / {displayRank.maxRp.toLocaleString()} RP</span>
             </div>
           </div>
 
@@ -927,7 +924,7 @@ export function RankSettlementModal({
               className="h-full rounded-full transition-all duration-75 relative z-0"
               style={{
                 width: `${Math.min(100, Math.max(0, progressRatio * 100))}%`,
-                background: `linear-gradient(90deg, ${displayRank.config.badgeSecondary}, ${activeBarColor})`,
+                background: `linear-gradient(90deg, ${getRankTheme(displayRank.tier).accent}, ${activeBarColor})`,
                 boxShadow: `0 0 14px ${activeBarColor}80`,
                 willChange: 'width',
               }}
@@ -1229,3 +1226,6 @@ export function RankSettlementModal({
     </div>
   );
 }
+
+
+

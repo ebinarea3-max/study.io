@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect, useRef, ReactNod
 import { UserProfile } from '../types';
 import { INITIAL_USER, cleanupLegacyDemoData } from '../lib/mockData';
 import { getSupabase } from '../lib/supabase';
+import { getRankFromRp, getSoftResetRp } from '../lib/ranks';
 import { getCurrentSeasonId } from '../lib/rankedSystem';
 import { getLevelFromLifetimeXP, getScholarTitle } from '../lib/gamification';
 
@@ -193,6 +194,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .maybeSingle();
 
         if (data && !error) {
+          const currentMonthStr = new Date().toISOString().substring(0, 7);
+          let seasonRp = data.season_rp ?? data.rp ?? 0;
+          let lastResetMonth = data.last_reset_month;
+
+          if (lastResetMonth !== currentMonthStr) {
+            seasonRp = getSoftResetRp(seasonRp);
+            lastResetMonth = currentMonthStr;
+            const newTier = getRankFromRp(seasonRp);
+            
+            await supabase.from('profiles').update({
+              season_rp: seasonRp,
+              last_reset_month: lastResetMonth,
+              rank_title: newTier.fullTitle,
+              rank_badge: newTier.badge
+            }).eq('id', user.id);
+
+            data.season_rp = seasonRp;
+            data.last_reset_month = lastResetMonth;
+            data.rank_title = newTier.fullTitle;
+            data.rank_badge = newTier.badge;
+            if (data.level_title) data.level_title = newTier.fullTitle;
+          }
           setUser(prev => {
             const updated = {
               ...prev,
@@ -823,4 +846,5 @@ export function formatAuthError(err: unknown): string {
   }
   return raw || 'Authentication encountered an error. Please try again.';
 }
+
 

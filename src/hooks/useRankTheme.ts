@@ -3,12 +3,12 @@
 import { useMemo, useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useStudy } from '../context/StudyContext';
-import { getRankTier, RankTierDetails } from '../lib/rankedSystem';
+import { getRankFromRp, RankTier } from '../lib/ranks';
 import { getRankTheme, RankThemePalette } from '../lib/rankTheme';
 
 export function useRankTheme(): {
   theme: RankThemePalette;
-  userRank: RankTierDetails;
+  userRank: RankTier;
   totalRP: number;
 } {
   const { user } = useAuth();
@@ -25,13 +25,11 @@ export function useRankTheme(): {
   }, [sessions]);
 
   const totalRP = useMemo(() => {
-    const focusRP = Math.floor(totalSeconds / 60) * 10;
-    const profileRP = Number((user as any)?.rp ?? user?.seasonRp ?? 0);
-    return Math.max(focusRP, profileRP);
-  }, [totalSeconds, (user as any)?.rp, user?.seasonRp]);
+    return Number((user as any)?.season_rp ?? user?.seasonRp ?? (user as any)?.rp ?? 0);
+  }, [(user as any)?.season_rp, user?.seasonRp, (user as any)?.rp]);
 
   const userRank = useMemo(() => {
-    return getRankTier(totalRP);
+    return getRankFromRp(totalRP);
   }, [totalRP]);
 
   const theme = useMemo(() => {
