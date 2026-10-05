@@ -94,7 +94,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     setIsReporting(false);
     
     if (res.success) {
-      toast.success('Report sent directly to support! Thank you.');
+      toast.success('Report submitted successfully! Thank you.');
       setShowReportForm(false);
       setReportMessage('');
       setReportCategory('Bug');

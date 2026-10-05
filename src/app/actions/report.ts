@@ -5,11 +5,7 @@ import { createClient } from '@/lib/supabaseServer';
 export async function submitReport(formData: FormData) {
   try {
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return { success: false, error: 'You must be logged in to report a problem.' };
-    }
+    const { data: { user } } = await supabase.auth.getUser();
 
     const category = formData.get('category') as string;
     const message = formData.get('message') as string;
@@ -18,77 +14,49 @@ export async function submitReport(formData: FormData) {
       return { success: false, error: 'Category and message are required.' };
     }
 
-    // Attempt to get user profile for username
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('username')
-      .eq('id', user.id)
-      .single();
+    let username = 'Anonymous';
 
-    const username = profile?.username || user.user_metadata?.username || user.user_metadata?.full_name || 'Anonymous';
-    const sender_email = user.email || 'No email provided';
+    if (user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('id', user.id)
+        .maybeSingle();
 
-    // Store in Supabase 'reports' table if it exists
-    try {
-      await supabase.from('reports').insert([
-        {
-          user_id: user.id,
-          username,
-          sender_email,
-          category,
-          message,
-          created_at: new Date().toISOString()
-        }
-      ]);
-    } catch (e) {
-      console.warn('Failed to insert into reports table (it may not exist)', e);
+      username = profile?.username || user.user_metadata?.username || user.user_metadata?.full_name || 'Anonymous';
     }
 
-    // Send email
-    const emailSubject = `[Study-io Bug Report] ${category} from @${username}`;
-    const emailBody = `Scholar: @${username} (${sender_email})\nCategory: ${category}\nTimestamp: ${new Date().toLocaleString()}\n\nReport Details:\n${message}`;
+    // Save to Supabase
+    try {
+      const { error: dbError } = await supabase.from('reports').insert({
+        user_id: user?.id || null,
+        username,
+        category,
+        message,
+        created_at: new Date().toISOString()
+      });
+      if (dbError) {
+        console.warn('Database insert error:', dbError);
+      }
+    } catch (e) {
+      console.error('Database exception:', e);
+    }
 
-    if (process.env.RESEND_API_KEY) {
-      const res = await fetch('https://api.resend.com/emails', {
+    // Forward directly to Gmail via Web3Forms endpoint
+    try {
+      await fetch('https://api.web3forms.com/submit', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.RESEND_API_KEY}`
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          from: 'Study.io <onboarding@resend.dev>',
+          access_key: process.env.WEB3FORMS_ACCESS_KEY || 'YOUR_ACCESS_KEY',
+          subject: `[Study-io Bug Report] ${category} from @${username}`,
+          from_name: 'Study-io Reports',
           to: 'ebtypinged@gmail.com',
-          subject: emailSubject,
-          text: emailBody,
+          message: `Category: ${category}\nUser: @${username}\n\nIssue:\n${message}`,
         })
       });
-
-      if (!res.ok) {
-        console.error('Failed to send email via Resend:', await res.text());
-        return { success: false, error: 'Failed to dispatch email report.' };
-      }
-    } else {
-      // Fallback to Web3Forms if key exists, otherwise mock
-      if (process.env.WEB3FORMS_ACCESS_KEY) {
-        const res = await fetch('https://api.web3forms.com/submit', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            access_key: process.env.WEB3FORMS_ACCESS_KEY,
-            subject: emailSubject,
-            email: sender_email,
-            message: emailBody,
-          })
-        });
-
-        if (!res.ok) {
-          console.error('Failed to send email via Web3Forms:', await res.text());
-          return { success: false, error: 'Failed to dispatch email report.' };
-        }
-      } else {
-        console.warn('No email service configured. Would have sent:', { emailSubject, emailBody });
-        // Simulating success when no provider is configured
-      }
+    } catch (e) {
+      console.error('Email dispatch error:', e);
     }
 
     return { success: true };
