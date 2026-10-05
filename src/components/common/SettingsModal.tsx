@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   X,
   Volume2,
@@ -15,6 +15,7 @@ import {
   CheckCircle2,
   Bug,
   Send,
+  Paperclip,
 } from 'lucide-react';
 import { submitReport } from '../../app/actions/report';
 import { soundFx } from '../../lib/audio';
@@ -46,6 +47,10 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [reportMessage, setReportMessage] = useState('');
   const [isReporting, setIsReporting] = useState(false);
   const [reportError, setReportError] = useState('');
+  
+  const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
+  const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
 
@@ -81,25 +86,88 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     }
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('File size must be less than 5MB');
+      return;
+    }
+
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      toast.error('Only JPEG, PNG, and WebP images are allowed');
+      return;
+    }
+
+    setScreenshotFile(file);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setScreenshotPreview(e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const clearScreenshot = () => {
+    setScreenshotFile(null);
+    setScreenshotPreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const handleReportSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsReporting(true);
     setReportError('');
+    let imageUrl: string | null = null;
 
-    const formData = new FormData();
-    formData.append('category', reportCategory);
-    formData.append('message', reportMessage);
+    try {
+      if (screenshotFile) {
+        const supabase = getSupabase();
+        if (!supabase) {
+          throw new Error('Database client not initialized. Cannot upload screenshot.');
+        }
+        
+        const fileName = `${Date.now()}-${screenshotFile.name.replace(/\s+/g, '_')}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('report-screenshots')
+          .upload(fileName, screenshotFile);
 
-    const res = await submitReport(formData);
-    setIsReporting(false);
-    
-    if (res.success) {
-      toast.success('Report submitted successfully! Thank you.');
-      setShowReportForm(false);
-      setReportMessage('');
-      setReportCategory('Bug');
-    } else {
-      setReportError(res.error || 'Failed to send report.');
+        if (uploadError) {
+          throw new Error('Failed to upload screenshot. Please try again.');
+        }
+
+        const { data: urlData } = supabase.storage
+          .from('report-screenshots')
+          .getPublicUrl(fileName);
+        
+        imageUrl = urlData.publicUrl;
+      }
+
+      const formData = new FormData();
+      formData.append('category', reportCategory);
+      formData.append('message', reportMessage);
+      if (imageUrl) {
+        formData.append('imageUrl', imageUrl);
+      }
+
+      const res = await submitReport(formData);
+      
+      if (res.success) {
+        toast.success('Report submitted! Thanks for your feedback.');
+        setShowReportForm(false);
+        setReportMessage('');
+        setReportCategory('Bug');
+        clearScreenshot();
+      } else {
+        setReportError(res.error || 'Failed to send report.');
+      }
+    } catch (err: any) {
+      setReportError(err.message || 'An unexpected error occurred.');
+    } finally {
+      setIsReporting(false);
     }
   };
 
@@ -294,6 +362,43 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   className="w-full px-3 py-2 bg-black/40 border border-white/10 rounded-xl text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white/30 transition-colors font-mono min-h-[80px]"
                   required
                 />
+                
+                {/* Screenshot Attachment */}
+                <div className="flex items-center gap-3">
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    accept="image/png, image/jpeg, image/webp"
+                    className="hidden"
+                  />
+                  {!screenshotPreview ? (
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="px-3 py-1.5 rounded-xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-xs font-hud font-bold tracking-wider text-neutral-300 hover:text-white transition-colors flex items-center gap-1.5"
+                    >
+                      <Paperclip className="w-3.5 h-3.5" />
+                      <span>ATTACH SCREENSHOT (OPTIONAL)</span>
+                    </button>
+                  ) : (
+                    <div className="relative group">
+                      <img
+                        src={screenshotPreview}
+                        alt="Preview"
+                        className="h-12 w-12 object-cover rounded-lg border border-white/20 shadow-md"
+                      />
+                      <button
+                        type="button"
+                        onClick={clearScreenshot}
+                        className="absolute -top-1.5 -right-1.5 bg-rose-500 text-white rounded-full p-0.5 shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+
                 {reportError && (
                   <div className="text-xs text-rose-400 font-medium font-mono">{reportError}</div>
                 )}

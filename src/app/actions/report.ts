@@ -9,6 +9,7 @@ export async function submitReport(formData: FormData) {
 
     const category = formData.get('category') as string;
     const message = formData.get('message') as string;
+    const imageUrl = formData.get('imageUrl') as string | null;
 
     if (!category || !message) {
       return { success: false, error: 'Category and message are required.' };
@@ -26,37 +27,19 @@ export async function submitReport(formData: FormData) {
       username = profile?.username || user.user_metadata?.username || user.user_metadata?.full_name || 'Anonymous';
     }
 
-    // Save to Supabase
-    try {
-      const { error: dbError } = await supabase.from('reports').insert({
-        user_id: user?.id || null,
-        username,
-        category,
-        message,
-        created_at: new Date().toISOString()
-      });
-      if (dbError) {
-        console.warn('Database insert error:', dbError);
-      }
-    } catch (e) {
-      console.error('Database exception:', e);
-    }
+    // Save strictly to Supabase reports table
+    const { error: dbError } = await supabase.from('reports').insert({
+      user_id: user?.id || null,
+      username,
+      category,
+      message,
+      image_url: imageUrl || null,
+      created_at: new Date().toISOString()
+    });
 
-    // Forward directly to Gmail via Web3Forms endpoint
-    try {
-      await fetch('https://api.web3forms.com/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          access_key: process.env.WEB3FORMS_ACCESS_KEY || 'YOUR_ACCESS_KEY',
-          subject: `[Study-io Bug Report] ${category} from @${username}`,
-          from_name: 'Study-io Reports',
-          to: 'ebtypinged@gmail.com',
-          message: `Category: ${category}\nUser: @${username}\n\nIssue:\n${message}`,
-        })
-      });
-    } catch (e) {
-      console.error('Email dispatch error:', e);
+    if (dbError) {
+      console.warn('Database insert error:', dbError);
+      return { success: false, error: 'Failed to save the report to database.' };
     }
 
     return { success: true };
