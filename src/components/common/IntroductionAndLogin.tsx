@@ -44,79 +44,79 @@ export function IntroductionAndLogin() {
         </div>
       </header>
 
-      {/* Main Hero & Split Layout */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-8 lg:py-12 grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center relative z-10">
-        {/* Left Column: Product Introduction */}
-        <div className="lg:col-span-7 space-y-8">
-          <div className="space-y-4">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-xs font-bold text-emerald-400 shadow-sm">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Next-Gen Study & Focus Platform</span>
-            </div>
-
-            <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-[1.15]">
-              Master Your Focus. <br />
-              <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">
-                Study With Purpose.
-              </span>
-            </h1>
-
-            <p className="text-sm sm:text-base text-slate-300 leading-relaxed max-w-xl">
-              <strong className="text-emerald-300">study.io</strong> turns deep work into a rewarding progression system. Track focus sessions with precision timers, stay accountable with daily checklists, and climb competitive rank tiers from Bronze to Grandmaster.
-            </p>
+      {/* Main Hero & Centered Layout */}
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-12 flex flex-col items-center justify-center relative z-10">
+        <div className="text-center space-y-6 mb-10 max-w-3xl flex flex-col items-center">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[var(--surface)] border border-[var(--border)] text-xs font-bold text-emerald-400 shadow-sm backdrop-blur-md">
+            <Sparkles className="w-4 h-4" />
+            <span>Next-Gen Study & Focus Platform</span>
           </div>
 
-          {/* 4 Feature Pillars Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-            {/* Feature 1 */}
-            <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-slate-700 transition-all backdrop-blur-md space-y-2">
-              <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
-                <Timer className="w-4 h-4" />
-              </div>
-              <h3 className="font-bold text-sm text-white">Precision Timer &amp; Soundscapes</h3>
-              <p className="text-xs text-slate-400 leading-normal">
-                Stopwatch, Pomodoro (25/5 &amp; 50/10), and ambient background audio (Rain, Cafe, White Noise) with background-tab throttling protection.
-              </p>
-            </div>
+          <h1 className="text-4xl sm:text-6xl md:text-7xl font-black text-white tracking-tight leading-[1.1]">
+            Master Your Focus. <br />
+            <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">
+              Study With Purpose.
+            </span>
+          </h1>
 
-            {/* Feature 2 */}
-            <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-slate-700 transition-all backdrop-blur-md space-y-2">
-              <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold">
-                <Trophy className="w-4 h-4" />
-              </div>
-              <h3 className="font-bold text-sm text-white">Rank Tiers &amp; RP System</h3>
-              <p className="text-xs text-slate-400 leading-normal">
-                Earn RP for every focused minute. Level up from Bronze to Grandmaster with post-session milestone breakdowns and monthly season resets.
-              </p>
-            </div>
+          <p className="text-base sm:text-lg text-slate-400 leading-relaxed max-w-2xl">
+            <strong className="text-emerald-400 font-semibold">study.io</strong> turns deep work into a rewarding progression system. Track focus sessions, stay accountable, and climb competitive rank tiers from Bronze to Grandmaster.
+          </p>
+        </div>
 
-            {/* Feature 3 */}
-            <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-slate-700 transition-all backdrop-blur-md space-y-2">
-              <div className="w-8 h-8 rounded-xl bg-teal-500/20 text-teal-400 flex items-center justify-center font-bold">
-                <CheckSquare className="w-4 h-4" />
-              </div>
-              <h3 className="font-bold text-sm text-white">Daily Task Checklist</h3>
-              <p className="text-xs text-slate-400 leading-normal">
-                Fast, keyboard-friendly checklist with streak tracking and session focus goals to eliminate distractions.
-              </p>
-            </div>
-
-            {/* Feature 4 */}
-            <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-slate-700 transition-all backdrop-blur-md space-y-2">
-              <div className="w-8 h-8 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold">
-                <BarChart3 className="w-4 h-4" />
-              </div>
-              <h3 className="font-bold text-sm text-white">24-Hour Timeline &amp; Heatmaps</h3>
-              <p className="text-xs text-slate-400 leading-normal">
-                Inspect hourly study distributions, GitHub-style 12-week consistency heatmaps, and per-subject breakdown stats.
-              </p>
-            </div>
+        {/* Auth Card Centered */}
+        <div className="w-full max-w-md mx-auto mb-16 relative">
+          <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 rounded-[2rem] blur-xl" />
+          <div className="relative">
+            <AuthCard />
           </div>
         </div>
 
-        {/* Right Column: Sleek Auth Card */}
-        <div className="lg:col-span-5 w-full max-w-md mx-auto">
-          <AuthCard />
+        {/* 4 Feature Pillars Grid (Centered below) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full max-w-6xl">
+          {/* Feature 1 */}
+          <div className="p-5 rounded-2xl bg-[var(--surface)] border border-[var(--border)] hover:border-emerald-500/30 transition-all backdrop-blur-xl flex flex-col items-center text-center space-y-3 group">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold group-hover:scale-110 transition-transform">
+              <Timer className="w-5 h-5" />
+            </div>
+            <h3 className="font-bold text-sm text-slate-200">Precision Timers</h3>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Stopwatch, Pomodoro (25/5 & 50/10), and ambient background audio to keep you in the zone.
+            </p>
+          </div>
+
+          {/* Feature 2 */}
+          <div className="p-5 rounded-2xl bg-[var(--surface)] border border-[var(--border)] hover:border-amber-500/30 transition-all backdrop-blur-xl flex flex-col items-center text-center space-y-3 group">
+            <div className="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-400 flex items-center justify-center font-bold group-hover:scale-110 transition-transform">
+              <Trophy className="w-5 h-5" />
+            </div>
+            <h3 className="font-bold text-sm text-slate-200">Rank Tiers & RP</h3>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Earn RP for every focused minute. Level up from Bronze to Grandmaster with monthly resets.
+            </p>
+          </div>
+
+          {/* Feature 3 */}
+          <div className="p-5 rounded-2xl bg-[var(--surface)] border border-[var(--border)] hover:border-teal-500/30 transition-all backdrop-blur-xl flex flex-col items-center text-center space-y-3 group">
+            <div className="w-10 h-10 rounded-2xl bg-teal-500/10 text-teal-400 flex items-center justify-center font-bold group-hover:scale-110 transition-transform">
+              <CheckSquare className="w-5 h-5" />
+            </div>
+            <h3 className="font-bold text-sm text-slate-200">Daily Checklist</h3>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Keyboard-friendly checklist with streak tracking and session focus goals.
+            </p>
+          </div>
+
+          {/* Feature 4 */}
+          <div className="p-5 rounded-2xl bg-[var(--surface)] border border-[var(--border)] hover:border-purple-500/30 transition-all backdrop-blur-xl flex flex-col items-center text-center space-y-3 group">
+            <div className="w-10 h-10 rounded-2xl bg-purple-500/10 text-purple-400 flex items-center justify-center font-bold group-hover:scale-110 transition-transform">
+              <BarChart3 className="w-5 h-5" />
+            </div>
+            <h3 className="font-bold text-sm text-slate-200">Advanced Analytics</h3>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Inspect hourly distributions, consistency heatmaps, and per-subject breakdown stats.
+            </p>
+          </div>
         </div>
       </main>
 
