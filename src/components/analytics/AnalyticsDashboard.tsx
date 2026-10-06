@@ -262,7 +262,15 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
       const t = d.getTime();
 
       if (distTimeframe === 'daily') {
-        return d.toLocaleDateString() === anchorLocalDate || getLocalDateString(d) === distAnchorDate || (t >= startTime && t <= endTime);
+        return getLocalDateString(d) === distAnchorDate;
+      }
+      if (distTimeframe === 'monthly') {
+        const anchor = parseLocalDateString(distAnchorDate);
+        return d.getMonth() === anchor.getMonth() && d.getFullYear() === anchor.getFullYear();
+      }
+      if (distTimeframe === 'yearly') {
+        const anchor = parseLocalDateString(distAnchorDate);
+        return d.getFullYear() === anchor.getFullYear();
       }
 
       return t >= startTime && t <= endTime;
