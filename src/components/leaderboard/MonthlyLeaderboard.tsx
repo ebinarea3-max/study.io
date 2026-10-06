@@ -320,11 +320,14 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
               const isMe = Boolean(row.is_current_user || (currentUser?.id && row.user_id === currentUser.id));
               
               let computedRank = row.rank_title;
-              if (!computedRank || computedRank.trim() === '') {
+              if (row.season_rp !== undefined || row.rp !== undefined) {
                 const rpToUse = Number(row.season_rp ?? row.rp ?? 0);
                 computedRank = getRankFromRp(rpToUse).name;
+              } else if (!computedRank || computedRank.trim() === '') {
+                computedRank = getRankFromRp(0).name;
               }
-              if (isMe && currentUser?.levelTitle && (computedRank.toUpperCase() === 'BRONZE I' || !row.rank_title)) {
+              
+              if (isMe && currentUser?.levelTitle) {
                 computedRank = currentUser.levelTitle;
               }
 
@@ -383,11 +386,14 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                 entries = dbProfiles.map((p: any) => {
                   const isMe = p.id === currentUser?.id;
                   let computedRank = p.rank_title;
-                  if (!computedRank || computedRank.trim() === '') {
+                  if (p.season_rp !== undefined || p.rp !== undefined) {
                     const rpToUse = Number(p.season_rp ?? p.rp ?? 0);
                     computedRank = getRankFromRp(rpToUse).name;
+                  } else if (!computedRank || computedRank.trim() === '') {
+                    computedRank = getRankFromRp(0).name;
                   }
-                  if (isMe && currentUser?.levelTitle && (computedRank.toUpperCase() === 'BRONZE I' || !p.rank_title)) {
+
+                  if (isMe && currentUser?.levelTitle) {
                     computedRank = currentUser.levelTitle;
                   }
 
@@ -654,6 +660,11 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                   if (idx < 2) console.log('Leaderboard row data:', row);
 
                   let tierConfig = getMonthlyRankTierConfig(row.total_seconds, row.rank_title);
+                  
+                  if (isCurrentUser && user) {
+                    const persistentRank = user.levelTitle || user.rank_title || 'Bronze I';
+                    tierConfig = getMonthlyRankTierConfig(0, persistentRank);
+                  }
                   const level = row.level ?? getLevelFromLifetimeXP(row.lifetime_xp || 0);
 
                   const displayTierTitle = tierConfig.name.toUpperCase();
