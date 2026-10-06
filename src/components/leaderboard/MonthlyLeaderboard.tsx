@@ -11,7 +11,7 @@ import { LeaderboardEntry } from '../../types';
 import { Clock } from 'lucide-react';
 import { soundFx } from '../../lib/audio';
 import { RankCrestBadge } from '../common/RankCrestBadge';
-
+import { useRankTheme } from '../../hooks/useRankTheme';
 export function formatStudyTime(totalSeconds: number): string {
   const safeSeconds = Math.max(0, Math.round(totalSeconds || 0));
   const hours = Math.floor(safeSeconds / 3600);
@@ -237,6 +237,7 @@ interface MonthlyLeaderboardProps {
 export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: MonthlyLeaderboardProps) {
   const { user } = useAuth();
   const { sessions } = useStudy();
+  const { userRank } = useRankTheme();
 
   const [timeframe, setTimeframe] = useState<LeaderboardTimeframe>('month');
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
@@ -504,11 +505,13 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
     
     const row = contenders[idx];
     const actualRank = idx + 1;
-    const tierConfig = getMonthlyRankTierConfig(row.total_seconds, row.rank_title);
+    const tierConfig = userRank 
+      ? getMonthlyRankTierConfig(0, userRank.name) 
+      : getMonthlyRankTierConfig(row.total_seconds, row.rank_title);
     const { h, m } = parseTimeHoursMinutes(row.total_seconds);
     
     return { rank: actualRank, row, h, m, tierConfig };
-  }, [contenders, checkIsCurrentUser]);
+  }, [contenders, checkIsCurrentUser, userRank]);
 
   useEffect(() => {
     if (isLoading || isFetching) return;
@@ -661,9 +664,10 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
 
                   let tierConfig = getMonthlyRankTierConfig(row.total_seconds, row.rank_title);
                   
-                  if (isCurrentUser && user) {
-                    const persistentRank = user.levelTitle || user.rank_title || 'Bronze I';
-                    tierConfig = getMonthlyRankTierConfig(0, persistentRank);
+                  if (isCurrentUser && userRank) {
+                    // BRUTE-FORCE UNCONDITIONAL OVERRIDE:
+                    // Always match the exact rank displayed in the header.
+                    tierConfig = getMonthlyRankTierConfig(0, userRank.name);
                   }
                   const level = row.level ?? getLevelFromLifetimeXP(row.lifetime_xp || 0);
 
