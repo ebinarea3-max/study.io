@@ -65,6 +65,7 @@ interface StudyContextType {
   simulateSeasonResetModal: (mockData?: Partial<SeasonResetData>) => void;
   lastXpEarned: { id: string; amount: number; reason: string; type?: 'focus' | 'todo' | 'streak' | 'general' } | null;
   levelUpData: { newLevel: number; oldLevel: number; title: string } | null;
+  triggerLevelUp: (oldLevel: number, newLevel: number, title: string) => void;
   dismissLevelUpModal: () => void;
   dismissXpNotification: () => void;
   isIdleCheckActive: boolean;
@@ -558,12 +559,12 @@ export function StudyProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const dismissLevelUpModal = useCallback(() => {
-    if (levelUpData) {
-      setStoredLastSeenLevel(levelUpData.newLevel, user?.id);
-      updateProfile({ last_seen_level: levelUpData.newLevel });
-    }
     setLevelUpData(null);
-  }, [levelUpData, user?.id, updateProfile]);
+  }, []);
+
+  const triggerLevelUp = useCallback((oldLevel: number, newLevel: number, title: string) => {
+    setLevelUpData({ newLevel, oldLevel, title });
+  }, []);
 
   const dismissXpNotification = useCallback(() => {
     setLastXpEarned(null);
@@ -2739,6 +2740,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       // Permanently increment lifetime_xp (never resets across seasons)
       const prevLifetimeXP = Number(currentUser?.lifetime_xp ?? currentUser?.lifetimeXp ?? currentUser?.xp ?? 0);
       const newLifetimeXP = prevLifetimeXP + totalEarnedXP;
+      const prevLevel = getLevelFromLifetimeXP(prevLifetimeXP);
       const newLevel = getLevelFromLifetimeXP(newLifetimeXP);
       const newScholarTitle = getScholarTitle(newLevel);
 
@@ -2749,6 +2751,10 @@ export function StudyProvider({ children }: { children: ReactNode }) {
           ? `${mins} min Focus (+100 Daily Streak)`
           : `${mins} min Focus Session`;
         triggerXpEarned(totalEarnedXP, reason, 'focus');
+      }
+
+      if (newLevel > prevLevel) {
+        triggerLevelUp(prevLevel, newLevel, newScholarTitle);
       }
 
       const profileUpdates: Partial<UserProfile> = {
@@ -3435,6 +3441,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       isBlockedByOtherTab,
       confirmIdleCheck,
         triggerXpEarned,
+        triggerLevelUp,
         subjects,
         selectedSubject,
         selectedSubjectId,

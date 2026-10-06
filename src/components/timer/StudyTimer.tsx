@@ -97,6 +97,7 @@ export function StudyTimer() {
     addSession,
     currentNotes,
     triggerXpEarned,
+    triggerLevelUp,
     showRankSettlement,
     activeTaskId,
     hasHydrated,
@@ -456,6 +457,11 @@ export function StudyTimer() {
           ? `${mins} min Focus (+100 Daily Streak)`
           : `${mins} min Focus Session`;
         triggerXpEarned(totalEarnedXP, reason, 'focus');
+      }
+
+      const prevLevel = getLevelFromLifetimeXP(prevLifetimeXP);
+      if (newLevel > prevLevel) {
+        triggerLevelUp(prevLevel, newLevel, newScholarTitle);
       }
 
       // Persist new RP, lifetime XP, level, and streak bonus date in profile
