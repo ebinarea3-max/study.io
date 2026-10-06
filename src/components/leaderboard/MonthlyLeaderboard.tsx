@@ -669,11 +669,18 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                     
                     if (idx < 2) console.log('Leaderboard row data:', row);
 
+                    const hoursStudied = (Number(row.total_seconds) || 0) / 3600;
+                    let calculatedTierName = "BRONZE I";
+                    if (hoursStudied >= 10) calculatedTierName = "SILVER I";
+                    else if (hoursStudied >= 5) calculatedTierName = "BRONZE III";
+                    else if (hoursStudied >= 2) calculatedTierName = "BRONZE II";
+
                     let tierConfig = getRankFromRp(0); // Safe fallback
                     if (isCurrentUser && userRank) {
                       tierConfig = getMonthlyRankTierConfig(0, userRank.name);
-                    } else if (row.rank_title) {
-                      tierConfig = getMonthlyRankTierConfig(row.total_seconds, String(row.rank_title));
+                    } else {
+                      const finalRankName = row.rank_title ? String(row.rank_title) : calculatedTierName;
+                      tierConfig = getMonthlyRankTierConfig(row.total_seconds, finalRankName);
                     }
                     
                     const level = row.level ?? getLevelFromLifetimeXP(Number(row.lifetime_xp) || 0);
