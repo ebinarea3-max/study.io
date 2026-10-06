@@ -661,29 +661,31 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
 
                 {/* Roster Rows */}
                 {contenders.map((row, idx) => {
-                  const actualRank = idx + 1;
-                  const isCurrentUser = checkIsCurrentUser(row);
-                  
-                  if (idx < 2) console.log('Leaderboard row data:', row);
+                  if (!row) return null;
 
-                  let tierConfig = getMonthlyRankTierConfig(row.total_seconds, row.rank_title);
-                  
-                  if (isCurrentUser && userRank) {
-                    // BRUTE-FORCE UNCONDITIONAL OVERRIDE:
-                    // Always match the exact rank displayed in the header.
-                    tierConfig = getMonthlyRankTierConfig(0, userRank.name);
-                  }
-                  const level = row.level ?? getLevelFromLifetimeXP(row.lifetime_xp || 0);
+                  try {
+                    const actualRank = idx + 1;
+                    const isCurrentUser = checkIsCurrentUser(row);
+                    
+                    if (idx < 2) console.log('Leaderboard row data:', row);
 
-                  const displayTierTitle = tierConfig.name.toUpperCase();
-                  const theme = getRankTheme(tierConfig.tier);
-                  
-                  const displayName = row.display_name || row.name || row.username || 'Scholar';
-                  const handle = row.username || displayName.toLowerCase().replace(/\s+/g, '');
-                  const { h, m } = parseTimeHoursMinutes(row.total_seconds);
-                  const movement = getRankDelta(row.user_id, actualRank, timeframe);
+                    let tierConfig = getRankFromRp(0); // Safe fallback
+                    if (isCurrentUser && userRank) {
+                      tierConfig = getMonthlyRankTierConfig(0, userRank.name);
+                    } else if (row.rank_title) {
+                      tierConfig = getMonthlyRankTierConfig(row.total_seconds, String(row.rank_title));
+                    }
+                    
+                    const level = row.level ?? getLevelFromLifetimeXP(Number(row.lifetime_xp) || 0);
+                    const displayTierTitle = String(tierConfig.name).toUpperCase();
+                    const theme = getRankTheme(tierConfig.tier || 'Bronze');
+                    
+                    const displayName = String(row.display_name || row.name || row.username || 'Scholar');
+                    const handle = row.username ? String(row.username) : displayName.toLowerCase().replace(/\s+/g, '');
+                    const { h, m } = parseTimeHoursMinutes(Number(row.total_seconds) || 0);
+                    const movement = getRankDelta(String(row.user_id), actualRank, timeframe);
 
-                  return (
+                    return (
                     <div
                       key={row.user_id}
                       ref={isCurrentUser ? myRowRef : null}
@@ -837,6 +839,10 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                       </div>
                     </div>
                   );
+                 } catch (err) {
+                   console.error("Leaderboard row render crash:", err, row);
+                   return null;
+                 }
                 })}
               </div>
             )}
