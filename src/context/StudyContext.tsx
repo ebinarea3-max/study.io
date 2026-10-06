@@ -20,10 +20,26 @@ import {
   LevelProgress,
 } from '../lib/gamification';
 import {
-  calculateSessionRP,
   calculateSeasonReset,
   getCurrentSeasonId,
 } from '../lib/rankedSystem';
+
+export const showPushNotification = async (title: string, options?: NotificationOptions) => {
+  if (typeof window === 'undefined' || !('Notification' in window)) return;
+  if (Notification.permission === 'granted') {
+    try {
+      const reg = await navigator.serviceWorker.getRegistration();
+      if (reg && reg.showNotification) {
+        reg.showNotification(title, options);
+      } else {
+        new Notification(title, options);
+      }
+    } catch (e) {
+      new Notification(title, options);
+    }
+  }
+};
+
 
 interface StudyContextType {
   isSyncConnected: boolean;
@@ -485,6 +501,8 @@ export function StudyProvider({ children }: { children: ReactNode }) {
   }, []);
   const [hasHydrated, setHasHydrated] = useState(false);
   const [isLoadingSessions, setIsLoadingSessions] = useState(true);
+
+  const pauseTimerRef = useRef<(() => void) | null>(null);
 
   const [sessions, setSessions] = useState<StudySession[]>(() => {
     let uid = user?.id;
@@ -969,17 +987,21 @@ export function StudyProvider({ children }: { children: ReactNode }) {
           
           if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
             const iconUrl = window.location.origin + '/icon-192.png';
-            new Notification('Are you still studying?', { body: 'Timer reached 4 hours. Confirm to keep it running.', icon: iconUrl, requireInteraction: true });
+            showPushNotification('Are you still studying?', { body: 'Timer reached 4 hours. Confirm to keep it running.', icon: iconUrl, requireInteraction: true });
           }
 
           idleCheckTimeoutRef.current = setTimeout(() => {
             setIsIdleCheckActive(false);
-            setIsPaused(true);
-            if (timerIntervalRef.current) {
-              clearInterval(timerIntervalRef.current);
-              timerIntervalRef.current = null;
+            if (pauseTimerRef.current) {
+              pauseTimerRef.current();
+            } else {
+              setIsPaused(true);
+              if (timerIntervalRef.current) {
+                clearInterval(timerIntervalRef.current);
+                timerIntervalRef.current = null;
+              }
+              startTimeRef.current = null;
             }
-            startTimeRef.current = null;
           }, 20000);
         }
 
@@ -1078,17 +1100,21 @@ export function StudyProvider({ children }: { children: ReactNode }) {
           
           if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
             const iconUrl = window.location.origin + '/icon-192.png';
-            new Notification('Are you still studying?', { body: 'Timer reached 4 hours. Confirm to keep it running.', icon: iconUrl, requireInteraction: true });
+            showPushNotification('Are you still studying?', { body: 'Timer reached 4 hours. Confirm to keep it running.', icon: iconUrl, requireInteraction: true });
           }
 
           idleCheckTimeoutRef.current = setTimeout(() => {
             setIsIdleCheckActive(false);
-            setIsPaused(true);
-            if (timerIntervalRef.current) {
-              clearInterval(timerIntervalRef.current);
-              timerIntervalRef.current = null;
+            if (pauseTimerRef.current) {
+              pauseTimerRef.current();
+            } else {
+              setIsPaused(true);
+              if (timerIntervalRef.current) {
+                clearInterval(timerIntervalRef.current);
+                timerIntervalRef.current = null;
+              }
+              startTimeRef.current = null;
             }
-            startTimeRef.current = null;
           }, 20000);
         }
 
@@ -2393,6 +2419,10 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       pomodoroPhase,
     });
   }, [checkDebounce, updateProfile, syncActiveSessionToDb, timerMode, pomodoroPhase]);
+
+  useEffect(() => {
+    pauseTimerRef.current = pauseTimer;
+  }, [pauseTimer]);
 
   // Resume Timer - recalculate startTimeRef.current = Date.now() - (accumulatedSeconds * 1000) and sync to Supabase
   const resumeTimer = useCallback(() => {
