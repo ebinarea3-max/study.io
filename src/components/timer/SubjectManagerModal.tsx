@@ -207,7 +207,7 @@ export function SubjectManagerModal({ isOpen = true, onClose, subjects: propsSub
                 className="w-full px-3.5 py-2.5 bg-black/40 border border-white/[0.1] rounded-xl text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/40 transition-all shadow-inner"
               />
               {errorMessage && (
-                <p className="text-xs text-rose-400 font-medium mt-1.5">{errorMessage}</p>
+                <p className="text-red-400 text-xs mt-1">{errorMessage}</p>
               )}
             </div>
 

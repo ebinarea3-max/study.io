@@ -127,8 +127,8 @@ interface StudyContextType {
   resetTimer: () => void;
   restoreTimerSession: (seconds: number, mode?: TimerMode, subjectIdOrName?: string) => void;
   clearPersistedTimer: () => void;
-  addSubject: (subject: Omit<Subject, 'id' | 'createdAt'>) => void;
-  updateSubject: (id: string, updates: Partial<Subject>) => void;
+  addSubject: (subject: Omit<Subject, 'id' | 'createdAt'>) => Promise<void>;
+  updateSubject: (id: string, updates: Partial<Subject>) => Promise<void>;
   deleteSubject: (id: string) => Promise<void>;
   addTodo: (todo: Omit<TodoItem, 'id' | 'userId' | 'createdAt'>) => void;
   toggleTodo: (id: string) => void;
@@ -3074,20 +3074,20 @@ export function StudyProvider({ children }: { children: ReactNode }) {
   }, [refetchSessions]);
 
   // Subjects Management
-  const addSubject = (newSub: Omit<Subject, 'id' | 'createdAt'>) => {
+  const addSubject = async (newSub: Omit<Subject, 'id' | 'createdAt'>) => {
     if (!newSub) return;
     const trimmedName = (newSub.name || '').trim();
     if (!trimmedName) return;
 
     const subjectList = Array.isArray(subjects) ? subjects : [];
 
-    // Prevent duplicate subjects (case-insensitive)
+    // Prevent duplicate subjects (case-insensitive) locally first
     const existing = subjectList.find(
       s => s && (s.name || '').trim().toLowerCase() === trimmedName.toLowerCase()
     );
     if (existing) {
       if (existing.is_archived) {
-        updateSubject(existing.id, {
+        await updateSubject(existing.id, {
           is_archived: false,
           color: newSub.color || '#10B981',
           targetMinutesPerDay: newSub.targetMinutesPerDay || 60,
@@ -3102,62 +3102,90 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     const tempId = `sub-${Date.now()}`;
     const targetUserId = user?.id || newSub.userId || '';
     const targetDailyMins = newSub.daily_goal_minutes || newSub.targetMinutesPerDay || 60;
+    
+    let finalId = tempId;
+    let finalUserId = targetUserId;
+
+    const supabase = getSupabase();
+    if (supabase) {
+      const { data: authData } = await supabase.auth.getUser();
+      const activeUserId = authData?.user?.id || targetUserId;
+      if (activeUserId && !activeUserId.startsWith('user-scholar-')) {
+        const { data, error } = await supabase
+          .from('subjects')
+          .insert({
+            user_id: activeUserId,
+            name: trimmedName,
+            color: newSub.color || '#10B981',
+            daily_goal_minutes: targetDailyMins,
+            is_archived: false,
+          })
+          .select()
+          .single();
+          
+        if (error) {
+          console.error("Failed to insert subject into Supabase:", error);
+          if (error.code === '23505') {
+            throw new Error("A subject with this name already exists.");
+          }
+          throw error;
+        }
+        if (data) {
+          finalId = data.id;
+          finalUserId = activeUserId;
+        }
+      }
+    }
+
     const sub: Subject = {
       ...newSub,
       name: trimmedName,
       color: newSub.color || '#10B981',
       targetMinutesPerDay: targetDailyMins,
       daily_goal_minutes: targetDailyMins,
-      id: tempId,
-      userId: targetUserId,
+      id: finalId,
+      userId: finalUserId,
       createdAt: new Date().toISOString(),
       is_archived: false,
     };
-    saveSubjects([...subjectList, sub]);
+    
+    setSubjectsState(prev => {
+      const prevList = Array.isArray(prev) ? prev : [];
+      const updated = [...prevList, sub];
+      const deduped = deduplicateSubjects(updated);
+      saveSubjects(deduped);
+      return deduped;
+    });
     setSelectedSubjectId(sub.id);
-
-    const supabase = getSupabase();
-    if (supabase) {
-      supabase.auth.getUser().then(({ data: authData }) => {
-        const activeUserId = authData?.user?.id || targetUserId;
-        if (activeUserId && !activeUserId.startsWith('user-scholar-')) {
-          supabase
-            .from('subjects')
-            .insert({
-              user_id: activeUserId,
-              name: trimmedName,
-              color: newSub.color || '#10B981',
-              daily_goal_minutes: targetDailyMins,
-              is_archived: false,
-            })
-            .select()
-            .single()
-            .then(({ data, error }) => {
-              if (data && !error) {
-                setSubjectsState(prev => {
-                  const prevList = Array.isArray(prev) ? prev : [];
-                  const updated = prevList.map(s => (s && s.id === tempId ? { ...s, id: data.id, userId: activeUserId } : s));
-                  const deduped = deduplicateSubjects(updated);
-                  saveSubjects(deduped);
-                  return deduped;
-                });
-                setSelectedSubjectId(data.id);
-              } else if (error) {
-                console.error("Failed to insert subject into Supabase:", error);
-              }
-            });
-        }
-      });
-    }
   };
 
-  const updateSubject = (id: string, updates: Partial<Subject>) => {
+  const updateSubject = async (id: string, updates: Partial<Subject>) => {
     if (!id) return;
     const subjectList = Array.isArray(subjects) ? subjects : [];
     const trimmedUpdates = {
       ...updates,
       ...(updates.name !== undefined ? { name: (updates.name || '').trim() } : {}),
     };
+    
+    const supabase = getSupabase();
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    if (supabase && user?.id && isUuid) {
+      const dbUpdates: Record<string, any> = {};
+      if (trimmedUpdates.name !== undefined) dbUpdates.name = trimmedUpdates.name;
+      if (trimmedUpdates.color !== undefined) dbUpdates.color = trimmedUpdates.color;
+      if (trimmedUpdates.is_archived !== undefined) dbUpdates.is_archived = trimmedUpdates.is_archived;
+      if (Object.keys(dbUpdates).length > 0) {
+        const { error } = await supabase.from('subjects').update(dbUpdates).eq('id', id);
+        if (error) {
+          console.error("Failed to update subject in Supabase:", error);
+          if (error.code === '23505') {
+            throw new Error("A subject with this name already exists.");
+          }
+          throw error;
+        }
+      }
+    }
+    
     const targetSubject = subjectList.find(s => s && s.id === id);
     const oldName = targetSubject?.name;
     const updated = subjectList.map(s => s && s.id === id ? { ...s, ...trimmedUpdates } : s);
@@ -3188,22 +3216,6 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         } catch {}
         return updatedSessions;
       });
-    }
-
-    const supabase = getSupabase();
-    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-    if (supabase && user?.id && isUuid) {
-      const dbUpdates: Record<string, any> = {};
-      if (trimmedUpdates.name !== undefined) dbUpdates.name = trimmedUpdates.name;
-      if (trimmedUpdates.color !== undefined) dbUpdates.color = trimmedUpdates.color;
-      if (trimmedUpdates.is_archived !== undefined) dbUpdates.is_archived = trimmedUpdates.is_archived;
-      if (Object.keys(dbUpdates).length > 0) {
-        supabase
-          .from('subjects')
-          .update(dbUpdates)
-          .eq('id', id)
-          .then(() => {}, (err) => console.error("Failed to update subject in Supabase:", err));
-      }
     }
   };
 

@@ -259,3 +259,5 @@ $$ language plpgsql security definer;
 create or replace trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
+C R E A T E   U N I Q U E   I N D E X   I F   N O T   E X I S T S   u n i q u e _ u s e r _ s u b j e c t _ n a m e   O N   p u b l i c . s u b j e c t s   ( u s e r _ i d ,   L O W E R ( T R I M ( n a m e ) ) ) ;  
+ 
