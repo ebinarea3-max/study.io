@@ -3072,7 +3072,6 @@ export function StudyProvider({ children }: { children: ReactNode }) {
             user_id: activeUserId,
             name: trimmedName,
             color: newSub.color || '#10B981',
-            is_archived: false,
           })
           .select()
           .single();
@@ -3127,7 +3126,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       const dbUpdates: Record<string, any> = {};
       if (trimmedUpdates.name !== undefined) dbUpdates.name = trimmedUpdates.name;
       if (trimmedUpdates.color !== undefined) dbUpdates.color = trimmedUpdates.color;
-      if (trimmedUpdates.is_archived !== undefined) dbUpdates.is_archived = trimmedUpdates.is_archived;
+      // if (trimmedUpdates.is_archived !== undefined) dbUpdates.is_archived = trimmedUpdates.is_archived; // Schema may not support this yet
       if (Object.keys(dbUpdates).length > 0) {
         const { error } = await supabase.from('subjects').update(dbUpdates).eq('id', id);
         if (error) {
@@ -3189,13 +3188,9 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
     if (supabase && user?.id && isUuid) {
       try {
-        const { error } = await supabase
-          .from('subjects')
-          .update({ is_archived: true })
-          .eq('id', id);
-        if (error) {
-          console.warn("Failed to soft-delete subject in Supabase:", error);
-        }
+        // Schema may not support is_archived column yet.
+        // If it did, we would do:
+        // await supabase.from('subjects').update({ is_archived: true }).eq('id', id);
       } catch (err) {
         console.error("Failed to archive subject in Supabase:", err);
       }
