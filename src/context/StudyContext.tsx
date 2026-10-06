@@ -235,56 +235,11 @@ export function mergeAndDeduplicateSessions(existing: StudySession[], incoming: 
 }
 
 export function getStoredSessions(uid?: string, subjectList: Subject[] = [], currentUser?: UserProfile): StudySession[] {
-  if (typeof window === 'undefined') return [];
-  const map = new Map<string, StudySession>();
-
-  // ALWAYS include all possible storage locations to prevent data loss.
-  // The deduplicator and normalizer will handle any redundant or orphaned sessions safely.
-  const keys = [
-    uid ? getSessionStorageKey(uid) : null,
-    'study_io_sessions_guest',
-    'studypulse_sessions',
-    'studypulse_pending_sessions',
-    'study_sessions',
-    'focus_history',
-  ].filter(Boolean) as string[];
-
-  for (const key of keys) {
-    try {
-      const raw = localStorage.getItem(key);
-      if (!raw) continue;
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        const normalized = normalizeStudySessions(parsed, subjectList, currentUser);
-        for (const s of normalized) {
-          const timeKey = `${s.startTime || (s as any).started_at || s.createdAt}__${s.durationSeconds}`;
-          const idKey = s.id || timeKey;
-          if (!map.has(idKey)) {
-            map.set(idKey, s);
-          }
-        }
-      }
-    } catch {}
-  }
-
-  return Array.from(map.values()).sort(
-    (a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
-  );
+  return []; // Local storage session caching disabled
 }
 
 export function persistSessionsToLocalStorage(sessions: StudySession[], uid?: string) {
-  if (typeof window === 'undefined') return;
-  try {
-    const serialized = JSON.stringify(sessions);
-    const isRealUser = Boolean(uid && !uid.startsWith('guest') && !uid.startsWith('user-scholar'));
-    if (uid) {
-      localStorage.setItem(getSessionStorageKey(uid), serialized);
-    }
-    if (!isRealUser) {
-      localStorage.setItem('study_io_sessions_guest', serialized);
-    }
-    localStorage.setItem('studypulse_sessions', serialized);
-  } catch {}
+  // Local storage session caching disabled
 }
 
 export function deduplicateSubjects(list: Subject[]): Subject[] {
