@@ -402,6 +402,13 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         const uid = userRef.current?.id || 'guest';
         localStorage.setItem(getSelectedSubjectStorageKey(uid), id);
         localStorage.setItem('studypulse_selected_subject_id', id);
+
+        const supabase = getSupabase();
+        if (supabase && !uid.startsWith('guest') && !uid.startsWith('user-scholar')) {
+          supabase.auth.updateUser({
+            data: { current_subject_id: id }
+          }).catch(e => console.warn('Failed to sync subject selection:', e));
+        }
       } catch {}
     }
   }, [subjects]);
@@ -1778,7 +1785,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
             });
           }
 
-          // Subjects loaded; keep selectedSubjectId empty so user is prompted to select a subject
+
         } else if (subError) {
           console.warn("Supabase subjects fetch error, retaining local cached subjects:", subError);
           // Retain cached subjects! Do NOT reset to []
@@ -1811,6 +1818,16 @@ export function StudyProvider({ children }: { children: ReactNode }) {
           } else {
             // Truly new user with zero subjects anywhere
             setSubjectsState([]);
+          }
+        }
+
+        // Restore synced subject selection from user metadata if available
+        if (user?.user_metadata?.current_subject_id) {
+          const syncedSubId = String(user.user_metadata.current_subject_id);
+          const found = latestSubjects.find(s => s.id === syncedSubId && !s.is_archived);
+          if (found) {
+            setSelectedSubjectIdState(syncedSubId);
+            activeSubjectRef.current = found;
           }
         }
 
