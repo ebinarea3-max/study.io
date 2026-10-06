@@ -52,14 +52,26 @@ export default function FixBugPage() {
         if (error) throw error;
       }
       
-      // 2. Delete from LocalStorage
-      const localSessionsStr = localStorage.getItem(`study_io_sessions_${user.id}`) || localStorage.getItem('studypulse_sessions');
-      if (localSessionsStr) {
-        let localSess = JSON.parse(localSessionsStr);
-        localSess = localSess.filter((s: any) => !selectedIds.has(s.id));
-        localStorage.setItem(`study_io_sessions_${user.id}`, JSON.stringify(localSess));
-        localStorage.setItem('studypulse_sessions', JSON.stringify(localSess));
-      }
+      // 2. Delete from ALL possible LocalStorage keys
+      const keysToFilter = [
+        `study_io_sessions_${user.id}`,
+        'study_io_sessions_guest',
+        'studypulse_sessions',
+        'studypulse_pending_sessions',
+        'study_sessions',
+        'focus_history',
+      ];
+      keysToFilter.forEach(key => {
+        const localStr = localStorage.getItem(key);
+        if (localStr) {
+          try {
+            const localSess = JSON.parse(localStr).filter((s: any) => !selectedIds.has(s.id));
+            localStorage.setItem(key, JSON.stringify(localSess));
+          } catch (e) {
+            // ignore parse errors
+          }
+        }
+      });
       
       // 3. Deduct XP and RP
       const xpToRemove = Math.floor(totalSecondsToRemove / 60) * 10;
@@ -164,8 +176,16 @@ export default function FixBugPage() {
                 await supabase.from('study_sessions').delete().eq('user_id', user.id);
               }
               
-              // 2. Clear LocalStorage sessions
-              localStorage.removeItem(`study_io_sessions_${user.id}`);
+              // 2. Clear ALL LocalStorage session keys
+              const keysToClear = [
+                `study_io_sessions_${user.id}`,
+                'study_io_sessions_guest',
+                'studypulse_sessions',
+                'studypulse_pending_sessions',
+                'study_sessions',
+                'focus_history',
+              ];
+              keysToClear.forEach(key => localStorage.removeItem(key));
               
               // 3. Reset Profile Stats
               await updateProfile({
@@ -174,10 +194,9 @@ export default function FixBugPage() {
                 xp: 0,
                 rp: 0,
                 seasonRp: 0,
-                season_rp: 0,
                 level: 1,
-                total_study_seconds: 0,
-                streak_days: 0
+                totalStudySeconds: 0,
+                streakDays: 0
               });
               
               await refetchSessions();
