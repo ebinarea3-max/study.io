@@ -148,8 +148,8 @@ export function SubjectManagerModal({ isOpen = true, onClose, subjects: propsSub
   if (!isOpen) return null;
   
   const modalContent = (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl animate-in fade-in duration-200">
-      <div className="relative w-full max-w-xl bg-[#0a0d14]/90 backdrop-blur-2xl border border-white/[0.1] rounded-3xl shadow-[0_25px_70px_rgba(0,0,0,0.85),inset_0_1px_0_0_rgba(255,255,255,0.12)] p-6 sm:p-7 overflow-hidden">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="relative w-full max-w-xl bg-[var(--surface)] backdrop-blur-2xl border border-[var(--border)] rounded-3xl shadow-2xl p-6 sm:p-7 overflow-hidden">
         {/* Ambient Glass Glows */}
         <div className="absolute -top-20 -right-20 w-56 h-56 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-20 -left-20 w-56 h-56 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
