@@ -169,7 +169,9 @@ export function SwipeTabContainer({
               visibility: (!isDragging && currentIndex !== idx) ? 'hidden' : 'visible'
             }}
           >
-            {children[tab]}
+            <div className={(!isDragging && currentIndex !== idx) ? 'hidden' : 'contents w-full h-full flex-1'}>
+              {children[tab]}
+            </div>
           </div>
         ))}
       </div>

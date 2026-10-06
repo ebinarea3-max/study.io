@@ -53,6 +53,12 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
   // -------------------------------------------------------------
   const [distTimeframe, setDistTimeframe] = useState<Timeframe>('daily');
   const [distAnchorDate, setDistAnchorDate] = useState<string>(selectedDate || todayStr);
+  const [activeDonutSlice, setActiveDonutSlice] = useState<{
+    name: string;
+    seconds: number;
+    color: string;
+    percentage: number;
+  } | null>(null);
 
   // -------------------------------------------------------------
   // 2. Focus Time Goal Calendar State
@@ -457,6 +463,7 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
       hasActivity: boolean;
       isSelected: boolean;
       isToday: boolean;
+      isFuture?: boolean;
     }[] = [];
 
     // Lead padding
@@ -489,6 +496,7 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
         hasActivity,
         isSelected: dateKey === calSelectedDate,
         isToday: dateKey === todayStr,
+        isFuture: dateKey > todayStr,
       });
     }
 
@@ -740,7 +748,8 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
                 </button>
                 <button
                   onClick={() => handleDistStep('next')}
-                  className="p-1 rounded-lg hover:bg-white/[0.08] text-neutral-400 hover:text-white transition-colors cursor-pointer"
+                  disabled={distTimeframe === 'daily' && distAnchorDate >= todayStr}
+                  className="p-1 rounded-lg hover:bg-white/[0.08] text-neutral-400 hover:text-white transition-colors cursor-pointer disabled:opacity-30 disabled:pointer-events-none"
                   title="Next period"
                 >
                   <ChevronRight className="w-3.5 h-3.5" />
@@ -806,12 +815,25 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
               {/* Donut Chart */}
               <div className="w-full sm:w-1/2 h-64 relative flex items-center justify-center">
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10 pt-1">
-                  <div className="font-hud font-bold text-white text-3xl tracking-tight">
-                    {formatHoursAndMins(distTotalSeconds)}
-                  </div>
-                  <div className="font-hud-mono text-xs uppercase font-bold tracking-wider text-neutral-500 mt-1">
-                    Total
-                  </div>
+                  {activeDonutSlice ? (
+                    <>
+                      <div className="font-hud font-bold text-3xl tracking-tight" style={{ color: activeDonutSlice.color }}>
+                        {formatHoursAndMins(activeDonutSlice.seconds)}
+                      </div>
+                      <div className="font-hud-mono text-xs uppercase font-bold tracking-wider text-neutral-500 mt-1 truncate max-w-[120px]">
+                        {activeDonutSlice.name}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="font-hud font-bold text-white text-3xl tracking-tight">
+                        {formatHoursAndMins(distTotalSeconds)}
+                      </div>
+                      <div className="font-hud-mono text-xs uppercase font-bold tracking-wider text-neutral-500 mt-1">
+                        Total
+                      </div>
+                    </>
+                  )}
                 </div>
                 <ResponsiveContainer width="100%" height="100%" className="relative z-0">
                   <PieChart>
@@ -823,6 +845,8 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
                       outerRadius={115}
                       paddingAngle={3}
                       dataKey="seconds"
+                      onMouseEnter={(_, index) => setActiveDonutSlice(distSubjectBreakdown[index])}
+                      onMouseLeave={() => setActiveDonutSlice(null)}
                     >
                       {distSubjectBreakdown.map((entry, index) => (
                         <Cell
@@ -980,6 +1004,10 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
 
                 let cellClass =
                   'aspect-square rounded-xl flex flex-col items-center justify-center relative cursor-pointer text-sm sm:text-base font-hud-mono transition-all border ';
+                
+                if (c.isFuture) {
+                  cellClass += ' pointer-events-none opacity-30';
+                }
 
                 let customStyle: React.CSSProperties = {};
 

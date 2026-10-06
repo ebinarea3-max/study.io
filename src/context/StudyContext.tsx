@@ -208,56 +208,11 @@ export function normalizeStudySessions(
 }
 
 export function mergeAndDeduplicateSessions(existing: StudySession[], incoming: StudySession[]): StudySession[] {
-  const map = new Map<string, StudySession>();
-
-  const getDedupKey = (s: StudySession) => {
-    const rawTime = s.startTime || (s as any).started_at || s.createdAt;
-    const dur = s.durationSeconds ?? (s as any).duration_seconds ?? 0;
-    return `${s.id || ''}__${rawTime}__${dur}`;
-  };
-
-  for (const s of existing) {
-    if (!s) continue;
-    map.set(getDedupKey(s), s);
-  }
-
-  for (const s of incoming) {
-    if (!s) continue;
-    const incomingDedup = getDedupKey(s);
-    const timeKey = `${s.startTime || (s as any).started_at || s.createdAt}__${s.durationSeconds ?? (s as any).duration_seconds ?? 0}`;
-    
-    for (const [k, existingSess] of Array.from(map.entries())) {
-      const existingTimeKey = `${existingSess.startTime || (existingSess as any).started_at || existingSess.createdAt}__${existingSess.durationSeconds ?? (existingSess as any).duration_seconds ?? 0}`;
-      if (existingTimeKey === timeKey && k !== incomingDedup) {
-        map.delete(k);
-      }
-    }
-    map.set(incomingDedup, s);
-  }
-
-  const all = Array.from(map.values()).sort(
+  const incomingSessions = [...existing, ...incoming];
+  const uniqueSessions = Array.from(new Map(incomingSessions.map(s => [s.id, s])).values());
+  return uniqueSessions.sort(
     (a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
   );
-
-  // Secondary pass: eliminate duplicate sessions logged within 10 seconds for same user and subject
-  const deduped: StudySession[] = [];
-  for (const s of all) {
-    const sTime = new Date(s.startTime || (s as any).started_at || s.createdAt).getTime();
-    const isDuplicate = deduped.some(existing => {
-      const existingTime = new Date(existing.startTime || (existing as any).started_at || existing.createdAt).getTime();
-      const timeDiff = Math.abs(sTime - existingTime);
-      const sameUser = !s.userId || !existing.userId || s.userId === existing.userId;
-      const sameSub = (s.subjectId && existing.subjectId && s.subjectId === existing.subjectId) ||
-                      (s.subjectName && existing.subjectName && s.subjectName.toLowerCase() === existing.subjectName.toLowerCase());
-      return timeDiff < 10000 && sameUser && sameSub;
-    });
-
-    if (!isDuplicate) {
-      deduped.push(s);
-    }
-  }
-
-  return deduped;
 }
 
 export function getStoredSessions(uid?: string, subjectList: Subject[] = [], currentUser?: UserProfile): StudySession[] {
