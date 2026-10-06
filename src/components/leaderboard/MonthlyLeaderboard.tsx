@@ -81,8 +81,11 @@ function AnimatedDigit({
  * Ensures valid 23-rank monthly tiers (e.g. "BRONZE I", "SILVER II", "GOLD I").
  */
 export function getMonthlyRankTierTitle(rankTitle?: string, totalSeconds?: number): string {
-  const rp = calculateRpFromSeconds(totalSeconds || 0);
-  return getRankFromRp(rp).name.toUpperCase();
+  if (rankTitle) {
+    const found = RANKS.find(r => r.name.toUpperCase() === rankTitle.toUpperCase());
+    if (found) return found.name.toUpperCase();
+  }
+  return getRankFromRp(0).name.toUpperCase();
 }
 
 export function getMonthlyRankTierConfig(totalSeconds?: number, rankTitle?: string): RankTier {
@@ -90,8 +93,8 @@ export function getMonthlyRankTierConfig(totalSeconds?: number, rankTitle?: stri
     const found = RANKS.find(r => r.name.toUpperCase() === rankTitle.toUpperCase());
     if (found) return found;
   }
-  const rp = calculateRpFromSeconds(totalSeconds || 0);
-  return getRankFromRp(rp);
+  // Default to the base rank instead of dynamically calculating based on the period's duration
+  return getRankFromRp(0);
 }
 
 export type LeaderboardTimeframe = 'today' | 'week' | 'month' | 'all';
