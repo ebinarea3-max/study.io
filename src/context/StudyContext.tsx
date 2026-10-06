@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useRe
 import { Subject, StudySession, TodoItem, TimerMode, PomodoroPhase, PomodoroPreset, PomodoroCompletedPhase, RankSettlementData, SeasonRecapData, SeasonResetData, UserProfile, ActiveSession } from '../types';
 import { INITIAL_TODOS, getTodayDateString, calculateStreak, cleanupLegacyDemoData } from '../lib/mockData';
 import { getLocalStartOfDay, getLocalEndOfDay, getLocalDateString } from '../lib/dateUtils';
+import { splitSessionAtMidnights } from '../lib/sessionSplitting';
 import { useAuth } from './AuthContext';
 import { getSupabase } from '../lib/supabase';
 import { getDeviceId } from '../lib/deviceId';
@@ -2568,37 +2569,48 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    const sessionPayload = {
-      client_session_id: clientSessionIdRef.current || crypto.randomUUID(),
-      user_id: activeUser?.id || currentUser.id,
-      subject_id: subjectId || activeSubject?.id || null,
-      duration_seconds: duration,
-      started_at: startedAt,
-      ended_at: endedAt,
-      notes: notesToSave && notesToSave.trim().length > 0 ? notesToSave.trim() : null,
-      mode: currentMode || 'stopwatch',
-    };
+    const splits = splitSessionAtMidnights(
+      new Date(startedAt),
+      new Date(endedAt),
+      {
+        userId: activeUser?.id || currentUser.id,
+        subjectId: subjectId || activeSubject?.id || undefined,
+        subjectName: activeSubject.name,
+        notes: notesToSave && notesToSave.trim().length > 0 ? notesToSave.trim() : undefined,
+      }
+    );
 
-    console.log("Saving focus session payload:", sessionPayload);
+    const sessionPayloads = splits.map((split, idx) => ({
+      client_session_id: idx === 0 ? (clientSessionIdRef.current || crypto.randomUUID()) : crypto.randomUUID(),
+      user_id: split.userId,
+      subject_id: split.subjectId || null,
+      duration_seconds: split.durationSeconds,
+      started_at: split.startTime,
+      ended_at: split.endTime,
+      notes: split.notes || null,
+      mode: currentMode || 'stopwatch',
+    }));
+
+    console.log("Saving focus session payloads (split by midnight):", sessionPayloads);
     console.log('[Session Persist: study_sessions history table]', {
       timestamp: new Date().toISOString(),
-      final_duration_saved: sessionPayload.duration_seconds,
-      started_at: sessionPayload.started_at,
-      ended_at: sessionPayload.ended_at,
-      payload: sessionPayload,
+      original_duration: duration,
+      started_at: startedAt,
+      ended_at: endedAt,
+      payloads: sessionPayloads,
     });
 
-    let insertedRecordId: string | null = null;
+    let insertedRecordIds: string[] = [];
 
     if (activeUser?.id) {
       if (!supabase) return false;
       try {
-        const { data, error } = await supabase.from('study_sessions').upsert([sessionPayload], { onConflict: 'client_session_id', ignoreDuplicates: true }).select();
+        const { data, error } = await supabase.from('study_sessions').upsert(sessionPayloads, { onConflict: 'client_session_id', ignoreDuplicates: true }).select();
         if (error) {
           console.error("Supabase session insert error:", error);
           return false;
-        } else {
-          insertedRecordId = data?.[0]?.id || null;
+        } else if (data) {
+          insertedRecordIds = data.map(d => d.id);
         }
       } catch (err) {
         console.error('StudyContext: Exception inserting session:', err);
@@ -2606,30 +2618,32 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    const newSession: StudySession = {
-      id: insertedRecordId || sessionPayload.client_session_id,
-      client_session_id: sessionPayload.client_session_id,
-      userId: sessionPayload.user_id || 'guest',
+    const newSessions: StudySession[] = sessionPayloads.map((payload, idx) => ({
+      id: insertedRecordIds[idx] || payload.client_session_id,
+      client_session_id: payload.client_session_id,
+      userId: payload.user_id || 'guest',
       userName: currentUser.displayName,
       userAvatar: currentUser.avatarUrl,
-      subjectId: sessionPayload.subject_id || activeSubject.id,
+      subjectId: payload.subject_id || activeSubject.id,
       subjectName: activeSubject.name || 'Unknown',
       subjectColor: activeSubject.color || '#10b981',
       subject_name: activeSubject.name || 'Unknown',
-      startTime: startedAt,
-      endTime: endedAt,
-      durationSeconds: sessionPayload.duration_seconds,
-      notes: notesToSave,
+      startTime: payload.started_at,
+      endTime: payload.ended_at,
+      durationSeconds: payload.duration_seconds,
+      notes: payload.notes || undefined,
       mode: currentMode as TimerMode,
       createdAt: new Date().toISOString(),
-    };
+    }));
 
-    // Immediately append the new session to the current day's session array
-    addSession(newSession);
+    // Immediately append the new sessions to the current day's session array
+    newSessions.forEach(s => addSession(s));
 
       const todayStart = getLocalStartOfDay(new Date());
       const todayEnd = getLocalEndOfDay(new Date());
-      const allSessionsNow = [newSession, ...sessions.filter(s => s.id !== newSession.id)];
+      
+      const newSessionIds = new Set(newSessions.map(s => s.id));
+      const allSessionsNow = [...newSessions, ...sessions.filter(s => !newSessionIds.has(s.id))];
       const totalToday = allSessionsNow
         .filter(s => {
           const t = new Date(s.startTime).getTime();
