@@ -316,18 +316,31 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
 
           if (!res.error && Array.isArray(res.data)) {
             rpcSucceeded = true;
-            entries = res.data.map((row: any) => ({
-              user_id: String(row.user_id),
-              name: String(row.display_name || row.name || 'Scholar'),
-              display_name: row.display_name || row.name || null,
-              username: row.username ? String(row.username) : null,
-              avatar_url: row.avatar_url ? String(row.avatar_url) : null,
-              level: row.level ? Number(row.level) : undefined,
-              lifetime_xp: Number(row.lifetime_xp || 0),
-              rank_title: String(row.rank_title || 'Bronze I'),
-              total_seconds: Number(row.total_seconds || 0),
-              is_current_user: Boolean(row.is_current_user || (currentUser?.id && row.user_id === currentUser.id)),
-            }));
+            entries = res.data.map((row: any) => {
+              const isMe = Boolean(row.is_current_user || (currentUser?.id && row.user_id === currentUser.id));
+              
+              let computedRank = row.rank_title;
+              if (!computedRank || computedRank.trim() === '') {
+                const rpToUse = Number(row.season_rp ?? row.rp ?? 0);
+                computedRank = getRankFromRp(rpToUse).name;
+              }
+              if (isMe && currentUser?.levelTitle && (computedRank.toUpperCase() === 'BRONZE I' || !row.rank_title)) {
+                computedRank = currentUser.levelTitle;
+              }
+
+              return {
+                user_id: String(row.user_id),
+                name: String(row.display_name || row.name || 'Scholar'),
+                display_name: row.display_name || row.name || null,
+                username: row.username ? String(row.username) : null,
+                avatar_url: row.avatar_url ? String(row.avatar_url) : null,
+                level: row.level ? Number(row.level) : undefined,
+                lifetime_xp: Number(row.lifetime_xp || 0),
+                rank_title: String(computedRank).toUpperCase(),
+                total_seconds: Number(row.total_seconds || 0),
+                is_current_user: isMe,
+              };
+            });
           } else if (res.error) {
             console.warn('[Leaderboard] RPC get_leaderboard notice:', res.error.message);
           }
@@ -363,22 +376,34 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
               const uids = Object.keys(userTotals);
               const { data: dbProfiles } = await supabase
                 .from('profiles')
-                .select('id, name, username, avatar_url, lifetime_xp, xp, rank_title, level')
+                .select('id, name, username, avatar_url, lifetime_xp, xp, rank_title, level, rp, season_rp')
                 .in('id', uids);
 
               if (dbProfiles) {
-                entries = dbProfiles.map((p: any) => ({
-                  user_id: p.id,
-                  name: p.name || 'Scholar',
-                  display_name: p.name || 'Scholar',
-                  username: p.username || null,
-                  avatar_url: p.avatar_url || null,
-                  level: p.level ? Number(p.level) : undefined,
-                  lifetime_xp: Number(p.lifetime_xp ?? p.xp ?? 0),
-                  rank_title: p.rank_title || 'Bronze I',
-                  total_seconds: userTotals[p.id] || 0,
-                  is_current_user: p.id === currentUser?.id,
-                }));
+                entries = dbProfiles.map((p: any) => {
+                  const isMe = p.id === currentUser?.id;
+                  let computedRank = p.rank_title;
+                  if (!computedRank || computedRank.trim() === '') {
+                    const rpToUse = Number(p.season_rp ?? p.rp ?? 0);
+                    computedRank = getRankFromRp(rpToUse).name;
+                  }
+                  if (isMe && currentUser?.levelTitle && (computedRank.toUpperCase() === 'BRONZE I' || !p.rank_title)) {
+                    computedRank = currentUser.levelTitle;
+                  }
+
+                  return {
+                    user_id: p.id,
+                    name: p.name || 'Scholar',
+                    display_name: p.name || 'Scholar',
+                    username: p.username || null,
+                    avatar_url: p.avatar_url || null,
+                    level: p.level ? Number(p.level) : undefined,
+                    lifetime_xp: Number(p.lifetime_xp ?? p.xp ?? 0),
+                    rank_title: String(computedRank).toUpperCase(),
+                    total_seconds: userTotals[p.id] || 0,
+                    is_current_user: isMe,
+                  };
+                });
                 entries.sort((a, b) => b.total_seconds - a.total_seconds);
               }
             }
