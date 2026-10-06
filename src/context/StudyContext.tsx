@@ -3117,7 +3117,6 @@ export function StudyProvider({ children }: { children: ReactNode }) {
             user_id: activeUserId,
             name: trimmedName,
             color: newSub.color || '#10B981',
-            daily_goal_minutes: targetDailyMins,
             is_archived: false,
           })
           .select()
