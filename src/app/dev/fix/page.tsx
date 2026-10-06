@@ -140,13 +140,63 @@ export default function FixBugPage() {
       <button 
         onClick={handleFix} 
         disabled={loading || selectedIds.size === 0}
-        className="px-6 py-3 bg-red-600 hover:bg-red-700 font-bold rounded-lg disabled:opacity-50"
+        className="px-6 py-3 bg-red-600 hover:bg-red-700 font-bold rounded-lg disabled:opacity-50 w-full mb-4"
       >
         {loading ? 'Deleting...' : `Delete ${selectedIds.size} Selected Sessions & Revert Stats`}
       </button>
       
+      <div className="mt-8 border-t border-red-900 pt-8">
+        <h2 className="text-xl font-bold text-red-500 mb-2">Nuclear Option</h2>
+        <p className="text-neutral-400 mb-4">
+          If your account is completely corrupted and you want to start over, you can wipe ALL stats and sessions. This cannot be undone.
+        </p>
+        <button 
+          onClick={async () => {
+            if (!user) return setResult('No user logged in.');
+            if (!confirm('Are you absolutely sure? This will wipe all XP, RP, levels, and delete EVERY study session for this account.')) return;
+            
+            setLoading(true);
+            setResult('Nuking account...');
+            try {
+              // 1. Delete all sessions in Supabase
+              const supabase = getSupabase();
+              if (supabase) {
+                await supabase.from('study_sessions').delete().eq('user_id', user.id);
+              }
+              
+              // 2. Clear LocalStorage sessions
+              localStorage.removeItem(`study_io_sessions_${user.id}`);
+              
+              // 3. Reset Profile Stats
+              await updateProfile({
+                lifetime_xp: 0,
+                lifetimeXp: 0,
+                xp: 0,
+                rp: 0,
+                seasonRp: 0,
+                season_rp: 0,
+                level: 1,
+                total_study_seconds: 0,
+                streak_days: 0
+              });
+              
+              await refetchSessions();
+              setResult('Account successfully nuked. All stats reset to 0.');
+            } catch (err: any) {
+              console.error(err);
+              setResult('Error nuking account: ' + err.message);
+            }
+            setLoading(false);
+          }}
+          disabled={loading}
+          className="px-6 py-3 bg-red-900 hover:bg-red-950 text-red-100 font-bold rounded-lg border border-red-500 w-full"
+        >
+          {loading ? 'Processing...' : 'WIPE ALL ACCOUNT DATA & STATS'}
+        </button>
+      </div>
+
       {result && (
-        <div className="mt-6 p-4 bg-emerald-900/50 text-emerald-400 rounded-lg">
+        <div className="mt-6 p-4 bg-emerald-900/50 text-emerald-400 rounded-lg whitespace-pre-wrap">
           {result}
         </div>
       )}
