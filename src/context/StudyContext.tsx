@@ -20,6 +20,7 @@ import {
   LevelProgress,
 } from '../lib/gamification';
 import {
+  calculateSessionRP,
   calculateSeasonReset,
   getCurrentSeasonId,
 } from '../lib/rankedSystem';
