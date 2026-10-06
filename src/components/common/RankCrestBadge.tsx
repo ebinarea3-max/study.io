@@ -158,14 +158,20 @@ export function RankCrestBadge({
               return (
                 <div key={i} className="absolute inset-0 flex items-center justify-center">
                   <div
-                    className="absolute w-1.5 h-1.5 rounded-full"
+                    className="absolute w-[80%] h-[80%]"
                     style={{
-                      backgroundColor: sparklesColor,
-                      boxShadow: `0 0 6px ${sparklesColor}`,
-                      animation: `orbitStar 8s linear infinite`,
+                      animation: `spin 8s linear infinite`,
                       animationDelay: `-${i * (8 / sparklesCount)}s`
                     }}
-                  />
+                  >
+                    <div
+                      className="absolute -top-1 left-1/2 -translate-x-1/2 w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full"
+                      style={{
+                        backgroundColor: sparklesColor,
+                        boxShadow: `0 0 6px ${sparklesColor}`,
+                      }}
+                    />
+                  </div>
                 </div>
               );
             }
