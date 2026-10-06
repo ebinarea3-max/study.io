@@ -320,13 +320,15 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
             entries = res.data.map((row: any) => {
               const isMe = Boolean(row.is_current_user || (currentUser?.id && row.user_id === currentUser.id));
               
-              let computedRank = row.rank_title;
-              if (row.season_rp !== undefined || row.rp !== undefined) {
-                const rpToUse = Number(row.season_rp ?? row.rp ?? 0);
-                computedRank = getRankFromRp(rpToUse).name;
-              } else if (!computedRank || computedRank.trim() === '') {
-                computedRank = getRankFromRp(0).name;
-              }
+              let computedRank = getRankFromRp(0).name;
+              try {
+                if (row.season_rp !== undefined || row.rp !== undefined) {
+                  const rpToUse = Number(row.season_rp ?? row.rp ?? 0);
+                  computedRank = getRankFromRp(rpToUse).name;
+                } else if (row.rank_title) {
+                  computedRank = String(row.rank_title);
+                }
+              } catch (e) {}
               
               if (isMe && currentUser?.levelTitle) {
                 computedRank = currentUser.levelTitle;
@@ -386,13 +388,15 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
               if (dbProfiles) {
                 entries = dbProfiles.map((p: any) => {
                   const isMe = p.id === currentUser?.id;
-                  let computedRank = p.rank_title;
-                  if (p.season_rp !== undefined || p.rp !== undefined) {
-                    const rpToUse = Number(p.season_rp ?? p.rp ?? 0);
-                    computedRank = getRankFromRp(rpToUse).name;
-                  } else if (!computedRank || computedRank.trim() === '') {
-                    computedRank = getRankFromRp(0).name;
-                  }
+                  let computedRank = getRankFromRp(0).name;
+                  try {
+                    if (p.season_rp !== undefined || p.rp !== undefined) {
+                      const rpToUse = Number(p.season_rp ?? p.rp ?? 0);
+                      computedRank = getRankFromRp(rpToUse).name;
+                    } else if (p.rank_title) {
+                      computedRank = String(p.rank_title);
+                    }
+                  } catch (e) {}
 
                   if (isMe && currentUser?.levelTitle) {
                     computedRank = currentUser.levelTitle;
