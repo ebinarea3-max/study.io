@@ -7,7 +7,6 @@ import { Navbar } from '../components/common/Navbar';
 import { AuthModal } from '../components/common/AuthModal';
 import { ProfileModal } from '../components/common/ProfileModal';
 import { SettingsModal } from '../components/common/SettingsModal';
-import { FloatingReactions } from '../components/common/FloatingReactions';
 import { StudyTimer } from '../components/timer/StudyTimer';
 import { FocusModeModal } from '../components/timer/FocusModeModal';
 import { IdleCheckModal } from '../components/timer/IdleCheckModal';
@@ -27,7 +26,6 @@ import { NavTabType } from '../components/common/Navbar';
 import { SwipeTabContainer } from '../components/common/SwipeTabContainer';
 import { SettingsTabContent } from '../components/common/SettingsTabContent';
 import { MonthlyLeaderboard } from '../components/leaderboard/MonthlyLeaderboard';
-import StudyRoomsTab from '../components/rooms/StudyRoomsTab';
 import { useRankTheme } from '../hooks/useRankTheme';
 
 export default function Home() {
@@ -159,9 +157,6 @@ export default function Home() {
       {/* Drifting Ambient HUD Grid Overlay */}
       <div className="fixed inset-0 pointer-events-none bg-hud-grid opacity-[0.03] z-0" />
 
-      {/* Floating Animated Cheers */}
-      <FloatingReactions />
-
       {/* 4-Hour Idle Alarm Check */}
       <IdleCheckModal />
 
@@ -210,11 +205,6 @@ export default function Home() {
             leaderboard: (
               <ErrorBoundary fallbackTitle="Monthly Leaderboard">
                 <MonthlyLeaderboard isEmbedded isActiveTab={activeTab === 'leaderboard'} />
-              </ErrorBoundary>
-            ),
-            rooms: (
-              <ErrorBoundary fallbackTitle="Study Rooms">
-                <StudyRoomsTab onBackToDashboard={() => setActiveTab('timer')} />
               </ErrorBoundary>
             ),
             settings: (

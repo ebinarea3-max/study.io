@@ -3,7 +3,6 @@
 import React, { ReactNode } from 'react';
 import { AuthProvider } from '../../context/AuthContext';
 import { StudyProvider } from '../../context/StudyContext';
-import { RoomProvider } from '../../context/RoomContext';
 import { Toaster } from 'react-hot-toast';
 import { TimerSWBridge } from './TimerSWBridge';
 
@@ -11,7 +10,6 @@ export function Providers({ children }: { children: ReactNode }) {
   return (
     <AuthProvider>
       <StudyProvider>
-        <RoomProvider>
           {/* Bridge timer state → Service Worker for background tracking & notifications */}
           <TimerSWBridge />
           {children}
@@ -43,7 +41,6 @@ export function Providers({ children }: { children: ReactNode }) {
               },
             }}
           />
-        </RoomProvider>
       </StudyProvider>
     </AuthProvider>
   );
