@@ -103,6 +103,9 @@ export default function StudyRoomsTab({ onBackToDashboard }: { onBackToDashboard
     
     if (!deleteError) {
       setRooms(prev => prev.filter(r => r.id !== roomId));
+    } else {
+      console.error("Delete room failed:", deleteError);
+      alert(`Could not delete room: ${deleteError.message}. Make sure you are the host and have permissions.`);
     }
   };
 

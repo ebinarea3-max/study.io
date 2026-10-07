@@ -60,7 +60,7 @@ export default function LiveRoom({ roomId, onLeaveRoom }: LiveRoomProps) {
 
   // Helper to build the presence payload using refs for freshness
   const buildPresencePayload = useCallback(() => {
-    if (!user) return null;
+    if (!user || !user.id) return null;
     return {
       user_id: user.id,
       username: user.username || user.displayName || 'Unknown Scholar',
@@ -71,7 +71,7 @@ export default function LiveRoom({ roomId, onLeaveRoom }: LiveRoomProps) {
 
   // Realtime Subscriptions — only re-run when roomId or user identity changes
   useEffect(() => {
-    if (!roomId || !user) return;
+    if (!roomId || !user || !user.id) return;
     const supabase = getSupabase();
     if (!supabase) return;
 
@@ -79,17 +79,19 @@ export default function LiveRoom({ roomId, onLeaveRoom }: LiveRoomProps) {
       config: {
         presence: {
           key: user.id,
-        },
-      },
+        }
+      }
     });
 
     roomChannel
       .on('presence', { event: 'sync' }, () => {
         const state = roomChannel.presenceState();
+        console.log("Presence sync state:", state);
         const users = Object.values(state).map((presenceArr: any) => presenceArr[0]);
         setPresentUsers(users as PresenceUser[]);
       })
       .subscribe(async (status) => {
+        console.log("Channel subscribe status:", status);
         if (status === 'SUBSCRIBED') {
           const payload = buildPresencePayload();
           if (payload) {
@@ -110,7 +112,7 @@ export default function LiveRoom({ roomId, onLeaveRoom }: LiveRoomProps) {
 
   // Update Presence on Timer State Change — only fires when isRunning toggles
   useEffect(() => {
-    if (!channelRef.current || !user || !roomId) return;
+    if (!channelRef.current || !user || !user.id || !roomId) return;
     
     const channel = channelRef.current;
     if (channel.state === 'joined') {
