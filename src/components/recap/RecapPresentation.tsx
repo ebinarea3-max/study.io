@@ -268,11 +268,12 @@ export default function RecapPresentation({
 
   return (
     <div 
-      className="min-h-screen flex items-center justify-center bg-black text-white relative overflow-hidden cursor-pointer selection:bg-transparent"
+      className="min-h-screen flex items-center justify-center bg-[#07090e] text-slate-100 relative overflow-hidden cursor-pointer selection:bg-amber-500/30 selection:text-amber-400"
       onClick={handleNext}
     >
-      {/* Background Ambience */}
-      <div className="absolute inset-0 bg-dot-grid opacity-20 pointer-events-none" />
+      {/* Background Ambience matches the app */}
+      <div className="fixed inset-0 pointer-events-none bg-dot-grid z-0" />
+      <div className="fixed inset-0 pointer-events-none bg-hud-grid opacity-[0.03] z-0" />
       <div className="absolute inset-0 bg-gradient-to-t from-amber-900/10 via-transparent to-transparent pointer-events-none" />
 
       {/* Slide Content */}
@@ -310,7 +311,7 @@ export default function RecapPresentation({
           <Link 
             href="/"
             onClick={(e) => e.stopPropagation()}
-            className="inline-block px-10 py-5 bg-gradient-to-r from-red-600/80 to-amber-600/80 hover:from-red-500 hover:to-amber-500 backdrop-blur-md rounded-2xl text-white font-hud font-black tracking-widest transition-all border border-white/20 shadow-[0_0_30px_rgba(220,38,38,0.3)] hover:scale-105"
+            className="inline-block px-10 py-5 bg-amber-500 hover:bg-amber-400 rounded-xl text-black font-hud font-bold tracking-widest transition-all shadow-lg shadow-amber-500/20 active:scale-95"
           >
             {isFirstSeason ? "RETURN TO DASHBOARD" : "START THE GRIND"}
           </Link>

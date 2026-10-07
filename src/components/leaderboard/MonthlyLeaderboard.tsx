@@ -555,8 +555,14 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
 
   if (hasSeenRecap === false) {
     return (
-      <div className={`w-full text-white font-sans ${isEmbedded ? 'max-w-5xl mx-auto py-12' : 'bg-[#05070a] min-h-screen p-8 flex flex-col justify-center'} flex items-center justify-center`}>
-        <div className="bg-white/[0.03] backdrop-blur-2xl border border-white/[0.1] rounded-3xl p-12 text-center flex flex-col items-center justify-center gap-6 shadow-[0_8px_32px_rgba(0,0,0,0.5)] max-w-lg w-full">
+      <div className={`w-full text-slate-100 font-sans ${isEmbedded ? 'max-w-5xl mx-auto py-12' : 'bg-[#07090e] min-h-screen p-8 flex flex-col justify-center'} flex items-center justify-center relative`}>
+        {!isEmbedded && (
+          <>
+            <div className="fixed inset-0 pointer-events-none bg-dot-grid z-0" />
+            <div className="fixed inset-0 pointer-events-none bg-hud-grid opacity-[0.03] z-0" />
+          </>
+        )}
+        <div className="relative z-10 bg-white/[0.03] backdrop-blur-2xl border border-white/[0.1] rounded-3xl p-12 text-center flex flex-col items-center justify-center gap-6 shadow-[0_8px_32px_rgba(0,0,0,0.5)] max-w-lg w-full">
           <div className="w-20 h-20 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 mb-2 relative animate-pulse">
             <Trophy className="w-10 h-10 stroke-[1.5]" />
           </div>
@@ -568,7 +574,7 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
           </p>
           <Link
             href="/recap"
-            className="inline-block w-full py-4 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 rounded-xl text-black font-hud font-bold tracking-widest transition-all shadow-[0_0_20px_rgba(217,119,6,0.3)] hover:scale-105"
+            className="inline-block w-full py-4 bg-amber-500 hover:bg-amber-400 rounded-xl text-black font-hud font-bold tracking-widest transition-all shadow-lg shadow-amber-500/20 active:scale-95"
           >
             WATCH SEASON RECAP TO UNLOCK
           </Link>
