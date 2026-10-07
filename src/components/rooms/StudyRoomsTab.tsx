@@ -17,6 +17,8 @@ export default function StudyRoomsTab({ onBackToDashboard }: { onBackToDashboard
   const [rooms, setRooms] = useState<StudyRoom[]>([]);
   const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newRoomName, setNewRoomName] = useState('');
 
   const fetchRooms = async () => {
     const supabase = getSupabase();
@@ -38,20 +40,21 @@ export default function StudyRoomsTab({ onBackToDashboard }: { onBackToDashboard
 
   const handleCreateRoom = async () => {
     if (!user) return;
-    const roomName = window.prompt("Enter Room Name:");
-    if (!roomName || !roomName.trim()) return;
+    if (!newRoomName || !newRoomName.trim()) return;
 
     const supabase = getSupabase();
     if (!supabase) return;
 
     const { error } = await supabase
       .from('study_rooms')
-      .insert([{ name: roomName.trim(), host_id: user.id }]);
+      .insert([{ name: newRoomName.trim(), host_id: user.id }]);
 
     if (error) {
       console.error('Failed to create room:', error);
       alert('Failed to create room. Please try again.');
     } else {
+      setIsModalOpen(false);
+      setNewRoomName('');
       fetchRooms(); // Immediately re-fetch
     }
   };
@@ -76,7 +79,7 @@ export default function StudyRoomsTab({ onBackToDashboard }: { onBackToDashboard
             <p className="text-sm text-slate-400">Join a live session or start your own grind.</p>
           </div>
           <button
-            onClick={handleCreateRoom}
+            onClick={() => setIsModalOpen(true)}
             className="flex items-center gap-2 px-6 py-3 bg-amber-500 hover:bg-amber-400 text-black font-hud font-bold tracking-wider rounded-xl transition-all active:scale-95 whitespace-nowrap shadow-[0_0_20px_rgba(245,158,11,0.2)]"
           >
             <Plus className="w-5 h-5" />
@@ -127,6 +130,39 @@ export default function StudyRoomsTab({ onBackToDashboard }: { onBackToDashboard
         )}
 
       </div>
+
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm px-4">
+          <div className="bg-[#07090e] border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+            <h3 className="text-xl font-bold text-white mb-4">Create Study Room</h3>
+            
+            <input 
+              type="text" 
+              placeholder="e.g. Late Night Grind..."
+              value={newRoomName}
+              onChange={(e) => setNewRoomName(e.target.value)}
+              className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-amber-500 transition-colors mb-6"
+              autoFocus
+            />
+            
+            <div className="flex justify-end gap-3">
+              <button 
+                onClick={() => { setIsModalOpen(false); setNewRoomName(''); }}
+                className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleCreateRoom}
+                disabled={!newRoomName.trim()}
+                className="px-6 py-2 bg-amber-500 text-black font-bold rounded-xl hover:bg-amber-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                Launch Room
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
