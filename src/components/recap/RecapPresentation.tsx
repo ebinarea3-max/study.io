@@ -49,6 +49,12 @@ export default function RecapPresentation({
   const resetCurrParsed = currentRank ? parseRank(currentRank) : currentParsed;
 
   React.useEffect(() => {
+    // Automatically mark the recap as seen for this season as soon as they visit
+    try {
+      const currentSeason = new Date().toISOString().substring(0, 7);
+      localStorage.setItem(`has_seen_recap_${currentSeason}`, 'true');
+    } catch {}
+
     if (currentSlide === (isFirstSeason ? 2 : 3) || (currentSlide === 2 && !isFirstSeason)) {
       // If we are on the reset slide, trigger the sequence
       const dropTimer = setTimeout(() => {
@@ -303,12 +309,7 @@ export default function RecapPresentation({
         >
           <Link 
             href="/"
-            onClick={(e) => {
-              e.stopPropagation();
-              try {
-                localStorage.setItem('has_seen_recap_s1', 'true');
-              } catch {}
-            }}
+            onClick={(e) => e.stopPropagation()}
             className="inline-block px-10 py-5 bg-gradient-to-r from-red-600/80 to-amber-600/80 hover:from-red-500 hover:to-amber-500 backdrop-blur-md rounded-2xl text-white font-hud font-black tracking-widest transition-all border border-white/20 shadow-[0_0_30px_rgba(220,38,38,0.3)] hover:scale-105"
           >
             {isFirstSeason ? "RETURN TO DASHBOARD" : "START THE GRIND"}

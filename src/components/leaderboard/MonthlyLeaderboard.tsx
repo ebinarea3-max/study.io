@@ -249,7 +249,8 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
   const [hasSeenRecap, setHasSeenRecap] = useState<boolean | null>(null);
 
   useEffect(() => {
-    const seen = localStorage.getItem('has_seen_recap_s1') === 'true';
+    const currentSeason = new Date().toISOString().substring(0, 7);
+    const seen = localStorage.getItem(`has_seen_recap_${currentSeason}`) === 'true';
     setHasSeenRecap(seen);
   }, []);
 
