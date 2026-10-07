@@ -8,10 +8,12 @@ import { getRankFromRp, calculateRpFromSeconds, RankTierName, RankDivision, Rank
 import { getRankTheme } from '../../lib/rankTheme';
 import { getLevelFromLifetimeXP } from '../../lib/gamification';
 import { LeaderboardEntry } from '../../types';
-import { Clock } from 'lucide-react';
+import { Clock, Trophy } from 'lucide-react';
 import { soundFx } from '../../lib/audio';
 import { RankCrestBadge } from '../common/RankCrestBadge';
 import { useRankTheme } from '../../hooks/useRankTheme';
+import { Logo } from '../Logo';
+import Link from 'next/link';
 export function formatStudyTime(totalSeconds: number): string {
   const safeSeconds = Math.max(0, Math.round(totalSeconds || 0));
   const hours = Math.floor(safeSeconds / 3600);
@@ -244,6 +246,12 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isFetching, setIsFetching] = useState<boolean>(false);
   const [animationKey, setAnimationKey] = useState<number>(0);
+  const [hasSeenRecap, setHasSeenRecap] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const seen = localStorage.getItem('has_seen_recap_s1') === 'true';
+    setHasSeenRecap(seen);
+  }, []);
 
   const [currentUserRowVisible, setCurrentUserRowVisible] = useState(true);
   const myRowRef = useRef<HTMLDivElement | null>(null);
@@ -535,6 +543,38 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
 
     return () => observer.disconnect();
   }, [isLoading, isFetching, leaderboard, contenders]);
+
+  if (hasSeenRecap === null) {
+    return (
+      <div className="w-full min-h-[400px] flex items-center justify-center animate-pulse">
+        <Logo className="w-10 h-10 opacity-50" />
+      </div>
+    );
+  }
+
+  if (hasSeenRecap === false) {
+    return (
+      <div className={`w-full text-white font-sans ${isEmbedded ? 'max-w-5xl mx-auto py-12' : 'bg-[#05070a] min-h-screen p-8 flex flex-col justify-center'} flex items-center justify-center`}>
+        <div className="bg-white/[0.03] backdrop-blur-2xl border border-white/[0.1] rounded-3xl p-12 text-center flex flex-col items-center justify-center gap-6 shadow-[0_8px_32px_rgba(0,0,0,0.5)] max-w-lg w-full">
+          <div className="w-20 h-20 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 mb-2 relative animate-pulse">
+            <Trophy className="w-10 h-10 stroke-[1.5]" />
+          </div>
+          <h2 className="text-2xl md:text-3xl font-black font-hud tracking-widest uppercase">
+            A New Season Has Begun
+          </h2>
+          <p className="text-slate-400 font-hud tracking-wider text-sm mb-4">
+            Discover your personalized performance recap and unlock the new season's leaderboard.
+          </p>
+          <Link
+            href="/recap"
+            className="inline-block w-full py-4 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 rounded-xl text-black font-hud font-bold tracking-widest transition-all shadow-[0_0_20px_rgba(217,119,6,0.3)] hover:scale-105"
+          >
+            WATCH SEASON RECAP TO UNLOCK
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
