@@ -234,10 +234,8 @@ export default function LiveRoom({ roomId, onLeaveRoom }: LiveRoomProps) {
       <main className="flex-1 w-full max-w-[1600px] mx-auto p-4 md:p-6 relative z-10 flex flex-col lg:flex-row gap-6 h-[calc(100vh-80px)]">
         
         {/* Left Column: Personal Timer (70%) */}
-        <div className="w-full lg:w-[70%] h-full flex flex-col rounded-3xl overflow-hidden relative">
-          <div className="absolute inset-0 scale-[0.85] origin-top md:scale-100">
-             <StudyTimer />
-          </div>
+        <div className="w-full lg:w-[70%] h-full flex flex-col rounded-3xl overflow-y-auto custom-scrollbar relative border border-white/5 bg-black/20">
+          <StudyTimer />
         </div>
 
         {/* Right Column: Multiplayer Panel (30%) */}
