@@ -47,25 +47,51 @@ export default function LiveRoom({ roomId, onLeaveRoom }: LiveRoomProps) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Fetch Room Info
+  // Fetch Room Info & Historical Messages
   useEffect(() => {
     if (!roomId) return;
-    const fetchRoom = async () => {
+    const fetchData = async () => {
       const supabase = getSupabase();
       if (!supabase) return;
-      const { data, error } = await supabase
+      
+      // Fetch Room Name
+      const { data: roomData, error: roomError } = await supabase
         .from('study_rooms')
         .select('name')
         .eq('id', roomId)
         .single();
         
-      if (data) {
-        setRoomName(data.name);
-      } else if (error) {
+      if (roomData) {
+        setRoomName(roomData.name);
+      } else if (roomError) {
         setRoomName('Unknown Room');
       }
+
+      // Fetch Chat History
+      const { data: msgData } = await supabase
+        .from('room_messages')
+        .select(`
+          id,
+          user_id,
+          text,
+          created_at,
+          profiles:user_id(username)
+        `)
+        .eq('room_id', roomId)
+        .order('created_at', { ascending: true });
+
+      if (msgData) {
+        const formatted = msgData.map((msg: any) => ({
+          id: msg.id,
+          user_id: msg.user_id,
+          username: msg.profiles?.username || 'Unknown',
+          text: msg.text,
+          timestamp: new Date(msg.created_at).getTime()
+        }));
+        setMessages(formatted);
+      }
     };
-    fetchRoom();
+    fetchData();
   }, [roomId]);
 
   // Realtime Subscriptions
@@ -89,8 +115,32 @@ export default function LiveRoom({ roomId, onLeaveRoom }: LiveRoomProps) {
         const users = Object.values(state).map((presenceArr: any) => presenceArr[0]);
         setPresentUsers(users as PresenceUser[]);
       })
-      .on('broadcast', { event: 'chat' }, (payload) => {
-        setMessages(prev => [...prev, payload.payload]);
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'room_messages',
+        filter: `room_id=eq.${roomId}`
+      }, async (payload) => {
+        // Skip if we already added it optimistically
+        if (payload.new.user_id === user.id) return;
+        
+        const sb = getSupabase();
+        if (!sb) return;
+        
+        // Fetch username for the new message
+        const { data: profile } = await sb
+          .from('profiles')
+          .select('username')
+          .eq('id', payload.new.user_id)
+          .single();
+          
+        setMessages(prev => [...prev, {
+          id: payload.new.id,
+          user_id: payload.new.user_id,
+          username: profile?.username || 'Unknown',
+          text: payload.new.text,
+          timestamp: new Date(payload.new.created_at).getTime()
+        }]);
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
@@ -133,6 +183,7 @@ export default function LiveRoom({ roomId, onLeaveRoom }: LiveRoomProps) {
     e.preventDefault();
     if (!chatInput.trim() || !channelRef.current || !user) return;
 
+    // Optimistically add to our own UI
     const newMessage: ChatMessage = {
       id: Math.random().toString(36).substring(7),
       user_id: user.id,
@@ -141,16 +192,19 @@ export default function LiveRoom({ roomId, onLeaveRoom }: LiveRoomProps) {
       timestamp: Date.now()
     };
 
-    // Optimistically add to our own UI
     setMessages(prev => [...prev, newMessage]);
+    const messageText = chatInput.trim();
     setChatInput('');
 
-    // Broadcast to others
-    await channelRef.current.send({
-      type: 'broadcast',
-      event: 'chat',
-      payload: newMessage
-    });
+    // Insert to DB
+    const supabase = getSupabase();
+    if (supabase) {
+      await supabase.from('room_messages').insert([{
+        room_id: roomId,
+        user_id: user.id,
+        text: messageText
+      }]);
+    }
   };
 
   return (
