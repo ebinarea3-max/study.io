@@ -62,6 +62,19 @@ export default async function RecapPage() {
     .eq('id', user.id)
     .maybeSingle();
 
+  // Attempt to fetch recent reset data from season_history
+  const { data: history } = await supabase
+    .from('season_history')
+    .select('previous_rank, new_rank')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const previousRank = history?.previous_rank || null;
+  const currentRank = history?.new_rank || profile?.rank_title || 'BRONZE I';
+  const isFirstSeason = !previousRank;
+
   return (
     <RecapPresentation 
       totalSeconds={totalSeconds}
@@ -70,6 +83,9 @@ export default async function RecapPage() {
       rp={profile?.season_rp || profile?.rp || 0}
       rankTitle={profile?.rank_title || 'BRONZE I'}
       level={profile?.level || 1}
+      previousRank={previousRank}
+      currentRank={currentRank}
+      isFirstSeason={isFirstSeason}
     />
   );
 }

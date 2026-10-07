@@ -13,6 +13,9 @@ interface RecapPresentationProps {
   rp: number;
   rankTitle: string;
   level: number;
+  previousRank?: string | null;
+  currentRank?: string | null;
+  isFirstSeason?: boolean;
 }
 
 export default function RecapPresentation({
@@ -21,18 +24,47 @@ export default function RecapPresentation({
   topSubjectSeconds,
   rp,
   rankTitle,
-  level
+  level,
+  previousRank,
+  currentRank,
+  isFirstSeason
 }: RecapPresentationProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [resetPhase, setResetPhase] = useState<'peak' | 'drop' | 'grind'>('peak');
 
   const totalHours = (totalSeconds / 3600).toFixed(1);
   const topSubjectHours = (topSubjectSeconds / 3600).toFixed(1);
 
   // Parse Rank Title (e.g. "BRONZE II" -> "Bronze", "II")
-  const parts = rankTitle.split(' ');
-  const tierRaw = parts[0];
-  const tier = (tierRaw.charAt(0).toUpperCase() + tierRaw.slice(1).toLowerCase()) as RankTierName;
-  const division = parts[1] || '';
+  const parseRank = (title: string) => {
+    const parts = title.split(' ');
+    const tierRaw = parts[0] || 'Bronze';
+    const tier = (tierRaw.charAt(0).toUpperCase() + tierRaw.slice(1).toLowerCase()) as RankTierName;
+    const division = parts[1] || '';
+    return { tier, division };
+  };
+
+  const currentParsed = parseRank(rankTitle);
+  const resetPrevParsed = previousRank ? parseRank(previousRank) : null;
+  const resetCurrParsed = currentRank ? parseRank(currentRank) : currentParsed;
+
+  React.useEffect(() => {
+    if (currentSlide === (isFirstSeason ? 2 : 3) || (currentSlide === 2 && !isFirstSeason)) {
+      // If we are on the reset slide, trigger the sequence
+      const dropTimer = setTimeout(() => {
+        setResetPhase('drop');
+      }, 2000);
+
+      const grindTimer = setTimeout(() => {
+        setResetPhase('grind');
+      }, 2500);
+
+      return () => {
+        clearTimeout(dropTimer);
+        clearTimeout(grindTimer);
+      };
+    }
+  }, [currentSlide, isFirstSeason]);
 
   const slides = [
     // SLIDE 0: Welcome / Hook
@@ -82,49 +114,144 @@ export default function RecapPresentation({
       </div>
     </motion.div>,
 
-    // SLIDE 2: The Rank
-    <motion.div
-      key="slide2"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.8 }}
-      className="flex flex-col items-center justify-center text-center space-y-12"
-    >
-      <motion.h2 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className="text-2xl md:text-3xl font-hud text-slate-400 tracking-widest uppercase"
-      >
-        You reached...
-      </motion.h2>
-
+    // SLIDE 2: The Rank (Only shown if isFirstSeason)
+    ...(isFirstSeason ? [
       <motion.div
-        initial={{ scale: 0, rotate: -15 }}
-        animate={{ scale: 1, rotate: 0 }}
-        transition={{ type: "spring", bounce: 0.5, duration: 1.5, delay: 0.8 }}
-        className="relative"
+        key="slide2_first"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.8 }}
+        className="flex flex-col items-center justify-center text-center space-y-12"
       >
-        {/* Glow behind badge */}
-        <div className="absolute inset-0 bg-amber-500/20 blur-[100px] rounded-full" />
-        <RankCrestBadge tier={tier} division={division} size={240} className="relative z-10" />
-      </motion.div>
+        <motion.h2 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="text-2xl md:text-3xl font-hud text-slate-400 tracking-widest uppercase"
+        >
+          You reached...
+        </motion.h2>
 
+        <motion.div
+          initial={{ scale: 0, rotate: -15 }}
+          animate={{ scale: 1, rotate: 0 }}
+          transition={{ type: "spring", bounce: 0.5, duration: 1.5, delay: 0.8 }}
+          className="relative"
+        >
+          {/* Glow behind badge */}
+          <div className="absolute inset-0 bg-amber-500/20 blur-[100px] rounded-full" />
+          <RankCrestBadge tier={currentParsed.tier} division={currentParsed.division} size={240} className="relative z-10" />
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.5 }}
+          className="flex flex-col items-center space-y-2"
+        >
+          <div className="text-4xl md:text-5xl font-black font-hud text-white tracking-widest uppercase text-shadow-lg">
+            {rankTitle}
+          </div>
+          <div className="text-xl text-amber-400 font-bold font-hud uppercase tracking-wider">
+            {rp} RP
+          </div>
+        </motion.div>
+      </motion.div>
+    ] : [
+      // SLIDE 2 (Not First Season): The Reset Animation
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 1.5 }}
-        className="flex flex-col items-center space-y-2"
+        key="slide2_reset"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.8 }}
+        className="flex flex-col items-center justify-center text-center space-y-12"
       >
-        <div className="text-4xl md:text-5xl font-black font-hud text-white tracking-widest uppercase text-shadow-lg">
-          {rankTitle}
+        <div className="h-16 flex items-center justify-center">
+          <AnimatePresence mode="wait">
+            {resetPhase === 'peak' && (
+              <motion.h2 
+                key="text-peak"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="text-2xl md:text-3xl font-hud text-slate-400 tracking-widest uppercase absolute"
+              >
+                You ended the season at
+              </motion.h2>
+            )}
+            {resetPhase === 'grind' && (
+              <motion.h2 
+                key="text-grind"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-2xl md:text-3xl font-hud text-amber-400 tracking-widest uppercase absolute"
+              >
+                The reset is here. You start at
+              </motion.h2>
+            )}
+          </AnimatePresence>
         </div>
-        <div className="text-xl text-amber-400 font-bold font-hud uppercase tracking-wider">
-          {rp} RP
+
+        <div className="relative h-[300px] flex items-center justify-center">
+          <AnimatePresence mode="popLayout">
+            {(resetPhase === 'peak' || resetPhase === 'drop') && resetPrevParsed && (
+              <motion.div
+                key="badge-prev"
+                initial={{ scale: 0, rotate: -15 }}
+                animate={resetPhase === 'peak' ? { scale: 1, rotate: 0 } : { scale: 0.5, rotate: 15, opacity: 0, filter: "blur(10px)" }}
+                transition={resetPhase === 'peak' ? { type: "spring", bounce: 0.5, duration: 1.5, delay: 0.3 } : { duration: 0.5 }}
+                className="absolute z-10"
+              >
+                <RankCrestBadge tier={resetPrevParsed.tier} division={resetPrevParsed.division} size={240} />
+              </motion.div>
+            )}
+            
+            {resetPhase === 'grind' && (
+              <motion.div
+                key="badge-new"
+                initial={{ scale: 0, rotate: -10 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ type: "spring", bounce: 0.6, duration: 1.5 }}
+                className="absolute z-20"
+              >
+                <div className="absolute inset-0 bg-red-500/20 blur-[100px] rounded-full" />
+                <RankCrestBadge tier={resetCurrParsed.tier} division={resetCurrParsed.division} size={240} className="relative z-10" />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        <div className="h-16 flex items-center justify-center">
+          <AnimatePresence mode="wait">
+             {resetPhase === 'peak' && (
+                <motion.div 
+                  key="title-prev"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ delay: 0.8 }}
+                  className="text-4xl md:text-5xl font-black font-hud text-white tracking-widest uppercase text-shadow-lg absolute"
+                >
+                  {previousRank}
+                </motion.div>
+             )}
+             {resetPhase === 'grind' && (
+                <motion.div 
+                  key="title-new"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
+                  className="text-4xl md:text-5xl font-black font-hud text-white tracking-widest uppercase text-shadow-lg absolute"
+                >
+                  {currentRank}
+                </motion.div>
+             )}
+          </AnimatePresence>
         </div>
       </motion.div>
-    </motion.div>
+    ])
   ];
 
   const handleNext = () => {
@@ -171,15 +298,15 @@ export default function RecapPresentation({
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 2.5 }}
-          className="absolute bottom-12 left-0 w-full text-center z-30"
+          transition={{ delay: isFirstSeason ? 2.5 : 4.0 }}
+          className="absolute bottom-12 left-0 w-full text-center z-30 flex justify-center"
         >
           <Link 
             href="/"
             onClick={(e) => e.stopPropagation()}
-            className="inline-block px-8 py-4 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-2xl text-white font-hud font-bold tracking-wider transition-colors border border-white/10"
+            className="inline-block px-10 py-5 bg-gradient-to-r from-red-600/80 to-amber-600/80 hover:from-red-500 hover:to-amber-500 backdrop-blur-md rounded-2xl text-white font-hud font-black tracking-widest transition-all border border-white/20 shadow-[0_0_30px_rgba(220,38,38,0.3)] hover:scale-105"
           >
-            RETURN TO DASHBOARD
+            {isFirstSeason ? "RETURN TO DASHBOARD" : "START THE GRIND"}
           </Link>
         </motion.div>
       )}
