@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { getSupabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { Plus, Users } from 'lucide-react';
@@ -131,7 +132,7 @@ export default function StudyRoomsTab({ onBackToDashboard }: { onBackToDashboard
 
       </div>
 
-      {isModalOpen && (
+      {isModalOpen && typeof window !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm px-4">
           <div className="bg-[#07090e] border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl">
             <h3 className="text-xl font-bold text-white mb-4">Create Study Room</h3>
@@ -161,7 +162,8 @@ export default function StudyRoomsTab({ onBackToDashboard }: { onBackToDashboard
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
