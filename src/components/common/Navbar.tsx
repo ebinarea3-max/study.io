@@ -167,8 +167,26 @@ export function Navbar({
     setImageError(false);
   }, [effectiveAvatar]);
 
+  // Prevent UI flickering on window focus/tab switch by caching the resolved database name
+  const [cachedName, setCachedName] = useState<string>('');
+
+  useEffect(() => {
+    // If we get a valid database profile name (username or name), lock it in.
+    if (user?.username || user?.name) {
+      setCachedName(user.username || user.name || '');
+    }
+    // Only use Google metadata if we have NO cached name yet.
+    else if (!cachedName && user?.user_metadata?.full_name) {
+      const metaName = user.user_metadata.full_name as string;
+      setCachedName(metaName.includes('(') ? metaName.split(' (')[0].trim() : metaName);
+    } else if (!cachedName && user?.displayName) {
+      setCachedName(user.displayName);
+    }
+  }, [user, cachedName]);
+
   const displayName = useMemo(() => {
     return (
+      cachedName ||
       user?.displayName ||
       user?.user_metadata?.full_name ||
       (user as any)?.user_metadata?.name ||
@@ -176,6 +194,7 @@ export function Navbar({
       (user?.email ? user.email.split('@')[0] : 'Focus Scholar')
     );
   }, [
+    cachedName,
     user?.displayName,
     user?.user_metadata?.full_name,
     (user as any)?.user_metadata?.name,
@@ -412,7 +431,7 @@ export function Navbar({
               {/* User Identity & Level Display */}
               <div className="text-left hidden lg:flex lg:flex-col lg:justify-center">
                 <div className="flex items-baseline gap-1.5">
-                  <div className="text-[13px] font-bold text-slate-900 dark:text-white leading-tight truncate max-w-[120px]">
+                  <div className="text-[13px] font-bold text-slate-900 dark:text-white leading-tight truncate block max-w-[130px]">
                     {displayName}
                   </div>
                   {user?.username && (
