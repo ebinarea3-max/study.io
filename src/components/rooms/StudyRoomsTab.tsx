@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { getSupabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
-import { Plus, Users } from 'lucide-react';
+import { Plus, Users, Trash2 } from 'lucide-react';
 import LiveRoom from './LiveRoom';
 
 interface StudyRoom {
@@ -89,6 +89,20 @@ export default function StudyRoomsTab({ onBackToDashboard }: { onBackToDashboard
       setPassword('');
       setMaxCapacity(4);
       fetchRooms(); // Immediately re-fetch
+    }
+  };
+
+  const handleDeleteRoom = async (roomId: string) => {
+    if (!user) return;
+    const supabase = getSupabase();
+    if (!supabase) return;
+
+    // Delete related messages first, then the room
+    await supabase.from('room_messages').delete().eq('room_id', roomId);
+    const { error: deleteError } = await supabase.from('study_rooms').delete().eq('id', roomId).eq('host_id', user.id);
+    
+    if (!deleteError) {
+      setRooms(prev => prev.filter(r => r.id !== roomId));
     }
   };
 
@@ -222,12 +236,23 @@ export default function StudyRoomsTab({ onBackToDashboard }: { onBackToDashboard
                   </div>
                 </div>
 
-                <button
-                  onClick={() => handleInitiateJoin(room)}
-                  className="relative z-10 w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-white font-hud tracking-widest text-sm font-bold transition-colors cursor-pointer text-center"
-                >
-                  JOIN ROOM
-                </button>
+                <div className="relative z-10 flex items-center justify-between gap-3">
+                  <button
+                    onClick={() => handleInitiateJoin(room)}
+                    className="flex-1 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-white font-hud tracking-widest text-sm font-bold transition-colors cursor-pointer text-center"
+                  >
+                    JOIN ROOM
+                  </button>
+                  {room.host_id === user?.id && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleDeleteRoom(room.id); }}
+                      className="p-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 hover:border-red-500/40 rounded-xl text-red-400 hover:text-red-300 transition-colors"
+                      title="Delete Room"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
           </div>

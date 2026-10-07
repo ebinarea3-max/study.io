@@ -1,21 +1,11 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { getSupabase } from '../../lib/supabase';
 import { useStudy } from '../../context/StudyContext';
-import { StudyTimer } from '../../components/timer/StudyTimer';
 import { Logo } from '../../components/Logo';
-import Link from 'next/link';
 import { Users, ChevronLeft, Flame, Coffee, Laptop } from 'lucide-react';
-
-interface ChatMessage {
-  id: string;
-  user_id: string;
-  username: string;
-  text: string;
-  timestamp: number;
-}
 
 interface PresenceUser {
   user_id: string;
@@ -37,6 +27,14 @@ export default function LiveRoom({ roomId, onLeaveRoom }: LiveRoomProps) {
   const [presentUsers, setPresentUsers] = useState<PresenceUser[]>([]);
   
   const channelRef = useRef<any>(null);
+  // Use refs to always have the latest timer values without re-creating the channel
+  const isRunningRef = useRef(isRunning);
+  const elapsedSecondsRef = useRef(elapsedSeconds);
+
+  useEffect(() => {
+    isRunningRef.current = isRunning;
+    elapsedSecondsRef.current = elapsedSeconds;
+  }, [isRunning, elapsedSeconds]);
 
   // Fetch Room Info
   useEffect(() => {
@@ -60,7 +58,18 @@ export default function LiveRoom({ roomId, onLeaveRoom }: LiveRoomProps) {
     fetchData();
   }, [roomId]);
 
-  // Realtime Subscriptions
+  // Helper to build the presence payload using refs for freshness
+  const buildPresencePayload = useCallback(() => {
+    if (!user) return null;
+    return {
+      user_id: user.id,
+      username: user.username || user.displayName || 'Unknown Scholar',
+      avatar_url: user.avatarUrl || user.user_metadata?.avatar_url || '',
+      timer_start_at: isRunningRef.current ? Date.now() - (elapsedSecondsRef.current * 1000) : null
+    };
+  }, [user]);
+
+  // Realtime Subscriptions — only re-run when roomId or user identity changes
   useEffect(() => {
     if (!roomId || !user) return;
     const supabase = getSupabase();
@@ -77,18 +86,15 @@ export default function LiveRoom({ roomId, onLeaveRoom }: LiveRoomProps) {
     roomChannel
       .on('presence', { event: 'sync' }, () => {
         const state = roomChannel.presenceState();
-        // Flatten the presence state array
         const users = Object.values(state).map((presenceArr: any) => presenceArr[0]);
         setPresentUsers(users as PresenceUser[]);
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
-          await roomChannel.track({
-            user_id: user.id,
-            username: user.username || user.displayName || 'Unknown Scholar',
-            avatar_url: user.avatarUrl || user.user_metadata?.avatar_url || '',
-            timer_start_at: isRunning ? Date.now() - (elapsedSeconds * 1000) : null
-          });
+          const payload = buildPresencePayload();
+          if (payload) {
+            await roomChannel.track(payload);
+          }
         }
       });
 
@@ -97,28 +103,27 @@ export default function LiveRoom({ roomId, onLeaveRoom }: LiveRoomProps) {
     return () => {
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
       }
     };
-  }, [roomId, user]);
+  }, [roomId, user, buildPresencePayload]);
 
-  // Update Presence on Timer State Change
+  // Update Presence on Timer State Change — only fires when isRunning toggles
   useEffect(() => {
     if (!channelRef.current || !user || !roomId) return;
     
-    // Check if channel is joined and track is available
-    if (channelRef.current.state === 'joined') {
-      channelRef.current.track({
-        user_id: user.id,
-        username: user.username || user.displayName || 'Unknown Scholar',
-        avatar_url: user.avatarUrl || user.user_metadata?.avatar_url || '',
-        timer_start_at: isRunning ? Date.now() - (elapsedSeconds * 1000) : null
-      }).catch((err: any) => console.error('Failed to update presence:', err));
+    const channel = channelRef.current;
+    if (channel.state === 'joined') {
+      const payload = buildPresencePayload();
+      if (payload) {
+        channel.track(payload).catch((err: any) => console.error('Failed to update presence:', err));
+      }
     }
-  }, [isRunning, user, roomId, elapsedSeconds]);
+  }, [isRunning, user, roomId, buildPresencePayload]);
 
   return (
     <div className="min-h-screen bg-[#07090e] text-slate-100 flex flex-col relative overflow-hidden">
-      {/* Background Ambience matches the app */}
+      {/* Background Ambience */}
       <div className="fixed inset-0 pointer-events-none bg-dot-grid z-0" />
       <div className="fixed inset-0 pointer-events-none bg-hud-grid opacity-[0.03] z-0" />
       <div className="absolute inset-0 bg-gradient-to-t from-amber-900/5 via-transparent to-transparent pointer-events-none" />
@@ -134,13 +139,15 @@ export default function LiveRoom({ roomId, onLeaveRoom }: LiveRoomProps) {
             {roomName}
           </h1>
         </div>
-        <div className="flex items-center gap-3">
-          <Logo className="w-8 h-8" />
+        <div className="flex items-center gap-2">
+          <Users className="w-4 h-4 text-amber-500" />
+          <span className="text-sm font-mono text-amber-500 font-bold">{presentUsers.length}</span>
+          <Logo className="w-8 h-8 ml-2" />
         </div>
       </header>
 
-      {/* Main Layout */}
-      <main className="flex-1 w-full max-w-[1200px] mx-auto p-4 md:p-12 relative z-10 flex flex-col items-center justify-center">
+      {/* Main Layout — Centered Grid */}
+      <main className="flex-1 w-full max-w-[1200px] mx-auto p-6 md:p-12 relative z-10 flex flex-col items-center justify-center">
         
         {presentUsers.length === 0 ? (
           <div className="flex flex-col items-center opacity-50">
@@ -148,9 +155,9 @@ export default function LiveRoom({ roomId, onLeaveRoom }: LiveRoomProps) {
              <p className="font-mono text-sm tracking-widest uppercase">Waiting for scholars...</p>
           </div>
         ) : (
-          <div className="flex flex-wrap gap-8 justify-center items-center w-full">
+          <div className="flex flex-wrap gap-6 sm:gap-8 justify-center items-start w-full">
             {presentUsers.map((pUser, idx) => (
-              <LiveUserIcon key={`${pUser.user_id}-${idx}`} user={pUser} />
+              <LiveUserIcon key={`${pUser.user_id}-${idx}`} pUser={pUser} />
             ))}
           </div>
         )}
@@ -160,15 +167,20 @@ export default function LiveRoom({ roomId, onLeaveRoom }: LiveRoomProps) {
   );
 }
 
-const LiveUserIcon = ({ user }: { user: PresenceUser }) => {
+// ─── Minimalist User Icon with Live Ticking Timer ─────────────────────────────
+const LiveUserIcon = ({ pUser }: { pUser: PresenceUser }) => {
   const [displayTime, setDisplayTime] = useState('00:00:00');
+  const isStudying = pUser.timer_start_at !== null;
 
   useEffect(() => {
-    if (!user.timer_start_at) return;
+    if (!pUser.timer_start_at) {
+      setDisplayTime('00:00:00');
+      return;
+    }
 
     const update = () => {
-      const ms = Date.now() - user.timer_start_at!;
-      const totalSeconds = Math.floor(ms / 1000);
+      const ms = Date.now() - pUser.timer_start_at!;
+      const totalSeconds = Math.max(0, Math.floor(ms / 1000));
       const h = Math.floor(totalSeconds / 3600);
       const m = Math.floor((totalSeconds % 3600) / 60);
       const s = totalSeconds % 60;
@@ -180,28 +192,28 @@ const LiveUserIcon = ({ user }: { user: PresenceUser }) => {
     update();
     const interval = setInterval(update, 1000);
     return () => clearInterval(interval);
-  }, [user.timer_start_at]);
-
-  const isStudying = user.timer_start_at !== null;
+  }, [pUser.timer_start_at]);
 
   return (
-    <div className={`flex flex-col items-center gap-2 p-2 w-28 sm:w-32 transition-all duration-300 ${!isStudying ? 'opacity-60 hover:opacity-100' : ''}`}>
+    <div className={`flex flex-col items-center gap-2 p-3 w-28 sm:w-32 transition-all duration-300 ${!isStudying ? 'opacity-50 hover:opacity-80' : ''}`}>
+      {/* Icon */}
       <div className="relative flex items-center justify-center w-16 h-16 mb-1">
         {isStudying ? (
           <>
-            <Laptop className="w-12 h-12 text-amber-500 drop-shadow-[0_0_8px_rgba(245,158,11,0.6)]" strokeWidth={1.2} />
-            <Flame className="w-6 h-6 text-amber-500 absolute -top-1 -right-1 animate-pulse drop-shadow-[0_0_12px_rgba(245,158,11,1)]" strokeWidth={2} fill="currentColor" />
+            <Laptop className="w-12 h-12 text-amber-500 drop-shadow-[0_0_12px_rgba(245,158,11,0.5)]" strokeWidth={1.2} />
+            <Flame className="w-5 h-5 text-amber-400 absolute -top-1 -right-1 animate-pulse drop-shadow-[0_0_10px_rgba(245,158,11,0.9)]" strokeWidth={2} fill="currentColor" />
           </>
         ) : (
-          <Coffee className="w-12 h-12 text-slate-500" strokeWidth={1.2} />
+          <Coffee className="w-12 h-12 text-slate-600" strokeWidth={1.2} />
         )}
       </div>
+      {/* Name + Time */}
       <div className="flex flex-col items-center w-full">
-        <span className={`text-[13px] font-bold truncate w-full text-center ${isStudying ? 'text-amber-500' : 'text-slate-400'}`}>
-          {user.username}
+        <span className={`text-[13px] font-bold truncate w-full text-center ${isStudying ? 'text-amber-500' : 'text-slate-500'}`}>
+          {pUser.username}
         </span>
-        <span className={`text-[13px] font-mono tracking-widest mt-0.5 ${isStudying ? 'text-amber-500' : 'text-slate-500'}`}>
-          {isStudying ? displayTime : 'Paused'}
+        <span className={`text-[13px] font-mono tracking-wider mt-0.5 ${isStudying ? 'text-amber-400' : 'text-slate-600'}`}>
+          {isStudying ? displayTime : 'Idle'}
         </span>
       </div>
     </div>
