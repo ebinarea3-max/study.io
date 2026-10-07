@@ -20,6 +20,10 @@ export default function StudyRoomsTab({ onBackToDashboard }: { onBackToDashboard
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newRoomName, setNewRoomName] = useState('');
+  const [isPrivate, setIsPrivate] = useState(false);
+  const [password, setPassword] = useState('');
+  const [maxCapacity, setMaxCapacity] = useState(4);
+  const [error, setError] = useState('');
 
   const fetchRooms = async () => {
     const supabase = getSupabase();
@@ -42,20 +46,30 @@ export default function StudyRoomsTab({ onBackToDashboard }: { onBackToDashboard
   const handleCreateRoom = async () => {
     if (!user) return;
     if (!newRoomName || !newRoomName.trim()) return;
+    setError('');
 
     const supabase = getSupabase();
     if (!supabase) return;
 
-    const { error } = await supabase
+    const { error: insertError } = await supabase
       .from('study_rooms')
-      .insert([{ name: newRoomName.trim(), host_id: user.id }]);
+      .insert([{ 
+        name: newRoomName.trim(), 
+        host_id: user.id,
+        is_private: isPrivate,
+        password: isPrivate ? password : null,
+        max_capacity: maxCapacity
+      }]);
 
-    if (error) {
-      console.error('Failed to create room:', error);
-      alert('Failed to create room. Please try again.');
+    if (insertError) {
+      console.error('Failed to create room:', insertError);
+      setError(insertError.message);
     } else {
       setIsModalOpen(false);
       setNewRoomName('');
+      setIsPrivate(false);
+      setPassword('');
+      setMaxCapacity(4);
       fetchRooms(); // Immediately re-fetch
     }
   };
@@ -137,19 +151,73 @@ export default function StudyRoomsTab({ onBackToDashboard }: { onBackToDashboard
           <div className="bg-[#07090e] border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl">
             <h3 className="text-xl font-bold text-white mb-4">Create Study Room</h3>
             
-            <input 
-              type="text" 
-              placeholder="e.g. Late Night Grind..."
-              value={newRoomName}
-              onChange={(e) => setNewRoomName(e.target.value)}
-              className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-amber-500 transition-colors mb-6"
-              autoFocus
-            />
+            {error && <div className="text-red-500 text-sm mb-4 font-mono bg-red-500/10 p-2 rounded-lg border border-red-500/20">{error}</div>}
+
+            <div className="mb-4">
+              <label className="block text-xs font-hud font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Room Name</label>
+              <input 
+                type="text" 
+                placeholder="e.g. Late Night Grind..."
+                value={newRoomName}
+                onChange={(e) => setNewRoomName(e.target.value)}
+                className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-amber-500 transition-colors"
+                autoFocus
+              />
+            </div>
             
-            <div className="flex justify-end gap-3">
+            <div className="mb-4 flex items-center justify-between bg-black/30 p-3 rounded-xl border border-white/5">
+              <div>
+                <label className="block text-xs font-hud font-bold text-slate-300 uppercase tracking-wider">Private Room</label>
+                <p className="text-[10px] text-slate-500">Require a password to join</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" className="sr-only peer" checked={isPrivate} onChange={(e) => setIsPrivate(e.target.checked)} />
+                <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+              </label>
+            </div>
+
+            {isPrivate && (
+              <div className="mb-4">
+                <label className="block text-xs font-hud font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Password</label>
+                <input 
+                  type="password" 
+                  placeholder="Enter a secure password..."
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-amber-500 transition-colors"
+                />
+              </div>
+            )}
+
+            <div className="mb-6">
+              <label className="block text-xs font-hud font-bold text-slate-400 mb-2 uppercase tracking-wider">Max Capacity</label>
+              <div className="flex gap-2">
+                {[2, 4, 6, 10].map((cap) => (
+                  <button
+                    key={cap}
+                    onClick={() => setMaxCapacity(cap)}
+                    className={`flex-1 py-2 rounded-xl text-sm font-bold transition-colors ${
+                      maxCapacity === cap 
+                        ? 'bg-amber-500/20 text-amber-500 border border-amber-500/50' 
+                        : 'bg-black/50 text-slate-400 border border-white/10 hover:border-white/30'
+                    }`}
+                  >
+                    {cap}
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            <div className="flex justify-end gap-3 pt-2 border-t border-white/5">
               <button 
-                onClick={() => { setIsModalOpen(false); setNewRoomName(''); }}
-                className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+                onClick={() => { 
+                  setIsModalOpen(false); 
+                  setNewRoomName(''); 
+                  setIsPrivate(false);
+                  setPassword('');
+                  setError('');
+                }}
+                className="px-4 py-2 text-gray-400 hover:text-white transition-colors text-sm font-bold"
               >
                 Cancel
               </button>
