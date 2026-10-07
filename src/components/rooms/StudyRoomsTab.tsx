@@ -20,6 +20,16 @@ export default function StudyRoomsTab({ onBackToDashboard }: { onBackToDashboard
   const { user } = useAuth();
   const [rooms, setRooms] = useState<StudyRoom[]>([]);
   const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
+  const [unlockedRooms, setUnlockedRooms] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return JSON.parse(localStorage.getItem('unlocked_rooms') || '[]');
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newRoomName, setNewRoomName] = useState('');
@@ -83,13 +93,17 @@ export default function StudyRoomsTab({ onBackToDashboard }: { onBackToDashboard
   };
 
   const handleInitiateJoin = (room: StudyRoom) => {
-    if (room.is_private) {
-      setJoiningRoom(room);
-      setJoinPassword('');
-      setJoinError('');
-    } else {
+    const isHost = room.host_id === user?.id;
+    const hasKey = unlockedRooms.includes(room.id);
+    
+    if (!room.is_private || isHost || hasKey) {
       setActiveRoomId(room.id);
+      return;
     }
+    
+    setJoiningRoom(room);
+    setJoinPassword('');
+    setJoinError('');
   };
 
   const handleJoinByCode = (e: React.FormEvent) => {
@@ -110,6 +124,14 @@ export default function StudyRoomsTab({ onBackToDashboard }: { onBackToDashboard
       setJoinError('Incorrect password. Please try again.');
       return;
     }
+    
+    // Add to keychain
+    const newUnlocked = [...unlockedRooms, joiningRoom.id];
+    setUnlockedRooms(newUnlocked);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('unlocked_rooms', JSON.stringify(newUnlocked));
+    }
+    
     setActiveRoomId(joiningRoom.id);
     setJoiningRoom(null);
   };
