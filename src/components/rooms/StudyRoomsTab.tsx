@@ -1,11 +1,13 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Plus, Users, Shield, ShieldOff, Search, ChevronLeft } from 'lucide-react';
 import { getSupabase } from '../../lib/supabase';
 import { Logo } from '../Logo';
+import { useAuth } from '../../context/AuthContext';
+import LiveRoom from './LiveRoom';
 
 export interface StudyRoom {
   id: string;
@@ -17,18 +19,59 @@ export interface StudyRoom {
   host_rank: string;
 }
 
-interface RoomsLobbyProps {
-  initialRooms: StudyRoom[];
-  userId: string;
+interface StudyRoomsTabProps {
+  onBackToDashboard: () => void;
 }
 
-export default function RoomsLobby({ initialRooms, userId }: RoomsLobbyProps) {
-  const router = useRouter();
-  const [rooms, setRooms] = useState<StudyRoom[]>(initialRooms);
+export default function StudyRoomsTab({ onBackToDashboard }: StudyRoomsTabProps) {
+  const { user } = useAuth();
+  const [rooms, setRooms] = useState<StudyRoom[]>([]);
+  const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newRoomName, setNewRoomName] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchRooms = async () => {
+      const supabase = getSupabase();
+      if (!supabase) return;
+      const { data, error } = await supabase
+        .from('study_rooms')
+        .select(`
+          id,
+          name,
+          is_private,
+          created_at,
+          host_id,
+          host:profiles!host_id (
+            username,
+            rank_title
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (data) {
+        const formattedRooms = data.map((room: any) => {
+          const hostData = Array.isArray(room.host) ? room.host[0] : room.host;
+          return {
+            id: room.id,
+            name: room.name,
+            is_private: room.is_private,
+            created_at: room.created_at,
+            host_id: room.host_id,
+            host_username: hostData?.username || 'Unknown Host',
+            host_rank: hostData?.rank_title || 'Unranked'
+          };
+        });
+        setRooms(formattedRooms);
+      }
+      setIsLoading(false);
+    };
+
+    fetchRooms();
+  }, []);
 
   const handleCreateRoom = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,7 +89,7 @@ export default function RoomsLobby({ initialRooms, userId }: RoomsLobbyProps) {
         .from('study_rooms')
         .insert({
           name: newRoomName.trim(),
-          host_id: userId,
+          host_id: user?.id,
           is_private: isPrivate
         })
         .select(`
@@ -83,7 +126,7 @@ export default function RoomsLobby({ initialRooms, userId }: RoomsLobbyProps) {
         setIsPrivate(false);
         
         // Navigate straight to the room
-        router.push(`/rooms/${data.id}`);
+        setActiveRoomId(data.id);
       }
     } catch (err) {
       console.error('Failed to create room:', err);
@@ -93,18 +136,22 @@ export default function RoomsLobby({ initialRooms, userId }: RoomsLobbyProps) {
     }
   };
 
+  if (activeRoomId) {
+    return <LiveRoom roomId={activeRoomId} onLeaveRoom={() => setActiveRoomId(null)} />;
+  }
+
   return (
-    <div className="min-h-screen bg-[#07090e] text-slate-100 flex flex-col relative">
+    <div className="w-full flex flex-col relative">
       {/* Background Ambience */}
       <div className="fixed inset-0 pointer-events-none bg-dot-grid z-0" />
       <div className="fixed inset-0 pointer-events-none bg-hud-grid opacity-[0.03] z-0" />
       <div className="absolute inset-0 bg-gradient-to-t from-amber-900/5 via-transparent to-transparent pointer-events-none" />
 
       <header className="w-full flex items-center justify-between p-6 relative z-20">
-        <Link href="/" className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors group">
+        <button onClick={onBackToDashboard} className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors group">
           <ChevronLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
           <span className="font-hud tracking-widest text-sm font-bold mt-0.5">DASHBOARD</span>
-        </Link>
+        </button>
         <div className="flex items-center gap-3">
           <Logo className="w-8 h-8" />
         </div>
@@ -169,12 +216,12 @@ export default function RoomsLobby({ initialRooms, userId }: RoomsLobbyProps) {
                 </div>
 
                 <div className="mt-auto">
-                  <Link
-                    href={`/rooms/${room.id}`}
-                    className="block w-full py-3 text-center bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-white font-hud tracking-widest text-sm transition-colors"
+                  <button
+                    onClick={() => setActiveRoomId(room.id)}
+                    className="block w-full py-3 text-center bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-white font-hud tracking-widest text-sm transition-colors cursor-pointer"
                   >
                     JOIN ROOM
-                  </Link>
+                  </button>
                 </div>
               </div>
             ))

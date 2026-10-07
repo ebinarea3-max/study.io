@@ -1,11 +1,10 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { useAuth } from '../../../context/AuthContext';
-import { getSupabase } from '../../../lib/supabase';
-import { StudyTimer } from '../../../components/timer/StudyTimer';
-import { Logo } from '../../../components/Logo';
+import { useAuth } from '../../context/AuthContext';
+import { getSupabase } from '../../lib/supabase';
+import { StudyTimer } from '../../components/timer/StudyTimer';
+import { Logo } from '../../components/Logo';
 import Link from 'next/link';
 import { Send, Users, ChevronLeft, MessageSquare, User } from 'lucide-react';
 
@@ -24,11 +23,12 @@ interface PresenceUser {
   rank_title: string;
 }
 
-export default function LiveRoomPage() {
-  const params = useParams();
-  const roomId = params?.id as string;
-  const router = useRouter();
-  
+interface LiveRoomProps {
+  roomId: string;
+  onLeaveRoom: () => void;
+}
+
+export default function LiveRoom({ roomId, onLeaveRoom }: LiveRoomProps) {
   const { user } = useAuth();
   
   const [roomName, setRoomName] = useState<string>('Loading Room...');
@@ -142,10 +142,10 @@ export default function LiveRoomPage() {
 
       {/* Header */}
       <header className="w-full flex items-center justify-between p-4 md:p-6 relative z-20 border-b border-white/[0.05] bg-black/20 backdrop-blur-md">
-        <Link href="/rooms" className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors group">
+        <button onClick={onLeaveRoom} className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors group">
           <ChevronLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
           <span className="font-hud tracking-widest text-sm font-bold mt-0.5">LEAVE ROOM</span>
-        </Link>
+        </button>
         <div className="flex items-center gap-3 absolute left-1/2 -translate-x-1/2">
           <h1 className="text-xl font-black font-hud tracking-widest uppercase text-white drop-shadow-md">
             {roomName}

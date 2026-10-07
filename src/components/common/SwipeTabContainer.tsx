@@ -14,6 +14,7 @@ interface SwipeTabContainerProps {
     analytics: React.ReactNode;
     leaderboard?: React.ReactNode;
     settings?: React.ReactNode;
+    rooms?: React.ReactNode;
   };
 }
 

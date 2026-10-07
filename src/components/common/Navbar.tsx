@@ -29,7 +29,7 @@ import Image from 'next/image';
 import { getRankIconPath } from '../../utils/rankIcons';
 import { FacetedTrophyIcon, FacetedGearIcon } from './GeometricIcons';
 
-export type NavTabType = 'timer' | 'tasks' | 'analytics' | 'leaderboard' | 'settings';
+export type NavTabType = 'timer' | 'tasks' | 'analytics' | 'leaderboard' | 'settings' | 'rooms';
 
 interface NavbarProps {
   activeTab: NavTabType;
@@ -297,13 +297,18 @@ export function Navbar({
               <span>LEADERBOARD</span>
             </button>
 
-            <Link
-              href="/rooms"
-              className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-xl text-xs font-hud font-bold tracking-wider transition-all cursor-pointer text-slate-400 hover:text-white hover:bg-white/[0.04]"
+            <button
+              onClick={() => setActiveTab('rooms')}
+              className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-xl text-xs font-hud font-bold tracking-wider transition-all cursor-pointer ${
+                activeTab === 'rooms'
+                  ? 'text-white shadow-sm'
+                  : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
+              }`}
+              style={activeTab === 'rooms' ? { background: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#FFFFFF', fontWeight: 600 } : undefined}
             >
               <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>ROOMS</span>
-            </Link>
+            </button>
           </nav>
         </div>
 
@@ -657,14 +662,18 @@ export function Navbar({
         </button>
 
         {/* Tab 5: Rooms */}
-        <Link
-          href="/rooms"
-          className="relative z-10 flex-1 flex flex-col items-center justify-center py-2 rounded-full transition-all active:scale-95 cursor-pointer text-slate-400 hover:text-white"
+        <button
+          onClick={() => setActiveTab('rooms')}
+          className={`relative z-10 flex-1 flex flex-col items-center justify-center py-2 rounded-full transition-all active:scale-95 cursor-pointer ${
+            activeTab === 'rooms'
+              ? 'text-slate-950 font-bold'
+              : 'text-slate-400 hover:text-white'
+          }`}
           aria-label="Rooms"
         >
           <Users className="w-5 h-5" />
           <span className="text-[9px] font-hud font-bold tracking-widest uppercase mt-0.5">Rooms</span>
-        </Link>
+        </button>
       </div>
       </nav>
     </div>

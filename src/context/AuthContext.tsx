@@ -54,14 +54,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Immediately extract user_metadata for stable, zero-flicker UI
     const metaAvatar = (authUser.user_metadata?.avatar_url as string) || (authUser.user_metadata?.picture as string) || '';
-    const metaName = (authUser.user_metadata?.full_name as string) || (authUser.user_metadata?.name as string) || (authUser.user_metadata?.display_name as string) || (authUser.email ? authUser.email.split('@')[0] : '');
+    const rawMetaName = (authUser.user_metadata?.full_name as string) || (authUser.user_metadata?.name as string) || (authUser.user_metadata?.display_name as string) || (authUser.email ? authUser.email.split('@')[0] : '');
+    const cleanMetaName = rawMetaName.includes('(') ? rawMetaName.split(' (')[0].trim() : rawMetaName;
 
     setUser(prev => {
+      // Prioritize existing local state to prevent flickering back to raw oauth names during background refetches
+      const resolvedDisplayName = prev.username || prev.displayName || (authUser.user_metadata?.custom_username as string) || cleanMetaName || 'Focus Scholar';
+      
       const merged: UserProfile = {
         ...prev,
         id: authUser.id,
         email: authUser.email || prev.email || '',
-        displayName: metaName || prev.displayName || (authUser.email ? authUser.email.split('@')[0] : 'Focus Scholar'),
+        displayName: resolvedDisplayName,
         avatarUrl: prev.avatarUrl,
         user_metadata: authUser.user_metadata,
       };
@@ -141,7 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             email: authUser.email || prev.email || '',
             username: profile.username || prev.username,
             name: profile.name || prev.name,
-            displayName: profile.name || metaName || prev.displayName || (authUser.email ? authUser.email.split('@')[0] : 'Focus Scholar'),
+            displayName: profile.username || profile.display_name || profile.name || prev.username || prev.displayName || (authUser.user_metadata?.custom_username as string) || cleanMetaName || 'Focus Scholar',
             avatarUrl: profile.avatar_url || prev.avatarUrl,
             dailyGoalHours: Number(profile.daily_goal_hours ?? prev.dailyGoalHours ?? 4.0),
             streakDays: Number(profile.streak_days ?? prev.streakDays ?? 0),
@@ -172,7 +176,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         await supabase.from('profiles').upsert({
           id: authUser.id,
-          name: metaName,
+          name: cleanMetaName,
           avatar_url: metaAvatar || null,
           rp: syncedRP,
           season_rp: syncedRP,
@@ -226,7 +230,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(prev => {
             const updated = {
               ...prev,
-              displayName: data.name || prev.displayName,
+              displayName: data.username || data.display_name || data.name || prev.username || prev.displayName,
               avatarUrl: data.avatar_url || prev.avatarUrl,
               dailyGoalHours: data.daily_goal_hours ?? prev.dailyGoalHours,
               streakDays: data.streak_days ?? prev.streakDays,
