@@ -21,8 +21,7 @@ interface PresenceUser {
   user_id: string;
   username: string;
   avatar_url?: string;
-  rank_title: string;
-  status?: 'studying' | 'resting';
+  timer_start_at: number | null;
 }
 
 interface LiveRoomProps {
@@ -32,29 +31,20 @@ interface LiveRoomProps {
 
 export default function LiveRoom({ roomId, onLeaveRoom }: LiveRoomProps) {
   const { user } = useAuth();
-  const { isRunning } = useStudy();
+  const { isRunning, elapsedSeconds } = useStudy();
   
   const [roomName, setRoomName] = useState<string>('Loading Room...');
   const [presentUsers, setPresentUsers] = useState<PresenceUser[]>([]);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [chatInput, setChatInput] = useState('');
   
   const channelRef = useRef<any>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll chat
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  // Fetch Room Info & Historical Messages
+  // Fetch Room Info
   useEffect(() => {
     if (!roomId) return;
     const fetchData = async () => {
       const supabase = getSupabase();
       if (!supabase) return;
       
-      // Fetch Room Name
       const { data: roomData, error: roomError } = await supabase
         .from('study_rooms')
         .select('name')
@@ -65,30 +55,6 @@ export default function LiveRoom({ roomId, onLeaveRoom }: LiveRoomProps) {
         setRoomName(roomData.name);
       } else if (roomError) {
         setRoomName('Unknown Room');
-      }
-
-      // Fetch Chat History
-      const { data: msgData } = await supabase
-        .from('room_messages')
-        .select(`
-          id,
-          user_id,
-          text,
-          created_at,
-          profiles:user_id(username)
-        `)
-        .eq('room_id', roomId)
-        .order('created_at', { ascending: true });
-
-      if (msgData) {
-        const formatted = msgData.map((msg: any) => ({
-          id: msg.id,
-          user_id: msg.user_id,
-          username: msg.profiles?.username || 'Unknown',
-          text: msg.text,
-          timestamp: new Date(msg.created_at).getTime()
-        }));
-        setMessages(formatted);
       }
     };
     fetchData();
@@ -115,41 +81,13 @@ export default function LiveRoom({ roomId, onLeaveRoom }: LiveRoomProps) {
         const users = Object.values(state).map((presenceArr: any) => presenceArr[0]);
         setPresentUsers(users as PresenceUser[]);
       })
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'room_messages',
-        filter: `room_id=eq.${roomId}`
-      }, async (payload) => {
-        // Skip if we already added it optimistically
-        if (payload.new.user_id === user.id) return;
-        
-        const sb = getSupabase();
-        if (!sb) return;
-        
-        // Fetch username for the new message
-        const { data: profile } = await sb
-          .from('profiles')
-          .select('username')
-          .eq('id', payload.new.user_id)
-          .single();
-          
-        setMessages(prev => [...prev, {
-          id: payload.new.id,
-          user_id: payload.new.user_id,
-          username: profile?.username || 'Unknown',
-          text: payload.new.text,
-          timestamp: new Date(payload.new.created_at).getTime()
-        }]);
-      })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
           await roomChannel.track({
             user_id: user.id,
             username: user.username || user.displayName || 'Unknown Scholar',
             avatar_url: user.avatarUrl || user.user_metadata?.avatar_url || '',
-            rank_title: user.rank_title || 'Unranked',
-            status: isRunning ? 'studying' : 'resting'
+            timer_start_at: isRunning ? Date.now() - (elapsedSeconds * 1000) : null
           });
         }
       });
@@ -173,39 +111,10 @@ export default function LiveRoom({ roomId, onLeaveRoom }: LiveRoomProps) {
         user_id: user.id,
         username: user.username || user.displayName || 'Unknown Scholar',
         avatar_url: user.avatarUrl || user.user_metadata?.avatar_url || '',
-        rank_title: user.rank_title || 'Unranked',
-        status: isRunning ? 'studying' : 'resting'
+        timer_start_at: isRunning ? Date.now() - (elapsedSeconds * 1000) : null
       }).catch((err: any) => console.error('Failed to update presence:', err));
     }
-  }, [isRunning, user, roomId]);
-
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!chatInput.trim() || !channelRef.current || !user) return;
-
-    // Optimistically add to our own UI
-    const newMessage: ChatMessage = {
-      id: Math.random().toString(36).substring(7),
-      user_id: user.id,
-      username: user.username || user.displayName || 'Unknown',
-      text: chatInput.trim(),
-      timestamp: Date.now()
-    };
-
-    setMessages(prev => [...prev, newMessage]);
-    const messageText = chatInput.trim();
-    setChatInput('');
-
-    // Insert to DB
-    const supabase = getSupabase();
-    if (supabase) {
-      await supabase.from('room_messages').insert([{
-        room_id: roomId,
-        user_id: user.id,
-        text: messageText
-      }]);
-    }
-  };
+  }, [isRunning, user, roomId, elapsedSeconds]);
 
   return (
     <div className="min-h-screen bg-[#07090e] text-slate-100 flex flex-col relative overflow-hidden">
@@ -231,115 +140,69 @@ export default function LiveRoom({ roomId, onLeaveRoom }: LiveRoomProps) {
       </header>
 
       {/* Main Layout */}
-      <main className="flex-1 w-full max-w-[1600px] mx-auto p-4 md:p-6 relative z-10 flex flex-col lg:flex-row gap-6 h-[calc(100vh-80px)]">
+      <main className="flex-1 w-full max-w-[1200px] mx-auto p-4 md:p-12 relative z-10 flex flex-col items-center justify-center">
         
-        {/* Left Column: Personal Timer (70%) */}
-        <div className="w-full lg:w-[70%] h-full flex flex-col rounded-3xl overflow-y-auto custom-scrollbar relative border border-white/5 bg-black/20">
-          <StudyTimer />
-        </div>
-
-        {/* Right Column: Multiplayer Panel (30%) */}
-        <div className="w-full lg:w-[30%] h-full flex flex-col bg-white/[0.02] backdrop-blur-2xl border border-white/[0.08] rounded-3xl overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
-          
-          {/* Active Users Section */}
-          <div className="p-4 border-b border-white/[0.05] bg-black/20">
-            <div className="flex items-center gap-2 mb-3">
-              <Users className="w-5 h-5 text-amber-500" />
-              <h2 className="text-sm font-hud tracking-widest font-bold uppercase text-slate-300">
-                Active Scholars ({presentUsers.length})
-              </h2>
-            </div>
-            <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto custom-scrollbar">
-              {presentUsers.map((pUser, idx) => (
-                <div key={`${pUser.user_id}-${idx}`} className="flex items-center gap-2 bg-white/[0.05] border border-white/[0.1] rounded-full pl-1 pr-3 py-1">
-                  <div className="relative">
-                    <div className="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center overflow-hidden shrink-0">
-                      {pUser.avatar_url ? (
-                        <img src={pUser.avatar_url} alt="avatar" className="w-full h-full object-cover" />
-                      ) : (
-                        <User className="w-3 h-3 text-slate-400" />
-                      )}
-                    </div>
-                    {/* Pulsing Green Online Dot */}
-                    <div className="absolute bottom-0 right-0 w-2 h-2 bg-green-500 rounded-full border-2 border-[#12161f] animate-pulse" />
-                  </div>
-                  <span className="text-xs font-bold text-slate-200 truncate max-w-[100px]">
-                    {pUser.username}
-                  </span>
-                  <div className="ml-1 flex items-center justify-center">
-                    {pUser.status === 'studying' ? (
-                      <Flame className="w-4 h-4 text-amber-500 drop-shadow-[0_0_8px_rgba(245,158,11,0.8)] animate-pulse" />
-                    ) : (
-                      <Coffee className="w-4 h-4 text-slate-500" />
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
+        {presentUsers.length === 0 ? (
+          <div className="flex flex-col items-center opacity-50">
+             <Users className="w-12 h-12 mb-4" />
+             <p className="font-mono text-sm tracking-widest uppercase">Waiting for scholars...</p>
           </div>
-
-          {/* Chat Section */}
-          <div className="flex-1 flex flex-col min-h-0 bg-black/10">
-            <div className="flex items-center gap-2 p-4 border-b border-white/[0.05]">
-              <MessageSquare className="w-4 h-4 text-slate-400" />
-              <h2 className="text-xs font-hud tracking-widest font-bold uppercase text-slate-400">
-                Live Chat
-              </h2>
-            </div>
-            
-            <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 custom-scrollbar">
-              {messages.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-slate-500 text-center px-4">
-                  <MessageSquare className="w-8 h-8 mb-2 opacity-50" />
-                  <p className="text-xs font-mono">No messages yet. Say hello!</p>
-                </div>
-              ) : (
-                messages.map((msg) => {
-                  const isMe = msg.user_id === user?.id;
-                  return (
-                    <div key={msg.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-                      <span className="text-[10px] font-mono text-slate-500 mb-1 px-1">
-                        {msg.username}
-                      </span>
-                      <div className={`px-4 py-2.5 rounded-2xl text-sm max-w-[85%] break-words shadow-md ${
-                        isMe 
-                          ? 'bg-amber-500/20 text-amber-100 border border-amber-500/30 rounded-br-sm' 
-                          : 'bg-white/[0.05] text-slate-200 border border-white/[0.1] rounded-bl-sm'
-                      }`}>
-                        {msg.text}
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-
-            {/* Chat Input */}
-            <form onSubmit={handleSendMessage} className="p-4 bg-black/20 border-t border-white/[0.05]">
-              <div className="relative flex items-center">
-                <input
-                  type="text"
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  placeholder="Send a message..."
-                  maxLength={200}
-                  className="w-full bg-white/[0.03] border border-white/[0.1] rounded-xl pl-4 pr-12 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500/50 transition-colors"
-                />
-                <button
-                  type="submit"
-                  disabled={!chatInput.trim()}
-                  className="absolute right-2 p-1.5 bg-amber-500 hover:bg-amber-400 disabled:bg-slate-700 disabled:text-slate-500 text-black rounded-lg transition-colors"
-                >
-                  <Send className="w-4 h-4" />
-                </button>
-              </div>
-            </form>
+        ) : (
+          <div className="flex flex-wrap gap-8 justify-center items-center w-full">
+            {presentUsers.map((pUser, idx) => (
+              <LiveUserIcon key={`${pUser.user_id}-${idx}`} user={pUser} />
+            ))}
           </div>
-          
-        </div>
-
+        )}
+        
       </main>
     </div>
   );
 }
+
+const LiveUserIcon = ({ user }: { user: PresenceUser }) => {
+  const [displayTime, setDisplayTime] = useState('00:00:00');
+
+  useEffect(() => {
+    if (!user.timer_start_at) return;
+
+    const update = () => {
+      const ms = Date.now() - user.timer_start_at!;
+      const totalSeconds = Math.floor(ms / 1000);
+      const h = Math.floor(totalSeconds / 3600);
+      const m = Math.floor((totalSeconds % 3600) / 60);
+      const s = totalSeconds % 60;
+      setDisplayTime(
+        `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+      );
+    };
+
+    update();
+    const interval = setInterval(update, 1000);
+    return () => clearInterval(interval);
+  }, [user.timer_start_at]);
+
+  return (
+    <div className="flex flex-col items-center gap-3 bg-white/[0.02] p-6 rounded-3xl border border-white/5 shadow-2xl backdrop-blur-sm transition-transform hover:scale-105">
+      <div className="w-20 h-20 rounded-full border-[3px] border-amber-500/50 flex items-center justify-center bg-slate-800 overflow-hidden shadow-[0_0_20px_rgba(245,158,11,0.2)] relative">
+        {user.avatar_url ? (
+          <img src={user.avatar_url} alt={user.username} className="w-full h-full object-cover" />
+        ) : (
+          <User className="w-10 h-10 text-slate-400" />
+        )}
+      </div>
+      <div className="flex flex-col items-center">
+        <span className="text-sm font-bold text-white mb-1.5">{user.username}</span>
+        {user.timer_start_at ? (
+          <span className="text-sm font-mono font-bold text-amber-500 bg-amber-500/10 px-3 py-1 rounded-lg border border-amber-500/20 shadow-[0_0_10px_rgba(245,158,11,0.1)]">
+            {displayTime}
+          </span>
+        ) : (
+          <span className="text-sm font-mono text-gray-500 bg-white/5 px-3 py-1 rounded-lg border border-white/10">
+            Paused
+          </span>
+        )}
+      </div>
+    </div>
+  );
+};
