@@ -1,6 +1,7 @@
 import { createClient } from '../../lib/supabaseServer';
 import { redirect } from 'next/navigation';
 import RecapPresentation from '../../components/recap/RecapPresentation';
+import EmptyRecapFallback from '../../components/recap/EmptyRecapFallback';
 
 export default async function RecapPage() {
   const supabase = await createClient();
@@ -21,11 +22,7 @@ export default async function RecapPage() {
     .gte('started_at', startOfMonth);
 
   if (sessionsError || !sessions || sessions.length === 0) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-black/95 text-white font-hud tracking-widest text-xl text-center px-4">
-        NOT ENOUGH DATA YET
-      </div>
-    );
+    return <EmptyRecapFallback />;
   }
 
   // Aggregate total seconds
