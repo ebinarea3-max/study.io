@@ -3,9 +3,9 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Plus, Users, Shield, ShieldOff, Search } from 'lucide-react';
+import { Plus, Users, Shield, ShieldOff, Search, ChevronLeft } from 'lucide-react';
 import { getSupabase } from '../../lib/supabase';
-import { Navbar } from '../common/Navbar';
+import { Logo } from '../Logo';
 
 export interface StudyRoom {
   id: string;
@@ -36,6 +36,10 @@ export default function RoomsLobby({ initialRooms, userId }: RoomsLobbyProps) {
 
     setIsSubmitting(true);
     const supabase = getSupabase();
+    if (!supabase) {
+      setIsSubmitting(false);
+      return;
+    }
     
     try {
       const { data, error } = await supabase
@@ -61,14 +65,16 @@ export default function RoomsLobby({ initialRooms, userId }: RoomsLobbyProps) {
       if (error) throw error;
 
       if (data) {
+        const hostData = Array.isArray(data.host) ? data.host[0] : data.host;
+        
         const formattedRoom: StudyRoom = {
           id: data.id,
           name: data.name,
           is_private: data.is_private,
           created_at: data.created_at,
           host_id: data.host_id,
-          host_username: data.host?.username || 'Unknown Host',
-          host_rank: data.host?.rank_title || 'Unranked'
+          host_username: (hostData as any)?.username || 'Unknown Host',
+          host_rank: (hostData as any)?.rank_title || 'Unranked'
         };
 
         setRooms(prev => [formattedRoom, ...prev]);
@@ -94,9 +100,17 @@ export default function RoomsLobby({ initialRooms, userId }: RoomsLobbyProps) {
       <div className="fixed inset-0 pointer-events-none bg-hud-grid opacity-[0.03] z-0" />
       <div className="absolute inset-0 bg-gradient-to-t from-amber-900/5 via-transparent to-transparent pointer-events-none" />
 
-      <Navbar />
+      <header className="w-full flex items-center justify-between p-6 relative z-20">
+        <Link href="/" className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors group">
+          <ChevronLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+          <span className="font-hud tracking-widest text-sm font-bold mt-0.5">DASHBOARD</span>
+        </Link>
+        <div className="flex items-center gap-3">
+          <Logo className="w-8 h-8" />
+        </div>
+      </header>
 
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-8 relative z-10 flex flex-col mt-16">
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-4 md:py-8 relative z-10 flex flex-col">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-12">
           <div>
             <h1 className="text-3xl md:text-5xl font-black font-hud tracking-widest uppercase text-white drop-shadow-md">

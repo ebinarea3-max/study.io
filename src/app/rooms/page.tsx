@@ -27,15 +27,18 @@ export default async function RoomsPage() {
     .order('created_at', { ascending: false });
 
   // Map the nested join to a flat structure for the client
-  const formattedRooms = (rooms || []).map((room: any) => ({
-    id: room.id,
-    name: room.name,
-    is_private: room.is_private,
-    created_at: room.created_at,
-    host_id: room.host_id,
-    host_username: room.host?.username || 'Unknown Host',
-    host_rank: room.host?.rank_title || 'Unranked'
-  }));
+  const formattedRooms = (rooms || []).map((room: any) => {
+    const hostData = Array.isArray(room.host) ? room.host[0] : room.host;
+    return {
+      id: room.id,
+      name: room.name,
+      is_private: room.is_private,
+      created_at: room.created_at,
+      host_id: room.host_id,
+      host_username: hostData?.username || 'Unknown Host',
+      host_rank: hostData?.rank_title || 'Unranked'
+    };
+  });
 
   return <RoomsLobby initialRooms={formattedRooms} userId={user.id} />;
 }
