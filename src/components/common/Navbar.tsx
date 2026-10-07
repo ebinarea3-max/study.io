@@ -16,6 +16,7 @@ import {
   LogOut,
   Trophy,
   CheckSquare,
+  Users,
 } from 'lucide-react';
 
 import { Logo } from '../Logo';
@@ -295,6 +296,14 @@ export function Navbar({
               <FacetedTrophyIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>LEADERBOARD</span>
             </button>
+
+            <Link
+              href="/rooms"
+              className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-xl text-xs font-hud font-bold tracking-wider transition-all cursor-pointer text-slate-400 hover:text-white hover:bg-white/[0.04]"
+            >
+              <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span>ROOMS</span>
+            </Link>
           </nav>
         </div>
 
@@ -586,8 +595,8 @@ export function Navbar({
         <div
           className="absolute top-0 bottom-0 rounded-full transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none bg-white/15 border border-white/20"
           style={{
-            width: '25%',
-            transform: `translateX(${activeTab === 'timer' ? '0%' : activeTab === 'tasks' ? '100%' : activeTab === 'analytics' ? '200%' : '300%' })`
+            width: '20%',
+            transform: `translateX(${activeTab === 'timer' ? '0%' : activeTab === 'tasks' ? '100%' : activeTab === 'analytics' ? '200%' : activeTab === 'leaderboard' ? '300%' : '400%' })`
           }}
         />
 
@@ -646,6 +655,16 @@ export function Navbar({
           <FacetedTrophyIcon className="w-5 h-5" />
           <span className="text-[9px] font-hud font-bold tracking-widest uppercase mt-0.5">Rankings</span>
         </button>
+
+        {/* Tab 5: Rooms */}
+        <Link
+          href="/rooms"
+          className="relative z-10 flex-1 flex flex-col items-center justify-center py-2 rounded-full transition-all active:scale-95 cursor-pointer text-slate-400 hover:text-white"
+          aria-label="Rooms"
+        >
+          <Users className="w-5 h-5" />
+          <span className="text-[9px] font-hud font-bold tracking-widest uppercase mt-0.5">Rooms</span>
+        </Link>
       </div>
       </nav>
     </div>
