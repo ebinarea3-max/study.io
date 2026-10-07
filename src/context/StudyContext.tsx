@@ -1028,12 +1028,34 @@ export function StudyProvider({ children }: { children: ReactNode }) {
   // When document.visibilityState === 'visible' and timer is running, immediately recalculate elapsed seconds from Date.now() - startTimeRef.current
   useEffect(() => {
     const handleVisibilityOrFocus = () => {
+      // 1. ZOMBIE KILLER: Check if the timer was legitimately cleared from persistent storage during a save.
+      // If the timer state is still active in React memory but wiped from localStorage, it's a zombie.
+      const hasStorageState = Boolean(
+        localStorage.getItem('studyio_timer_seconds') || 
+        localStorage.getItem('studyio_timer_mode') || 
+        localStorage.getItem('timer-is-active')
+      );
+
       if (
         document.visibilityState === 'visible' &&
         isStudying &&
         !isPaused &&
         startTimeRef.current !== null
       ) {
+        if (!hasStorageState) {
+           console.warn('[ZOMBIE KILLER]: Aborted timer recalculation on window focus because persistent storage is empty. Forcing memory reset.');
+           // Force reset memory state
+           setIsStudying(false);
+           setIsPaused(false);
+           setElapsedSeconds(0);
+           startTimeRef.current = null;
+           if (timerIntervalRef.current) {
+             clearInterval(timerIntervalRef.current);
+             timerIntervalRef.current = null;
+           }
+           return;
+        }
+
         const now = Date.now();
         if (lastTickTimeRef.current) {
           const delta = now - lastTickTimeRef.current;
@@ -1191,6 +1213,13 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem('studyio_timer_mode');
       localStorage.removeItem('studyio_timer_countdown_target');
       localStorage.removeItem('studyio_timer_pomodoro_phase');
+      
+      // KILL THE ZOMBIE: Aggressively clear any fallback/legacy keys that might resurrect the timer
+      localStorage.removeItem('timer-start-time');
+      localStorage.removeItem('timer-is-active');
+      localStorage.removeItem('timer-subject-id');
+      localStorage.removeItem('studyio_timer_start_time');
+      localStorage.removeItem('studyio_is_active');
     } catch (e) {
       console.warn('Failed to clear timer state from localStorage:', e);
     }
