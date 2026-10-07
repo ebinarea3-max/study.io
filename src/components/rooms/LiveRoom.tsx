@@ -7,7 +7,7 @@ import { useStudy } from '../../context/StudyContext';
 import { StudyTimer } from '../../components/timer/StudyTimer';
 import { Logo } from '../../components/Logo';
 import Link from 'next/link';
-import { Send, Users, ChevronLeft, MessageSquare, User, Flame, Coffee } from 'lucide-react';
+import { Users, ChevronLeft, Flame, Coffee, Laptop } from 'lucide-react';
 
 interface ChatMessage {
   id: string;
@@ -182,26 +182,27 @@ const LiveUserIcon = ({ user }: { user: PresenceUser }) => {
     return () => clearInterval(interval);
   }, [user.timer_start_at]);
 
+  const isStudying = user.timer_start_at !== null;
+
   return (
-    <div className="flex flex-col items-center gap-3 bg-white/[0.02] p-6 rounded-3xl border border-white/5 shadow-2xl backdrop-blur-sm transition-transform hover:scale-105">
-      <div className="w-20 h-20 rounded-full border-[3px] border-amber-500/50 flex items-center justify-center bg-slate-800 overflow-hidden shadow-[0_0_20px_rgba(245,158,11,0.2)] relative">
-        {user.avatar_url ? (
-          <img src={user.avatar_url} alt={user.username} className="w-full h-full object-cover" />
+    <div className={`flex flex-col items-center gap-2 p-2 w-28 sm:w-32 transition-all duration-300 ${!isStudying ? 'opacity-60 hover:opacity-100' : ''}`}>
+      <div className="relative flex items-center justify-center w-16 h-16 mb-1">
+        {isStudying ? (
+          <>
+            <Laptop className="w-12 h-12 text-amber-500 drop-shadow-[0_0_8px_rgba(245,158,11,0.6)]" strokeWidth={1.2} />
+            <Flame className="w-6 h-6 text-amber-500 absolute -top-1 -right-1 animate-pulse drop-shadow-[0_0_12px_rgba(245,158,11,1)]" strokeWidth={2} fill="currentColor" />
+          </>
         ) : (
-          <User className="w-10 h-10 text-slate-400" />
+          <Coffee className="w-12 h-12 text-slate-500" strokeWidth={1.2} />
         )}
       </div>
-      <div className="flex flex-col items-center">
-        <span className="text-sm font-bold text-white mb-1.5">{user.username}</span>
-        {user.timer_start_at ? (
-          <span className="text-sm font-mono font-bold text-amber-500 bg-amber-500/10 px-3 py-1 rounded-lg border border-amber-500/20 shadow-[0_0_10px_rgba(245,158,11,0.1)]">
-            {displayTime}
-          </span>
-        ) : (
-          <span className="text-sm font-mono text-gray-500 bg-white/5 px-3 py-1 rounded-lg border border-white/10">
-            Paused
-          </span>
-        )}
+      <div className="flex flex-col items-center w-full">
+        <span className={`text-[13px] font-bold truncate w-full text-center ${isStudying ? 'text-amber-500' : 'text-slate-400'}`}>
+          {user.username}
+        </span>
+        <span className={`text-[13px] font-mono tracking-widest mt-0.5 ${isStudying ? 'text-amber-500' : 'text-slate-500'}`}>
+          {isStudying ? displayTime : 'Paused'}
+        </span>
       </div>
     </div>
   );
