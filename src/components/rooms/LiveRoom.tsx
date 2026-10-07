@@ -3,10 +3,11 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { getSupabase } from '../../lib/supabase';
+import { useStudy } from '../../context/StudyContext';
 import { StudyTimer } from '../../components/timer/StudyTimer';
 import { Logo } from '../../components/Logo';
 import Link from 'next/link';
-import { Send, Users, ChevronLeft, MessageSquare, User } from 'lucide-react';
+import { Send, Users, ChevronLeft, MessageSquare, User, Flame, Coffee } from 'lucide-react';
 
 interface ChatMessage {
   id: string;
@@ -21,6 +22,7 @@ interface PresenceUser {
   username: string;
   avatar_url?: string;
   rank_title: string;
+  status?: 'studying' | 'resting';
 }
 
 interface LiveRoomProps {
@@ -30,6 +32,7 @@ interface LiveRoomProps {
 
 export default function LiveRoom({ roomId, onLeaveRoom }: LiveRoomProps) {
   const { user } = useAuth();
+  const { isRunning } = useStudy();
   
   const [roomName, setRoomName] = useState<string>('Loading Room...');
   const [presentUsers, setPresentUsers] = useState<PresenceUser[]>([]);
@@ -95,7 +98,8 @@ export default function LiveRoom({ roomId, onLeaveRoom }: LiveRoomProps) {
             user_id: user.id,
             username: user.username || user.displayName || 'Unknown Scholar',
             avatar_url: user.avatarUrl || user.user_metadata?.avatar_url || '',
-            rank_title: user.rank_title || 'Unranked'
+            rank_title: user.rank_title || 'Unranked',
+            status: isRunning ? 'studying' : 'resting'
           });
         }
       });
@@ -108,6 +112,22 @@ export default function LiveRoom({ roomId, onLeaveRoom }: LiveRoomProps) {
       }
     };
   }, [roomId, user]);
+
+  // Update Presence on Timer State Change
+  useEffect(() => {
+    if (!channelRef.current || !user || !roomId) return;
+    
+    // Check if channel is joined and track is available
+    if (channelRef.current.state === 'joined') {
+      channelRef.current.track({
+        user_id: user.id,
+        username: user.username || user.displayName || 'Unknown Scholar',
+        avatar_url: user.avatarUrl || user.user_metadata?.avatar_url || '',
+        rank_title: user.rank_title || 'Unranked',
+        status: isRunning ? 'studying' : 'resting'
+      }).catch((err: any) => console.error('Failed to update presence:', err));
+    }
+  }, [isRunning, user, roomId]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -194,6 +214,13 @@ export default function LiveRoom({ roomId, onLeaveRoom }: LiveRoomProps) {
                   <span className="text-xs font-bold text-slate-200 truncate max-w-[100px]">
                     {pUser.username}
                   </span>
+                  <div className="ml-1 flex items-center justify-center">
+                    {pUser.status === 'studying' ? (
+                      <Flame className="w-4 h-4 text-amber-500 drop-shadow-[0_0_8px_rgba(245,158,11,0.8)] animate-pulse" />
+                    ) : (
+                      <Coffee className="w-4 h-4 text-slate-500" />
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
