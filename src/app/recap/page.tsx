@@ -68,27 +68,9 @@ export default async function RecapPage() {
     .limit(1)
     .maybeSingle();
 
-  const actualCurrentRank = profile?.rank_title || 'BRONZE I';
-  
-  // Calculate a realistic "previous rank" for testing (e.g. 3 divisions higher)
-  const tiers = [
-    'BRONZE I', 'BRONZE II', 'BRONZE III', 'BRONZE IV',
-    'SILVER I', 'SILVER II', 'SILVER III', 'SILVER IV',
-    'GOLD I', 'GOLD II', 'GOLD III', 'GOLD IV',
-    'PLATINUM I', 'PLATINUM II', 'PLATINUM III', 'PLATINUM IV',
-    'DIAMOND I', 'DIAMOND II', 'DIAMOND III', 'DIAMOND IV',
-    'CHAMPION', 'MASTER', 'GRANDMASTER'
-  ];
-  const currentIndex = tiers.indexOf(actualCurrentRank.toUpperCase());
-  const prevIndex = currentIndex !== -1 ? Math.min(currentIndex + 3, tiers.length - 1) : 4;
-  const mockPreviousRank = tiers[prevIndex];
-
-  // If history exists, use it. Otherwise, force mock data for testing based on their rank.
-  const previousRank = history?.previous_rank || mockPreviousRank;
-  const currentRank = history?.new_rank || actualCurrentRank;
-  
-  // Force this to false so the UI always plays the Peak -> Drop -> Grind sequence
-  const isFirstSeason = false;
+  const isFirstSeason = !history;
+  const previousRank = history?.previous_rank || null;
+  const currentRank = history?.new_rank || profile?.rank_title || 'BRONZE I';
 
   return (
     <RecapPresentation 
