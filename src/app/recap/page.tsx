@@ -71,9 +71,12 @@ export default async function RecapPage() {
     .limit(1)
     .maybeSingle();
 
-  const previousRank = history?.previous_rank || null;
-  const currentRank = history?.new_rank || profile?.rank_title || 'BRONZE I';
-  const isFirstSeason = !previousRank;
+  // If history exists, use it. Otherwise, force mock data for testing.
+  const previousRank = history?.previous_rank || "SILVER I";
+  const currentRank = history?.new_rank || profile?.rank_title || "BRONZE III";
+  
+  // Force this to false so the UI always plays the Peak -> Drop -> Grind sequence
+  const isFirstSeason = false;
 
   return (
     <RecapPresentation 
