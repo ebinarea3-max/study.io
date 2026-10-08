@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { getSupabase } from '../../lib/supabase';
-import { Users, Lock, ChevronLeft, Plus, Search, User, X } from 'lucide-react';
+import { Users, Lock, ChevronLeft, Plus, Search, User, X, Trash2, LogOut } from 'lucide-react';
+import ActiveRoom from './ActiveRoom';
 
 export default function StudyRoomsTab({ onBackToDashboard }: { onBackToDashboard: () => void }) {
   const { user } = useAuth();
@@ -10,6 +11,7 @@ export default function StudyRoomsTab({ onBackToDashboard }: { onBackToDashboard
   const [myGroups, setMyGroups] = useState<any[]>([]);
   const [explorerRooms, setExplorerRooms] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
 
   // Modal states
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -55,7 +57,7 @@ export default function StudyRoomsTab({ onBackToDashboard }: { onBackToDashboard
     
     setMyGroups(uniqueRooms);
     setIsLoading(false);
-  }, [user]);
+  }, [user?.id]);
 
   const fetchExplorerRooms = useCallback(async () => {
     setIsLoading(true);
@@ -81,7 +83,25 @@ export default function StudyRoomsTab({ onBackToDashboard }: { onBackToDashboard
     } else {
       fetchExplorerRooms();
     }
-  }, [view, fetchMyGroups, fetchExplorerRooms]);
+  }, [view, user?.id]); // Removed fetchMyGroups and fetchExplorerRooms to prevent infinite loop
+  
+  const handleLeaveRoom = async (room: any) => {
+    if (!user) return;
+    const supabase = getSupabase();
+    if (!supabase) return;
+    
+    if (room.host_id === user.id) {
+      if (confirm('Are you sure you want to delete this room? This will kick all members.')) {
+        await supabase.from('study_rooms').delete().eq('id', room.id);
+        setMyGroups(prev => prev.filter(r => r.id !== room.id));
+      }
+    } else {
+      if (confirm('Are you sure you want to leave this room?')) {
+        await supabase.from('room_members').delete().match({ room_id: room.id, user_id: user.id });
+        setMyGroups(prev => prev.filter(r => r.id !== room.id));
+      }
+    }
+  };
 
   const handleCreateGroup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -167,6 +187,10 @@ export default function StudyRoomsTab({ onBackToDashboard }: { onBackToDashboard
     setIsJoining(false);
   };
 
+  if (activeRoomId) {
+    return <ActiveRoom roomId={activeRoomId} onBack={() => setActiveRoomId(null)} />;
+  }
+
   return (
     <div className="w-full h-full min-h-[80vh] bg-[#07090e] flex flex-col relative text-slate-200">
       {/* Header */}
@@ -199,7 +223,11 @@ export default function StudyRoomsTab({ onBackToDashboard }: { onBackToDashboard
             </div>
           ) : (
             myGroups.map(room => (
-              <div key={room.id} className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.03] hover:bg-white/[0.05] border border-white/5 transition-colors cursor-pointer group">
+              <div 
+                key={room.id} 
+                onClick={() => setActiveRoomId(room.id)}
+                className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.03] hover:bg-white/[0.05] border border-white/5 transition-colors cursor-pointer group"
+              >
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-600/20 flex items-center justify-center border border-amber-500/20">
                     <Users className="w-6 h-6 text-amber-500" />
@@ -216,6 +244,12 @@ export default function StudyRoomsTab({ onBackToDashboard }: { onBackToDashboard
                     </div>
                   </div>
                 </div>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); handleLeaveRoom(room); }}
+                  className="p-2 rounded-xl text-slate-500 hover:text-red-400 hover:bg-red-400/10 transition-colors"
+                >
+                  {room.host_id === user?.id ? <Trash2 className="w-4 h-4" /> : <LogOut className="w-4 h-4" />}
+                </button>
               </div>
             ))
           )
