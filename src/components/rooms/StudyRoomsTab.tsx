@@ -75,7 +75,7 @@ export default function StudyRoomsTab({ onBackToDashboard }: { onBackToDashboard
   }, [view, fetchMyGroups, fetchExplorerRooms]);
 
   return (
-    <div className="w-full h-full bg-[#07090e] flex flex-col relative text-slate-200">
+    <div className="w-full h-full min-h-[80vh] bg-[#07090e] flex flex-col relative text-slate-200">
       {/* Header */}
       <header className="flex items-center justify-between p-4 border-b border-white/5 bg-white/[0.02]">
         {view === 'explorer' ? (
@@ -167,7 +167,7 @@ export default function StudyRoomsTab({ onBackToDashboard }: { onBackToDashboard
       {view === 'my_groups' && (
         <button 
           onClick={() => setView('explorer')}
-          className="absolute bottom-6 right-6 w-14 h-14 rounded-full bg-amber-500 hover:bg-amber-400 text-slate-900 flex items-center justify-center shadow-lg shadow-amber-500/20 transition-transform active:scale-95 z-10"
+          className="absolute bottom-8 right-8 z-50 flex items-center justify-center w-14 h-14 bg-amber-500 hover:bg-amber-400 text-black rounded-full shadow-lg shadow-amber-500/20 active:scale-95 transition-all text-2xl"
         >
           <Plus className="w-7 h-7" />
         </button>
