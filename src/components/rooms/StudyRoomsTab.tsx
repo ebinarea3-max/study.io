@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { getSupabase } from '../../lib/supabase';
-import { Users, Lock, ChevronLeft, Plus, Search, User } from 'lucide-react';
+import { Users, Lock, ChevronLeft, Plus, Search, User, X } from 'lucide-react';
 
 export default function StudyRoomsTab({ onBackToDashboard }: { onBackToDashboard: () => void }) {
   const { user } = useAuth();
@@ -10,6 +10,15 @@ export default function StudyRoomsTab({ onBackToDashboard }: { onBackToDashboard
   const [myGroups, setMyGroups] = useState<any[]>([]);
   const [explorerRooms, setExplorerRooms] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Modal states
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [createRoomData, setCreateRoomData] = useState({ name: '', password: '', max_capacity: 4 });
+  const [isCreating, setIsCreating] = useState(false);
+
+  const [selectedRoomToJoin, setSelectedRoomToJoin] = useState<any | null>(null);
+  const [joinPassword, setJoinPassword] = useState('');
+  const [isJoining, setIsJoining] = useState(false);
 
   const fetchMyGroups = useCallback(async () => {
     if (!user) return;
@@ -74,6 +83,90 @@ export default function StudyRoomsTab({ onBackToDashboard }: { onBackToDashboard
     }
   }, [view, fetchMyGroups, fetchExplorerRooms]);
 
+  const handleCreateGroup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !createRoomData.name.trim()) return;
+    setIsCreating(true);
+    
+    const supabase = getSupabase();
+    if (!supabase) return;
+
+    const is_private = createRoomData.password.trim().length > 0;
+    
+    const { data: newRoom, error } = await supabase.from('study_rooms').insert([{
+      name: createRoomData.name,
+      host_id: user.id,
+      password: is_private ? createRoomData.password : null,
+      is_private,
+      max_capacity: createRoomData.max_capacity
+    }]).select().single();
+
+    if (error) {
+      alert("Failed to create room: " + error.message);
+      setIsCreating(false);
+      return;
+    }
+
+    if (newRoom) {
+      await supabase.from('room_members').insert([{
+        room_id: newRoom.id,
+        user_id: user.id
+      }]);
+    }
+
+    setIsCreating(false);
+    setIsCreateModalOpen(false);
+    setCreateRoomData({ name: '', password: '', max_capacity: 4 });
+    setView('my_groups');
+  };
+
+  const handleJoinClick = (room: any) => {
+    if (!user) return;
+    const alreadyJoined = myGroups.some(g => g.id === room.id);
+    if (alreadyJoined) {
+      setView('my_groups');
+      return;
+    }
+
+    if (room.is_private) {
+      setSelectedRoomToJoin(room);
+      setJoinPassword('');
+    } else {
+      joinRoom(room.id, null);
+    }
+  };
+
+  const joinRoom = async (roomId: string, passwordAttempt: string | null) => {
+    if (!user) return;
+    setIsJoining(true);
+    const supabase = getSupabase();
+    if (!supabase) return;
+    
+    if (passwordAttempt !== null && selectedRoomToJoin) {
+       // Validate password
+       const { data: roomData } = await supabase.from('study_rooms').select('password').eq('id', roomId).single();
+       if (roomData?.password !== passwordAttempt) {
+         alert("Incorrect password");
+         setIsJoining(false);
+         return;
+       }
+    }
+
+    const { error } = await supabase.from('room_members').insert([{
+      room_id: roomId,
+      user_id: user.id
+    }]);
+
+    if (error) {
+      alert("Failed to join room: " + error.message);
+    } else {
+      setSelectedRoomToJoin(null);
+      setJoinPassword('');
+      setView('my_groups');
+    }
+    setIsJoining(false);
+  };
+
   return (
     <div className="w-full h-full min-h-[80vh] bg-[#07090e] flex flex-col relative text-slate-200">
       {/* Header */}
@@ -128,7 +221,10 @@ export default function StudyRoomsTab({ onBackToDashboard }: { onBackToDashboard
           )
         ) : (
           <>
-            <button className="w-full py-4 rounded-2xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 text-amber-500 font-bold transition-all flex items-center justify-center gap-2 mb-4">
+            <button 
+              onClick={() => setIsCreateModalOpen(true)}
+              className="w-full py-4 rounded-2xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 text-amber-500 font-bold transition-all flex items-center justify-center gap-2 mb-4"
+            >
               <Plus className="w-5 h-5" />
               Create Group
             </button>
@@ -153,7 +249,10 @@ export default function StudyRoomsTab({ onBackToDashboard }: { onBackToDashboard
                       </div>
                     </div>
                   </div>
-                  <button className="px-4 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-xs font-bold text-white transition-colors">
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); handleJoinClick(room); }}
+                    className="px-4 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-xs font-bold text-white transition-colors"
+                  >
                     Join
                   </button>
                 </div>
@@ -171,6 +270,103 @@ export default function StudyRoomsTab({ onBackToDashboard }: { onBackToDashboard
         >
           <Plus className="w-7 h-7" />
         </button>
+      )}
+
+      {/* Create Group Modal */}
+      {isCreateModalOpen && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#0f111a] border border-white/10 rounded-3xl w-full max-w-sm p-6 shadow-2xl relative">
+            <button 
+              onClick={() => setIsCreateModalOpen(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h2 className="text-xl font-bold text-white mb-6">Create new group</h2>
+            
+            <form onSubmit={handleCreateGroup} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Group Name</label>
+                <input 
+                  type="text" 
+                  value={createRoomData.name}
+                  onChange={(e) => setCreateRoomData({...createRoomData, name: e.target.value})}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500/50 transition-colors"
+                  placeholder="e.g., Late Night Coders"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Password (Optional)</label>
+                <input 
+                  type="text" 
+                  value={createRoomData.password}
+                  onChange={(e) => setCreateRoomData({...createRoomData, password: e.target.value})}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500/50 transition-colors"
+                  placeholder="Leave blank for public"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Capacity</label>
+                <select 
+                  value={createRoomData.max_capacity}
+                  onChange={(e) => setCreateRoomData({...createRoomData, max_capacity: Number(e.target.value)})}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500/50 transition-colors appearance-none"
+                >
+                  <option value={2} className="bg-[#0f111a]">2 Scholars</option>
+                  <option value={4} className="bg-[#0f111a]">4 Scholars</option>
+                  <option value={10} className="bg-[#0f111a]">10 Scholars</option>
+                  <option value={50} className="bg-[#0f111a]">50 Scholars</option>
+                </select>
+              </div>
+
+              <button 
+                type="submit"
+                disabled={isCreating}
+                className="w-full mt-6 bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold py-3 rounded-xl transition-colors disabled:opacity-50"
+              >
+                {isCreating ? 'Creating...' : 'Create Group'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Join Password Modal */}
+      {selectedRoomToJoin && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#0f111a] border border-white/10 rounded-3xl w-full max-w-sm p-6 shadow-2xl relative">
+            <button 
+              onClick={() => { setSelectedRoomToJoin(null); setJoinPassword(''); }}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h2 className="text-xl font-bold text-white mb-2">Enter Password</h2>
+            <p className="text-sm text-slate-400 mb-6">This group requires a password to join.</p>
+            
+            <form onSubmit={(e) => { e.preventDefault(); joinRoom(selectedRoomToJoin.id, joinPassword); }} className="space-y-4">
+              <input 
+                type="password" 
+                value={joinPassword}
+                onChange={(e) => setJoinPassword(e.target.value)}
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500/50 transition-colors"
+                placeholder="Password"
+                required
+              />
+
+              <button 
+                type="submit"
+                disabled={isJoining}
+                className="w-full mt-6 bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold py-3 rounded-xl transition-colors disabled:opacity-50"
+              >
+                {isJoining ? 'Joining...' : 'Join Group'}
+              </button>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );
