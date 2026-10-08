@@ -446,20 +446,19 @@ export function StudyProvider({ children }: { children: ReactNode }) {
   const [isIdleCheckActive, setIsIdleCheckActive] = useState(false);
   const [isBlockedByOtherTab, setIsBlockedByOtherTab] = useState(false);
   const broadcastChannelRef = useRef<BroadcastChannel | null>(null);
-  const idleCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const idleCheckFiredRef = useRef(false);
 
   const confirmIdleCheck = useCallback(() => {
     setIsIdleCheckActive(false);
-    if (idleCheckTimeoutRef.current) {
-      clearTimeout(idleCheckTimeoutRef.current);
-      idleCheckTimeoutRef.current = null;
+    if (resumeTimerRef.current) {
+      resumeTimerRef.current();
     }
   }, []);
   const [hasHydrated, setHasHydrated] = useState(false);
   const [isLoadingSessions, setIsLoadingSessions] = useState(true);
 
   const pauseTimerRef = useRef<(() => void) | null>(null);
+  const resumeTimerRef = useRef<(() => void) | null>(null);
 
   const [sessions, setSessions] = useState<StudySession[]>(() => {
     let uid = user?.id;
@@ -940,26 +939,33 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         // 4-hour idle check
         if (actualElapsed >= 14400 && !idleCheckFiredRef.current && timerMode !== 'pomodoro') {
           idleCheckFiredRef.current = true;
+          
+          // Clamp the elapsed time to 14400 if the device was asleep and jumped way past 4 hours
+          if (actualElapsed > 14405) {
+            accumulatedSecondsRef.current = 14400;
+            setElapsedSeconds(14400);
+            if (startTimeRef.current !== null) {
+              startTimeRef.current = Date.now() - (14400 * 1000);
+            }
+          }
+          
           setIsIdleCheckActive(true);
           
           if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
             const iconUrl = window.location.origin + '/icon-192.png';
-            showPushNotification('Are you still studying?', { body: 'Timer reached 4 hours. Confirm to keep it running.', icon: iconUrl, requireInteraction: true });
+            showPushNotification('Are you still studying?', { body: 'Timer reached 4 hours and auto-paused. Confirm to resume.', icon: iconUrl, requireInteraction: true });
           }
 
-          idleCheckTimeoutRef.current = setTimeout(() => {
-            setIsIdleCheckActive(false);
-            if (pauseTimerRef.current) {
-              pauseTimerRef.current();
-            } else {
-              setIsPaused(true);
-              if (timerIntervalRef.current) {
-                clearInterval(timerIntervalRef.current);
-                timerIntervalRef.current = null;
-              }
-              startTimeRef.current = null;
+          if (pauseTimerRef.current) {
+            pauseTimerRef.current();
+          } else {
+            setIsPaused(true);
+            if (timerIntervalRef.current) {
+              clearInterval(timerIntervalRef.current);
+              timerIntervalRef.current = null;
             }
-          }, 20000);
+            startTimeRef.current = null;
+          }
         }
 
 
@@ -1075,26 +1081,33 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         // 4-hour idle check
         if (actualElapsed >= 14400 && !idleCheckFiredRef.current && timerMode !== 'pomodoro') {
           idleCheckFiredRef.current = true;
+          
+          // Clamp the elapsed time to 14400 if the device was asleep and jumped way past 4 hours
+          if (actualElapsed > 14405) {
+            accumulatedSecondsRef.current = 14400;
+            setElapsedSeconds(14400);
+            if (startTimeRef.current !== null) {
+              startTimeRef.current = Date.now() - (14400 * 1000);
+            }
+          }
+          
           setIsIdleCheckActive(true);
           
           if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
             const iconUrl = window.location.origin + '/icon-192.png';
-            showPushNotification('Are you still studying?', { body: 'Timer reached 4 hours. Confirm to keep it running.', icon: iconUrl, requireInteraction: true });
+            showPushNotification('Are you still studying?', { body: 'Timer reached 4 hours and auto-paused. Confirm to resume.', icon: iconUrl, requireInteraction: true });
           }
 
-          idleCheckTimeoutRef.current = setTimeout(() => {
-            setIsIdleCheckActive(false);
-            if (pauseTimerRef.current) {
-              pauseTimerRef.current();
-            } else {
-              setIsPaused(true);
-              if (timerIntervalRef.current) {
-                clearInterval(timerIntervalRef.current);
-                timerIntervalRef.current = null;
-              }
-              startTimeRef.current = null;
+          if (pauseTimerRef.current) {
+            pauseTimerRef.current();
+          } else {
+            setIsPaused(true);
+            if (timerIntervalRef.current) {
+              clearInterval(timerIntervalRef.current);
+              timerIntervalRef.current = null;
             }
-          }, 20000);
+            startTimeRef.current = null;
+          }
         }
 
 
@@ -2410,6 +2423,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     pauseTimerRef.current = pauseTimer;
   }, [pauseTimer]);
 
+
   // Resume Timer - recalculate startTimeRef.current = Date.now() - (accumulatedSeconds * 1000) and sync to Supabase
   const resumeTimer = useCallback(() => {
     if (!checkDebounce()) return;
@@ -2443,6 +2457,10 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       pomodoroPhase,
     });
   }, [checkDebounce, timerMode, pomodoroPhase, selectedSubject, updateProfile, syncActiveSessionToDb]);
+
+  useEffect(() => {
+    resumeTimerRef.current = resumeTimer;
+  }, [resumeTimer]);
 
   // Restore recovered timer session in paused state
   const restoreTimerSession = useCallback((seconds: number, mode?: TimerMode, subjectIdOrName?: string) => {

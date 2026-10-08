@@ -33,14 +33,14 @@ export function IdleCheckModal() {
         
         <h2 className="text-2xl font-bold text-white mb-2">Still Studying?</h2>
         <p className="text-slate-400 mb-6 text-sm">
-          You've been studying for 4 hours straight! Please confirm you're still here, otherwise the timer will auto-pause in 20 seconds.
+          You've been studying for 4 hours straight! The timer has been auto-paused to ensure accurate tracking.
         </p>
         
         <button
           onClick={confirmIdleCheck}
           className="w-full py-4 rounded-xl font-bold text-white shadow-lg bg-amber-500 hover:bg-amber-400 transition-colors shadow-amber-500/20 active:scale-95"
         >
-          Yes, I'm still studying!
+          Yes, I'm still here! (Resume)
         </button>
       </div>
     </div>
