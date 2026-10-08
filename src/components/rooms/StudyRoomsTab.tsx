@@ -92,13 +92,25 @@ export default function StudyRoomsTab({ onBackToDashboard }: { onBackToDashboard
     
     if (room.host_id === user.id) {
       if (confirm('Are you sure you want to delete this room? This will kick all members.')) {
-        await supabase.from('study_rooms').delete().eq('id', room.id);
-        setMyGroups(prev => prev.filter(r => r.id !== room.id));
+        // Explicitly delete members first in case cascade is not working
+        await supabase.from('room_members').delete().eq('room_id', room.id);
+        const { error } = await supabase.from('study_rooms').delete().eq('id', room.id);
+        if (error) {
+          console.error("Failed to delete room:", error);
+          alert("Failed to delete room: " + error.message);
+        } else {
+          setMyGroups(prev => prev.filter(r => r.id !== room.id));
+        }
       }
     } else {
       if (confirm('Are you sure you want to leave this room?')) {
-        await supabase.from('room_members').delete().match({ room_id: room.id, user_id: user.id });
-        setMyGroups(prev => prev.filter(r => r.id !== room.id));
+        const { error } = await supabase.from('room_members').delete().match({ room_id: room.id, user_id: user.id });
+        if (error) {
+          console.error("Failed to leave room:", error);
+          alert("Failed to leave room: " + error.message);
+        } else {
+          setMyGroups(prev => prev.filter(r => r.id !== room.id));
+        }
       }
     }
   };
