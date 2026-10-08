@@ -26,6 +26,7 @@ import { NavTabType } from '../components/common/Navbar';
 import { SwipeTabContainer } from '../components/common/SwipeTabContainer';
 import { SettingsTabContent } from '../components/common/SettingsTabContent';
 import { MonthlyLeaderboard } from '../components/leaderboard/MonthlyLeaderboard';
+import StudyRoomsTab from '../components/rooms/StudyRoomsTab';
 import { useRankTheme } from '../hooks/useRankTheme';
 
 export default function Home() {
@@ -205,6 +206,11 @@ export default function Home() {
             leaderboard: (
               <ErrorBoundary fallbackTitle="Monthly Leaderboard">
                 <MonthlyLeaderboard isEmbedded isActiveTab={activeTab === 'leaderboard'} />
+              </ErrorBoundary>
+            ),
+            rooms: (
+              <ErrorBoundary fallbackTitle="Study Rooms">
+                <StudyRoomsTab onBackToDashboard={() => setActiveTab('timer')} />
               </ErrorBoundary>
             ),
             settings: (
