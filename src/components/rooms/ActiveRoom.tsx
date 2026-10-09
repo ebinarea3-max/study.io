@@ -32,6 +32,7 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
   }, [user?.id, (user as any)?.username, user?.displayName, user?.avatarUrl, (user as any)?.avatar_url, (user as any)?.user_metadata?.avatar_url, (user as any)?.user_metadata?.picture]);
 
   const channelRef = useRef<any>(null);
+  const chatChannelRef = useRef<any>(null);
   const isSubscribedRef = useRef<boolean>(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -76,19 +77,17 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
         }
       });
 
+    // Switched to Broadcast to bypass RLS streaming blocks
     const chatChannel = supabase.channel(`chat_room_${roomId}`);
+    chatChannelRef.current = chatChannel;
 
     chatChannel
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'room_messages', filter: `room_id=eq.${roomId}` }, (payload) => {
-        const fetchNewMsg = async () => {
-          const { data } = await supabase
-            .from('room_messages')
-            .select(`id, content, created_at, user_id, profiles ( username, avatar_url )`)
-            .eq('id', payload.new.id)
-            .single();
-          if (data) setMessages(prev => [...prev, data]);
-        };
-        fetchNewMsg();
+      .on('broadcast', { event: 'new_message' }, (payload) => {
+        setMessages(prev => {
+          // Prevent duplicates if we were the sender
+          if (prev.find(m => m.id === payload.payload.id)) return prev;
+          return [...prev, payload.payload];
+        });
       })
       .subscribe();
 
@@ -97,8 +96,9 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
       supabase.removeChannel(presenceChannel);
       supabase.removeChannel(chatChannel);
       channelRef.current = null;
+      chatChannelRef.current = null;
     };
-  }, [roomId, user?.id, profile?.username, profile?.avatar_url, isTimerRunning]);
+  }, [roomId, user?.id, profile?.username, profile?.avatar_url]); // Removed isTimerRunning to prevent disconnect loops
 
   useEffect(() => {
     if (channelRef.current && user?.id && isSubscribedRef.current) {
@@ -152,17 +152,31 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
     const supabase = getSupabase();
     if (!supabase) return;
 
-    const { error } = await supabase.from('room_messages').insert({
+    // Insert and immediately request the joined profile data back
+    const { data, error } = await supabase.from('room_messages').insert({
       room_id: roomId,
       user_id: user.id,
       content: newMessage.trim()
-    });
+    }).select(`
+      id, content, created_at, user_id,
+      profiles ( username, avatar_url )
+    `).single();
 
     if (error) {
       console.error(error);
       alert("Failed to send message.");
-    } else {
+    } else if (data) {
       setNewMessage('');
+      setMessages(prev => [...prev, data]);
+
+      // Broadcast to other users in the room instantly
+      if (chatChannelRef.current) {
+        chatChannelRef.current.send({
+          type: 'broadcast',
+          event: 'new_message',
+          payload: data
+        }).catch(console.error);
+      }
     }
     setIsSending(false);
   };
