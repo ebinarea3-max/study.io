@@ -47,39 +47,50 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
 
   // 1. Establish the connection ONLY ONCE when entering the room
   useEffect(() => {
-    // Wait for primitive string values, not the entire profile object
-    if (!user?.id || !profile?.username) return;
+    if (!user?.id) {
+      console.log("[Realtime] No user ID yet, waiting...");
+      return;
+    }
 
     const supabase = getSupabase();
     if (!supabase) return;
 
-    const roomChannel = supabase.channel(`room_${roomId}`);
+    console.log("[Realtime] Connecting to room:", roomId);
+    const roomChannel = supabase.channel(`room_${roomId}`, {
+      config: { presence: { key: user.id } }
+    });
     channelRef.current = roomChannel;
 
     roomChannel
       .on('presence', { event: 'sync' }, () => {
         const state = roomChannel.presenceState();
-        setPresentUsers(Object.values(state).flat());
+        const activeUsers = Object.values(state).flat();
+        console.log("[Realtime] Presence Sync triggered. Users online:", activeUsers.length);
+        setPresentUsers(activeUsers);
       })
-      .subscribe(async (status) => {
+      .subscribe(async (status, err) => {
+        console.log("[Realtime] Status:", status);
+        if (err) console.error("[Realtime] Error:", err);
+        
         if (status === 'SUBSCRIBED') {
-          await roomChannel.track({
+          console.log("[Realtime] Subscribed! Tracking presence...");
+          const trackStatus = await roomChannel.track({
             user_id: user.id,
-            username: profile.username,
-            avatar_url: profile.avatar_url || null,
+            username: profile?.username || user?.email || 'Anonymous Scholar',
+            avatar_url: profile?.avatar_url || null,
             status: 'resting',
             timer_start_at: null
           });
+          console.log("[Realtime] Track response:", trackStatus);
         }
       });
 
-    // Cleanup ONLY when the component unmounts (leaving the room)
     return () => {
+      console.log("[Realtime] Cleaning up channel");
       supabase.removeChannel(roomChannel);
       channelRef.current = null;
     };
-  }, [roomId, user?.id, profile?.username, profile?.avatar_url]); 
-  // ^ CRITICAL: Only depend on string primitives. DO NOT put isTimerRunning here.
+  }, [roomId, user?.id]); // DO NOT depend on profile here.
 
   // 2. Update tracking state WITHOUT destroying the channel
   useEffect(() => {
