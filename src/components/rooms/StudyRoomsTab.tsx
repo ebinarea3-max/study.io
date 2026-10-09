@@ -46,11 +46,11 @@ export default function StudyRoomsTab({ onBackToDashboard }: { onBackToDashboard
 
     const { data: hostedRooms } = await supabase
       .from('study_rooms')
-      .select('*')
+      .select('*, room_members(count)')
       .eq('host_id', user.id);
 
     const { data: joinedRooms } = roomIds.length > 0 
-      ? await supabase.from('study_rooms').select('*').in('id', roomIds)
+      ? await supabase.from('study_rooms').select('*, room_members(count)').in('id', roomIds)
       : { data: [] };
 
     const combined = [...(hostedRooms || []), ...(joinedRooms || [])];
@@ -69,7 +69,7 @@ export default function StudyRoomsTab({ onBackToDashboard }: { onBackToDashboard
 
     const { data, error } = await supabase
       .from('study_rooms')
-      .select('*')
+      .select('*, room_members(count)')
       .eq('is_private', false)
       .order('created_at', { ascending: false })
       .limit(50);
@@ -256,7 +256,7 @@ export default function StudyRoomsTab({ onBackToDashboard }: { onBackToDashboard
                     </h3>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-xs text-slate-400 flex items-center gap-1">
-                        <User className="w-3 h-3" /> {room.max_capacity ? `0 / ${room.max_capacity}` : 'Active'}
+                        <User className="w-3 h-3" /> {room.max_capacity ? `${room.room_members?.[0]?.count || 1} / ${room.max_capacity}` : `${room.room_members?.[0]?.count || 1} Active`}
                       </span>
                     </div>
                   </div>
@@ -295,7 +295,7 @@ export default function StudyRoomsTab({ onBackToDashboard }: { onBackToDashboard
                       </h3>
                       <div className="flex items-center gap-2 mt-1">
                         <span className="text-xs text-slate-400 flex items-center gap-1">
-                          <User className="w-3 h-3" /> {room.max_capacity ? `0 / ${room.max_capacity}` : 'Active'}
+                          <User className="w-3 h-3" /> {room.max_capacity ? `${room.room_members?.[0]?.count || 1} / ${room.max_capacity}` : `${room.room_members?.[0]?.count || 1} Active`}
                         </span>
                       </div>
                     </div>
