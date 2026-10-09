@@ -31,6 +31,7 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
     };
   }, [user?.id, (user as any)?.username, user?.displayName, user?.avatarUrl, (user as any)?.avatar_url, (user as any)?.user_metadata?.avatar_url, (user as any)?.user_metadata?.picture]);
 
+  const channelRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Fetch Room Details
@@ -44,17 +45,16 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
     fetchRoom();
   }, [roomId]);
 
-  // Presence and Realtime Sync
+  // 1. Establish the connection ONLY ONCE when entering the room
   useEffect(() => {
-    // 1. Prevent running before the user is authenticated
-    if (!user?.id) return; 
+    // Wait for primitive string values, not the entire profile object
+    if (!user?.id || !profile?.username) return;
 
     const supabase = getSupabase();
     if (!supabase) return;
 
-    const roomChannel = supabase.channel(`room_${roomId}`, {
-      config: { presence: { key: user.id } }
-    });
+    const roomChannel = supabase.channel(`room_${roomId}`);
+    channelRef.current = roomChannel;
 
     roomChannel
       .on('presence', { event: 'sync' }, () => {
@@ -63,22 +63,37 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
-          // CRITICAL: Replace any potential undefined values with null or strings
           await roomChannel.track({
             user_id: user.id,
-            username: profile?.username || 'Scholar',
-            avatar_url: profile?.avatar_url || null, 
-            status: isTimerRunning ? 'studying' : 'resting',
-            timer_start_at: isTimerRunning ? Date.now() : null
+            username: profile.username,
+            avatar_url: profile.avatar_url || null,
+            status: 'resting',
+            timer_start_at: null
           });
         }
       });
 
-    // Clean up the connection when leaving the room
+    // Cleanup ONLY when the component unmounts (leaving the room)
     return () => {
       supabase.removeChannel(roomChannel);
+      channelRef.current = null;
     };
-  }, [roomId, user?.id, profile, isTimerRunning]); // Depend on profile so it re-tracks when loaded
+  }, [roomId, user?.id, profile?.username, profile?.avatar_url]); 
+  // ^ CRITICAL: Only depend on string primitives. DO NOT put isTimerRunning here.
+
+  // 2. Update tracking state WITHOUT destroying the channel
+  useEffect(() => {
+    if (channelRef.current && user?.id) {
+      channelRef.current.track({
+        user_id: user.id,
+        username: profile?.username || 'Scholar',
+        avatar_url: profile?.avatar_url || null,
+        status: isTimerRunning ? 'studying' : 'resting',
+        timer_start_at: isTimerRunning ? Date.now() : null
+      });
+    }
+  }, [isTimerRunning]); 
+  // ^ This hook safely broadcasts status changes without disconnecting.
 
   // Fetch Chat History & Listen for new messages
   useEffect(() => {
