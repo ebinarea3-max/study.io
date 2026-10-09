@@ -45,7 +45,7 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
     fetchRoom();
   }, [roomId]);
 
-  // 1. Establish the connection ONLY ONCE when entering the room
+  // 1. Establish the Realtime channels (Presence and Chat isolated)
   useEffect(() => {
     if (!user?.id) {
       console.log("[Realtime] No user ID yet, waiting...");
@@ -55,39 +55,66 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
     const supabase = getSupabase();
     if (!supabase) return;
 
-    console.log("[Realtime] Connecting to room:", roomId);
-    const roomChannel = supabase.channel(`room_${roomId}`, {
+    // Channel 1 (Avatars/Presence):
+    console.log("[Realtime] Connecting to presence channel:", `presence_room_${roomId}`);
+    const presenceChannel = supabase.channel(`presence_room_${roomId}`, {
       config: { presence: { key: user.id } }
     });
-    channelRef.current = roomChannel;
+    channelRef.current = presenceChannel;
 
-    roomChannel
+    presenceChannel
       .on('presence', { event: 'sync' }, () => {
-        const state = roomChannel.presenceState();
+        const state = presenceChannel.presenceState();
         const activeUsers = Object.values(state).flat();
         console.log("[Realtime] Presence Sync triggered. Users online:", activeUsers.length);
         setPresentUsers(activeUsers);
       })
       .subscribe(async (status, err) => {
-        console.log("[Realtime] Status:", status);
-        if (err) console.error("[Realtime] Error:", err);
+        console.log("[Realtime Presence] Status:", status);
+        if (err) console.error("[Realtime Presence] Error:", err);
         
         if (status === 'SUBSCRIBED') {
-          console.log("[Realtime] Subscribed! Tracking presence...");
-          const trackStatus = await roomChannel.track({
+          console.log("[Realtime Presence] Subscribed! Tracking presence...");
+          const trackStatus = await presenceChannel.track({
             user_id: user.id,
             username: profile?.username || user?.email || 'Scholar',
             avatar_url: profile?.avatar_url || null,
             is_studying: isTimerRunning,
             session_start_time: isTimerRunning ? Date.now() : null
           });
-          console.log("[Realtime] Track response:", trackStatus);
+          console.log("[Realtime Presence] Track response:", trackStatus);
         }
       });
 
+    // Channel 2 (Chat Messages):
+    console.log("[Realtime] Connecting to chat channel:", `chat_room_${roomId}`);
+    const chatChannel = supabase.channel(`chat_room_${roomId}`);
+
+    chatChannel
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'room_messages', filter: `room_id=eq.${roomId}` }, (payload) => {
+        const fetchNewMsg = async () => {
+          const { data } = await supabase
+            .from('room_messages')
+            .select(`
+              id, content, created_at, user_id,
+              profiles ( username, avatar_url )
+            `)
+            .eq('id', payload.new.id)
+            .single();
+          if (data) setMessages(prev => [...prev, data]);
+        };
+        fetchNewMsg();
+      })
+      .subscribe((status, err) => {
+        console.log("[Realtime Chat] Status:", status);
+        if (err) console.warn("[Realtime Chat] Non-fatal chat channel error:", err);
+      });
+
+    // Clean up both channels on unmount
     return () => {
-      console.log("[Realtime] Cleaning up channel");
-      supabase.removeChannel(roomChannel);
+      console.log("[Realtime] Cleaning up presence and chat channels");
+      supabase.removeChannel(presenceChannel);
+      supabase.removeChannel(chatChannel);
       channelRef.current = null;
     };
   }, [roomId, user?.id]); // DO NOT depend on profile here.
@@ -106,9 +133,9 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
   }, [isTimerRunning]); 
   // ^ This hook safely broadcasts status changes without disconnecting.
 
-  // Fetch Chat History & Listen for new messages
+  // Fetch Chat History
   useEffect(() => {
-    if (!user || roomTab !== 'chat') return;
+    if (!user) return;
     const supabase = getSupabase();
     if (!supabase) return;
 
@@ -127,29 +154,7 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
     };
 
     fetchMessages();
-
-    const messageChannel = supabase.channel(`chat_${roomId}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'room_messages', filter: `room_id=eq.${roomId}` }, (payload) => {
-        // Fetch the inserted message with profile data
-        const fetchNewMsg = async () => {
-          const { data } = await supabase
-            .from('room_messages')
-            .select(`
-              id, content, created_at, user_id,
-              profiles ( username, avatar_url )
-            `)
-            .eq('id', payload.new.id)
-            .single();
-          if (data) setMessages(prev => [...prev, data]);
-        };
-        fetchNewMsg();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(messageChannel);
-    };
-  }, [roomId, user, roomTab]);
+  }, [roomId, user]);
 
   useEffect(() => {
     if (roomTab === 'chat' && messagesEndRef.current) {
