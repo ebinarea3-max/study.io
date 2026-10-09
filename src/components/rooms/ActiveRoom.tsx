@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { ChevronLeft, Flame, BookOpen, Moon, Coffee, User as UserIcon, Send } from 'lucide-react';
 import { getSupabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
@@ -21,7 +21,16 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
   
-  const channelRef = useRef<any>(null);
+  const isTimerRunning = isRunning;
+
+  const profile = useMemo(() => {
+    if (!user) return null;
+    return {
+      username: (user as any).username || user.displayName || 'Scholar',
+      avatar_url: user.avatarUrl || (user as any).avatar_url || (user as any).user_metadata?.avatar_url || (user as any).user_metadata?.picture || null,
+    };
+  }, [user?.id, (user as any)?.username, user?.displayName, user?.avatarUrl, (user as any)?.avatar_url, (user as any)?.user_metadata?.avatar_url, (user as any)?.user_metadata?.picture]);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Fetch Room Details
@@ -37,52 +46,39 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
 
   // Presence and Realtime Sync
   useEffect(() => {
-    if (!user) return;
+    // 1. Prevent running before the user is authenticated
+    if (!user?.id) return; 
+
     const supabase = getSupabase();
     if (!supabase) return;
 
-    const channel = supabase.channel(`room_${roomId}`, {
+    const roomChannel = supabase.channel(`room_${roomId}`, {
       config: { presence: { key: user.id } }
     });
-    
-    channelRef.current = channel;
 
-    channel
+    roomChannel
       .on('presence', { event: 'sync' }, () => {
-        const state = channel.presenceState();
+        const state = roomChannel.presenceState();
         setPresentUsers(Object.values(state).flat());
       })
-      .subscribe(async (status: string) => {
+      .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
-          await channel.track({
+          // CRITICAL: Replace any potential undefined values with null or strings
+          await roomChannel.track({
             user_id: user.id,
-            username: (user as any).username || user.displayName || 'Scholar',
-            avatar_url: user.avatarUrl,
-            status: isRunning ? 'studying' : 'resting',
-            timer_start_at: isRunning ? Date.now() - (elapsedSeconds * 1000) : null
+            username: profile?.username || 'Scholar',
+            avatar_url: profile?.avatar_url || null, 
+            status: isTimerRunning ? 'studying' : 'resting',
+            timer_start_at: isTimerRunning ? Date.now() : null
           });
         }
       });
 
+    // Clean up the connection when leaving the room
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(roomChannel);
     };
-  }, [roomId, user]); // We only re-init the channel when room/user changes.
-
-  // Update presence when global timer state changes
-  useEffect(() => {
-    const channel = channelRef.current;
-    if (channel && user) {
-      // Re-fire track to update others
-      channel.track({
-        user_id: user.id,
-        username: (user as any).username || user.displayName || 'Scholar',
-        avatar_url: user.avatarUrl,
-        status: isRunning ? 'studying' : 'resting',
-        timer_start_at: isRunning ? Date.now() - (elapsedSeconds * 1000) : null
-      });
-    }
-  }, [isRunning, user]); // Ignore elapsedSeconds in deps, we only care about when isRunning toggles.
+  }, [roomId, user?.id, profile, isTimerRunning]); // Depend on profile so it re-tracks when loaded
 
   // Fetch Chat History & Listen for new messages
   useEffect(() => {
