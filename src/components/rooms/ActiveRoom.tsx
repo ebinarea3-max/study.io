@@ -76,10 +76,10 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
           console.log("[Realtime] Subscribed! Tracking presence...");
           const trackStatus = await roomChannel.track({
             user_id: user.id,
-            username: profile?.username || user?.email || 'Anonymous Scholar',
+            username: profile?.username || user?.email || 'Scholar',
             avatar_url: profile?.avatar_url || null,
-            status: 'resting',
-            timer_start_at: null
+            is_studying: isTimerRunning,
+            session_start_time: isTimerRunning ? Date.now() : null
           });
           console.log("[Realtime] Track response:", trackStatus);
         }
@@ -97,10 +97,10 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
     if (channelRef.current && user?.id) {
       channelRef.current.track({
         user_id: user.id,
-        username: profile?.username || 'Scholar',
+        username: profile?.username || user?.email || 'Scholar',
         avatar_url: profile?.avatar_url || null,
-        status: isTimerRunning ? 'studying' : 'resting',
-        timer_start_at: isTimerRunning ? Date.now() : null
+        is_studying: isTimerRunning,
+        session_start_time: isTimerRunning ? Date.now() : null
       });
     }
   }, [isTimerRunning]); 
@@ -117,7 +117,7 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
         .from('room_messages')
         .select(`
           id, content, created_at, user_id,
-          profiles ( username, display_name, avatar_url )
+          profiles ( username, avatar_url )
         `)
         .eq('room_id', roomId)
         .order('created_at', { ascending: true })
@@ -136,7 +136,7 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
             .from('room_messages')
             .select(`
               id, content, created_at, user_id,
-              profiles ( username, display_name, avatar_url )
+              profiles ( username, avatar_url )
             `)
             .eq('id', payload.new.id)
             .single();
@@ -225,35 +225,39 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-4">
         {roomTab === 'home' ? (
           <div className="flex flex-wrap gap-8 justify-center mt-8">
-            {presentUsers.map((u, i) => (
-              <div key={`${u.user_id}-${i}`} className="flex flex-col items-center gap-2 group relative">
-                <div className="relative">
-                  {u.avatar_url ? (
-                    <img src={u.avatar_url} alt={u.username} className={`w-16 h-16 rounded-full object-cover border-2 transition-colors ${u.status === 'studying' ? 'border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.4)]' : 'border-slate-600 opacity-70'}`} />
-                  ) : (
-                    <div className={`w-16 h-16 rounded-full flex items-center justify-center border-2 transition-colors ${u.status === 'studying' ? 'border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.4)] bg-amber-500/10' : 'border-slate-600 bg-slate-800 opacity-70'}`}>
-                      <UserIcon className={`w-8 h-8 ${u.status === 'studying' ? 'text-amber-500' : 'text-slate-500'}`} />
-                    </div>
-                  )}
-                  
-                  {/* Status Icon Badge */}
-                  <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center border-2 border-[#07090e] ${u.status === 'studying' ? 'bg-amber-500' : 'bg-slate-700'}`}>
-                    {u.status === 'studying' ? (
-                      <Flame className="w-3.5 h-3.5 text-slate-900" />
+            {presentUsers.map((u, i) => {
+              const isStudying = Boolean(u.is_studying ?? (u.status === 'studying'));
+              const startTime = u.session_start_time ?? u.timer_start_at ?? null;
+              return (
+                <div key={`${u.user_id}-${i}`} className="flex flex-col items-center gap-2 group relative">
+                  <div className="relative">
+                    {u.avatar_url ? (
+                      <img src={u.avatar_url} alt={u.username || 'Scholar'} className={`w-16 h-16 rounded-full object-cover border-2 transition-colors ${isStudying ? 'border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.4)]' : 'border-slate-600 opacity-70'}`} />
                     ) : (
-                      <Moon className="w-3.5 h-3.5 text-slate-300" />
+                      <div className={`w-16 h-16 rounded-full flex items-center justify-center border-2 transition-colors ${isStudying ? 'border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.4)] bg-amber-500/10' : 'border-slate-600 bg-slate-800 opacity-70'}`}>
+                        <UserIcon className={`w-8 h-8 ${isStudying ? 'text-amber-500' : 'text-slate-500'}`} />
+                      </div>
                     )}
+                    
+                    {/* Status Icon Badge */}
+                    <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center border-2 border-[#07090e] ${isStudying ? 'bg-amber-500' : 'bg-slate-700'}`}>
+                      {isStudying ? (
+                        <Flame className="w-3.5 h-3.5 text-slate-900" />
+                      ) : (
+                        <Moon className="w-3.5 h-3.5 text-slate-300" />
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="text-center mt-1">
+                    <p className="text-sm font-bold text-slate-200">{u.username || 'Scholar'}</p>
+                    <p className={`text-xs font-mono mt-0.5 ${isStudying ? 'text-amber-400' : 'text-slate-500'}`}>
+                      {getLiveDuration(startTime)}
+                    </p>
                   </div>
                 </div>
-                
-                <div className="text-center mt-1">
-                  <p className="text-sm font-bold text-slate-200">{u.username}</p>
-                  <p className={`text-xs font-mono mt-0.5 ${u.status === 'studying' ? 'text-amber-400' : 'text-slate-500'}`}>
-                    {getLiveDuration(u.timer_start_at)}
-                  </p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
             {presentUsers.length === 0 && (
               <div className="text-slate-500 text-center w-full mt-10">Waiting for scholars to join...</div>
             )}
@@ -274,7 +278,7 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
                       </div>
                     )}
                     <div className={`flex flex-col max-w-[75%] ${msg.user_id === user?.id ? 'items-end' : 'items-start'}`}>
-                      <span className="text-xs text-slate-400 mb-1">{msg.profiles?.username || msg.profiles?.display_name || 'Scholar'}</span>
+                      <span className="text-xs text-slate-400 mb-1">{msg.profiles?.username || 'Scholar'}</span>
                       <div className={`px-4 py-2 rounded-2xl text-sm ${msg.user_id === user?.id ? 'bg-amber-500 text-slate-900 rounded-tr-sm' : 'bg-white/10 text-slate-200 rounded-tl-sm'}`}>
                         {msg.content}
                       </div>

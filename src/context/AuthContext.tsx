@@ -119,12 +119,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if ((needsRepair || calculatedLevel > (profile?.level || 1)) && authUser.id && !authUser.id.startsWith('user-scholar')) {
         try {
-          const updatePayload: any = { level: calculatedLevel, lifetime_xp: currentLifetimeXP };
-          if (needsRepair) {
-            updatePayload.rp = syncedRP;
-            updatePayload.season_rp = syncedRP;
-            updatePayload.total_study_seconds = totalStudySeconds;
-          }
+          const updatePayload: any = { 
+            level: Math.round(calculatedLevel), 
+            lifetime_xp: Math.round(currentLifetimeXP),
+            xp: Math.round(currentLifetimeXP)
+          };
           await supabase.from('profiles').update(updatePayload).eq('id', authUser.id);
         } catch (e) {
           console.warn('Failed to sync level to Supabase profile:', e);
@@ -176,11 +175,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         await supabase.from('profiles').upsert({
           id: authUser.id,
-          name: cleanMetaName,
+          username: cleanMetaName || 'Scholar',
           avatar_url: metaAvatar || null,
-          rp: syncedRP,
-          season_rp: syncedRP,
-          total_study_seconds: totalStudySeconds,
+          xp: 0,
+          lifetime_xp: 0,
+          level: 1,
         });
       }
     } catch {
@@ -637,60 +636,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.setItem('studypulse_active_user', JSON.stringify(updated));
       } catch {}
 
-      // Only send valid columns in the update payload to Supabase:
-      // (name, avatar_url, daily_goal_hours, streak_days, level, lifetime_xp, xp, rp, ...)
-      // and query against 'id' as the primary key: .from('profiles').update(updates).eq('id', user.id)
+      // Only send valid columns in the update payload to Supabase matching verified schema:
+      // profiles: id, username, avatar_url, xp (integer), lifetime_xp (integer), level (integer)
       const supabase = getSupabase();
       if (supabase && prev.id && !prev.id.startsWith('user-scholar') && !prev.id.startsWith('guest')) {
         const payload: Record<string, any> = {};
 
-        if (updates.displayName !== undefined && updates.displayName !== prev.displayName) {
-          payload.name = updates.displayName.trim();
-        }
-        if (updates.name !== undefined && updates.name !== prev.name) {
-          payload.name = updates.name.trim();
-        }
         if (updates.username !== undefined && updates.username !== prev.username) {
           payload.username = updates.username.trim().toLowerCase();
         }
         if (updates.avatarUrl !== undefined && updates.avatarUrl !== prev.avatarUrl) {
           payload.avatar_url = updates.avatarUrl || null;
         }
-        if (updates.dailyGoalHours !== undefined && Number(updates.dailyGoalHours) !== Number(prev.dailyGoalHours)) {
-          payload.daily_goal_hours = Number(updates.dailyGoalHours);
-        }
-        if (updates.streakDays !== undefined && Number(updates.streakDays) !== Number(prev.streakDays)) {
-          payload.streak_days = Number(updates.streakDays);
-        }
         if (updates.level !== undefined && Number(updates.level) !== Number(prev.level)) {
-          payload.level = Number(updates.level);
+          payload.level = Math.round(Number(updates.level));
         }
-        if (updates.lifetime_xp !== undefined) {
-          payload.lifetime_xp = Number(updates.lifetime_xp);
-        }
-        if (updates.lifetimeXp !== undefined) {
-          payload.lifetime_xp = Number(updates.lifetimeXp);
+        if (updates.lifetime_xp !== undefined || updates.lifetimeXp !== undefined) {
+          const lXp = updates.lifetime_xp ?? updates.lifetimeXp;
+          payload.lifetime_xp = Math.round(Number(lXp));
         }
         if (updates.xp !== undefined) {
-          payload.xp = Number(updates.xp);
-        }
-        if (updates.rp !== undefined) {
-          payload.rp = Number(updates.rp);
-        }
-        if (updates.seasonRp !== undefined) {
-          payload.season_rp = Number(updates.seasonRp);
-        }
-        if (updates.rank_title !== undefined) {
-          payload.rank_title = updates.rank_title;
-        }
-        if (updates.season_base_rp !== undefined) {
-          payload.season_base_rp = Number(updates.season_base_rp);
-        }
-        if (updates.currentSeasonId !== undefined) {
-          payload.current_season_id = updates.currentSeasonId;
-        }
-        if (updates.is_onboarded !== undefined) {
-          payload.is_onboarded = updates.is_onboarded;
+          payload.xp = Math.round(Number(updates.xp));
+        } else if (payload.lifetime_xp !== undefined) {
+          // Strictly keep xp aligned with lifetime_xp as integer
+          payload.xp = payload.lifetime_xp;
         }
 
         if (Object.keys(payload).length > 0) {

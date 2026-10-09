@@ -466,12 +466,12 @@ export function StudyTimer() {
 
       // Persist new RP, lifetime XP, level, and streak bonus date in profile
       const profileUpdates: Partial<UserProfile> = {
-        seasonRp: newRP,
-        rp: newRP,
-        lifetime_xp: newLifetimeXP,
-        lifetimeXp: newLifetimeXP,
-        xp: newLifetimeXP,
-        level: newLevel,
+        seasonRp: Math.round(newRP),
+        rp: Math.round(newRP),
+        lifetime_xp: Math.round(newLifetimeXP),
+        lifetimeXp: Math.round(newLifetimeXP),
+        xp: Math.round(newLifetimeXP),
+        level: Math.round(newLevel),
         levelTitle: newScholarTitle,
       };
 
