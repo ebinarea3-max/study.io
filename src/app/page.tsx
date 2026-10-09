@@ -19,7 +19,6 @@ import { SeasonRecapBanner } from '../components/gamification/SeasonRecapBanner'
 import { SeasonResetAlertModal } from '../components/gamification/SeasonResetAlertModal';
 import { TasksOverview } from '../components/todo/TasksOverview';
 import { DailyBoostModal } from '../components/common/DailyBoostModal';
-import { UpdateBannerModal } from '../components/common/UpdateBannerModal';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import { Logo } from '../components/Logo';
 import { NavTabType } from '../components/common/Navbar';
@@ -242,9 +241,6 @@ export default function Home() {
         data={settlementData}
         onContinue={dismissRankSettlement}
       />
-
-      {/* Update Notification Banner */}
-      <UpdateBannerModal />
 
       {/* Level Up Celebratory Modal */}
       {levelUpData && !settlementData && (
