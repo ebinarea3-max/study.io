@@ -155,13 +155,17 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
     };
 
     if (chatChannelRef.current) {
-      chatChannelRef.current
-        .send({
-          type: 'broadcast',
-          event: 'focus_status_update',
-          payload,
-        })
-        .catch(() => {});
+      try {
+        chatChannelRef.current
+          .send({
+            type: 'broadcast',
+            event: 'focus_status_update',
+            payload,
+          })
+          .catch(() => {});
+      } catch (err) {
+        // Channel might not be fully joined yet
+      }
     }
 
     const supabase = getSupabase();
@@ -195,13 +199,17 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
   useEffect(() => {
     const timer = setTimeout(() => {
       if (chatChannelRef.current) {
-        chatChannelRef.current
-          .send({
-            type: 'broadcast',
-            event: 'ping_focus_status',
-            payload: { requester_id: user?.id },
-          })
-          .catch(() => {});
+        try {
+          chatChannelRef.current
+            .send({
+              type: 'broadcast',
+              event: 'ping_focus_status',
+              payload: { requester_id: user?.id },
+            })
+            .catch(() => {});
+        } catch (err) {
+          // Channel not fully joined
+        }
       }
       const supabase = getSupabase();
       if (supabase) {
@@ -543,13 +551,17 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
       setMessages((prev) => [...prev, data]);
 
       if (chatChannelRef.current) {
-        chatChannelRef.current
-          .send({
-            type: 'broadcast',
-            event: 'new_message',
-            payload: data,
-          })
-          .catch(console.error);
+        try {
+          chatChannelRef.current
+            .send({
+              type: 'broadcast',
+              event: 'new_message',
+              payload: data,
+            })
+            .catch(console.error);
+        } catch (err) {
+          console.warn('Failed to broadcast message locally', err);
+        }
       }
     }
     setIsSending(false);
