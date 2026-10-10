@@ -722,7 +722,7 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
   ]);
 
   return (
-    <div className="w-full h-full min-h-[80vh] bg-[#07090e] flex flex-col relative text-slate-200">
+    <div className="w-full h-full flex-1 min-h-0 bg-[#07090e] flex flex-col relative text-slate-200">
       <header className="flex items-center justify-between p-4 border-b border-white/5 bg-white/[0.02]">
         <div className="flex items-center gap-3">
           <button
