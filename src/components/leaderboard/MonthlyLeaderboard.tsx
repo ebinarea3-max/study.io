@@ -331,12 +331,14 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
               
               let computedRank = getRankFromRp(0).name;
               try {
-                if (row.season_rp !== undefined && row.season_rp !== null) {
-                  computedRank = getRankFromRp(Number(row.season_rp)).name;
-                } else if (row.rp !== undefined && row.rp !== null) {
-                  computedRank = getRankFromRp(Number(row.rp)).name;
-                } else if (row.total_seconds) {
-                  computedRank = getRankFromRp(Math.floor(Number(row.total_seconds) / 60)).name;
+                const rpFromSeconds = row.total_seconds ? Math.floor(Number(row.total_seconds) / 60) : 0;
+                const explicitRp = (row.season_rp !== undefined && row.season_rp !== null) ? Number(row.season_rp) : 
+                                   (row.rp !== undefined && row.rp !== null) ? Number(row.rp) : 0;
+                
+                const bestRp = Math.max(rpFromSeconds, explicitRp);
+                
+                if (bestRp > 0) {
+                  computedRank = getRankFromRp(bestRp).name;
                 } else if (row.rank_title) {
                   computedRank = String(row.rank_title);
                 }
@@ -398,12 +400,14 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                   const isMe = p.id === currentUser?.id;
                   let computedRank = getRankFromRp(0).name;
                   try {
-                    if (p.season_rp !== undefined && p.season_rp !== null) {
-                      computedRank = getRankFromRp(Number(p.season_rp)).name;
-                    } else if (p.rp !== undefined && p.rp !== null) {
-                      computedRank = getRankFromRp(Number(p.rp)).name;
-                    } else if (userTotals[p.id]) {
-                      computedRank = getRankFromRp(Math.floor(userTotals[p.id] / 60)).name;
+                    const rpFromSeconds = userTotals[p.id] ? Math.floor(userTotals[p.id] / 60) : 0;
+                    const explicitRp = (p.season_rp !== undefined && p.season_rp !== null) ? Number(p.season_rp) : 
+                                       (p.rp !== undefined && p.rp !== null) ? Number(p.rp) : 0;
+                    
+                    const bestRp = Math.max(rpFromSeconds, explicitRp);
+                    
+                    if (bestRp > 0) {
+                      computedRank = getRankFromRp(bestRp).name;
                     } else if (p.rank_title) {
                       computedRank = String(p.rank_title);
                     }
