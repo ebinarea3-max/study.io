@@ -884,7 +884,7 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
             )}
           </div>
         ) : (
-          <div className="flex flex-col h-full overflow-hidden">
+          <div className="flex flex-col h-[calc(100dvh-180px)] overflow-hidden">
             <div ref={messagesEndRef} className="flex-1 overflow-y-auto min-h-0 pb-4 pr-2 flex flex-col">
               {messages.length === 0 ? (
                 <div className="text-center text-slate-500 mt-10">No messages yet. Say hi!</div>
