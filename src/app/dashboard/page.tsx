@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { Logo } from '../../components/Logo';
 import Home from '../page';
+export const dynamic = 'force-dynamic';
 
 export default function DashboardPage() {
   const { isAuthenticated, isLoading } = useAuth();
