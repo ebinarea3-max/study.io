@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../../context/AuthContext';
 import { getSupabase } from '../../lib/supabase';
 import {
@@ -30,7 +31,12 @@ interface StudyRoomsTabProps {
 
 export default function StudyRoomsTab({ onBackToDashboard, isActiveTab }: StudyRoomsTabProps) {
   const { user } = useAuth();
+  const [mounted, setMounted] = useState(false);
   const [view, setView] = useState<'my_groups' | 'explorer'>('my_groups');
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const [myGroups, setMyGroups] = useState<any[]>([]);
   const [explorerRooms, setExplorerRooms] = useState<any[]>([]);
@@ -901,8 +907,16 @@ export default function StudyRoomsTab({ onBackToDashboard, isActiveTab }: StudyR
       )}
 
       {/* Direct Join by Code Modal */}
-      {isJoinCodeModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in">
+      {mounted && typeof document !== 'undefined' && isJoinCodeModalOpen && createPortal(
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setIsJoinCodeModalOpen(false);
+              setCodeLookupError('');
+            }
+          }}
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in"
+        >
           <div className="bg-[#0f111a] border border-white/10 rounded-3xl w-full max-w-sm p-6 shadow-2xl relative">
             <button
               onClick={() => { setIsJoinCodeModalOpen(false); setCodeLookupError(''); }}
@@ -951,12 +965,20 @@ export default function StudyRoomsTab({ onBackToDashboard, isActiveTab }: StudyR
               </button>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Create Group Modal */}
-      {isCreateModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in">
+      {mounted && typeof document !== 'undefined' && isCreateModalOpen && createPortal(
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isCreating) {
+              setIsCreateModalOpen(false);
+            }
+          }}
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in"
+        >
           <div className="bg-[#0f111a] border border-white/10 rounded-3xl w-full max-w-sm p-6 shadow-2xl relative">
             <button
               onClick={() => setIsCreateModalOpen(false)}
@@ -1030,12 +1052,21 @@ export default function StudyRoomsTab({ onBackToDashboard, isActiveTab }: StudyR
               </button>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Join Password Modal */}
-      {selectedRoomToJoin && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in">
+      {mounted && typeof document !== 'undefined' && selectedRoomToJoin && createPortal(
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isJoining) {
+              setSelectedRoomToJoin(null);
+              setJoinPassword('');
+            }
+          }}
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in"
+        >
           <div className="bg-[#0f111a] border border-white/10 rounded-3xl w-full max-w-sm p-6 shadow-2xl relative">
             <button
               onClick={() => {
@@ -1080,12 +1111,20 @@ export default function StudyRoomsTab({ onBackToDashboard, isActiveTab }: StudyR
               </button>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Delete / Leave Group Modal */}
-      {roomToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in">
+      {mounted && typeof document !== 'undefined' && roomToDelete && createPortal(
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isDeleting) {
+              setRoomToDelete(null);
+            }
+          }}
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in"
+        >
           <div className="bg-[#0f111a] border border-white/10 rounded-3xl w-full max-w-sm p-6 shadow-2xl relative">
             <button
               onClick={() => setRoomToDelete(null)}
@@ -1120,7 +1159,8 @@ export default function StudyRoomsTab({ onBackToDashboard, isActiveTab }: StudyR
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
