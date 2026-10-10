@@ -20,7 +20,8 @@ import {
   Check,
   KeyRound,
   ShieldAlert,
-  ArrowRight
+  ArrowRight,
+  AlertCircle
 } from 'lucide-react';
 import ActiveRoom from './ActiveRoom';
 
@@ -61,6 +62,7 @@ export default function StudyRoomsTab({ onBackToDashboard, isActiveTab }: StudyR
   const [selectedRoomToJoin, setSelectedRoomToJoin] = useState<any | null>(null);
   const [joinPassword, setJoinPassword] = useState('');
   const [isJoining, setIsJoining] = useState(false);
+  const [joinError, setJoinError] = useState('');
 
   // Direct Join by Code Modal
   const [isJoinCodeModalOpen, setIsJoinCodeModalOpen] = useState(false);
@@ -405,13 +407,13 @@ export default function StudyRoomsTab({ onBackToDashboard, isActiveTab }: StudyR
           .single();
 
         if (roomError || !roomData) {
-          alert('Could not verify room password.');
+          setJoinError('Could not verify room password.');
           setIsJoining(false);
           return;
         }
 
         if (roomData.password !== passwordAttempt.trim()) {
-          alert('Incorrect password. Please try again.');
+          setJoinError('Incorrect password. Please try again.');
           setIsJoining(false);
           return;
         }
@@ -425,14 +427,14 @@ export default function StudyRoomsTab({ onBackToDashboard, isActiveTab }: StudyR
         .single();
 
       if (capacityError || !capacityData) {
-        alert('Could not verify room capacity.');
+        setJoinError('Could not verify room capacity.');
         setIsJoining(false);
         return;
       }
 
       const currentCount = (capacityData.room_members as any)?.[0]?.count || 0;
       if (capacityData.max_capacity && currentCount >= capacityData.max_capacity) {
-        alert('This room has reached its maximum capacity.');
+        setJoinError('This room has reached its maximum capacity.');
         setIsJoining(false);
         return;
       }
@@ -451,7 +453,7 @@ export default function StudyRoomsTab({ onBackToDashboard, isActiveTab }: StudyR
           setJoinPassword('');
           setActiveRoomId(roomId);
         } else {
-          alert('Failed to join room: ' + error.message);
+          setJoinError('Failed to join room: ' + error.message);
         }
       } else {
         setSelectedRoomToJoin(null);
@@ -461,7 +463,7 @@ export default function StudyRoomsTab({ onBackToDashboard, isActiveTab }: StudyR
         setActiveRoomId(roomId);
       }
     } catch (err: any) {
-      alert('Error joining room: ' + err.message);
+      setJoinError('Error joining room: ' + err.message);
     } finally {
       setIsJoining(false);
     }
@@ -1102,6 +1104,12 @@ export default function StudyRoomsTab({ onBackToDashboard, isActiveTab }: StudyR
               "{selectedRoomToJoin.name}" requires a password to join.
             </p>
 
+            {joinError && (
+              <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold text-center animate-in fade-in slide-in-from-bottom-2">
+                {joinError}
+              </div>
+            )}
+
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -1127,6 +1135,41 @@ export default function StudyRoomsTab({ onBackToDashboard, isActiveTab }: StudyR
                 {isJoining ? 'Verifying...' : 'Unlock & Join Room'}
               </button>
             </form>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Standalone Join Error Modal */}
+      {mounted && typeof document !== 'undefined' && joinError && !selectedRoomToJoin && createPortal(
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setJoinError('');
+            }
+          }}
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in"
+        >
+          <div className="bg-[#0f111a] border border-red-500/20 rounded-3xl w-full max-w-sm p-6 shadow-2xl relative flex flex-col items-center text-center">
+            <button
+              onClick={() => setJoinError('')}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-4 text-red-400">
+              <AlertCircle className="w-6 h-6" />
+            </div>
+            <h2 className="text-xl font-bold text-white mb-2">Access Denied</h2>
+            <p className="text-sm text-slate-400 mb-6 leading-relaxed">
+              {joinError}
+            </p>
+            <button
+              onClick={() => setJoinError('')}
+              className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3.5 rounded-xl transition-colors cursor-pointer"
+            >
+              Dismiss
+            </button>
           </div>
         </div>,
         document.body
