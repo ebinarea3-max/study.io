@@ -549,15 +549,6 @@ export default function StudyRoomsTab({ onBackToDashboard, isActiveTab }: StudyR
             <RotateCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-amber-400' : ''}`} />
           </button>
 
-          {/* Quick Code Lookup Button */}
-          <button
-            onClick={() => { setIsJoinCodeModalOpen(true); setCodeLookupError(''); }}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold text-slate-300 hover:text-white border border-white/10 transition-all cursor-pointer"
-            title="Join room using a 6-digit code"
-          >
-            <KeyRound className="w-3.5 h-3.5 text-amber-400" />
-            <span className="hidden sm:inline">Enter Code</span>
-          </button>
 
           {view === 'my_groups' && (
             <button
