@@ -53,7 +53,7 @@ export const RANK_TIERS: RankTier[] = SYSTEM_RANK_TIERS.map((cfg) => ({
 }));
 
 export function calculateSeasonRp(currentMonthSeconds: number, carryoverRp: number = 0): number {
-  const earnedRp = Math.floor(currentMonthSeconds / 36);
+  const earnedRp = Math.floor(currentMonthSeconds / 60);
   return carryoverRp + earnedRp;
 }
 

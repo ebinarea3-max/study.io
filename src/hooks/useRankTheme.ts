@@ -47,7 +47,7 @@ export function useRankTheme(): {
       .reduce((total: number, s: any) => total + (s.duration || s.durationSeconds || s.duration_seconds || 0), 0);
 
     const carryoverRp = (user as any)?.carryover_rp || (user as any)?.carryoverRp || 0;
-    return carryoverRp + Math.floor(currentMonthSeconds / 36);
+    return carryoverRp + Math.floor(currentMonthSeconds / 60);
   }, [(user as any)?.carryover_rp, (user as any)?.carryoverRp, sessions]);
 
   const userRank = useMemo(() => {

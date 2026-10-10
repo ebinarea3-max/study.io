@@ -98,18 +98,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         : 0;
         
       const carryoverRp = Number(profile?.season_base_rp ?? 0);
-      const calculatedRP = carryoverRp + Math.floor(currentMonthStudySeconds / 36);
+      const calculatedRP = carryoverRp + Math.floor(currentMonthStudySeconds / 60);
       
       let currentProfileRP = Number(profile?.rp ?? profile?.season_rp ?? 0);
       
       // AUTO-REPAIR CORRUPTED PROFILES:
       let needsRepair = false;
-      if (currentProfileRP > calculatedRP + 500 || Number(profile?.total_study_seconds ?? 0) > totalStudySeconds + 3600) {
+      if (currentProfileRP > calculatedRP + 100 || Number(profile?.total_study_seconds ?? 0) > totalStudySeconds + 3600) {
         currentProfileRP = calculatedRP; // Reset RP
         needsRepair = true;
       }
 
-      const syncedRP = Math.max(calculatedRP, currentProfileRP);
+      const syncedRP = needsRepair ? calculatedRP : Math.max(calculatedRP, currentProfileRP);
       let currentLifetimeXP = Number(profile?.lifetime_xp ?? profile?.xp ?? 0);
       if (currentLifetimeXP === 0 && totalStudySeconds > 0) {
         currentLifetimeXP = Math.floor(totalStudySeconds / 60) * 10;
@@ -124,6 +124,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             lifetime_xp: Math.round(currentLifetimeXP),
             xp: Math.round(currentLifetimeXP)
           };
+          if (needsRepair) {
+            updatePayload.season_rp = Math.round(calculatedRP);
+            updatePayload.rp = Math.round(calculatedRP);
+            updatePayload.rank_title = getRankFromRp(calculatedRP).name.toUpperCase();
+          }
           await supabase.from('profiles').update(updatePayload).eq('id', authUser.id);
         } catch (e) {
           console.warn('Failed to sync level to Supabase profile:', e);
