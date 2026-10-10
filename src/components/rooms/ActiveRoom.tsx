@@ -768,7 +768,7 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto overflow-x-hidden p-4">
+      <div className={`flex-1 overflow-x-hidden p-4 ${roomTab === 'home' ? 'overflow-y-auto' : 'flex flex-col min-h-0'}`}>
         {roomTab === 'home' ? (
           <div className="flex flex-wrap gap-8 justify-center items-start mt-8">
             {displayUsers.map((u, i) => {
