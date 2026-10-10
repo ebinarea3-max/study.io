@@ -98,6 +98,17 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const clientIdRef = useRef(Math.random().toString(36).substring(2, 7));
 
+  // Refs for frequently changing values to prevent effect re-runs
+  const getTodayTotalSecondsRef = useRef(getTodayTotalSeconds);
+  const isTimerRunningRef = useRef(isTimerRunning);
+  const elapsedSecondsRef = useRef(elapsedSeconds);
+
+  useEffect(() => {
+    getTodayTotalSecondsRef.current = getTodayTotalSeconds;
+    isTimerRunningRef.current = isTimerRunning;
+    elapsedSecondsRef.current = elapsedSeconds;
+  }, [getTodayTotalSeconds, isTimerRunning, elapsedSeconds]);
+
   // Ticker to smoothly update live study timers every second
   useEffect(() => {
     const timer = setInterval(() => {
@@ -130,12 +141,15 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
   // Broadcast current focus telemetry over room chat and global study hub
   const sendFocusBroadcast = useCallback(() => {
     if (!user?.id) return;
-    const todayTotal = getTodayTotalSeconds ? getTodayTotalSeconds() : 0;
+    const isRunning = isTimerRunningRef.current;
+    const elapsed = elapsedSecondsRef.current;
+    const todayTotal = getTodayTotalSecondsRef.current ? getTodayTotalSecondsRef.current() : 0;
+    
     const payload = {
       user_id: user.id,
-      is_studying: isTimerRunning,
-      session_start_time: isTimerRunning ? Date.now() - (elapsedSeconds * 1000) : null,
-      session_seconds: elapsedSeconds,
+      is_studying: isRunning,
+      session_start_time: isRunning ? Date.now() - (elapsed * 1000) : null,
+      session_seconds: elapsed,
       today_seconds: todayTotal,
       timestamp: Date.now(),
     };
@@ -163,7 +177,7 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
           .catch(() => {});
       } catch {}
     }
-  }, [user?.id, isTimerRunning, elapsedSeconds, getTodayTotalSeconds]);
+  }, [user?.id]);
 
   // Periodic heartbeat broadcast while studying so all peers see live progress
   useEffect(() => {
@@ -283,8 +297,8 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
         const startTime = sess?.started_at ? new Date(sess.started_at).getTime() : null;
 
         let todaySec = userTodayMap.get(uid) || 0;
-        if (uid === user?.id && getTodayTotalSeconds) {
-          todaySec = Math.max(todaySec, getTodayTotalSeconds());
+        if (uid === user?.id && getTodayTotalSecondsRef.current) {
+          todaySec = Math.max(todaySec, getTodayTotalSecondsRef.current());
         }
 
         return {
@@ -309,7 +323,7 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
     } catch (err) {
       console.error('Error fetching room members:', err);
     }
-  }, [roomId, user?.id, getTodayTotalSeconds]);
+  }, [roomId, user?.id]);
 
   useEffect(() => {
     fetchRoomMembers();
@@ -357,7 +371,7 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
         handleFocusUpdate(payload.payload);
       })
       .on('broadcast', { event: 'ping_focus_status' }, () => {
-        if (isTimerRunning) {
+        if (isTimerRunningRef.current) {
           sendFocusBroadcast();
         }
       })
@@ -366,7 +380,7 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
     return () => {
       supabase.removeChannel(hubChannel);
     };
-  }, [roomId, fetchRoomMembers, handleFocusUpdate, isTimerRunning, sendFocusBroadcast]);
+  }, [roomId, fetchRoomMembers, handleFocusUpdate, sendFocusBroadcast]);
 
   // Realtime Presence Channel
   useEffect(() => {
@@ -428,7 +442,7 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
         handleFocusUpdate(payload.payload);
       })
       .on('broadcast', { event: 'ping_focus_status' }, () => {
-        if (isTimerRunning) {
+        if (isTimerRunningRef.current) {
           sendFocusBroadcast();
         }
       })
@@ -441,7 +455,7 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
       channelRef.current = null;
       chatChannelRef.current = null;
     };
-  }, [roomId, user?.id, handleFocusUpdate, isTimerRunning, sendFocusBroadcast]);
+  }, [roomId, user?.id, handleFocusUpdate, sendFocusBroadcast]);
 
   // Update presence status live when timer starts or stops
   useEffect(() => {
