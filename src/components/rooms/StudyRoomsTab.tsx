@@ -85,7 +85,7 @@ export default function StudyRoomsTab({ onBackToDashboard, isActiveTab }: StudyR
     const supabase = getSupabase();
     if (!supabase) return;
     try {
-      const channel = supabase.channel('study_rooms_realtime_hub');
+      const channel = supabase.channel('study_rooms_lobby_hub');
       channel.send({
         type: 'broadcast',
         event: 'room_changed',
@@ -224,7 +224,7 @@ export default function StudyRoomsTab({ onBackToDashboard, isActiveTab }: StudyR
     const supabase = getSupabase();
     if (!supabase) return;
 
-    const channel = supabase.channel('study_rooms_realtime_hub');
+    const channel = supabase.channel('study_rooms_lobby_hub');
     realtimeChannelRef.current = channel;
 
     channel
