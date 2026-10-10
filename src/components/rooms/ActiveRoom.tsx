@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { ChevronLeft, Flame, Moon, User as UserIcon, Send } from 'lucide-react';
+import { ChevronLeft, Flame, Moon, User as UserIcon, Send, Play, Pause } from 'lucide-react';
 import { getSupabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useStudy } from '../../context/StudyContext';
@@ -17,13 +17,28 @@ interface RoomMemberInfo {
   is_studying: boolean;
   timer_start_at: number | null;
   accumulated_seconds?: number;
+  today_seconds: number;
   is_online: boolean;
   is_current_user?: boolean;
 }
 
+// Formats total seconds to HH:MM:SS with 2-digit zero-padding
+export function formatSeconds(totalSeconds: number): string {
+  const safe = Math.max(0, Math.floor(totalSeconds));
+  const hours = Math.floor(safe / 3600);
+  const minutes = Math.floor((safe % 3600) / 60);
+  const seconds = safe % 60;
+
+  const hStr = String(hours).padStart(2, '0');
+  const mStr = String(minutes).padStart(2, '0');
+  const sStr = String(seconds).padStart(2, '0');
+
+  return `${hStr}:${mStr}:${sStr}`;
+}
+
 export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
   const { user } = useAuth();
-  const { isRunning, elapsedSeconds } = useStudy();
+  const { isRunning, elapsedSeconds, startTimer, pauseTimer, getTodayTotalSeconds } = useStudy();
 
   const [roomName, setRoomName] = useState<string>('Loading...');
   const [roomTab, setRoomTab] = useState<'home' | 'chat'>('home');
@@ -62,7 +77,7 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
     return () => clearInterval(timer);
   }, []);
 
-  // Fetch all registered members of this room from the database
+  // Fetch all registered members of this room + their active sessions and total study time today
   const fetchRoomMembers = useCallback(async () => {
     const supabase = getSupabase();
     if (!supabase || !roomId) return;
@@ -107,6 +122,26 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
         .select('user_id, status, started_at, accumulated_seconds')
         .in('user_id', allUserIds);
 
+      // 5. Fetch study sessions today for all members
+      const now = new Date();
+      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+      const queryIso = new Date(startOfDay.getTime() - 12 * 3600 * 1000).toISOString();
+
+      const { data: todaySessionsData } = await supabase
+        .from('study_sessions')
+        .select('user_id, duration_seconds, started_at')
+        .in('user_id', allUserIds)
+        .gte('started_at', queryIso);
+
+      const userTodayMap = new Map<string, number>();
+      (todaySessionsData || []).forEach((s: any) => {
+        const time = new Date(s.started_at).getTime();
+        if (time >= startOfDay.getTime()) {
+          const sec = Number(s.duration_seconds || 0);
+          userTodayMap.set(s.user_id, (userTodayMap.get(s.user_id) || 0) + sec);
+        }
+      });
+
       const profilesMap = new Map((profilesData || []).map((p: any) => [p.id, p]));
       const sessionsMap = new Map((activeSessionsData || []).map((s: any) => [s.user_id, s]));
 
@@ -116,6 +151,11 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
         const isHost = uid === hostId;
         const isSessionRunning = sess?.status === 'running';
         const startTime = sess?.started_at ? new Date(sess.started_at).getTime() : null;
+
+        let todaySec = userTodayMap.get(uid) || 0;
+        if (uid === user?.id && getTodayTotalSeconds) {
+          todaySec = Math.max(todaySec, getTodayTotalSeconds());
+        }
 
         return {
           user_id: uid,
@@ -130,6 +170,7 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
           is_studying: isSessionRunning,
           timer_start_at: startTime,
           accumulated_seconds: Number(sess?.accumulated_seconds || 0),
+          today_seconds: todaySec,
           is_online: false,
         };
       });
@@ -138,7 +179,7 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
     } catch (err) {
       console.error('Error fetching room members:', err);
     }
-  }, [roomId, user?.id]);
+  }, [roomId, user?.id, getTodayTotalSeconds]);
 
   useEffect(() => {
     fetchRoomMembers();
@@ -168,6 +209,13 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'active_sessions' },
+        () => {
+          fetchRoomMembers();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'study_sessions' },
         () => {
           fetchRoomMembers();
         }
@@ -218,6 +266,8 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
               avatar_url: profileRef.current?.avatar_url || null,
               is_studying: isTimerRunning,
               session_start_time: isTimerRunning ? Date.now() - (elapsedSeconds * 1000) : null,
+              elapsed_seconds: elapsedSeconds,
+              today_seconds: getTodayTotalSeconds ? getTodayTotalSeconds() : 0,
             });
           } catch (err) {
             console.error('Initial presence track error:', err);
@@ -258,12 +308,14 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
           avatar_url: profile?.avatar_url || null,
           is_studying: isTimerRunning,
           session_start_time: isTimerRunning ? Date.now() - (elapsedSeconds * 1000) : null,
+          elapsed_seconds: elapsedSeconds,
+          today_seconds: getTodayTotalSeconds ? getTodayTotalSeconds() : 0,
         });
       } catch (err) {
         console.error('Tracking error:', err);
       }
     }
-  }, [isTimerRunning, user?.id, profile?.username, profile?.avatar_url]);
+  }, [isTimerRunning, user?.id, profile?.username, profile?.avatar_url, getTodayTotalSeconds]);
 
   // Fetch chat messages
   useEffect(() => {
@@ -353,21 +405,37 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
       const pu = presentMap.get(member.user_id);
 
       let isStudying = false;
-      let startTime: number | null = null;
       let isOnline = false;
+      let sessionSeconds = 0;
+      let todaySec = member.today_seconds || 0;
 
       if (isCurrentUser) {
         isStudying = isTimerRunning;
-        startTime = isTimerRunning ? Date.now() - (elapsedSeconds * 1000) : null;
+        sessionSeconds = elapsedSeconds;
         isOnline = true;
+        if (getTodayTotalSeconds) {
+          todaySec = Math.max(todaySec, getTodayTotalSeconds());
+        }
       } else if (pu) {
         isOnline = true;
         isStudying = Boolean(pu.is_studying);
-        startTime = pu.session_start_time ?? member.timer_start_at;
+        const startTime = pu.session_start_time ?? member.timer_start_at;
+        if (startTime) {
+          sessionSeconds = Math.max(0, Math.floor((nowTick - startTime) / 1000));
+        }
+        if (pu.today_seconds) {
+          todaySec = Math.max(todaySec, pu.today_seconds);
+        }
       } else {
         isOnline = false;
         isStudying = member.is_studying;
-        startTime = member.timer_start_at;
+        const startTime = member.timer_start_at;
+        if (startTime) {
+          sessionSeconds = Math.max(
+            0,
+            Math.floor((nowTick - startTime) / 1000) + (member.accumulated_seconds || 0)
+          );
+        }
       }
 
       result.push({
@@ -375,7 +443,8 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
         username: (isCurrentUser ? profile?.username : null) || member.username || pu?.username || 'Scholar',
         avatar_url: (isCurrentUser ? profile?.avatar_url : null) || member.avatar_url || pu?.avatar_url || null,
         is_studying: isStudying,
-        timer_start_at: startTime,
+        session_seconds: sessionSeconds,
+        today_seconds: todaySec,
         is_online: isOnline,
         is_current_user: isCurrentUser,
       });
@@ -383,13 +452,15 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
 
     // Ensure current user is always included even before dbMembers load
     if (user?.id && !seenUserIds.has(user.id)) {
+      const todaySec = getTodayTotalSeconds ? getTodayTotalSeconds() : 0;
       result.unshift({
         user_id: user.id,
         username: profile?.username || 'Scholar',
         avatar_url: profile?.avatar_url || null,
         is_host: false,
         is_studying: isTimerRunning,
-        timer_start_at: isTimerRunning ? Date.now() - (elapsedSeconds * 1000) : null,
+        session_seconds: elapsedSeconds,
+        today_seconds: todaySec,
         is_online: true,
         is_current_user: true,
       });
@@ -400,13 +471,16 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
     for (const pu of presentUsers) {
       if (pu?.user_id && !seenUserIds.has(pu.user_id)) {
         seenUserIds.add(pu.user_id);
+        const startTime = pu.session_start_time;
+        const sessionSeconds = startTime ? Math.max(0, Math.floor((nowTick - startTime) / 1000)) : 0;
         result.push({
           user_id: pu.user_id,
           username: pu.username || 'Scholar',
           avatar_url: pu.avatar_url || null,
           is_host: false,
           is_studying: Boolean(pu.is_studying),
-          timer_start_at: pu.session_start_time || null,
+          session_seconds: sessionSeconds,
+          today_seconds: pu.today_seconds || 0,
           is_online: true,
           is_current_user: false,
         });
@@ -414,34 +488,17 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
     }
 
     return result;
-  }, [dbMembers, presentUsers, user?.id, profile?.username, profile?.avatar_url, isTimerRunning, elapsedSeconds]);
-
-  const getLiveDuration = (
-    timerStartAt: number | null,
-    isStudying: boolean,
-    isOnline: boolean,
-    currentElapsed?: number
-  ) => {
-    if (!isStudying) {
-      return isOnline ? 'Paused' : 'Offline';
-    }
-
-    if (typeof currentElapsed === 'number') {
-      const h = Math.floor(currentElapsed / 3600);
-      const m = Math.floor((currentElapsed % 3600) / 60);
-      const s = currentElapsed % 60;
-      if (h > 0) return `${h}h ${m}m`;
-      return `${m}m ${s < 10 ? '0' : ''}${s}s`;
-    }
-
-    if (!timerStartAt) return 'Studying';
-    const elapsed = Math.max(0, Math.floor((nowTick - timerStartAt) / 1000));
-    const h = Math.floor(elapsed / 3600);
-    const m = Math.floor((elapsed % 3600) / 60);
-    const s = elapsed % 60;
-    if (h > 0) return `${h}h ${m}m`;
-    return `${m}m ${s < 10 ? '0' : ''}${s}s`;
-  };
+  }, [
+    dbMembers,
+    presentUsers,
+    user?.id,
+    profile?.username,
+    profile?.avatar_url,
+    isTimerRunning,
+    elapsedSeconds,
+    nowTick,
+    getTodayTotalSeconds,
+  ]);
 
   return (
     <div className="w-full h-full min-h-[80vh] bg-[#07090e] flex flex-col relative text-slate-200">
@@ -455,36 +512,67 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
             <span className="font-bold text-slate-300 hidden sm:inline ml-1">Leave</span>
           </button>
           <div className="flex items-baseline gap-2">
-            <h1 className="text-xl font-bold text-white tracking-wide truncate max-w-[150px] sm:max-w-[300px]">
+            <h1 className="text-xl font-bold text-white tracking-wide truncate max-w-[150px] sm:max-w-[240px]">
               {roomName}
             </h1>
-            <span className="text-xs text-slate-500 font-medium">
+            <span className="text-xs text-slate-500 font-medium hidden sm:inline">
               {displayUsers.length} {displayUsers.length === 1 ? 'member' : 'members'}
             </span>
           </div>
         </div>
 
-        <div className="flex bg-white/5 p-1 rounded-xl">
+        <div className="flex items-center gap-2.5">
+          {/* Quick study timer control directly from the room */}
           <button
-            onClick={() => setRoomTab('home')}
-            className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${
-              roomTab === 'home'
-                ? 'bg-amber-500 text-slate-900 shadow-lg'
-                : 'text-slate-400 hover:text-white'
+            onClick={() => {
+              if (isTimerRunning) {
+                pauseTimer();
+              } else {
+                startTimer();
+              }
+            }}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-md ${
+              isTimerRunning
+                ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30 hover:bg-amber-500/25'
+                : 'bg-amber-500 text-slate-950 hover:bg-amber-400 shadow-amber-500/20'
             }`}
+            title={isTimerRunning ? 'Pause Study Session' : 'Start Study Session'}
           >
-            Home
+            {isTimerRunning ? (
+              <>
+                <Pause className="w-3.5 h-3.5 fill-amber-400" />
+                <span>Pause ({formatSeconds(elapsedSeconds)})</span>
+              </>
+            ) : (
+              <>
+                <Play className="w-3.5 h-3.5 fill-slate-950" />
+                <span>Start Timer</span>
+              </>
+            )}
           </button>
-          <button
-            onClick={() => setRoomTab('chat')}
-            className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${
-              roomTab === 'chat'
-                ? 'bg-amber-500 text-slate-900 shadow-lg'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            Chat
-          </button>
+
+          <div className="flex bg-white/5 p-1 rounded-xl">
+            <button
+              onClick={() => setRoomTab('home')}
+              className={`px-3.5 py-1.5 rounded-lg text-sm font-bold transition-all ${
+                roomTab === 'home'
+                  ? 'bg-amber-500 text-slate-900 shadow-lg'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              Home
+            </button>
+            <button
+              onClick={() => setRoomTab('chat')}
+              className={`px-3.5 py-1.5 rounded-lg text-sm font-bold transition-all ${
+                roomTab === 'chat'
+                  ? 'bg-amber-500 text-slate-900 shadow-lg'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              Chat
+            </button>
+          </div>
         </div>
       </header>
 
@@ -493,7 +581,8 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
           <div className="flex flex-wrap gap-8 justify-center items-start mt-8">
             {displayUsers.map((u, i) => {
               const isStudying = u.is_studying;
-              const startTime = u.timer_start_at;
+              const sessionSec = u.session_seconds || 0;
+              const todaySec = u.today_seconds || 0;
 
               return (
                 <div
@@ -507,7 +596,7 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
                         alt={u.username || 'Scholar'}
                         className={`w-16 h-16 rounded-full object-cover border-2 transition-all duration-300 ${
                           isStudying
-                            ? 'border-amber-500 shadow-[0_0_16px_rgba(245,158,11,0.5)] scale-105'
+                            ? 'border-amber-500 shadow-[0_0_18px_rgba(245,158,11,0.55)] scale-105'
                             : u.is_online
                             ? 'border-slate-500 opacity-90'
                             : 'border-slate-700/80 opacity-60'
@@ -517,7 +606,7 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
                       <div
                         className={`w-16 h-16 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${
                           isStudying
-                            ? 'border-amber-500 shadow-[0_0_16px_rgba(245,158,11,0.5)] bg-amber-500/10 scale-105'
+                            ? 'border-amber-500 shadow-[0_0_18px_rgba(245,158,11,0.55)] bg-amber-500/10 scale-105'
                             : u.is_online
                             ? 'border-slate-500 bg-slate-800 opacity-90'
                             : 'border-slate-700/80 bg-slate-900 opacity-60'
@@ -540,17 +629,17 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
                       }`}
                     >
                       {isStudying ? (
-                        <Flame className="w-3.5 h-3.5 text-slate-900 fill-slate-900" />
+                        <Flame className="w-3.5 h-3.5 text-slate-900 fill-slate-900 animate-pulse" />
                       ) : (
                         <Moon className="w-3.5 h-3.5 text-slate-300" />
                       )}
                     </div>
                   </div>
 
-                  {/* Member Name and Live Status */}
-                  <div className="text-center mt-1 max-w-[130px]">
+                  {/* Member Name, Live Timer / Total Time Studied Today */}
+                  <div className="text-center mt-1 flex flex-col items-center max-w-[130px]">
                     <div className="flex items-center gap-1.5 justify-center">
-                      <p className="text-sm font-bold text-slate-200 truncate" title={u.username}>
+                      <p className="text-sm font-bold text-slate-200 truncate max-w-[100px]" title={u.username}>
                         {u.username}
                       </p>
                       {u.is_host && (
@@ -559,22 +648,34 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
                         </span>
                       )}
                     </div>
+
+                    {/* Displays live session timer with seconds when studying, or total time studied today when paused/offline */}
                     <p
-                      className={`text-xs font-mono mt-0.5 tracking-tight ${
+                      className={`text-sm font-mono mt-1 font-bold tracking-wider transition-colors ${
                         isStudying
-                          ? 'text-amber-400 font-semibold'
-                          : u.is_online
-                          ? 'text-slate-400'
-                          : 'text-slate-600'
+                          ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]'
+                          : 'text-slate-300'
                       }`}
                     >
-                      {getLiveDuration(
-                        startTime,
-                        isStudying,
-                        u.is_online,
-                        u.is_current_user ? elapsedSeconds : undefined
-                      )}
+                      {formatSeconds(isStudying ? sessionSec : todaySec)}
                     </p>
+
+                    {/* Subtitle explaining state */}
+                    <span
+                      className={`text-[10px] font-medium tracking-tight mt-0.5 ${
+                        isStudying
+                          ? 'text-amber-400/90 font-semibold flex items-center gap-1'
+                          : u.is_online
+                          ? 'text-slate-400'
+                          : 'text-slate-500'
+                      }`}
+                    >
+                      {isStudying ? (
+                        <span>Studying</span>
+                      ) : (
+                        <span>Today • {u.is_online ? 'Paused' : 'Offline'}</span>
+                      )}
+                    </span>
                   </div>
                 </div>
               );
