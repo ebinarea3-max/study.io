@@ -518,7 +518,8 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
 
   useEffect(() => {
     if (roomTab === 'chat' && messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      const el = messagesEndRef.current;
+      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
     }
   }, [messages, roomTab]);
 
@@ -883,8 +884,8 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
             )}
           </div>
         ) : (
-          <div className="flex flex-col h-full">
-            <div className="flex-1 overflow-y-auto space-y-4 pb-4">
+          <div className="flex flex-col h-full min-h-0">
+            <div ref={messagesEndRef} className="flex-1 overflow-y-auto space-y-4 pb-4 pr-2">
               {messages.length === 0 ? (
                 <div className="text-center text-slate-500 mt-10">No messages yet. Say hi!</div>
               ) : (
@@ -925,10 +926,9 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
                   </div>
                 ))
               )}
-              <div ref={messagesEndRef} />
             </div>
 
-            <form onSubmit={handleSendMessage} className="relative mt-2">
+            <form onSubmit={handleSendMessage} className="relative mt-2 shrink-0">
               <input
                 type="text"
                 value={newMessage}
