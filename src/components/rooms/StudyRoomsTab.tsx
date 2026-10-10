@@ -895,16 +895,7 @@ export default function StudyRoomsTab({ onBackToDashboard, isActiveTab }: StudyR
         )}
       </div>
 
-      {/* FAB (Floating Action Button) for My Groups view */}
-      {view === 'my_groups' && (
-        <button
-          onClick={() => { setView('explorer'); fetchExplorerRooms(); }}
-          className="fixed bottom-24 right-6 md:bottom-10 md:right-10 z-40 flex items-center justify-center w-14 h-14 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-full shadow-2xl shadow-amber-500/30 active:scale-95 transition-all text-2xl cursor-pointer"
-          title="Discover or Join Study Groups"
-        >
-          <Plus className="w-7 h-7" />
-        </button>
-      )}
+
 
       {/* Direct Join by Code Modal */}
       {mounted && typeof document !== 'undefined' && isJoinCodeModalOpen && createPortal(
