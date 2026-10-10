@@ -337,12 +337,6 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                 } else if (row.rank_title) {
                   computedRank = String(row.rank_title);
                 }
-              } catch (e) {}
-              
-              if (isMe && currentUser?.levelTitle) {
-                computedRank = currentUser.levelTitle;
-              }
-
               return {
                 user_id: String(row.user_id),
                 name: String(row.display_name || row.name || 'Scholar'),
@@ -405,12 +399,6 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                     } else if (p.rank_title) {
                       computedRank = String(p.rank_title);
                     }
-                  } catch (e) {}
-
-                  if (isMe && currentUser?.levelTitle) {
-                    computedRank = currentUser.levelTitle;
-                  }
-
                   return {
                     user_id: p.id,
                     name: p.name || 'Scholar',
