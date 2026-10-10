@@ -44,6 +44,16 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
 
   const [roomName, setRoomName] = useState<string>('Loading...');
   const [roomTab, setRoomTab] = useState<'home' | 'chat'>('home');
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+  const roomTabRef = useRef(roomTab);
+
+  useEffect(() => {
+    roomTabRef.current = roomTab;
+    if (roomTab === 'chat') {
+      setUnreadCount(0);
+    }
+  }, [roomTab]);
+
   const [dbMembers, setDbMembers] = useState<RoomMemberInfo[]>([]);
   const [presentUsers, setPresentUsers] = useState<any[]>([]);
   const [nowTick, setNowTick] = useState<number>(Date.now());
@@ -443,6 +453,11 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
       .on('broadcast', { event: 'new_message' }, (payload) => {
         setMessages((prev) => {
           if (prev.find((m) => m.id === payload.payload.id)) return prev;
+          
+          if (roomTabRef.current !== 'chat' && payload.payload.user_id !== user?.id) {
+            setUnreadCount((c) => c + 1);
+          }
+
           return [...prev, payload.payload];
         });
       })
@@ -756,13 +771,18 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
             </button>
             <button
               onClick={() => setRoomTab('chat')}
-              className={`px-3.5 py-1.5 rounded-lg text-sm font-bold transition-all ${
+              className={`px-3.5 py-1.5 rounded-lg text-sm font-bold transition-all relative ${
                 roomTab === 'chat'
                   ? 'bg-amber-500 text-slate-900 shadow-lg'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
               Chat
+              {unreadCount > 0 && (
+                <span className="absolute -top-1.5 -right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 min-w-[20px] text-center rounded-full border-2 border-[#07090e] shadow-md animate-in zoom-in duration-200">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
             </button>
           </div>
         </div>
