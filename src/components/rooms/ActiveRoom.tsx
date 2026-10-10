@@ -885,46 +885,71 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
           </div>
         ) : (
           <div className="flex flex-col h-full min-h-0">
-            <div ref={messagesEndRef} className="flex-1 overflow-y-auto space-y-4 pb-4 pr-2">
+            <div ref={messagesEndRef} className="flex-1 overflow-y-auto pb-4 pr-2 flex flex-col">
               {messages.length === 0 ? (
                 <div className="text-center text-slate-500 mt-10">No messages yet. Say hi!</div>
               ) : (
-                messages.map((msg) => (
-                  <div
-                    key={msg.id}
-                    className={`flex gap-3 ${msg.user_id === user?.id ? 'flex-row-reverse' : ''}`}
-                  >
-                    {msg.profiles?.avatar_url ? (
-                      <img
-                        src={msg.profiles.avatar_url}
-                        alt=""
-                        className="w-8 h-8 rounded-full flex-shrink-0 object-cover"
-                      />
-                    ) : (
-                      <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center flex-shrink-0">
-                        <UserIcon className="w-4 h-4 text-slate-400" />
-                      </div>
-                    )}
+                messages.map((msg, idx) => {
+                  const isMe = msg.user_id === user?.id;
+                  const prevMsg = messages[idx - 1];
+                  const nextMsg = messages[idx + 1];
+                  
+                  const isConsecutivePrev = prevMsg?.user_id === msg.user_id;
+                  const isConsecutiveNext = nextMsg?.user_id === msg.user_id;
+                  
+                  const timeString = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                  return (
                     <div
-                      className={`flex flex-col max-w-[75%] ${
-                        msg.user_id === user?.id ? 'items-end' : 'items-start'
-                      }`}
+                      key={msg.id}
+                      className={`flex gap-3 ${isMe ? 'flex-row-reverse' : ''} ${isConsecutivePrev ? 'mt-1' : 'mt-4'}`}
                     >
-                      <span className="text-xs text-slate-400 mb-1">
-                        {msg.profiles?.username || 'Scholar'}
-                      </span>
+                      <div className="w-8 h-8 flex-shrink-0 flex items-end">
+                        {!isConsecutiveNext && (
+                          msg.profiles?.avatar_url ? (
+                            <img
+                              src={msg.profiles.avatar_url}
+                              alt=""
+                              className="w-8 h-8 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center">
+                              <UserIcon className="w-4 h-4 text-slate-400" />
+                            </div>
+                          )
+                        )}
+                      </div>
+                      
                       <div
-                        className={`px-4 py-2 rounded-2xl text-sm ${
-                          msg.user_id === user?.id
-                            ? 'bg-amber-500 text-slate-900 rounded-tr-sm'
-                            : 'bg-white/10 text-slate-200 rounded-tl-sm'
+                        className={`flex flex-col max-w-[75%] ${
+                          isMe ? 'items-end' : 'items-start'
                         }`}
                       >
-                        {msg.content}
+                        {!isConsecutivePrev && (
+                          <span className="text-xs text-slate-400 mb-1 ml-1 mr-1">
+                            {msg.profiles?.username || 'Scholar'}
+                          </span>
+                        )}
+                        <div
+                          className={`px-4 py-2 text-sm shadow-sm ${
+                            isMe
+                              ? 'bg-amber-500 text-slate-900'
+                              : 'bg-slate-800/80 text-slate-200'
+                          } ${
+                            isMe
+                              ? `rounded-l-2xl ${isConsecutivePrev ? 'rounded-tr-sm' : 'rounded-tr-2xl'} ${isConsecutiveNext ? 'rounded-br-sm' : 'rounded-br-2xl'}`
+                              : `rounded-r-2xl ${isConsecutivePrev ? 'rounded-tl-sm' : 'rounded-tl-2xl'} ${isConsecutiveNext ? 'rounded-bl-sm' : 'rounded-bl-2xl'}`
+                          }`}
+                        >
+                          {msg.content}
+                        </div>
+                        {!isConsecutiveNext && (
+                          <span className="text-[10px] text-slate-500 mt-1 ml-1 mr-1 font-medium">{timeString}</span>
+                        )}
                       </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
 
