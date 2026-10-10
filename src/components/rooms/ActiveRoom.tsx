@@ -18,6 +18,8 @@ interface RoomMemberInfo {
   timer_start_at: number | null;
   accumulated_seconds?: number;
   today_seconds: number;
+  session_seconds?: number;
+  total_focus_seconds?: number;
   is_online: boolean;
   is_current_user?: boolean;
 }
@@ -46,6 +48,20 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
   const [presentUsers, setPresentUsers] = useState<any[]>([]);
   const [nowTick, setNowTick] = useState<number>(Date.now());
 
+  // Real-time peer-to-peer focus telemetry map
+  const [liveFocusMap, setLiveFocusMap] = useState<
+    Record<
+      string,
+      {
+        is_studying: boolean;
+        session_start_time: number | null;
+        today_seconds: number;
+        session_seconds: number;
+        last_seen: number;
+      }
+    >
+  >({});
+
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -56,9 +72,22 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
     if (!user) return null;
     return {
       username: (user as any).username || user.displayName || 'Scholar',
-      avatar_url: user.avatarUrl || (user as any).avatar_url || (user as any).user_metadata?.avatar_url || (user as any).user_metadata?.picture || null,
+      avatar_url:
+        user.avatarUrl ||
+        (user as any).avatar_url ||
+        (user as any).user_metadata?.avatar_url ||
+        (user as any).user_metadata?.picture ||
+        null,
     };
-  }, [user?.id, (user as any)?.username, user?.displayName, user?.avatarUrl, (user as any)?.avatar_url, (user as any)?.user_metadata?.avatar_url, (user as any)?.user_metadata?.picture]);
+  }, [
+    user?.id,
+    (user as any)?.username,
+    user?.displayName,
+    user?.avatarUrl,
+    (user as any)?.avatar_url,
+    (user as any)?.user_metadata?.avatar_url,
+    (user as any)?.user_metadata?.picture,
+  ]);
 
   const profileRef = useRef(profile);
   profileRef.current = profile;
@@ -76,6 +105,107 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
     }, 1000);
     return () => clearInterval(timer);
   }, []);
+
+  // Handle incoming focus broadcast from another peer
+  const handleFocusUpdate = useCallback(
+    (payload: any) => {
+      if (!payload || !payload.user_id) return;
+      if (payload.user_id === user?.id) return;
+
+      setLiveFocusMap((prev) => ({
+        ...prev,
+        [payload.user_id]: {
+          is_studying: Boolean(payload.is_studying),
+          session_start_time:
+            payload.session_start_time ?? (payload.is_studying ? Date.now() : null),
+          today_seconds: Number(payload.today_seconds || 0),
+          session_seconds: Number(payload.session_seconds || 0),
+          last_seen: Date.now(),
+        },
+      }));
+    },
+    [user?.id]
+  );
+
+  // Broadcast current focus telemetry over room chat and global study hub
+  const sendFocusBroadcast = useCallback(() => {
+    if (!user?.id) return;
+    const todayTotal = getTodayTotalSeconds ? getTodayTotalSeconds() : 0;
+    const payload = {
+      user_id: user.id,
+      is_studying: isTimerRunning,
+      session_start_time: isTimerRunning ? Date.now() - (elapsedSeconds * 1000) : null,
+      session_seconds: elapsedSeconds,
+      today_seconds: todayTotal,
+      timestamp: Date.now(),
+    };
+
+    if (chatChannelRef.current) {
+      chatChannelRef.current
+        .send({
+          type: 'broadcast',
+          event: 'focus_status_update',
+          payload,
+        })
+        .catch(() => {});
+    }
+
+    const supabase = getSupabase();
+    if (supabase) {
+      try {
+        const hub = supabase.channel('study_rooms_realtime_hub');
+        hub
+          .send({
+            type: 'broadcast',
+            event: 'focus_status_update',
+            payload,
+          })
+          .catch(() => {});
+      } catch {}
+    }
+  }, [user?.id, isTimerRunning, elapsedSeconds, getTodayTotalSeconds]);
+
+  // Periodic heartbeat broadcast while studying so all peers see live progress
+  useEffect(() => {
+    sendFocusBroadcast();
+    if (!isTimerRunning) return;
+
+    const interval = setInterval(() => {
+      sendFocusBroadcast();
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [isTimerRunning, sendFocusBroadcast]);
+
+  // On mount, ask other peers for their active focus status
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (chatChannelRef.current) {
+        chatChannelRef.current
+          .send({
+            type: 'broadcast',
+            event: 'ping_focus_status',
+            payload: { requester_id: user?.id },
+          })
+          .catch(() => {});
+      }
+      const supabase = getSupabase();
+      if (supabase) {
+        try {
+          const hub = supabase.channel('study_rooms_realtime_hub');
+          hub
+            .send({
+              type: 'broadcast',
+              event: 'ping_focus_status',
+              payload: { requester_id: user?.id },
+            })
+            .catch(() => {});
+        } catch {}
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [user?.id]);
 
   // Fetch all registered members of this room + their active sessions and total study time today
   const fetchRoomMembers = useCallback(async () => {
@@ -223,12 +353,20 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
       .on('broadcast', { event: 'room_changed' }, () => {
         fetchRoomMembers();
       })
+      .on('broadcast', { event: 'focus_status_update' }, (payload) => {
+        handleFocusUpdate(payload.payload);
+      })
+      .on('broadcast', { event: 'ping_focus_status' }, () => {
+        if (isTimerRunning) {
+          sendFocusBroadcast();
+        }
+      })
       .subscribe();
 
     return () => {
       supabase.removeChannel(hubChannel);
     };
-  }, [roomId, fetchRoomMembers]);
+  }, [roomId, fetchRoomMembers, handleFocusUpdate, isTimerRunning, sendFocusBroadcast]);
 
   // Realtime Presence Channel
   useEffect(() => {
@@ -286,6 +424,14 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
           return [...prev, payload.payload];
         });
       })
+      .on('broadcast', { event: 'focus_status_update' }, (payload) => {
+        handleFocusUpdate(payload.payload);
+      })
+      .on('broadcast', { event: 'ping_focus_status' }, () => {
+        if (isTimerRunning) {
+          sendFocusBroadcast();
+        }
+      })
       .subscribe();
 
     return () => {
@@ -295,7 +441,7 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
       channelRef.current = null;
       chatChannelRef.current = null;
     };
-  }, [roomId, user?.id]);
+  }, [roomId, user?.id, handleFocusUpdate, isTimerRunning, sendFocusBroadcast]);
 
   // Update presence status live when timer starts or stops
   useEffect(() => {
@@ -315,7 +461,15 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
         console.error('Tracking error:', err);
       }
     }
-  }, [isTimerRunning, user?.id, profile?.username, profile?.avatar_url, getTodayTotalSeconds]);
+    sendFocusBroadcast();
+  }, [
+    isTimerRunning,
+    user?.id,
+    profile?.username,
+    profile?.avatar_url,
+    getTodayTotalSeconds,
+    sendFocusBroadcast,
+  ]);
 
   // Fetch chat messages
   useEffect(() => {
@@ -387,7 +541,7 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
     setIsSending(false);
   };
 
-  // Merge DB registered members with live Realtime presence
+  // Merge DB registered members with live Realtime presence & broadcast focus telemetry
   const displayUsers = useMemo(() => {
     const presentMap = new Map<string, any>();
     presentUsers.forEach((pu) => {
@@ -403,6 +557,7 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
       seenUserIds.add(member.user_id);
       const isCurrentUser = member.user_id === user?.id;
       const pu = presentMap.get(member.user_id);
+      const liveFocus = liveFocusMap[member.user_id];
 
       let isStudying = false;
       let isOnline = false;
@@ -416,21 +571,36 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
         if (getTodayTotalSeconds) {
           todaySec = Math.max(todaySec, getTodayTotalSeconds());
         }
+      } else if (liveFocus && Date.now() - liveFocus.last_seen < 60000) {
+        // High-priority peer-to-peer broadcast telemetry
+        isOnline = true;
+        isStudying = liveFocus.is_studying;
+        todaySec = Math.max(todaySec, liveFocus.today_seconds);
+        if (isStudying) {
+          const start = liveFocus.session_start_time;
+          if (start) {
+            sessionSeconds = Math.max(0, Math.floor((nowTick - start) / 1000));
+          } else {
+            sessionSeconds = liveFocus.session_seconds || 0;
+          }
+        }
       } else if (pu) {
+        // Realtime presence state
         isOnline = true;
         isStudying = Boolean(pu.is_studying);
         const startTime = pu.session_start_time ?? member.timer_start_at;
-        if (startTime) {
+        if (startTime && isStudying) {
           sessionSeconds = Math.max(0, Math.floor((nowTick - startTime) / 1000));
         }
         if (pu.today_seconds) {
           todaySec = Math.max(todaySec, pu.today_seconds);
         }
       } else {
+        // Database active_sessions fallback
         isOnline = false;
         isStudying = member.is_studying;
         const startTime = member.timer_start_at;
-        if (startTime) {
+        if (startTime && isStudying) {
           sessionSeconds = Math.max(
             0,
             Math.floor((nowTick - startTime) / 1000) + (member.accumulated_seconds || 0)
@@ -438,13 +608,27 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
         }
       }
 
+      // "when I'm turning on the timer it is starting from zero it should add from today's total focus"
+      // If studying: adds live session seconds to today's total focus so it never restarts from 0!
+      // If resting: shows total focus accumulated today.
+      const totalFocusSeconds = isStudying ? todaySec + sessionSeconds : todaySec;
+
       result.push({
         ...member,
-        username: (isCurrentUser ? profile?.username : null) || member.username || pu?.username || 'Scholar',
-        avatar_url: (isCurrentUser ? profile?.avatar_url : null) || member.avatar_url || pu?.avatar_url || null,
+        username:
+          (isCurrentUser ? profile?.username : null) ||
+          member.username ||
+          pu?.username ||
+          'Scholar',
+        avatar_url:
+          (isCurrentUser ? profile?.avatar_url : null) ||
+          member.avatar_url ||
+          pu?.avatar_url ||
+          null,
         is_studying: isStudying,
         session_seconds: sessionSeconds,
         today_seconds: todaySec,
+        total_focus_seconds: totalFocusSeconds,
         is_online: isOnline,
         is_current_user: isCurrentUser,
       });
@@ -453,6 +637,7 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
     // Ensure current user is always included even before dbMembers load
     if (user?.id && !seenUserIds.has(user.id)) {
       const todaySec = getTodayTotalSeconds ? getTodayTotalSeconds() : 0;
+      const totalFocus = isTimerRunning ? todaySec + elapsedSeconds : todaySec;
       result.unshift({
         user_id: user.id,
         username: profile?.username || 'Scholar',
@@ -461,6 +646,7 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
         is_studying: isTimerRunning,
         session_seconds: elapsedSeconds,
         today_seconds: todaySec,
+        total_focus_seconds: totalFocus,
         is_online: true,
         is_current_user: true,
       });
@@ -472,7 +658,13 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
       if (pu?.user_id && !seenUserIds.has(pu.user_id)) {
         seenUserIds.add(pu.user_id);
         const startTime = pu.session_start_time;
-        const sessionSeconds = startTime ? Math.max(0, Math.floor((nowTick - startTime) / 1000)) : 0;
+        const sessionSeconds =
+          startTime && pu.is_studying
+            ? Math.max(0, Math.floor((nowTick - startTime) / 1000))
+            : 0;
+        const todaySec = pu.today_seconds || 0;
+        const totalFocus = pu.is_studying ? todaySec + sessionSeconds : todaySec;
+
         result.push({
           user_id: pu.user_id,
           username: pu.username || 'Scholar',
@@ -480,7 +672,8 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
           is_host: false,
           is_studying: Boolean(pu.is_studying),
           session_seconds: sessionSeconds,
-          today_seconds: pu.today_seconds || 0,
+          today_seconds: todaySec,
+          total_focus_seconds: totalFocus,
           is_online: true,
           is_current_user: false,
         });
@@ -491,6 +684,7 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
   }, [
     dbMembers,
     presentUsers,
+    liveFocusMap,
     user?.id,
     profile?.username,
     profile?.avatar_url,
@@ -554,6 +748,7 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
               const isStudying = u.is_studying;
               const sessionSec = u.session_seconds || 0;
               const todaySec = u.today_seconds || 0;
+              const totalFocusSec = u.total_focus_seconds ?? (isStudying ? todaySec + sessionSec : todaySec);
 
               return (
                 <div
@@ -607,10 +802,13 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
                     </div>
                   </div>
 
-                  {/* Member Name, Live Timer / Total Time Studied Today */}
+                  {/* Member Name, Total Time Studied Today (Adds up live when focusing) */}
                   <div className="text-center mt-1 flex flex-col items-center max-w-[130px]">
                     <div className="flex items-center gap-1.5 justify-center">
-                      <p className="text-sm font-bold text-slate-200 truncate max-w-[100px]" title={u.username}>
+                      <p
+                        className="text-sm font-bold text-slate-200 truncate max-w-[100px]"
+                        title={u.username}
+                      >
                         {u.username}
                       </p>
                       {u.is_host && (
@@ -620,7 +818,7 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
                       )}
                     </div>
 
-                    {/* Displays live session timer with seconds when studying, or total time studied today when paused/offline */}
+                    {/* Displays Total Focus Time Today with live seconds ticking up from today's total */}
                     <p
                       className={`text-sm font-mono mt-1 font-bold tracking-wider transition-colors ${
                         isStudying
@@ -628,21 +826,21 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
                           : 'text-slate-300'
                       }`}
                     >
-                      {formatSeconds(isStudying ? sessionSec : todaySec)}
+                      {formatSeconds(totalFocusSec)}
                     </p>
 
-                    {/* Subtitle explaining state */}
+                    {/* Subtitle explaining state and session progress */}
                     <span
                       className={`text-[10px] font-medium tracking-tight mt-0.5 ${
                         isStudying
-                          ? 'text-amber-400/90 font-semibold flex items-center gap-1'
+                          ? 'text-amber-400/90 font-semibold'
                           : u.is_online
                           ? 'text-slate-400'
                           : 'text-slate-500'
                       }`}
                     >
                       {isStudying ? (
-                        <span>Studying</span>
+                        <span>Studying ({formatSeconds(sessionSec)})</span>
                       ) : (
                         <span>Today • {u.is_online ? 'Paused' : 'Offline'}</span>
                       )}

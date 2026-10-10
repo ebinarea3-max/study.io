@@ -1259,6 +1259,23 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     const deviceId = getDeviceId();
     lastLocalActionRef.current = { timestamp: Date.now(), status };
 
+    // Broadcast focus status instantly to study rooms hub
+    try {
+      const hub = supabase.channel('study_rooms_realtime_hub');
+      hub.send({
+        type: 'broadcast',
+        event: 'focus_status_update',
+        payload: {
+          user_id: uid,
+          is_studying: status === 'running',
+          session_start_time: status === 'running' ? Date.now() - ((extra?.accumulatedSeconds || 0) * 1000) : null,
+          session_seconds: extra?.accumulatedSeconds || 0,
+          today_seconds: getTodayTotalSeconds ? getTodayTotalSeconds() : 0,
+          timestamp: Date.now(),
+        },
+      }).catch(() => {});
+    } catch {}
+
     const executeSync = async () => {
       if (status === 'stopped') {
         console.log('[Timer Write: syncActiveSessionToDb (stopped)]', {
@@ -1679,6 +1696,26 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
     runPoll();
 
+    // Listen on study_rooms_realtime_hub for pings from room members
+    const hub = supabase.channel('study_rooms_realtime_hub');
+    hub.on('broadcast', { event: 'ping_focus_status' }, () => {
+      if (isStudying && !isPaused && startTimeRef.current !== null) {
+        const elapsed = Math.max(0, Math.floor((Date.now() - startTimeRef.current) / 1000));
+        hub.send({
+          type: 'broadcast',
+          event: 'focus_status_update',
+          payload: {
+            user_id: userId,
+            is_studying: true,
+            session_start_time: startTimeRef.current,
+            session_seconds: elapsed,
+            today_seconds: getTodayTotalSeconds ? getTodayTotalSeconds() : 0,
+            timestamp: Date.now(),
+          },
+        }).catch(() => {});
+      }
+    }).subscribe();
+
     const interval = setInterval(() => {
       runPoll();
     }, 25000);
@@ -1694,6 +1731,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
     return () => {
       clearInterval(interval);
+      supabase.removeChannel(hub);
       document.removeEventListener('visibilitychange', handleFocus);
       window.removeEventListener('focus', handleFocus);
     };
