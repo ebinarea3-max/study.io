@@ -35,6 +35,7 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
   const chatChannelRef = useRef<any>(null);
   const isSubscribedRef = useRef<boolean>(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const clientIdRef = useRef(Math.random().toString(36).substring(2, 7));
 
   useEffect(() => {
     const fetchRoom = async () => {
@@ -55,7 +56,7 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
     isSubscribedRef.current = false;
 
     const presenceChannel = supabase.channel(`presence_room_${roomId}`, {
-      config: { presence: { key: user.id } }
+      config: { presence: { key: `${user.id}_${clientIdRef.current}` } }
     });
     channelRef.current = presenceChannel;
 

@@ -209,7 +209,7 @@ export default function Home() {
             ),
             rooms: (
               <ErrorBoundary fallbackTitle="Study Rooms">
-                <StudyRoomsTab onBackToDashboard={() => setActiveTab('timer')} />
+                <StudyRoomsTab onBackToDashboard={() => setActiveTab('timer')} isActiveTab={activeTab === 'rooms'} />
               </ErrorBoundary>
             ),
             settings: (
