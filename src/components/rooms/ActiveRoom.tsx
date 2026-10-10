@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { ChevronLeft, Flame, Moon, User as UserIcon, Send, Play, Pause } from 'lucide-react';
+import { ChevronLeft, Flame, Moon, User as UserIcon, Send } from 'lucide-react';
 import { getSupabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useStudy } from '../../context/StudyContext';
@@ -38,7 +38,7 @@ export function formatSeconds(totalSeconds: number): string {
 
 export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
   const { user } = useAuth();
-  const { isRunning, elapsedSeconds, startTimer, pauseTimer, getTodayTotalSeconds } = useStudy();
+  const { isRunning, elapsedSeconds, getTodayTotalSeconds } = useStudy();
 
   const [roomName, setRoomName] = useState<string>('Loading...');
   const [roomTab, setRoomTab] = useState<'home' | 'chat'>('home');
@@ -521,36 +521,7 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5">
-          {/* Quick study timer control directly from the room */}
-          <button
-            onClick={() => {
-              if (isTimerRunning) {
-                pauseTimer();
-              } else {
-                startTimer();
-              }
-            }}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-md ${
-              isTimerRunning
-                ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30 hover:bg-amber-500/25'
-                : 'bg-amber-500 text-slate-950 hover:bg-amber-400 shadow-amber-500/20'
-            }`}
-            title={isTimerRunning ? 'Pause Study Session' : 'Start Study Session'}
-          >
-            {isTimerRunning ? (
-              <>
-                <Pause className="w-3.5 h-3.5 fill-amber-400" />
-                <span>Pause ({formatSeconds(elapsedSeconds)})</span>
-              </>
-            ) : (
-              <>
-                <Play className="w-3.5 h-3.5 fill-slate-950" />
-                <span>Start Timer</span>
-              </>
-            )}
-          </button>
-
+        <div className="flex items-center">
           <div className="flex bg-white/5 p-1 rounded-xl">
             <button
               onClick={() => setRoomTab('home')}
