@@ -897,7 +897,7 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
                     groups.push([msg]);
                   }
                   return groups;
-                }, [] as typeof messages[]).map((group) => {
+                }, [] as typeof messages[]).map((group: typeof messages) => {
                   const firstMsg = group[0];
                   const lastMsg = group[group.length - 1];
                   const isMe = firstMsg.user_id === user?.id;
@@ -929,7 +929,7 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
 
                         {/* Bubbles Column */}
                         <div className={`flex flex-col gap-1 ${isMe ? 'items-end' : 'items-start'}`}>
-                          {group.map((msg, idx) => {
+                          {group.map((msg: any, idx: number) => {
                             const isFirst = idx === 0;
                             const isLast = idx === group.length - 1;
                             return (
