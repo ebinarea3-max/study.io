@@ -379,10 +379,25 @@ export default function StudyRoomsTab({ onBackToDashboard, isActiveTab }: StudyR
       setIsJoining(false);
       return;
     }
-
     try {
+      // 1. Check if already a member
+      const { data: existingMember } = await supabase
+        .from('room_members')
+        .select('user_id')
+        .eq('room_id', roomId)
+        .eq('user_id', user.id)
+        .single();
+
+      if (existingMember) {
+        setSelectedRoomToJoin(null);
+        setJoinPassword('');
+        setActiveRoomId(roomId);
+        setIsJoining(false);
+        return;
+      }
+
+      // 2. Validate Password
       if (passwordAttempt !== null && selectedRoomToJoin) {
-        // Validate password against room
         const { data: roomData, error: roomError } = await supabase
           .from('study_rooms')
           .select('password')
@@ -400,6 +415,26 @@ export default function StudyRoomsTab({ onBackToDashboard, isActiveTab }: StudyR
           setIsJoining(false);
           return;
         }
+      }
+
+      // 3. Enforce Max Capacity
+      const { data: capacityData, error: capacityError } = await supabase
+        .from('study_rooms')
+        .select('max_capacity, room_members(count)')
+        .eq('id', roomId)
+        .single();
+
+      if (capacityError || !capacityData) {
+        alert('Could not verify room capacity.');
+        setIsJoining(false);
+        return;
+      }
+
+      const currentCount = (capacityData.room_members as any)?.[0]?.count || 0;
+      if (capacityData.max_capacity && currentCount >= capacityData.max_capacity) {
+        alert('This room has reached its maximum capacity.');
+        setIsJoining(false);
+        return;
       }
 
       const { error } = await supabase.from('room_members').insert([
