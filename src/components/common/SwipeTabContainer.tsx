@@ -155,9 +155,9 @@ export function SwipeTabContainer({
             key={tab}
             className={`flex-shrink-0 flex flex-col transition-opacity duration-300 h-full ${
               currentIndex === idx
-                ? tab === 'timer'
-                  ? 'overflow-hidden'          // Timer tab: no scroll, fills viewport exactly
-                  : 'overflow-y-auto pb-28'    // All other tabs: scrollable with bottom nav clearance
+                ? (tab === 'timer' || tab === 'rooms')
+                  ? 'overflow-hidden pb-0'
+                  : 'overflow-y-auto pb-28'
                 : 'overflow-hidden pointer-events-none'
             }`}
             style={{
