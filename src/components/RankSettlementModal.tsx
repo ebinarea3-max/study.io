@@ -513,7 +513,7 @@ export function RankSettlementModal({
   if (!isOpen || !data) return null;
 
   const remainingRP = Math.max(0, getMaxRpForTier(displayRank.name) - animatingRP);
-  const currentRankIndex = RANK_TIERS.findIndex(t => t.name === displayRank.name);
+  const currentRankIndex = RANK_TIERS.findIndex(t => t.name.toLowerCase() === displayRank.name.toLowerCase());
   const nextTier = (currentRankIndex !== -1 && currentRankIndex < RANK_TIERS.length - 1)
     ? RANK_TIERS[currentRankIndex + 1]
     : null;

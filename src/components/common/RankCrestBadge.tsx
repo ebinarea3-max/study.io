@@ -23,7 +23,8 @@ const TIER_SCALES: Record<string, number> = {
 };
 
 const DIVISION_MAP: Record<string, string> = {
-  'I': '1', 'II': '2', 'III': '3', 'IV': '4'
+  'I': '1', 'II': '2', 'III': '3', 'IV': '4',
+  '1': '1', '2': '2', '3': '3', '4': '4',
 };
 
 export function RankCrestBadge({
