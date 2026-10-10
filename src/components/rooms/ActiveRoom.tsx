@@ -889,26 +889,34 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
               {messages.length === 0 ? (
                 <div className="text-center text-slate-500 mt-10">No messages yet. Say hi!</div>
               ) : (
-                messages.map((msg, idx) => {
-                  const isMe = msg.user_id === user?.id;
-                  const prevMsg = messages[idx - 1];
-                  const nextMsg = messages[idx + 1];
-                  
-                  const isConsecutivePrev = prevMsg?.user_id === msg.user_id;
-                  const isConsecutiveNext = nextMsg?.user_id === msg.user_id;
-                  
-                  const timeString = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                messages.reduce((groups, msg) => {
+                  const lastGroup = groups[groups.length - 1];
+                  if (lastGroup && lastGroup[0].user_id === msg.user_id) {
+                    lastGroup.push(msg);
+                  } else {
+                    groups.push([msg]);
+                  }
+                  return groups;
+                }, [] as typeof messages[]).map((group) => {
+                  const firstMsg = group[0];
+                  const lastMsg = group[group.length - 1];
+                  const isMe = firstMsg.user_id === user?.id;
+                  const timeString = new Date(lastMsg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
                   return (
-                    <div
-                      key={msg.id}
-                      className={`flex gap-3 ${isMe ? 'flex-row-reverse' : ''} ${isConsecutivePrev ? 'mt-1' : 'mt-4'}`}
-                    >
-                      <div className="w-8 h-8 flex-shrink-0 flex items-end">
-                        {!isConsecutiveNext && (
-                          msg.profiles?.avatar_url ? (
+                    <div key={`group-${firstMsg.id}`} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} mt-4`}>
+                      {/* Username */}
+                      <span className={`text-xs text-slate-400 mb-1 ${isMe ? 'mr-11' : 'ml-11'}`}>
+                        {firstMsg.profiles?.username || 'Scholar'}
+                      </span>
+
+                      {/* Avatar and Bubbles Row */}
+                      <div className={`flex gap-3 ${isMe ? 'flex-row-reverse' : ''} items-end max-w-[85%]`}>
+                        {/* Avatar */}
+                        <div className="w-8 flex-shrink-0">
+                          {firstMsg.profiles?.avatar_url ? (
                             <img
-                              src={msg.profiles.avatar_url}
+                              src={firstMsg.profiles.avatar_url}
                               alt=""
                               className="w-8 h-8 rounded-full object-cover"
                             />
@@ -916,37 +924,36 @@ export default function ActiveRoom({ roomId, onBack }: ActiveRoomProps) {
                             <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center">
                               <UserIcon className="w-4 h-4 text-slate-400" />
                             </div>
-                          )
-                        )}
-                      </div>
-                      
-                      <div
-                        className={`flex flex-col max-w-[75%] ${
-                          isMe ? 'items-end' : 'items-start'
-                        }`}
-                      >
-                        {!isConsecutivePrev && (
-                          <span className="text-xs text-slate-400 mb-1 ml-1 mr-1">
-                            {msg.profiles?.username || 'Scholar'}
-                          </span>
-                        )}
-                        <div
-                          className={`px-4 py-2 text-sm shadow-sm ${
-                            isMe
-                              ? 'bg-amber-500 text-slate-900'
-                              : 'bg-slate-800/80 text-slate-200'
-                          } ${
-                            isMe
-                              ? `rounded-l-2xl ${isConsecutivePrev ? 'rounded-tr-sm' : 'rounded-tr-2xl'} ${isConsecutiveNext ? 'rounded-br-sm' : 'rounded-br-2xl'}`
-                              : `rounded-r-2xl ${isConsecutivePrev ? 'rounded-tl-sm' : 'rounded-tl-2xl'} ${isConsecutiveNext ? 'rounded-bl-sm' : 'rounded-bl-2xl'}`
-                          }`}
-                        >
-                          {msg.content}
+                          )}
                         </div>
-                        {!isConsecutiveNext && (
-                          <span className="text-[10px] text-slate-500 mt-1 ml-1 mr-1 font-medium">{timeString}</span>
-                        )}
+
+                        {/* Bubbles Column */}
+                        <div className={`flex flex-col gap-1 ${isMe ? 'items-end' : 'items-start'}`}>
+                          {group.map((msg, idx) => {
+                            const isFirst = idx === 0;
+                            const isLast = idx === group.length - 1;
+                            return (
+                              <div
+                                key={msg.id}
+                                className={`px-4 py-2 text-sm shadow-sm ${
+                                  isMe ? 'bg-amber-500 text-slate-900' : 'bg-slate-800/80 text-slate-200'
+                                } ${
+                                  isMe
+                                    ? `rounded-l-2xl ${isFirst ? 'rounded-tr-2xl' : 'rounded-tr-sm'} ${isLast ? 'rounded-br-2xl' : 'rounded-br-sm'}`
+                                    : `rounded-r-2xl ${isFirst ? 'rounded-tl-2xl' : 'rounded-tl-sm'} ${isLast ? 'rounded-bl-2xl' : 'rounded-bl-sm'}`
+                                }`}
+                              >
+                                {msg.content}
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
+
+                      {/* Timestamp */}
+                      <span className={`text-[10px] text-slate-500 mt-1 ${isMe ? 'mr-11' : 'ml-11'} font-medium`}>
+                        {timeString}
+                      </span>
                     </div>
                   );
                 })
