@@ -1022,7 +1022,7 @@ CREATE POLICY "Hosts can update their own study rooms"
 
   return (
     <div className="w-full h-full flex-1 min-h-0 bg-[#07090e] flex flex-col relative text-slate-200">
-      <header className="shrink-0 flex items-center justify-between p-4 border-b border-white/5 bg-white/[0.02]">
+      <header className="shrink-0 flex items-center justify-between px-4 py-2.5 mx-4 mt-3 rounded-2xl bg-white/[0.02] border border-white/5 backdrop-blur-md">
         <div className="flex items-center gap-3">
           <button
             onClick={onBack}
