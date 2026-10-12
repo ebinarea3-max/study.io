@@ -55,6 +55,7 @@ interface RoomMemberInfo {
   is_studying: boolean;
   timer_start_at: number | null;
   accumulated_seconds?: number;
+  base_today_seconds?: number;
   today_seconds: number;
   session_seconds?: number;
   total_focus_seconds?: number;
@@ -188,6 +189,7 @@ CREATE POLICY "Hosts can update their own study rooms"
       {
         is_studying: boolean;
         session_start_time: number | null;
+        base_today_seconds?: number;
         today_seconds: number;
         session_seconds: number;
         last_seen: number;
@@ -256,14 +258,22 @@ CREATE POLICY "Hosts can update their own study rooms"
       if (!payload || !payload.user_id) return;
       if (payload.user_id === user?.id) return;
 
+      const isStudying = Boolean(payload.is_studying);
+      const sessionSeconds = Number(payload.session_seconds || 0);
+      const todayTotal = Number(payload.today_seconds || 0);
+      const baseToday = payload.base_today_seconds !== undefined
+        ? Number(payload.base_today_seconds)
+        : Math.max(0, todayTotal - (isStudying ? sessionSeconds : 0));
+
       setLiveFocusMap((prev) => ({
         ...prev,
         [payload.user_id]: {
-          is_studying: Boolean(payload.is_studying),
+          is_studying: isStudying,
           session_start_time:
-            payload.session_start_time ?? (payload.is_studying ? Date.now() : null),
-          today_seconds: Number(payload.today_seconds || 0),
-          session_seconds: Number(payload.session_seconds || 0),
+            payload.session_start_time ?? (isStudying ? Date.now() - (sessionSeconds * 1000) : null),
+          base_today_seconds: baseToday,
+          today_seconds: todayTotal,
+          session_seconds: sessionSeconds,
           last_seen: Date.now(),
         },
       }));
@@ -277,12 +287,14 @@ CREATE POLICY "Hosts can update their own study rooms"
     const isRunning = isTimerRunningRef.current;
     const elapsed = elapsedSecondsRef.current;
     const todayTotal = getTodayTotalSecondsRef.current ? getTodayTotalSecondsRef.current() : 0;
+    const baseToday = Math.max(0, todayTotal - (isRunning ? elapsed : 0));
     
     const payload = {
       user_id: user.id,
       is_studying: isRunning,
       session_start_time: isRunning ? Date.now() - (elapsed * 1000) : null,
       session_seconds: elapsed,
+      base_today_seconds: baseToday,
       today_seconds: todayTotal,
       timestamp: Date.now(),
     };
@@ -446,10 +458,7 @@ CREATE POLICY "Hosts can update their own study rooms"
         const isSessionRunning = sess?.status === 'running';
         const startTime = sess?.started_at ? new Date(sess.started_at).getTime() : null;
 
-        let todaySec = userTodayMap.get(uid) || 0;
-        if (uid === user?.id && getTodayTotalSecondsRef.current) {
-          todaySec = Math.max(todaySec, getTodayTotalSecondsRef.current());
-        }
+        const baseToday = userTodayMap.get(uid) || 0;
 
         return {
           user_id: uid,
@@ -464,7 +473,8 @@ CREATE POLICY "Hosts can update their own study rooms"
           is_studying: isSessionRunning,
           timer_start_at: startTime,
           accumulated_seconds: Number(sess?.accumulated_seconds || 0),
-          today_seconds: todaySec,
+          base_today_seconds: baseToday,
+          today_seconds: baseToday,
           is_online: false,
         };
       });
@@ -561,15 +571,21 @@ CREATE POLICY "Hosts can update their own study rooms"
         if (status === 'SUBSCRIBED') {
           isSubscribedRef.current = true;
           try {
+            const isRunning = isTimerRunningRef.current;
+            const elapsed = elapsedSecondsRef.current;
+            const todayTotal = getTodayTotalSeconds ? getTodayTotalSeconds() : 0;
+            const baseToday = Math.max(0, todayTotal - (isRunning ? elapsed : 0));
+
             await presenceChannel.track({
               user_id: user.id,
               client_id: clientIdRef.current,
               username: profileRef.current?.username || user?.email || 'Scholar',
               avatar_url: profileRef.current?.avatar_url || null,
-              is_studying: isTimerRunning,
-              session_start_time: isTimerRunning ? Date.now() - (elapsedSeconds * 1000) : null,
-              elapsed_seconds: elapsedSeconds,
-              today_seconds: getTodayTotalSeconds ? getTodayTotalSeconds() : 0,
+              is_studying: isRunning,
+              session_start_time: isRunning ? Date.now() - (elapsed * 1000) : null,
+              elapsed_seconds: elapsed,
+              base_today_seconds: baseToday,
+              today_seconds: todayTotal,
             });
           } catch (err) {
             console.error('Initial presence track error:', err);
@@ -616,15 +632,21 @@ CREATE POLICY "Hosts can update their own study rooms"
   useEffect(() => {
     if (channelRef.current && user?.id && isSubscribedRef.current) {
       try {
+        const isRunning = isTimerRunning;
+        const elapsed = elapsedSeconds;
+        const todayTotal = getTodayTotalSeconds ? getTodayTotalSeconds() : 0;
+        const baseToday = Math.max(0, todayTotal - (isRunning ? elapsed : 0));
+
         channelRef.current.track({
           user_id: user.id,
           client_id: clientIdRef.current,
           username: profile?.username || user?.email || 'Scholar',
           avatar_url: profile?.avatar_url || null,
-          is_studying: isTimerRunning,
-          session_start_time: isTimerRunning ? Date.now() - (elapsedSeconds * 1000) : null,
-          elapsed_seconds: elapsedSeconds,
-          today_seconds: getTodayTotalSeconds ? getTodayTotalSeconds() : 0,
+          is_studying: isRunning,
+          session_start_time: isRunning ? Date.now() - (elapsed * 1000) : null,
+          elapsed_seconds: elapsed,
+          base_today_seconds: baseToday,
+          today_seconds: todayTotal,
         });
       } catch (err) {
         console.error('Tracking error:', err);
@@ -633,6 +655,7 @@ CREATE POLICY "Hosts can update their own study rooms"
     sendFocusBroadcast();
   }, [
     isTimerRunning,
+    elapsedSeconds,
     user?.id,
     profile?.username,
     profile?.avatar_url,
@@ -736,56 +759,68 @@ CREATE POLICY "Hosts can update their own study rooms"
       let isStudying = false;
       let isOnline = false;
       let sessionSeconds = 0;
-      let todaySec = member.today_seconds || 0;
+      let baseToday = member.base_today_seconds ?? member.today_seconds ?? 0;
+      let totalFocusSeconds = baseToday;
 
       if (isCurrentUser) {
         isStudying = isTimerRunning;
-        sessionSeconds = elapsedSeconds;
+        sessionSeconds = isTimerRunning ? elapsedSeconds : 0;
         isOnline = true;
-        if (getTodayTotalSeconds) {
-          todaySec = Math.max(todaySec, getTodayTotalSeconds());
-        }
+        totalFocusSeconds = getTodayTotalSeconds ? getTodayTotalSeconds() : sessionSeconds;
+        baseToday = Math.max(0, totalFocusSeconds - sessionSeconds);
       } else if (liveFocus && Date.now() - liveFocus.last_seen < 60000) {
         // High-priority peer-to-peer broadcast telemetry
         isOnline = true;
         isStudying = liveFocus.is_studying;
-        todaySec = Math.max(todaySec, liveFocus.today_seconds);
         if (isStudying) {
           const start = liveFocus.session_start_time;
-          if (start) {
-            sessionSeconds = Math.max(0, Math.floor((nowTick - start) / 1000));
-          } else {
-            sessionSeconds = liveFocus.session_seconds || 0;
-          }
+          sessionSeconds = start
+            ? Math.max(0, Math.floor((nowTick - start) / 1000))
+            : (liveFocus.session_seconds || 0);
+          const peerBase = liveFocus.base_today_seconds !== undefined
+            ? liveFocus.base_today_seconds
+            : Math.max(0, (liveFocus.today_seconds || 0) - (liveFocus.session_seconds || 0));
+          baseToday = Math.max(baseToday, peerBase);
+          totalFocusSeconds = baseToday + sessionSeconds;
+        } else {
+          sessionSeconds = 0;
+          baseToday = Math.max(baseToday, liveFocus.base_today_seconds ?? liveFocus.today_seconds ?? 0);
+          totalFocusSeconds = baseToday;
         }
       } else if (pu) {
         // Realtime presence state
         isOnline = true;
         isStudying = Boolean(pu.is_studying);
-        const startTime = pu.session_start_time ?? member.timer_start_at;
-        if (startTime && isStudying) {
-          sessionSeconds = Math.max(0, Math.floor((nowTick - startTime) / 1000));
-        }
-        if (pu.today_seconds) {
-          todaySec = Math.max(todaySec, pu.today_seconds);
+        if (isStudying) {
+          const startTime = pu.session_start_time ?? member.timer_start_at;
+          sessionSeconds = startTime
+            ? Math.max(0, Math.floor((nowTick - startTime) / 1000))
+            : (pu.elapsed_seconds || 0);
+          const peerBase = pu.base_today_seconds !== undefined
+            ? pu.base_today_seconds
+            : Math.max(0, (pu.today_seconds || 0) - (pu.elapsed_seconds || 0));
+          baseToday = Math.max(baseToday, peerBase);
+          totalFocusSeconds = baseToday + sessionSeconds;
+        } else {
+          sessionSeconds = 0;
+          baseToday = Math.max(baseToday, pu.base_today_seconds ?? pu.today_seconds ?? 0);
+          totalFocusSeconds = baseToday;
         }
       } else {
         // Database active_sessions fallback
         isOnline = false;
         isStudying = member.is_studying;
-        const startTime = member.timer_start_at;
-        if (startTime && isStudying) {
+        if (isStudying && member.timer_start_at) {
           sessionSeconds = Math.max(
             0,
-            Math.floor((nowTick - startTime) / 1000) + (member.accumulated_seconds || 0)
+            Math.floor((nowTick - member.timer_start_at) / 1000) + (member.accumulated_seconds || 0)
           );
+          totalFocusSeconds = baseToday + sessionSeconds;
+        } else {
+          sessionSeconds = 0;
+          totalFocusSeconds = baseToday;
         }
       }
-
-      // "when I'm turning on the timer it is starting from zero it should add from today's total focus"
-      // If studying: adds live session seconds to today's total focus so it never restarts from 0!
-      // If resting: shows total focus accumulated today.
-      const totalFocusSeconds = isStudying ? todaySec + sessionSeconds : todaySec;
 
       result.push({
         ...member,
@@ -801,7 +836,7 @@ CREATE POLICY "Hosts can update their own study rooms"
           null,
         is_studying: isStudying,
         session_seconds: sessionSeconds,
-        today_seconds: todaySec,
+        today_seconds: baseToday,
         total_focus_seconds: totalFocusSeconds,
         is_online: isOnline,
         is_current_user: isCurrentUser,
@@ -810,16 +845,17 @@ CREATE POLICY "Hosts can update their own study rooms"
 
     // Ensure current user is always included even before dbMembers load
     if (user?.id && !seenUserIds.has(user.id)) {
-      const todaySec = getTodayTotalSeconds ? getTodayTotalSeconds() : 0;
-      const totalFocus = isTimerRunning ? todaySec + elapsedSeconds : todaySec;
+      const sessionSeconds = isTimerRunning ? elapsedSeconds : 0;
+      const totalFocus = getTodayTotalSeconds ? getTodayTotalSeconds() : sessionSeconds;
+      const baseToday = Math.max(0, totalFocus - sessionSeconds);
       result.unshift({
         user_id: user.id,
         username: profile?.username || 'Scholar',
         avatar_url: profile?.avatar_url || null,
         is_host: Boolean(user?.id && roomInfo?.host_id === user.id),
         is_studying: isTimerRunning,
-        session_seconds: elapsedSeconds,
-        today_seconds: todaySec,
+        session_seconds: sessionSeconds,
+        today_seconds: baseToday,
         total_focus_seconds: totalFocus,
         is_online: true,
         is_current_user: true,
@@ -831,22 +867,25 @@ CREATE POLICY "Hosts can update their own study rooms"
     for (const pu of presentUsers) {
       if (pu?.user_id && !seenUserIds.has(pu.user_id)) {
         seenUserIds.add(pu.user_id);
+        const isStudying = Boolean(pu.is_studying);
         const startTime = pu.session_start_time;
         const sessionSeconds =
-          startTime && pu.is_studying
+          startTime && isStudying
             ? Math.max(0, Math.floor((nowTick - startTime) / 1000))
-            : 0;
-        const todaySec = pu.today_seconds || 0;
-        const totalFocus = pu.is_studying ? todaySec + sessionSeconds : todaySec;
+            : (pu.elapsed_seconds || 0);
+        const baseToday = pu.base_today_seconds !== undefined
+          ? pu.base_today_seconds
+          : Math.max(0, (pu.today_seconds || 0) - (pu.elapsed_seconds || 0));
+        const totalFocus = isStudying ? baseToday + sessionSeconds : baseToday;
 
         result.push({
           user_id: pu.user_id,
           username: pu.username || 'Scholar',
           avatar_url: pu.avatar_url || null,
           is_host: Boolean(pu.user_id && roomInfo?.host_id === pu.user_id),
-          is_studying: Boolean(pu.is_studying),
+          is_studying: isStudying,
           session_seconds: sessionSeconds,
-          today_seconds: todaySec,
+          today_seconds: baseToday,
           total_focus_seconds: totalFocus,
           is_online: true,
           is_current_user: false,
