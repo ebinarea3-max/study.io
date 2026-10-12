@@ -22,17 +22,7 @@ import {
   Crown,
   Globe,
   Trash2,
-  X,
-  Sparkles,
-  Shield,
-  ShieldCheck,
-  ShieldAlert,
-  Dices,
-  RotateCcw,
-  Compass,
-  Sliders,
-  Activity,
-  KeyRound,
+  X
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getSupabase, broadcast } from '../../lib/supabase';
@@ -113,20 +103,7 @@ export default function ActiveRoom({ roomId, onBack, initialTab }: ActiveRoomPro
   const [copiedRlsSql, setCopiedRlsSql] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeletingRoom, setIsDeletingRoom] = useState(false);
-  const [isFormDirty, setIsFormDirty] = useState(false);
   const isFormDirtyRef = useRef(false);
-
-  const generateRandomPasscode = () => {
-    const prefixes = ['FOCUS', 'ALPHA', 'QUANTUM', 'ZEN', 'TITAN', 'NEXUS', 'PULSE', 'GRIND', 'CYBER', 'HYPER'];
-    const num = Math.floor(100 + Math.random() * 900);
-    const chosen = prefixes[Math.floor(Math.random() * prefixes.length)];
-    const generated = `${chosen}-${num}`;
-    setEditPassword(generated);
-    setShowPassword(true);
-    setIsFormDirty(true);
-    isFormDirtyRef.current = true;
-    toast.success(`Generated security key: ${generated}`, { icon: '🔑' });
-  };
 
   const handleDeleteRoom = async () => {
     if (!user || !isHost || !roomId) return;
@@ -989,7 +966,6 @@ CREATE POLICY "Hosts can update their own study rooms"
 
       // 3. Update local state and propagate changes
       isFormDirtyRef.current = false;
-      setIsFormDirty(false);
       setRoomInfo(savedRoom);
       setRoomName(savedRoom.name);
       setEditName(savedRoom.name);
@@ -1318,35 +1294,21 @@ CREATE POLICY "Hosts can update their own study rooms"
 
         {roomTab === 'settings' && (
           <div className="max-w-2xl mx-auto w-full py-4 sm:py-6 space-y-6 animate-in fade-in duration-200 pb-36">
-            {/* Host Command Deck Banner */}
-            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#0f1424] via-[#090d18] to-[#06080e] border border-amber-500/30 p-5 sm:p-7 shadow-[0_12px_45px_rgba(0,0,0,0.7)] backdrop-blur-2xl">
-              {/* Ambient Golden Bloom */}
-              <div className="absolute top-0 right-0 w-80 h-80 bg-amber-500/[0.08] rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
-              <div className="absolute inset-0 bg-dot-grid opacity-25 pointer-events-none" />
-
-              <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-5">
-                <div className="flex items-center gap-4">
-                  <div className="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400/20 via-amber-500/10 to-amber-600/5 border border-amber-400/40 flex items-center justify-center shrink-0 shadow-[0_0_25px_rgba(245,158,11,0.25)]">
-                    <Crown className="w-7 h-7 text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
-                    <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-amber-500 border-2 border-[#090d18] flex items-center justify-center">
-                      <Sparkles className="w-2.5 h-2.5 text-slate-950" />
-                    </span>
+            {/* Host Banner */}
+            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-500/10 via-white/[0.02] to-transparent border border-amber-500/20 p-5 sm:p-6 shadow-xl">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center shrink-0 shadow-inner">
+                    <Crown className="w-6 h-6 text-amber-400" />
                   </div>
-
                   <div>
-                    <div className="flex items-center gap-2.5 flex-wrap">
-                      <h2 className="text-xl font-black text-white tracking-tight flex items-center gap-2">
-                        <span>Room Host Controls</span>
-                      </h2>
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase bg-amber-500/15 text-amber-300 border border-amber-500/30 shadow-[0_0_10px_rgba(245,158,11,0.15)]">
-                        <span className="relative flex h-2 w-2">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-400" />
-                        </span>
-                        Host Clearance
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-lg font-bold text-white tracking-wide">Room Host Controls</h2>
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                        Host Only
                       </span>
                     </div>
-                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                    <p className="text-xs text-slate-400 mt-0.5">
                       Configure room password security, member capacity, and study hall details.
                     </p>
                   </div>
@@ -1356,70 +1318,18 @@ CREATE POLICY "Hosts can update their own study rooms"
                   <button
                     type="button"
                     onClick={() => handleCopyCode(roomInfo.short_code!)}
-                    className="inline-flex items-center gap-2 self-start sm:self-center px-3.5 py-2 rounded-xl bg-white/[0.04] hover:bg-amber-500/10 border border-white/10 hover:border-amber-500/30 text-xs font-mono text-slate-200 hover:text-white transition-all cursor-pointer shadow-sm group active:scale-95"
-                    title="Click to copy room access code"
+                    className="inline-flex items-center gap-2 self-start sm:self-center px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-mono text-slate-300 hover:text-white transition-all cursor-pointer shadow-sm group"
+                    title="Click to copy room code"
                   >
-                    <Hash className="w-3.5 h-3.5 text-amber-400 opacity-80 group-hover:opacity-100" />
-                    <span className="font-bold tracking-widest text-amber-300 font-mono">
-                      #{roomInfo.short_code}
-                    </span>
+                    <Hash className="w-3.5 h-3.5 text-amber-400 opacity-80" />
+                    <span className="font-bold tracking-wider">{roomInfo.short_code}</span>
                     {copiedCode ? (
-                      <span className="inline-flex items-center gap-1 text-[11px] text-emerald-400 font-bold pl-1">
-                        <Check className="w-3.5 h-3.5" />
-                        <span>Copied</span>
-                      </span>
+                      <Check className="w-3.5 h-3.5 text-emerald-400 ml-1" />
                     ) : (
-                      <Copy className="w-3.5 h-3.5 opacity-50 group-hover:opacity-100 group-hover:text-amber-400 transition-all ml-1" />
+                      <Copy className="w-3.5 h-3.5 opacity-60 group-hover:opacity-100 ml-1" />
                     )}
                   </button>
                 )}
-              </div>
-
-              {/* Telemetry Strip */}
-              <div className="relative z-10 grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-5 mt-5 border-t border-white/[0.07]">
-                <div className="p-2.5 rounded-xl bg-black/40 border border-white/[0.05] flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
-                    <Users className="w-3.5 h-3.5 text-amber-400" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500">Squad Roster</div>
-                    <div className="text-xs font-mono font-bold text-slate-200 truncate">
-                      {dbMembers.length} / {editMaxCapacity} Enrolled
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-2.5 rounded-xl bg-black/40 border border-white/[0.05] flex items-center gap-2.5">
-                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border ${
-                    isPrivate
-                      ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
-                      : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
-                  }`}>
-                    {isPrivate ? <Lock className="w-3.5 h-3.5" /> : <Globe className="w-3.5 h-3.5" />}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500">Security</div>
-                    <div className="text-xs font-mono font-bold truncate">
-                      {isPrivate ? (
-                        <span className="text-amber-400">Password Locked</span>
-                      ) : (
-                        <span className="text-emerald-400">Open Access</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="col-span-2 sm:col-span-1 p-2.5 rounded-xl bg-black/40 border border-white/[0.05] flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
-                    <Compass className="w-3.5 h-3.5 text-slate-300" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500">Callsign</div>
-                    <div className="text-xs font-bold text-slate-200 truncate font-mono">
-                      {editName || roomName}
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
 
@@ -1431,7 +1341,7 @@ CREATE POLICY "Hosts can update their own study rooms"
             )}
 
             {rlsBlocked && (
-              <div className="p-5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs space-y-3 animate-in fade-in">
+              <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs space-y-3 animate-in fade-in">
                 <div className="flex items-start gap-2.5">
                   <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
                   <div>
@@ -1461,181 +1371,94 @@ CREATE POLICY "Hosts can update their own study rooms"
             )}
 
             <form onSubmit={handleSaveSettings} className="space-y-6">
-              {/* Room Identity / Name Card */}
-              <div className="bg-[#0b0e18]/85 border border-white/[0.08] hover:border-amber-500/30 rounded-2xl p-5 sm:p-6 backdrop-blur-xl relative overflow-hidden transition-all shadow-lg group">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
-                      <Compass className="w-3.5 h-3.5" />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-mono font-bold text-white uppercase tracking-wider">
-                        Room Name
-                      </label>
-                      <span className="text-[11px] text-slate-400">
-                        Public title visible to scholars in the Lobby & Explorer
-                      </span>
-                    </div>
-                  </div>
-                  <span className="text-[11px] font-mono text-slate-400 bg-white/[0.04] px-2 py-0.5 rounded-md border border-white/[0.06]">
-                    {editName.length} / 40
-                  </span>
-                </div>
-
-                <div className="relative mt-2">
-                  <input
-                    type="text"
-                    maxLength={40}
-                    value={editName}
-                    onChange={(e) => {
-                      isFormDirtyRef.current = true;
-                      setIsFormDirty(true);
-                      setEditName(e.target.value);
-                    }}
-                    placeholder="e.g., Deep Work Grind"
-                    className="w-full bg-[#06080e]/90 border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder:text-slate-600 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 transition-all text-sm font-medium shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)]"
-                    required
-                  />
-                </div>
-
-                {/* Quick Inspiration Pills */}
-                <div className="mt-3.5 pt-3 border-t border-white/[0.05] flex items-center gap-1.5 flex-wrap">
-                  <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider mr-1">
-                    Presets:
-                  </span>
-                  {[
-                    'Deep Work Grind',
-                    'Late Night Focus',
-                    'Sprint Session',
-                    'Silent Library',
-                  ].map((preset) => (
-                    <button
-                      key={preset}
-                      type="button"
-                      onClick={() => {
-                        isFormDirtyRef.current = true;
-                        setIsFormDirty(true);
-                        setEditName(preset);
-                      }}
-                      className="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-white/[0.03] hover:bg-amber-500/10 text-slate-400 hover:text-amber-300 border border-white/[0.06] hover:border-amber-500/25 transition-all cursor-pointer"
-                    >
-                      {preset}
-                    </button>
-                  ))}
-                </div>
+              {/* Room Name */}
+              <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-5 space-y-3">
+                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
+                  Room Name
+                </label>
+                <input
+                  type="text"
+                  maxLength={40}
+                  value={editName}
+                  onChange={(e) => {
+                    isFormDirtyRef.current = true;
+                    setEditName(e.target.value);
+                  }}
+                  placeholder="e.g., Deep Work Grind"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-slate-600 focus:outline-none focus:border-amber-500/50 transition-colors text-sm font-medium"
+                  required
+                />
               </div>
 
-              {/* Password & Room Privacy */}
-              <div className="bg-[#0b0e18]/85 border border-white/[0.08] hover:border-amber-500/30 rounded-2xl p-5 sm:p-6 backdrop-blur-xl relative overflow-hidden transition-all shadow-lg group">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
-                      <ShieldCheck className="w-3.5 h-3.5" />
-                    </div>
-                    <div>
-                      <h3 className="text-xs font-mono font-bold text-white uppercase tracking-wider">
-                        Password & Room Privacy
-                      </h3>
-                      <p className="text-[11px] text-slate-400">
-                        Choose whether entry requires an access passcode
-                      </p>
-                    </div>
+              {/* Security & Password */}
+              <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Lock className="w-4 h-4 text-amber-400" />
+                    <h3 className="text-sm font-bold text-white tracking-wide">
+                      Password & Room Privacy
+                    </h3>
                   </div>
-
-                  <span className={`text-[10px] font-mono font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${
+                  <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${
                     isPrivate
-                      ? 'bg-amber-500/10 text-amber-400 border-amber-500/25 shadow-[0_0_10px_rgba(245,158,11,0.15)]'
-                      : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25 shadow-[0_0_10px_rgba(16,185,129,0.15)]'
+                      ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                      : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
                   }`}>
-                    {isPrivate ? 'Protected' : 'Public'}
+                    {isPrivate ? 'Protected' : 'Public Access'}
                   </span>
                 </div>
 
-                {/* Tactile Privacy Mode Switcher */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3">
+                <p className="text-xs text-slate-400">
+                  Control whether other scholars need a password to enter this room. As the host, you can view, change, or remove the password at any time.
+                </p>
+
+                {/* Privacy Mode Selector */}
+                <div className="grid grid-cols-2 gap-3 pt-1">
                   <button
                     type="button"
                     onClick={() => {
                       isFormDirtyRef.current = true;
-                      setIsFormDirty(true);
                       setIsPrivate(false);
                     }}
-                    className={`relative p-4 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                    className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                       !isPrivate
-                        ? 'bg-emerald-500/10 border-emerald-500/50 shadow-[0_0_20px_rgba(16,185,129,0.15)] ring-1 ring-emerald-500/30'
-                        : 'bg-white/[0.02] border-white/5 text-slate-400 hover:text-white hover:bg-white/[0.05] hover:border-white/10'
+                        ? 'bg-white/10 border-amber-500 text-white shadow-md'
+                        : 'bg-white/[0.02] border-white/5 text-slate-400 hover:text-white hover:bg-white/5'
                     }`}
                   >
-                    <div className="flex items-center justify-between mb-1.5">
-                      <div className="flex items-center gap-2">
-                        <Globe className={`w-4 h-4 ${!isPrivate ? 'text-emerald-400' : 'text-slate-400'}`} />
-                        <span className={`text-sm font-bold ${!isPrivate ? 'text-white' : 'text-slate-300'}`}>
-                          Public (No Password)
-                        </span>
-                      </div>
-                      {!isPrivate && (
-                        <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(16,185,129,0.8)]" />
-                      )}
-                    </div>
-                    <span className="text-[11px] text-slate-400">
-                      Open hall. Any scholar can discover and join instantly.
-                    </span>
+                    <Unlock className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Public (No Password)</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => {
                       isFormDirtyRef.current = true;
-                      setIsFormDirty(true);
                       setIsPrivate(true);
                     }}
-                    className={`relative p-4 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                    className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                       isPrivate
-                        ? 'bg-amber-500/10 border-amber-500/50 shadow-[0_0_20px_rgba(245,158,11,0.15)] ring-1 ring-amber-500/30'
-                        : 'bg-white/[0.02] border-white/5 text-slate-400 hover:text-white hover:bg-white/[0.05] hover:border-white/10'
+                        ? 'bg-amber-500/15 border-amber-500/40 text-amber-400 shadow-md'
+                        : 'bg-white/[0.02] border-white/5 text-slate-400 hover:text-white hover:bg-white/5'
                     }`}
                   >
-                    <div className="flex items-center justify-between mb-1.5">
-                      <div className="flex items-center gap-2">
-                        <Lock className={`w-4 h-4 ${isPrivate ? 'text-amber-400' : 'text-slate-400'}`} />
-                        <span className={`text-sm font-bold ${isPrivate ? 'text-white' : 'text-slate-300'}`}>
-                          Private (Password)
-                        </span>
-                      </div>
-                      {isPrivate && (
-                        <span className="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_6px_rgba(245,158,11,0.8)]" />
-                      )}
-                    </div>
-                    <span className="text-[11px] text-slate-400">
-                      Protected hall. Scholars must enter the passcode to enter.
-                    </span>
+                    <Lock className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Private (Password)</span>
                   </button>
                 </div>
 
-                {/* Password Configuration Section */}
+                {/* Password field */}
                 {isPrivate ? (
-                  <div className="mt-4 pt-4 border-t border-white/[0.06] space-y-3 animate-in fade-in duration-200">
+                  <div className="space-y-2 pt-2 animate-in fade-in duration-200">
                     <div className="flex items-center justify-between">
-                      <label className="text-xs font-mono font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                        <KeyRound className="w-3.5 h-3.5 text-amber-400" />
-                        <span>Current Room Password</span>
+                      <label className="text-xs font-bold text-slate-300 uppercase tracking-wider">
+                        Current Room Password
                       </label>
-
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={generateRandomPasscode}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/25 text-[10px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer active:scale-95"
-                          title="Generate a memorable security passcode"
-                        >
-                          <Dices className="w-3 h-3 text-amber-400" />
-                          <span>Generate Key</span>
-                        </button>
-
-                        <span className="text-[10px] font-mono text-slate-500 hidden sm:inline">
-                          {showPassword ? 'Revealed' : 'Masked'}
+                      {editPassword && (
+                        <span className="text-[11px] text-slate-400">
+                          {showPassword ? 'Password Revealed' : 'Password Masked'}
                         </span>
-                      </div>
+                      )}
                     </div>
 
                     <div className="relative flex items-center">
@@ -1645,11 +1468,10 @@ CREATE POLICY "Hosts can update their own study rooms"
                         value={editPassword}
                         onChange={(e) => {
                           isFormDirtyRef.current = true;
-                          setIsFormDirty(true);
                           setEditPassword(e.target.value);
                         }}
                         placeholder="Enter room password..."
-                        className="w-full bg-[#06080e]/90 border border-white/10 rounded-xl pl-4 pr-24 py-3.5 text-white placeholder:text-slate-600 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 transition-all text-sm font-mono tracking-wider shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)]"
+                        className="w-full bg-white/5 border border-white/10 rounded-xl pl-4 pr-24 py-3 text-white placeholder:text-slate-600 focus:outline-none focus:border-amber-500/50 transition-colors text-sm font-mono tracking-wider"
                         required={isPrivate}
                       />
 
@@ -1683,62 +1505,55 @@ CREATE POLICY "Hosts can update their own study rooms"
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between text-[11px] text-slate-500 pt-0.5">
-                      <span>Scholars entering via explorer or short code will be asked for this passcode.</span>
-                      <span className="font-mono text-slate-400 hidden sm:inline">
-                        {editPassword.length} chars
-                      </span>
-                    </div>
+                    <p className="text-[11px] text-slate-500">
+                      Scholars who enter via the explorer or short code will be asked for this password. Use the eye icon to see it or the copy button to share it.
+                    </p>
                   </div>
                 ) : (
-                  <div className="mt-4 p-3.5 rounded-xl bg-emerald-500/5 border border-emerald-500/15 text-slate-300 text-xs flex items-center gap-3">
+                  <div className="p-3.5 rounded-xl bg-emerald-500/5 border border-emerald-500/10 text-slate-400 text-xs flex items-center gap-2.5">
                     <Globe className="w-4 h-4 text-emerald-400 shrink-0" />
-                    <span className="leading-relaxed">
-                      This room is currently open. Any scholar browsing the Explorer can join immediately without entering a passcode.
+                    <span>
+                      This room is currently open for any scholar to join without entering a password.
                     </span>
                   </div>
                 )}
               </div>
 
-              {/* Room Capacity Card */}
-              <div className="bg-[#0b0e18]/85 border border-white/[0.08] hover:border-amber-500/30 rounded-2xl p-5 sm:p-6 backdrop-blur-xl relative overflow-hidden transition-all shadow-lg group">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
-                      <Users className="w-3.5 h-3.5" />
-                    </div>
-                    <div>
-                      <h3 className="text-xs font-mono font-bold text-white uppercase tracking-wider">
-                        Room Member Capacity
-                      </h3>
-                      <p className="text-[11px] text-slate-400">
-                        Adjust max scholars enrolled in this study group
-                      </p>
-                    </div>
+              {/* Room Capacity */}
+              <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4 text-amber-400" />
+                    <h3 className="text-sm font-bold text-white tracking-wide">
+                      Room Member Capacity
+                    </h3>
                   </div>
-
-                  <span className="text-xs font-mono font-bold text-amber-400 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/25 shadow-[0_0_10px_rgba(245,158,11,0.15)]">
+                  <span className="text-xs font-mono font-bold text-amber-400 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/20">
                     {dbMembers.length} / {editMaxCapacity} Members
                   </span>
                 </div>
 
-                {/* Progress Visualizer */}
-                <div className="space-y-2 mb-5">
-                  <div className="w-full bg-white/[0.04] h-2.5 rounded-full overflow-hidden border border-white/[0.06] p-0.5">
+                <p className="text-xs text-slate-400">
+                  Increase or adjust the maximum number of scholars who can be enrolled in this focus group at the same time.
+                </p>
+
+                {/* Progress bar */}
+                <div className="space-y-1.5">
+                  <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden border border-white/5">
                     <div
-                      className={`h-full rounded-full transition-all duration-300 ${
+                      className={`h-full transition-all duration-300 ${
                         dbMembers.length >= editMaxCapacity
-                          ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]'
-                          : 'bg-gradient-to-r from-amber-500 via-amber-400 to-orange-500 shadow-[0_0_10px_rgba(245,158,11,0.4)]'
+                          ? 'bg-red-500'
+                          : 'bg-gradient-to-r from-amber-500 to-orange-500'
                       }`}
                       style={{
                         width: `${Math.min(100, Math.round((dbMembers.length / Math.max(1, editMaxCapacity)) * 100))}%`,
                       }}
                     />
                   </div>
-                  <div className="flex items-center justify-between text-[11px] font-mono text-slate-500">
+                  <div className="flex items-center justify-between text-[11px] text-slate-500">
                     <span>{dbMembers.length} currently enrolled</span>
-                    <span className={editMaxCapacity - dbMembers.length <= 0 ? 'text-red-400 font-bold' : 'text-emerald-400 font-bold'}>
+                    <span>
                       {editMaxCapacity - dbMembers.length <= 0
                         ? 'Squad is at max capacity'
                         : `${editMaxCapacity - dbMembers.length} spots remaining`}
@@ -1746,36 +1561,33 @@ CREATE POLICY "Hosts can update their own study rooms"
                   </div>
                 </div>
 
-                {/* Interactive Capacity Stepper & Readout */}
-                <div className="p-4 rounded-xl bg-[#06080e]/90 border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)]">
-                  <div>
-                    <span className="text-xs font-bold text-white block">Max Member Limit</span>
-                    <span className="text-[11px] font-mono text-slate-500">
-                      Min {Math.max(2, dbMembers.length)} • Max 100
-                    </span>
+                {/* Interactive Capacity Stepper */}
+                <div className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10">
+                  <div className="flex flex-col">
+                    <span className="text-xs font-bold text-slate-200">Max Member Limit</span>
+                    <span className="text-[11px] text-slate-500">Min {Math.max(2, dbMembers.length)} • Max 100</span>
                   </div>
 
-                  <div className="flex items-center gap-3 self-center sm:self-auto">
+                  <div className="flex items-center gap-3">
                     <button
                       type="button"
                       disabled={editMaxCapacity <= Math.max(2, dbMembers.length)}
                       onClick={() => {
                         isFormDirtyRef.current = true;
-                        setIsFormDirty(true);
                         setEditMaxCapacity((prev) => Math.max(Math.max(2, dbMembers.length), prev - 1));
                       }}
-                      className="w-11 h-11 rounded-xl bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-white/5 border border-white/10 text-white flex items-center justify-center transition-all cursor-pointer font-bold text-lg active:scale-90"
+                      className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-white/5 border border-white/10 text-white flex items-center justify-center transition-all cursor-pointer font-bold text-lg"
                       title="Decrease capacity"
                     >
                       <Minus className="w-4 h-4" />
                     </button>
 
-                    <div className="min-w-[80px] text-center">
-                      <span className="text-3xl font-mono font-black text-amber-400 drop-shadow-[0_0_12px_rgba(245,158,11,0.35)]">
+                    <div className="min-w-[70px] text-center">
+                      <span className="text-2xl font-mono font-bold text-white">
                         {editMaxCapacity}
                       </span>
-                      <span className="block text-[10px] text-slate-400 uppercase font-mono tracking-wider">
-                        Scholars
+                      <span className="block text-[10px] text-slate-400 uppercase font-semibold">
+                        Members
                       </span>
                     </div>
 
@@ -1784,10 +1596,9 @@ CREATE POLICY "Hosts can update their own study rooms"
                       disabled={editMaxCapacity >= 100}
                       onClick={() => {
                         isFormDirtyRef.current = true;
-                        setIsFormDirty(true);
                         setEditMaxCapacity((prev) => Math.min(100, prev + 1));
                       }}
-                      className="w-11 h-11 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-30 border border-amber-400/50 text-slate-950 flex items-center justify-center transition-all cursor-pointer font-bold text-lg shadow-[0_0_15px_rgba(245,158,11,0.3)] active:scale-90"
+                      className="w-10 h-10 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-30 border border-amber-400/40 text-slate-950 flex items-center justify-center transition-all cursor-pointer font-bold text-lg shadow-md shadow-amber-500/20"
                       title="Increase capacity"
                     >
                       <Plus className="w-4 h-4" />
@@ -1795,39 +1606,18 @@ CREATE POLICY "Hosts can update their own study rooms"
                   </div>
                 </div>
 
-                {/* Direct Slider */}
-                <div className="pt-4 px-1">
-                  <input
-                    type="range"
-                    min={Math.max(2, dbMembers.length)}
-                    max={100}
-                    value={editMaxCapacity}
-                    onChange={(e) => {
-                      isFormDirtyRef.current = true;
-                      setIsFormDirty(true);
-                      setEditMaxCapacity(parseInt(e.target.value, 10));
-                    }}
-                    className="w-full accent-amber-500 cursor-pointer h-1.5 bg-white/10 rounded-lg"
-                  />
-                  <div className="flex justify-between text-[10px] font-mono text-slate-500 mt-1">
-                    <span>{Math.max(2, dbMembers.length)} min</span>
-                    <span>50 mid</span>
-                    <span>100 max</span>
-                  </div>
-                </div>
-
                 {/* Quick Presets */}
-                <div className="space-y-2 pt-4 mt-2 border-t border-white/[0.05]">
-                  <label className="text-[11px] font-mono font-bold text-slate-400 uppercase tracking-wider block">
+                <div className="space-y-1.5 pt-1">
+                  <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
                     Quick Capacity Presets
                   </label>
-                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                  <div className="flex flex-wrap gap-2">
                     {[
-                      { count: 4, label: 'Squad', sub: '4 max' },
-                      { count: 8, label: 'Fireteam', sub: '8 max' },
-                      { count: 12, label: 'Circle', sub: '12 max' },
-                      { count: 25, label: 'Hall', sub: '25 max' },
-                      { count: 50, label: 'Lecture', sub: '50 max' },
+                      { count: 4, label: '4 (Squad)' },
+                      { count: 8, label: '8 (Group)' },
+                      { count: 12, label: '12 (Circle)' },
+                      { count: 25, label: '25 (Hall)' },
+                      { count: 50, label: '50 (Lecture)' },
                     ].map((preset) => {
                       const isSelected = editMaxCapacity === preset.count;
                       const isDisabled = preset.count < dbMembers.length;
@@ -1839,23 +1629,17 @@ CREATE POLICY "Hosts can update their own study rooms"
                           disabled={isDisabled}
                           onClick={() => {
                             isFormDirtyRef.current = true;
-                            setIsFormDirty(true);
                             setEditMaxCapacity(preset.count);
                           }}
-                          className={`p-2.5 rounded-xl text-left transition-all border cursor-pointer flex flex-col justify-between ${
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
                             isSelected
-                              ? 'bg-amber-500/15 text-white border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.2)] ring-1 ring-amber-500/30'
+                              ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-md shadow-amber-500/20'
                               : isDisabled
                               ? 'opacity-30 bg-white/[0.02] border-white/5 text-slate-600 cursor-not-allowed'
-                              : 'bg-white/[0.03] hover:bg-white/[0.07] text-slate-300 hover:text-white border-white/[0.08]'
+                              : 'bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border-white/10'
                           }`}
                         >
-                          <span className={`text-xs font-bold font-mono ${isSelected ? 'text-amber-400' : 'text-slate-200'}`}>
-                            {preset.count}
-                          </span>
-                          <span className="text-[10px] text-slate-400 mt-0.5 truncate">
-                            {preset.label}
-                          </span>
+                          {preset.label}
                         </button>
                       );
                     })}
@@ -1863,71 +1647,56 @@ CREATE POLICY "Hosts can update their own study rooms"
                 </div>
               </div>
 
-              {/* Action Buttons with Live Status */}
-              <div className="space-y-3 pt-2">
-                {isFormDirty && (
-                  <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-mono animate-in fade-in duration-150">
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-400" />
-                    </span>
-                    <span>Unsaved room modifications pending. Click save below to apply.</span>
-                  </div>
-                )}
+              {/* Submit CTA */}
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  type="submit"
+                  disabled={isSaving}
+                  className="flex-1 py-3.5 px-6 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-amber-500/25 disabled:opacity-50"
+                >
+                  {isSaving ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                      <span>Saving Settings...</span>
+                    </>
+                  ) : saveSuccess ? (
+                    <>
+                      <Check className="w-4 h-4 text-slate-950" />
+                      <span>Settings Saved!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4 text-slate-950" />
+                      <span>Save Room Changes</span>
+                    </>
+                  )}
+                </button>
 
-                <div className="flex items-center gap-3">
-                  <button
-                    type="submit"
-                    disabled={isSaving}
-                    className="flex-1 py-4 px-6 rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-slate-950 font-black text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_25px_rgba(245,158,11,0.35)] hover:shadow-[0_0_35px_rgba(245,158,11,0.5)] disabled:opacity-50 active:scale-98 tracking-wide"
-                  >
-                    {isSaving ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
-                        <span>Saving Settings...</span>
-                      </>
-                    ) : saveSuccess ? (
-                      <>
-                        <Check className="w-5 h-5 text-slate-950" />
-                        <span>Settings Saved!</span>
-                      </>
-                    ) : (
-                      <>
-                        <Save className="w-4 h-4 text-slate-950" />
-                        <span>Save Room Changes</span>
-                      </>
-                    )}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (roomInfo) {
-                        isFormDirtyRef.current = false;
-                        setIsFormDirty(false);
-                        setEditName(roomInfo.name || '');
-                        setIsPrivate(Boolean(roomInfo.is_private));
-                        setEditPassword(roomInfo.password || '');
-                        setEditMaxCapacity(roomInfo.max_capacity || 4);
-                        toast('Changes reset to current settings', { icon: '🔄' });
-                      }
-                    }}
-                    className="py-4 px-5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-slate-400 hover:text-white border border-white/10 font-bold text-sm transition-all cursor-pointer flex items-center gap-2 active:scale-95"
-                    title="Revert form back to current room values"
-                  >
-                    <RotateCcw className="w-4 h-4" />
-                    <span className="hidden sm:inline">Reset</span>
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (roomInfo) {
+                      isFormDirtyRef.current = false;
+                      setEditName(roomInfo.name || '');
+                      setIsPrivate(Boolean(roomInfo.is_private));
+                      setEditPassword(roomInfo.password || '');
+                      setEditMaxCapacity(roomInfo.max_capacity || 4);
+                      toast('Changes reset to current settings', { icon: '🔄' });
+                    }
+                  }}
+                  className="py-3.5 px-4 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white border border-white/10 font-bold text-sm transition-all cursor-pointer"
+                >
+                  Reset
+                </button>
               </div>
 
               {/* Danger Zone: Delete Room */}
-              <div className="pt-6 border-t border-white/[0.08]">
-                <div className="p-5 sm:p-6 rounded-2xl bg-gradient-to-br from-red-950/20 via-[#0d0910] to-[#07090e] border border-red-500/25 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-lg">
+              <div className="pt-6 border-t border-white/5">
+                <div className="p-5 rounded-2xl bg-red-500/5 border border-red-500/15 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
                     <h4 className="text-sm font-bold text-red-400 flex items-center gap-2">
-                      <ShieldAlert className="w-4 h-4 text-red-400" />
-                      <span>Delete Study Room</span>
+                      <Trash2 className="w-4 h-4" />
+                      Delete Study Room
                     </h4>
                     <p className="text-xs text-slate-400 mt-1 leading-relaxed">
                       Permanently delete this focus group. All enrolled scholars will be disconnected immediately.
@@ -1937,7 +1706,7 @@ CREATE POLICY "Hosts can update their own study rooms"
                     type="button"
                     disabled={isSaving || isDeletingRoom}
                     onClick={() => setShowDeleteConfirm(true)}
-                    className="px-4 py-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-white border border-red-500/30 font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0 active:scale-95 shadow-[0_0_15px_rgba(239,68,68,0.15)]"
+                    className="px-4 py-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-white border border-red-500/20 font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0 active:scale-95"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                     <span>Delete Room</span>
