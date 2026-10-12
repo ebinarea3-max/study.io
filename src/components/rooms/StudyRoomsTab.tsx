@@ -928,28 +928,8 @@ CREATE POLICY "Hosts can update their own study rooms"
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1 shrink-0 ml-2">
-                        {isHost ? (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setEditingRoom(room);
-                              setEditRoomName(room.name || '');
-                              setEditIsPrivate(Boolean(room.is_private));
-                              setEditPassword(room.password || '');
-                              setEditMaxCapacity(room.max_capacity || 4);
-                              setShowEditPassword(false);
-                              setCopiedEditPassword(false);
-                              setEditRoomError('');
-                              setRlsBlocked(false);
-                            }}
-                            className="p-2.5 rounded-xl text-slate-400 hover:text-amber-400 hover:bg-amber-400/10 transition-colors cursor-pointer"
-                            title="Edit Room Settings"
-                          >
-                            <Settings className="w-4 h-4" />
-                          </button>
-                        ) : (
+                      {!isHost && (
+                        <div className="flex items-center gap-1 shrink-0 ml-2">
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -960,8 +940,8 @@ CREATE POLICY "Hosts can update their own study rooms"
                           >
                             <LogOut className="w-4 h-4" />
                           </button>
-                        )}
-                      </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
