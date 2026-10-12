@@ -17,12 +17,14 @@ import {
   Minus,
   Save,
   AlertCircle,
+  AlertTriangle,
   Hash,
   Crown,
   Globe
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { getSupabase } from '../../lib/supabase';
+import { getSupabase, broadcast } from '../../lib/supabase';
+import { updateRoomSettingsAction } from '../../app/actions/rooms';
 import { useAuth } from '../../context/AuthContext';
 import { useStudy } from '../../context/StudyContext';
 
@@ -95,7 +97,25 @@ export default function ActiveRoom({ roomId, onBack, initialTab }: ActiveRoomPro
   const [copiedPassword, setCopiedPassword] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
   const [settingsError, setSettingsError] = useState('');
+  const [rlsBlocked, setRlsBlocked] = useState(false);
+  const [copiedRlsSql, setCopiedRlsSql] = useState(false);
   const isFormDirtyRef = useRef(false);
+
+  const ROOMS_RLS_SQL = `-- Run this in your Supabase Dashboard -> SQL Editor:
+ALTER TABLE public.study_rooms ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Hosts can update their own study rooms" ON public.study_rooms;
+CREATE POLICY "Hosts can update their own study rooms"
+  ON public.study_rooms FOR UPDATE
+  USING (auth.uid() = host_id)
+  WITH CHECK (auth.uid() = host_id);`;
+
+  const handleCopyRlsSql = () => {
+    navigator.clipboard.writeText(ROOMS_RLS_SQL);
+    setCopiedRlsSql(true);
+    toast.success('SQL policy copied to clipboard!');
+    setTimeout(() => setCopiedRlsSql(false), 2500);
+  };
 
   useEffect(() => {
     roomTabRef.current = roomTab;
@@ -833,65 +853,104 @@ export default function ActiveRoom({ roomId, onBack, initialTab }: ActiveRoomPro
 
     setIsSaving(true);
     setSettingsError('');
-    const supabase = getSupabase();
-    if (!supabase) {
-      setIsSaving(false);
-      return;
-    }
+    setRlsBlocked(false);
 
     try {
       const trimmedPass = editPassword.trim();
       const willBePrivate = isPrivate && trimmedPass.length > 0;
+      const trimmedName = editName.trim();
+      const capacity = editMaxCapacity;
 
-      const { data, error } = await supabase
-        .from('study_rooms')
-        .update({
-          name: editName.trim(),
+      let savedRoom: any = null;
+
+      // 1. Attempt Server Action first (can bypass RLS with service role if configured)
+      try {
+        const actionRes = await updateRoomSettingsAction({
+          roomId,
+          name: trimmedName,
           password: willBePrivate ? trimmedPass : null,
           is_private: willBePrivate,
-          max_capacity: editMaxCapacity,
-        })
-        .eq('id', roomId)
-        .select()
-        .single();
+          max_capacity: capacity,
+        });
 
-      if (error) {
-        console.error('Error updating room settings:', error);
-        setSettingsError(error.message || 'Failed to update settings');
-        toast.error('Failed to update room settings: ' + error.message);
-        return;
+        if (actionRes.success && actionRes.room) {
+          savedRoom = actionRes.room;
+        }
+      } catch (actionErr) {
+        console.warn('Server action room update note:', actionErr);
       }
 
+      // 2. Client-side update fallback with user auth session
+      if (!savedRoom) {
+        const supabase = getSupabase();
+        if (!supabase) {
+          throw new Error('Supabase client is not available');
+        }
+
+        const { data, error } = await supabase
+          .from('study_rooms')
+          .update({
+            name: trimmedName,
+            password: willBePrivate ? trimmedPass : null,
+            is_private: willBePrivate,
+            max_capacity: capacity,
+          })
+          .eq('id', roomId)
+          .select();
+
+        if (error) {
+          console.error('Error updating room settings:', error);
+          setSettingsError(error.message || 'Failed to update settings');
+          toast.error('Failed to update room settings: ' + error.message);
+          return;
+        }
+
+        if (!data || data.length === 0) {
+          // Zero rows updated -> PostgreSQL RLS is blocking the UPDATE!
+          console.warn('RLS blocked room update: 0 rows modified.');
+          setRlsBlocked(true);
+          setSettingsError('Supabase Row-Level Security policy required: public.study_rooms lacks an UPDATE policy for hosts.');
+          toast.error('Database permission blocked: RLS UPDATE policy required.');
+          return;
+        }
+
+        savedRoom = data[0];
+      }
+
+      // 3. Update local state and propagate changes
       isFormDirtyRef.current = false;
-      if (data) {
-        setRoomInfo(data);
-        setRoomName(data.name);
-      } else {
-        setRoomInfo((prev: any) => ({
-          ...prev,
-          name: editName.trim(),
-          password: willBePrivate ? trimmedPass : null,
-          is_private: willBePrivate,
-          max_capacity: editMaxCapacity,
-        }));
-        setRoomName(editName.trim());
-      }
+      setRoomInfo(savedRoom);
+      setRoomName(savedRoom.name);
+      setEditName(savedRoom.name);
+      setIsPrivate(Boolean(savedRoom.is_private));
+      setEditPassword(savedRoom.password || '');
+      setEditMaxCapacity(savedRoom.max_capacity || capacity);
+
+      // Refresh members and details
+      await fetchRoomMembers();
 
       // Broadcast changes so all other clients in lobby & room refresh
       try {
-        const lobbyChannel = supabase.channel('study_rooms_lobby_hub');
-        lobbyChannel.send({
-          type: 'broadcast',
-          event: 'lobby_update',
-          payload: { timestamp: Date.now() },
-        });
+        const supabase = getSupabase();
+        if (supabase) {
+          const lobbyChannel = supabase.channel('study_rooms_lobby_hub');
+          lobbyChannel.send({
+            type: 'broadcast',
+            event: 'lobby_update',
+            payload: { timestamp: Date.now() },
+          });
 
-        const roomChannel = supabase.channel(`room_members_hub_${roomId}`);
-        roomChannel.send({
-          type: 'broadcast',
-          event: 'room_changed',
-          payload: { timestamp: Date.now() },
-        });
+          const roomChannel = supabase.channel(`room_members_hub_${roomId}`);
+          roomChannel.send({
+            type: 'broadcast',
+            event: 'room_changed',
+            payload: { timestamp: Date.now() },
+          });
+        }
+        if (broadcast) {
+          broadcast.postMessage({ type: 'lobby_update', timestamp: Date.now() });
+          broadcast.postMessage({ type: 'room_changed', roomId, timestamp: Date.now() });
+        }
       } catch (err) {
         console.warn('Broadcast room update error:', err);
       }
@@ -1231,6 +1290,36 @@ export default function ActiveRoom({ roomId, onBack, initialTab }: ActiveRoomPro
               <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-3 animate-in fade-in">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{settingsError}</span>
+              </div>
+            )}
+
+            {rlsBlocked && (
+              <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs space-y-3 animate-in fade-in">
+                <div className="flex items-start gap-2.5">
+                  <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold text-amber-300 text-sm">Supabase Permission Setup Required</p>
+                    <p className="text-slate-300 mt-1 leading-relaxed">
+                      PostgreSQL Row-Level Security (RLS) is blocking saves because <code className="text-amber-300 bg-amber-500/20 px-1 py-0.5 rounded font-mono">public.study_rooms</code> has no <code className="text-amber-300 bg-amber-500/20 px-1 py-0.5 rounded font-mono">UPDATE</code> policy for room hosts.
+                    </p>
+                  </div>
+                </div>
+                <div className="bg-slate-950/80 p-3 rounded-xl border border-white/5 font-mono text-[11px] text-slate-300 overflow-x-auto select-all">
+                  <pre>{ROOMS_RLS_SQL}</pre>
+                </div>
+                <div className="flex items-center gap-2 pt-1 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={handleCopyRlsSql}
+                    className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    {copiedRlsSql ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copiedRlsSql ? 'Copied to Clipboard!' : 'Copy SQL Fix'}
+                  </button>
+                  <span className="text-[11px] text-slate-400">
+                    Paste into Supabase Dashboard &rarr; SQL Editor &rarr; Run, then click Save again.
+                  </span>
+                </div>
               </div>
             )}
 

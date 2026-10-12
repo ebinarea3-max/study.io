@@ -23,12 +23,14 @@ import {
   ShieldAlert,
   ArrowRight,
   AlertCircle,
+  AlertTriangle,
   Settings,
   Eye,
   EyeOff,
   Crown
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { updateRoomSettingsAction } from '../../app/actions/rooms';
 import ActiveRoom from './ActiveRoom';
 
 interface StudyRoomsTabProps {
@@ -68,6 +70,24 @@ export default function StudyRoomsTab({ onBackToDashboard, isActiveTab }: StudyR
   const [isUpdatingRoom, setIsUpdatingRoom] = useState(false);
   const [copiedEditPassword, setCopiedEditPassword] = useState(false);
   const [editRoomError, setEditRoomError] = useState('');
+  const [rlsBlocked, setRlsBlocked] = useState(false);
+  const [copiedRlsSql, setCopiedRlsSql] = useState(false);
+
+  const ROOMS_RLS_SQL = `-- Run this in your Supabase Dashboard -> SQL Editor:
+ALTER TABLE public.study_rooms ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Hosts can update their own study rooms" ON public.study_rooms;
+CREATE POLICY "Hosts can update their own study rooms"
+  ON public.study_rooms FOR UPDATE
+  USING (auth.uid() = host_id)
+  WITH CHECK (auth.uid() = host_id);`;
+
+  const handleCopyRlsSql = () => {
+    navigator.clipboard.writeText(ROOMS_RLS_SQL);
+    setCopiedRlsSql(true);
+    toast.success('SQL policy copied to clipboard!');
+    setTimeout(() => setCopiedRlsSql(false), 2500);
+  };
 
   // Modal states
   const [roomToDelete, setRoomToDelete] = useState<any>(null);
@@ -404,30 +424,68 @@ export default function StudyRoomsTab({ onBackToDashboard, isActiveTab }: StudyR
 
     setIsUpdatingRoom(true);
     setEditRoomError('');
-
-    const supabase = getSupabase();
-    if (!supabase) {
-      setIsUpdatingRoom(false);
-      return;
-    }
+    setRlsBlocked(false);
 
     try {
       const willBePrivate = editIsPrivate && editPassword.trim().length > 0;
-      const { error } = await supabase
-        .from('study_rooms')
-        .update({
-          name: editRoomName.trim(),
-          password: willBePrivate ? editPassword.trim() : null,
-          is_private: willBePrivate,
-          max_capacity: editMaxCapacity,
-        })
-        .eq('id', editingRoom.id);
+      const trimmedPass = editPassword.trim();
+      const trimmedName = editRoomName.trim();
+      const capacity = editMaxCapacity;
 
-      if (error) {
-        setEditRoomError('Failed to update room: ' + error.message);
-        return;
+      let savedRoom: any = null;
+
+      // 1. Attempt Server Action first
+      try {
+        const actionRes = await updateRoomSettingsAction({
+          roomId: editingRoom.id,
+          name: trimmedName,
+          password: willBePrivate ? trimmedPass : null,
+          is_private: willBePrivate,
+          max_capacity: capacity,
+        });
+
+        if (actionRes.success && actionRes.room) {
+          savedRoom = actionRes.room;
+        }
+      } catch (actionErr) {
+        console.warn('Server action room update note (modal):', actionErr);
       }
 
+      // 2. Client-side update fallback with user auth session
+      if (!savedRoom) {
+        const supabase = getSupabase();
+        if (!supabase) {
+          throw new Error('Supabase client is not available');
+        }
+
+        const { data, error } = await supabase
+          .from('study_rooms')
+          .update({
+            name: trimmedName,
+            password: willBePrivate ? trimmedPass : null,
+            is_private: willBePrivate,
+            max_capacity: capacity,
+          })
+          .eq('id', editingRoom.id)
+          .select();
+
+        if (error) {
+          setEditRoomError('Failed to update room: ' + error.message);
+          return;
+        }
+
+        if (!data || data.length === 0) {
+          // Zero rows updated -> PostgreSQL RLS blocked the update!
+          console.warn('RLS blocked room update from modal: 0 rows modified.');
+          setRlsBlocked(true);
+          setEditRoomError('Supabase Row-Level Security policy required: public.study_rooms lacks an UPDATE policy for hosts.');
+          return;
+        }
+
+        savedRoom = data[0];
+      }
+
+      // 3. Propagation and refresh
       broadcastRoomChange();
       await fetchMyGroups();
       await fetchExplorerRooms();
@@ -884,6 +942,7 @@ export default function StudyRoomsTab({ onBackToDashboard, isActiveTab }: StudyR
                               setShowEditPassword(false);
                               setCopiedEditPassword(false);
                               setEditRoomError('');
+                              setRlsBlocked(false);
                             }}
                             className="p-2.5 rounded-xl text-slate-400 hover:text-amber-400 hover:bg-amber-400/10 transition-colors cursor-pointer"
                             title="Edit Room Settings"
@@ -1372,6 +1431,36 @@ export default function StudyRoomsTab({ onBackToDashboard, isActiveTab }: StudyR
               <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold animate-in fade-in flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{editRoomError}</span>
+              </div>
+            )}
+
+            {rlsBlocked && (
+              <div className="mb-4 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs space-y-3 animate-in fade-in">
+                <div className="flex items-start gap-2.5">
+                  <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold text-amber-300 text-sm">Supabase Permission Setup Required</p>
+                    <p className="text-slate-300 mt-1 leading-relaxed">
+                      PostgreSQL Row-Level Security (RLS) is blocking saves because <code className="text-amber-300 bg-amber-500/20 px-1 py-0.5 rounded font-mono">public.study_rooms</code> has no <code className="text-amber-300 bg-amber-500/20 px-1 py-0.5 rounded font-mono">UPDATE</code> policy for room hosts.
+                    </p>
+                  </div>
+                </div>
+                <div className="bg-slate-950/80 p-3 rounded-xl border border-white/5 font-mono text-[11px] text-slate-300 overflow-x-auto select-all">
+                  <pre>{ROOMS_RLS_SQL}</pre>
+                </div>
+                <div className="flex items-center gap-2 pt-1 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={handleCopyRlsSql}
+                    className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    {copiedRlsSql ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copiedRlsSql ? 'Copied to Clipboard!' : 'Copy SQL Fix'}
+                  </button>
+                  <span className="text-[11px] text-slate-400">
+                    Paste into Supabase Dashboard &rarr; SQL Editor &rarr; Run
+                  </span>
+                </div>
               </div>
             )}
 

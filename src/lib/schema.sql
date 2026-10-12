@@ -259,5 +259,128 @@ $$ language plpgsql security definer;
 create or replace trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
+
+create unique index if not exists unique_user_subject_name on public.subjects (user_id, lower(trim(name)));
+
+-- ====================================================================
+-- 7. Study Rooms & Members Schema & RLS Policies
+-- ====================================================================
+
+-- 7.1 Study Rooms Table
+create table if not exists public.study_rooms (
+  id uuid default gen_random_uuid() primary key,
+  name text not null,
+  host_id uuid references auth.users(id) on delete cascade not null,
+  is_private boolean default false,
+  password text,
+  max_capacity integer default 4,
+  short_code text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.study_rooms enable row level security;
+
+-- Policies for public.study_rooms
+drop policy if exists "Study rooms are viewable by everyone" on public.study_rooms;
+create policy "Study rooms are viewable by everyone"
+  on public.study_rooms for select using (true);
+
+drop policy if exists "Authenticated users can create study rooms" on public.study_rooms;
+create policy "Authenticated users can create study rooms"
+  on public.study_rooms for insert with check (auth.uid() = host_id);
+
+drop policy if exists "Hosts can update their own study rooms" on public.study_rooms;
+create policy "Hosts can update their own study rooms"
+  on public.study_rooms for update
+  using (auth.uid() = host_id)
+  with check (auth.uid() = host_id);
+
+drop policy if exists "Hosts can delete their own study rooms" on public.study_rooms;
+create policy "Hosts can delete their own study rooms"
+  on public.study_rooms for delete
+  using (auth.uid() = host_id);
+
+-- 7.2 Room Members Table
+create table if not exists public.room_members (
+  id uuid default gen_random_uuid() primary key,
+  room_id uuid references public.study_rooms(id) on delete cascade not null,
+  user_id uuid references auth.users(id) on delete cascade not null,
+  joined_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  unique (room_id, user_id)
+);
+
+alter table public.room_members enable row level security;
+
+drop policy if exists "Room members are viewable by everyone" on public.room_members;
+create policy "Room members are viewable by everyone"
+  on public.room_members for select using (true);
+
+drop policy if exists "Users can join rooms" on public.room_members;
+create policy "Users can join rooms"
+  on public.room_members for insert with check (auth.uid() = user_id);
+
+drop policy if exists "Users can leave rooms or hosts can remove members" on public.room_members;
+create policy "Users can leave rooms or hosts can remove members"
+  on public.room_members for delete
+  using (auth.uid() = user_id or exists (
+    select 1 from public.study_rooms r where r.id = room_members.room_id and r.host_id = auth.uid()
+  ));
+
+-- 7.3 Room Messages Table
+create table if not exists public.room_messages (
+  id uuid default gen_random_uuid() primary key,
+  room_id uuid references public.study_rooms(id) on delete cascade not null,
+  user_id uuid references auth.users(id) on delete cascade not null,
+  content text not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.room_messages enable row level security;
+
+drop policy if exists "Room messages viewable by everyone" on public.room_messages;
+create policy "Room messages viewable by everyone"
+  on public.room_messages for select using (true);
+
+drop policy if exists "Authenticated users can insert room messages" on public.room_messages;
+create policy "Authenticated users can insert room messages"
+  on public.room_messages for insert with check (auth.uid() = user_id);
+
+-- 7.4 RPC: Update Study Room Settings (Security Definer Fallback)
+create or replace function public.update_study_room_settings(
+  p_room_id uuid,
+  p_name text,
+  p_password text,
+  p_is_private boolean,
+  p_max_capacity integer
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_host_id uuid;
+  v_updated record;
+begin
+  select host_id into v_host_id from public.study_rooms where id = p_room_id;
+  if v_host_id is null then
+    raise exception 'Study room not found';
+  end if;
+
+  if auth.uid() is null or auth.uid() <> v_host_id then
+    raise exception 'Unauthorized: Only the room host can update settings';
+  end if;
+
+  update public.study_rooms
+  set name = trim(p_name),
+      password = case when p_is_private and p_password is not null and length(trim(p_password)) > 0 then trim(p_password) else null end,
+      is_private = p_is_private,
+      max_capacity = p_max_capacity
+  where id = p_room_id
+  returning * into v_updated;
+
+  return to_jsonb(v_updated);
+end;
+$$;
 C R E A T E   U N I Q U E   I N D E X   I F   N O T   E X I S T S   u n i q u e _ u s e r _ s u b j e c t _ n a m e   O N   p u b l i c . s u b j e c t s   ( u s e r _ i d ,   L O W E R ( T R I M ( n a m e ) ) ) ;  
  
