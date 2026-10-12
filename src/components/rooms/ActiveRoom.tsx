@@ -893,6 +893,25 @@ CREATE POLICY "Hosts can update their own study rooms"
       }
     }
 
+    // Sort group members based on study time: person who studied the most is first, least is last
+    result.sort((a, b) => {
+      const aTime = a.total_focus_seconds ?? 0;
+      const bTime = b.total_focus_seconds ?? 0;
+      if (bTime !== aTime) {
+        return bTime - aTime;
+      }
+      if (a.is_studying !== b.is_studying) {
+        return a.is_studying ? -1 : 1;
+      }
+      if (a.is_online !== b.is_online) {
+        return a.is_online ? -1 : 1;
+      }
+      if (a.is_host !== b.is_host) {
+        return a.is_host ? -1 : 1;
+      }
+      return (a.username || '').localeCompare(b.username || '');
+    });
+
     return result;
   }, [
     dbMembers,
@@ -1135,8 +1154,8 @@ CREATE POLICY "Hosts can update their own study rooms"
 
               return (
                 <div
-                  key={`${u.user_id}-${i}`}
-                  className="flex flex-col items-center gap-2 group relative"
+                  key={u.user_id}
+                  className="flex flex-col items-center gap-2 group relative transition-all duration-300"
                 >
                   <div className="relative">
                     {u.avatar_url ? (
@@ -1167,22 +1186,16 @@ CREATE POLICY "Hosts can update their own study rooms"
                       </div>
                     )}
 
-                    {/* Status Badge */}
-                    <div
-                      className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center border-2 border-[#07090e] shadow-md transition-colors ${
-                        isStudying
-                          ? 'bg-amber-500'
-                          : u.is_online
-                          ? 'bg-slate-700'
-                          : 'bg-slate-800'
-                      }`}
-                    >
-                      {isStudying ? (
-                        <Flame className="w-3.5 h-3.5 text-slate-900 fill-slate-900 animate-pulse" />
-                      ) : (
+                    {/* Status Badge (only when resting/offline; fire icon removed when studying) */}
+                    {!isStudying && (
+                      <div
+                        className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center border-2 border-[#07090e] shadow-md transition-colors ${
+                          u.is_online ? 'bg-slate-700' : 'bg-slate-800'
+                        }`}
+                      >
                         <Moon className="w-3.5 h-3.5 text-slate-300" />
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Member Name, Total Time Studied Today (Adds up live when focusing) */}
