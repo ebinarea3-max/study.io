@@ -193,16 +193,10 @@ export type ActiveSession = {
   subject_id: string | null;
   subject_name: string | null;
   status: 'running' | 'paused' | 'stopped';
-  timer_status?: 'IDLE' | 'RUNNING' | 'PAUSED';
   started_at: string | null;
-  accumulated_seconds?: number;
   elapsed_before_pause: number;
-  timer_mode: 'stopwatch' | 'pomodoro' | 'countdown';
-  duration_seconds?: number;
+  timer_mode: 'stopwatch' | 'pomodoro';
   target_duration: number | null;
-  pomodoro_phase?: string | null;
-  pomodoro_duration_seconds?: number | null;
-  device_id?: string | null;
   updated_at: string;
 };
 

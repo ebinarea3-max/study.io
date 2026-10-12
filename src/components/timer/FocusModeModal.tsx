@@ -11,8 +11,6 @@ export function FocusModeModal() {
     setIsFocusModeOpen,
     elapsedSeconds,
     timerMode,
-    durationSeconds,
-    countdownTarget,
     pomodoroPhase,
     pomodoroWorkDuration,
     pomodoroBreakDuration,
@@ -75,10 +73,6 @@ export function FocusModeModal() {
   let displayTime = formatSeconds(elapsedSeconds);
   if (timerMode === 'pomodoro') {
     const target = pomodoroPhase === 'work' ? pomodoroWorkDuration : pomodoroBreakDuration;
-    const remaining = Math.max(0, target - elapsedSeconds);
-    displayTime = formatSeconds(remaining);
-  } else if (timerMode === 'countdown') {
-    const target = durationSeconds > 0 ? durationSeconds : (countdownTarget || 3600);
     const remaining = Math.max(0, target - elapsedSeconds);
     displayTime = formatSeconds(remaining);
   }

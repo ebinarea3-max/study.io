@@ -79,22 +79,15 @@ create table if not exists public.active_sessions (
   user_id uuid not null references auth.users(id) on delete cascade unique,
   status text not null default 'idle' 
     check (status in ('idle', 'running', 'paused', 'stopped')),
-  timer_status text default 'IDLE'
-    check (timer_status in ('IDLE', 'RUNNING', 'PAUSED')),
-  mode text check (mode in ('stopwatch', 'pomodoro', 'countdown')),
+  mode text check (mode in ('stopwatch', 'pomodoro')),
   subject_id uuid references public.subjects(id) on delete set null,
   started_at timestamptz,
   accumulated_seconds int not null default 0,
-  duration_seconds int default 0,
   pomodoro_phase text check (pomodoro_phase in ('focus', 'break')),
   pomodoro_duration_seconds int,
   device_id text,
   updated_at timestamptz not null default now()
 );
-
--- Migration for existing active_sessions instances:
-alter table public.active_sessions add column if not exists timer_status text default 'IDLE';
-alter table public.active_sessions add column if not exists duration_seconds int default 0;
 
 -- Auto-update updated_at on every change
 create or replace function public.set_updated_at()
@@ -124,10 +117,9 @@ begin
   set accumulated_seconds = accumulated_seconds + 
         extract(epoch from (now() - started_at))::int,
       status = 'paused',
-      timer_status = 'PAUSED',
       started_at = null,
       device_id = p_device_id
-  where user_id = auth.uid() and (status = 'running' or timer_status = 'RUNNING');
+  where user_id = auth.uid() and status = 'running';
 end;
 $$ language plpgsql security definer;
 
@@ -141,15 +133,14 @@ begin
   set accumulated_seconds = accumulated_seconds + 
         coalesce(extract(epoch from (now() - started_at))::int, 0),
       status = 'stopped',
-      timer_status = 'IDLE',
       started_at = null,
       device_id = p_device_id
-  where user_id = auth.uid() and (status in ('running', 'paused') or timer_status in ('RUNNING', 'PAUSED'))
+  where user_id = auth.uid() and status in ('running', 'paused')
   returning accumulated_seconds into final_seconds;
 
   -- Reset back to idle after capturing the final duration
   update public.active_sessions
-  set status = 'idle', timer_status = 'IDLE', accumulated_seconds = 0, duration_seconds = 0, subject_id = null
+  set status = 'idle', accumulated_seconds = 0, subject_id = null
   where user_id = auth.uid();
 
   return final_seconds;

@@ -67,12 +67,6 @@ export function StudyTimer() {
     setSelectedSubjectId,
     timerMode,
     setTimerMode,
-    timerStatus,
-    startedAt,
-    accumulatedSeconds,
-    durationSeconds,
-    countdownTarget,
-    setCountdownTarget,
     isStudying,
     isPaused,
     isRunning,
@@ -120,6 +114,7 @@ export function StudyTimer() {
   const [ambientSound, setAmbientSound] = useState<AmbientSoundType | 'none'>('none');
   const [ambientVolume, setAmbientVolume] = useState(0.5);
   const [isAmbientMenuOpen, setIsAmbientMenuOpen] = useState(false);
+  const [countdownTarget, setCountdownTarget] = useState<number>(3600);
   const [customCountdownInput, setCustomCountdownInput] = useState("");
   const [isEditingCountdown, setIsEditingCountdown] = useState(false);
 
@@ -696,12 +691,11 @@ export function StudyTimer() {
     displayTime = formatSeconds(remaining);
     progressPercent = Math.min(100, (elapsedSeconds / target) * 100);
   } else if (timerMode === 'countdown') {
-    const target = durationSeconds > 0 ? durationSeconds : countdownTarget;
+    const target = countdownTarget;
     const remaining = Math.max(0, target - elapsedSeconds);
     displayTime = formatSeconds(remaining);
     progressPercent = Math.min(100, (elapsedSeconds / Math.max(1, target)) * 100);
   } else {
-    displayTime = formatSeconds(elapsedSeconds);
     const subjectTargetSeconds = ((selectedSubject?.targetMinutesPerDay || 120) * 60);
     progressPercent = selectedSubject?.id
       ? Math.min(100, ((todaySubjectSeconds + elapsedSeconds) / Math.max(1, subjectTargetSeconds)) * 100)
