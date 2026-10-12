@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import {
   ChevronLeft,
   Flame,
@@ -103,7 +104,12 @@ export default function ActiveRoom({ roomId, onBack, initialTab }: ActiveRoomPro
   const [copiedRlsSql, setCopiedRlsSql] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeletingRoom, setIsDeletingRoom] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const isFormDirtyRef = useRef(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleDeleteRoom = async () => {
     if (!user || !isHost || !roomId) return;
@@ -1719,14 +1725,14 @@ CREATE POLICY "Hosts can update their own study rooms"
       </div>
 
       {/* Delete Confirmation Modal */}
-      {showDeleteConfirm && (
+      {mounted && typeof document !== 'undefined' && showDeleteConfirm && createPortal(
         <div
           onClick={(e) => {
             if (e.target === e.currentTarget && !isDeletingRoom) {
               setShowDeleteConfirm(false);
             }
           }}
-          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in"
+          className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
         >
           <div className="bg-[#0f111a] border border-white/10 rounded-3xl w-full max-w-sm p-6 shadow-2xl relative">
             <button
@@ -1762,7 +1768,8 @@ CREATE POLICY "Hosts can update their own study rooms"
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
