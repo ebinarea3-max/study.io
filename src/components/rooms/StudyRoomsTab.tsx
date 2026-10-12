@@ -10,6 +10,7 @@ import {
   Globe,
   ChevronLeft,
   Plus,
+  Minus,
   Search,
   User,
   X,
@@ -21,8 +22,13 @@ import {
   KeyRound,
   ShieldAlert,
   ArrowRight,
-  AlertCircle
+  AlertCircle,
+  Settings,
+  Eye,
+  EyeOff,
+  Crown
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import ActiveRoom from './ActiveRoom';
 
 interface StudyRoomsTabProps {
@@ -43,6 +49,7 @@ export default function StudyRoomsTab({ onBackToDashboard, isActiveTab }: StudyR
   const [explorerRooms, setExplorerRooms] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
+  const [activeRoomInitialTab, setActiveRoomInitialTab] = useState<'home' | 'chat' | 'settings'>('home');
 
   // Search & Filter state for Explorer
   const [searchQuery, setSearchQuery] = useState('');
@@ -50,6 +57,17 @@ export default function StudyRoomsTab({ onBackToDashboard, isActiveTab }: StudyR
 
   // Copy code feedback
   const [copiedCodeId, setCopiedCodeId] = useState<string | null>(null);
+
+  // Room Settings Modal State (Host only)
+  const [editingRoom, setEditingRoom] = useState<any | null>(null);
+  const [editRoomName, setEditRoomName] = useState('');
+  const [editIsPrivate, setEditIsPrivate] = useState(false);
+  const [editPassword, setEditPassword] = useState('');
+  const [showEditPassword, setShowEditPassword] = useState(false);
+  const [editMaxCapacity, setEditMaxCapacity] = useState(4);
+  const [isUpdatingRoom, setIsUpdatingRoom] = useState(false);
+  const [copiedEditPassword, setCopiedEditPassword] = useState(false);
+  const [editRoomError, setEditRoomError] = useState('');
 
   // Modal states
   const [roomToDelete, setRoomToDelete] = useState<any>(null);
@@ -356,6 +374,72 @@ export default function StudyRoomsTab({ onBackToDashboard, isActiveTab }: StudyR
     }
   };
 
+  const handleCopyEditPassword = () => {
+    if (!editPassword) return;
+    navigator.clipboard.writeText(editPassword);
+    setCopiedEditPassword(true);
+    toast.success('Room password copied to clipboard!');
+    setTimeout(() => setCopiedEditPassword(false), 2000);
+  };
+
+  const handleSaveRoomSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingRoom || !user) return;
+
+    if (!editRoomName.trim()) {
+      setEditRoomError('Room name cannot be empty.');
+      return;
+    }
+
+    const currentMemberCount = editingRoom.room_members?.[0]?.count || 1;
+    if (editMaxCapacity < Math.max(2, currentMemberCount)) {
+      setEditRoomError(`Max capacity cannot be lower than current members (${currentMemberCount}).`);
+      return;
+    }
+
+    if (editIsPrivate && !editPassword.trim()) {
+      setEditRoomError('Please specify a password for private room, or switch to Public.');
+      return;
+    }
+
+    setIsUpdatingRoom(true);
+    setEditRoomError('');
+
+    const supabase = getSupabase();
+    if (!supabase) {
+      setIsUpdatingRoom(false);
+      return;
+    }
+
+    try {
+      const willBePrivate = editIsPrivate && editPassword.trim().length > 0;
+      const { error } = await supabase
+        .from('study_rooms')
+        .update({
+          name: editRoomName.trim(),
+          password: willBePrivate ? editPassword.trim() : null,
+          is_private: willBePrivate,
+          max_capacity: editMaxCapacity,
+        })
+        .eq('id', editingRoom.id);
+
+      if (error) {
+        setEditRoomError('Failed to update room: ' + error.message);
+        return;
+      }
+
+      broadcastRoomChange();
+      await fetchMyGroups();
+      await fetchExplorerRooms();
+      toast.success('Room settings updated! 🎉');
+      setEditingRoom(null);
+    } catch (err: any) {
+      setEditRoomError(err.message || 'An unexpected error occurred');
+    } finally {
+      setIsUpdatingRoom(false);
+    }
+  };
+
   const handleJoinClick = (room: any) => {
     if (!user) return;
     const isMember = myGroups.some((g) => g.id === room.id) || room.host_id === user.id;
@@ -547,7 +631,17 @@ export default function StudyRoomsTab({ onBackToDashboard, isActiveTab }: StudyR
   });
 
   if (activeRoomId) {
-    return <ActiveRoom roomId={activeRoomId} onBack={() => { setActiveRoomId(null); refreshAll(); }} />;
+    return (
+      <ActiveRoom
+        roomId={activeRoomId}
+        initialTab={activeRoomInitialTab}
+        onBack={() => {
+          setActiveRoomId(null);
+          setActiveRoomInitialTab('home');
+          refreshAll();
+        }}
+      />
+    );
   }
 
   return (
@@ -777,6 +871,26 @@ export default function StudyRoomsTab({ onBackToDashboard, isActiveTab }: StudyR
                       </div>
 
                       <div className="flex items-center gap-1 shrink-0 ml-2">
+                        {isHost && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingRoom(room);
+                              setEditRoomName(room.name || '');
+                              setEditIsPrivate(Boolean(room.is_private));
+                              setEditPassword(room.password || '');
+                              setEditMaxCapacity(room.max_capacity || 4);
+                              setShowEditPassword(false);
+                              setCopiedEditPassword(false);
+                              setEditRoomError('');
+                            }}
+                            className="p-2.5 rounded-xl text-slate-400 hover:text-amber-400 hover:bg-amber-400/10 transition-colors cursor-pointer"
+                            title="Edit Room Settings"
+                          >
+                            <Settings className="w-4 h-4" />
+                          </button>
+                        )}
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -1218,6 +1332,243 @@ export default function StudyRoomsTab({ onBackToDashboard, isActiveTab }: StudyR
                 {isDeleting ? 'Processing...' : 'Confirm'}
               </button>
             </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Room Settings Modal (Host Only) */}
+      {mounted && typeof document !== 'undefined' && editingRoom && createPortal(
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isUpdatingRoom) {
+              setEditingRoom(null);
+            }
+          }}
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in"
+        >
+          <div className="bg-[#0f111a] border border-white/10 rounded-3xl w-full max-w-md p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => setEditingRoom(null)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors cursor-pointer"
+              disabled={isUpdatingRoom}
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
+                <Settings className="w-5 h-5 text-amber-400" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-white leading-tight">Room Settings</h2>
+                <p className="text-xs text-slate-400">
+                  Host controls for #{editingRoom.short_code || editingRoom.id.slice(0, 6).toUpperCase()}
+                </p>
+              </div>
+            </div>
+
+            {editRoomError && (
+              <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold animate-in fade-in flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{editRoomError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSaveRoomSettings} className="space-y-4">
+              {/* Room Name */}
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1.5 uppercase tracking-wider">
+                  Room Name
+                </label>
+                <input
+                  type="text"
+                  maxLength={40}
+                  value={editRoomName}
+                  onChange={(e) => setEditRoomName(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500/50 transition-colors text-sm font-medium"
+                  placeholder="e.g., Deep Work Grind"
+                  required
+                />
+              </div>
+
+              {/* Security & Password */}
+              <div className="space-y-3 pt-1">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <Lock className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Password & Privacy</span>
+                  </label>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                    editIsPrivate
+                      ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                      : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                  }`}>
+                    {editIsPrivate ? 'Private' : 'Public'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditIsPrivate(false)}
+                    className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                      !editIsPrivate
+                        ? 'bg-white/10 border-amber-500 text-white'
+                        : 'bg-white/[0.02] border-white/5 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    Public (Open)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditIsPrivate(true)}
+                    className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                      editIsPrivate
+                        ? 'bg-amber-500/15 border-amber-500 text-amber-400'
+                        : 'bg-white/[0.02] border-white/5 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    Private (Password)
+                  </button>
+                </div>
+
+                {editIsPrivate ? (
+                  <div className="space-y-1.5 pt-1">
+                    <div className="relative flex items-center">
+                      <input
+                        type={showEditPassword ? 'text' : 'password'}
+                        maxLength={30}
+                        value={editPassword}
+                        onChange={(e) => setEditPassword(e.target.value)}
+                        placeholder="Enter room password..."
+                        className="w-full bg-white/5 border border-white/10 rounded-xl pl-4 pr-20 py-3 text-white placeholder:text-slate-600 focus:outline-none focus:border-amber-500/50 transition-colors text-sm font-mono"
+                        required={editIsPrivate}
+                      />
+                      <div className="absolute right-2 flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setShowEditPassword(!showEditPassword)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                          title={showEditPassword ? 'Hide password' : 'See password'}
+                        >
+                          {showEditPassword ? <EyeOff className="w-4 h-4 text-amber-400" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={!editPassword.trim()}
+                          onClick={handleCopyEditPassword}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer disabled:opacity-30"
+                          title="Copy password"
+                        >
+                          {copiedEditPassword ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+                    <span className="text-[11px] text-slate-500 block">
+                      Use the eye icon to see the password or copy icon to copy it.
+                    </span>
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-slate-500">
+                    Anyone can enter this room without typing a password.
+                  </p>
+                )}
+              </div>
+
+              {/* Room Member Capacity */}
+              <div className="space-y-2 pt-1">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <Users className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Member Capacity</span>
+                  </label>
+                  <span className="text-xs font-mono font-bold text-amber-400">
+                    {editingRoom.room_members?.[0]?.count || 1} / {editMaxCapacity}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10">
+                  <span className="text-xs text-slate-300">Max Scholars</span>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={editMaxCapacity <= Math.max(2, editingRoom.room_members?.[0]?.count || 1)}
+                      onClick={() => setEditMaxCapacity((prev) => Math.max(Math.max(2, editingRoom.room_members?.[0]?.count || 1), prev - 1))}
+                      className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 disabled:opacity-30 border border-white/10 text-white flex items-center justify-center cursor-pointer font-bold"
+                    >
+                      <Minus className="w-3.5 h-3.5" />
+                    </button>
+
+                    <span className="min-w-[40px] text-center font-mono font-bold text-white text-base">
+                      {editMaxCapacity}
+                    </span>
+
+                    <button
+                      type="button"
+                      disabled={editMaxCapacity >= 100}
+                      onClick={() => setEditMaxCapacity((prev) => Math.min(100, prev + 1))}
+                      className="w-8 h-8 rounded-lg bg-amber-500 hover:bg-amber-400 disabled:opacity-30 border border-amber-400 text-slate-950 flex items-center justify-center cursor-pointer font-bold"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Presets */}
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {[4, 8, 12, 25, 50].map((num) => {
+                    const currentCount = editingRoom.room_members?.[0]?.count || 1;
+                    const isDisabled = num < currentCount;
+                    const isSelected = editMaxCapacity === num;
+                    return (
+                      <button
+                        key={num}
+                        type="button"
+                        disabled={isDisabled}
+                        onClick={() => setEditMaxCapacity(num)}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all border cursor-pointer ${
+                          isSelected
+                            ? 'bg-amber-500 text-slate-950 border-amber-400'
+                            : isDisabled
+                            ? 'opacity-30 bg-white/[0.02] border-white/5 text-slate-600 cursor-not-allowed'
+                            : 'bg-white/5 hover:bg-white/10 text-slate-300 border-white/10'
+                        }`}
+                      >
+                        {num}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row gap-2 pt-3">
+                <button
+                  type="submit"
+                  disabled={isUpdatingRoom}
+                  className="flex-1 py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-amber-500/25 disabled:opacity-50"
+                >
+                  {isUpdatingRoom ? 'Saving Changes...' : 'Save Settings'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const id = editingRoom.id;
+                    setEditingRoom(null);
+                    setActiveRoomInitialTab('settings');
+                    setActiveRoomId(id);
+                  }}
+                  className="py-3 px-4 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/10 font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                  title="Open full settings inside room"
+                >
+                  <ArrowRight className="w-3.5 h-3.5" />
+                  <span>Open In Room</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>,
         document.body
