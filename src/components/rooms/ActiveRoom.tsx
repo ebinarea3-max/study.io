@@ -20,7 +20,9 @@ import {
   AlertTriangle,
   Hash,
   Crown,
-  Globe
+  Globe,
+  Trash2,
+  X
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getSupabase, broadcast } from '../../lib/supabase';
@@ -99,7 +101,52 @@ export default function ActiveRoom({ roomId, onBack, initialTab }: ActiveRoomPro
   const [settingsError, setSettingsError] = useState('');
   const [rlsBlocked, setRlsBlocked] = useState(false);
   const [copiedRlsSql, setCopiedRlsSql] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeletingRoom, setIsDeletingRoom] = useState(false);
   const isFormDirtyRef = useRef(false);
+
+  const handleDeleteRoom = async () => {
+    if (!user || !isHost || !roomId) return;
+    setIsDeletingRoom(true);
+    try {
+      const supabase = getSupabase();
+      if (supabase) {
+        await supabase.from('room_members').delete().eq('room_id', roomId);
+        const { error } = await supabase.from('study_rooms').delete().eq('id', roomId);
+        if (error) {
+          toast.error('Failed to delete room: ' + error.message);
+          return;
+        }
+
+        try {
+          const lobbyChannel = supabase.channel('study_rooms_lobby_hub');
+          lobbyChannel.send({
+            type: 'broadcast',
+            event: 'lobby_update',
+            payload: { timestamp: Date.now() },
+          });
+
+          const roomChannel = supabase.channel(`room_members_hub_${roomId}`);
+          roomChannel.send({
+            type: 'broadcast',
+            event: 'room_deleted',
+            payload: { timestamp: Date.now() },
+          });
+        } catch {}
+
+        if (broadcast) {
+          broadcast.postMessage({ type: 'lobby_update', timestamp: Date.now() });
+        }
+      }
+      toast.success('Study room deleted');
+      onBack();
+    } catch (err: any) {
+      toast.error('Error deleting room: ' + err.message);
+    } finally {
+      setIsDeletingRoom(false);
+      setShowDeleteConfirm(false);
+    }
+  };
 
   const ROOMS_RLS_SQL = `-- Run this in your Supabase Dashboard -> SQL Editor:
 ALTER TABLE public.study_rooms ENABLE ROW LEVEL SECURITY;
@@ -1642,10 +1689,81 @@ CREATE POLICY "Hosts can update their own study rooms"
                   Reset
                 </button>
               </div>
+
+              {/* Danger Zone: Delete Room */}
+              <div className="pt-6 border-t border-white/5">
+                <div className="p-5 rounded-2xl bg-red-500/5 border border-red-500/15 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h4 className="text-sm font-bold text-red-400 flex items-center gap-2">
+                      <Trash2 className="w-4 h-4" />
+                      Delete Study Room
+                    </h4>
+                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                      Permanently delete this focus group. All enrolled scholars will be disconnected immediately.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={isSaving || isDeletingRoom}
+                    onClick={() => setShowDeleteConfirm(true)}
+                    className="px-4 py-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-white border border-red-500/20 font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0 active:scale-95"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete Room</span>
+                  </button>
+                </div>
+              </div>
             </form>
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isDeletingRoom) {
+              setShowDeleteConfirm(false);
+            }
+          }}
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in"
+        >
+          <div className="bg-[#0f111a] border border-white/10 rounded-3xl w-full max-w-sm p-6 shadow-2xl relative">
+            <button
+              onClick={() => setShowDeleteConfirm(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors cursor-pointer"
+              disabled={isDeletingRoom}
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h2 className="text-xl font-bold text-white mb-2">
+              Delete Study Room?
+            </h2>
+            <p className="text-sm text-slate-400 mb-8 leading-relaxed">
+              Are you sure you want to delete &ldquo;{roomName}&rdquo;? This action cannot be undone and all active members will be removed.
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={isDeletingRoom}
+                className="flex-1 py-3 rounded-xl font-bold text-slate-300 bg-white/5 hover:bg-white/10 transition-colors disabled:opacity-50 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteRoom}
+                disabled={isDeletingRoom}
+                className="flex-1 py-3 rounded-xl font-bold text-white bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/20 transition-colors disabled:opacity-50 cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                {isDeletingRoom ? 'Deleting...' : 'Confirm'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

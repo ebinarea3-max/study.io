@@ -929,7 +929,7 @@ CREATE POLICY "Hosts can update their own study rooms"
                       </div>
 
                       <div className="flex items-center gap-1 shrink-0 ml-2">
-                        {isHost && (
+                        {isHost ? (
                           <button
                             type="button"
                             onClick={(e) => {
@@ -949,17 +949,18 @@ CREATE POLICY "Hosts can update their own study rooms"
                           >
                             <Settings className="w-4 h-4" />
                           </button>
+                        ) : (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setRoomToDelete(room);
+                            }}
+                            className="p-2.5 rounded-xl text-slate-500 hover:text-red-400 hover:bg-red-400/10 transition-colors cursor-pointer"
+                            title="Leave Group"
+                          >
+                            <LogOut className="w-4 h-4" />
+                          </button>
                         )}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setRoomToDelete(room);
-                          }}
-                          className="p-2.5 rounded-xl text-slate-500 hover:text-red-400 hover:bg-red-400/10 transition-colors cursor-pointer"
-                          title={isHost ? 'Delete Group' : 'Leave Group'}
-                        >
-                          {isHost ? <Trash2 className="w-4 h-4" /> : <LogOut className="w-4 h-4" />}
-                        </button>
                       </div>
                     </div>
                   );
@@ -1656,6 +1657,35 @@ CREATE POLICY "Hosts can update their own study rooms"
                   <ArrowRight className="w-3.5 h-3.5" />
                   <span>Open In Room</span>
                 </button>
+              </div>
+
+              {/* Danger Zone: Delete Room */}
+              <div className="pt-4 mt-1 border-t border-white/5">
+                <div className="flex items-center justify-between p-3.5 rounded-2xl bg-red-500/5 border border-red-500/15">
+                  <div className="flex flex-col pr-2">
+                    <span className="text-xs font-bold text-red-400 flex items-center gap-1.5">
+                      <Trash2 className="w-3.5 h-3.5" />
+                      Delete Room
+                    </span>
+                    <span className="text-[11px] text-slate-500 leading-tight mt-0.5">
+                      Permanently delete this group and disconnect all scholars
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={isUpdatingRoom}
+                    onClick={() => {
+                      const room = editingRoom;
+                      setEditingRoom(null);
+                      setRoomToDelete(room);
+                    }}
+                    className="shrink-0 px-3 py-2 rounded-xl text-xs font-bold text-red-400 hover:text-white bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
+                    title="Delete this study room"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete</span>
+                  </button>
+                </div>
               </div>
             </form>
           </div>
