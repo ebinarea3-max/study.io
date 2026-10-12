@@ -1016,7 +1016,7 @@ CREATE POLICY "Hosts can update their own study rooms"
 
   return (
     <div className="w-full h-full flex-1 min-h-0 bg-[#07090e] flex flex-col relative text-slate-200">
-      <header className="flex items-center justify-between p-4 border-b border-white/5 bg-white/[0.02]">
+      <header className="shrink-0 flex items-center justify-between p-4 border-b border-white/5 bg-white/[0.02]">
         <div className="flex items-center gap-3">
           <button
             onClick={onBack}
@@ -1079,7 +1079,7 @@ CREATE POLICY "Hosts can update their own study rooms"
         </div>
       </header>
 
-      <div className={`flex-1 overflow-x-hidden p-4 ${roomTab === 'chat' ? 'flex flex-col min-h-0' : 'overflow-y-auto'}`}>
+      <div className={`flex-1 min-h-0 w-full overflow-x-hidden ${roomTab === 'chat' ? 'p-4 flex flex-col' : 'overflow-y-auto p-4 overscroll-contain scrollbar-thin'}`}>
         {roomTab === 'home' && (
           <div className="flex flex-wrap gap-8 justify-center items-start mt-8">
             {displayUsers.map((u, i) => {
@@ -1293,7 +1293,7 @@ CREATE POLICY "Hosts can update their own study rooms"
         )}
 
         {roomTab === 'settings' && (
-          <div className="max-w-2xl mx-auto w-full py-4 sm:py-6 space-y-6 animate-in fade-in duration-200">
+          <div className="max-w-2xl mx-auto w-full py-4 sm:py-6 space-y-6 animate-in fade-in duration-200 pb-36">
             {/* Host Banner */}
             <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-500/10 via-white/[0.02] to-transparent border border-amber-500/20 p-5 sm:p-6 shadow-xl">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

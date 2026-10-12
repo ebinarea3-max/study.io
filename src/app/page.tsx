@@ -194,7 +194,7 @@ export default function Home() {
         activeTab === "timer" 
           ? "h-full md:min-h-screen" 
           : activeTab === "rooms"
-          ? "flex-1 min-h-0"
+          ? "flex-1 min-h-0 h-full overflow-hidden"
           : "min-h-screen"
       }`}>
         <SwipeTabContainer activeTab={activeTab} onChangeTab={setActiveTab}>

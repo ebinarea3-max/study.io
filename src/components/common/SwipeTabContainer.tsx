@@ -134,7 +134,7 @@ export function SwipeTabContainer({
 
   return (
     <div
-      className="w-full overflow-hidden relative flex-1 flex flex-col"
+      className="w-full h-full min-h-0 overflow-hidden relative flex-1 flex flex-col"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -142,7 +142,7 @@ export function SwipeTabContainer({
     >
       {/* Dynamic Sliding Track */}
       <div
-        className="flex w-full flex-1"
+        className="flex w-full h-full min-h-0 flex-1"
         style={{
           width: `${TABS.length * 100}%`,
           transform: `translateX(calc(-${currentIndex * (100 / TABS.length)}% + ${dragX}px))`,
@@ -153,7 +153,7 @@ export function SwipeTabContainer({
         {TABS.map((tab, idx) => (
           <div
             key={tab}
-            className={`flex-shrink-0 flex flex-col transition-opacity duration-300 h-full ${
+            className={`flex-shrink-0 flex flex-col transition-opacity duration-300 h-full min-h-0 ${
               currentIndex === idx
                 ? (tab === 'timer' || tab === 'rooms')
                   ? 'overflow-hidden pb-0'

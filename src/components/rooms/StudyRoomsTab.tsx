@@ -703,9 +703,9 @@ CREATE POLICY "Hosts can update their own study rooms"
   }
 
   return (
-    <div className="w-full h-full min-h-[85vh] bg-[#07090e] flex flex-col relative text-slate-200">
+    <div className="w-full h-full flex-1 min-h-0 bg-[#07090e] flex flex-col relative text-slate-200">
       {/* Header */}
-      <header className="flex items-center justify-between p-4 border-b border-white/5 bg-white/[0.02] sticky top-0 z-20 backdrop-blur-md">
+      <header className="shrink-0 flex items-center justify-between p-4 border-b border-white/5 bg-white/[0.02] sticky top-0 z-20 backdrop-blur-md">
         {view === 'explorer' ? (
           <div className="flex items-center gap-3">
             <button
@@ -752,7 +752,7 @@ CREATE POLICY "Hosts can update their own study rooms"
       </header>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-4 pb-28 scrollbar-thin">
         {view === 'explorer' && (
           <div className="space-y-3 mb-2">
             {/* Create Room Banner & Search Bar */}
