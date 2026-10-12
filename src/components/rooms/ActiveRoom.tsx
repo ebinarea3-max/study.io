@@ -78,7 +78,7 @@ export function formatSeconds(totalSeconds: number): string {
 
 export default function ActiveRoom({ roomId, onBack, initialTab }: ActiveRoomProps) {
   const { user } = useAuth();
-  const { isRunning, elapsedSeconds, getTodayTotalSeconds } = useStudy();
+  const { isRunning, isPaused, timerStatus, startedAt, accumulatedSeconds, elapsedSeconds, getTodayTotalSeconds } = useStudy();
 
   const [roomName, setRoomName] = useState<string>('Loading...');
   const [roomTab, setRoomTab] = useState<'home' | 'chat' | 'settings'>(initialTab || 'home');
@@ -187,7 +187,10 @@ CREATE POLICY "Hosts can update their own study rooms"
       string,
       {
         is_studying: boolean;
+        timer_status?: 'IDLE' | 'RUNNING' | 'PAUSED';
         session_start_time: number | null;
+        started_at?: string | null;
+        accumulated_seconds?: number;
         today_seconds: number;
         session_seconds: number;
         last_seen: number;
@@ -234,13 +237,21 @@ CREATE POLICY "Hosts can update their own study rooms"
   // Refs for frequently changing values to prevent effect re-runs
   const getTodayTotalSecondsRef = useRef(getTodayTotalSeconds);
   const isTimerRunningRef = useRef(isTimerRunning);
+  const isPausedRef = useRef(isPaused);
+  const timerStatusRef = useRef(timerStatus);
   const elapsedSecondsRef = useRef(elapsedSeconds);
+  const startedAtRef = useRef(startedAt);
+  const accumulatedSecondsRef = useRef(accumulatedSeconds);
 
   useEffect(() => {
     getTodayTotalSecondsRef.current = getTodayTotalSeconds;
     isTimerRunningRef.current = isTimerRunning;
+    isPausedRef.current = isPaused;
+    timerStatusRef.current = timerStatus;
     elapsedSecondsRef.current = elapsedSeconds;
-  }, [getTodayTotalSeconds, isTimerRunning, elapsedSeconds]);
+    startedAtRef.current = startedAt;
+    accumulatedSecondsRef.current = accumulatedSeconds;
+  }, [getTodayTotalSeconds, isTimerRunning, isPaused, timerStatus, elapsedSeconds, startedAt, accumulatedSeconds]);
 
   // Ticker to smoothly update live study timers every second
   useEffect(() => {
@@ -256,12 +267,18 @@ CREATE POLICY "Hosts can update their own study rooms"
       if (!payload || !payload.user_id) return;
       if (payload.user_id === user?.id) return;
 
+      const isStudying = Boolean(payload.is_studying || payload.timer_status === 'RUNNING');
+      const startIso = payload.started_at || (payload.session_start_time ? new Date(payload.session_start_time).toISOString() : null);
+      const accum = Number(payload.accumulated_seconds || 0);
+
       setLiveFocusMap((prev) => ({
         ...prev,
         [payload.user_id]: {
-          is_studying: Boolean(payload.is_studying),
-          session_start_time:
-            payload.session_start_time ?? (payload.is_studying ? Date.now() : null),
+          is_studying: isStudying,
+          timer_status: payload.timer_status || (isStudying ? 'RUNNING' : 'IDLE'),
+          session_start_time: startIso ? new Date(startIso).getTime() : null,
+          started_at: startIso,
+          accumulated_seconds: accum,
           today_seconds: Number(payload.today_seconds || 0),
           session_seconds: Number(payload.session_seconds || 0),
           last_seen: Date.now(),
@@ -275,13 +292,20 @@ CREATE POLICY "Hosts can update their own study rooms"
   const sendFocusBroadcast = useCallback(() => {
     if (!user?.id) return;
     const isRunning = isTimerRunningRef.current;
+    const isPaused = isPausedRef.current;
+    const currentStatus = timerStatusRef.current || (isRunning ? 'RUNNING' : (isPaused ? 'PAUSED' : 'IDLE'));
     const elapsed = elapsedSecondsRef.current;
+    const startIso = startedAtRef.current;
+    const accum = accumulatedSecondsRef.current || 0;
     const todayTotal = getTodayTotalSecondsRef.current ? getTodayTotalSecondsRef.current() : 0;
     
     const payload = {
       user_id: user.id,
       is_studying: isRunning,
-      session_start_time: isRunning ? Date.now() - (elapsed * 1000) : null,
+      timer_status: currentStatus,
+      started_at: isRunning ? startIso : null,
+      session_start_time: isRunning ? (startIso ? new Date(startIso).getTime() : Date.now() - (elapsed * 1000)) : null,
+      accumulated_seconds: accum,
       session_seconds: elapsed,
       today_seconds: todayTotal,
       timestamp: Date.now(),
@@ -561,14 +585,24 @@ CREATE POLICY "Hosts can update their own study rooms"
         if (status === 'SUBSCRIBED') {
           isSubscribedRef.current = true;
           try {
+            const isRunning = isTimerRunningRef.current;
+            const isPaused = isPausedRef.current;
+            const currentStatus = timerStatusRef.current || (isRunning ? 'RUNNING' : (isPaused ? 'PAUSED' : 'IDLE'));
+            const startIso = startedAtRef.current;
+            const accum = accumulatedSecondsRef.current || 0;
+            const elapsed = elapsedSecondsRef.current;
+
             await presenceChannel.track({
               user_id: user.id,
               client_id: clientIdRef.current,
               username: profileRef.current?.username || user?.email || 'Scholar',
               avatar_url: profileRef.current?.avatar_url || null,
-              is_studying: isTimerRunning,
-              session_start_time: isTimerRunning ? Date.now() - (elapsedSeconds * 1000) : null,
-              elapsed_seconds: elapsedSeconds,
+              is_studying: isRunning,
+              timer_status: currentStatus,
+              started_at: isRunning ? startIso : null,
+              session_start_time: isRunning ? (startIso ? new Date(startIso).getTime() : Date.now() - (elapsed * 1000)) : null,
+              accumulated_seconds: accum,
+              elapsed_seconds: elapsed,
               today_seconds: getTodayTotalSeconds ? getTodayTotalSeconds() : 0,
             });
           } catch (err) {
@@ -616,13 +650,18 @@ CREATE POLICY "Hosts can update their own study rooms"
   useEffect(() => {
     if (channelRef.current && user?.id && isSubscribedRef.current) {
       try {
+        const isRunning = isTimerRunning;
+        const currentStatus = timerStatus || (isRunning ? 'RUNNING' : (isPaused ? 'PAUSED' : 'IDLE'));
         channelRef.current.track({
           user_id: user.id,
           client_id: clientIdRef.current,
           username: profile?.username || user?.email || 'Scholar',
           avatar_url: profile?.avatar_url || null,
-          is_studying: isTimerRunning,
-          session_start_time: isTimerRunning ? Date.now() - (elapsedSeconds * 1000) : null,
+          is_studying: isRunning,
+          timer_status: currentStatus,
+          started_at: isRunning ? startedAt : null,
+          session_start_time: isRunning ? (startedAt ? new Date(startedAt).getTime() : Date.now() - (elapsedSeconds * 1000)) : null,
+          accumulated_seconds: accumulatedSeconds || 0,
           elapsed_seconds: elapsedSeconds,
           today_seconds: getTodayTotalSeconds ? getTodayTotalSeconds() : 0,
         });
@@ -633,6 +672,11 @@ CREATE POLICY "Hosts can update their own study rooms"
     sendFocusBroadcast();
   }, [
     isTimerRunning,
+    isPaused,
+    timerStatus,
+    startedAt,
+    accumulatedSeconds,
+    elapsedSeconds,
     user?.id,
     profile?.username,
     profile?.avatar_url,
@@ -749,22 +793,28 @@ CREATE POLICY "Hosts can update their own study rooms"
         // High-priority peer-to-peer broadcast telemetry
         isOnline = true;
         isStudying = liveFocus.is_studying;
-        todaySec = Math.max(todaySec, liveFocus.today_seconds);
+        todaySec = Math.max(todaySec, liveFocus.today_seconds || 0);
         if (isStudying) {
-          const start = liveFocus.session_start_time;
-          if (start) {
-            sessionSeconds = Math.max(0, Math.floor((nowTick - start) / 1000));
+          const accum = liveFocus.accumulated_seconds || 0;
+          const startMs = liveFocus.session_start_time ?? (liveFocus.started_at ? new Date(liveFocus.started_at).getTime() : null);
+          if (startMs && liveFocus.timer_status !== 'PAUSED') {
+            sessionSeconds = accum + Math.max(0, Math.floor((nowTick - startMs) / 1000));
           } else {
-            sessionSeconds = liveFocus.session_seconds || 0;
+            sessionSeconds = accum || liveFocus.session_seconds || 0;
           }
         }
       } else if (pu) {
         // Realtime presence state
         isOnline = true;
         isStudying = Boolean(pu.is_studying);
-        const startTime = pu.session_start_time ?? member.timer_start_at;
-        if (startTime && isStudying) {
-          sessionSeconds = Math.max(0, Math.floor((nowTick - startTime) / 1000));
+        const accum = pu.accumulated_seconds || 0;
+        const startTime = pu.session_start_time ?? (pu.started_at ? new Date(pu.started_at).getTime() : member.timer_start_at);
+        if (isStudying) {
+          if (startTime && pu.timer_status !== 'PAUSED') {
+            sessionSeconds = accum + Math.max(0, Math.floor((nowTick - startTime) / 1000));
+          } else {
+            sessionSeconds = accum || pu.elapsed_seconds || 0;
+          }
         }
         if (pu.today_seconds) {
           todaySec = Math.max(todaySec, pu.today_seconds);
@@ -774,11 +824,11 @@ CREATE POLICY "Hosts can update their own study rooms"
         isOnline = false;
         isStudying = member.is_studying;
         const startTime = member.timer_start_at;
+        const accum = member.accumulated_seconds || 0;
         if (startTime && isStudying) {
-          sessionSeconds = Math.max(
-            0,
-            Math.floor((nowTick - startTime) / 1000) + (member.accumulated_seconds || 0)
-          );
+          sessionSeconds = accum + Math.max(0, Math.floor((nowTick - startTime) / 1000));
+        } else {
+          sessionSeconds = accum;
         }
       }
 
@@ -831,20 +881,22 @@ CREATE POLICY "Hosts can update their own study rooms"
     for (const pu of presentUsers) {
       if (pu?.user_id && !seenUserIds.has(pu.user_id)) {
         seenUserIds.add(pu.user_id);
-        const startTime = pu.session_start_time;
+        const isStudying = Boolean(pu.is_studying);
+        const accum = pu.accumulated_seconds || 0;
+        const startTime = pu.session_start_time ?? (pu.started_at ? new Date(pu.started_at).getTime() : null);
         const sessionSeconds =
-          startTime && pu.is_studying
-            ? Math.max(0, Math.floor((nowTick - startTime) / 1000))
-            : 0;
+          startTime && isStudying && pu.timer_status !== 'PAUSED'
+            ? accum + Math.max(0, Math.floor((nowTick - startTime) / 1000))
+            : accum || pu.elapsed_seconds || 0;
         const todaySec = pu.today_seconds || 0;
-        const totalFocus = pu.is_studying ? todaySec + sessionSeconds : todaySec;
+        const totalFocus = isStudying ? todaySec + sessionSeconds : todaySec;
 
         result.push({
           user_id: pu.user_id,
           username: pu.username || 'Scholar',
           avatar_url: pu.avatar_url || null,
           is_host: Boolean(pu.user_id && roomInfo?.host_id === pu.user_id),
-          is_studying: Boolean(pu.is_studying),
+          is_studying: isStudying,
           session_seconds: sessionSeconds,
           today_seconds: todaySec,
           total_focus_seconds: totalFocus,
