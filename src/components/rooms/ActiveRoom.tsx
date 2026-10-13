@@ -23,9 +23,12 @@ import {
   Crown,
   Globe,
   Trash2,
-  X
+  X,
+  MessageSquare,
+  Radio,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { UserAvatar } from '../common/UserAvatar';
 import { getSupabase, broadcast } from '../../lib/supabase';
 import { updateRoomSettingsAction } from '../../app/actions/rooms';
 import { useAuth } from '../../context/AuthContext';
@@ -1080,48 +1083,54 @@ CREATE POLICY "Hosts can update their own study rooms"
 
   return (
     <div className="w-full h-full flex-1 min-h-0 bg-[#07090e] flex flex-col relative text-slate-200">
-      <header className="shrink-0 flex items-center justify-between px-4 py-2.5 mx-4 mt-3 rounded-2xl bg-white/[0.02] border border-white/5 backdrop-blur-md">
-        <div className="flex items-center gap-3">
+      <header className="shrink-0 flex items-center justify-between px-3 sm:px-5 py-2.5 mx-2 sm:mx-4 mt-2 sm:mt-3 rounded-2xl bg-[#0b0e14]/80 border border-white/[0.08] backdrop-blur-xl shadow-lg">
+        <div className="flex items-center gap-2.5 sm:gap-3">
           <button
             onClick={onBack}
-            className="p-2 -ml-2 rounded-xl hover:bg-white/10 transition-colors flex items-center"
+            className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-white/20 text-slate-300 hover:text-white font-hud font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1 active:scale-95 cursor-pointer"
           >
-            <ChevronLeft className="w-6 h-6 text-slate-300" />
-            <span className="font-bold text-slate-300 hidden sm:inline ml-1">Leave</span>
+            <ChevronLeft className="w-4 h-4 text-slate-400" />
+            <span className="hidden sm:inline">LEAVE</span>
           </button>
-          <div className="flex items-baseline gap-2">
-            <h1 className="text-xl font-bold text-white tracking-wide truncate max-w-[150px] sm:max-w-[240px]">
+          <div className="flex items-center gap-2">
+            <h1 className="text-sm sm:text-base font-hud font-bold text-white tracking-wide uppercase truncate max-w-[140px] sm:max-w-[260px]">
               {roomName}
             </h1>
-            <span className="text-xs text-slate-500 font-medium hidden sm:inline">
-              {displayUsers.length} {displayUsers.length === 1 ? 'member' : 'members'}
+            <span className="text-[10px] font-hud-mono text-neutral-400 bg-white/[0.04] border border-white/10 px-2 py-0.5 rounded-full hidden sm:inline-flex items-center gap-1">
+              <Users className="w-2.5 h-2.5 text-neutral-400" />
+              {displayUsers.length} {displayUsers.length === 1 ? 'MEMBER' : 'MEMBERS'}
             </span>
           </div>
         </div>
 
         <div className="flex items-center">
-          <div className="flex bg-white/5 p-1 rounded-xl">
+          <div className="flex bg-black/40 border border-white/10 p-1 rounded-xl shadow-inner backdrop-blur-md gap-1">
             <button
               onClick={() => setRoomTab('home')}
-              className={`px-3.5 py-1.5 rounded-lg text-sm font-bold transition-all ${
+              className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-lg text-xs font-hud font-bold uppercase tracking-wider transition-all cursor-pointer ${
                 roomTab === 'home'
-                  ? 'bg-amber-500 text-slate-900 shadow-lg'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-white/[0.1] border border-white/20 text-white shadow-sm'
+                  : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
               }`}
             >
-              Home
+              <Users className="w-3.5 h-3.5" />
+              <span>HOME</span>
             </button>
             <button
-              onClick={() => setRoomTab('chat')}
-              className={`px-3.5 py-1.5 rounded-lg text-sm font-bold transition-all relative ${
+              onClick={() => {
+                setRoomTab('chat');
+                setUnreadCount(0);
+              }}
+              className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-lg text-xs font-hud font-bold uppercase tracking-wider transition-all cursor-pointer relative ${
                 roomTab === 'chat'
-                  ? 'bg-amber-500 text-slate-900 shadow-lg'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-amber-500/15 border border-amber-500/40 text-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.2)]'
+                  : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
               }`}
             >
-              Chat
+              <MessageSquare className="w-3.5 h-3.5" />
+              <span>CHAT</span>
               {unreadCount > 0 && (
-                <span className="absolute -top-1.5 -right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 min-w-[20px] text-center rounded-full border-2 border-[#07090e] shadow-md animate-in zoom-in duration-200">
+                <span className="ml-0.5 bg-amber-500 text-slate-950 text-[10px] font-hud-mono font-bold px-1.5 py-0.2 rounded-full border border-amber-300 shadow-[0_0_8px_rgba(245,158,11,0.5)] animate-in zoom-in duration-200">
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
               )}
@@ -1129,14 +1138,14 @@ CREATE POLICY "Hosts can update their own study rooms"
             {isHost && (
               <button
                 onClick={() => setRoomTab('settings')}
-                className={`px-3.5 py-1.5 rounded-lg text-sm font-bold transition-all flex items-center gap-1.5 ${
+                className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-lg text-xs font-hud font-bold uppercase tracking-wider transition-all cursor-pointer ${
                   roomTab === 'settings'
-                    ? 'bg-amber-500 text-slate-900 shadow-lg'
-                    : 'text-slate-400 hover:text-white'
+                    ? 'bg-white/[0.1] border border-white/20 text-white shadow-sm'
+                    : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
                 }`}
               >
                 <Settings className="w-3.5 h-3.5" />
-                Settings
+                <span>SETTINGS</span>
               </button>
             )}
           </div>
@@ -1255,10 +1264,53 @@ CREATE POLICY "Hosts can update their own study rooms"
         )}
 
         {roomTab === 'chat' && (
-          <div className="flex flex-col h-[calc(100dvh-180px)] overflow-hidden">
-            <div ref={messagesEndRef} className="flex-1 overflow-y-auto min-h-0 pb-4 pr-2 flex flex-col">
+          <div className="max-w-4xl w-full mx-auto flex-1 min-h-0 flex flex-col bg-[#0b0e14]/90 border border-white/[0.08] rounded-2xl sm:rounded-3xl shadow-2xl backdrop-blur-xl relative overflow-hidden h-full">
+            {/* Angular Targeting Reticle Corner Brackets */}
+            <div className="hidden sm:block hud-corner-bracket hud-corner-tl" />
+            <div className="hidden sm:block hud-corner-bracket hud-corner-tr" />
+            <div className="hidden sm:block hud-corner-bracket hud-corner-bl" />
+            <div className="hidden sm:block hud-corner-bracket hud-corner-br" />
+
+            {/* Terminal Header Bar */}
+            <div className="px-4 sm:px-6 py-3 border-b border-white/[0.08] bg-white/[0.02] flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)] shrink-0" />
+                <span className="font-hud text-xs sm:text-sm font-bold uppercase tracking-wider text-white truncate">
+                  ROOM COMMS // {roomName}
+                </span>
+                <span className="text-[9px] font-hud-mono px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-semibold hidden md:inline shrink-0">
+                  LIVE SYNC
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2 text-xs font-hud-mono shrink-0">
+                {displayUsers.filter(u => u.is_studying).length > 0 && (
+                  <span className="flex items-center gap-1.5 text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-lg font-bold text-[10px] uppercase">
+                    <Flame className="w-3 h-3 fill-amber-400" />
+                    <span>{displayUsers.filter(u => u.is_studying).length} Focusing</span>
+                  </span>
+                )}
+                <span className="text-neutral-500 hidden sm:inline">•</span>
+                <span className="text-neutral-400 text-[11px] font-mono hidden sm:inline">
+                  {displayUsers.length} {displayUsers.length === 1 ? 'Scholar' : 'Scholars'}
+                </span>
+              </div>
+            </div>
+
+            {/* Messages Scroll Area */}
+            <div ref={messagesEndRef} className="flex-1 overflow-y-auto min-h-0 p-4 sm:p-6 space-y-4 scrollbar-thin">
               {messages.length === 0 ? (
-                <div className="text-center text-slate-500 mt-10">No messages yet. Say hi!</div>
+                <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-3 my-auto min-h-[220px]">
+                  <div className="w-12 h-12 rounded-2xl bg-white/[0.03] border border-white/10 flex items-center justify-center text-amber-400 shadow-inner">
+                    <MessageSquare className="w-6 h-6 opacity-80" />
+                  </div>
+                  <div className="text-sm font-hud font-bold text-white tracking-wide uppercase">
+                    ROOM COMMS STANDBY
+                  </div>
+                  <p className="text-xs text-neutral-400 max-w-xs font-mono">
+                    No transmissions logged yet. Connect with fellow scholars or broadcast your study target.
+                  </p>
+                </div>
               ) : (
                 messages.reduce((groups, msg) => {
                   const lastGroup = groups[groups.length - 1];
@@ -1272,46 +1324,70 @@ CREATE POLICY "Hosts can update their own study rooms"
                   const firstMsg = group[0];
                   const lastMsg = group[group.length - 1];
                   const isMe = firstMsg.user_id === user?.id;
+                  const senderMember = displayUsers.find(u => u.user_id === firstMsg.user_id);
+                  const isStudying = senderMember?.is_studying;
+                  const isHostUser = senderMember?.is_host;
                   const timeString = new Date(lastMsg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                  const username = firstMsg.profiles?.username || senderMember?.username || 'Scholar';
+                  const avatarUrl = firstMsg.profiles?.avatar_url || senderMember?.avatar_url;
 
                   return (
-                    <div key={`group-${firstMsg.id}`} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} mt-4`}>
-                      {/* Username */}
-                      <span className={`text-xs text-slate-400 mb-1 ${isMe ? 'mr-11' : 'ml-11'}`}>
-                        {firstMsg.profiles?.username || 'Scholar'}
-                      </span>
+                    <div
+                      key={`group-${firstMsg.id}`}
+                      className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} group`}
+                    >
+                      {/* Meta header: name, host badge, focusing status, timestamp */}
+                      <div className={`flex items-center gap-2 mb-1.5 ${isMe ? 'mr-1 flex-row-reverse' : 'ml-1'}`}>
+                        <span className={`text-xs font-hud font-bold tracking-tight ${isMe ? 'text-amber-400' : 'text-slate-200'}`}>
+                          {isMe ? 'YOU' : username}
+                        </span>
+                        {isHostUser && (
+                          <span className="text-[9px] font-hud font-bold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 uppercase">
+                            HOST
+                          </span>
+                        )}
+                        {isStudying && (
+                          <span className="text-[9px] font-hud px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center gap-1 uppercase font-semibold">
+                            <Flame className="w-2.5 h-2.5 fill-amber-400" /> FOCUSING
+                          </span>
+                        )}
+                        <span className="text-[10px] font-hud-mono text-neutral-500">
+                          {timeString}
+                        </span>
+                      </div>
 
-                      {/* Avatar and Bubbles Row */}
-                      <div className={`flex gap-3 ${isMe ? 'flex-row-reverse' : ''} items-end max-w-[85%]`}>
+                      {/* Avatar and Bubble Row */}
+                      <div className={`flex gap-3 ${isMe ? 'flex-row-reverse' : ''} items-end max-w-[88%] sm:max-w-[75%]`}>
                         {/* Avatar */}
-                        <div className="w-8 flex-shrink-0">
-                          {firstMsg.profiles?.avatar_url ? (
-                            <img
-                              src={firstMsg.profiles.avatar_url}
-                              alt=""
-                              className="w-8 h-8 rounded-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center">
-                              <UserIcon className="w-4 h-4 text-slate-400" />
-                            </div>
-                          )}
+                        <div className="relative shrink-0">
+                          <UserAvatar
+                            src={avatarUrl}
+                            name={username}
+                            size={32}
+                            className={`rounded-full border transition-all ${
+                              isStudying
+                                ? 'border-amber-500 ring-2 ring-amber-500/30 shadow-[0_0_8px_rgba(245,158,11,0.4)]'
+                                : 'border-white/10'
+                            }`}
+                          />
                         </div>
 
-                        {/* Bubbles Column */}
-                        <div className={`flex flex-col gap-1 ${isMe ? 'items-end' : 'items-start'}`}>
+                        {/* Bubble Stack */}
+                        <div className={`flex flex-col gap-1.5 ${isMe ? 'items-end' : 'items-start'}`}>
                           {group.map((msg: any, idx: number) => {
                             const isFirst = idx === 0;
                             const isLast = idx === group.length - 1;
                             return (
                               <div
                                 key={msg.id}
-                                className={`px-4 py-2 text-sm shadow-sm ${
-                                  isMe ? 'bg-amber-500 text-slate-900' : 'bg-slate-800/80 text-slate-200'
+                                className={`px-4 py-2.5 text-sm leading-relaxed transition-all break-words ${
+                                  isMe
+                                    ? 'bg-gradient-to-br from-amber-500/25 via-amber-500/15 to-amber-600/10 border border-amber-500/35 text-amber-50 shadow-[0_2px_12px_rgba(245,158,11,0.1)]'
+                                    : 'bg-white/[0.05] border border-white/[0.1] text-slate-100 shadow-md hover:border-white/20'
                                 } ${
                                   isMe
-                                    ? `rounded-l-2xl ${isFirst ? 'rounded-tr-2xl' : 'rounded-tr-sm'} ${isLast ? 'rounded-br-2xl' : 'rounded-br-sm'}`
-                                    : `rounded-r-2xl ${isFirst ? 'rounded-tl-2xl' : 'rounded-tl-sm'} ${isLast ? 'rounded-bl-2xl' : 'rounded-bl-sm'}`
+                                    ? `rounded-2xl ${isFirst ? 'rounded-tr-md' : 'rounded-tr-md'} ${isLast ? 'rounded-br-2xl' : 'rounded-br-md'}`
+                                    : `rounded-2xl ${isFirst ? 'rounded-tl-md' : 'rounded-tl-md'} ${isLast ? 'rounded-bl-2xl' : 'rounded-bl-md'}`
                                 }`}
                               >
                                 {msg.content}
@@ -1320,35 +1396,57 @@ CREATE POLICY "Hosts can update their own study rooms"
                           })}
                         </div>
                       </div>
-
-                      {/* Timestamp */}
-                      <span className={`text-[10px] text-slate-500 mt-1 ${isMe ? 'mr-11' : 'ml-11'} font-medium`}>
-                        {timeString}
-                      </span>
                     </div>
                   );
                 })
               )}
             </div>
 
-            <form onSubmit={handleSendMessage} className="relative mt-2 shrink-0">
-              <input
-                type="text"
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                placeholder="Message the room..."
-                className="w-full bg-white/5 border border-white/10 rounded-2xl pl-4 pr-12 py-3 text-white focus:outline-none focus:border-amber-500/50 transition-colors"
-              />
-              <button
-                type="submit"
-                disabled={!newMessage.trim() || isSending}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-amber-500 text-slate-900 hover:bg-amber-400 disabled:opacity-50 transition-colors"
-              >
-                <Send className="w-4 h-4" />
-              </button>
+            {/* Quick Comms Chips */}
+            <div className="px-4 sm:px-6 pt-2 pb-1 border-t border-white/[0.05] bg-white/[0.01] flex items-center gap-2 overflow-x-auto scrollbar-none shrink-0">
+              <span className="text-[10px] font-hud-mono uppercase text-neutral-500 tracking-wider hidden sm:inline">
+                QUICK TRANSMIT:
+              </span>
+              {[
+                '🔥 Locked in',
+                '☕ Taking 5',
+                '🎯 Goal crushed',
+                '💪 Keep pushing',
+              ].map((chip) => (
+                <button
+                  key={chip}
+                  type="button"
+                  onClick={() => setNewMessage(chip)}
+                  className="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.09] border border-white/10 hover:border-amber-500/30 text-[11px] font-medium text-neutral-300 hover:text-white transition-all cursor-pointer whitespace-nowrap active:scale-95"
+                >
+                  {chip}
+                </button>
+              ))}
+            </div>
+
+            {/* Input Form Dock */}
+            <form onSubmit={handleSendMessage} className="p-3 sm:p-4 bg-[#07090e]/80 border-t border-white/[0.08] backdrop-blur-md shrink-0">
+              <div className="bg-black/60 border border-white/10 focus-within:border-amber-500/60 focus-within:ring-2 focus-within:ring-amber-500/20 rounded-2xl p-1.5 pl-4 flex items-center gap-2 transition-all shadow-inner">
+                <input
+                  type="text"
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  placeholder="Transmit message to room..."
+                  className="w-full bg-transparent text-sm text-white placeholder:text-neutral-500 focus:outline-none font-sans"
+                />
+                <button
+                  type="submit"
+                  disabled={!newMessage.trim() || isSending}
+                  className="px-4 py-2 rounded-xl font-hud font-bold text-xs uppercase tracking-wider text-black bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 shadow-[0_0_15px_rgba(245,158,11,0.25)] hover:brightness-110 active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0"
+                >
+                  <Send className="w-3.5 h-3.5 fill-current" />
+                  <span className="hidden sm:inline">SEND</span>
+                </button>
+              </div>
             </form>
           </div>
         )}
+
 
         {roomTab === 'settings' && (
           <div className="max-w-2xl mx-auto w-full py-4 sm:py-6 space-y-6 animate-in fade-in duration-200 pb-36">
