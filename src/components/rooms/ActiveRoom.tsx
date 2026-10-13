@@ -1083,8 +1083,8 @@ CREATE POLICY "Hosts can update their own study rooms"
   };
 
   return (
-    <div className="w-full h-full flex-1 min-h-0 bg-[#07090e] flex flex-col relative text-slate-200">
-      <header className="shrink-0 flex items-center justify-between px-3 sm:px-5 py-2.5 mx-2 sm:mx-4 mt-2 sm:mt-3 rounded-2xl bg-[#0b0e14]/80 border border-white/[0.08] backdrop-blur-xl shadow-lg">
+    <div className="w-full h-full flex-1 min-h-0 bg-transparent flex flex-col relative text-slate-200">
+      <header className="shrink-0 flex items-center justify-between px-2 sm:px-4 py-2.5 border-b border-white/[0.08] bg-transparent">
         <div className="flex items-center gap-2.5 sm:gap-3">
           <button
             onClick={onBack}
@@ -1153,7 +1153,7 @@ CREATE POLICY "Hosts can update their own study rooms"
         </div>
       </header>
 
-      <div className={`flex-1 min-h-0 w-full overflow-x-hidden ${roomTab === 'chat' ? 'px-2 sm:px-4 pt-2 pb-2 sm:pb-3 flex flex-col' : 'overflow-y-auto p-4 overscroll-contain scrollbar-thin'}`}>
+      <div className={`flex-1 min-h-0 w-full overflow-x-hidden ${roomTab === 'chat' ? 'flex flex-col' : 'overflow-y-auto p-4 overscroll-contain scrollbar-thin'}`}>
         {roomTab === 'home' && (
           <div className="flex flex-wrap gap-8 justify-center items-start mt-8">
             {displayUsers.map((u, i) => {
@@ -1250,13 +1250,7 @@ CREATE POLICY "Hosts can update their own study rooms"
         )}
 
         {roomTab === 'chat' && (
-          <div className="w-full flex-1 min-h-0 flex flex-col bg-[#0b0e14]/90 border border-white/[0.08] rounded-2xl shadow-2xl backdrop-blur-xl relative overflow-hidden h-full">
-            {/* Angular Targeting Reticle Corner Brackets */}
-            <div className="hidden sm:block hud-corner-bracket hud-corner-tl" />
-            <div className="hidden sm:block hud-corner-bracket hud-corner-tr" />
-            <div className="hidden sm:block hud-corner-bracket hud-corner-bl" />
-            <div className="hidden sm:block hud-corner-bracket hud-corner-br" />
-
+          <div className="w-full flex-1 min-h-0 flex flex-col h-full">
             {/* Messages Scroll Area */}
             <div ref={messagesEndRef} className="flex-1 overflow-y-auto min-h-0 p-4 sm:p-6 scrollbar-thin">
               <div className="max-w-3xl w-full mx-auto space-y-4">
@@ -1365,7 +1359,7 @@ CREATE POLICY "Hosts can update their own study rooms"
             </div>
 
             {/* Input Form Dock */}
-            <form onSubmit={handleSendMessage} className="p-3 sm:p-4 bg-[#07090e]/90 border-t border-white/[0.08] backdrop-blur-md shrink-0">
+            <form onSubmit={handleSendMessage} className="p-3 sm:p-4 border-t border-white/[0.08] bg-transparent backdrop-blur-sm shrink-0">
               <div className="max-w-3xl w-full mx-auto">
                 <div className="w-full bg-black/60 border border-white/10 focus-within:border-amber-500/60 focus-within:ring-2 focus-within:ring-amber-500/20 rounded-2xl p-1.5 pl-4 flex items-center gap-2 transition-all shadow-inner">
                   <input
