@@ -1,4 +1,4 @@
-﻿import { clsx, type ClassValue } from 'clsx';
+import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
 export function cn(...inputs: ClassValue[]) {
@@ -27,6 +27,21 @@ export function formatDuration(totalSeconds: number): string {
   return `${hours}h ${minutes.toString().padStart(2, '0')}m`;
 }
 
+export function formatDurationWithSeconds(totalSeconds: number): string {
+  const safeSec = Math.max(0, Math.floor(totalSeconds || 0));
+  const hours = Math.floor(safeSec / 3600);
+  const minutes = Math.floor((safeSec % 3600) / 60);
+  const seconds = Math.floor(safeSec % 60);
+
+  if (hours > 0) {
+    return `${hours}h ${minutes.toString().padStart(2, '0')}m ${seconds.toString().padStart(2, '0')}s`;
+  }
+  if (minutes > 0) {
+    return `${minutes}m ${seconds.toString().padStart(2, '0')}s`;
+  }
+  return `${seconds}s`;
+}
+
 import { getLocalDateString } from './dateUtils';
 export * from './dateUtils';
 
@@ -34,5 +49,5 @@ export function getTodayDateStr(): string {
   return getLocalDateString();
 }
 
-
 export const formatHoursAndMins = formatDuration;
+

@@ -211,7 +211,10 @@ export default function Home() {
             ),
             analytics: (
               <ErrorBoundary fallbackTitle="Analytics Dashboard">
-                <AnalyticsDashboard onStartSession={() => setActiveTab('timer')} />
+                <AnalyticsDashboard
+                  onStartSession={() => setActiveTab('timer')}
+                  onOpenSettings={() => setIsSettingsOpen(true)}
+                />
               </ErrorBoundary>
             ),
             leaderboard: (

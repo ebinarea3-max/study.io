@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Subject } from '../../types';
 import { Skeleton } from '../common/Skeleton';
 import {
+  formatDurationWithSeconds,
   formatHoursAndMins,
   getLocalStartOfDay,
   getLocalEndOfDay,
@@ -19,7 +20,14 @@ import {
   Clock,
   PieChart as PieIcon,
   Sparkles,
+  Settings,
+  Target,
+  BarChart3,
+  Sliders,
+  Check,
 } from 'lucide-react';
+import { toast } from 'react-hot-toast';
+import { SettingsModal } from '../common/SettingsModal';
 import {
   ResponsiveContainer,
   PieChart,
@@ -39,12 +47,37 @@ type Timeframe = 'daily' | 'weekly' | 'monthly' | 'yearly';
 
 interface AnalyticsDashboardProps {
   onStartSession?: () => void;
+  onOpenSettings?: () => void;
 }
 
-export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) {
-  const { user, isLoading } = useAuth();
+export function AnalyticsDashboard({ onStartSession, onOpenSettings }: AnalyticsDashboardProps) {
+  const { user, updateProfile, isLoading } = useAuth();
   const { sessions, subjects, selectedDate, setSelectedDate, refetchSessions, hasHydrated, isLoadingSessions } = useStudy();
   const { theme } = useRankTheme();
+
+  const [isLocalSettingsOpen, setIsLocalSettingsOpen] = useState(false);
+  const [isGoalEditorOpen, setIsGoalEditorOpen] = useState(false);
+
+  const handleOpenSettings = () => {
+    if (onOpenSettings) {
+      onOpenSettings();
+    } else {
+      setIsLocalSettingsOpen(true);
+    }
+  };
+
+  const handleAdjustGoal = (delta: number) => {
+    const current = user?.dailyGoalHours || 3;
+    const next = Math.min(16, Math.max(0.5, Math.round((current + delta) * 2) / 2));
+    updateProfile({ dailyGoalHours: next });
+    toast.success(`Daily goal updated to ${next}h`);
+  };
+
+  const handleSetDirectGoal = (val: number) => {
+    const next = Math.min(16, Math.max(0.5, Math.round(val * 2) / 2));
+    updateProfile({ dailyGoalHours: next });
+    toast.success(`Daily goal set to ${next}h`);
+  };
 
   const todayStr = getLocalDateString();
 
@@ -628,8 +661,8 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
 
     return {
       items: data,
-      topFormatted: formatHoursAndMins(maxSec),
-      avgFormatted: formatHoursAndMins(avgSec),
+      topFormatted: formatDurationWithSeconds(maxSec),
+      avgFormatted: formatDurationWithSeconds(avgSec),
     };
   }, [focusChartAnchorDate, focusChartTimeframe, sessionsByDateMap, dailyGoalHours, sessions]);
 
@@ -676,6 +709,168 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
 
   return (
     <div className="w-full space-y-5 sm:space-y-6 text-slate-100">
+      {/* 0. Top HUD Header: Telemetry Title & Status + Daily Goal Controls + Settings Button */}
+      <div className="w-full bg-[#0b0e14]/90 border border-white/[0.08] rounded-2xl p-3 sm:p-4 backdrop-blur-xl shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative overflow-visible">
+        {/* Left: Telemetry Title & Live Status */}
+        <div className="flex items-center gap-3">
+          <div
+            className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/10 flex items-center justify-center shrink-0 shadow-sm"
+            style={{ color: theme.accent }}
+          >
+            <BarChart3 className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="font-hud font-extrabold text-sm sm:text-base text-white tracking-wider uppercase">
+                TELEMETRY &amp; STATS
+              </h1>
+              <span
+                className="text-[9px] font-hud-mono font-bold px-2 py-0.5 rounded-full border uppercase tracking-wider flex items-center gap-1.5"
+                style={{
+                  borderColor: `${theme.accent}40`,
+                  backgroundColor: `${theme.accent}15`,
+                  color: theme.accent,
+                }}
+              >
+                <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: theme.accent }} />
+                LIVE
+              </span>
+            </div>
+            <p className="text-[11px] text-neutral-400 font-mono tracking-tight mt-0.5">
+              Sector Focus Breakdown, Daily Goals &amp; Historical Trajectory
+            </p>
+          </div>
+        </div>
+
+        {/* Right: Daily Goal Controls & Settings Action */}
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap relative">
+          {/* Daily Goal Controller */}
+          <div className="relative">
+            <div className="flex items-center gap-2 bg-black/60 border border-white/10 hover:border-white/20 rounded-xl px-3 py-1.5 shadow-inner transition-colors">
+              <Target className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+              <button
+                type="button"
+                onClick={() => setIsGoalEditorOpen(!isGoalEditorOpen)}
+                className="flex flex-col text-left cursor-pointer group"
+                title="Click to adjust daily study goal"
+              >
+                <span className="text-[9px] font-hud-mono uppercase text-neutral-400 tracking-wider group-hover:text-cyan-400 transition-colors">
+                  Daily Goal
+                </span>
+                <span className="text-xs font-hud-mono font-bold text-white tabular-nums group-hover:text-cyan-300 transition-colors">
+                  {dailyGoalHours}h <span className="text-[10px] text-neutral-400 font-normal">({Math.round(dailyGoalHours * 60)}m)</span>
+                </span>
+              </button>
+              
+              {/* Stepper buttons */}
+              <div className="flex items-center gap-1 ml-1 pl-2 border-l border-white/10">
+                <button
+                  type="button"
+                  onClick={() => handleAdjustGoal(-0.5)}
+                  disabled={dailyGoalHours <= 0.5}
+                  className="w-6 h-6 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] text-neutral-300 hover:text-white flex items-center justify-center font-mono font-bold text-xs disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
+                  title="Decrease daily goal by 30 mins"
+                >
+                  -
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleAdjustGoal(0.5)}
+                  disabled={dailyGoalHours >= 16}
+                  className="w-6 h-6 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] text-neutral-300 hover:text-white flex items-center justify-center font-mono font-bold text-xs disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
+                  title="Increase daily goal by 30 mins"
+                >
+                  +
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsGoalEditorOpen(!isGoalEditorOpen)}
+                  className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs transition-colors cursor-pointer ${
+                    isGoalEditorOpen ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40' : 'bg-white/[0.06] hover:bg-white/[0.12] text-neutral-400 hover:text-white'
+                  }`}
+                  title="Open slider goal presets"
+                >
+                  <Sliders className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+
+            {/* Expandable Goal Preset & Range Slider Popover */}
+            {isGoalEditorOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-30"
+                  onClick={() => setIsGoalEditorOpen(false)}
+                />
+                <div className="absolute top-full right-0 mt-2 z-40 bg-[#0e1117] border border-white/15 rounded-2xl p-4 shadow-2xl min-w-[280px] sm:min-w-[320px] backdrop-blur-2xl animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="flex items-center justify-between pb-2 mb-3 border-b border-white/10">
+                    <span className="text-xs font-hud font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                      <Target className="w-3.5 h-3.5 text-cyan-400" />
+                      Configure Daily Target
+                    </span>
+                    <span className="text-xs font-hud-mono font-bold text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
+                      {dailyGoalHours}h ({Math.round(dailyGoalHours * 60)}m)
+                    </span>
+                  </div>
+
+                  {/* Range Slider */}
+                  <input
+                    type="range"
+                    min="0.5"
+                    max="14"
+                    step="0.5"
+                    value={dailyGoalHours}
+                    onChange={(e) => handleSetDirectGoal(parseFloat(e.target.value))}
+                    className="w-full accent-cyan-400 bg-white/10 h-1.5 rounded-lg cursor-pointer my-2"
+                  />
+                  <div className="flex justify-between text-[10px] text-neutral-400 font-mono mb-3">
+                    <span>30m Light</span>
+                    <span>3h Target</span>
+                    <span>6h Pro</span>
+                    <span>10h+ Hard</span>
+                  </div>
+
+                  {/* Preset Pills */}
+                  <div className="text-[10px] uppercase font-hud-mono text-neutral-400 mb-1.5 tracking-wider">
+                    Quick Presets
+                  </div>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {[1, 2, 3, 4, 5, 6, 8, 10].map((hours) => (
+                      <button
+                        key={hours}
+                        type="button"
+                        onClick={() => {
+                          handleSetDirectGoal(hours);
+                          setIsGoalEditorOpen(false);
+                        }}
+                        className={`px-2 py-1.5 rounded-lg text-xs font-hud-mono font-bold transition-all cursor-pointer ${
+                          dailyGoalHours === hours
+                            ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
+                            : 'bg-white/[0.05] hover:bg-white/[0.1] text-neutral-300 border border-white/5'
+                        }`}
+                      >
+                        {hours}h
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Settings Button */}
+          <button
+            type="button"
+            onClick={handleOpenSettings}
+            className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 hover:border-white/30 text-slate-200 hover:text-white font-hud font-bold text-xs tracking-wider uppercase transition-all duration-200 cursor-pointer shadow-sm active:scale-95 group"
+            title="Open Settings &amp; Preferences"
+          >
+            <Settings className="w-4 h-4 text-neutral-300 transition-transform duration-300 group-hover:rotate-45" />
+            <span>SETTINGS</span>
+          </button>
+        </div>
+      </div>
+
       {/* 1. Top Row — 3 Focus Time Metric Cards (Chronological Granularity: Today -> Week -> Month) */}
       <div className="grid grid-cols-3 md:grid-cols-3 gap-2 md:gap-4 w-full">
         {/* Card 1 (Left): Focus Time of Today */}
@@ -688,7 +883,7 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
             {(isLoading || isLoadingSessions) && !hasHydrated ? (
               <Skeleton className="h-5 sm:h-6 md:h-7 w-12 sm:w-16 md:w-24 my-0.5 bg-neutral-800" />
             ) : (
-              formatHoursAndMins(topMetrics.todayFocusSec)
+              formatDurationWithSeconds(topMetrics.todayFocusSec)
             )}
           </div>
         </div>
@@ -703,7 +898,7 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
             {(isLoading || isLoadingSessions) && !hasHydrated ? (
               <Skeleton className="h-5 sm:h-6 md:h-7 w-12 sm:w-16 md:w-24 my-0.5 bg-neutral-800" />
             ) : (
-              formatHoursAndMins(topMetrics.thisWeekFocusSec)
+              formatDurationWithSeconds(topMetrics.thisWeekFocusSec)
             )}
           </div>
         </div>
@@ -718,7 +913,7 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
             {(isLoading || isLoadingSessions) && !hasHydrated ? (
               <Skeleton className="h-5 sm:h-6 md:h-7 w-12 sm:w-16 md:w-24 my-0.5 bg-neutral-800" />
             ) : (
-              formatHoursAndMins(topMetrics.thisMonthFocusSec)
+              formatDurationWithSeconds(topMetrics.thisMonthFocusSec)
             )}
           </div>
         </div>
@@ -788,7 +983,7 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
           <div className="flex items-center justify-between px-0.5 pt-2 pb-4">
             <span className="font-hud-mono text-sm sm:text-base text-neutral-300">{distRange.label}</span>
             <span className="font-hud-mono font-bold text-sm sm:text-base" style={{ color: theme.accent }}>
-              TOTAL: {formatHoursAndMins(distTotalSeconds)}
+              TOTAL: {formatDurationWithSeconds(distTotalSeconds)}
             </span>
           </div>
 
@@ -826,7 +1021,7 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
                   {activeDonutSlice ? (
                     <>
                       <div className="font-hud font-bold text-3xl tracking-tight" style={{ color: activeDonutSlice.color }}>
-                        {formatHoursAndMins(activeDonutSlice.seconds)}
+                        {formatDurationWithSeconds(activeDonutSlice.seconds)}
                       </div>
                       <div className="font-hud-mono text-xs uppercase font-bold tracking-wider text-neutral-500 mt-1 truncate max-w-[120px]">
                         {activeDonutSlice.name}
@@ -835,7 +1030,7 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
                   ) : (
                     <>
                       <div className="font-hud font-bold text-white text-3xl tracking-tight">
-                        {formatHoursAndMins(distTotalSeconds)}
+                        {formatDurationWithSeconds(distTotalSeconds)}
                       </div>
                       <div className="font-hud-mono text-xs uppercase font-bold tracking-wider text-neutral-500 mt-1">
                         Total
@@ -879,7 +1074,7 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
                                 <span>{item.name}</span>
                               </div>
                               <div className="font-bold" style={{ color: theme.accent }}>
-                                {formatHoursAndMins(item.seconds)} ({item.percentage}%)
+                                {formatDurationWithSeconds(item.seconds)} ({item.percentage}%)
                               </div>
                             </div>
                           );
@@ -907,7 +1102,7 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
                       </div>
                       <div className="flex items-center gap-2.5 flex-shrink-0">
                         <span className="font-hud-mono text-white font-bold text-sm tabular-nums">
-                          {formatHoursAndMins(sub.seconds)}
+                          {formatDurationWithSeconds(sub.seconds)}
                         </span>
                         <span className="font-hud-mono text-xs text-neutral-400 font-bold tabular-nums">
                           {sub.percentage}%
@@ -1074,8 +1269,8 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
                         :{' '}
                         <span className="font-bold" style={{ color: theme.accent }}>
                           {c.totalSeconds > 0
-                            ? formatHoursAndMins(c.totalSeconds)
-                            : '0m'}
+                            ? formatDurationWithSeconds(c.totalSeconds)
+                            : '0s'}
                         </span>
                       </div>
                     )}
@@ -1185,7 +1380,7 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
                       <div className="bg-[var(--bg)] border border-[var(--border)] p-2.5 rounded-xl shadow-2xl text-xs font-hud-mono">
                         <div className="font-bold text-white mb-0.5">{item.label}</div>
                         <div className="font-bold" style={{ color: theme.accent }}>
-                          {formatHoursAndMins(item.rawSec)}
+                          {formatDurationWithSeconds(item.rawSec)}
                         </div>
                       </div>
                     );
@@ -1198,6 +1393,14 @@ export function AnalyticsDashboard({ onStartSession }: AnalyticsDashboardProps) 
           </ResponsiveContainer>
         </div>
       </div>
+
+      {/* Fallback settings modal if onOpenSettings is not passed */}
+      {isLocalSettingsOpen && !onOpenSettings && (
+        <SettingsModal
+          isOpen={isLocalSettingsOpen}
+          onClose={() => setIsLocalSettingsOpen(false)}
+        />
+      )}
     </div>
   );
 }

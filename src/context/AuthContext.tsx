@@ -666,6 +666,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Strictly keep xp aligned with lifetime_xp as integer
           payload.xp = payload.lifetime_xp;
         }
+        if (updates.dailyGoalHours !== undefined) {
+          payload.daily_goal_minutes = Math.round(Number(updates.dailyGoalHours) * 60);
+        }
 
         if (Object.keys(payload).length > 0) {
           supabase
