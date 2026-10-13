@@ -31,6 +31,7 @@ import {
   ShieldAlert,
   UserX,
   UserCheck,
+  MoreVertical,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { UserAvatar } from '../common/UserAvatar';
@@ -218,6 +219,17 @@ CREATE POLICY "Hosts can update their own study rooms"
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [activeMenuUserId, setActiveMenuUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setActiveMenuUserId(null);
+    };
+    if (activeMenuUserId) {
+      window.addEventListener('click', handleClickOutside);
+      return () => window.removeEventListener('click', handleClickOutside);
+    }
+  }, [activeMenuUserId]);
 
   const isTimerRunning = isRunning;
 
@@ -1473,6 +1485,48 @@ CREATE POLICY "Hosts can update their own study rooms"
                         <Moon className="w-3.5 h-3.5 text-slate-300" />
                       </div>
                     )}
+
+                    {/* Host 3-Dots Action Button on Hover */}
+                    {isHost && !u.is_host && !u.is_current_user && (
+                      <div className="absolute -top-1 -right-2 z-20">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveMenuUserId(activeMenuUserId === u.user_id ? null : u.user_id);
+                          }}
+                          className={`w-6 h-6 rounded-full flex items-center justify-center bg-[#0d121c] border border-white/20 text-slate-300 hover:text-white hover:border-amber-400/60 hover:bg-black shadow-lg transition-all cursor-pointer ${
+                            activeMenuUserId === u.user_id
+                              ? 'opacity-100 ring-2 ring-amber-500/50 bg-black text-amber-300 scale-105'
+                              : 'opacity-0 group-hover:opacity-100'
+                          }`}
+                          title="Scholar Options"
+                        >
+                          <MoreVertical className="w-3.5 h-3.5" />
+                        </button>
+
+                        {/* Floating Dropdown Menu */}
+                        {activeMenuUserId === u.user_id && (
+                          <div
+                            onClick={(e) => e.stopPropagation()}
+                            className="absolute left-1/2 -translate-x-1/2 top-full mt-1.5 w-28 bg-[#0c1017] border border-white/15 rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.9)] backdrop-blur-xl p-1 z-30 animate-in fade-in zoom-in-95 duration-150"
+                          >
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveMenuUserId(null);
+                                setMemberToBan({ userId: u.user_id, username: u.username });
+                              }}
+                              className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-rose-400 hover:text-white hover:bg-rose-500/20 text-[11px] font-hud font-bold uppercase tracking-wider transition-colors cursor-pointer text-left"
+                            >
+                              <Ban className="w-3.5 h-3.5 text-rose-400" />
+                              <span>Ban</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Member Name, Total Time Studied Today (Adds up live when focusing) */}
@@ -1518,18 +1572,6 @@ CREATE POLICY "Hosts can update their own study rooms"
                         <span>Today • {u.is_online ? 'Paused' : 'Offline'}</span>
                       )}
                     </span>
-
-                    {isHost && !u.is_host && !u.is_current_user && (
-                      <button
-                        type="button"
-                        onClick={() => setMemberToBan({ userId: u.user_id, username: u.username })}
-                        className="mt-2 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 hover:text-white text-[10px] font-hud font-bold uppercase tracking-wider transition-all cursor-pointer shadow-sm active:scale-95"
-                        title={`Ban ${u.username} from room`}
-                      >
-                        <Ban className="w-3 h-3 text-rose-400" />
-                        <span>BAN</span>
-                      </button>
-                    )}
                   </div>
                 </div>
               );
