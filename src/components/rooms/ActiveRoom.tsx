@@ -1257,155 +1257,133 @@ CREATE POLICY "Hosts can update their own study rooms"
             <div className="hidden sm:block hud-corner-bracket hud-corner-bl" />
             <div className="hidden sm:block hud-corner-bracket hud-corner-br" />
 
-            {/* Terminal Header Bar */}
-            <div className="px-4 sm:px-6 py-3 border-b border-white/[0.08] bg-white/[0.02] flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)] shrink-0" />
-                <span className="font-hud text-xs sm:text-sm font-bold uppercase tracking-wider text-white truncate">
-                  ROOM COMMS // {roomName}
-                </span>
-                <span className="text-[9px] font-hud-mono px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-semibold hidden md:inline shrink-0">
-                  LIVE SYNC
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2 text-xs font-hud-mono shrink-0">
-                {displayUsers.filter(u => u.is_studying).length > 0 && (
-                  <span className="flex items-center gap-1.5 text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-lg font-bold text-[10px] uppercase">
-                    <Flame className="w-3 h-3 fill-amber-400" />
-                    <span>{displayUsers.filter(u => u.is_studying).length} Focusing</span>
-                  </span>
-                )}
-                <span className="text-neutral-500 hidden sm:inline">•</span>
-                <span className="text-neutral-400 text-[11px] font-mono hidden sm:inline">
-                  {displayUsers.length} {displayUsers.length === 1 ? 'Scholar' : 'Scholars'}
-                </span>
-              </div>
-            </div>
-
             {/* Messages Scroll Area */}
-            <div ref={messagesEndRef} className="flex-1 overflow-y-auto min-h-0 p-4 sm:p-6 space-y-4 scrollbar-thin">
-              {messages.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-3 my-auto min-h-[220px]">
-                  <div className="w-12 h-12 rounded-2xl bg-white/[0.03] border border-white/10 flex items-center justify-center text-amber-400 shadow-inner">
-                    <MessageCircle className="w-6 h-6 opacity-80" />
-                  </div>
-                  <div className="text-sm font-hud font-bold text-white tracking-wide uppercase">
-                    ROOM COMMS STANDBY
-                  </div>
-                  <p className="text-xs text-neutral-400 max-w-xs font-mono">
-                    No transmissions logged yet. Connect with fellow scholars or broadcast your study target.
-                  </p>
-                </div>
-              ) : (
-                messages.reduce((groups, msg) => {
-                  const lastGroup = groups[groups.length - 1];
-                  if (lastGroup && lastGroup[0].user_id === msg.user_id) {
-                    lastGroup.push(msg);
-                  } else {
-                    groups.push([msg]);
-                  }
-                  return groups;
-                }, [] as typeof messages[]).map((group: typeof messages) => {
-                  const firstMsg = group[0];
-                  const lastMsg = group[group.length - 1];
-                  const isMe = firstMsg.user_id === user?.id;
-                  const senderMember = displayUsers.find(u => u.user_id === firstMsg.user_id);
-                  const isStudying = senderMember?.is_studying;
-                  const isHostUser = senderMember?.is_host;
-                  const timeString = new Date(lastMsg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                  const username = firstMsg.profiles?.username || senderMember?.username || 'Scholar';
-                  const avatarUrl = firstMsg.profiles?.avatar_url || senderMember?.avatar_url;
-
-                  return (
-                    <div
-                      key={`group-${firstMsg.id}`}
-                      className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} group`}
-                    >
-                      {/* Meta header: name, host badge, focusing status, timestamp */}
-                      <div className={`flex items-center gap-2 mb-1.5 ${isMe ? 'mr-1 flex-row-reverse' : 'ml-1'}`}>
-                        <span className={`text-xs font-hud font-bold tracking-tight ${isMe ? 'text-amber-400' : 'text-slate-200'}`}>
-                          {isMe ? 'YOU' : username}
-                        </span>
-                        {isHostUser && (
-                          <span className="text-[9px] font-hud font-bold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 uppercase">
-                            HOST
-                          </span>
-                        )}
-                        {isStudying && (
-                          <span className="text-[9px] font-hud px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center gap-1 uppercase font-semibold">
-                            <Flame className="w-3 h-3 fill-amber-400" /> FOCUSING
-                          </span>
-                        )}
-                        <span className="text-[10px] font-hud-mono text-neutral-500">
-                          {timeString}
-                        </span>
-                      </div>
-
-                      {/* Avatar and Bubble Row */}
-                      <div className={`flex gap-3 ${isMe ? 'flex-row-reverse' : ''} items-end max-w-[88%] sm:max-w-[75%]`}>
-                        {/* Avatar */}
-                        <div className="relative shrink-0">
-                          <UserAvatar
-                            src={avatarUrl}
-                            name={username}
-                            size={36}
-                            className={`rounded-full border transition-all ${
-                              isStudying
-                                ? 'border-amber-500 ring-2 ring-amber-500/30 shadow-[0_0_8px_rgba(245,158,11,0.4)]'
-                                : 'border-white/10'
-                            }`}
-                          />
-                        </div>
-
-                        {/* Bubble Stack */}
-                        <div className={`flex flex-col gap-1.5 ${isMe ? 'items-end' : 'items-start'}`}>
-                          {group.map((msg: any, idx: number) => {
-                            const isFirst = idx === 0;
-                            const isLast = idx === group.length - 1;
-                            return (
-                              <div
-                                key={msg.id}
-                                className={`px-4 py-2.5 text-sm leading-relaxed transition-all break-words ${
-                                  isMe
-                                    ? 'bg-gradient-to-br from-amber-500/25 via-amber-500/15 to-amber-600/10 border border-amber-500/35 text-amber-50 shadow-[0_2px_12px_rgba(245,158,11,0.1)]'
-                                    : 'bg-white/[0.05] border border-white/[0.1] text-slate-100 shadow-md hover:border-white/20'
-                                } ${
-                                  isMe
-                                    ? `rounded-2xl ${isFirst ? 'rounded-tr-md' : 'rounded-tr-md'} ${isLast ? 'rounded-br-2xl' : 'rounded-br-md'}`
-                                    : `rounded-2xl ${isFirst ? 'rounded-tl-md' : 'rounded-tl-md'} ${isLast ? 'rounded-bl-2xl' : 'rounded-bl-md'}`
-                                }`}
-                              >
-                                {msg.content}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
+            <div ref={messagesEndRef} className="flex-1 overflow-y-auto min-h-0 p-4 sm:p-6 scrollbar-thin">
+              <div className="max-w-3xl w-full mx-auto space-y-4">
+                {messages.length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-3 my-auto min-h-[220px]">
+                    <div className="w-12 h-12 rounded-2xl bg-white/[0.03] border border-white/10 flex items-center justify-center text-amber-400 shadow-inner">
+                      <MessageCircle className="w-6 h-6 opacity-80" />
                     </div>
-                  );
-                })
-              )}
+                    <div className="text-sm font-hud font-bold text-white tracking-wide uppercase">
+                      ROOM COMMS STANDBY
+                    </div>
+                    <p className="text-xs text-neutral-400 max-w-xs font-mono">
+                      No transmissions logged yet. Connect with fellow scholars or broadcast your study target.
+                    </p>
+                  </div>
+                ) : (
+                  messages.reduce((groups, msg) => {
+                    const lastGroup = groups[groups.length - 1];
+                    if (lastGroup && lastGroup[0].user_id === msg.user_id) {
+                      lastGroup.push(msg);
+                    } else {
+                      groups.push([msg]);
+                    }
+                    return groups;
+                  }, [] as typeof messages[]).map((group: typeof messages) => {
+                    const firstMsg = group[0];
+                    const lastMsg = group[group.length - 1];
+                    const isMe = firstMsg.user_id === user?.id;
+                    const senderMember = displayUsers.find(u => u.user_id === firstMsg.user_id);
+                    const isStudying = senderMember?.is_studying;
+                    const isHostUser = senderMember?.is_host;
+                    const timeString = new Date(lastMsg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    const username = firstMsg.profiles?.username || senderMember?.username || 'Scholar';
+                    const avatarUrl = firstMsg.profiles?.avatar_url || senderMember?.avatar_url;
+
+                    return (
+                      <div
+                        key={`group-${firstMsg.id}`}
+                        className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} group`}
+                      >
+                        {/* Meta header: name, host badge, focusing status, timestamp */}
+                        <div className={`flex items-center gap-2 mb-1.5 ${isMe ? 'mr-1 flex-row-reverse' : 'ml-1'}`}>
+                          <span className={`text-xs font-hud font-bold tracking-tight ${isMe ? 'text-amber-400' : 'text-slate-200'}`}>
+                            {isMe ? 'YOU' : username}
+                          </span>
+                          {isHostUser && (
+                            <span className="text-[9px] font-hud font-bold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 uppercase">
+                              HOST
+                            </span>
+                          )}
+                          {isStudying && (
+                            <span className="text-[9px] font-hud px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center gap-1 uppercase font-semibold">
+                              <Flame className="w-3 h-3 fill-amber-400" /> FOCUSING
+                            </span>
+                          )}
+                          <span className="text-[10px] font-hud-mono text-neutral-500">
+                            {timeString}
+                          </span>
+                        </div>
+
+                        {/* Avatar and Bubble Row */}
+                        <div className={`flex gap-3 ${isMe ? 'flex-row-reverse' : ''} items-end max-w-[88%] sm:max-w-[75%]`}>
+                          {/* Avatar */}
+                          <div className="relative shrink-0">
+                            <UserAvatar
+                              src={avatarUrl}
+                              name={username}
+                              size={36}
+                              className={`rounded-full border transition-all ${
+                                isStudying
+                                  ? 'border-amber-500 ring-2 ring-amber-500/30 shadow-[0_0_8px_rgba(245,158,11,0.4)]'
+                                  : 'border-white/10'
+                              }`}
+                            />
+                          </div>
+
+                          {/* Bubble Stack */}
+                          <div className={`flex flex-col gap-1.5 ${isMe ? 'items-end' : 'items-start'}`}>
+                            {group.map((msg: any, idx: number) => {
+                              const isFirst = idx === 0;
+                              const isLast = idx === group.length - 1;
+                              return (
+                                <div
+                                  key={msg.id}
+                                  className={`px-4 py-2.5 text-sm leading-relaxed transition-all break-words ${
+                                    isMe
+                                      ? 'bg-gradient-to-br from-amber-500/25 via-amber-500/15 to-amber-600/10 border border-amber-500/35 text-amber-50 shadow-[0_2px_12px_rgba(245,158,11,0.1)]'
+                                      : 'bg-white/[0.05] border border-white/[0.1] text-slate-100 shadow-md hover:border-white/20'
+                                  } ${
+                                    isMe
+                                      ? `rounded-2xl ${isFirst ? 'rounded-tr-md' : 'rounded-tr-md'} ${isLast ? 'rounded-br-2xl' : 'rounded-br-md'}`
+                                      : `rounded-2xl ${isFirst ? 'rounded-tl-md' : 'rounded-tl-md'} ${isLast ? 'rounded-bl-2xl' : 'rounded-bl-md'}`
+                                  }`}
+                                >
+                                  {msg.content}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
             </div>
 
             {/* Input Form Dock */}
             <form onSubmit={handleSendMessage} className="p-3 sm:p-4 bg-[#07090e]/90 border-t border-white/[0.08] backdrop-blur-md shrink-0">
-              <div className="w-full bg-black/60 border border-white/10 focus-within:border-amber-500/60 focus-within:ring-2 focus-within:ring-amber-500/20 rounded-2xl p-1.5 pl-4 flex items-center gap-2 transition-all shadow-inner">
-                <input
-                  type="text"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Transmit message to room..."
-                  className="w-full bg-transparent text-sm text-white placeholder:text-neutral-500 focus:outline-none font-sans"
-                />
-                <button
-                  type="submit"
-                  disabled={!newMessage.trim() || isSending}
-                  className="px-4 sm:px-5 py-2.5 rounded-xl font-hud font-bold text-xs uppercase tracking-wider text-black bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 shadow-[0_0_15px_rgba(245,158,11,0.25)] hover:brightness-110 active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">SEND</span>
-                </button>
+              <div className="max-w-3xl w-full mx-auto">
+                <div className="w-full bg-black/60 border border-white/10 focus-within:border-amber-500/60 focus-within:ring-2 focus-within:ring-amber-500/20 rounded-2xl p-1.5 pl-4 flex items-center gap-2 transition-all shadow-inner">
+                  <input
+                    type="text"
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    placeholder="Transmit message to room..."
+                    className="w-full bg-transparent text-sm text-white placeholder:text-neutral-500 focus:outline-none font-sans"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!newMessage.trim() || isSending}
+                    className="px-4 sm:px-5 py-2.5 rounded-xl font-hud font-bold text-xs uppercase tracking-wider text-black bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 shadow-[0_0_15px_rgba(245,158,11,0.25)] hover:brightness-110 active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">SEND</span>
+                  </button>
+                </div>
               </div>
             </form>
           </div>
