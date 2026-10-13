@@ -90,6 +90,58 @@ export function formatSeconds(totalSeconds: number): string {
   return `${hStr}:${mStr}:${sStr}`;
 }
 
+// In-memory module profile cache to immediately hydrate member avatars and usernames
+const memoryProfileCache = new Map<string, { username: string; avatar_url: string | null }>();
+
+export function getCachedMemberProfile(userId: string): { username?: string; avatar_url?: string | null } | undefined {
+  if (!userId) return undefined;
+  if (memoryProfileCache.has(userId)) {
+    return memoryProfileCache.get(userId);
+  }
+  try {
+    const raw = typeof window !== 'undefined' ? localStorage.getItem('study_io_profiles_cache') : null;
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed[userId]) {
+        memoryProfileCache.set(userId, parsed[userId]);
+        return parsed[userId];
+      }
+    }
+  } catch {}
+  return undefined;
+}
+
+export function cacheMemberProfiles(
+  profiles: { id: string; username?: string; name?: string; avatar_url?: string | null }[]
+) {
+  if (!profiles || profiles.length === 0) return;
+  try {
+    let localObj: Record<string, { username: string; avatar_url: string | null }> = {};
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem('study_io_profiles_cache');
+        if (raw) localObj = JSON.parse(raw);
+      } catch {}
+    }
+
+    profiles.forEach((p) => {
+      if (!p || !p.id) return;
+      const cleanAvatar =
+        typeof p.avatar_url === 'string' && p.avatar_url.trim().length > 0 ? p.avatar_url.trim() : null;
+      const item = {
+        username: p.username || p.name || 'Scholar',
+        avatar_url: cleanAvatar,
+      };
+      memoryProfileCache.set(p.id, item);
+      localObj[p.id] = item;
+    });
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('study_io_profiles_cache', JSON.stringify(localObj));
+    }
+  } catch {}
+}
+
 export default function ActiveRoom({ roomId, onBack, initialTab }: ActiveRoomProps) {
   const { user } = useAuth();
   const { isRunning, elapsedSeconds, getTodayTotalSeconds } = useStudy();
@@ -274,6 +326,22 @@ CREATE POLICY "Hosts can update their own study rooms"
     isTimerRunningRef.current = isTimerRunning;
     elapsedSecondsRef.current = elapsedSeconds;
   }, [getTodayTotalSeconds, isTimerRunning, elapsedSeconds]);
+
+  // Keep local profile cache seeded with current user profile
+  useEffect(() => {
+    if (user?.id) {
+      const myAvatar =
+        profile?.avatar_url ||
+        user?.avatarUrl ||
+        (user as any)?.avatar_url ||
+        (user as any)?.user_metadata?.avatar_url ||
+        (user as any)?.user_metadata?.picture ||
+        null;
+      const myName = profile?.username || user?.displayName || user?.email?.split('@')[0] || 'Scholar';
+      cacheMemberProfiles([{ id: user.id, username: myName, avatar_url: myAvatar }]);
+    }
+  }, [user?.id, profile?.avatar_url, profile?.username, user?.avatarUrl, user?.displayName, user?.email]);
+
 
   // Ticker to smoothly update live study timers every second
   useEffect(() => {
@@ -484,6 +552,10 @@ CREATE POLICY "Hosts can update their own study rooms"
         .select('id, username, name, avatar_url')
         .in('id', allUserIds);
 
+      if (profilesData && profilesData.length > 0) {
+        cacheMemberProfiles(profilesData);
+      }
+
       // 4. Fetch active study sessions for all members
       const { data: activeSessionsData } = await supabase
         .from('active_sessions')
@@ -515,6 +587,7 @@ CREATE POLICY "Hosts can update their own study rooms"
 
       const membersList: RoomMemberInfo[] = allUserIds.map((uid) => {
         const prof = profilesMap.get(uid);
+        const cached = getCachedMemberProfile(uid);
         const sess = sessionsMap.get(uid);
         const isHost = uid === hostId;
         const isSessionRunning = sess?.status === 'running';
@@ -522,15 +595,21 @@ CREATE POLICY "Hosts can update their own study rooms"
 
         const baseToday = userTodayMap.get(uid) || 0;
 
+        const resolvedUsername =
+          prof?.username ||
+          prof?.name ||
+          cached?.username ||
+          (uid === user?.id ? (profileRef.current?.username || user?.displayName || 'Scholar') : 'Scholar');
+
+        const resolvedAvatar =
+          prof?.avatar_url ||
+          cached?.avatar_url ||
+          (uid === user?.id ? (profileRef.current?.avatar_url || user?.avatarUrl) : null);
+
         return {
           user_id: uid,
-          username:
-            prof?.username ||
-            prof?.name ||
-            (uid === user?.id ? (profileRef.current?.username || 'Scholar') : 'Scholar'),
-          avatar_url:
-            prof?.avatar_url ||
-            (uid === user?.id ? profileRef.current?.avatar_url : null),
+          username: resolvedUsername,
+          avatar_url: resolvedAvatar,
           is_host: isHost,
           is_studying: isSessionRunning,
           timer_start_at: startTime,
@@ -743,11 +822,26 @@ CREATE POLICY "Hosts can update their own study rooms"
             const todayTotal = getTodayTotalSeconds ? getTodayTotalSeconds() : 0;
             const baseToday = Math.max(0, todayTotal - (isRunning ? elapsed : 0));
 
+            const myAvatar =
+              profileRef.current?.avatar_url ||
+              user?.avatarUrl ||
+              (user as any)?.avatar_url ||
+              (user as any)?.user_metadata?.avatar_url ||
+              (user as any)?.user_metadata?.picture ||
+              getCachedMemberProfile(user.id)?.avatar_url ||
+              null;
+            const myUsername =
+              profileRef.current?.username ||
+              user?.displayName ||
+              user?.email?.split('@')[0] ||
+              getCachedMemberProfile(user.id)?.username ||
+              'Scholar';
+
             await presenceChannel.track({
               user_id: user.id,
               client_id: clientIdRef.current,
-              username: profileRef.current?.username || user?.email || 'Scholar',
-              avatar_url: profileRef.current?.avatar_url || null,
+              username: myUsername,
+              avatar_url: myAvatar,
               is_studying: isRunning,
               session_start_time: isRunning ? Date.now() - (elapsed * 1000) : null,
               elapsed_seconds: elapsed,
@@ -804,11 +898,26 @@ CREATE POLICY "Hosts can update their own study rooms"
         const todayTotal = getTodayTotalSeconds ? getTodayTotalSeconds() : 0;
         const baseToday = Math.max(0, todayTotal - (isRunning ? elapsed : 0));
 
+        const myAvatar =
+          profile?.avatar_url ||
+          user?.avatarUrl ||
+          (user as any)?.avatar_url ||
+          (user as any)?.user_metadata?.avatar_url ||
+          (user as any)?.user_metadata?.picture ||
+          getCachedMemberProfile(user.id)?.avatar_url ||
+          null;
+        const myUsername =
+          profile?.username ||
+          user?.displayName ||
+          user?.email?.split('@')[0] ||
+          getCachedMemberProfile(user.id)?.username ||
+          'Scholar';
+
         channelRef.current.track({
           user_id: user.id,
           client_id: clientIdRef.current,
-          username: profile?.username || user?.email || 'Scholar',
-          avatar_url: profile?.avatar_url || null,
+          username: myUsername,
+          avatar_url: myAvatar,
           is_studying: isRunning,
           session_start_time: isRunning ? Date.now() - (elapsed * 1000) : null,
           elapsed_seconds: elapsed,
@@ -1110,16 +1219,19 @@ CREATE POLICY "Hosts can update their own study rooms"
         }
       }
 
+      const cached = getCachedMemberProfile(member.user_id);
       result.push({
         ...member,
         username:
           (isCurrentUser ? profile?.username : null) ||
           member.username ||
+          cached?.username ||
           pu?.username ||
           'Scholar',
         avatar_url:
           (isCurrentUser ? profile?.avatar_url : null) ||
           member.avatar_url ||
+          cached?.avatar_url ||
           pu?.avatar_url ||
           null,
         is_studying: isStudying,
@@ -1136,10 +1248,11 @@ CREATE POLICY "Hosts can update their own study rooms"
       const sessionSeconds = isTimerRunning ? elapsedSeconds : 0;
       const totalFocus = getTodayTotalSeconds ? getTodayTotalSeconds() : sessionSeconds;
       const baseToday = Math.max(0, totalFocus - sessionSeconds);
+      const cached = getCachedMemberProfile(user.id);
       result.unshift({
         user_id: user.id,
-        username: profile?.username || 'Scholar',
-        avatar_url: profile?.avatar_url || null,
+        username: profile?.username || user.displayName || cached?.username || 'Scholar',
+        avatar_url: profile?.avatar_url || user.avatarUrl || cached?.avatar_url || null,
         is_host: Boolean(user?.id && roomInfo?.host_id === user.id),
         is_studying: isTimerRunning,
         session_seconds: sessionSeconds,
@@ -1176,10 +1289,11 @@ CREATE POLICY "Hosts can update their own study rooms"
           }
         }
 
+        const cached = getCachedMemberProfile(pu.user_id);
         result.push({
           user_id: pu.user_id,
-          username: pu.username || 'Scholar',
-          avatar_url: pu.avatar_url || null,
+          username: pu.username || cached?.username || 'Scholar',
+          avatar_url: pu.avatar_url || cached?.avatar_url || null,
           is_host: Boolean(pu.user_id && roomInfo?.host_id === pu.user_id),
           is_studying: isStudying,
           session_seconds: sessionSeconds,
@@ -1662,11 +1776,12 @@ CREATE POLICY "Hosts can update their own study rooms"
                       const lastMsg = group[group.length - 1];
                       const isMe = firstMsg.user_id === user?.id;
                       const senderMember = displayUsers.find(u => u.user_id === firstMsg.user_id);
+                      const cachedUser = getCachedMemberProfile(firstMsg.user_id);
                       const isStudying = senderMember?.is_studying;
                       const isHostUser = senderMember?.is_host;
                       const timeString = new Date(lastMsg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                      const username = firstMsg.profiles?.username || senderMember?.username || 'Scholar';
-                      const avatarUrl = firstMsg.profiles?.avatar_url || senderMember?.avatar_url;
+                      const username = firstMsg.profiles?.username || senderMember?.username || cachedUser?.username || 'Scholar';
+                      const avatarUrl = firstMsg.profiles?.avatar_url || senderMember?.avatar_url || cachedUser?.avatar_url || null;
 
                       return (
                         <div

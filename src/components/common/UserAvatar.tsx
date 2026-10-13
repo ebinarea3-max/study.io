@@ -41,13 +41,13 @@ export function getAvatarGradient(name?: string): string {
 
 export function UserAvatar({ src, name, size = 36, className = '' }: UserAvatarProps) {
   const [hasError, setHasError] = useState(false);
-  const [isLoaded, setIsLoaded] = useState(false);
+
+  const cleanSrc = typeof src === 'string' && src.trim().length > 0 ? src.trim() : null;
 
   // Reset error state if the src changes
   useEffect(() => {
     setHasError(false);
-    setIsLoaded(false);
-  }, [src]);
+  }, [cleanSrc]);
 
   const initials = getInitials(name);
   const gradient = getAvatarGradient(name);
@@ -67,25 +67,21 @@ export function UserAvatar({ src, name, size = 36, className = '' }: UserAvatarP
         {initials}
       </div>
 
-      {/* Foreground Avatar Image with Smooth Fade */}
-      {src && !hasError && (
+      {/* Foreground Avatar Image */}
+      {cleanSrc && !hasError && (
         <img
-          src={src}
+          src={cleanSrc}
           alt={name || 'User Avatar'}
           width={size}
           height={size}
-          loading="lazy"
           referrerPolicy="no-referrer"
-          onLoad={() => setIsLoaded(true)}
           onError={() => {
             setHasError(true);
-            setIsLoaded(false);
           }}
-          className={`absolute inset-0 w-full h-full object-cover rounded-full transition-opacity duration-300 ease-in-out ${
-            isLoaded ? 'opacity-100' : 'opacity-0'
-          }`}
+          className="absolute inset-0 w-full h-full object-cover rounded-full"
         />
       )}
     </div>
   );
 }
+
