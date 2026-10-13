@@ -27,11 +27,19 @@ import {
   Trash2,
   X,
   Radio,
+  Ban,
+  ShieldAlert,
+  UserX,
+  UserCheck,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { UserAvatar } from '../common/UserAvatar';
 import { getSupabase, broadcast } from '../../lib/supabase';
-import { updateRoomSettingsAction } from '../../app/actions/rooms';
+import {
+  updateRoomSettingsAction,
+  banRoomMemberAction,
+  unbanRoomMemberAction,
+} from '../../app/actions/rooms';
 import { useAuth } from '../../context/AuthContext';
 import { useStudy } from '../../context/StudyContext';
 
@@ -111,6 +119,12 @@ export default function ActiveRoom({ roomId, onBack, initialTab }: ActiveRoomPro
   const [isDeletingRoom, setIsDeletingRoom] = useState(false);
   const [mounted, setMounted] = useState(false);
   const isFormDirtyRef = useRef(false);
+
+  // Ban management state
+  const [bannedMembers, setBannedMembers] = useState<{ userId: string; username: string }[]>([]);
+  const [memberToBan, setMemberToBan] = useState<{ userId: string; username: string } | null>(null);
+  const [isBanning, setIsBanning] = useState(false);
+  const [isUnbanning, setIsUnbanning] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -484,6 +498,38 @@ CREATE POLICY "Hosts can update their own study rooms"
       });
 
       setDbMembers(membersList);
+
+      // 6. Fetch banned scholars for this room
+      const { data: banRecords } = await supabase
+        .from('room_messages')
+        .select('content, created_at')
+        .eq('room_id', roomId)
+        .ilike('content', '%[SYSTEM_%')
+        .order('created_at', { ascending: true });
+
+      const banMap = new Map<string, { userId: string; username: string }>();
+      if (banRecords) {
+        for (const record of banRecords) {
+          if (record.content?.startsWith('[SYSTEM_BAN]:')) {
+            try {
+              const parsed = JSON.parse(record.content.replace('[SYSTEM_BAN]:', ''));
+              banMap.set(parsed.userId, { userId: parsed.userId, username: parsed.username });
+            } catch {}
+          } else if (record.content?.startsWith('[SYSTEM_UNBAN]:')) {
+            try {
+              const parsed = JSON.parse(record.content.replace('[SYSTEM_UNBAN]:', ''));
+              banMap.delete(parsed.userId);
+            } catch {}
+          }
+        }
+      }
+      setBannedMembers(Array.from(banMap.values()));
+
+      if (user?.id && banMap.has(user.id)) {
+        toast.error('You were banned from this room by the host.');
+        onBack();
+        return;
+      }
     } catch (err) {
       console.error('Error fetching room members:', err);
     }
@@ -538,6 +584,22 @@ CREATE POLICY "Hosts can update their own study rooms"
         if (isTimerRunningRef.current) {
           sendFocusBroadcast();
         }
+      })
+      .on('broadcast', { event: 'member_banned' }, (payload: any) => {
+        const bannedId = payload.payload?.userId;
+        const bannedName = payload.payload?.username || 'A scholar';
+        if (bannedId === user?.id) {
+          toast.error('You were banned from this room by the host.');
+          onBack();
+        } else {
+          fetchRoomMembers();
+          fetchMessages();
+          toast(`${bannedName} was banned from the room`, { icon: '🛡️' });
+        }
+      })
+      .on('broadcast', { event: 'member_unbanned' }, () => {
+        fetchRoomMembers();
+        fetchMessages();
       })
       .subscribe();
 
@@ -668,27 +730,154 @@ CREATE POLICY "Hosts can update their own study rooms"
   ]);
 
   // Fetch chat messages
-  useEffect(() => {
-    if (!user) return;
+  const fetchMessages = useCallback(async () => {
+    if (!user || !roomId) return;
     const supabase = getSupabase();
     if (!supabase) return;
 
-    const fetchMessages = async () => {
-      const { data, error } = await supabase
-        .from('room_messages')
-        .select(`
-          id, content, created_at, user_id,
-          profiles ( username, avatar_url )
-        `)
-        .eq('room_id', roomId)
-        .order('created_at', { ascending: true })
-        .limit(100);
+    const { data, error } = await supabase
+      .from('room_messages')
+      .select(`
+        id, content, created_at, user_id,
+        profiles ( username, avatar_url )
+      `)
+      .eq('room_id', roomId)
+      .order('created_at', { ascending: true })
+      .limit(100);
 
-      if (!error && data) setMessages(data);
-    };
-
-    fetchMessages();
+    if (!error && data) setMessages(data);
   }, [roomId, user]);
+
+  useEffect(() => {
+    fetchMessages();
+  }, [fetchMessages]);
+
+  const handleConfirmBan = async () => {
+    if (!memberToBan || !user || !roomId || !isHost) return;
+    setIsBanning(true);
+
+    try {
+      const targetUserId = memberToBan.userId;
+      const targetUsername = memberToBan.username;
+
+      // 1. Server action
+      try {
+        await banRoomMemberAction({
+          roomId,
+          targetUserId,
+          targetUsername,
+        });
+      } catch (e) {
+        console.warn('Server action ban error:', e);
+      }
+
+      // 2. Client-side fallback
+      const supabase = getSupabase();
+      if (supabase) {
+        await supabase
+          .from('room_members')
+          .delete()
+          .eq('room_id', roomId)
+          .eq('user_id', targetUserId);
+
+        await supabase
+          .from('room_presence')
+          .delete()
+          .eq('room_id', roomId)
+          .eq('user_id', targetUserId);
+
+        const banPayload = JSON.stringify({
+          type: 'ban',
+          userId: targetUserId,
+          username: targetUsername,
+          timestamp: Date.now(),
+        });
+
+        await supabase
+          .from('room_messages')
+          .insert({
+            room_id: roomId,
+            user_id: user.id,
+            content: `[SYSTEM_BAN]:${banPayload}`,
+          });
+
+        const roomChannel = supabase.channel(`room_members_hub_${roomId}`);
+        roomChannel.send({
+          type: 'broadcast',
+          event: 'member_banned',
+          payload: { roomId, userId: targetUserId, username: targetUsername, timestamp: Date.now() },
+        });
+
+        const lobbyChannel = supabase.channel('study_rooms_lobby_hub');
+        lobbyChannel.send({
+          type: 'broadcast',
+          event: 'lobby_update',
+          payload: { timestamp: Date.now() },
+        });
+      }
+
+      toast.success(`${targetUsername} was banned from the room.`);
+      setMemberToBan(null);
+      await fetchRoomMembers();
+      await fetchMessages();
+    } catch (err: any) {
+      toast.error('Failed to ban member: ' + (err.message || 'Unknown error'));
+    } finally {
+      setIsBanning(false);
+    }
+  };
+
+  const handleUnban = async (targetUserId: string, targetUsername: string) => {
+    if (!user || !roomId || !isHost) return;
+    setIsUnbanning(targetUserId);
+
+    try {
+      // 1. Server action
+      try {
+        await unbanRoomMemberAction({
+          roomId,
+          targetUserId,
+          targetUsername,
+        });
+      } catch (e) {
+        console.warn('Server action unban error:', e);
+      }
+
+      // 2. Client-side fallback
+      const supabase = getSupabase();
+      if (supabase) {
+        const unbanPayload = JSON.stringify({
+          type: 'unban',
+          userId: targetUserId,
+          username: targetUsername,
+          timestamp: Date.now(),
+        });
+
+        await supabase
+          .from('room_messages')
+          .insert({
+            room_id: roomId,
+            user_id: user.id,
+            content: `[SYSTEM_UNBAN]:${unbanPayload}`,
+          });
+
+        const roomChannel = supabase.channel(`room_members_hub_${roomId}`);
+        roomChannel.send({
+          type: 'broadcast',
+          event: 'member_unbanned',
+          payload: { roomId, userId: targetUserId, username: targetUsername, timestamp: Date.now() },
+        });
+      }
+
+      toast.success(`${targetUsername} was unbanned.`);
+      await fetchRoomMembers();
+      await fetchMessages();
+    } catch (err: any) {
+      toast.error('Failed to unban: ' + (err.message || 'Unknown error'));
+    } finally {
+      setIsUnbanning(null);
+    }
+  };
 
   useEffect(() => {
     if (roomTab === 'chat' && messagesEndRef.current) {
@@ -1236,6 +1425,18 @@ CREATE POLICY "Hosts can update their own study rooms"
                         <span>Today • {u.is_online ? 'Paused' : 'Offline'}</span>
                       )}
                     </span>
+
+                    {isHost && !u.is_host && !u.is_current_user && (
+                      <button
+                        type="button"
+                        onClick={() => setMemberToBan({ userId: u.user_id, username: u.username })}
+                        className="mt-2 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 hover:text-white text-[10px] font-hud font-bold uppercase tracking-wider transition-all cursor-pointer shadow-sm active:scale-95"
+                        title={`Ban ${u.username} from room`}
+                      >
+                        <Ban className="w-3 h-3 text-rose-400" />
+                        <span>BAN</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               );
@@ -1267,93 +1468,150 @@ CREATE POLICY "Hosts can update their own study rooms"
                     </p>
                   </div>
                 ) : (
-                  messages.reduce((groups, msg) => {
-                    const lastGroup = groups[groups.length - 1];
-                    if (lastGroup && lastGroup[0].user_id === msg.user_id) {
-                      lastGroup.push(msg);
-                    } else {
-                      groups.push([msg]);
+                  (() => {
+                    const items: any[] = [];
+                    let currentGroup: any[] = [];
+
+                    for (const msg of messages) {
+                      if (msg.content?.startsWith('[SYSTEM_BAN]:')) {
+                        if (currentGroup.length > 0) {
+                          items.push({ type: 'group', group: currentGroup });
+                          currentGroup = [];
+                        }
+                        try {
+                          const data = JSON.parse(msg.content.replace('[SYSTEM_BAN]:', ''));
+                          items.push({ type: 'system', id: msg.id, action: 'ban', username: data.username || 'Scholar' });
+                        } catch {}
+                      } else if (msg.content?.startsWith('[SYSTEM_UNBAN]:')) {
+                        if (currentGroup.length > 0) {
+                          items.push({ type: 'group', group: currentGroup });
+                          currentGroup = [];
+                        }
+                        try {
+                          const data = JSON.parse(msg.content.replace('[SYSTEM_UNBAN]:', ''));
+                          items.push({ type: 'system', id: msg.id, action: 'unban', username: data.username || 'Scholar' });
+                        } catch {}
+                      } else {
+                        if (currentGroup.length > 0 && currentGroup[0].user_id === msg.user_id) {
+                          currentGroup.push(msg);
+                        } else {
+                          if (currentGroup.length > 0) {
+                            items.push({ type: 'group', group: currentGroup });
+                          }
+                          currentGroup = [msg];
+                        }
+                      }
                     }
-                    return groups;
-                  }, [] as typeof messages[]).map((group: typeof messages) => {
-                    const firstMsg = group[0];
-                    const lastMsg = group[group.length - 1];
-                    const isMe = firstMsg.user_id === user?.id;
-                    const senderMember = displayUsers.find(u => u.user_id === firstMsg.user_id);
-                    const isStudying = senderMember?.is_studying;
-                    const isHostUser = senderMember?.is_host;
-                    const timeString = new Date(lastMsg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                    const username = firstMsg.profiles?.username || senderMember?.username || 'Scholar';
-                    const avatarUrl = firstMsg.profiles?.avatar_url || senderMember?.avatar_url;
+                    if (currentGroup.length > 0) {
+                      items.push({ type: 'group', group: currentGroup });
+                    }
 
-                    return (
-                      <div
-                        key={`group-${firstMsg.id}`}
-                        className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} group`}
-                      >
-                        {/* Meta header: name, host badge, focusing status, timestamp */}
-                        <div className={`flex items-center gap-2 mb-1.5 ${isMe ? 'mr-1 flex-row-reverse' : 'ml-1'}`}>
-                          <span className={`text-xs font-hud font-bold tracking-tight ${isMe ? 'text-amber-400' : 'text-slate-200'}`}>
-                            {isMe ? 'YOU' : username}
-                          </span>
-                          {isHostUser && (
-                            <span className="text-[9px] font-hud font-bold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 uppercase">
-                              HOST
-                            </span>
-                          )}
-                          {isStudying && (
-                            <span className="text-[9px] font-hud px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center gap-1 uppercase font-semibold">
-                              <Flame className="w-3 h-3 fill-amber-400" /> FOCUSING
-                            </span>
-                          )}
-                          <span className="text-[10px] font-hud-mono text-neutral-500">
-                            {timeString}
-                          </span>
-                        </div>
+                    return items.map((item) => {
+                      if (item.type === 'system') {
+                        return (
+                          <div key={`system-${item.id}`} className="w-full flex justify-center my-2">
+                            <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-hud font-semibold ${
+                              item.action === 'ban'
+                                ? 'bg-rose-500/15 border border-rose-500/30 text-rose-300'
+                                : 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-300'
+                            }`}>
+                              {item.action === 'ban' ? <Ban className="w-3 h-3 text-rose-400" /> : <UserCheck className="w-3 h-3 text-emerald-400" />}
+                              <span>{item.username} was {item.action === 'ban' ? 'banned from' : 'unbanned in'} the room</span>
+                            </div>
+                          </div>
+                        );
+                      }
 
-                        {/* Avatar and Bubble Row */}
-                        <div className={`flex gap-3 ${isMe ? 'flex-row-reverse' : ''} items-end max-w-[88%] sm:max-w-[75%]`}>
-                          {/* Avatar */}
-                          <div className="relative shrink-0">
-                            <UserAvatar
-                              src={avatarUrl}
-                              name={username}
-                              size={36}
-                              className={`rounded-full border transition-all ${
-                                isStudying
-                                  ? 'border-amber-500 ring-2 ring-amber-500/30 shadow-[0_0_8px_rgba(245,158,11,0.4)]'
-                                  : 'border-white/10'
-                              }`}
-                            />
+                      const group = item.group;
+                      const firstMsg = group[0];
+                      const lastMsg = group[group.length - 1];
+                      const isMe = firstMsg.user_id === user?.id;
+                      const senderMember = displayUsers.find(u => u.user_id === firstMsg.user_id);
+                      const isStudying = senderMember?.is_studying;
+                      const isHostUser = senderMember?.is_host;
+                      const timeString = new Date(lastMsg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                      const username = firstMsg.profiles?.username || senderMember?.username || 'Scholar';
+                      const avatarUrl = firstMsg.profiles?.avatar_url || senderMember?.avatar_url;
+
+                      return (
+                        <div
+                          key={`group-${firstMsg.id}`}
+                          className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} group`}
+                        >
+                          {/* Meta header: name, host badge, focusing status, timestamp, ban action */}
+                          <div className={`flex items-center gap-2 mb-1.5 ${isMe ? 'mr-1 flex-row-reverse' : 'ml-1'}`}>
+                            <span className={`text-xs font-hud font-bold tracking-tight ${isMe ? 'text-amber-400' : 'text-slate-200'}`}>
+                              {isMe ? 'YOU' : username}
+                            </span>
+                            {isHostUser && (
+                              <span className="text-[9px] font-hud font-bold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 uppercase">
+                                HOST
+                              </span>
+                            )}
+                            {isStudying && (
+                              <span className="text-[9px] font-hud px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center gap-1 uppercase font-semibold">
+                                <Flame className="w-3 h-3 fill-amber-400" /> FOCUSING
+                              </span>
+                            )}
+                            <span className="text-[10px] font-hud-mono text-neutral-500">
+                              {timeString}
+                            </span>
+                            {isHost && !isMe && !isHostUser && (
+                              <button
+                                type="button"
+                                onClick={() => setMemberToBan({ userId: firstMsg.user_id, username })}
+                                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded text-rose-400 hover:text-rose-300 hover:bg-rose-500/20 cursor-pointer"
+                                title={`Ban ${username} from room`}
+                              >
+                                <Ban className="w-3 h-3" />
+                              </button>
+                            )}
                           </div>
 
-                          {/* Bubble Stack */}
-                          <div className={`flex flex-col gap-1.5 ${isMe ? 'items-end' : 'items-start'}`}>
-                            {group.map((msg: any, idx: number) => {
-                              const isFirst = idx === 0;
-                              const isLast = idx === group.length - 1;
-                              return (
-                                <div
-                                  key={msg.id}
-                                  className={`px-4 py-2.5 text-sm leading-relaxed transition-all break-words ${
-                                    isMe
-                                      ? 'bg-gradient-to-br from-amber-500/25 via-amber-500/15 to-amber-600/10 border border-amber-500/35 text-amber-50 shadow-[0_2px_12px_rgba(245,158,11,0.1)]'
-                                      : 'bg-white/[0.05] border border-white/[0.1] text-slate-100 shadow-md hover:border-white/20'
-                                  } ${
-                                    isMe
-                                      ? `rounded-2xl ${isFirst ? 'rounded-tr-md' : 'rounded-tr-md'} ${isLast ? 'rounded-br-2xl' : 'rounded-br-md'}`
-                                      : `rounded-2xl ${isFirst ? 'rounded-tl-md' : 'rounded-tl-md'} ${isLast ? 'rounded-bl-2xl' : 'rounded-bl-md'}`
-                                  }`}
-                                >
-                                  {msg.content}
-                                </div>
-                              );
-                            })}
+                          {/* Avatar and Bubble Row */}
+                          <div className={`flex gap-3 ${isMe ? 'flex-row-reverse' : ''} items-end max-w-[88%] sm:max-w-[75%]`}>
+                            {/* Avatar */}
+                            <div className="relative shrink-0">
+                              <UserAvatar
+                                src={avatarUrl}
+                                name={username}
+                                size={36}
+                                className={`rounded-full border transition-all ${
+                                  isStudying
+                                    ? 'border-amber-500 ring-2 ring-amber-500/30 shadow-[0_0_8px_rgba(245,158,11,0.4)]'
+                                    : 'border-white/10'
+                                }`}
+                              />
+                            </div>
+
+                            {/* Bubble Stack */}
+                            <div className={`flex flex-col gap-1.5 ${isMe ? 'items-end' : 'items-start'}`}>
+                              {group.map((msg: any, idx: number) => {
+                                const isFirst = idx === 0;
+                                const isLast = idx === group.length - 1;
+                                return (
+                                  <div
+                                    key={msg.id}
+                                    className={`px-4 py-2.5 text-sm leading-relaxed transition-all break-words ${
+                                      isMe
+                                        ? 'bg-gradient-to-br from-amber-500/25 via-amber-500/15 to-amber-600/10 border border-amber-500/35 text-amber-50 shadow-[0_2px_12px_rgba(245,158,11,0.1)]'
+                                        : 'bg-white/[0.05] border border-white/[0.1] text-slate-100 shadow-md hover:border-white/20'
+                                    } ${
+                                      isMe
+                                        ? `rounded-2xl ${isFirst ? 'rounded-tr-md' : 'rounded-tr-md'} ${isLast ? 'rounded-br-2xl' : 'rounded-br-md'}`
+                                        : `rounded-2xl ${isFirst ? 'rounded-tl-md' : 'rounded-tl-md'} ${isLast ? 'rounded-bl-2xl' : 'rounded-bl-md'}`
+                                    }`}
+                                  >
+                                    {msg.content}
+                                  </div>
+                                );
+                              })}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })
+                      );
+                    });
+                  })()
                 )}
               </div>
             </div>
@@ -1782,6 +2040,120 @@ CREATE POLICY "Hosts can update their own study rooms"
                 </button>
               </div>
 
+              {/* Scholar Management & Ban Section */}
+              <div className="rounded-3xl bg-white/[0.02] border border-white/5 p-5 sm:p-6 space-y-5">
+                <div className="flex items-center justify-between border-b border-white/[0.08] pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center shrink-0 text-rose-400">
+                      <ShieldAlert className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold text-white tracking-wide">Scholar Management & Bans</h3>
+                      <p className="text-xs text-slate-400">
+                        Manage room scholars and enforce exclusions.
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-hud-mono font-bold px-2 py-1 rounded-full bg-white/5 border border-white/10 text-neutral-400">
+                    {displayUsers.filter(u => !u.is_host).length} MEMBERS
+                  </span>
+                </div>
+
+                {/* Active Room Members */}
+                <div className="space-y-2">
+                  <label className="text-xs font-hud font-bold text-slate-300 uppercase tracking-wider block">
+                    Active Room Scholars
+                  </label>
+                  <div className="space-y-2 max-h-56 overflow-y-auto scrollbar-thin pr-1">
+                    {displayUsers.map((member) => (
+                      <div
+                        key={member.user_id}
+                        className="flex items-center justify-between p-2.5 rounded-xl bg-black/40 border border-white/5 hover:border-white/10 transition-colors"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <UserAvatar
+                            src={member.avatar_url}
+                            name={member.username}
+                            size={32}
+                            className="rounded-full border border-white/10 shrink-0"
+                          />
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-sm font-bold text-white truncate max-w-[140px]">
+                                {member.username}
+                              </span>
+                              {member.is_host && (
+                                <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 border border-amber-500/30 text-amber-400 font-bold uppercase">
+                                  HOST
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-[10px] text-slate-400 font-mono">
+                              {formatSeconds(member.total_focus_seconds || 0)} studied
+                            </span>
+                          </div>
+                        </div>
+
+                        {!member.is_host && (
+                          <button
+                            type="button"
+                            onClick={() => setMemberToBan({ userId: member.user_id, username: member.username })}
+                            className="px-3 py-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 hover:border-rose-500/60 text-rose-400 text-xs font-hud font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 shrink-0 active:scale-95"
+                          >
+                            <Ban className="w-3.5 h-3.5" />
+                            <span>BAN</span>
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Banned Scholars List */}
+                <div className="pt-3 border-t border-white/[0.08] space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-hud font-bold text-rose-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <Ban className="w-3.5 h-3.5" />
+                      <span>Banned Scholars ({bannedMembers.length})</span>
+                    </label>
+                  </div>
+
+                  {bannedMembers.length === 0 ? (
+                    <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 text-center text-xs text-neutral-500 font-mono">
+                      No scholars are currently banned from this room.
+                    </div>
+                  ) : (
+                    <div className="space-y-2 max-h-48 overflow-y-auto scrollbar-thin pr-1">
+                      {bannedMembers.map((banned) => (
+                        <div
+                          key={banned.userId}
+                          className="flex items-center justify-between p-2.5 rounded-xl bg-rose-500/5 border border-rose-500/20"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="w-7 h-7 rounded-full bg-rose-500/20 border border-rose-500/30 flex items-center justify-center text-rose-400 shrink-0">
+                              <UserX className="w-3.5 h-3.5" />
+                            </div>
+                            <span className="text-sm font-bold text-slate-200 truncate">
+                              {banned.username}
+                            </span>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => handleUnban(banned.userId, banned.username)}
+                            disabled={isUnbanning === banned.userId}
+                            className="px-3 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 hover:border-emerald-500/60 text-emerald-400 text-xs font-hud font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 shrink-0 active:scale-95 disabled:opacity-50"
+                          >
+                            <UserCheck className="w-3.5 h-3.5" />
+                            <span>{isUnbanning === banned.userId ? 'UNBANNING...' : 'UNBAN'}</span>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
               {/* Danger Zone: Delete Room */}
               <div className="pt-6 border-t border-white/5">
                 <div className="p-5 rounded-2xl bg-red-500/5 border border-red-500/15 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -1851,6 +2223,61 @@ CREATE POLICY "Hosts can update their own study rooms"
                 className="flex-1 py-3 rounded-xl font-bold text-white bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/20 transition-colors disabled:opacity-50 cursor-pointer flex items-center justify-center gap-1.5"
               >
                 {isDeletingRoom ? 'Deleting...' : 'Confirm'}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Ban Scholar Confirmation Modal */}
+      {mounted && typeof document !== 'undefined' && memberToBan && createPortal(
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isBanning) {
+              setMemberToBan(null);
+            }
+          }}
+          className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+        >
+          <div className="bg-[#0f111a] border border-rose-500/30 rounded-3xl w-full max-w-sm p-6 shadow-2xl relative space-y-4 animate-in zoom-in-95 duration-150">
+            <button
+              onClick={() => setMemberToBan(null)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors cursor-pointer"
+              disabled={isBanning}
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-500/20 border border-rose-500/30 flex items-center justify-center shrink-0 text-rose-400">
+                <Ban className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-hud font-bold text-lg text-white">Ban Scholar</h3>
+                <p className="text-xs text-rose-300/80">Permanent room exclusion</p>
+              </div>
+            </div>
+            <p className="text-sm text-slate-300 leading-relaxed">
+              Are you sure you want to ban <span className="font-bold text-white font-hud">{memberToBan.username}</span> from this room? They will be removed immediately and barred from rejoining.
+            </p>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setMemberToBan(null)}
+                disabled={isBanning}
+                className="flex-1 py-2.5 rounded-xl font-bold text-slate-300 bg-white/5 hover:bg-white/10 transition-colors disabled:opacity-50 cursor-pointer text-xs uppercase font-hud"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmBan}
+                disabled={isBanning}
+                className="flex-1 py-2.5 rounded-xl font-bold text-white bg-rose-600 hover:bg-rose-500 transition-colors disabled:opacity-50 cursor-pointer flex items-center justify-center gap-1.5 text-xs uppercase font-hud shadow-lg shadow-rose-600/30"
+              >
+                <Ban className="w-3.5 h-3.5" />
+                <span>{isBanning ? 'Banning...' : 'Confirm Ban'}</span>
               </button>
             </div>
           </div>

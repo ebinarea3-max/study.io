@@ -524,6 +524,38 @@ CREATE POLICY "Hosts can update their own study rooms"
       return;
     }
     try {
+      // 0. Verify if user is banned from this room
+      const { data: banRecords } = await supabase
+        .from('room_messages')
+        .select('content, created_at')
+        .eq('room_id', roomId)
+        .ilike('content', '%[SYSTEM_%')
+        .order('created_at', { ascending: true });
+
+      if (banRecords && banRecords.length > 0) {
+        let isUserBanned = false;
+        for (const record of banRecords) {
+          if (record.content.startsWith('[SYSTEM_BAN]:')) {
+            try {
+              const parsed = JSON.parse(record.content.replace('[SYSTEM_BAN]:', ''));
+              if (parsed.userId === user.id) isUserBanned = true;
+            } catch {}
+          } else if (record.content.startsWith('[SYSTEM_UNBAN]:')) {
+            try {
+              const parsed = JSON.parse(record.content.replace('[SYSTEM_UNBAN]:', ''));
+              if (parsed.userId === user.id) isUserBanned = false;
+            } catch {}
+          }
+        }
+
+        if (isUserBanned) {
+          setJoinError('You have been banned from this study room by the host.');
+          toast.error('You are banned from this room by the host.');
+          setIsJoining(false);
+          return;
+        }
+      }
+
       // 1. Check if already a member
       const { data: existingMember } = await supabase
         .from('room_members')
