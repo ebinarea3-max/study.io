@@ -51,13 +51,16 @@ export function UserAvatar({ src, name, size = 36, className = '' }: UserAvatarP
 
   const initials = getInitials(name);
   const gradient = getAvatarGradient(name);
-  const roundedClass = className.includes('rounded-') ? '' : 'rounded-xl';
+  const roundedClass = className.includes('rounded-') ? '' : 'rounded-full';
 
   return (
-    <div className={`relative ${roundedClass} ${className}`} style={{ width: size, height: size }}>
+    <div
+      className={`relative ${roundedClass} overflow-hidden shrink-0 select-none ${className}`}
+      style={{ width: size, height: size, minWidth: size, minHeight: size }}
+    >
       {/* Background Fallback (Initials) */}
       <div
-        className={`absolute inset-0 bg-gradient-to-tr ${gradient} flex items-center justify-center font-black text-slate-950 tracking-wider select-none shadow-md ${roundedClass}`}
+        className={`absolute inset-0 bg-gradient-to-tr ${gradient} flex items-center justify-center font-black text-slate-950 tracking-wider shadow-inner rounded-full`}
         style={{ fontSize: Math.max(10, Math.floor(size * 0.38)) }}
         title={name || 'User Profile'}
       >
@@ -78,9 +81,9 @@ export function UserAvatar({ src, name, size = 36, className = '' }: UserAvatarP
             setHasError(true);
             setIsLoaded(false);
           }}
-          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ease-in-out ${
+          className={`absolute inset-0 w-full h-full object-cover rounded-full transition-opacity duration-300 ease-in-out ${
             isLoaded ? 'opacity-100' : 'opacity-0'
-          } ${roundedClass}`}
+          }`}
         />
       )}
     </div>

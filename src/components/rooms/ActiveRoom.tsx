@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom';
 import {
   ChevronLeft,
   Flame,
+  Home,
+  MessageCircle,
   Moon,
   User as UserIcon,
   Send,
@@ -24,7 +26,6 @@ import {
   Globe,
   Trash2,
   X,
-  MessageSquare,
   Radio,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -1096,8 +1097,8 @@ CREATE POLICY "Hosts can update their own study rooms"
             <h1 className="text-sm sm:text-base font-hud font-bold text-white tracking-wide uppercase truncate max-w-[140px] sm:max-w-[260px]">
               {roomName}
             </h1>
-            <span className="text-[10px] font-hud-mono text-neutral-400 bg-white/[0.04] border border-white/10 px-2 py-0.5 rounded-full hidden sm:inline-flex items-center gap-1">
-              <Users className="w-2.5 h-2.5 text-neutral-400" />
+            <span className="text-[10px] font-hud-mono text-neutral-400 bg-white/[0.04] border border-white/10 px-2 py-0.5 rounded-full hidden sm:inline-flex items-center gap-1.5">
+              <Users className="w-3.5 h-3.5 text-neutral-400" />
               {displayUsers.length} {displayUsers.length === 1 ? 'MEMBER' : 'MEMBERS'}
             </span>
           </div>
@@ -1113,7 +1114,7 @@ CREATE POLICY "Hosts can update their own study rooms"
                   : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
               }`}
             >
-              <Users className="w-3.5 h-3.5" />
+              <Home className="w-3.5 h-3.5" />
               <span>HOME</span>
             </button>
             <button
@@ -1127,7 +1128,7 @@ CREATE POLICY "Hosts can update their own study rooms"
                   : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
               }`}
             >
-              <MessageSquare className="w-3.5 h-3.5" />
+              <MessageCircle className="w-3.5 h-3.5" />
               <span>CHAT</span>
               {unreadCount > 0 && (
                 <span className="ml-0.5 bg-amber-500 text-slate-950 text-[10px] font-hud-mono font-bold px-1.5 py-0.2 rounded-full border border-amber-300 shadow-[0_0_8px_rgba(245,158,11,0.5)] animate-in zoom-in duration-200">
@@ -1167,33 +1168,18 @@ CREATE POLICY "Hosts can update their own study rooms"
                   className="flex flex-col items-center gap-2 group relative transition-all duration-300"
                 >
                   <div className="relative">
-                    {u.avatar_url ? (
-                      <img
-                        src={u.avatar_url}
-                        alt={u.username || 'Scholar'}
-                        className={`w-16 h-16 rounded-full object-cover border-2 transition-all duration-300 ${
-                          isStudying
-                            ? 'border-amber-500 shadow-[0_0_18px_rgba(245,158,11,0.55)] scale-105'
-                            : u.is_online
-                            ? 'border-slate-500 opacity-90'
-                            : 'border-slate-700/80 opacity-60'
-                        }`}
-                      />
-                    ) : (
-                      <div
-                        className={`w-16 h-16 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${
-                          isStudying
-                            ? 'border-amber-500 shadow-[0_0_18px_rgba(245,158,11,0.55)] bg-amber-500/10 scale-105'
-                            : u.is_online
-                            ? 'border-slate-500 bg-slate-800 opacity-90'
-                            : 'border-slate-700/80 bg-slate-900 opacity-60'
-                        }`}
-                      >
-                        <UserIcon
-                          className={`w-8 h-8 ${isStudying ? 'text-amber-500' : 'text-slate-500'}`}
-                        />
-                      </div>
-                    )}
+                    <UserAvatar
+                      src={u.avatar_url}
+                      name={u.username}
+                      size={64}
+                      className={`border-2 transition-all duration-300 ${
+                        isStudying
+                          ? 'border-amber-500 shadow-[0_0_18px_rgba(245,158,11,0.55)] scale-105'
+                          : u.is_online
+                          ? 'border-slate-500 opacity-90'
+                          : 'border-slate-700/80 opacity-60'
+                      }`}
+                    />
 
                     {/* Status Badge (only when resting/offline; fire icon removed when studying) */}
                     {!isStudying && (
@@ -1302,7 +1288,7 @@ CREATE POLICY "Hosts can update their own study rooms"
               {messages.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-3 my-auto min-h-[220px]">
                   <div className="w-12 h-12 rounded-2xl bg-white/[0.03] border border-white/10 flex items-center justify-center text-amber-400 shadow-inner">
-                    <MessageSquare className="w-6 h-6 opacity-80" />
+                    <MessageCircle className="w-6 h-6 opacity-80" />
                   </div>
                   <div className="text-sm font-hud font-bold text-white tracking-wide uppercase">
                     ROOM COMMS STANDBY
@@ -1348,7 +1334,7 @@ CREATE POLICY "Hosts can update their own study rooms"
                         )}
                         {isStudying && (
                           <span className="text-[9px] font-hud px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center gap-1 uppercase font-semibold">
-                            <Flame className="w-2.5 h-2.5 fill-amber-400" /> FOCUSING
+                            <Flame className="w-3 h-3 fill-amber-400" /> FOCUSING
                           </span>
                         )}
                         <span className="text-[10px] font-hud-mono text-neutral-500">
@@ -1363,7 +1349,7 @@ CREATE POLICY "Hosts can update their own study rooms"
                           <UserAvatar
                             src={avatarUrl}
                             name={username}
-                            size={32}
+                            size={36}
                             className={`rounded-full border transition-all ${
                               isStudying
                                 ? 'border-amber-500 ring-2 ring-amber-500/30 shadow-[0_0_8px_rgba(245,158,11,0.4)]'
@@ -1417,7 +1403,7 @@ CREATE POLICY "Hosts can update their own study rooms"
                   disabled={!newMessage.trim() || isSending}
                   className="px-4 sm:px-5 py-2.5 rounded-xl font-hud font-bold text-xs uppercase tracking-wider text-black bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 shadow-[0_0_15px_rgba(245,158,11,0.25)] hover:brightness-110 active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0"
                 >
-                  <Send className="w-3.5 h-3.5 fill-current" />
+                  <Send className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">SEND</span>
                 </button>
               </div>
