@@ -849,8 +849,8 @@ export function AnalyticsDashboard({ onStartSession, onOpenSettings }: Analytics
                     </>
                   )}
                 </div>
-                <ResponsiveContainer width="100%" height="100%" className="relative z-0">
-                  <PieChart>
+                <ResponsiveContainer width="100%" height="100%" className="relative z-0 select-none">
+                  <PieChart style={{ outline: 'none' }}>
                     <Pie
                       data={distSubjectBreakdown}
                       cx="50%"
@@ -859,6 +859,8 @@ export function AnalyticsDashboard({ onStartSession, onOpenSettings }: Analytics
                       outerRadius={115}
                       paddingAngle={3}
                       dataKey="seconds"
+                      style={{ outline: 'none' }}
+                      tabIndex={-1}
                       onMouseEnter={(_, index) => setActiveDonutSlice(distSubjectBreakdown[index])}
                       onMouseLeave={() => setActiveDonutSlice(null)}
                     >
@@ -868,10 +870,13 @@ export function AnalyticsDashboard({ onStartSession, onOpenSettings }: Analytics
                           fill={entry.color}
                           stroke="#14171D"
                           strokeWidth={2}
+                          style={{ outline: 'none' }}
+                          tabIndex={-1}
                         />
                       ))}
                     </Pie>
                     <RechartsTooltip
+                      cursor={false}
                       content={({ active, payload }) => {
                         if (active && payload && payload.length) {
                           const item = payload[0].payload;
@@ -1159,6 +1164,7 @@ export function AnalyticsDashboard({ onStartSession, onOpenSettings }: Analytics
             <BarChart
               data={focusChartData.items}
               margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+              style={{ outline: 'none' }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
               <XAxis
@@ -1184,6 +1190,7 @@ export function AnalyticsDashboard({ onStartSession, onOpenSettings }: Analytics
                 />
               )}
               <RechartsTooltip
+                cursor={false}
                 content={({ active, payload }) => {
                   if (active && payload && payload.length) {
                     const item = payload[0].payload;
@@ -1199,7 +1206,14 @@ export function AnalyticsDashboard({ onStartSession, onOpenSettings }: Analytics
                   return null;
                 }}
               />
-              <Bar dataKey="hours" fill={theme.accent} radius={[4, 4, 0, 0]} maxBarSize={48} />
+              <Bar
+                dataKey="hours"
+                fill={theme.accent}
+                radius={[4, 4, 0, 0]}
+                maxBarSize={48}
+                style={{ outline: 'none' }}
+                tabIndex={-1}
+              />
             </BarChart>
           </ResponsiveContainer>
         </div>

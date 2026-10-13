@@ -621,6 +621,48 @@ html.light .recharts-text,
   fill: #64748b !important;
 }
 
+/* Recharts outline & unwanted cursor highlight resets */
+.recharts-surface,
+.recharts-surface *,
+.recharts-wrapper,
+.recharts-wrapper *,
+.recharts-pie,
+.recharts-pie *,
+.recharts-pie-sector,
+.recharts-sector,
+.recharts-bar,
+.recharts-bar-rectangle,
+.recharts-layer {
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+.recharts-surface:focus,
+.recharts-surface:focus-visible,
+.recharts-wrapper:focus,
+.recharts-wrapper:focus-visible,
+.recharts-pie-sector:focus,
+.recharts-pie-sector:focus-visible,
+.recharts-sector:focus,
+.recharts-sector:focus-visible,
+.recharts-bar-rectangle:focus,
+.recharts-bar-rectangle:focus-visible,
+svg.recharts-surface:focus,
+svg.recharts-surface:focus-visible,
+path.recharts-sector:focus,
+path.recharts-sector:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Eliminate unwanted default cursor highlight box on BarCharts */
+.recharts-tooltip-cursor,
+.recharts-bar-cursor {
+  fill: transparent !important;
+  stroke: transparent !important;
+}
+
+
 /* Light mode selection */
 html.light ::selection,
 [data-theme="light"] ::selection {

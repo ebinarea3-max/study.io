@@ -34,7 +34,11 @@ export function StudyBarChart({ data }: StudyBarChartProps) {
   return (
     <div className="w-full h-72">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 15, right: 10, left: -20, bottom: 0 }}>
+        <BarChart
+          data={data}
+          margin={{ top: 15, right: 10, left: -20, bottom: 0 }}
+          style={{ outline: 'none' }}
+        >
           <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" vertical={false} />
           <XAxis
             dataKey="label"
@@ -51,6 +55,7 @@ export function StudyBarChart({ data }: StudyBarChartProps) {
             tickFormatter={val => `${val}h`}
           />
           <Tooltip
+            cursor={false}
             content={({ active, payload }) => {
               if (active && payload && payload.length) {
                 const item = payload[0].payload;
@@ -85,6 +90,8 @@ export function StudyBarChart({ data }: StudyBarChartProps) {
             fill="#10B981"
             radius={[6, 6, 0, 0]}
             maxBarSize={45}
+            style={{ outline: 'none' }}
+            tabIndex={-1}
           />
         </BarChart>
       </ResponsiveContainer>

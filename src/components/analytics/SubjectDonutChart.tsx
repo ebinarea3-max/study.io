@@ -29,7 +29,7 @@ export function SubjectDonutChart({ data }: SubjectDonutChartProps) {
       {/* Donut Pie */}
       <div className="w-full lg:w-1/2 h-64 relative">
         <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
+          <PieChart style={{ outline: 'none' }}>
             <Pie
               data={chartData}
               cx="50%"
@@ -38,12 +38,22 @@ export function SubjectDonutChart({ data }: SubjectDonutChartProps) {
               outerRadius={95}
               paddingAngle={4}
               dataKey="seconds"
+              style={{ outline: 'none' }}
+              tabIndex={-1}
             >
               {chartData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.color} stroke="#0F172A" strokeWidth={2} />
+                <Cell
+                  key={`cell-${index}`}
+                  fill={entry.color}
+                  stroke="#0F172A"
+                  strokeWidth={2}
+                  style={{ outline: 'none' }}
+                  tabIndex={-1}
+                />
               ))}
             </Pie>
             <Tooltip
+              cursor={false}
               content={({ active, payload }) => {
                 if (active && payload && payload.length) {
                   const item = payload[0].payload;
