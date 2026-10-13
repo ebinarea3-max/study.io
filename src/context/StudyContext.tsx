@@ -854,6 +854,19 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
   const isRunning = isStudying && !isPaused;
 
+  const getTodayTotalSeconds = useCallback(() => {
+    const startOfToday = getLocalStartOfDay(new Date());
+    const endOfToday = getLocalEndOfDay(new Date());
+    const loggedToday = sessions
+      .filter(s => {
+        const t = new Date(s.startTime).getTime();
+        return t >= startOfToday.getTime() && t <= endOfToday.getTime();
+      })
+      .reduce((sum, s) => sum + s.durationSeconds, 0);
+
+    return loggedToday + (isStudying ? elapsedSeconds : 0);
+  }, [sessions, isStudying, elapsedSeconds]);
+
   // BroadcastChannel for Single-Active-Tab Timer Locking
   useEffect(() => {
     if (typeof window === "undefined" || !("BroadcastChannel" in window)) return;
@@ -1262,15 +1275,19 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     // Broadcast focus status instantly to study rooms hub
     try {
       const hub = supabase.channel('study_rooms_realtime_hub');
+      const elapsed = extra?.accumulatedSeconds || 0;
+      const todayTotal = getTodayTotalSeconds ? getTodayTotalSeconds() : 0;
+      const baseToday = Math.max(0, todayTotal - (status === 'running' ? elapsed : 0));
       hub.send({
         type: 'broadcast',
         event: 'focus_status_update',
         payload: {
           user_id: uid,
           is_studying: status === 'running',
-          session_start_time: status === 'running' ? Date.now() - ((extra?.accumulatedSeconds || 0) * 1000) : null,
-          session_seconds: extra?.accumulatedSeconds || 0,
-          today_seconds: getTodayTotalSeconds ? getTodayTotalSeconds() : 0,
+          session_start_time: status === 'running' ? Date.now() - (elapsed * 1000) : null,
+          session_seconds: elapsed,
+          base_today_seconds: baseToday,
+          today_seconds: todayTotal,
           timestamp: Date.now(),
         },
       }).catch(() => {});
@@ -1701,6 +1718,8 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     hub.on('broadcast', { event: 'ping_focus_status' }, () => {
       if (isStudying && !isPaused && startTimeRef.current !== null) {
         const elapsed = Math.max(0, Math.floor((Date.now() - startTimeRef.current) / 1000));
+        const todayTotal = getTodayTotalSeconds ? getTodayTotalSeconds() : 0;
+        const baseToday = Math.max(0, todayTotal - elapsed);
         hub.send({
           type: 'broadcast',
           event: 'focus_status_update',
@@ -1709,7 +1728,8 @@ export function StudyProvider({ children }: { children: ReactNode }) {
             is_studying: true,
             session_start_time: startTimeRef.current,
             session_seconds: elapsed,
-            today_seconds: getTodayTotalSeconds ? getTodayTotalSeconds() : 0,
+            base_today_seconds: baseToday,
+            today_seconds: todayTotal,
             timestamp: Date.now(),
           },
         }).catch(() => {});
@@ -1736,6 +1756,41 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       window.removeEventListener('focus', handleFocus);
     };
   }, [user?.id, refetchActiveSession]);
+
+  // Periodic broadcast to study_rooms_realtime_hub while studying so room peers always see live timer progress
+  useEffect(() => {
+    if (!isRunning) return;
+    const uid = realtimeUserId || userRef.current?.id || user?.id;
+    if (!uid || uid.startsWith('user-scholar') || uid.startsWith('guest')) return;
+    const supabase = getSupabase();
+    if (!supabase) return;
+    const hub = supabase.channel('study_rooms_realtime_hub');
+
+    const broadcastPulse = () => {
+      if (startTimeRef.current === null) return;
+      const elapsed = Math.max(0, Math.floor((Date.now() - startTimeRef.current) / 1000));
+      const todayTotal = getTodayTotalSeconds ? getTodayTotalSeconds() : 0;
+      const baseToday = Math.max(0, todayTotal - elapsed);
+
+      hub.send({
+        type: 'broadcast',
+        event: 'focus_status_update',
+        payload: {
+          user_id: uid,
+          is_studying: true,
+          session_start_time: startTimeRef.current,
+          session_seconds: elapsed,
+          base_today_seconds: baseToday,
+          today_seconds: todayTotal,
+          timestamp: Date.now(),
+        },
+      }).catch(() => {});
+    };
+
+    broadcastPulse();
+    const pulseInterval = setInterval(broadcastPulse, 3000);
+    return () => clearInterval(pulseInterval);
+  }, [isRunning, realtimeUserId, user?.id, getTodayTotalSeconds]);
 
   // Load from Supabase or localStorage fallback
   useEffect(() => {
@@ -3441,19 +3496,6 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         }
       });
     }
-  };
-
-  const getTodayTotalSeconds = () => {
-    const startOfToday = getLocalStartOfDay(new Date());
-    const endOfToday = getLocalEndOfDay(new Date());
-    const loggedToday = sessions
-      .filter(s => {
-        const t = new Date(s.startTime).getTime();
-        return t >= startOfToday.getTime() && t <= endOfToday.getTime();
-      })
-      .reduce((sum, s) => sum + s.durationSeconds, 0);
-
-    return loggedToday + (isStudying ? elapsedSeconds : 0);
   };
 
   return (
