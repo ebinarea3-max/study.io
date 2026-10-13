@@ -1152,7 +1152,7 @@ CREATE POLICY "Hosts can update their own study rooms"
         </div>
       </header>
 
-      <div className={`flex-1 min-h-0 w-full overflow-x-hidden ${roomTab === 'chat' ? 'p-4 flex flex-col' : 'overflow-y-auto p-4 overscroll-contain scrollbar-thin'}`}>
+      <div className={`flex-1 min-h-0 w-full overflow-x-hidden ${roomTab === 'chat' ? 'px-2 sm:px-4 pt-2 pb-2 sm:pb-3 flex flex-col' : 'overflow-y-auto p-4 overscroll-contain scrollbar-thin'}`}>
         {roomTab === 'home' && (
           <div className="flex flex-wrap gap-8 justify-center items-start mt-8">
             {displayUsers.map((u, i) => {
@@ -1264,7 +1264,7 @@ CREATE POLICY "Hosts can update their own study rooms"
         )}
 
         {roomTab === 'chat' && (
-          <div className="max-w-4xl w-full mx-auto flex-1 min-h-0 flex flex-col bg-[#0b0e14]/90 border border-white/[0.08] rounded-2xl sm:rounded-3xl shadow-2xl backdrop-blur-xl relative overflow-hidden h-full">
+          <div className="w-full flex-1 min-h-0 flex flex-col bg-[#0b0e14]/90 border border-white/[0.08] rounded-2xl shadow-2xl backdrop-blur-xl relative overflow-hidden h-full">
             {/* Angular Targeting Reticle Corner Brackets */}
             <div className="hidden sm:block hud-corner-bracket hud-corner-tl" />
             <div className="hidden sm:block hud-corner-bracket hud-corner-tr" />
@@ -1402,31 +1402,9 @@ CREATE POLICY "Hosts can update their own study rooms"
               )}
             </div>
 
-            {/* Quick Comms Chips */}
-            <div className="px-4 sm:px-6 pt-2 pb-1 border-t border-white/[0.05] bg-white/[0.01] flex items-center gap-2 overflow-x-auto scrollbar-none shrink-0">
-              <span className="text-[10px] font-hud-mono uppercase text-neutral-500 tracking-wider hidden sm:inline">
-                QUICK TRANSMIT:
-              </span>
-              {[
-                '🔥 Locked in',
-                '☕ Taking 5',
-                '🎯 Goal crushed',
-                '💪 Keep pushing',
-              ].map((chip) => (
-                <button
-                  key={chip}
-                  type="button"
-                  onClick={() => setNewMessage(chip)}
-                  className="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.09] border border-white/10 hover:border-amber-500/30 text-[11px] font-medium text-neutral-300 hover:text-white transition-all cursor-pointer whitespace-nowrap active:scale-95"
-                >
-                  {chip}
-                </button>
-              ))}
-            </div>
-
             {/* Input Form Dock */}
-            <form onSubmit={handleSendMessage} className="p-3 sm:p-4 bg-[#07090e]/80 border-t border-white/[0.08] backdrop-blur-md shrink-0">
-              <div className="bg-black/60 border border-white/10 focus-within:border-amber-500/60 focus-within:ring-2 focus-within:ring-amber-500/20 rounded-2xl p-1.5 pl-4 flex items-center gap-2 transition-all shadow-inner">
+            <form onSubmit={handleSendMessage} className="p-3 sm:p-4 bg-[#07090e]/90 border-t border-white/[0.08] backdrop-blur-md shrink-0">
+              <div className="w-full bg-black/60 border border-white/10 focus-within:border-amber-500/60 focus-within:ring-2 focus-within:ring-amber-500/20 rounded-2xl p-1.5 pl-4 flex items-center gap-2 transition-all shadow-inner">
                 <input
                   type="text"
                   value={newMessage}
@@ -1437,7 +1415,7 @@ CREATE POLICY "Hosts can update their own study rooms"
                 <button
                   type="submit"
                   disabled={!newMessage.trim() || isSending}
-                  className="px-4 py-2 rounded-xl font-hud font-bold text-xs uppercase tracking-wider text-black bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 shadow-[0_0_15px_rgba(245,158,11,0.25)] hover:brightness-110 active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0"
+                  className="px-4 sm:px-5 py-2.5 rounded-xl font-hud font-bold text-xs uppercase tracking-wider text-black bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 shadow-[0_0_15px_rgba(245,158,11,0.25)] hover:brightness-110 active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0"
                 >
                   <Send className="w-3.5 h-3.5 fill-current" />
                   <span className="hidden sm:inline">SEND</span>
