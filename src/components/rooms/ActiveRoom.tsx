@@ -1492,31 +1492,31 @@ CREATE POLICY "Hosts can update their own study rooms"
 
   return (
     <div className="w-full h-full flex-1 min-h-0 bg-transparent flex flex-col relative text-slate-200">
-      <header className="shrink-0 flex items-center justify-between px-2 sm:px-4 py-2.5 border-b border-white/[0.08] bg-transparent">
-        <div className="flex items-center gap-2.5 sm:gap-3">
+      <header className="shrink-0 flex items-center justify-between px-2 sm:px-4 py-2 sm:py-2.5 border-b border-white/[0.08] bg-transparent">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <button
             onClick={onBack}
-            className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-white/20 text-slate-300 hover:text-white font-hud font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1 active:scale-95 cursor-pointer"
+            className="px-2 sm:px-3 py-1.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-white/20 text-slate-300 hover:text-white font-hud font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1 active:scale-95 cursor-pointer shrink-0"
           >
             <ChevronLeft className="w-4 h-4 text-slate-400" />
             <span className="hidden sm:inline">LEAVE</span>
           </button>
-          <div className="flex items-center gap-2">
-            <h1 className="text-sm sm:text-base font-hud font-bold text-white tracking-wide uppercase truncate max-w-[140px] sm:max-w-[260px]">
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+            <h1 className="text-xs sm:text-base font-hud font-bold text-white tracking-wide uppercase truncate max-w-[90px] xs:max-w-[130px] sm:max-w-[260px]">
               {roomName}
             </h1>
-            <span className="text-[10px] font-hud-mono text-neutral-400 bg-white/[0.04] border border-white/10 px-2 py-0.5 rounded-full hidden sm:inline-flex items-center gap-1.5">
+            <span className="text-[10px] font-hud-mono text-neutral-400 bg-white/[0.04] border border-white/10 px-2 py-0.5 rounded-full hidden sm:inline-flex items-center gap-1.5 shrink-0">
               <Users className="w-3.5 h-3.5 text-neutral-400" />
               {displayUsers.length} {displayUsers.length === 1 ? 'MEMBER' : 'MEMBERS'}
             </span>
           </div>
         </div>
 
-        <div className="flex items-center">
-          <div className="flex bg-black/40 border border-white/10 p-1 rounded-xl shadow-inner backdrop-blur-md gap-1">
+        <div className="flex items-center shrink-0">
+          <div className="flex bg-black/40 border border-white/10 p-0.5 sm:p-1 rounded-xl shadow-inner backdrop-blur-md gap-0.5 sm:gap-1">
             <button
               onClick={() => setRoomTab('home')}
-              className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-lg text-xs font-hud font-bold uppercase tracking-wider transition-all cursor-pointer ${
+              className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-hud font-bold uppercase tracking-wider transition-all cursor-pointer ${
                 roomTab === 'home'
                   ? 'bg-white/[0.1] border border-white/20 text-white shadow-sm'
                   : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
@@ -1530,7 +1530,7 @@ CREATE POLICY "Hosts can update their own study rooms"
                 setRoomTab('chat');
                 setUnreadCount(0);
               }}
-              className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-lg text-xs font-hud font-bold uppercase tracking-wider transition-all cursor-pointer relative ${
+              className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-hud font-bold uppercase tracking-wider transition-all cursor-pointer relative ${
                 roomTab === 'chat'
                   ? 'bg-amber-500/15 border border-amber-500/40 text-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.2)]'
                   : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
@@ -1547,7 +1547,7 @@ CREATE POLICY "Hosts can update their own study rooms"
             {isHost && (
               <button
                 onClick={() => setRoomTab('settings')}
-                className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-lg text-xs font-hud font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-hud font-bold uppercase tracking-wider transition-all cursor-pointer ${
                   roomTab === 'settings'
                     ? 'bg-white/[0.1] border border-white/20 text-white shadow-sm'
                     : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
@@ -1563,7 +1563,7 @@ CREATE POLICY "Hosts can update their own study rooms"
 
       <div className={`flex-1 min-h-0 w-full overflow-x-hidden ${roomTab === 'chat' ? 'flex flex-col' : 'overflow-y-auto p-4 overscroll-contain scrollbar-thin'}`}>
         {roomTab === 'home' && (
-          <div className="flex flex-wrap gap-8 justify-center items-start mt-8">
+          <div className="flex flex-wrap gap-8 justify-center items-start mt-8 pb-28 md:pb-8">
             {displayUsers.map((u, i) => {
               const isStudying = u.is_studying;
               const sessionSec = u.session_seconds || 0;
@@ -1702,7 +1702,7 @@ CREATE POLICY "Hosts can update their own study rooms"
         {roomTab === 'chat' && (
           <div className="w-full flex-1 min-h-0 flex flex-col h-full">
             {/* Messages Scroll Area */}
-            <div ref={messagesEndRef} className="flex-1 overflow-y-auto min-h-0 p-4 sm:p-6 scrollbar-thin">
+            <div ref={messagesEndRef} className="flex-1 overflow-y-auto min-h-0 px-3 sm:px-6 py-4 scrollbar-thin">
               <div className="max-w-3xl w-full mx-auto space-y-4">
                 {messages.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-3 my-auto min-h-[220px]">
@@ -1866,8 +1866,8 @@ CREATE POLICY "Hosts can update their own study rooms"
               </div>
             </div>
 
-            {/* Input Form Dock */}
-            <form onSubmit={handleSendMessage} className="p-3 sm:p-4 border-t border-white/[0.08] bg-transparent backdrop-blur-sm shrink-0">
+            {/* Input Form Dock positioned neatly above mobile floating bottom dock */}
+            <form onSubmit={handleSendMessage} className="px-3 pt-2.5 pb-[calc(5rem+env(safe-area-inset-bottom,8px))] md:pb-4 md:pt-4 md:px-4 border-t border-white/[0.08] bg-[#07090e]/95 backdrop-blur-md shrink-0 z-20">
               <div className="max-w-3xl w-full mx-auto">
                 <div className="w-full bg-black/60 border border-white/10 focus-within:border-amber-500/60 focus-within:ring-2 focus-within:ring-amber-500/20 rounded-2xl p-1.5 pl-4 flex items-center gap-2 transition-all shadow-inner">
                   <input
