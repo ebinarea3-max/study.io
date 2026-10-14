@@ -8,7 +8,8 @@ import { getRankFromRp, calculateRpFromSeconds, RankTierName, RankDivision, Rank
 import { getRankTheme } from '../../lib/rankTheme';
 import { getLevelFromLifetimeXP } from '../../lib/gamification';
 import { LeaderboardEntry } from '../../types';
-import { Clock, Trophy, Crown } from 'lucide-react';
+import { Clock, Trophy } from 'lucide-react';
+import { soundFx } from '../../lib/audio';
 import { RankCrestBadge } from '../common/RankCrestBadge';
 import { useRankTheme } from '../../hooks/useRankTheme';
 import { Logo } from '../Logo';
@@ -30,6 +31,51 @@ function parseTimeHoursMinutes(totalSeconds: number) {
     hNum: hours,
     mNum: minutes,
   };
+}
+
+/**
+ * Animated number component for smooth dopamine count-up on load.
+ */
+function AnimatedDigit({
+  target,
+  durationMs = 800,
+  delayMs = 0,
+}: {
+  target: number;
+  durationMs?: number;
+  delayMs?: number;
+}) {
+  const [current, setCurrent] = useState(0);
+
+  useEffect(() => {
+    let startTimestamp: number | null = null;
+    let animationFrameId: number;
+
+    const timeoutId = setTimeout(() => {
+      const step = (timestamp: number) => {
+        if (!startTimestamp) startTimestamp = timestamp;
+        const progress = Math.min((timestamp - startTimestamp) / durationMs, 1);
+        const easeOut = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+        const val = Math.floor(easeOut * target);
+        setCurrent(val);
+
+        if (progress < 1) {
+          animationFrameId = requestAnimationFrame(step);
+        } else {
+          setCurrent(target);
+        }
+      };
+
+      animationFrameId = requestAnimationFrame(step);
+    }, delayMs);
+
+    return () => {
+      clearTimeout(timeoutId);
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    };
+  }, [target, durationMs, delayMs]);
+
+  return <>{String(current).padStart(2, '0')}</>;
 }
 
 /**
@@ -199,6 +245,7 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isFetching, setIsFetching] = useState<boolean>(false);
+  const [animationKey, setAnimationKey] = useState<number>(0);
   const [hasSeenRecap, setHasSeenRecap] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -217,6 +264,7 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
   sessionsRef.current = sessions;
 
   const inFlightRef = useRef(false);
+  const hasPlayedRevealRef = useRef(false);
 
   // Compute seasonal tracker line and subtext dynamically based on timeframe
   const { trackerText, subtext, emptyText } = useMemo(() => {
@@ -413,6 +461,7 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
 
       setLeaderboard(entries);
       saveRankSnapshot(entries, timeframe);
+      setAnimationKey((prev) => prev + 1);
     } finally {
       setIsLoading(false);
       setIsFetching(false);
@@ -435,6 +484,17 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
       }
     }
   }, [sessions.length, isActiveTab, fetchLeaderboard]);
+
+  // Subtle rising chime sound on podium reveal
+  useEffect(() => {
+    if (!isLoading && leaderboard.length > 0 && !hasPlayedRevealRef.current) {
+      hasPlayedRevealRef.current = true;
+      const soundTimer = setTimeout(() => {
+        soundFx.playPodiumReveal();
+      }, 500);
+      return () => clearTimeout(soundTimer);
+    }
+  }, [isLoading, leaderboard.length]);
 
   // Keep the list limited to the top 50
   const contenders = useMemo(() => {
@@ -582,20 +642,13 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
             {/* ══════════════════════════════════════════════════════════ */}
             {/* HEADER & PERIOD SELECTOR                                   */}
             {/* ══════════════════════════════════════════════════════════ */}
-            <div className="w-full flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-2">
-              <div className="flex flex-col gap-1">
-                <span className="text-xs font-mono text-amber-400 uppercase tracking-wider font-bold">
+            <div className="w-full flex flex-wrap items-center justify-between gap-3 pb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-mono text-zinc-400 uppercase tracking-wider font-bold">
                   {trackerText}
                 </span>
-                <h1 className="text-2xl sm:text-3xl font-black font-hud tracking-widest text-white uppercase">
-                  LEADERBOARD
-                </h1>
-                <p className="text-xs text-zinc-400 font-mono">
-                  {subtext}
-                </p>
               </div>
-
-              <div className="inline-flex items-center p-1 bg-white/[0.04] border border-white/[0.08] rounded-xl gap-1 self-start sm:self-auto">
+              <div className="inline-flex items-center p-1 bg-white/[0.04] border border-white/[0.08] rounded-xl gap-1">
                 {(
                   [
                     { label: 'TODAY', value: 'today' },
@@ -662,6 +715,8 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                   try {
                     const actualRank = idx + 1;
                     const isCurrentUser = checkIsCurrentUser(row);
+                    
+                    if (idx < 2) console.log('Leaderboard row data:', row);
 
                     const hoursStudied = (Number(row.total_seconds) || 0) / 3600;
                     let calculatedTierName = "BRONZE I";
@@ -692,8 +747,8 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                       ref={isCurrentUser ? myRowRef : null}
                       className="flex flex-col transition-all duration-500 rounded-lg"
                       style={{
-                        animation: 'listRowFadeSlide 0.3s ease-out both',
-                        animationDelay: `${Math.min(idx * 20, 200)}ms`,
+                        animation: 'listRowFadeSlide 0.4s ease-out both',
+                        animationDelay: `${550 + idx * 40}ms`,
                       }}
                     >
                       {/* Mobile Row (< sm) */}
@@ -709,7 +764,12 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                       >
                         <div className="flex items-center gap-3 min-w-0 flex-1">
                           {/* Rank Column */}
-                          <span className="w-9 font-mono text-xs text-zinc-500 text-center shrink-0">
+                          <span className={`w-9 font-mono text-xs font-bold text-center shrink-0 ${
+                            actualRank === 1 ? 'text-amber-400' :
+                            actualRank === 2 ? 'text-slate-300' :
+                            actualRank === 3 ? 'text-amber-700' :
+                            'text-zinc-400'
+                          }`}>
                             #{actualRank < 10 ? `0${actualRank}` : actualRank}
                           </span>
 
@@ -733,14 +793,7 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                           <div className="min-w-0 flex-1">
                             <div className="text-sm font-semibold text-white truncate flex items-center gap-1.5">
                               <span className="truncate">{displayName}</span>
-                              {actualRank === 1 && (
-                                <Crown className="w-3.5 h-3.5 text-amber-400 shrink-0 inline-block fill-amber-400/20" />
-                              )}
-                              {isCurrentUser && (
-                                <span className="text-[9px] font-mono font-bold text-amber-400 uppercase px-1.5 py-0.2 rounded bg-amber-500/20 border border-amber-500/40 shadow-[0_0_8px_rgba(245,158,11,0.25)] flex-shrink-0">
-                                  (you)
-                                </span>
-                              )}
+                              {actualRank === 1 && <span className="shrink-0">👑</span>}
                             </div>
                             <div className="text-[11px] text-zinc-500 font-mono truncate">
                               @{handle} · {displayTierTitle}
@@ -803,9 +856,7 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                                 {displayName}
                               </span>
                               {actualRank === 1 && (
-                                <span className="shrink-0 inline-flex items-center text-amber-400" title="Rank 1">
-                                  <Crown className="w-3.5 h-3.5 fill-amber-400/20" />
-                                </span>
+                                <span className="text-[14px]" title="Champion">👑</span>
                               )}
                               {isCurrentUser && (
                                 <span className="text-[9px] font-mono font-bold text-amber-400 uppercase px-1.5 py-0.2 rounded bg-amber-500/20 border border-amber-500/40 shadow-[0_0_8px_rgba(245,158,11,0.25)] flex-shrink-0">
