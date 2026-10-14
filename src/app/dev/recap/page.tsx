@@ -277,6 +277,23 @@ export default function DevRecapPreviewPage() {
   const [rpcResult, setRpcResult] = useState<any>(null);
   const [isResettingBanner, setIsResettingBanner] = useState(false);
 
+  // Target season for override
+  const computedSeasonKey = useMemo(() => {
+    try {
+      return getPreviousSeasonId(new Date(overrideDate));
+    } catch {
+      return '2026-09';
+    }
+  }, [overrideDate]);
+
+  const computedBoundaries = useMemo(() => {
+    try {
+      return getSeasonUtcBoundaries(computedSeasonKey);
+    } catch {
+      return { start: new Date(), end: new Date() };
+    }
+  }, [computedSeasonKey]);
+
   useEffect(() => {
     setIsClient(true);
   }, []);
@@ -437,22 +454,6 @@ export default function DevRecapPreviewPage() {
     setShowZeroFallback(false);
   };
 
-  // Target season for override
-  const computedSeasonKey = useMemo(() => {
-    try {
-      return getPreviousSeasonId(new Date(overrideDate));
-    } catch {
-      return '2026-09';
-    }
-  }, [overrideDate]);
-
-  const computedBoundaries = useMemo(() => {
-    try {
-      return getSeasonUtcBoundaries(computedSeasonKey);
-    } catch {
-      return { start: new Date(), end: new Date() };
-    }
-  }, [computedSeasonKey]);
 
   return (
     <div className="min-h-screen bg-[#07090e] text-slate-100 font-sans p-4 sm:p-8 pb-36 relative select-none">
