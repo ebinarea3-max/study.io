@@ -9,15 +9,20 @@ import { useAuth } from '../../context/AuthContext';
 interface EmptyRecapFallbackProps {
   seasonDisplayName?: string;
   seasonKey?: string;
+  isDevPreview?: boolean;
+  onClose?: () => void;
 }
 
 export default function EmptyRecapFallback({
   seasonDisplayName = 'Previous Season',
   seasonKey,
+  isDevPreview = false,
+  onClose,
 }: EmptyRecapFallbackProps) {
   const { user } = useAuth();
 
   useEffect(() => {
+    if (isDevPreview) return; // Do NOT write to Supabase or localStorage in dev preview
     try {
       const targetSeason = seasonKey || new Date().toISOString().substring(0, 7);
       localStorage.setItem(`has_seen_recap_${targetSeason}`, 'true');
@@ -36,7 +41,7 @@ export default function EmptyRecapFallback({
         }
       }
     } catch {}
-  }, [seasonKey, user?.id]);
+  }, [seasonKey, user?.id, isDevPreview]);
 
   return (
     <div className="w-full text-slate-100 font-sans bg-[#07090e] min-h-screen p-8 flex flex-col justify-center items-center relative overflow-hidden select-none">
@@ -72,12 +77,22 @@ export default function EmptyRecapFallback({
             <ArrowRight className="w-4 h-4" />
           </Link>
 
-          <Link
-            href="/"
-            className="inline-block text-xs font-mono text-zinc-400 hover:text-white transition-colors"
-          >
-            ← Return to Dashboard
-          </Link>
+          {onClose ? (
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-block text-xs font-mono text-amber-400 hover:text-amber-300 transition-colors cursor-pointer"
+            >
+              ← Return to Dev Preview Controls
+            </button>
+          ) : (
+            <Link
+              href="/"
+              className="inline-block text-xs font-mono text-zinc-400 hover:text-white transition-colors"
+            >
+              ← Return to Dashboard
+            </Link>
+          )}
         </div>
       </div>
     </div>

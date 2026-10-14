@@ -13,7 +13,9 @@ import {
 
 export const dynamic = 'force-dynamic';
 
-export default async function RecapPage() {
+export default async function RecapPage(props: {
+  searchParams?: Promise<{ season?: string; devDate?: string }>;
+}) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -22,8 +24,17 @@ export default async function RecapPage() {
   }
 
   // 1. Resolve PREVIOUS completed season and strict UTC boundaries
-  const now = new Date();
-  const previousSeasonKey = getPreviousSeasonId(now);
+  const searchParams = props.searchParams ? await props.searchParams : undefined;
+  let previousSeasonKey: string;
+  if (process.env.NODE_ENV !== 'production' && searchParams?.season) {
+    previousSeasonKey = searchParams.season;
+  } else if (process.env.NODE_ENV !== 'production' && searchParams?.devDate) {
+    previousSeasonKey = getPreviousSeasonId(new Date(searchParams.devDate));
+  } else {
+    const now = new Date();
+    previousSeasonKey = getPreviousSeasonId(now);
+  }
+
   const seasonDisplayName = getSeasonDisplayName(previousSeasonKey);
   const { start: seasonStart, end: seasonEnd } = getSeasonUtcBoundaries(previousSeasonKey);
   const startIso = seasonStart.toISOString();

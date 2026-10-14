@@ -32,6 +32,13 @@ export interface RecapPresentationProps {
   currentLiveRP: number;
   isFirstSeason?: boolean;
   username?: string;
+  // Dev preview enhancements
+  isDevPreview?: boolean;
+  onClose?: () => void;
+  forcedSlide?: number;
+  onSlideChange?: (currentSlide: number, totalSlides: number, slideIds: string[]) => void;
+  speedMultiplier?: number;
+  soundEnabled?: boolean;
 }
 
 // Parse Rank Title (e.g. "BRONZE II" -> { tier: "Bronze", division: "II" })
@@ -77,7 +84,7 @@ function getTierAccent(tier: RankTierName): string {
 /**
  * Animated count-up hook with ease-out cubic interpolation
  */
-function useCountUp(target: number, durationMs: number = 1200, enabled: boolean = true) {
+function useCountUp(target: number, durationMs: number = 1200, enabled: boolean = true, speedMultiplier: number = 1) {
   const [value, setValue] = useState(enabled ? 0 : target);
 
   useEffect(() => {
@@ -87,10 +94,11 @@ function useCountUp(target: number, durationMs: number = 1200, enabled: boolean 
     }
     let startTimestamp: number | null = null;
     let frameId: number;
+    const effectiveDuration = durationMs / Math.max(0.1, speedMultiplier);
 
     const step = (timestamp: number) => {
       if (!startTimestamp) startTimestamp = timestamp;
-      const progress = Math.min((timestamp - startTimestamp) / durationMs, 1);
+      const progress = Math.min((timestamp - startTimestamp) / effectiveDuration, 1);
       const easeOut = 1 - Math.pow(1 - progress, 3);
       setValue(Math.round(easeOut * target));
 
@@ -103,7 +111,7 @@ function useCountUp(target: number, durationMs: number = 1200, enabled: boolean 
 
     frameId = requestAnimationFrame(step);
     return () => cancelAnimationFrame(frameId);
-  }, [target, durationMs, enabled]);
+  }, [target, durationMs, enabled, speedMultiplier]);
 
   return value;
 }
@@ -127,14 +135,34 @@ export default function RecapPresentation({
   currentLiveRP,
   isFirstSeason = false,
   username = 'Scholar',
+  isDevPreview = false,
+  onClose,
+  forcedSlide,
+  onSlideChange,
+  speedMultiplier = 1,
+  soundEnabled,
 }: RecapPresentationProps) {
-  const [currentSlide, setCurrentSlide] = useState(0);
+  const [currentSlide, setCurrentSlide] = useState(forcedSlide !== undefined ? forcedSlide : 0);
   const [isHolding, setIsHolding] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
+  const [isMuted, setIsMuted] = useState(soundEnabled !== undefined ? !soundEnabled : false);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const [rankPhase, setRankPhase] = useState<'initial' | 'ended' | 'resetting' | 'impact' | 'settled'>('initial');
   const [screenShake, setScreenShake] = useState(false);
   const [showRadialFlash, setShowRadialFlash] = useState(false);
+
+  // Sync soundEnabled if controlled
+  useEffect(() => {
+    if (soundEnabled !== undefined) {
+      setIsMuted(!soundEnabled);
+    }
+  }, [soundEnabled]);
+
+  // Sync forcedSlide if controlled
+  useEffect(() => {
+    if (typeof forcedSlide === 'number' && forcedSlide >= 0) {
+      setCurrentSlide(forcedSlide);
+    }
+  }, [forcedSlide]);
 
   // Check prefers-reduced-motion
   useEffect(() => {
@@ -148,13 +176,14 @@ export default function RecapPresentation({
 
   // Mute preference persistence
   useEffect(() => {
+    if (soundEnabled !== undefined) return;
     try {
       const saved = localStorage.getItem('studypulse_recap_muted');
       if (saved !== null) {
         setIsMuted(saved === 'true');
       }
     } catch {}
-  }, []);
+  }, [soundEnabled]);
 
   const toggleMute = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -169,12 +198,13 @@ export default function RecapPresentation({
 
   // Mark recap as seen in localStorage and notify profiles
   useEffect(() => {
+    if (isDevPreview) return; // Do NOT write to localStorage in dev preview!
     try {
       localStorage.setItem(`has_seen_recap_${seasonKey}`, 'true');
       const safeKey = seasonKey.replace('-', '_');
       localStorage.setItem(`season_settlement_acknowledged_${safeKey}`, 'true');
     } catch {}
-  }, [seasonKey]);
+  }, [seasonKey, isDevPreview]);
 
   // Derived rank objects
   const prevParsed = useMemo(() => parseRank(previousRank), [previousRank]);
@@ -211,6 +241,11 @@ export default function RecapPresentation({
   const isRankSlide = activeSlideId === 'rank';
   const isCtaSlide = activeSlideId === 'cta';
 
+  // Report slide changes to external listener (e.g. dev preview controls)
+  useEffect(() => {
+    onSlideChange?.(currentSlide, totalSlides, slides);
+  }, [currentSlide, totalSlides, slides, onSlideChange]);
+
   // Sound trigger helper
   const triggerSlideSwell = useCallback(() => {
     if (!isMuted) {
@@ -241,7 +276,7 @@ export default function RecapPresentation({
     }
     setSlideProgress(0);
     const intervalTime = 50;
-    const duration = 5000;
+    const duration = 5000 / Math.max(0.1, speedMultiplier);
     const increment = (intervalTime / duration) * 100;
 
     const interval = setInterval(() => {
@@ -256,7 +291,7 @@ export default function RecapPresentation({
     }, intervalTime);
 
     return () => clearInterval(interval);
-  }, [currentSlide, isRankSlide, isCtaSlide, isHolding, handleNext]);
+  }, [currentSlide, isRankSlide, isCtaSlide, isHolding, handleNext, speedMultiplier]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -282,12 +317,13 @@ export default function RecapPresentation({
       return;
     }
 
+    const speed = Math.max(0.1, speedMultiplier);
     setRankPhase('ended');
 
     // 1. Line draws and RP count down begins
     const timerReset = setTimeout(() => {
       setRankPhase('resetting');
-    }, 1400);
+    }, 1400 / speed);
 
     // 2. Impact Hit: Current rank crest slams in with tween punch
     const timerImpact = setTimeout(() => {
@@ -297,21 +333,21 @@ export default function RecapPresentation({
       if (!isMuted) {
         soundFx.playImpactThud();
       }
-      setTimeout(() => setShowRadialFlash(false), 500);
-      setTimeout(() => setScreenShake(false), 450);
-    }, 2800);
+      setTimeout(() => setShowRadialFlash(false), 500 / speed);
+      setTimeout(() => setScreenShake(false), 450 / speed);
+    }, 2800 / speed);
 
     // 3. Settle: Show motivational gap text
     const timerSettled = setTimeout(() => {
       setRankPhase('settled');
-    }, 3600);
+    }, 3600 / speed);
 
     return () => {
       clearTimeout(timerReset);
       clearTimeout(timerImpact);
       clearTimeout(timerSettled);
     };
-  }, [isRankSlide, isMuted]);
+  }, [isRankSlide, isMuted, speedMultiplier]);
 
   // RP tick down counter on rank slide
   const [rpDisplay, setRpDisplay] = useState(previousRP);
@@ -322,7 +358,7 @@ export default function RecapPresentation({
       setRpDisplay(previousRP);
     } else if (rankPhase === 'resetting' || rankPhase === 'impact' || rankPhase === 'settled') {
       let startTimestamp: number | null = null;
-      const duration = 1200;
+      const duration = 1200 / Math.max(0.1, speedMultiplier);
       let frameId: number;
 
       const step = (timestamp: number) => {
@@ -342,11 +378,11 @@ export default function RecapPresentation({
       frameId = requestAnimationFrame(step);
       return () => cancelAnimationFrame(frameId);
     }
-  }, [isRankSlide, rankPhase, previousRP, startingRP, isFirstSeason]);
+  }, [isRankSlide, rankPhase, previousRP, startingRP, isFirstSeason, speedMultiplier]);
 
   // Total Hours calculation
   const totalHoursNum = Math.round((totalSeconds / 3600) * 10) / 10;
-  const animatedHours = useCountUp(Math.floor(totalHoursNum), 1200, activeSlideId === 'hook');
+  const animatedHours = useCountUp(Math.floor(totalHoursNum), 1200, activeSlideId === 'hook', speedMultiplier);
   const animatedHoursDec = Math.round((totalHoursNum - Math.floor(totalHoursNum)) * 10);
 
   // Background radial color computation
@@ -454,14 +490,28 @@ export default function RecapPresentation({
             </button>
 
             {/* Close / Return to Dashboard */}
-            <Link
-              href="/"
-              onClick={(e) => e.stopPropagation()}
-              className="p-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-zinc-300 hover:text-white transition-all cursor-pointer"
-              title="Close Recap"
-            >
-              <X className="w-3.5 h-3.5" />
-            </Link>
+            {onClose ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onClose();
+                }}
+                className="p-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-zinc-300 hover:text-white transition-all cursor-pointer"
+                title="Exit Preview"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            ) : (
+              <Link
+                href="/"
+                onClick={(e) => e.stopPropagation()}
+                className="p-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-zinc-300 hover:text-white transition-all cursor-pointer"
+                title="Close Recap"
+              >
+                <X className="w-3.5 h-3.5" />
+              </Link>
+            )}
           </div>
         </div>
       </header>
@@ -869,13 +919,26 @@ export default function RecapPresentation({
                   <ArrowRight className="w-4 h-4" />
                 </Link>
 
-                <Link
-                  href="/"
-                  onClick={(e) => e.stopPropagation()}
-                  className="w-full sm:w-auto px-6 py-4 bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 rounded-xl text-zinc-300 hover:text-white font-mono text-xs font-semibold tracking-wider transition-all active:scale-95 text-center"
-                >
-                  RETURN TO DASHBOARD
-                </Link>
+                {onClose ? (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onClose();
+                    }}
+                    className="w-full sm:w-auto px-6 py-4 bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 rounded-xl text-amber-300 hover:text-amber-200 font-mono text-xs font-semibold tracking-wider transition-all active:scale-95 text-center cursor-pointer"
+                  >
+                    RETURN TO DEV PREVIEW
+                  </button>
+                ) : (
+                  <Link
+                    href="/"
+                    onClick={(e) => e.stopPropagation()}
+                    className="w-full sm:w-auto px-6 py-4 bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 rounded-xl text-zinc-300 hover:text-white font-mono text-xs font-semibold tracking-wider transition-all active:scale-95 text-center"
+                  >
+                    RETURN TO DASHBOARD
+                  </Link>
+                )}
               </div>
             </motion.div>
           )}
