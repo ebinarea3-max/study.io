@@ -546,12 +546,34 @@ export function calculateSeasonReset(previousRP: number): {
 
 
 /**
- * Get current season ID (e.g. "2026-09")
+ * Get current season ID (e.g. "2026-10")
  */
 export function getCurrentSeasonId(date: Date = new Date()): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
   return `${year}-${month}`;
+}
+
+/**
+ * Get previous completed season ID (e.g. "2026-09" when current is "2026-10")
+ */
+export function getPreviousSeasonId(date: Date = new Date()): string {
+  const prevMonthDate = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() - 1, 1));
+  const year = prevMonthDate.getUTCFullYear();
+  const month = String(prevMonthDate.getUTCMonth() + 1).padStart(2, '0');
+  return `${year}-${month}`;
+}
+
+/**
+ * Compute strict UTC start and end timestamps for a season key (e.g. "2026-09")
+ */
+export function getSeasonUtcBoundaries(seasonKey: string): { start: Date; end: Date } {
+  const parts = seasonKey.split('-');
+  const year = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10);
+  const start = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0));
+  const end = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0));
+  return { start, end };
 }
 
 /**
@@ -567,6 +589,24 @@ export function getSeasonDisplayName(seasonId: string): string {
   const mIndex = parseInt(month, 10) - 1;
   const monthName = monthNames[mIndex] || month;
   return `Season ${monthName} ${year}`;
+}
+
+/**
+ * Calculates RP needed to reach the next tier/division
+ */
+export function getNextTierGapInfo(currentRP: number): { nextTierTitle: string; rpNeeded: number } | null {
+  const safeRP = Math.max(0, Math.round(currentRP || 0));
+  const currentTier = getRankTier(safeRP);
+  const currentIndex = RANK_TIERS.findIndex(t => t.fullTitle.toUpperCase() === currentTier.fullTitle.toUpperCase());
+  if (currentIndex === -1 || currentIndex >= RANK_TIERS.length - 1) {
+    return null;
+  }
+  const nextTier = RANK_TIERS[currentIndex + 1];
+  const rpNeeded = Math.max(1, nextTier.minRP - safeRP);
+  return {
+    nextTierTitle: nextTier.fullTitle,
+    rpNeeded,
+  };
 }
 
 /**

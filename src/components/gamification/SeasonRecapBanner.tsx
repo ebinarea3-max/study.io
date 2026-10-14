@@ -1,9 +1,12 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
-import { Trophy, ArrowRight, Sparkles, X } from 'lucide-react';
+import React, { useMemo, useState, useEffect } from 'react';
+import { Trophy, ArrowRight, Sparkles, X, Play } from 'lucide-react';
 import { SeasonRecapData } from '../../types';
 import confetti from 'canvas-confetti';
+import { useRouter } from 'next/navigation';
+import { getRankBadgePath } from '../../lib/rankedSystem';
+import { soundFx } from '../../lib/audio';
 
 interface SeasonRecapBannerProps {
   recap: SeasonRecapData | null;
@@ -11,7 +14,23 @@ interface SeasonRecapBannerProps {
 }
 
 export function SeasonRecapBanner({ recap, onDismiss }: SeasonRecapBannerProps) {
+  const router = useRouter();
   const [isExiting, setIsExiting] = useState(false);
+
+  // Requirement 1.g: Prefetch /recap & preload rank crest badges on banner mount
+  useEffect(() => {
+    try {
+      router.prefetch('/recap');
+      if (recap?.previousTierTitle) {
+        const img1 = new Image();
+        img1.src = getRankBadgePath(recap.previousTierTitle);
+      }
+      if (recap?.newTierTitle) {
+        const img2 = new Image();
+        img2.src = getRankBadgePath(recap.newTierTitle);
+      }
+    } catch {}
+  }, [recap, router]);
 
   if (!recap) return null;
 
@@ -49,6 +68,14 @@ export function SeasonRecapBanner({ recap, onDismiss }: SeasonRecapBannerProps) 
     handleDismiss();
   };
 
+  const handleWatchRecap = () => {
+    // Unlock AudioContext on user gesture so slide sounds are not blocked
+    try {
+      soundFx.resumeContext();
+    } catch {}
+    router.push('/recap');
+  };
+
   return (
     <div className={`relative w-full max-w-7xl mx-auto px-4 sm:px-6 pt-4 z-20 duration-500 ${isExiting ? 'animate-out slide-out-to-top-4 fade-out fill-mode-forwards' : 'animate-in slide-in-from-top-4'}`}>
       <div className="relative overflow-hidden bg-[#0c0d12]/90 border border-amber-500/20 rounded-2xl p-3.5 sm:p-4 backdrop-blur-md shadow-2xl shadow-amber-500/10">
@@ -78,31 +105,32 @@ export function SeasonRecapBanner({ recap, onDismiss }: SeasonRecapBannerProps) 
               </h4>
 
               <p className="text-xs text-slate-400 mt-0.5">
-                {previousMonthName} season concluded. Monthly soft reset applied. Your starting tier for {currentMonthName} is <span className="text-emerald-300 font-extrabold">{recap.newTierTitle}</span>. Ready for the new climb?
+                {previousMonthName} season concluded. Monthly soft reset applied. Your starting tier for {currentMonthName} is <span className="text-emerald-300 font-extrabold">{recap.newTierTitle}</span>.
               </p>
             </div>
           </div>
 
-          {/* Right: Placement Badge & Claim Action */}
-          <div className="flex items-center gap-3 self-end md:self-center w-full md:w-auto justify-end">
-            <div className="px-3 py-1.5 rounded-xl bg-slate-950/80 border border-white/10 text-right hidden sm:block">
-              <div className="text-[9px] uppercase tracking-wider text-slate-400 font-bold">New Starting Tier</div>
-              <div className="text-xs font-black text-emerald-400 font-mono">{recap.newTierTitle} · {recap.newRP} RP</div>
-            </div>
+          {/* Right: Actions */}
+          <div className="flex items-center gap-2.5 self-end md:self-center w-full md:w-auto justify-end flex-wrap">
+            <button
+              onClick={handleWatchRecap}
+              className="bg-gradient-to-r from-amber-500 to-amber-400 hover:brightness-110 text-black font-bold text-xs py-2.5 px-4 rounded-xl shadow-lg shadow-amber-500/20 uppercase tracking-wider transition-all active:scale-95 cursor-pointer flex items-center gap-2 whitespace-nowrap"
+            >
+              <Play className="w-3.5 h-3.5 fill-black shrink-0" />
+              <span>WATCH SEASONAL RECAP</span>
+            </button>
 
             <button
               onClick={handleClaim}
-              className="bg-gradient-to-r from-amber-500 to-orange-600 hover:brightness-110 text-black font-semibold text-xs py-2 px-4 rounded-xl shadow-md uppercase tracking-wider transition-all active:scale-95 cursor-pointer flex items-center gap-2 whitespace-nowrap"
+              className="bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-zinc-300 hover:text-white font-semibold text-xs py-2.5 px-3 rounded-xl transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 whitespace-nowrap"
             >
-              <Sparkles className="w-3.5 h-3.5 shrink-0" />
-              <span>BEGIN NEW CLIMB</span>
-              <ArrowRight className="w-3.5 h-3.5 shrink-0" />
+              <span>DISMISS</span>
             </button>
 
             <button
               onClick={handleDismiss}
               className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
-              title="Dismiss recap"
+              title="Dismiss banner"
             >
               <X className="w-4 h-4" />
             </button>

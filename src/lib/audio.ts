@@ -655,6 +655,93 @@ class AudioEngine {
     }
   }
 
+  // Soft low synth swell for recap slide transitions (no bright chimes)
+  public playSlideSwell() {
+    try {
+      const ctx = this.getContext();
+      if (!ctx) return;
+      const now = ctx.currentTime;
+
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(110, now);
+      osc.frequency.exponentialRampToValueAtTime(155, now + 0.28);
+
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(320, now);
+      filter.frequency.linearRampToValueAtTime(180, now + 0.35);
+
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.09, now + 0.06);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.36);
+    } catch {
+      // ignore
+    }
+  }
+
+  // Heavy sub-bass thud for rank reveal impact hit
+  public playImpactThud() {
+    try {
+      const ctx = this.getContext();
+      if (!ctx) return;
+      const now = ctx.currentTime;
+
+      // Sub-bass sweep
+      const subOsc = ctx.createOscillator();
+      const subGain = ctx.createGain();
+      subOsc.type = 'sine';
+      subOsc.frequency.setValueAtTime(95, now);
+      subOsc.frequency.exponentialRampToValueAtTime(36, now + 0.35);
+
+      subGain.gain.setValueAtTime(0, now);
+      subGain.gain.linearRampToValueAtTime(0.32, now + 0.02);
+      subGain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+
+      subOsc.connect(subGain);
+      subGain.connect(ctx.destination);
+      subOsc.start(now);
+      subOsc.stop(now + 0.46);
+
+      // Low-frequency tactile impact transient
+      const bufferLength = Math.max(1, Math.floor(ctx.sampleRate * 0.07));
+      const noiseBuffer = ctx.createBuffer(1, bufferLength, ctx.sampleRate);
+      const output = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < bufferLength; i++) {
+        output[i] = (Math.random() * 2 - 1) * 0.5;
+      }
+      const noiseSource = ctx.createBufferSource();
+      noiseSource.buffer = noiseBuffer;
+
+      const noiseFilter = ctx.createBiquadFilter();
+      noiseFilter.type = 'lowpass';
+      noiseFilter.frequency.setValueAtTime(220, now);
+      noiseFilter.frequency.exponentialRampToValueAtTime(60, now + 0.06);
+
+      const noiseGain = ctx.createGain();
+      noiseGain.gain.setValueAtTime(0.16, now);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
+
+      noiseSource.connect(noiseFilter);
+      noiseFilter.connect(noiseGain);
+      noiseGain.connect(ctx.destination);
+
+      noiseSource.start(now);
+      noiseSource.stop(now + 0.08);
+    } catch {
+      // ignore
+    }
+  }
+
   public stopAmbient() {
     if (this.ambientGain && this.ctx) {
       try {

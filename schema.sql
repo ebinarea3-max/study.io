@@ -647,6 +647,186 @@ begin
 end;
 $$;
 
+create unique index if not exists unique_user_subject_name on public.subjects (user_id, lower(trim(name)));
+
+-- ====================================================================
+-- 11. Seasonal Recap & Historical Performance Optimization
+-- ====================================================================
+
+-- 11.1 Fast composite index for user season date-range scans
+create index if not exists idx_study_sessions_user_started 
+  on public.study_sessions (user_id, started_at);
+
+-- 11.2 Season History Table (Records soft reset transitions)
+create table if not exists public.season_history (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users(id) on delete cascade not null,
+  season_id text not null,
+  previous_rank text not null,
+  new_rank text not null,
+  previous_rp integer default 0,
+  new_rp integer default 0,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.season_history enable row level security;
+
+drop policy if exists "Users can read own season history" on public.season_history;
+create policy "Users can read own season history"
+  on public.season_history for select using (auth.uid() = user_id);
+
+drop policy if exists "Users can insert own season history" on public.season_history;
+create policy "Users can insert own season history"
+  on public.season_history for insert with check (auth.uid() = user_id);
+
+-- 11.3 Cached Season Recaps Table (Permanent single primary-key lookup)
+create table if not exists public.season_recaps (
+  user_id uuid references auth.users(id) on delete cascade not null,
+  season_key text not null,
+  data jsonb not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  primary key (user_id, season_key)
+);
+
+alter table public.season_recaps enable row level security;
+
+drop policy if exists "Users can read own season recaps" on public.season_recaps;
+create policy "Users can read own season recaps"
+  on public.season_recaps for select using (auth.uid() = user_id);
+
+drop policy if exists "Users can insert own season recaps" on public.season_recaps;
+create policy "Users can insert own season recaps"
+  on public.season_recaps for insert with check (auth.uid() = user_id);
+
+drop policy if exists "Users can update own season recaps" on public.season_recaps;
+create policy "Users can update own season recaps"
+  on public.season_recaps for update using (auth.uid() = user_id);
+
+-- 11.4 RPC: get_season_recap (High-performance server-side aggregation)
+create or replace function public.get_season_recap(
+  p_user_id uuid,
+  p_season_start timestamptz,
+  p_season_end timestamptz
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_total_seconds bigint := 0;
+  v_active_days int := 0;
+  v_top_subject record;
+  v_subject_breakdown jsonb := '[]'::jsonb;
+  v_best_weekday text := null;
+  v_peak_hour int := 0;
+  v_completed_tasks int := 0;
+  v_result jsonb;
+begin
+  -- 1. Total seconds & active days in range
+  select 
+    coalesce(sum(duration_seconds), 0),
+    count(distinct (started_at at time zone 'UTC')::date)
+  into v_total_seconds, v_active_days
+  from public.study_sessions
+  where user_id = p_user_id
+    and started_at >= p_season_start
+    and started_at < p_season_end;
+
+  -- 2. Top subject & breakdown
+  with subject_stats as (
+    select 
+      s.subject_id,
+      coalesce(sub.name, 'Unassigned') as subject_name,
+      sum(s.duration_seconds) as total_sec
+    from public.study_sessions s
+    left join public.subjects sub on s.subject_id = sub.id
+    where s.user_id = p_user_id
+      and s.started_at >= p_season_start
+      and s.started_at < p_season_end
+    group by s.subject_id, sub.name
+    order by total_sec desc
+  )
+  select 
+    jsonb_agg(
+      jsonb_build_object(
+        'name', subject_name,
+        'seconds', total_sec
+      )
+    )
+  into v_subject_breakdown
+  from (
+    select subject_name, total_sec from subject_stats limit 4
+  ) sub_top;
+
+  select subject_name, total_sec into v_top_subject
+  from (
+    select 
+      coalesce(sub.name, 'Unassigned') as subject_name,
+      sum(s.duration_seconds) as total_sec
+    from public.study_sessions s
+    left join public.subjects sub on s.subject_id = sub.id
+    where s.user_id = p_user_id
+      and s.started_at >= p_season_start
+      and s.started_at < p_season_end
+    group by sub.name
+    order by total_sec desc
+    limit 1
+  ) top_sub;
+
+  -- 3. Best weekday (day with highest total seconds)
+  with day_stats as (
+    select 
+      to_char(started_at at time zone 'UTC', 'Day') as day_name,
+      sum(duration_seconds) as total_sec
+    from public.study_sessions
+    where user_id = p_user_id
+      and started_at >= p_season_start
+      and started_at < p_season_end
+    group by to_char(started_at at time zone 'UTC', 'Day')
+    order by total_sec desc
+    limit 1
+  )
+  select trim(day_name) into v_best_weekday from day_stats;
+
+  -- 4. Peak hour (hour 0-23 with highest session activity)
+  with hour_stats as (
+    select 
+      extract(hour from started_at at time zone 'UTC')::int as h,
+      count(*) as session_count
+    from public.study_sessions
+    where user_id = p_user_id
+      and started_at >= p_season_start
+      and started_at < p_season_end
+    group by extract(hour from started_at at time zone 'UTC')
+    order by session_count desc
+    limit 1
+  )
+  select h into v_peak_hour from hour_stats;
+
+  -- 5. Completed tasks in month
+  select count(*)::int into v_completed_tasks
+  from public.todos
+  where user_id = p_user_id
+    and is_completed = true
+    and created_at >= p_season_start
+    and created_at < p_season_end;
+
+  v_result := jsonb_build_object(
+    'total_seconds', v_total_seconds,
+    'active_days', v_active_days,
+    'top_subject', coalesce(v_top_subject.subject_name, 'General Study'),
+    'top_subject_seconds', coalesce(v_top_subject.total_sec, 0),
+    'subject_breakdown', coalesce(v_subject_breakdown, '[]'::jsonb),
+    'best_weekday', coalesce(v_best_weekday, 'Weekday'),
+    'peak_hour', coalesce(v_peak_hour, 14),
+    'completed_tasks', v_completed_tasks
+  );
+
+  return v_result;
+end;
+$$;
+
 
 C R E A T E   U N I Q U E   I N D E X   I F   N O T   E X I S T S   u n i q u e _ u s e r _ s u b j e c t _ n a m e   O N   p u b l i c . s u b j e c t s   ( u s e r _ i d ,   L O W E R ( T R I M ( n a m e ) ) ) ;  
  

@@ -576,6 +576,11 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
           </p>
           <Link
             href="/recap"
+            onClick={() => {
+              try {
+                soundFx.resumeContext();
+              } catch {}
+            }}
             className="inline-block w-full py-4 bg-amber-500 hover:bg-amber-400 rounded-xl text-black font-hud font-bold tracking-widest transition-all shadow-lg shadow-amber-500/20 active:scale-95"
           >
             WATCH SEASON RECAP TO UNLOCK

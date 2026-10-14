@@ -59,7 +59,7 @@ interface StudyContextType {
   dismissRankSettlement: () => void;
   seasonRecap: SeasonRecapData | null;
   dismissSeasonRecap: () => void;
-  simulateSeasonReset: () => void;
+  simulateSeasonReset: (scenario?: 'returning' | 'first' | 'zero') => void;
   seasonResetAlert: SeasonResetData | null;
   dismissSeasonResetAlert: () => void;
   simulateSeasonResetModal: (mockData?: Partial<SeasonResetData>) => void;
@@ -555,27 +555,77 @@ export function StudyProvider({ children }: { children: ReactNode }) {
   }, [seasonRecap, user?.id, updateProfile]);
 
   // Developer / Test simulation of monthly season soft-reset
-  const simulateSeasonReset = useCallback(() => {
+  const simulateSeasonReset = useCallback((scenario: 'returning' | 'first' | 'zero' = 'returning') => {
     const currentMonth = getCurrentSeasonId();
-    const previousRP = user?.seasonRp ?? user?.rp ?? 1450; // Demo value or existing
-    const resetResult = calculateSeasonReset(previousRP);
+    const prevMonth = '2026-09';
+
+    if (scenario === 'zero') {
+      const emptyRecapPayload = {
+        seasonKey: prevMonth,
+        seasonDisplayName: 'Season September 2026',
+        totalSeconds: 0,
+        activeDays: 0,
+        topSubject: 'General Study',
+        topSubjectSeconds: 0,
+        subjectBreakdown: [],
+        previousRank: null,
+        previousRP: 0,
+        currentRank: 'BRONZE I',
+        startingRP: 0,
+        currentLiveRP: 0,
+        isFirstSeason: false,
+      };
+      try {
+        localStorage.setItem(`has_seen_recap_${prevMonth}`, 'false');
+        localStorage.setItem('studypulse_season_recap', JSON.stringify(emptyRecapPayload));
+      } catch {}
+      setSeasonRecap(null);
+      return;
+    }
+
+    if (scenario === 'first') {
+      const firstRecap: SeasonRecapData = {
+        previousSeasonId: prevMonth,
+        newSeasonId: currentMonth,
+        previousRP: 0,
+        previousTierTitle: 'UNRANKED',
+        newRP: 0,
+        newTierTitle: 'BRONZE I',
+      };
+      updateProfile({
+        currentSeasonId: currentMonth,
+        seasonRp: 0,
+        rank_title: 'BRONZE I',
+      });
+      setSeasonRecap(firstRecap);
+      try {
+        localStorage.setItem(`has_seen_recap_${prevMonth}`, 'false');
+        localStorage.setItem('studypulse_season_recap', JSON.stringify(firstRecap));
+      } catch {}
+      return;
+    }
+
+    // Default: 'returning' (User who went Silver II -> Bronze I)
+    const previousRP = 1750; // Silver II
     const recap: SeasonRecapData = {
-      previousSeasonId: '2026-08',
+      previousSeasonId: prevMonth,
       newSeasonId: currentMonth,
       previousRP,
-      previousTierTitle: resetResult.previousTier.fullTitle,
-      newRP: resetResult.newRP,
-      newTierTitle: resetResult.newTier.fullTitle,
+      previousTierTitle: 'SILVER II',
+      newRP: 0, // Bronze I
+      newTierTitle: 'BRONZE I',
     };
     updateProfile({
       currentSeasonId: currentMonth,
-      seasonRp: resetResult.newRP,
+      seasonRp: 0,
+      rank_title: 'BRONZE I',
     });
     setSeasonRecap(recap);
     try {
+      localStorage.setItem(`has_seen_recap_${prevMonth}`, 'false');
       localStorage.setItem('studypulse_season_recap', JSON.stringify(recap));
     } catch {}
-  }, [user?.seasonRp, updateProfile]);
+  }, [updateProfile]);
 
   const [seasonResetAlert, setSeasonResetAlert] = useState<SeasonResetData | null>(null);
 
