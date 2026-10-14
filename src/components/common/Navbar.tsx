@@ -588,7 +588,7 @@ export function Navbar({
     </header>
 
     {/* Mobile Floating Dock Navigation: Full-width Pill with Sliding Tier Indicator */}
-    <div className="fixed bottom-2 sm:bottom-3 left-0 right-0 z-50 md:hidden flex justify-center px-3 pb-[env(safe-area-inset-bottom,8px)] pointer-events-none">
+    <div className="fixed bottom-5 sm:bottom-6 left-0 right-0 z-50 md:hidden flex justify-center px-3 pb-[env(safe-area-inset-bottom,0px)] pointer-events-none">
       <nav
         aria-label="Mobile Floating Dock Navigation"
         className="w-full max-w-md bg-[#0d0f12]/92 backdrop-blur-xl border border-white/10 rounded-full p-1 shadow-[0_8px_32px_rgba(0,0,0,0.8)] transition-all pointer-events-auto"
