@@ -745,7 +745,6 @@ CREATE POLICY "Hosts can update their own study rooms"
         } else {
           fetchRoomMembers();
           fetchMessages();
-          toast(`${bannedName} was banned from the room`, { icon: '🛡️' });
         }
       })
       .on('broadcast', { event: 'member_unbanned' }, () => {
@@ -971,12 +970,16 @@ CREATE POLICY "Hosts can update their own study rooms"
       const targetUsername = memberToBan.username;
 
       // 1. Server action
+      let serverActionSuccess = false;
       try {
-        await banRoomMemberAction({
+        const res = await banRoomMemberAction({
           roomId,
           targetUserId,
           targetUsername,
         });
+        if (res && res.success) {
+          serverActionSuccess = true;
+        }
       } catch (e) {
         console.warn('Server action ban error:', e);
       }
@@ -996,20 +999,22 @@ CREATE POLICY "Hosts can update their own study rooms"
           .eq('room_id', roomId)
           .eq('user_id', targetUserId);
 
-        const banPayload = JSON.stringify({
-          type: 'ban',
-          userId: targetUserId,
-          username: targetUsername,
-          timestamp: Date.now(),
-        });
-
-        await supabase
-          .from('room_messages')
-          .insert({
-            room_id: roomId,
-            user_id: user.id,
-            content: `[SYSTEM_BAN]:${banPayload}`,
+        if (!serverActionSuccess) {
+          const banPayload = JSON.stringify({
+            type: 'ban',
+            userId: targetUserId,
+            username: targetUsername,
+            timestamp: Date.now(),
           });
+
+          await supabase
+            .from('room_messages')
+            .insert({
+              room_id: roomId,
+              user_id: user.id,
+              content: `[SYSTEM_BAN]:${banPayload}`,
+            });
+        }
 
         const roomChannel = supabase.channel(`room_members_hub_${roomId}`);
         roomChannel.send({
@@ -1043,12 +1048,16 @@ CREATE POLICY "Hosts can update their own study rooms"
 
     try {
       // 1. Server action
+      let serverActionSuccess = false;
       try {
-        await unbanRoomMemberAction({
+        const res = await unbanRoomMemberAction({
           roomId,
           targetUserId,
           targetUsername,
         });
+        if (res && res.success) {
+          serverActionSuccess = true;
+        }
       } catch (e) {
         console.warn('Server action unban error:', e);
       }
@@ -1056,20 +1065,22 @@ CREATE POLICY "Hosts can update their own study rooms"
       // 2. Client-side fallback
       const supabase = getSupabase();
       if (supabase) {
-        const unbanPayload = JSON.stringify({
-          type: 'unban',
-          userId: targetUserId,
-          username: targetUsername,
-          timestamp: Date.now(),
-        });
-
-        await supabase
-          .from('room_messages')
-          .insert({
-            room_id: roomId,
-            user_id: user.id,
-            content: `[SYSTEM_UNBAN]:${unbanPayload}`,
+        if (!serverActionSuccess) {
+          const unbanPayload = JSON.stringify({
+            type: 'unban',
+            userId: targetUserId,
+            username: targetUsername,
+            timestamp: Date.now(),
           });
+
+          await supabase
+            .from('room_messages')
+            .insert({
+              room_id: roomId,
+              user_id: user.id,
+              content: `[SYSTEM_UNBAN]:${unbanPayload}`,
+            });
+        }
 
         const roomChannel = supabase.channel(`room_members_hub_${roomId}`);
         roomChannel.send({
@@ -1704,74 +1715,45 @@ CREATE POLICY "Hosts can update their own study rooms"
             {/* Messages Scroll Area */}
             <div ref={messagesEndRef} className="flex-1 overflow-y-auto min-h-0 px-3 sm:px-6 py-4 scrollbar-thin">
               <div className="max-w-3xl w-full mx-auto space-y-4">
-                {messages.length === 0 ? (
-                  <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-3 my-auto min-h-[220px]">
-                    <div className="w-12 h-12 rounded-2xl bg-white/[0.03] border border-white/10 flex items-center justify-center text-amber-400 shadow-inner">
-                      <MessageCircle className="w-6 h-6 opacity-80" />
-                    </div>
-                    <div className="text-sm font-hud font-bold text-white tracking-wide uppercase">
-                      ROOM COMMS STANDBY
-                    </div>
-                    <p className="text-xs text-neutral-400 max-w-xs font-mono">
-                      No transmissions logged yet. Connect with fellow scholars or broadcast your study target.
-                    </p>
-                  </div>
-                ) : (
-                  (() => {
-                    const items: any[] = [];
-                    let currentGroup: any[] = [];
+                {(() => {
+                  const chatMessages = messages.filter(
+                    (msg) => !msg.content?.startsWith('[SYSTEM_')
+                  );
 
-                    for (const msg of messages) {
-                      if (msg.content?.startsWith('[SYSTEM_BAN]:')) {
-                        if (currentGroup.length > 0) {
-                          items.push({ type: 'group', group: currentGroup });
-                          currentGroup = [];
-                        }
-                        try {
-                          const data = JSON.parse(msg.content.replace('[SYSTEM_BAN]:', ''));
-                          items.push({ type: 'system', id: msg.id, action: 'ban', username: data.username || 'Scholar' });
-                        } catch {}
-                      } else if (msg.content?.startsWith('[SYSTEM_UNBAN]:')) {
-                        if (currentGroup.length > 0) {
-                          items.push({ type: 'group', group: currentGroup });
-                          currentGroup = [];
-                        }
-                        try {
-                          const data = JSON.parse(msg.content.replace('[SYSTEM_UNBAN]:', ''));
-                          items.push({ type: 'system', id: msg.id, action: 'unban', username: data.username || 'Scholar' });
-                        } catch {}
-                      } else {
-                        if (currentGroup.length > 0 && currentGroup[0].user_id === msg.user_id) {
-                          currentGroup.push(msg);
-                        } else {
-                          if (currentGroup.length > 0) {
-                            items.push({ type: 'group', group: currentGroup });
-                          }
-                          currentGroup = [msg];
-                        }
+                  if (chatMessages.length === 0) {
+                    return (
+                      <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-3 my-auto min-h-[220px]">
+                        <div className="w-12 h-12 rounded-2xl bg-white/[0.03] border border-white/10 flex items-center justify-center text-amber-400 shadow-inner">
+                          <MessageCircle className="w-6 h-6 opacity-80" />
+                        </div>
+                        <div className="text-sm font-hud font-bold text-white tracking-wide uppercase">
+                          ROOM COMMS STANDBY
+                        </div>
+                        <p className="text-xs text-neutral-400 max-w-xs font-mono">
+                          No transmissions logged yet. Connect with fellow scholars or broadcast your study target.
+                        </p>
+                      </div>
+                    );
+                  }
+
+                  const groups: any[][] = [];
+                  let currentGroup: any[] = [];
+
+                  for (const msg of chatMessages) {
+                    if (currentGroup.length > 0 && currentGroup[0].user_id === msg.user_id) {
+                      currentGroup.push(msg);
+                    } else {
+                      if (currentGroup.length > 0) {
+                        groups.push(currentGroup);
                       }
+                      currentGroup = [msg];
                     }
-                    if (currentGroup.length > 0) {
-                      items.push({ type: 'group', group: currentGroup });
-                    }
+                  }
+                  if (currentGroup.length > 0) {
+                    groups.push(currentGroup);
+                  }
 
-                    return items.map((item) => {
-                      if (item.type === 'system') {
-                        return (
-                          <div key={`system-${item.id}`} className="w-full flex justify-center my-2">
-                            <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-hud font-semibold ${
-                              item.action === 'ban'
-                                ? 'bg-rose-500/15 border border-rose-500/30 text-rose-300'
-                                : 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-300'
-                            }`}>
-                              {item.action === 'ban' ? <Ban className="w-3 h-3 text-rose-400" /> : <UserCheck className="w-3 h-3 text-emerald-400" />}
-                              <span>{item.username} was {item.action === 'ban' ? 'banned from' : 'unbanned in'} the room</span>
-                            </div>
-                          </div>
-                        );
-                      }
-
-                      const group = item.group;
+                  return groups.map((group) => {
                       const firstMsg = group[0];
                       const lastMsg = group[group.length - 1];
                       const isMe = firstMsg.user_id === user?.id;
@@ -1861,8 +1843,7 @@ CREATE POLICY "Hosts can update their own study rooms"
                         </div>
                       );
                     });
-                  })()
-                )}
+                  })()}
               </div>
             </div>
 
