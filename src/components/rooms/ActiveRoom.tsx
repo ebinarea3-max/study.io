@@ -1867,7 +1867,7 @@ CREATE POLICY "Hosts can update their own study rooms"
             </div>
 
             {/* Input Form Dock positioned neatly above mobile floating bottom dock */}
-            <form onSubmit={handleSendMessage} className="px-3 pt-2.5 pb-[calc(5rem+env(safe-area-inset-bottom,8px))] md:pb-4 md:pt-4 md:px-4 border-t border-white/[0.08] bg-[#07090e]/95 backdrop-blur-md shrink-0 z-20">
+            <form onSubmit={handleSendMessage} className="px-3 pt-2 pb-[calc(4rem+env(safe-area-inset-bottom,6px))] md:pb-4 md:pt-4 md:px-4 border-t border-white/[0.08] bg-[#07090e]/95 backdrop-blur-md shrink-0 z-20">
               <div className="max-w-3xl w-full mx-auto">
                 <div className="w-full bg-black/60 border border-white/10 focus-within:border-amber-500/60 focus-within:ring-2 focus-within:ring-amber-500/20 rounded-2xl p-1.5 pl-4 flex items-center gap-2 transition-all shadow-inner">
                   <input

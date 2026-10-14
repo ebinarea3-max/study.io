@@ -587,11 +587,11 @@ export function Navbar({
       </div>
     </header>
 
-    {/* Mobile Floating Dock Navigation: 4 Dedicated Tabs with Sliding Tier Indicator */}
-    <div className="fixed bottom-3 sm:bottom-4 left-0 right-0 z-50 md:hidden flex justify-center px-3 pb-[env(safe-area-inset-bottom,16px)] pointer-events-none">
+    {/* Mobile Floating Dock Navigation: Compact Pill with Sliding Tier Indicator */}
+    <div className="fixed bottom-2 sm:bottom-3 left-0 right-0 z-50 md:hidden flex justify-center px-3 pb-[env(safe-area-inset-bottom,8px)] pointer-events-none">
       <nav
         aria-label="Mobile Floating Dock Navigation"
-        className="w-full max-w-sm bg-[#0d0f12]/90 backdrop-blur-xl border-t border-white/10 rounded-full p-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.7)] transition-all pointer-events-auto"
+        className="w-full max-w-[310px] bg-[#0d0f12]/92 backdrop-blur-xl border border-white/10 rounded-full p-1 shadow-[0_8px_32px_rgba(0,0,0,0.8)] transition-all pointer-events-auto"
         style={{
           borderColor: `${theme.accent}35`,
         }}
@@ -599,7 +599,7 @@ export function Navbar({
       <div className="relative flex items-center justify-between w-full">
         {/* Sliding active indicator pill in Tier Accent */}
         <div
-          className="absolute top-0 bottom-0 rounded-full transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none bg-white/15 border border-white/20"
+          className="absolute top-0.5 bottom-0.5 rounded-full transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none bg-white/[0.14] border border-white/20 shadow-sm"
           style={{
             width: '20%',
             transform: `translateX(${activeTab === 'timer' ? '0%' : activeTab === 'tasks' ? '100%' : activeTab === 'analytics' ? '200%' : activeTab === 'leaderboard' ? '300%' : '400%' })`
@@ -609,71 +609,71 @@ export function Navbar({
         {/* Tab 1: Timer */}
         <button
           onClick={() => setActiveTab('timer')}
-          className={`relative z-10 flex-1 flex flex-col items-center justify-center py-2 rounded-full transition-all active:scale-95 cursor-pointer ${
+          className={`relative z-10 flex-1 flex flex-col items-center justify-center py-1 rounded-full transition-all active:scale-95 cursor-pointer ${
             activeTab === 'timer'
-              ? 'text-slate-950 font-bold'
-              : 'text-slate-400 hover:text-white'
+              ? 'text-white font-bold drop-shadow-sm'
+              : 'text-neutral-400 hover:text-white'
           }`}
           aria-label="Timer"
         >
-          <Timer className="w-5 h-5" />
-          <span className="text-[9px] font-hud font-bold tracking-widest uppercase mt-0.5">Timer</span>
+          <Timer className="w-4 h-4" />
+          <span className="text-[8px] font-hud font-bold tracking-wider uppercase mt-0.5">Timer</span>
         </button>
 
         {/* Tab 2: Tasks */}
         <button
           onClick={() => setActiveTab('tasks')}
-          className={`relative z-10 flex-1 flex flex-col items-center justify-center py-2 rounded-full transition-all active:scale-95 cursor-pointer ${
+          className={`relative z-10 flex-1 flex flex-col items-center justify-center py-1 rounded-full transition-all active:scale-95 cursor-pointer ${
             activeTab === 'tasks'
-              ? 'text-slate-950 font-bold'
-              : 'text-slate-400 hover:text-white'
+              ? 'text-white font-bold drop-shadow-sm'
+              : 'text-neutral-400 hover:text-white'
           }`}
           aria-label="Tasks"
         >
-          <CheckSquare className="w-5 h-5" />
-          <span className="text-[9px] font-hud font-bold tracking-widest uppercase mt-0.5">Tasks</span>
+          <CheckSquare className="w-4 h-4" />
+          <span className="text-[8px] font-hud font-bold tracking-wider uppercase mt-0.5">Tasks</span>
         </button>
 
         {/* Tab 3: Analytics */}
         <button
           onClick={() => setActiveTab('analytics')}
-          className={`relative z-10 flex-1 flex flex-col items-center justify-center py-2 rounded-full transition-all active:scale-95 cursor-pointer ${
+          className={`relative z-10 flex-1 flex flex-col items-center justify-center py-1 rounded-full transition-all active:scale-95 cursor-pointer ${
             activeTab === 'analytics'
-              ? 'text-slate-950 font-bold'
-              : 'text-slate-400 hover:text-white'
+              ? 'text-white font-bold drop-shadow-sm'
+              : 'text-neutral-400 hover:text-white'
           }`}
           aria-label="Analytics"
         >
-          <BarChart3 className="w-5 h-5" />
-          <span className="text-[9px] font-hud font-bold tracking-widest uppercase mt-0.5">Stats</span>
+          <BarChart3 className="w-4 h-4" />
+          <span className="text-[8px] font-hud font-bold tracking-wider uppercase mt-0.5">Stats</span>
         </button>
 
         {/* Tab 4: Leaderboard */}
         <button
           onClick={() => setActiveTab('leaderboard')}
-          className={`relative z-10 flex-1 flex flex-col items-center justify-center py-2 rounded-full transition-all active:scale-95 cursor-pointer ${
+          className={`relative z-10 flex-1 flex flex-col items-center justify-center py-1 rounded-full transition-all active:scale-95 cursor-pointer ${
             activeTab === 'leaderboard'
-              ? 'text-slate-950 font-bold'
-              : 'text-slate-400 hover:text-white'
+              ? 'text-white font-bold drop-shadow-sm'
+              : 'text-neutral-400 hover:text-white'
           }`}
           aria-label="Leaderboard"
         >
-          <FacetedTrophyIcon className="w-5 h-5" />
-          <span className="text-[9px] font-hud font-bold tracking-widest uppercase mt-0.5">Rankings</span>
+          <FacetedTrophyIcon className="w-4 h-4" />
+          <span className="text-[8px] font-hud font-bold tracking-wider uppercase mt-0.5">Rankings</span>
         </button>
 
         {/* Tab 5: Rooms */}
         <button
           onClick={() => setActiveTab('rooms')}
-          className={`relative z-10 flex-1 flex flex-col items-center justify-center py-2 rounded-full transition-all active:scale-95 cursor-pointer ${
+          className={`relative z-10 flex-1 flex flex-col items-center justify-center py-1 rounded-full transition-all active:scale-95 cursor-pointer ${
             activeTab === 'rooms'
-              ? 'text-slate-950 font-bold'
-              : 'text-slate-400 hover:text-white'
+              ? 'text-white font-bold drop-shadow-sm'
+              : 'text-neutral-400 hover:text-white'
           }`}
           aria-label="Rooms"
         >
-          <Users className="w-5 h-5" />
-          <span className="text-[9px] font-hud font-bold tracking-widest uppercase mt-0.5">Rooms</span>
+          <Users className="w-4 h-4" />
+          <span className="text-[8px] font-hud font-bold tracking-wider uppercase mt-0.5">Rooms</span>
         </button>
       </div>
       </nav>
