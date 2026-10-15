@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Check, RotateCcw } from 'lucide-react';
+import { X, Check } from 'lucide-react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 
 interface CountdownEditorProps {
@@ -12,23 +12,6 @@ interface CountdownEditorProps {
 }
 
 const ITEM_HEIGHT = 44; // Height of each wheel item in px
-const VISIBLE_ITEMS = 3; // 3 visible items: prev, selected, next
-
-const PRESETS = [
-  { label: '15 min', seconds: 15 * 60 },
-  { label: '25 min', seconds: 25 * 60 },
-  { label: '45 min', seconds: 45 * 60 },
-  { label: '1 hr', seconds: 60 * 60 },
-  { label: '1.5 hr', seconds: 90 * 60 },
-  { label: '2 hr', seconds: 120 * 60 },
-];
-
-const ADJUST_BUTTONS = [
-  { label: '−10 min', delta: -10 * 60 },
-  { label: '−5 min', delta: -5 * 60 },
-  { label: '+5 min', delta: 5 * 60 },
-  { label: '+10 min', delta: 10 * 60 },
-];
 
 function formatPlainWords(totalSec: number): string {
   if (totalSec <= 0) return '0 min';
@@ -39,7 +22,8 @@ function formatPlainWords(totalSec: number): string {
   const parts: string[] = [];
   if (h > 0) parts.push(`${h} hr`);
   if (m > 0) parts.push(`${m} min`);
-  if (s > 0) parts.push(`${s} sec`);
+  if (s > 0 && h === 0) parts.push(`${s} sec`);
+  else if (s > 0 && h > 0 && m === 0) parts.push(`${s} sec`);
 
   return parts.length > 0 ? parts.join(' ') : '0 min';
 }
@@ -138,11 +122,11 @@ function WheelColumn({
       onChange(next);
     } else if (e.key === 'PageUp') {
       e.preventDefault();
-      const step = isHours ? 10 : 5;
+      const step = 5;
       onChange(Math.max(0, value - step));
     } else if (e.key === 'PageDown') {
       e.preventDefault();
-      const step = isHours ? 10 : 5;
+      const step = 5;
       onChange(Math.min(maxVal, value + step));
     } else if (e.key === 'Home') {
       e.preventDefault();
@@ -157,16 +141,6 @@ function WheelColumn({
       e.preventDefault();
       onMoveToNext?.();
     }
-  };
-
-  const handleStartTyping = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsTyping(true);
-    setTypedValue('');
-    setTimeout(() => {
-      inputRef.current?.focus();
-      inputRef.current?.select();
-    }, 20);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -302,7 +276,8 @@ function WheelColumn({
 }
 
 export function CountdownEditor({ initialSeconds, onSave, onCancel }: CountdownEditorProps) {
-  const [hours, setHours] = useState(Math.floor(initialSeconds / 3600));
+  // Clamped up to 24 hours
+  const [hours, setHours] = useState(Math.min(24, Math.floor(initialSeconds / 3600)));
   const [minutes, setMinutes] = useState(Math.floor((initialSeconds % 3600) / 60));
   const [seconds, setSeconds] = useState(initialSeconds % 60);
 
@@ -338,21 +313,6 @@ export function CountdownEditor({ initialSeconds, onSave, onCancel }: CountdownE
     }
   }, [totalSeconds, onSave]);
 
-  // Adjust total by delta seconds (with clamping)
-  const handleAdjust = (deltaSec: number) => {
-    const nextTotal = Math.max(0, Math.min(99 * 3600 + 59 * 60 + 59, totalSeconds + deltaSec));
-    setHours(Math.floor(nextTotal / 3600));
-    setMinutes(Math.floor((nextTotal % 3600) / 60));
-    setSeconds(nextTotal % 60);
-  };
-
-  // Reset to initialSeconds
-  const handleReset = () => {
-    setHours(Math.floor(initialSeconds / 3600));
-    setMinutes(Math.floor((initialSeconds % 3600) / 60));
-    setSeconds(initialSeconds % 60);
-  };
-
   // Keyboard navigation for Enter and Escape, plus focus trapping
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
@@ -360,7 +320,6 @@ export function CountdownEditor({ initialSeconds, onSave, onCancel }: CountdownE
         e.preventDefault();
         onCancel();
       } else if (e.key === 'Enter') {
-        // If not in a focused input
         const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
         if (tag !== 'input') {
           e.preventDefault();
@@ -424,7 +383,7 @@ export function CountdownEditor({ initialSeconds, onSave, onCancel }: CountdownE
         <div className="w-10 h-1 bg-white/20 rounded-full mx-auto sm:hidden mb-3" />
 
         {/* Header */}
-        <div className="flex items-start justify-between mb-4">
+        <div className="flex items-start justify-between mb-5">
           <div>
             <h2
               id="countdown-modal-title"
@@ -459,39 +418,12 @@ export function CountdownEditor({ initialSeconds, onSave, onCancel }: CountdownE
           </button>
         </div>
 
-        {/* Quick Action Preset Chips Row */}
-        <div className="mb-4">
-          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 -mx-1 px-1">
-            {PRESETS.map((p) => {
-              const isSelected = totalSeconds === p.seconds;
-              return (
-                <button
-                  key={p.label}
-                  type="button"
-                  onClick={() => {
-                    setHours(Math.floor(p.seconds / 3600));
-                    setMinutes(Math.floor((p.seconds % 3600) / 60));
-                    setSeconds(p.seconds % 60);
-                  }}
-                  className={`px-3 py-1 rounded-full text-xs font-mono transition-all duration-120 whitespace-nowrap cursor-pointer active:scale-[0.97] border ${
-                    isSelected
-                      ? 'bg-white/[0.12] border-white/30 text-white font-semibold shadow-sm'
-                      : 'bg-white/[0.03] border-white/[0.06] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06]'
-                  }`}
-                >
-                  {p.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
         {/* Wheel Picker */}
-        <div className="relative py-2 px-3 bg-black/20 rounded-2xl border border-white/[0.04] mb-3 flex items-center justify-center gap-2 sm:gap-3">
-          {/* Hours Column */}
+        <div className="relative py-3 px-3 bg-black/20 rounded-2xl border border-white/[0.04] mb-5 flex items-center justify-center gap-2 sm:gap-3">
+          {/* Hours Column (Up to 24 hours only) */}
           <WheelColumn
             value={hours}
-            maxVal={99}
+            maxVal={24}
             label="hr"
             isHours
             wrap
@@ -536,37 +468,8 @@ export function CountdownEditor({ initialSeconds, onSave, onCancel }: CountdownE
           />
         </div>
 
-        {/* Adjust Buttons Row */}
-        <div className="flex items-center justify-between gap-1 mb-5">
-          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
-            {ADJUST_BUTTONS.map((adj) => (
-              <button
-                key={adj.label}
-                type="button"
-                onClick={() => handleAdjust(adj.delta)}
-                className="px-2.5 py-1 rounded-lg text-[11px] font-mono text-zinc-400 hover:text-zinc-200 bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.05] transition-all duration-120 active:scale-[0.97] cursor-pointer"
-              >
-                {adj.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Reset button if changed */}
-          {totalSeconds !== initialSeconds && (
-            <button
-              type="button"
-              onClick={handleReset}
-              className="text-[11px] font-mono text-zinc-400 hover:text-white flex items-center gap-1 transition-colors cursor-pointer shrink-0 ml-1"
-              title="Reset to initial value"
-            >
-              <RotateCcw className="w-3 h-3" />
-              <span>Reset</span>
-            </button>
-          )}
-        </div>
-
         {/* Footer Actions */}
-        <div className="flex items-center justify-between pt-3 border-t border-white/[0.06] mt-auto">
+        <div className="flex items-center justify-between pt-4 border-t border-white/[0.06] mt-auto">
           {/* Helper hint when total is 0 or less than 1 minute */}
           <div className="text-[11px] font-mono text-amber-400/90 min-h-[16px]">
             {isSaveDisabled && 'Pick at least 1 minute'}
