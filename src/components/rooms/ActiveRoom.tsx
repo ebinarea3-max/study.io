@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronLeft,
   Flame,
@@ -32,9 +33,11 @@ import {
   UserX,
   UserCheck,
   MoreVertical,
+  ArrowDown,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { UserAvatar } from '../common/UserAvatar';
+import { RankCrestBadge } from '../common/RankCrestBadge';
 import { getSupabase, broadcast } from '../../lib/supabase';
 import {
   updateRoomSettingsAction,
@@ -43,6 +46,8 @@ import {
 } from '../../app/actions/rooms';
 import { useAuth } from '../../context/AuthContext';
 import { useStudy } from '../../context/StudyContext';
+import { RankTierName, RankDivision, getRankFromRp, RANKS, RankTier } from '../../lib/ranks';
+import { getLevelFromLifetimeXP } from '../../lib/gamification';
 
 interface ActiveRoomProps {
   roomId: string;
@@ -88,6 +93,54 @@ export function formatSeconds(totalSeconds: number): string {
   const sStr = String(seconds).padStart(2, '0');
 
   return `${hStr}:${mStr}:${sStr}`;
+}
+
+export function formatChatDateLabel(isoString: string): string {
+  try {
+    const date = new Date(isoString);
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(today.getDate() - 1);
+
+    if (date.toDateString() === today.toDateString()) {
+      return 'TODAY';
+    }
+    if (date.toDateString() === yesterday.toDateString()) {
+      return 'YESTERDAY';
+    }
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+    }).toUpperCase();
+  } catch {
+    return 'MISSION LOG';
+  }
+}
+
+export function getMemberTierConfig(u: any): { tierConfig: RankTier; level: number; handle: string; formattedTier: string } {
+  const totalSecs = Math.max(0, Number(u.total_focus_seconds || u.today_seconds || 0));
+  const hoursStudied = totalSecs / 3600;
+  let calculatedTierName = 'Bronze I';
+  if (hoursStudied >= 10) calculatedTierName = 'Silver I';
+  else if (hoursStudied >= 5) calculatedTierName = 'Bronze III';
+  else if (hoursStudied >= 2) calculatedTierName = 'Bronze II';
+
+  let tierConfig: RankTier = getRankFromRp(0);
+  try {
+    const targetName = u.rank_title || calculatedTierName;
+    const found = RANKS.find((r) => r.name.toUpperCase() === String(targetName).toUpperCase());
+    if (found) {
+      tierConfig = found;
+    }
+  } catch {
+    tierConfig = getRankFromRp(0);
+  }
+
+  const level = u.level ?? getLevelFromLifetimeXP(totalSecs * 10);
+  const handle = u.username ? u.username.toLowerCase().replace(/\s+/g, '') : 'scholar';
+  const formattedTier = tierConfig.name;
+
+  return { tierConfig, level, handle, formattedTier };
 }
 
 // In-memory module profile cache to immediately hydrate member avatars and usernames
@@ -1316,18 +1369,18 @@ CREATE POLICY "Hosts can update their own study rooms"
       }
     }
 
-    // Sort group members based on study time: person who studied the most is first, least is last
+    // Sort order: focusing first, then paused, then offline
     result.sort((a, b) => {
-      const aTime = a.total_focus_seconds ?? 0;
-      const bTime = b.total_focus_seconds ?? 0;
-      if (bTime !== aTime) {
-        return bTime - aTime;
-      }
       if (a.is_studying !== b.is_studying) {
         return a.is_studying ? -1 : 1;
       }
       if (a.is_online !== b.is_online) {
         return a.is_online ? -1 : 1;
+      }
+      const aTime = a.total_focus_seconds ?? 0;
+      const bTime = b.total_focus_seconds ?? 0;
+      if (bTime !== aTime) {
+        return bTime - aTime;
       }
       if (a.is_host !== b.is_host) {
         return a.is_host ? -1 : 1;
@@ -1349,6 +1402,55 @@ CREATE POLICY "Hosts can update their own study rooms"
     getTodayTotalSeconds,
     roomInfo?.host_id,
   ]);
+
+  // Telemetry metrics derived from active member presence
+  const telemetryMetrics = useMemo(() => {
+    const focusingNow = displayUsers.filter((u) => u.is_studying).length;
+    const totalRoomFocusToday = displayUsers.reduce(
+      (acc, u) => acc + (u.total_focus_seconds || u.today_seconds || 0),
+      0
+    );
+    const longestSession = displayUsers.reduce(
+      (max, u) => Math.max(max, u.session_seconds || 0),
+      0
+    );
+    const onlineCount = displayUsers.filter((u) => u.is_online).length;
+    const totalMembers = displayUsers.length;
+
+    return {
+      focusingNow,
+      totalRoomFocusToday,
+      longestSession,
+      onlineCount,
+      totalMembers,
+    };
+  }, [displayUsers]);
+
+  const anyStudying = telemetryMetrics.focusingNow > 0;
+
+  const isFormDirty = useMemo(() => {
+    if (!roomInfo) return false;
+    const nameChanged = editName.trim() !== (roomInfo.name || '').trim();
+    const privacyChanged = isPrivate !== Boolean(roomInfo.is_private);
+    const passwordChanged = isPrivate && editPassword.trim() !== (roomInfo.password || '').trim();
+    const capacityChanged = editMaxCapacity !== (roomInfo.max_capacity || 4);
+    return nameChanged || privacyChanged || passwordChanged || capacityChanged;
+  }, [roomInfo, editName, isPrivate, editPassword, editMaxCapacity]);
+
+  useEffect(() => {
+    isFormDirtyRef.current = isFormDirty;
+  }, [isFormDirty]);
+
+  const handleResetSettings = useCallback(() => {
+    if (roomInfo) {
+      isFormDirtyRef.current = false;
+      setEditName(roomInfo.name || '');
+      setIsPrivate(Boolean(roomInfo.is_private));
+      setEditPassword(roomInfo.password || '');
+      setEditMaxCapacity(roomInfo.max_capacity || 4);
+      toast('Changes reset to current settings', { icon: '🔄' });
+    }
+  }, [roomInfo]);
 
   const handleCopyPassword = () => {
     if (!editPassword) return;
@@ -1501,67 +1603,140 @@ CREATE POLICY "Hosts can update their own study rooms"
     }
   };
 
+  const [showJumpToLatest, setShowJumpToLatest] = useState(false);
+  const chatScrollContainerRef = useRef<HTMLDivElement>(null);
+
+  const handleChatScroll = useCallback(() => {
+    const el = chatScrollContainerRef.current;
+    if (!el) return;
+    const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+    setShowJumpToLatest(!isNearBottom);
+  }, []);
+
+  const scrollToBottom = useCallback((smooth = true) => {
+    const el = chatScrollContainerRef.current;
+    if (!el) return;
+    el.scrollTo({
+      top: el.scrollHeight,
+      behavior: smooth ? 'smooth' : 'auto',
+    });
+    setShowJumpToLatest(false);
+  }, []);
+
+  useEffect(() => {
+    if (roomTab === 'chat') {
+      const el = chatScrollContainerRef.current;
+      if (!el || el.scrollHeight - el.scrollTop - el.clientHeight < 180) {
+        scrollToBottom(false);
+      }
+    }
+  }, [messages, roomTab, scrollToBottom]);
+
   return (
     <div className="w-full h-full flex-1 min-h-0 bg-transparent flex flex-col relative text-slate-200">
-      <header className="shrink-0 flex items-center justify-between px-2 sm:px-4 py-2 sm:py-2.5 border-b border-white/[0.08] bg-transparent">
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+      {/* 1. SLIM COMMAND BAR SUB-HEADER */}
+      <header className="shrink-0 flex items-center justify-between px-3 sm:px-6 py-2.5 sm:py-3 border-b border-white/[0.08] bg-[#07090e]/95 backdrop-blur-md z-20">
+        <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+          {/* LEAVE Ghost Button */}
           <button
+            type="button"
             onClick={onBack}
-            className="px-2 sm:px-3 py-1.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-white/20 text-slate-300 hover:text-white font-hud font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1 active:scale-95 cursor-pointer shrink-0"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-transparent hover:border-white/10 hover:bg-white/[0.04] text-neutral-400 hover:text-white font-hud-mono text-xs uppercase tracking-wider transition-all cursor-pointer shrink-0 active:scale-95"
+            title="Leave Mission Room"
           >
-            <ChevronLeft className="w-4 h-4 text-slate-400" />
+            <ChevronLeft className="w-4 h-4 text-neutral-400" />
             <span className="hidden sm:inline">LEAVE</span>
           </button>
-          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-            <h1 className="text-xs sm:text-base font-hud font-bold text-white tracking-wide uppercase truncate max-w-[90px] xs:max-w-[130px] sm:max-w-[260px]">
+
+          <div className="h-4 w-px bg-white/[0.08] hidden sm:block shrink-0" />
+
+          <div className="flex items-center gap-2 min-w-0">
+            {/* Live Status LED */}
+            <span
+              className={`w-2 h-2 rounded-full shrink-0 transition-colors ${
+                anyStudying
+                  ? 'bg-amber-400 animate-pulse shadow-[0_0_8px_rgba(245,158,11,0.6)]'
+                  : 'bg-neutral-600'
+              }`}
+              title={anyStudying ? 'Session Active: Operators Focusing' : 'Station Idle'}
+            />
+
+            {/* Room Name in display font */}
+            <h1 className="text-xs sm:text-sm font-hud font-bold text-white tracking-wider uppercase truncate max-w-[100px] xs:max-w-[140px] sm:max-w-[220px] md:max-w-xs">
               {roomName}
             </h1>
-            <span className="text-[10px] font-hud-mono text-neutral-400 bg-white/[0.04] border border-white/10 px-2 py-0.5 rounded-full hidden sm:inline-flex items-center gap-1.5 shrink-0">
-              <Users className="w-3.5 h-3.5 text-neutral-400" />
-              {displayUsers.length} {displayUsers.length === 1 ? 'MEMBER' : 'MEMBERS'}
+
+            {/* Member count as 06 / CAP readout */}
+            <span className="text-[10px] font-hud-mono text-neutral-400 bg-white/[0.03] border border-white/[0.07] px-2 py-0.5 rounded-md hidden xs:inline-flex items-center gap-1.5 shrink-0">
+              <Users className="w-3 h-3 text-neutral-500" />
+              <span>
+                {String(displayUsers.length).padStart(2, '0')} / {String(roomInfo?.max_capacity || editMaxCapacity || 20).padStart(2, '0')}
+              </span>
             </span>
+
+            {/* Compact copyable #CODE chip */}
+            {roomInfo?.short_code && (
+              <button
+                type="button"
+                onClick={() => handleCopyCode(roomInfo.short_code!)}
+                className="text-[10px] font-hud-mono text-neutral-300 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] hover:border-white/20 px-2 py-0.5 rounded-md hidden sm:inline-flex items-center gap-1 cursor-pointer transition-colors shrink-0"
+                title="Click to copy room short code"
+              >
+                <span className="text-amber-400 font-bold">#</span>
+                <span>{roomInfo.short_code}</span>
+                {copiedCode ? (
+                  <Check className="w-3 h-3 text-emerald-400 ml-0.5" />
+                ) : (
+                  <Copy className="w-3 h-3 text-neutral-500 ml-0.5" />
+                )}
+              </button>
+            )}
           </div>
         </div>
 
+        {/* Right: HOME / CHAT / SETTINGS segmented pill in Stats style */}
         <div className="flex items-center shrink-0">
-          <div className="flex bg-black/40 border border-white/10 p-0.5 sm:p-1 rounded-xl shadow-inner backdrop-blur-md gap-0.5 sm:gap-1">
+          <div className="inline-flex items-center p-1 bg-white/[0.03] border border-white/[0.07] rounded-xl gap-1">
             <button
+              type="button"
               onClick={() => setRoomTab('home')}
-              className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-hud font-bold uppercase tracking-wider transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-hud-mono uppercase tracking-wider transition-all cursor-pointer ${
                 roomTab === 'home'
-                  ? 'bg-white/[0.1] border border-white/20 text-white shadow-sm'
-                  : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
+                  ? 'bg-white/[0.08] text-white border border-amber-500/50 shadow-[0_0_10px_rgba(245,158,11,0.12)] font-bold'
+                  : 'text-neutral-400 hover:text-white hover:bg-white/[0.03] border border-transparent'
               }`}
             >
               <Home className="w-3.5 h-3.5" />
               <span>HOME</span>
             </button>
+
             <button
+              type="button"
               onClick={() => {
                 setRoomTab('chat');
                 setUnreadCount(0);
               }}
-              className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-hud font-bold uppercase tracking-wider transition-all cursor-pointer relative ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-hud-mono uppercase tracking-wider transition-all cursor-pointer relative ${
                 roomTab === 'chat'
-                  ? 'bg-amber-500/15 border border-amber-500/40 text-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.2)]'
-                  : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
+                  ? 'bg-white/[0.08] text-white border border-amber-500/50 shadow-[0_0_10px_rgba(245,158,11,0.12)] font-bold'
+                  : 'text-neutral-400 hover:text-white hover:bg-white/[0.03] border border-transparent'
               }`}
             >
               <MessageCircle className="w-3.5 h-3.5" />
               <span>CHAT</span>
               {unreadCount > 0 && (
-                <span className="ml-0.5 bg-amber-500 text-slate-950 text-[10px] font-hud-mono font-bold px-1.5 py-0.2 rounded-full border border-amber-300 shadow-[0_0_8px_rgba(245,158,11,0.5)] animate-in zoom-in duration-200">
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </span>
+                <span className="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_6px_rgba(245,158,11,0.8)] animate-pulse" />
               )}
             </button>
+
             {isHost && (
               <button
+                type="button"
                 onClick={() => setRoomTab('settings')}
-                className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-hud font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-hud-mono uppercase tracking-wider transition-all cursor-pointer ${
                   roomTab === 'settings'
-                    ? 'bg-white/[0.1] border border-white/20 text-white shadow-sm'
-                    : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
+                    ? 'bg-white/[0.08] text-white border border-amber-500/50 shadow-[0_0_10px_rgba(245,158,11,0.12)] font-bold'
+                    : 'text-neutral-400 hover:text-white hover:bg-white/[0.03] border border-transparent'
                 }`}
               >
                 <Settings className="w-3.5 h-3.5" />
@@ -1572,149 +1747,360 @@ CREATE POLICY "Hosts can update their own study rooms"
         </div>
       </header>
 
-      <div className={`flex-1 min-h-0 w-full overflow-x-hidden ${roomTab === 'chat' ? 'flex flex-col' : 'overflow-y-auto p-4 overscroll-contain scrollbar-thin'}`}>
+      {/* 2. TAB CONTENT VIEWPORT */}
+      <div className={`flex-1 min-h-0 w-full overflow-x-hidden ${roomTab === 'chat' ? 'flex flex-col' : 'overflow-y-auto p-4 sm:p-6 overscroll-contain scrollbar-thin'}`}>
+        
+        {/* ============================================================== */}
+        {/* HOME VIEW: Presence & Operators Control Room                     */}
+        {/* ============================================================== */}
         {roomTab === 'home' && (
-          <div className="flex flex-wrap gap-8 justify-center items-start mt-8 pb-28 md:pb-8">
-            {displayUsers.map((u, i) => {
-              const isStudying = u.is_studying;
-              const sessionSec = u.session_seconds || 0;
-              const todaySec = u.today_seconds || 0;
-              const totalFocusSec = u.total_focus_seconds ?? (isStudying ? todaySec + sessionSec : todaySec);
+          <div className="max-w-6xl mx-auto w-full space-y-6">
+            {/* Thin ROOM TELEMETRY Strip with 4 Stats cards */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between px-1">
+                <div className="flex items-center gap-2">
+                  <span className={`w-1.5 h-1.5 rounded-full ${anyStudying ? 'bg-amber-400 animate-pulse' : 'bg-neutral-500'}`} />
+                  <span className="text-[10px] font-hud-mono font-bold uppercase tracking-widest text-neutral-400">
+                    ROOM TELEMETRY // REAL-TIME MONITOR
+                  </span>
+                </div>
+                <div className="text-[10px] font-hud-mono text-neutral-500 tracking-wider">
+                  STATUS: {anyStudying ? 'ACTIVE SESSIONS LOGGED' : 'STANDBY'}
+                </div>
+              </div>
 
-              return (
-                <div
-                  key={u.user_id}
-                  className="flex flex-col items-center gap-2 group relative transition-all duration-300"
-                >
-                  <div className="relative">
-                    <UserAvatar
-                      src={u.avatar_url}
-                      name={u.username}
-                      size={64}
-                      className={`border-2 transition-all duration-300 ${
-                        isStudying
-                          ? 'border-amber-500 shadow-[0_0_18px_rgba(245,158,11,0.55)] scale-105'
-                          : u.is_online
-                          ? 'border-slate-500 opacity-90'
-                          : 'border-slate-700/80 opacity-60'
-                      }`}
-                    />
-
-                    {/* Status Badge (only when resting/offline; fire icon removed when studying) */}
-                    {!isStudying && (
-                      <div
-                        className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center border-2 border-[#07090e] shadow-md transition-colors ${
-                          u.is_online ? 'bg-slate-700' : 'bg-slate-800'
-                        }`}
-                      >
-                        <Moon className="w-3.5 h-3.5 text-slate-300" />
-                      </div>
-                    )}
-
-                    {/* Host 3-Dots Action Button on Hover */}
-                    {isHost && !u.is_host && !u.is_current_user && (
-                      <div className="absolute -top-1 -right-2 z-20">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setActiveMenuUserId(activeMenuUserId === u.user_id ? null : u.user_id);
-                          }}
-                          className={`w-6 h-6 rounded-full flex items-center justify-center bg-[#0d121c] border border-white/20 text-slate-300 hover:text-white hover:border-amber-400/60 hover:bg-black shadow-lg transition-all cursor-pointer ${
-                            activeMenuUserId === u.user_id
-                              ? 'opacity-100 ring-2 ring-amber-500/50 bg-black text-amber-300 scale-105'
-                              : 'opacity-0 group-hover:opacity-100'
-                          }`}
-                          title="Scholar Options"
-                        >
-                          <MoreVertical className="w-3.5 h-3.5" />
-                        </button>
-
-                        {/* Floating Dropdown Menu */}
-                        {activeMenuUserId === u.user_id && (
-                          <div
-                            onClick={(e) => e.stopPropagation()}
-                            className="absolute left-1/2 -translate-x-1/2 top-full mt-1.5 w-28 bg-[#0c1017] border border-white/15 rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.9)] backdrop-blur-xl p-1 z-30 animate-in fade-in zoom-in-95 duration-150"
-                          >
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setActiveMenuUserId(null);
-                                setMemberToBan({ userId: u.user_id, username: u.username });
-                              }}
-                              className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-rose-400 hover:text-white hover:bg-rose-500/20 text-[11px] font-hud font-bold uppercase tracking-wider transition-colors cursor-pointer text-left"
-                            >
-                              <Ban className="w-3.5 h-3.5 text-rose-400" />
-                              <span>Ban</span>
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Member Name, Total Time Studied Today (Adds up live when focusing) */}
-                  <div className="text-center mt-1 flex flex-col items-center max-w-[130px]">
-                    <div className="flex items-center gap-1.5 justify-center">
-                      <p
-                        className="text-sm font-bold text-slate-200 truncate max-w-[100px]"
-                        title={u.username}
-                      >
-                        {u.username}
-                      </p>
-                      {u.is_host && (
-                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 border border-amber-500/30 text-amber-400 font-semibold uppercase tracking-wider flex-shrink-0">
-                          Host
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Displays Total Focus Time Today with live seconds ticking up from today's total */}
-                    <p
-                      className={`text-sm font-mono mt-1 font-bold tracking-wider transition-colors ${
-                        isStudying
-                          ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]'
-                          : 'text-slate-300'
-                      }`}
-                    >
-                      {formatSeconds(totalFocusSec)}
-                    </p>
-
-                    {/* Subtitle explaining state and session progress */}
-                    <span
-                      className={`text-[10px] font-medium tracking-tight mt-0.5 ${
-                        isStudying
-                          ? 'text-amber-400/90 font-semibold'
-                          : u.is_online
-                          ? 'text-slate-400'
-                          : 'text-slate-500'
-                      }`}
-                    >
-                      {isStudying ? (
-                        <span>Studying ({formatSeconds(sessionSec)})</span>
-                      ) : (
-                        <span>Today • {u.is_online ? 'Paused' : 'Offline'}</span>
-                      )}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
+                {/* Metric 1: FOCUSING NOW */}
+                <div className="p-3 sm:p-3.5 rounded-xl bg-[#0b0e14]/90 border border-white/[0.07] flex flex-col justify-between relative overflow-hidden group">
+                  <div className="w-5 h-0.5 bg-amber-500 rounded-full mb-1.5" />
+                  <span className="text-[10px] sm:text-xs font-hud-mono tracking-wider uppercase text-neutral-400 font-medium truncate">
+                    FOCUSING NOW
+                  </span>
+                  <div className="text-base sm:text-xl font-mono font-bold text-neutral-100 tabular-nums mt-0.5 truncate flex items-baseline gap-1.5">
+                    <span className={telemetryMetrics.focusingNow > 0 ? 'text-amber-400' : 'text-neutral-200'}>
+                      {telemetryMetrics.focusingNow}
+                    </span>
+                    <span className="text-xs text-neutral-500 font-normal">
+                      / {telemetryMetrics.totalMembers} OPERATORS
                     </span>
                   </div>
                 </div>
-              );
-            })}
 
-            {displayUsers.length === 0 && (
-              <div className="text-slate-500 text-center w-full mt-10">
-                Waiting for scholars to join...
+                {/* Metric 2: TOTAL ROOM FOCUS TODAY */}
+                <div className="p-3 sm:p-3.5 rounded-xl bg-[#0b0e14]/90 border border-white/[0.07] flex flex-col justify-between relative overflow-hidden group">
+                  <div className="w-5 h-0.5 bg-amber-500 rounded-full mb-1.5" />
+                  <span className="text-[10px] sm:text-xs font-hud-mono tracking-wider uppercase text-neutral-400 font-medium truncate">
+                    TOTAL ROOM FOCUS TODAY
+                  </span>
+                  <div className="text-base sm:text-xl font-mono font-bold text-neutral-100 tabular-nums mt-0.5 truncate">
+                    {formatSeconds(telemetryMetrics.totalRoomFocusToday)}
+                  </div>
+                </div>
+
+                {/* Metric 3: LONGEST SESSION */}
+                <div className="p-3 sm:p-3.5 rounded-xl bg-[#0b0e14]/90 border border-white/[0.07] flex flex-col justify-between relative overflow-hidden group">
+                  <div className="w-5 h-0.5 bg-amber-500 rounded-full mb-1.5" />
+                  <span className="text-[10px] sm:text-xs font-hud-mono tracking-wider uppercase text-neutral-400 font-medium truncate">
+                    LONGEST SESSION
+                  </span>
+                  <div className="text-base sm:text-xl font-mono font-bold text-neutral-100 tabular-nums mt-0.5 truncate">
+                    {formatSeconds(telemetryMetrics.longestSession)}
+                  </div>
+                </div>
+
+                {/* Metric 4: MEMBERS ONLINE */}
+                <div className="p-3 sm:p-3.5 rounded-xl bg-[#0b0e14]/90 border border-white/[0.07] flex flex-col justify-between relative overflow-hidden group">
+                  <div className="w-5 h-0.5 bg-amber-500 rounded-full mb-1.5" />
+                  <span className="text-[10px] sm:text-xs font-hud-mono tracking-wider uppercase text-neutral-400 font-medium truncate">
+                    MEMBERS ONLINE
+                  </span>
+                  <div className="text-base sm:text-xl font-mono font-bold text-neutral-100 tabular-nums mt-0.5 truncate flex items-baseline gap-1.5">
+                    <span className="text-white">
+                      {String(telemetryMetrics.onlineCount).padStart(2, '0')}
+                    </span>
+                    <span className="text-xs text-neutral-500 font-normal">
+                      / {String(telemetryMetrics.totalMembers).padStart(2, '0')}
+                    </span>
+                  </div>
+                </div>
               </div>
-            )}
+            </div>
+
+            {/* Operator Roster Grid */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between px-1">
+                <span className="text-[10px] font-hud-mono uppercase tracking-widest text-neutral-400">
+                  OPERATOR ROSTER ({displayUsers.length})
+                </span>
+                <span className="text-[10px] font-hud-mono text-neutral-500 tracking-wider">
+                  SORT: FOCUSING → PAUSED → OFFLINE
+                </span>
+              </div>
+
+              {displayUsers.length === 0 ? (
+                /* Stats-style TELEMETRY EMPTY Block */
+                <div className="hud-surface border border-white/[0.07] rounded-2xl p-8 flex flex-col items-center justify-center text-center space-y-2 my-8">
+                  <svg
+                    className="w-14 h-14 mx-auto text-neutral-700 opacity-60"
+                    viewBox="0 0 64 64"
+                    fill="none"
+                  >
+                    <path
+                      d="M32 8L52 19.5V42.5L32 54L12 42.5V19.5L32 8Z"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M32 8V31M52 19.5L32 31M12 19.5L32 31M32 31V54"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  <div className="font-hud-mono text-xs font-bold text-neutral-400 tracking-wider">
+                    TELEMETRY EMPTY
+                  </div>
+                  <p className="text-[11px] text-neutral-500 max-w-xs font-mono">
+                    Waiting for scholars to join the mission room. Transmit room short code to recruit operators.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 pb-28 md:pb-8">
+                  {displayUsers.map((u) => {
+                    const isStudying = u.is_studying;
+                    const isOnline = u.is_online;
+                    const sessionSec = u.session_seconds || 0;
+                    const todaySec = u.today_seconds || 0;
+                    const totalFocusSec = u.total_focus_seconds ?? (isStudying ? todaySec + sessionSec : todaySec);
+                    const { tierConfig, level, handle } = getMemberTierConfig(u);
+
+                    // Circular ring calculations:
+                    const radius = 26;
+                    const circumference = 2 * Math.PI * radius; // ~163.36
+                    const targetSec = isStudying ? 3600 : 7200;
+                    const progressRatio = Math.min(1, Math.max(0, (isStudying ? sessionSec : totalFocusSec) / targetSec));
+                    const strokeDashoffset = circumference * (1 - progressRatio);
+
+                    return (
+                      <motion.div
+                        layout
+                        key={u.user_id}
+                        initial={{ opacity: 0, scale: 0.98 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.98 }}
+                        transition={{ duration: 0.18, ease: 'easeOut' }}
+                        className={`rounded-xl bg-[#0b0e14]/90 border p-3.5 sm:p-4 flex flex-col justify-between relative overflow-hidden group transition-all duration-200 ${
+                          isStudying
+                            ? 'border-amber-500/40 bg-[#0e1219]/90'
+                            : 'border-white/[0.07] hover:border-white/15'
+                        } ${u.is_host ? 'border-t-2 border-t-amber-500' : ''}`}
+                      >
+                        {/* Top Bar: Status Badge + Tier Badge + Host Action */}
+                        <div className="flex items-center justify-between gap-2 mb-3">
+                          {/* Status Badge */}
+                          {isStudying ? (
+                            <div className="px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/30 text-amber-400 font-hud-mono font-bold text-[10px] uppercase tracking-wider flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                              <span>FOCUSING</span>
+                            </div>
+                          ) : isOnline ? (
+                            <div className="px-2 py-0.5 rounded-md bg-white/[0.03] border border-white/10 text-neutral-400 font-hud-mono text-[10px] uppercase tracking-wider flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-neutral-500" />
+                              <span>PAUSED</span>
+                            </div>
+                          ) : (
+                            <div className="px-2 py-0.5 rounded-md bg-white/[0.02] border border-white/5 text-neutral-600 font-hud-mono text-[10px] uppercase tracking-wider flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-neutral-700" />
+                              <span>OFFLINE</span>
+                            </div>
+                          )}
+
+                          <div className="flex items-center gap-1.5">
+                            {/* Tier Crest Badge from Leaderboard */}
+                            <div title={`${tierConfig.name} Tier`}>
+                              <RankCrestBadge
+                                tier={tierConfig.tier as RankTierName}
+                                division={tierConfig.division as RankDivision}
+                                size={26}
+                              />
+                            </div>
+
+                            {/* Host 3-Dots Action Menu */}
+                            {isHost && !u.is_host && !u.is_current_user && (
+                              <div className="relative">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setActiveMenuUserId(activeMenuUserId === u.user_id ? null : u.user_id);
+                                  }}
+                                  className="w-6 h-6 rounded flex items-center justify-center text-neutral-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                                  title="Scholar Actions"
+                                >
+                                  <MoreVertical className="w-3.5 h-3.5" />
+                                </button>
+                                {activeMenuUserId === u.user_id && (
+                                  <div
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="absolute right-0 top-full mt-1 w-28 bg-[#0c1017] border border-white/15 rounded-lg shadow-2xl p-1 z-30"
+                                  >
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setActiveMenuUserId(null);
+                                        setMemberToBan({ userId: u.user_id, username: u.username });
+                                      }}
+                                      className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded text-rose-400 hover:text-white hover:bg-rose-500/20 text-[10px] font-hud font-bold uppercase tracking-wider transition-colors cursor-pointer text-left"
+                                    >
+                                      <Ban className="w-3 h-3 text-rose-400" />
+                                      <span>BAN</span>
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Middle: Avatar in Circular Progress Ring + Info */}
+                        <div className="flex items-center gap-3.5 my-1">
+                          {/* Circular Ring around Avatar */}
+                          <div className="relative w-16 h-16 flex items-center justify-center shrink-0">
+                            <svg className="w-16 h-16 -rotate-90 pointer-events-none" viewBox="0 0 60 60">
+                              <circle
+                                cx="30"
+                                cy="30"
+                                r={radius}
+                                stroke="rgba(255, 255, 255, 0.05)"
+                                strokeWidth="2.5"
+                                fill="transparent"
+                              />
+                              {isStudying && (
+                                <circle
+                                  cx="30"
+                                  cy="30"
+                                  r={radius}
+                                  stroke="#f59e0b"
+                                  strokeWidth="2.5"
+                                  strokeLinecap="round"
+                                  fill="transparent"
+                                  strokeDasharray={circumference}
+                                  strokeDashoffset={strokeDashoffset}
+                                  className="animate-pulse transition-all duration-500"
+                                />
+                              )}
+                              {!isStudying && isOnline && progressRatio > 0 && (
+                                <circle
+                                  cx="30"
+                                  cy="30"
+                                  r={radius}
+                                  stroke="rgba(217, 119, 6, 0.45)"
+                                  strokeWidth="2.5"
+                                  strokeLinecap="round"
+                                  fill="transparent"
+                                  strokeDasharray={circumference}
+                                  strokeDashoffset={strokeDashoffset}
+                                  className="transition-all duration-500"
+                                />
+                              )}
+                            </svg>
+
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <UserAvatar
+                                src={u.avatar_url}
+                                name={u.username}
+                                size={44}
+                                className={`rounded-full transition-all ${
+                                  isStudying
+                                    ? 'ring-1 ring-amber-500/60'
+                                    : isOnline
+                                    ? 'opacity-90'
+                                    : 'grayscale opacity-50'
+                                }`}
+                              />
+                            </div>
+                          </div>
+
+                          {/* Scholar Identification */}
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5">
+                              <span
+                                className={`font-hud font-bold text-sm sm:text-base tracking-wide truncate ${
+                                  isOnline ? 'text-white' : 'text-neutral-400'
+                                }`}
+                                title={u.username}
+                              >
+                                {u.username}
+                              </span>
+                              {u.is_host && (
+                                <span title="Room Host" className="inline-flex items-center">
+                                  <Crown className="w-3.5 h-3.5 text-amber-400 shrink-0 fill-amber-400/20" />
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-xs text-neutral-400 font-mono truncate mt-0.5">
+                              @{handle}
+                              <span className="text-neutral-500"> · Lv. {level}</span>
+                            </div>
+                            {u.is_current_user && (
+                              <span className="inline-block text-[9px] font-hud-mono font-bold px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 uppercase mt-1">
+                                YOU
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Bottom: Large Mono Timer + Subtitles */}
+                        <div className="flex items-baseline justify-between pt-3 border-t border-white/[0.06] mt-3">
+                          <div className="flex flex-col">
+                            <span className="text-[10px] font-hud-mono text-neutral-500 uppercase tracking-wider">
+                              {isStudying ? 'ACTIVE SESSION' : 'TODAY FOCUS'}
+                            </span>
+                            <div
+                              className={`font-mono text-lg sm:text-xl font-bold tracking-wider tabular-nums ${
+                                isStudying
+                                  ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.35)]'
+                                  : isOnline
+                                  ? 'text-neutral-200'
+                                  : 'text-neutral-500'
+                              }`}
+                            >
+                              {formatSeconds(isStudying ? sessionSec : totalFocusSec)}
+                            </div>
+                          </div>
+
+                          <div className="text-right flex flex-col items-end">
+                            <span className="text-[10px] font-hud-mono text-neutral-500 uppercase tracking-wider">
+                              {isStudying ? 'TOTAL TODAY' : 'PRESENCE'}
+                            </span>
+                            <span className="font-mono text-xs text-neutral-400 tabular-nums">
+                              {isStudying ? formatSeconds(totalFocusSec) : isOnline ? 'ONLINE' : 'OFFLINE'}
+                            </span>
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
+        {/* ============================================================== */}
+        {/* CHAT VIEW: Comms Terminal                                       */}
+        {/* ============================================================== */}
         {roomTab === 'chat' && (
-          <div className="w-full flex-1 min-h-0 flex flex-col h-full">
+          <div className="w-full flex-1 min-h-0 flex flex-col h-full relative">
             {/* Messages Scroll Area */}
-            <div ref={messagesEndRef} className="flex-1 overflow-y-auto min-h-0 px-3 sm:px-6 py-4 scrollbar-thin">
-              <div className="max-w-3xl w-full mx-auto space-y-4">
+            <div
+              ref={chatScrollContainerRef}
+              onScroll={handleChatScroll}
+              className="flex-1 overflow-y-auto min-h-0 px-3 sm:px-6 py-4 scrollbar-thin"
+            >
+              <div className="max-w-3xl w-full mx-auto space-y-3">
                 {(() => {
                   const chatMessages = messages.filter(
                     (msg) => !msg.content?.startsWith('[SYSTEM_')
@@ -1723,148 +2109,197 @@ CREATE POLICY "Hosts can update their own study rooms"
                   if (chatMessages.length === 0) {
                     return (
                       <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-3 my-auto min-h-[220px]">
-                        <div className="w-12 h-12 rounded-2xl bg-white/[0.03] border border-white/10 flex items-center justify-center text-amber-400 shadow-inner">
-                          <MessageCircle className="w-6 h-6 opacity-80" />
+                        <div className="w-12 h-12 rounded-xl bg-white/[0.03] border border-white/10 flex items-center justify-center text-amber-400">
+                          <MessageCircle className="w-5 h-5 opacity-80" />
                         </div>
-                        <div className="text-sm font-hud font-bold text-white tracking-wide uppercase">
-                          ROOM COMMS STANDBY
+                        <div className="font-hud-mono font-bold text-xs text-neutral-300 tracking-widest uppercase">
+                          COMMS TERMINAL STANDBY
                         </div>
-                        <p className="text-xs text-neutral-400 max-w-xs font-mono">
+                        <p className="text-[11px] text-neutral-500 max-w-xs font-mono">
                           No transmissions logged yet. Connect with fellow scholars or broadcast your study target.
                         </p>
                       </div>
                     );
                   }
 
-                  const groups: any[][] = [];
+                  const elements: React.ReactNode[] = [];
                   let currentGroup: any[] = [];
+                  let lastDateStr = '';
 
-                  for (const msg of chatMessages) {
+                  const flushGroup = () => {
+                    if (currentGroup.length === 0) return;
+                    const group = [...currentGroup];
+                    currentGroup = [];
+                    const firstMsg = group[0];
+                    const lastMsg = group[group.length - 1];
+                    const isMe = firstMsg.user_id === user?.id;
+                    const senderMember = displayUsers.find((u) => u.user_id === firstMsg.user_id);
+                    const cachedUser = getCachedMemberProfile(firstMsg.user_id);
+                    const isStudying = senderMember?.is_studying;
+                    const isHostUser = senderMember?.is_host;
+                    const timeString = new Date(lastMsg.created_at).toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    });
+                    const username =
+                      firstMsg.profiles?.username || senderMember?.username || cachedUser?.username || 'Scholar';
+                    const avatarUrl =
+                      firstMsg.profiles?.avatar_url || senderMember?.avatar_url || cachedUser?.avatar_url || null;
+
+                    elements.push(
+                      <div
+                        key={`group-${firstMsg.id}`}
+                        className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} group max-w-full`}
+                      >
+                        {/* Meta header: name, host badge, focusing status, timestamp, ban action */}
+                        <div className={`flex items-center gap-2 mb-1 ${isMe ? 'mr-1 flex-row-reverse' : 'ml-1'}`}>
+                          <span
+                            className={`text-xs font-hud font-bold tracking-tight ${
+                              isMe ? 'text-amber-400' : 'text-neutral-200'
+                            }`}
+                          >
+                            {isMe ? 'YOU' : username}
+                          </span>
+                          {isHostUser && (
+                            <span className="text-[9px] font-hud-mono font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/30 uppercase flex items-center gap-1">
+                              <Crown className="w-2.5 h-2.5 text-amber-400" />
+                              <span>HOST</span>
+                            </span>
+                          )}
+                          {isStudying && (
+                            <span className="text-[9px] font-hud-mono px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/30 flex items-center gap-1 uppercase font-bold">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                              <span>FOCUSING</span>
+                            </span>
+                          )}
+                          <span className="text-[10px] font-mono text-neutral-500">{timeString}</span>
+                          {isHost && !isMe && !isHostUser && (
+                            <button
+                              type="button"
+                              onClick={() => setMemberToBan({ userId: firstMsg.user_id, username })}
+                              className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded text-rose-400 hover:text-rose-300 hover:bg-rose-500/20 cursor-pointer"
+                              title={`Ban ${username} from room`}
+                            >
+                              <Ban className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Avatar and Bubble Row */}
+                        <div className={`flex gap-2.5 ${isMe ? 'flex-row-reverse' : ''} items-start max-w-[92%] sm:max-w-[80%]`}>
+                          <UserAvatar
+                            src={avatarUrl}
+                            name={username}
+                            size={32}
+                            className={`rounded-lg border transition-all shrink-0 ${
+                              isStudying
+                                ? 'border-amber-500/60 ring-1 ring-amber-500/30'
+                                : 'border-white/10'
+                            }`}
+                          />
+
+                          {/* Bubble Stack */}
+                          <div className={`flex flex-col gap-1 ${isMe ? 'items-end' : 'items-start'}`}>
+                            {group.map((msg: any) => (
+                              <div
+                                key={msg.id}
+                                className={`px-3.5 py-2 text-xs sm:text-sm leading-relaxed transition-all break-words border rounded-lg ${
+                                  isMe
+                                    ? 'bg-amber-500/[0.08] border-amber-500/25 text-neutral-100 rounded-tr-none'
+                                    : 'bg-[#0c0f16] border-white/[0.08] text-neutral-200 rounded-tl-none hover:border-white/15'
+                                }`}
+                              >
+                                {msg.content}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  };
+
+                  for (const msg of messages) {
+                    if (msg.content?.startsWith('[SYSTEM_') || msg.is_system) {
+                      flushGroup();
+                      const cleanText = msg.content.replace(/^\[SYSTEM_[^\]]*\]\s*/, '');
+                      elements.push(
+                        <div key={`system-${msg.id}`} className="flex items-center justify-center my-3 select-none">
+                          <div className="flex-1 h-px bg-white/[0.06]" />
+                          <span className="px-3 text-[10px] font-mono text-neutral-500 tracking-wider uppercase">
+                            // {cleanText}
+                          </span>
+                          <div className="flex-1 h-px bg-white/[0.06]" />
+                        </div>
+                      );
+                      continue;
+                    }
+
+                    const dateStr = new Date(msg.created_at).toDateString();
+                    if (dateStr !== lastDateStr) {
+                      flushGroup();
+                      lastDateStr = dateStr;
+                      elements.push(
+                        <div key={`date-${msg.created_at}`} className="flex items-center my-4 select-none">
+                          <div className="flex-1 h-px bg-white/[0.08]" />
+                          <span className="px-3 text-[10px] font-hud-mono font-bold text-neutral-500 uppercase tracking-widest">
+                            {formatChatDateLabel(msg.created_at)}
+                          </span>
+                          <div className="flex-1 h-px bg-white/[0.08]" />
+                        </div>
+                      );
+                    }
+
                     if (currentGroup.length > 0 && currentGroup[0].user_id === msg.user_id) {
                       currentGroup.push(msg);
                     } else {
-                      if (currentGroup.length > 0) {
-                        groups.push(currentGroup);
-                      }
+                      flushGroup();
                       currentGroup = [msg];
                     }
                   }
-                  if (currentGroup.length > 0) {
-                    groups.push(currentGroup);
-                  }
+                  flushGroup();
 
-                  return groups.map((group) => {
-                      const firstMsg = group[0];
-                      const lastMsg = group[group.length - 1];
-                      const isMe = firstMsg.user_id === user?.id;
-                      const senderMember = displayUsers.find(u => u.user_id === firstMsg.user_id);
-                      const cachedUser = getCachedMemberProfile(firstMsg.user_id);
-                      const isStudying = senderMember?.is_studying;
-                      const isHostUser = senderMember?.is_host;
-                      const timeString = new Date(lastMsg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                      const username = firstMsg.profiles?.username || senderMember?.username || cachedUser?.username || 'Scholar';
-                      const avatarUrl = firstMsg.profiles?.avatar_url || senderMember?.avatar_url || cachedUser?.avatar_url || null;
-
-                      return (
-                        <div
-                          key={`group-${firstMsg.id}`}
-                          className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} group`}
-                        >
-                          {/* Meta header: name, host badge, focusing status, timestamp, ban action */}
-                          <div className={`flex items-center gap-2 mb-1.5 ${isMe ? 'mr-1 flex-row-reverse' : 'ml-1'}`}>
-                            <span className={`text-xs font-hud font-bold tracking-tight ${isMe ? 'text-amber-400' : 'text-slate-200'}`}>
-                              {isMe ? 'YOU' : username}
-                            </span>
-                            {isHostUser && (
-                              <span className="text-[9px] font-hud font-bold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 uppercase">
-                                HOST
-                              </span>
-                            )}
-                            {isStudying && (
-                              <span className="text-[9px] font-hud px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center gap-1 uppercase font-semibold">
-                                <Flame className="w-3 h-3 fill-amber-400" /> FOCUSING
-                              </span>
-                            )}
-                            <span className="text-[10px] font-hud-mono text-neutral-500">
-                              {timeString}
-                            </span>
-                            {isHost && !isMe && !isHostUser && (
-                              <button
-                                type="button"
-                                onClick={() => setMemberToBan({ userId: firstMsg.user_id, username })}
-                                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded text-rose-400 hover:text-rose-300 hover:bg-rose-500/20 cursor-pointer"
-                                title={`Ban ${username} from room`}
-                              >
-                                <Ban className="w-3 h-3" />
-                              </button>
-                            )}
-                          </div>
-
-                          {/* Avatar and Bubble Row */}
-                          <div className={`flex gap-3 ${isMe ? 'flex-row-reverse' : ''} items-end max-w-[88%] sm:max-w-[75%]`}>
-                            {/* Avatar */}
-                            <div className="relative shrink-0">
-                              <UserAvatar
-                                src={avatarUrl}
-                                name={username}
-                                size={36}
-                                className={`rounded-full border transition-all ${
-                                  isStudying
-                                    ? 'border-amber-500 ring-2 ring-amber-500/30 shadow-[0_0_8px_rgba(245,158,11,0.4)]'
-                                    : 'border-white/10'
-                                }`}
-                              />
-                            </div>
-
-                            {/* Bubble Stack */}
-                            <div className={`flex flex-col gap-1.5 ${isMe ? 'items-end' : 'items-start'}`}>
-                              {group.map((msg: any, idx: number) => {
-                                const isFirst = idx === 0;
-                                const isLast = idx === group.length - 1;
-                                return (
-                                  <div
-                                    key={msg.id}
-                                    className={`px-4 py-2.5 text-sm leading-relaxed transition-all break-words ${
-                                      isMe
-                                        ? 'bg-gradient-to-br from-amber-500/25 via-amber-500/15 to-amber-600/10 border border-amber-500/35 text-amber-50 shadow-[0_2px_12px_rgba(245,158,11,0.1)]'
-                                        : 'bg-white/[0.05] border border-white/[0.1] text-slate-100 shadow-md hover:border-white/20'
-                                    } ${
-                                      isMe
-                                        ? `rounded-2xl ${isFirst ? 'rounded-tr-md' : 'rounded-tr-md'} ${isLast ? 'rounded-br-2xl' : 'rounded-br-md'}`
-                                        : `rounded-2xl ${isFirst ? 'rounded-tl-md' : 'rounded-tl-md'} ${isLast ? 'rounded-bl-2xl' : 'rounded-bl-md'}`
-                                    }`}
-                                  >
-                                    {msg.content}
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    });
-                  })()}
+                  return elements;
+                })()}
+                <div ref={messagesEndRef} />
               </div>
             </div>
 
-            {/* Input Form Dock positioned neatly above mobile floating bottom dock */}
-            <form onSubmit={handleSendMessage} className="px-3 pt-2 pb-[calc(4.75rem+env(safe-area-inset-bottom,0px))] md:pb-4 md:pt-4 md:px-4 border-t border-white/[0.08] bg-[#07090e]/95 backdrop-blur-md shrink-0 z-20">
+            {/* Jump to Latest Floating Pill */}
+            {showJumpToLatest && (
+              <button
+                type="button"
+                onClick={() => scrollToBottom(true)}
+                className="absolute bottom-20 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-full bg-[#0d1117] border border-amber-500/40 text-amber-400 font-hud-mono text-[10px] font-bold uppercase tracking-wider shadow-2xl flex items-center gap-1.5 cursor-pointer hover:bg-amber-500/10 active:scale-95 transition-all z-30"
+              >
+                <ArrowDown className="w-3 h-3 text-amber-400 animate-bounce" />
+                <span>JUMP TO LATEST</span>
+              </button>
+            )}
+
+            {/* Input Bar pinned to bottom */}
+            <form
+              onSubmit={handleSendMessage}
+              className="px-3 sm:px-4 py-3 border-t border-white/[0.08] bg-[#07090e]/95 backdrop-blur-md shrink-0 z-20 pb-[calc(4.75rem+env(safe-area-inset-bottom,0px))] md:pb-3"
+            >
               <div className="max-w-3xl w-full mx-auto">
-                <div className="w-full bg-black/60 border border-white/10 focus-within:border-amber-500/60 focus-within:ring-2 focus-within:ring-amber-500/20 rounded-2xl p-1.5 pl-4 flex items-center gap-2 transition-all shadow-inner">
+                <div className="flex items-center gap-2 bg-black/40 border border-white/10 focus-within:border-amber-500/50 rounded-xl p-1.5 pl-3.5 transition-all">
                   <input
                     type="text"
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder="Transmit message to room..."
-                    className="w-full bg-transparent text-sm text-white placeholder:text-neutral-500 focus:outline-none font-sans"
+                    placeholder="TRANSMIT MESSAGE TO ROOM…"
+                    className="flex-1 bg-transparent text-xs sm:text-sm text-white placeholder:text-neutral-500 focus:outline-none font-mono py-1"
                   />
+                  <span className="hidden sm:inline text-[10px] font-hud-mono text-neutral-500 pr-1 select-none">
+                    ↵ ENTER
+                  </span>
                   <button
                     type="submit"
                     disabled={!newMessage.trim() || isSending}
-                    className="px-4 sm:px-5 py-2.5 rounded-xl font-hud font-bold text-xs uppercase tracking-wider text-black bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 shadow-[0_0_15px_rgba(245,158,11,0.25)] hover:brightness-110 active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0"
+                    className="px-4 py-2 text-xs font-hud-mono font-bold text-slate-950 bg-amber-500 hover:brightness-110 active:scale-95 disabled:opacity-40 disabled:pointer-events-none rounded-lg transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
                   >
                     <Send className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">SEND</span>
+                    <span>SEND</span>
                   </button>
                 </div>
               </div>
@@ -1872,548 +2307,570 @@ CREATE POLICY "Hosts can update their own study rooms"
           </div>
         )}
 
-
+        {/* ============================================================== */}
+        {/* SETTINGS VIEW: Two-Column Host Controls                         */}
+        {/* ============================================================== */}
         {roomTab === 'settings' && (
-          <div className="max-w-2xl mx-auto w-full py-4 sm:py-6 space-y-6 animate-in fade-in duration-200 pb-36">
-            {/* Host Banner */}
-            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-500/10 via-white/[0.02] to-transparent border border-amber-500/20 p-5 sm:p-6 shadow-xl">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-3.5">
-                  <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center shrink-0 shadow-inner">
-                    <Crown className="w-6 h-6 text-amber-400" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h2 className="text-lg font-bold text-white tracking-wide">Room Host Controls</h2>
-                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                        Host Only
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-400 mt-0.5">
-                      Configure room password security, member capacity, and study hall details.
-                    </p>
-                  </div>
+          <div className="max-w-4xl mx-auto w-full py-4 sm:py-6 space-y-6 pb-36 animate-in fade-in duration-150">
+            {/* Host Banner: Compact CLEARANCE: HOST */}
+            <div className="bg-[#0b0e14]/90 border border-amber-500/20 rounded-xl p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+                  <Crown className="w-4 h-4 fill-amber-400/20" />
                 </div>
-
-                {roomInfo?.short_code && (
-                  <button
-                    type="button"
-                    onClick={() => handleCopyCode(roomInfo.short_code!)}
-                    className="inline-flex items-center gap-2 self-start sm:self-center px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-mono text-slate-300 hover:text-white transition-all cursor-pointer shadow-sm group"
-                    title="Click to copy room code"
-                  >
-                    <Hash className="w-3.5 h-3.5 text-amber-400 opacity-80" />
-                    <span className="font-bold tracking-wider">{roomInfo.short_code}</span>
-                    {copiedCode ? (
-                      <Check className="w-3.5 h-3.5 text-emerald-400 ml-1" />
-                    ) : (
-                      <Copy className="w-3.5 h-3.5 opacity-60 group-hover:opacity-100 ml-1" />
-                    )}
-                  </button>
-                )}
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-hud-mono font-bold text-xs uppercase tracking-wider text-amber-400">
+                      CLEARANCE: HOST
+                    </span>
+                    <span className="text-[10px] font-hud-mono text-neutral-500">• MISSION CONTROL</span>
+                  </div>
+                  <p className="text-xs text-neutral-400 font-mono mt-0.5">
+                    Configure room identity, clearance passwords, capacity quotas, and squad permissions.
+                  </p>
+                </div>
               </div>
+
+              {roomInfo?.short_code && (
+                <button
+                  type="button"
+                  onClick={() => handleCopyCode(roomInfo.short_code!)}
+                  className="self-start sm:self-center px-2.5 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-xs font-hud-mono text-neutral-300 hover:text-white transition-all cursor-pointer flex items-center gap-1.5"
+                  title="Click to copy room code"
+                >
+                  <Hash className="w-3.5 h-3.5 text-amber-400" />
+                  <span className="font-bold tracking-wider">{roomInfo.short_code}</span>
+                  {copiedCode ? (
+                    <Check className="w-3.5 h-3.5 text-emerald-400 ml-1" />
+                  ) : (
+                    <Copy className="w-3.5 h-3.5 text-neutral-400 ml-1" />
+                  )}
+                </button>
+              )}
             </div>
 
             {settingsError && (
-              <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-3 animate-in fade-in">
+              <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-mono flex items-center gap-2.5">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{settingsError}</span>
               </div>
             )}
 
             {rlsBlocked && (
-              <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs space-y-3 animate-in fade-in">
+              <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs space-y-3 font-mono">
                 <div className="flex items-start gap-2.5">
-                  <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                  <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                   <div>
-                    <p className="font-bold text-amber-300 text-sm">Supabase Permission Setup Required</p>
-                    <p className="text-slate-300 mt-1 leading-relaxed">
-                      PostgreSQL Row-Level Security (RLS) is blocking saves because <code className="text-amber-300 bg-amber-500/20 px-1 py-0.5 rounded font-mono">public.study_rooms</code> has no <code className="text-amber-300 bg-amber-500/20 px-1 py-0.5 rounded font-mono">UPDATE</code> policy for room hosts.
+                    <p className="font-bold text-amber-300">Supabase Permission Policy Required</p>
+                    <p className="text-neutral-300 mt-1">
+                      PostgreSQL Row-Level Security requires an UPDATE policy on public.study_rooms.
                     </p>
                   </div>
                 </div>
-                <div className="bg-slate-950/80 p-3 rounded-xl border border-white/5 font-mono text-[11px] text-slate-300 overflow-x-auto select-all">
+                <div className="bg-slate-950/80 p-3 rounded-lg border border-white/5 text-[11px] overflow-x-auto select-all">
                   <pre>{ROOMS_RLS_SQL}</pre>
                 </div>
-                <div className="flex items-center gap-2 pt-1 flex-wrap">
-                  <button
-                    type="button"
-                    onClick={handleCopyRlsSql}
-                    className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
-                  >
-                    {copiedRlsSql ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                    {copiedRlsSql ? 'Copied to Clipboard!' : 'Copy SQL Fix'}
-                  </button>
-                  <span className="text-[11px] text-slate-400">
-                    Paste into Supabase Dashboard &rarr; SQL Editor &rarr; Run, then click Save again.
-                  </span>
-                </div>
+                <button
+                  type="button"
+                  onClick={handleCopyRlsSql}
+                  className="px-3 py-1.5 rounded-lg bg-amber-500 text-slate-950 font-bold text-xs flex items-center gap-1.5 cursor-pointer font-hud-mono"
+                >
+                  {copiedRlsSql ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copiedRlsSql ? 'COPIED' : 'COPY SQL'}</span>
+                </button>
               </div>
             )}
 
-            <form onSubmit={handleSaveSettings} className="space-y-6">
-              {/* Room Name */}
-              <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-5 space-y-3">
-                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
-                  Room Name
-                </label>
-                <input
-                  type="text"
-                  maxLength={40}
-                  value={editName}
-                  onChange={(e) => {
-                    isFormDirtyRef.current = true;
-                    setEditName(e.target.value);
-                  }}
-                  placeholder="e.g., Deep Work Grind"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-slate-600 focus:outline-none focus:border-amber-500/50 transition-colors text-sm font-medium"
-                  required
-                />
-              </div>
-
-              {/* Security & Password */}
-              <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-5 space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Lock className="w-4 h-4 text-amber-400" />
-                    <h3 className="text-sm font-bold text-white tracking-wide">
-                      Password & Room Privacy
-                    </h3>
-                  </div>
-                  <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${
-                    isPrivate
-                      ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-                      : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                  }`}>
-                    {isPrivate ? 'Protected' : 'Public Access'}
-                  </span>
-                </div>
-
-                <p className="text-xs text-slate-400">
-                  Control whether other scholars need a password to enter this room. As the host, you can view, change, or remove the password at any time.
-                </p>
-
-                {/* Privacy Mode Selector */}
-                <div className="grid grid-cols-2 gap-3 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      isFormDirtyRef.current = true;
-                      setIsPrivate(false);
-                    }}
-                    className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-                      !isPrivate
-                        ? 'bg-white/10 border-amber-500 text-white shadow-md'
-                        : 'bg-white/[0.02] border-white/5 text-slate-400 hover:text-white hover:bg-white/5'
-                    }`}
-                  >
-                    <Unlock className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Public (No Password)</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      isFormDirtyRef.current = true;
-                      setIsPrivate(true);
-                    }}
-                    className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-                      isPrivate
-                        ? 'bg-amber-500/15 border-amber-500/40 text-amber-400 shadow-md'
-                        : 'bg-white/[0.02] border-white/5 text-slate-400 hover:text-white hover:bg-white/5'
-                    }`}
-                  >
-                    <Lock className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Private (Password)</span>
-                  </button>
-                </div>
-
-                {/* Password field */}
-                {isPrivate ? (
-                  <div className="space-y-2 pt-2 animate-in fade-in duration-200">
-                    <div className="flex items-center justify-between">
-                      <label className="text-xs font-bold text-slate-300 uppercase tracking-wider">
-                        Current Room Password
-                      </label>
-                      {editPassword && (
-                        <span className="text-[11px] text-slate-400">
-                          {showPassword ? 'Password Revealed' : 'Password Masked'}
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="relative flex items-center">
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        maxLength={30}
-                        value={editPassword}
-                        onChange={(e) => {
-                          isFormDirtyRef.current = true;
-                          setEditPassword(e.target.value);
-                        }}
-                        placeholder="Enter room password..."
-                        className="w-full bg-white/5 border border-white/10 rounded-xl pl-4 pr-24 py-3 text-white placeholder:text-slate-600 focus:outline-none focus:border-amber-500/50 transition-colors text-sm font-mono tracking-wider"
-                        required={isPrivate}
-                      />
-
-                      <div className="absolute right-2 flex items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
-                          title={showPassword ? 'Hide password' : 'See password'}
-                        >
-                          {showPassword ? (
-                            <EyeOff className="w-4 h-4 text-amber-400" />
-                          ) : (
-                            <Eye className="w-4 h-4" />
-                          )}
-                        </button>
-
-                        <button
-                          type="button"
-                          disabled={!editPassword.trim()}
-                          onClick={handleCopyPassword}
-                          className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer disabled:opacity-30"
-                          title="Copy password to clipboard"
-                        >
-                          {copiedPassword ? (
-                            <Check className="w-4 h-4 text-emerald-400" />
-                          ) : (
-                            <Copy className="w-4 h-4" />
-                          )}
-                        </button>
-                      </div>
-                    </div>
-
-                    <p className="text-[11px] text-slate-500">
-                      Scholars who enter via the explorer or short code will be asked for this password. Use the eye icon to see it or the copy button to share it.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="p-3.5 rounded-xl bg-emerald-500/5 border border-emerald-500/10 text-slate-400 text-xs flex items-center gap-2.5">
-                    <Globe className="w-4 h-4 text-emerald-400 shrink-0" />
-                    <span>
-                      This room is currently open for any scholar to join without entering a password.
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              {/* Room Capacity */}
-              <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-5 space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4 text-amber-400" />
-                    <h3 className="text-sm font-bold text-white tracking-wide">
-                      Room Member Capacity
-                    </h3>
-                  </div>
-                  <span className="text-xs font-mono font-bold text-amber-400 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/20">
-                    {dbMembers.length} / {editMaxCapacity} Members
-                  </span>
-                </div>
-
-                <p className="text-xs text-slate-400">
-                  Increase or adjust the maximum number of scholars who can be enrolled in this focus group at the same time.
-                </p>
-
-                {/* Progress bar */}
-                <div className="space-y-1.5">
-                  <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden border border-white/5">
-                    <div
-                      className={`h-full transition-all duration-300 ${
-                        dbMembers.length >= editMaxCapacity
-                          ? 'bg-red-500'
-                          : 'bg-gradient-to-r from-amber-500 to-orange-500'
-                      }`}
-                      style={{
-                        width: `${Math.min(100, Math.round((dbMembers.length / Math.max(1, editMaxCapacity)) * 100))}%`,
+            {/* Two-Column Section Layout: Left Sticky Nav, Right Panels */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+              {/* Left Column: Sticky Section Index */}
+              <aside className="md:col-span-3">
+                {/* Desktop Sticky Index */}
+                <nav className="hidden md:flex flex-col space-y-1 sticky top-4">
+                  {[
+                    { id: 'room', label: 'ROOM IDENT' },
+                    { id: 'access', label: 'ACCESS CONTROL' },
+                    { id: 'capacity', label: 'CAPACITY' },
+                    { id: 'scholars', label: 'ROSTER & BANS' },
+                    { id: 'danger', label: 'DANGER ZONE', isDanger: true },
+                  ].map((sec) => (
+                    <button
+                      key={sec.id}
+                      type="button"
+                      onClick={() => {
+                        const el = document.getElementById(`settings-${sec.id}`);
+                        el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                       }}
+                      className={`w-full text-left px-3 py-2 rounded-lg text-xs font-hud-mono uppercase tracking-wider transition-all flex items-center justify-between cursor-pointer ${
+                        sec.isDanger
+                          ? 'text-rose-400/80 hover:text-rose-300 hover:bg-rose-500/10'
+                          : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
+                      }`}
+                    >
+                      <span>{sec.label}</span>
+                      {sec.isDanger && <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />}
+                    </button>
+                  ))}
+                </nav>
+
+                {/* Mobile Horizontal Pill Strip */}
+                <div className="flex md:hidden items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                  {[
+                    { id: 'room', label: 'ROOM' },
+                    { id: 'access', label: 'ACCESS' },
+                    { id: 'capacity', label: 'CAPACITY' },
+                    { id: 'scholars', label: 'ROSTER' },
+                    { id: 'danger', label: 'DANGER', isDanger: true },
+                  ].map((sec) => (
+                    <button
+                      key={sec.id}
+                      type="button"
+                      onClick={() => {
+                        const el = document.getElementById(`settings-${sec.id}`);
+                        el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }}
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-hud-mono uppercase tracking-wider whitespace-nowrap border shrink-0 cursor-pointer ${
+                        sec.isDanger
+                          ? 'border-rose-500/20 bg-rose-500/5 text-rose-400'
+                          : 'border-white/10 bg-white/[0.03] text-neutral-400 hover:text-white'
+                      }`}
+                    >
+                      {sec.label}
+                    </button>
+                  ))}
+                </div>
+              </aside>
+
+              {/* Right Column: Settings Panels */}
+              <div className="md:col-span-9 space-y-6">
+                <form onSubmit={handleSaveSettings} className="space-y-6">
+                  {/* Panel 1: Room Identification */}
+                  <div id="settings-room" className="bg-[#0b0e14]/90 border border-white/[0.07] rounded-xl p-4 sm:p-5 space-y-3">
+                    <div className="flex items-center justify-between border-b border-white/[0.06] pb-2.5">
+                      <span className="text-xs font-hud-mono font-bold text-neutral-300 uppercase tracking-wider">
+                        ROOM IDENTIFICATION
+                      </span>
+                      <span className="text-[10px] font-hud-mono text-neutral-500 uppercase">
+                        MAX 40 CHARS
+                      </span>
+                    </div>
+                    <label className="block text-[10px] font-hud-mono uppercase tracking-wider text-neutral-400">
+                      ROOM DESIGNATION
+                    </label>
+                    <input
+                      type="text"
+                      maxLength={40}
+                      value={editName}
+                      onChange={(e) => {
+                        isFormDirtyRef.current = true;
+                        setEditName(e.target.value);
+                      }}
+                      placeholder="e.g., DEEP WORK CONTROL ROOM"
+                      className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder:text-neutral-500 focus:outline-none focus:border-amber-500/50 text-sm font-mono transition-colors"
+                      required
                     />
                   </div>
-                  <div className="flex items-center justify-between text-[11px] text-slate-500">
-                    <span>{dbMembers.length} currently enrolled</span>
-                    <span>
-                      {editMaxCapacity - dbMembers.length <= 0
-                        ? 'Squad is at max capacity'
-                        : `${editMaxCapacity - dbMembers.length} spots remaining`}
-                    </span>
-                  </div>
-                </div>
 
-                {/* Interactive Capacity Stepper */}
-                <div className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10">
-                  <div className="flex flex-col">
-                    <span className="text-xs font-bold text-slate-200">Max Member Limit</span>
-                    <span className="text-[11px] text-slate-500">Min {Math.max(2, dbMembers.length)} • Max 100</span>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      disabled={editMaxCapacity <= Math.max(2, dbMembers.length)}
-                      onClick={() => {
-                        isFormDirtyRef.current = true;
-                        setEditMaxCapacity((prev) => Math.max(Math.max(2, dbMembers.length), prev - 1));
-                      }}
-                      className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-white/5 border border-white/10 text-white flex items-center justify-center transition-all cursor-pointer font-bold text-lg"
-                      title="Decrease capacity"
-                    >
-                      <Minus className="w-4 h-4" />
-                    </button>
-
-                    <div className="min-w-[70px] text-center">
-                      <span className="text-2xl font-mono font-bold text-white">
-                        {editMaxCapacity}
+                  {/* Panel 2: Access & Password */}
+                  <div id="settings-access" className="bg-[#0b0e14]/90 border border-white/[0.07] rounded-xl p-4 sm:p-5 space-y-4">
+                    <div className="flex items-center justify-between border-b border-white/[0.06] pb-2.5">
+                      <span className="text-xs font-hud-mono font-bold text-neutral-300 uppercase tracking-wider">
+                        ACCESS & CLEARANCE CONTROL
                       </span>
-                      <span className="block text-[10px] text-slate-400 uppercase font-semibold">
-                        Members
+                      <span className={`text-[10px] font-hud-mono px-2 py-0.5 rounded border ${
+                        isPrivate
+                          ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                          : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                      }`}>
+                        {isPrivate ? 'PROTECTED' : 'PUBLIC'}
                       </span>
                     </div>
 
-                    <button
-                      type="button"
-                      disabled={editMaxCapacity >= 100}
-                      onClick={() => {
-                        isFormDirtyRef.current = true;
-                        setEditMaxCapacity((prev) => Math.min(100, prev + 1));
-                      }}
-                      className="w-10 h-10 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-30 border border-amber-400/40 text-slate-950 flex items-center justify-center transition-all cursor-pointer font-bold text-lg shadow-md shadow-amber-500/20"
-                      title="Increase capacity"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
+                    <p className="text-xs text-neutral-400 font-mono">
+                      Control whether operators require clearance credentials to access this study hall.
+                    </p>
 
-                {/* Quick Presets */}
-                <div className="space-y-1.5 pt-1">
-                  <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-                    Quick Capacity Presets
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {[
-                      { count: 4, label: '4 (Squad)' },
-                      { count: 8, label: '8 (Group)' },
-                      { count: 12, label: '12 (Circle)' },
-                      { count: 25, label: '25 (Hall)' },
-                      { count: 50, label: '50 (Lecture)' },
-                    ].map((preset) => {
-                      const isSelected = editMaxCapacity === preset.count;
-                      const isDisabled = preset.count < dbMembers.length;
-
-                      return (
-                        <button
-                          key={preset.count}
-                          type="button"
-                          disabled={isDisabled}
-                          onClick={() => {
-                            isFormDirtyRef.current = true;
-                            setEditMaxCapacity(preset.count);
-                          }}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
-                            isSelected
-                              ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-md shadow-amber-500/20'
-                              : isDisabled
-                              ? 'opacity-30 bg-white/[0.02] border-white/5 text-slate-600 cursor-not-allowed'
-                              : 'bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border-white/10'
-                          }`}
-                        >
-                          {preset.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-
-              {/* Submit CTA */}
-              <div className="flex items-center gap-3 pt-2">
-                <button
-                  type="submit"
-                  disabled={isSaving}
-                  className="flex-1 py-3.5 px-6 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-amber-500/25 disabled:opacity-50"
-                >
-                  {isSaving ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
-                      <span>Saving Settings...</span>
-                    </>
-                  ) : saveSuccess ? (
-                    <>
-                      <Check className="w-4 h-4 text-slate-950" />
-                      <span>Settings Saved!</span>
-                    </>
-                  ) : (
-                    <>
-                      <Save className="w-4 h-4 text-slate-950" />
-                      <span>Save Room Changes</span>
-                    </>
-                  )}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (roomInfo) {
-                      isFormDirtyRef.current = false;
-                      setEditName(roomInfo.name || '');
-                      setIsPrivate(Boolean(roomInfo.is_private));
-                      setEditPassword(roomInfo.password || '');
-                      setEditMaxCapacity(roomInfo.max_capacity || 4);
-                      toast('Changes reset to current settings', { icon: '🔄' });
-                    }
-                  }}
-                  className="py-3.5 px-4 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white border border-white/10 font-bold text-sm transition-all cursor-pointer"
-                >
-                  Reset
-                </button>
-              </div>
-
-              {/* Scholar Management & Ban Section */}
-              <div className="rounded-3xl bg-white/[0.02] border border-white/5 p-5 sm:p-6 space-y-5">
-                <div className="flex items-center justify-between border-b border-white/[0.08] pb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-2xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center shrink-0 text-rose-400">
-                      <ShieldAlert className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h3 className="text-base font-bold text-white tracking-wide">Scholar Management & Bans</h3>
-                      <p className="text-xs text-slate-400">
-                        Manage room scholars and enforce exclusions.
-                      </p>
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-hud-mono font-bold px-2 py-1 rounded-full bg-white/5 border border-white/10 text-neutral-400">
-                    {displayUsers.filter(u => !u.is_host).length} MEMBERS
-                  </span>
-                </div>
-
-                {/* Active Room Members */}
-                <div className="space-y-2">
-                  <label className="text-xs font-hud font-bold text-slate-300 uppercase tracking-wider block">
-                    Active Room Scholars
-                  </label>
-                  <div className="space-y-2 max-h-56 overflow-y-auto scrollbar-thin pr-1">
-                    {displayUsers.map((member) => (
-                      <div
-                        key={member.user_id}
-                        className="flex items-center justify-between p-2.5 rounded-xl bg-black/40 border border-white/5 hover:border-white/10 transition-colors"
+                    {/* Privacy Mode Selector - Stats Pill Style */}
+                    <div className="inline-flex p-1 bg-white/[0.03] border border-white/[0.07] rounded-xl gap-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          isFormDirtyRef.current = true;
+                          setIsPrivate(false);
+                        }}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-hud-mono uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer ${
+                          !isPrivate
+                            ? 'bg-white/[0.08] text-white border border-amber-500/50 shadow-[0_0_10px_rgba(245,158,11,0.12)] font-bold'
+                            : 'text-neutral-400 hover:text-white border border-transparent'
+                        }`}
                       >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <UserAvatar
-                            src={member.avatar_url}
-                            name={member.username}
-                            size={32}
-                            className="rounded-full border border-white/10 shrink-0"
+                        <Unlock className="w-3.5 h-3.5" />
+                        <span>PUBLIC (NO PASSWORD)</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          isFormDirtyRef.current = true;
+                          setIsPrivate(true);
+                        }}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-hud-mono uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer ${
+                          isPrivate
+                            ? 'bg-amber-500/15 border border-amber-500/40 text-amber-300 font-bold'
+                            : 'text-neutral-400 hover:text-white border border-transparent'
+                        }`}
+                      >
+                        <Lock className="w-3.5 h-3.5 text-amber-400" />
+                        <span>PRIVATE (PASSWORD)</span>
+                      </button>
+                    </div>
+
+                    {/* Password Field */}
+                    {isPrivate ? (
+                      <div className="space-y-1.5 pt-1">
+                        <label className="text-[10px] font-hud-mono uppercase tracking-wider text-neutral-400 block">
+                          CLEARANCE PASSWORD
+                        </label>
+                        <div className="relative flex items-center">
+                          <input
+                            type={showPassword ? 'text' : 'password'}
+                            maxLength={30}
+                            value={editPassword}
+                            onChange={(e) => {
+                              isFormDirtyRef.current = true;
+                              setEditPassword(e.target.value);
+                            }}
+                            placeholder="ENTER ACCESS PASSWORD…"
+                            className="w-full bg-black/40 border border-white/10 rounded-xl pl-4 pr-24 py-2.5 text-white placeholder:text-neutral-500 focus:outline-none focus:border-amber-500/50 font-mono text-sm tracking-wider"
+                            required={isPrivate}
                           />
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-sm font-bold text-white truncate max-w-[140px]">
-                                {member.username}
-                              </span>
-                              {member.is_host && (
-                                <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 border border-amber-500/30 text-amber-400 font-bold uppercase">
-                                  HOST
-                                </span>
+                          <div className="absolute right-2 flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => setShowPassword(!showPassword)}
+                              className="p-1.5 rounded text-neutral-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                              title={showPassword ? 'Hide password' : 'Show password'}
+                            >
+                              {showPassword ? (
+                                <EyeOff className="w-4 h-4 text-amber-400" />
+                              ) : (
+                                <Eye className="w-4 h-4" />
                               )}
-                            </div>
-                            <span className="text-[10px] text-slate-400 font-mono">
-                              {formatSeconds(member.total_focus_seconds || 0)} studied
-                            </span>
+                            </button>
+                            <button
+                              type="button"
+                              disabled={!editPassword.trim()}
+                              onClick={handleCopyPassword}
+                              className="p-1.5 rounded text-neutral-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer disabled:opacity-30"
+                              title="Copy password"
+                            >
+                              {copiedPassword ? (
+                                <Check className="w-4 h-4 text-emerald-400" />
+                              ) : (
+                                <Copy className="w-4 h-4" />
+                              )}
+                            </button>
                           </div>
                         </div>
-
-                        {!member.is_host && (
-                          <button
-                            type="button"
-                            onClick={() => setMemberToBan({ userId: member.user_id, username: member.username })}
-                            className="px-3 py-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 hover:border-rose-500/60 text-rose-400 text-xs font-hud font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 shrink-0 active:scale-95"
-                          >
-                            <Ban className="w-3.5 h-3.5" />
-                            <span>BAN</span>
-                          </button>
-                        )}
+                        <p className="text-[11px] text-neutral-500 font-mono mt-1">
+                          Operators entering via explorer or short code will be prompted for this clearance credential.
+                        </p>
                       </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Banned Scholars List */}
-                <div className="pt-3 border-t border-white/[0.08] space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-hud font-bold text-rose-400 uppercase tracking-wider flex items-center gap-1.5">
-                      <Ban className="w-3.5 h-3.5" />
-                      <span>Banned Scholars ({bannedMembers.length})</span>
-                    </label>
+                    ) : (
+                      <div className="p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/10 text-neutral-400 text-xs font-mono flex items-center gap-2">
+                        <Globe className="w-4 h-4 text-emerald-400 shrink-0" />
+                        <span>Room is open to all scholars without credential verification.</span>
+                      </div>
+                    )}
                   </div>
 
-                  {bannedMembers.length === 0 ? (
-                    <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 text-center text-xs text-neutral-500 font-mono">
-                      No scholars are currently banned from this room.
+                  {/* Panel 3: Room Capacity Quota */}
+                  <div id="settings-capacity" className="bg-[#0b0e14]/90 border border-white/[0.07] rounded-xl p-4 sm:p-5 space-y-4">
+                    <div className="flex items-center justify-between border-b border-white/[0.06] pb-2.5">
+                      <span className="text-xs font-hud-mono font-bold text-neutral-300 uppercase tracking-wider">
+                        OPERATOR CAPACITY QUOTA
+                      </span>
+                      <span className="text-xs font-hud-mono font-bold text-amber-400">
+                        {String(dbMembers.length).padStart(2, '0')} / {String(editMaxCapacity).padStart(2, '0')} SLOTS
+                      </span>
                     </div>
-                  ) : (
-                    <div className="space-y-2 max-h-48 overflow-y-auto scrollbar-thin pr-1">
-                      {bannedMembers.map((banned) => (
+
+                    {/* Segmented Slot Visualization: 20 discrete ticks */}
+                    <div className="space-y-1.5">
+                      <div className="grid grid-cols-20 gap-1 my-1">
+                        {Array.from({ length: 20 }).map((_, idx) => {
+                          const occupiedRatio = dbMembers.length / editMaxCapacity;
+                          const isOccupied = idx / 20 < occupiedRatio;
+                          return (
+                            <div
+                              key={idx}
+                              className={`h-2 rounded-sm transition-all ${
+                                isOccupied ? 'bg-amber-500' : 'bg-white/[0.07]'
+                              }`}
+                            />
+                          );
+                        })}
+                      </div>
+                      <div className="flex items-center justify-between text-[11px] font-mono text-neutral-500">
+                        <span>{dbMembers.length} OPERATORS CURRENTLY ASSIGNED</span>
+                        <span>
+                          {editMaxCapacity - dbMembers.length <= 0
+                            ? 'MAX CAPACITY REACHED'
+                            : `${editMaxCapacity - dbMembers.length} SLOTS OPEN`}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Stepper */}
+                    <div className="flex items-center justify-between p-3.5 rounded-xl bg-black/40 border border-white/10">
+                      <div className="flex flex-col">
+                        <span className="text-xs font-hud-mono font-bold text-neutral-300 uppercase tracking-wider">
+                          MAX OPERATOR QUOTA
+                        </span>
+                        <span className="text-[11px] font-mono text-neutral-500">
+                          MIN {Math.max(2, dbMembers.length)} • MAX 100
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          disabled={editMaxCapacity <= Math.max(2, dbMembers.length)}
+                          onClick={() => {
+                            isFormDirtyRef.current = true;
+                            setEditMaxCapacity((prev) => Math.max(Math.max(2, dbMembers.length), prev - 1));
+                          }}
+                          className="w-8 h-8 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] disabled:opacity-30 border border-white/10 text-white flex items-center justify-center transition-all cursor-pointer font-bold"
+                          title="Decrease"
+                        >
+                          <Minus className="w-3.5 h-3.5" />
+                        </button>
+
+                        <div className="min-w-[60px] text-center">
+                          <span className="text-xl font-mono font-bold text-white tabular-nums">
+                            {String(editMaxCapacity).padStart(2, '0')}
+                          </span>
+                          <span className="block text-[9px] font-hud-mono text-neutral-500 uppercase">
+                            SLOTS
+                          </span>
+                        </div>
+
+                        <button
+                          type="button"
+                          disabled={editMaxCapacity >= 100}
+                          onClick={() => {
+                            isFormDirtyRef.current = true;
+                            setEditMaxCapacity((prev) => Math.min(100, prev + 1));
+                          }}
+                          className="w-8 h-8 rounded-lg bg-amber-500 hover:brightness-110 active:scale-95 disabled:opacity-30 text-slate-950 flex items-center justify-center transition-all cursor-pointer font-bold"
+                          title="Increase"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Quick Presets */}
+                    <div className="space-y-1.5 pt-1">
+                      <label className="text-[10px] font-hud-mono uppercase tracking-wider text-neutral-400 block">
+                        QUICK CAPACITY PRESETS
+                      </label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {[
+                          { count: 4, label: '04 SQUAD' },
+                          { count: 8, label: '08 GROUP' },
+                          { count: 12, label: '12 CIRCLE' },
+                          { count: 25, label: '25 HALL' },
+                          { count: 50, label: '50 LECTURE' },
+                        ].map((preset) => {
+                          const isSelected = editMaxCapacity === preset.count;
+                          const isDisabled = preset.count < dbMembers.length;
+                          return (
+                            <button
+                              key={preset.count}
+                              type="button"
+                              disabled={isDisabled}
+                              onClick={() => {
+                                isFormDirtyRef.current = true;
+                                setEditMaxCapacity(preset.count);
+                              }}
+                              className={`px-2.5 py-1 rounded-lg text-[10px] font-hud-mono font-bold uppercase tracking-wider transition-all border cursor-pointer ${
+                                isSelected
+                                  ? 'bg-amber-500 text-slate-950 border-amber-400'
+                                  : isDisabled
+                                  ? 'opacity-30 bg-white/[0.02] border-white/5 text-neutral-600 cursor-not-allowed'
+                                  : 'bg-white/[0.04] hover:bg-white/[0.08] text-neutral-300 hover:text-white border-white/10'
+                              }`}
+                            >
+                              {preset.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Panel 4: Scholars & Bans */}
+                  <div id="settings-scholars" className="bg-[#0b0e14]/90 border border-white/[0.07] rounded-xl p-4 sm:p-5 space-y-4">
+                    <div className="flex items-center justify-between border-b border-white/[0.06] pb-2.5">
+                      <span className="text-xs font-hud-mono font-bold text-neutral-300 uppercase tracking-wider">
+                        OPERATOR ROSTER & EXCLUSIONS
+                      </span>
+                      <span className="text-[10px] font-hud-mono text-neutral-500">
+                        {displayUsers.filter((u) => !u.is_host).length} ENROLLED
+                      </span>
+                    </div>
+
+                    {/* Active members list */}
+                    <div className="space-y-1.5 max-h-52 overflow-y-auto scrollbar-thin pr-1">
+                      {displayUsers.map((member) => (
                         <div
-                          key={banned.userId}
-                          className="flex items-center justify-between p-2.5 rounded-xl bg-rose-500/5 border border-rose-500/20"
+                          key={member.user_id}
+                          className="flex items-center justify-between p-2 rounded-lg bg-black/40 border border-white/5"
                         >
                           <div className="flex items-center gap-2.5 min-w-0">
-                            <div className="w-7 h-7 rounded-full bg-rose-500/20 border border-rose-500/30 flex items-center justify-center text-rose-400 shrink-0">
-                              <UserX className="w-3.5 h-3.5" />
+                            <UserAvatar
+                              src={member.avatar_url}
+                              name={member.username}
+                              size={28}
+                              className="rounded-full border border-white/10 shrink-0"
+                            />
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-xs font-hud font-bold text-white truncate max-w-[130px]">
+                                  {member.username}
+                                </span>
+                                {member.is_host && (
+                                  <Crown className="w-3 h-3 text-amber-400 shrink-0 fill-amber-400/20" />
+                                )}
+                              </div>
+                              <span className="text-[10px] text-neutral-500 font-mono">
+                                {formatSeconds(member.total_focus_seconds || 0)} focus logged
+                              </span>
                             </div>
-                            <span className="text-sm font-bold text-slate-200 truncate">
-                              {banned.username}
-                            </span>
                           </div>
 
-                          <button
-                            type="button"
-                            onClick={() => handleUnban(banned.userId, banned.username)}
-                            disabled={isUnbanning === banned.userId}
-                            className="px-3 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 hover:border-emerald-500/60 text-emerald-400 text-xs font-hud font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 shrink-0 active:scale-95 disabled:opacity-50"
-                          >
-                            <UserCheck className="w-3.5 h-3.5" />
-                            <span>{isUnbanning === banned.userId ? 'UNBANNING...' : 'UNBAN'}</span>
-                          </button>
+                          {!member.is_host && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setMemberToBan({ userId: member.user_id, username: member.username })
+                              }
+                              className="px-2.5 py-1 rounded bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-400 text-[10px] font-hud-mono font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1 shrink-0"
+                            >
+                              <Ban className="w-3 h-3" />
+                              <span>BAN</span>
+                            </button>
+                          )}
                         </div>
                       ))}
                     </div>
-                  )}
-                </div>
-              </div>
 
-              {/* Danger Zone: Delete Room */}
-              <div className="pt-6 border-t border-white/5">
-                <div className="p-5 rounded-2xl bg-red-500/5 border border-red-500/15 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div>
-                    <h4 className="text-sm font-bold text-red-400 flex items-center gap-2">
-                      <Trash2 className="w-4 h-4" />
-                      Delete Study Room
-                    </h4>
-                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                      Permanently delete this focus group. All enrolled scholars will be disconnected immediately.
-                    </p>
+                    {/* Banned members list */}
+                    <div className="pt-2 border-t border-white/[0.06] space-y-1.5">
+                      <span className="text-[10px] font-hud-mono uppercase tracking-wider text-rose-400 block">
+                        BANNED OPERATORS ({bannedMembers.length})
+                      </span>
+                      {bannedMembers.length === 0 ? (
+                        <div className="p-2.5 rounded-lg bg-white/[0.02] border border-white/5 text-center text-[11px] text-neutral-500 font-mono">
+                          No operators are currently excluded from this room.
+                        </div>
+                      ) : (
+                        <div className="space-y-1.5 max-h-40 overflow-y-auto scrollbar-thin pr-1">
+                          {bannedMembers.map((banned) => (
+                            <div
+                              key={banned.userId}
+                              className="flex items-center justify-between p-2 rounded-lg bg-rose-500/5 border border-rose-500/20"
+                            >
+                              <span className="text-xs font-mono text-neutral-300 truncate">
+                                {banned.username}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleUnban(banned.userId, banned.username)}
+                                disabled={isUnbanning === banned.userId}
+                                className="px-2.5 py-1 rounded bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-400 text-[10px] font-hud-mono font-bold uppercase tracking-wider transition-all cursor-pointer"
+                              >
+                                {isUnbanning === banned.userId ? 'UNBANNING…' : 'UNBAN'}
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
+
+                  {/* Panel 5: Danger Zone */}
+                  <div id="settings-danger" className="pt-4 border-t border-white/[0.08]">
+                    <div className="p-4 rounded-xl bg-rose-500/[0.03] border border-rose-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <span className="text-xs font-hud-mono font-bold text-rose-400 uppercase tracking-wider flex items-center gap-1.5">
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>TERMINATE ROOM CLEARANCE</span>
+                        </span>
+                        <p className="text-[11px] text-neutral-400 font-mono mt-1">
+                          Permanently decommission this study hall. All operators will be immediately disconnected.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        disabled={isSaving || isDeletingRoom}
+                        onClick={() => setShowDeleteConfirm(true)}
+                        className="px-3.5 py-2 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 border border-rose-500/30 font-hud-mono text-xs uppercase font-bold tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>DELETE ROOM</span>
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
+
+            {/* Sticky Save Bar (Appears when isFormDirty) */}
+            {isFormDirty && (
+              <div className="sticky bottom-4 z-30 max-w-xl mx-auto w-full p-2.5 sm:p-3 rounded-xl bg-[#0e121a]/95 border border-amber-500/40 shadow-2xl flex items-center justify-between gap-3 backdrop-blur-md animate-in slide-in-from-bottom-2 duration-150">
+                <div className="flex items-center gap-2 pl-2">
+                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                  <span className="text-xs font-hud-mono font-bold text-amber-300 uppercase tracking-wider">
+                    UNSAVED CHANGES
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    disabled={isSaving || isDeletingRoom}
-                    onClick={() => setShowDeleteConfirm(true)}
-                    className="px-4 py-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-white border border-red-500/20 font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0 active:scale-95"
+                    onClick={handleResetSettings}
+                    className="px-3 py-1.5 rounded-lg text-xs font-hud-mono uppercase tracking-wider text-neutral-400 hover:text-white hover:bg-white/5 transition-all cursor-pointer"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>Delete Room</span>
+                    DISCARD
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSaveSettings()}
+                    disabled={isSaving}
+                    className="px-4 py-1.5 rounded-lg text-xs font-hud-mono font-bold uppercase tracking-wider text-slate-950 bg-amber-500 hover:brightness-110 active:scale-95 disabled:opacity-50 transition-all flex items-center gap-1.5 cursor-pointer shadow-md shadow-amber-500/20"
+                  >
+                    {isSaving ? (
+                      <>
+                        <div className="w-3 h-3 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                        <span>SAVING…</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-3.5 h-3.5 text-slate-950" />
+                        <span>SAVE</span>
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
-            </form>
+            )}
           </div>
         )}
       </div>
 
-      {/* Delete Confirmation Modal */}
+      {/* ============================================================== */}
+      {/* CONFIRMATION MODALS (Portal)                                    */}
+      {/* ============================================================== */}
       {mounted && typeof document !== 'undefined' && showDeleteConfirm && createPortal(
         <div
           onClick={(e) => {
@@ -2421,39 +2878,47 @@ CREATE POLICY "Hosts can update their own study rooms"
               setShowDeleteConfirm(false);
             }
           }}
-          className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+          className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150"
         >
-          <div className="bg-[#0f111a] border border-white/10 rounded-3xl w-full max-w-sm p-6 shadow-2xl relative">
+          <div className="bg-[#0b0e14] border border-white/10 rounded-2xl w-full max-w-sm p-5 shadow-2xl relative space-y-4">
             <button
               onClick={() => setShowDeleteConfirm(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors cursor-pointer"
+              className="absolute top-3.5 right-3.5 text-neutral-400 hover:text-white transition-colors cursor-pointer"
               disabled={isDeletingRoom}
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
-            <h2 className="text-xl font-bold text-white mb-2">
-              Delete Study Room?
-            </h2>
-            <p className="text-sm text-slate-400 mb-8 leading-relaxed">
-              Are you sure you want to delete &ldquo;{roomName}&rdquo;? This action cannot be undone and all active members will be removed.
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 shrink-0">
+                <Trash2 className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="font-hud font-bold text-sm text-white uppercase tracking-wider">
+                  DELETE STUDY ROOM
+                </h3>
+                <p className="text-[10px] font-mono text-neutral-500">Permanent action</p>
+              </div>
+            </div>
+            <p className="text-xs text-neutral-300 font-mono leading-relaxed">
+              Decommission &ldquo;{roomName}&rdquo;? All enrolled operators will be disconnected and room records wiped.
             </p>
 
-            <div className="flex gap-3">
+            <div className="flex gap-2 pt-1">
               <button
                 type="button"
                 onClick={() => setShowDeleteConfirm(false)}
                 disabled={isDeletingRoom}
-                className="flex-1 py-3 rounded-xl font-bold text-slate-300 bg-white/5 hover:bg-white/10 transition-colors disabled:opacity-50 cursor-pointer"
+                className="flex-1 py-2 rounded-lg font-hud-mono font-bold text-neutral-300 bg-white/5 hover:bg-white/10 text-xs uppercase tracking-wider transition-colors disabled:opacity-50 cursor-pointer"
               >
-                Cancel
+                CANCEL
               </button>
               <button
                 type="button"
                 onClick={handleDeleteRoom}
                 disabled={isDeletingRoom}
-                className="flex-1 py-3 rounded-xl font-bold text-white bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/20 transition-colors disabled:opacity-50 cursor-pointer flex items-center justify-center gap-1.5"
+                className="flex-1 py-2 rounded-lg font-hud-mono font-bold text-rose-300 bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-xs uppercase tracking-wider transition-colors disabled:opacity-50 cursor-pointer flex items-center justify-center gap-1.5"
               >
-                {isDeletingRoom ? 'Deleting...' : 'Confirm'}
+                {isDeletingRoom ? 'DELETING…' : 'CONFIRM DELETE'}
               </button>
             </div>
           </div>
@@ -2461,7 +2926,6 @@ CREATE POLICY "Hosts can update their own study rooms"
         document.body
       )}
 
-      {/* Ban Scholar Confirmation Modal */}
       {mounted && typeof document !== 'undefined' && memberToBan && createPortal(
         <div
           onClick={(e) => {
@@ -2469,46 +2933,48 @@ CREATE POLICY "Hosts can update their own study rooms"
               setMemberToBan(null);
             }
           }}
-          className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+          className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150"
         >
-          <div className="bg-[#0f111a] border border-rose-500/30 rounded-3xl w-full max-w-sm p-6 shadow-2xl relative space-y-4 animate-in zoom-in-95 duration-150">
+          <div className="bg-[#0b0e14] border border-rose-500/30 rounded-2xl w-full max-w-sm p-5 shadow-2xl relative space-y-4 animate-in zoom-in-95 duration-150">
             <button
               onClick={() => setMemberToBan(null)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors cursor-pointer"
+              className="absolute top-3.5 right-3.5 text-neutral-400 hover:text-white transition-colors cursor-pointer"
               disabled={isBanning}
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-rose-500/20 border border-rose-500/30 flex items-center justify-center shrink-0 text-rose-400">
-                <Ban className="w-5 h-5" />
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400 shrink-0">
+                <Ban className="w-4 h-4" />
               </div>
               <div>
-                <h3 className="font-hud font-bold text-lg text-white">Ban Scholar</h3>
-                <p className="text-xs text-rose-300/80">Permanent room exclusion</p>
+                <h3 className="font-hud font-bold text-sm text-white uppercase tracking-wider">
+                  BAN OPERATOR
+                </h3>
+                <p className="text-[10px] font-mono text-rose-400/80">Permanent exclusion</p>
               </div>
             </div>
-            <p className="text-sm text-slate-300 leading-relaxed">
-              Are you sure you want to ban <span className="font-bold text-white font-hud">{memberToBan.username}</span> from this room? They will be removed immediately and barred from rejoining.
+            <p className="text-xs text-neutral-300 font-mono leading-relaxed">
+              Ban <span className="font-bold text-white font-hud">{memberToBan.username}</span> from this room? They will be immediately removed and barred from reconnecting.
             </p>
 
-            <div className="flex gap-3 pt-2">
+            <div className="flex gap-2 pt-1">
               <button
                 type="button"
                 onClick={() => setMemberToBan(null)}
                 disabled={isBanning}
-                className="flex-1 py-2.5 rounded-xl font-bold text-slate-300 bg-white/5 hover:bg-white/10 transition-colors disabled:opacity-50 cursor-pointer text-xs uppercase font-hud"
+                className="flex-1 py-2 rounded-lg font-hud-mono font-bold text-neutral-300 bg-white/5 hover:bg-white/10 text-xs uppercase tracking-wider transition-colors disabled:opacity-50 cursor-pointer"
               >
-                Cancel
+                CANCEL
               </button>
               <button
                 type="button"
                 onClick={handleConfirmBan}
                 disabled={isBanning}
-                className="flex-1 py-2.5 rounded-xl font-bold text-white bg-rose-600 hover:bg-rose-500 transition-colors disabled:opacity-50 cursor-pointer flex items-center justify-center gap-1.5 text-xs uppercase font-hud shadow-lg shadow-rose-600/30"
+                className="flex-1 py-2 rounded-lg font-hud-mono font-bold text-white bg-rose-600 hover:bg-rose-500 text-xs uppercase tracking-wider transition-colors disabled:opacity-50 cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-rose-600/30"
               >
                 <Ban className="w-3.5 h-3.5" />
-                <span>{isBanning ? 'Banning...' : 'Confirm Ban'}</span>
+                <span>{isBanning ? 'BANNING…' : 'CONFIRM BAN'}</span>
               </button>
             </div>
           </div>

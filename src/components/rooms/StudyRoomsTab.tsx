@@ -786,17 +786,6 @@ CREATE POLICY "Hosts can update their own study rooms"
               <RotateCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-amber-400' : ''}`} />
             </button>
 
-            {/* Direct Join by Code Modal Button */}
-            <button
-              type="button"
-              onClick={() => setIsJoinCodeModalOpen(true)}
-              className="px-2.5 py-1.5 rounded-lg bg-white/[0.03] hover:bg-white/[0.08] border border-white/10 text-neutral-400 hover:text-neutral-200 font-hud-mono text-xs font-bold tracking-wider uppercase transition-all cursor-pointer flex items-center gap-1.5"
-              title="Enter 6-digit room code"
-            >
-              <KeyRound className="w-3.5 h-3.5" />
-              <span>CODE</span>
-            </button>
-
             {/* Segmented Filter Pills (MY ROOMS / EXPLORE) */}
             <div className="inline-flex items-center p-1 bg-white/[0.03] border border-white/[0.07] rounded-xl gap-1">
               <button
@@ -829,19 +818,21 @@ CREATE POLICY "Hosts can update their own study rooms"
               </button>
             </div>
 
-            {/* Create Room Button (Tasks style) */}
-            <button
-              type="button"
-              onClick={() => {
-                setIsPrivateCreate(false);
-                setCreateRoomData({ name: '', password: '', max_capacity: 4 });
-                setIsCreateModalOpen(true);
-              }}
-              className="px-3.5 py-1.5 text-xs font-hud-mono font-bold text-slate-950 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer hover:brightness-110 active:scale-95 bg-amber-500 uppercase tracking-wider"
-            >
-              <Plus className="w-3.5 h-3.5 stroke-[3]" />
-              CREATE
-            </button>
+            {/* Create Room Button - only shown on Explore tab */}
+            {view === 'explorer' && (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsPrivateCreate(false);
+                  setCreateRoomData({ name: '', password: '', max_capacity: 4 });
+                  setIsCreateModalOpen(true);
+                }}
+                className="px-3.5 py-1.5 text-xs font-hud-mono font-bold text-slate-950 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer hover:brightness-110 active:scale-95 bg-amber-500 uppercase tracking-wider"
+              >
+                <Plus className="w-3.5 h-3.5 stroke-[3]" />
+                CREATE
+              </button>
+            )}
           </div>
         </div>
 
@@ -924,7 +915,7 @@ CREATE POLICY "Hosts can update their own study rooms"
                     <span className="w-16 sm:w-24 text-center sm:text-left">Members</span>
                     <span className="w-16 sm:w-20 text-center">Status</span>
                     <span className="w-20 sm:w-28 text-right hidden md:inline">Focus Time</span>
-                    <span className="w-24 sm:w-32 text-right">Action</span>
+                    <span className="w-20 sm:w-28 text-right">Action</span>
                   </div>
                 </div>
 
@@ -1038,24 +1029,8 @@ CREATE POLICY "Hosts can update their own study rooms"
                         </div>
 
                         {/* Action */}
-                        <div className="w-24 sm:w-32 flex items-center justify-end gap-1.5">
-                          {isHost ? (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setEditingRoom(room);
-                                setEditRoomName(room.name);
-                                setEditIsPrivate(room.is_private);
-                                setEditPassword(room.password || '');
-                                setEditMaxCapacity(room.max_capacity || 4);
-                              }}
-                              className="p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer"
-                              title="Room Settings"
-                            >
-                              <Settings className="w-4 h-4" />
-                            </button>
-                          ) : (
+                        <div className="w-20 sm:w-28 flex items-center justify-end gap-1.5">
+                          {!isHost && (
                             <button
                               type="button"
                               onClick={(e) => {
@@ -1196,7 +1171,7 @@ CREATE POLICY "Hosts can update their own study rooms"
                     <span className="w-16 sm:w-24 text-center sm:text-left">Members</span>
                     <span className="w-16 sm:w-20 text-center">Status</span>
                     <span className="w-20 sm:w-28 text-right hidden md:inline">Focus Time</span>
-                    <span className="w-24 sm:w-32 text-right">Action</span>
+                    <span className="w-20 sm:w-28 text-right">Action</span>
                   </div>
                 </div>
 
@@ -1311,7 +1286,7 @@ CREATE POLICY "Hosts can update their own study rooms"
                         </div>
 
                         {/* Action */}
-                        <div className="w-24 sm:w-32 flex items-center justify-end gap-1.5">
+                        <div className="w-20 sm:w-28 flex items-center justify-end gap-1.5">
                           {isMember ? (
                             <button
                               type="button"
