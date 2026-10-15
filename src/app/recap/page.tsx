@@ -102,6 +102,9 @@ export default async function RecapPage(props: {
   let bestWeekday: string | null = null;
   let peakHour: number | null = 14;
   let completedTasks = 0;
+  let activeDatesList: string[] = [];
+  let streakStartDate: string | null = null;
+  let streakEndDate: string | null = null;
 
   if (rpcRes.data && typeof rpcRes.data === 'object' && !rpcRes.error) {
     const rpc = rpcRes.data as any;
@@ -113,6 +116,11 @@ export default async function RecapPage(props: {
     bestWeekday = rpc.best_weekday ? String(rpc.best_weekday) : null;
     peakHour = rpc.peak_hour !== undefined ? Number(rpc.peak_hour) : 14;
     completedTasks = Number(rpc.completed_tasks) || 0;
+    if (Array.isArray(rpc.active_dates)) {
+      activeDatesList = rpc.active_dates.map(String).sort();
+    }
+    if (rpc.streak_start_date) streakStartDate = String(rpc.streak_start_date);
+    if (rpc.streak_end_date) streakEndDate = String(rpc.streak_end_date);
   } else {
     // Fallback parallel queries for local dev, offline, or prior to RPC deployment
     const [sessionsRes, subjectsRes, todosRes] = await Promise.all([
@@ -162,6 +170,7 @@ export default async function RecapPage(props: {
     });
 
     activeDays = activeDates.size;
+    activeDatesList = Array.from(activeDates).sort();
 
     // Top subject & breakdown
     let maxSec = 0;
@@ -199,6 +208,38 @@ export default async function RecapPage(props: {
     }
   }
 
+  // Calculate contiguous streak range from activeDatesList
+  let computedStreak = 0;
+  if (activeDatesList.length > 0) {
+    let currentStreak = 1;
+    let maxStreak = 1;
+    let currentStart = activeDatesList[0];
+    let bestStart = activeDatesList[0];
+    let bestEnd = activeDatesList[0];
+
+    for (let i = 1; i < activeDatesList.length; i++) {
+      const prev = new Date(activeDatesList[i - 1] + 'T00:00:00Z').getTime();
+      const curr = new Date(activeDatesList[i] + 'T00:00:00Z').getTime();
+      const diffDays = Math.round((curr - prev) / (1000 * 60 * 60 * 24));
+
+      if (diffDays === 1) {
+        currentStreak++;
+        if (currentStreak > maxStreak) {
+          maxStreak = currentStreak;
+          bestStart = currentStart;
+          bestEnd = activeDatesList[i];
+        }
+      } else if (diffDays > 1) {
+        currentStreak = 1;
+        currentStart = activeDatesList[i];
+      }
+    }
+
+    computedStreak = maxStreak;
+    if (!streakStartDate) streakStartDate = bestStart;
+    if (!streakEndDate) streakEndDate = bestEnd;
+  }
+
   // 5. Zero-session edge case
   if (totalSeconds === 0) {
     return <EmptyRecapFallback seasonDisplayName={seasonDisplayName} seasonKey={previousSeasonKey} />;
@@ -215,6 +256,8 @@ export default async function RecapPage(props: {
   const currentRank = profile?.rank_title || history?.new_rank || softReset.newTier.fullTitle;
   const currentLiveRP = profile?.season_rp ?? profile?.rp ?? startingRP;
 
+  const resolvedStreak = Math.max(computedStreak, profile?.streak_days || 0, Math.min(activeDays, 1));
+
   const payload = {
     seasonKey: previousSeasonKey,
     seasonDisplayName,
@@ -225,7 +268,7 @@ export default async function RecapPage(props: {
     subjectBreakdown,
     bestWeekday,
     peakHour,
-    longestStreak: profile?.streak_days || Math.min(activeDays, 7),
+    longestStreak: resolvedStreak,
     completedTasks,
     previousRank,
     previousRP,
@@ -234,6 +277,9 @@ export default async function RecapPage(props: {
     currentLiveRP,
     isFirstSeason,
     username: profile?.name || profile?.username || 'Scholar',
+    activeDates: activeDatesList,
+    streakStartDate,
+    streakEndDate,
   };
 
   // 7. Cache in season_recaps table for future sub-100ms primary key lookups

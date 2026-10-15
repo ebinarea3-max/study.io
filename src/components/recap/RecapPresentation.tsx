@@ -32,6 +32,10 @@ export interface RecapPresentationProps {
   currentLiveRP: number;
   isFirstSeason?: boolean;
   username?: string;
+  // Consistency slide calendar data
+  activeDates?: string[];
+  streakStartDate?: string | null;
+  streakEndDate?: string | null;
   // Dev preview enhancements
   isDevPreview?: boolean;
   onClose?: () => void;
@@ -116,6 +120,31 @@ function useCountUp(target: number, durationMs: number = 1200, enabled: boolean 
   return value;
 }
 
+/**
+ * Custom SVG Flame mark for streak climax
+ */
+function CustomFlameMark({ className = '' }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      <path
+        d="M12 2C10.5 4.5 9 7.5 9 10.5C9 10.8 9.02 11.1 9.06 11.4C8.2 10.3 7.8 8.9 7.9 7.5C5.5 9.5 4 12.5 4 15.5C4 19.64 7.58 23 12 23C16.42 23 20 19.64 20 15.5C20 10.8 15.5 6 12 2Z"
+        className="fill-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.9)]"
+      />
+      <path
+        d="M12 20.5C9.79 20.5 8 18.71 8 16.5C8 14.8 9 13 10.5 12C10.8 13.5 11.8 14.8 13.2 15.2C13.8 13.8 14.5 12.5 15.8 11.8C15.9 12.5 16 13.2 16 14C16 17.59 14.21 20.5 12 20.5Z"
+        className="fill-amber-100"
+        opacity="0.9"
+      />
+    </svg>
+  );
+}
+
 export default function RecapPresentation({
   seasonKey,
   seasonDisplayName,
@@ -135,6 +164,9 @@ export default function RecapPresentation({
   currentLiveRP,
   isFirstSeason = false,
   username = 'Scholar',
+  activeDates,
+  streakStartDate,
+  streakEndDate,
   isDevPreview = false,
   onClose,
   forcedSlide,
@@ -229,12 +261,12 @@ export default function RecapPresentation({
       'hook',
       'subject',
       ...(hasPowerDay ? ['powerday'] : []),
-      'consistency',
+      ...(activeDays > 0 ? ['consistency'] : []),
       'rank',
       'cta',
     ];
     return list;
-  }, [hasPowerDay]);
+  }, [hasPowerDay, activeDays]);
 
   const activeSlideId = slides[currentSlide] || 'hook';
   const totalSlides = slides.length;
@@ -268,16 +300,22 @@ export default function RecapPresentation({
     }
   }, [currentSlide, triggerSlideSwell]);
 
-  // Auto-advance progress timer (5 seconds for slides 0-3, paused on rank and cta)
+  // Auto-advance progress timer (6.5s for consistency, 5.0s for others, paused on rank, cta, and hold)
   const [slideProgress, setSlideProgress] = useState(0);
+
+  // Reset progress when currentSlide changes
+  useEffect(() => {
+    setSlideProgress(0);
+  }, [currentSlide]);
+
   useEffect(() => {
     if (isRankSlide || isCtaSlide || isHolding) {
       return;
     }
-    setSlideProgress(0);
-    const intervalTime = 50;
-    const duration = 5000 / Math.max(0.1, speedMultiplier);
-    const increment = (intervalTime / duration) * 100;
+
+    const intervalTime = 40;
+    const currentDuration = (activeSlideId === 'consistency' ? 6500 : 5000) / Math.max(0.1, speedMultiplier);
+    const increment = (intervalTime / currentDuration) * 100;
 
     const interval = setInterval(() => {
       setSlideProgress((prev) => {
@@ -291,7 +329,7 @@ export default function RecapPresentation({
     }, intervalTime);
 
     return () => clearInterval(interval);
-  }, [currentSlide, isRankSlide, isCtaSlide, isHolding, handleNext, speedMultiplier]);
+  }, [currentSlide, activeSlideId, isRankSlide, isCtaSlide, isHolding, handleNext, speedMultiplier]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -398,6 +436,220 @@ export default function RecapPresentation({
     }
     return 'rgba(217, 119, 6, 0.2)';
   }, [isRankSlide, rankPhase, currParsed.tier, prevParsed.tier, activeSlideId]);
+
+  // ══════════════════════════════════════════════════════════
+  // SLIDE 3: CONSISTENCY CALENDAR & CHOREOGRAPHY STATE
+  // ══════════════════════════════════════════════════════════
+  const [consistencyElapsedMs, setConsistencyElapsedMs] = useState(0);
+  const lastConsistencyFrameRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (activeSlideId !== 'consistency') {
+      setConsistencyElapsedMs(0);
+      lastConsistencyFrameRef.current = null;
+      return;
+    }
+
+    if (prefersReducedMotion) {
+      setConsistencyElapsedMs(5000);
+      return;
+    }
+
+    setConsistencyElapsedMs(0);
+    lastConsistencyFrameRef.current = null;
+
+    let animId: number;
+    const loop = (timestamp: number) => {
+      if (lastConsistencyFrameRef.current === null) {
+        lastConsistencyFrameRef.current = timestamp;
+      }
+      const delta = timestamp - lastConsistencyFrameRef.current;
+      lastConsistencyFrameRef.current = timestamp;
+
+      if (!isHolding) {
+        setConsistencyElapsedMs((prev) => prev + delta * Math.max(0.1, speedMultiplier));
+      }
+
+      animId = requestAnimationFrame(loop);
+    };
+
+    animId = requestAnimationFrame(loop);
+    return () => {
+      cancelAnimationFrame(animId);
+      lastConsistencyFrameRef.current = null;
+    };
+  }, [activeSlideId, isHolding, speedMultiplier, prefersReducedMotion]);
+
+  // Calendar matrix memo
+  const calendarData = useMemo(() => {
+    const [yStr, mStr] = (seasonKey || '2026-09').split('-');
+    const year = parseInt(yStr, 10) || 2026;
+    const month = parseInt(mStr, 10) || 9; // 1-12
+    const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
+    // Monday = 0, Sunday = 6
+    const firstDayWeekday = (new Date(Date.UTC(year, month - 1, 1)).getUTCDay() + 6) % 7;
+
+    let activeSet = new Set<string>(activeDates || []);
+    let resolvedStreakStart = streakStartDate || null;
+    let resolvedStreakEnd = streakEndDate || null;
+
+    // Graceful synthetic fallback if activeDates was not provided
+    if (activeSet.size === 0 && activeDays > 0) {
+      const sLen = Math.min(longestStreak || Math.min(activeDays, 7), activeDays, daysInMonth);
+      const sStartDay = Math.max(1, Math.min(5, daysInMonth - sLen + 1));
+      const sEndDay = sStartDay + sLen - 1;
+      resolvedStreakStart = `${year}-${String(month).padStart(2, '0')}-${String(sStartDay).padStart(2, '0')}`;
+      resolvedStreakEnd = `${year}-${String(month).padStart(2, '0')}-${String(sEndDay).padStart(2, '0')}`;
+
+      const synthDates: string[] = [];
+      for (let d = sStartDay; d <= sEndDay; d++) {
+        synthDates.push(`${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`);
+      }
+      let remaining = activeDays - synthDates.length;
+      for (let d = 1; d <= daysInMonth && remaining > 0; d++) {
+        const ds = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        if (!synthDates.includes(ds)) {
+          synthDates.push(ds);
+          remaining--;
+        }
+      }
+      activeSet = new Set(synthDates);
+    }
+
+    interface DayCell {
+      dayNum: number;
+      dateStr: string;
+      colIndex: number;
+      rowIndex: number;
+      isActive: boolean;
+      isStreak: boolean;
+      isStreakEnd: boolean;
+      activeOrderIndex: number;
+      streakOrderIndex: number;
+    }
+
+    const cells: DayCell[] = [];
+    let currentActiveOrder = 0;
+    let currentStreakOrder = 0;
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const isActive = activeSet.has(dateStr);
+      const isStreak = Boolean(
+        resolvedStreakStart &&
+        resolvedStreakEnd &&
+        dateStr >= resolvedStreakStart &&
+        dateStr <= resolvedStreakEnd &&
+        isActive
+      );
+      const isStreakEnd = Boolean(resolvedStreakEnd && dateStr === resolvedStreakEnd);
+      const gridIndex = firstDayWeekday + (day - 1);
+      const colIndex = gridIndex % 7;
+      const rowIndex = Math.floor(gridIndex / 7);
+
+      cells.push({
+        dayNum: day,
+        dateStr,
+        colIndex,
+        rowIndex,
+        isActive,
+        isStreak,
+        isStreakEnd,
+        activeOrderIndex: isActive ? currentActiveOrder++ : -1,
+        streakOrderIndex: isStreak ? currentStreakOrder++ : -1,
+      });
+    }
+
+    return {
+      daysInMonth,
+      firstDayWeekday,
+      cells,
+      totalActive: currentActiveOrder,
+      totalStreak: currentStreakOrder,
+      streakStart: resolvedStreakStart,
+      streakEnd: resolvedStreakEnd,
+    };
+  }, [seasonKey, activeDates, streakStartDate, streakEndDate, activeDays, longestStreak]);
+
+  // Derived choreography timeline values
+  const cElapsed = prefersReducedMotion ? 5000 : consistencyElapsedMs;
+
+  // 0.0s to 0.5s: Eyebrow and headline slide up 12px, blur 6px to 0, staggered 100ms
+  const eyebrowP = Math.min(1, Math.max(0, cElapsed / 400));
+  const headlineP = Math.min(1, Math.max(0, (cElapsed - 100) / 400));
+
+  // 0.5s to 0.8s: Weekdays and dim cells fade in
+  const gridAppearP = Math.min(1, Math.max(0, (cElapsed - 500) / 300));
+
+  // 0.8s to ~2.0s: Active cells light up in date order (~30ms apart)
+  const activeInterval = calendarData.totalActive > 0 ? Math.min(40, Math.max(22, 1100 / calendarData.totalActive)) : 30;
+  let litActiveCount = 0;
+  for (const cell of calendarData.cells) {
+    if (cell.isActive) {
+      const startTime = 800 + cell.activeOrderIndex * activeInterval;
+      if (cElapsed >= startTime) {
+        litActiveCount++;
+      }
+    }
+  }
+
+  // 2.0s to 2.8s: Streak highlight sweep along cells (~20ms apart)
+  const streakInterval = calendarData.totalStreak > 0 ? Math.min(28, Math.max(15, 750 / calendarData.totalStreak)) : 20;
+  let litStreakCount = 0;
+  for (const cell of calendarData.cells) {
+    if (cell.isStreak) {
+      const startTime = 2000 + cell.streakOrderIndex * streakInterval;
+      if (cElapsed >= startTime) {
+        litStreakCount++;
+      }
+    }
+  }
+
+  // Flame mark pop-in on the last streak day
+  const flameStartTime = 2000 + Math.max(0, calendarData.totalStreak - 1) * streakInterval + 60;
+  const flamePopP = calendarData.totalStreak > 0 ? Math.min(1, Math.max(0, (cElapsed - flameStartTime) / 220)) : 0;
+
+  // 2.8s to 3.7s: Tasks number count-up with ease-out
+  let tasksCountDisplay = 0;
+  if (cElapsed >= 3700) {
+    tasksCountDisplay = completedTasks;
+  } else if (cElapsed > 2800) {
+    const p = (cElapsed - 2800) / 900;
+    const easeOut = 1 - Math.pow(1 - p, 3);
+    tasksCountDisplay = Math.round(easeOut * completedTasks);
+  }
+
+  // 3.7s: Bottom line observation fades in
+  const bottomLineOpacity = Math.min(1, Math.max(0, (cElapsed - 3700) / 350));
+
+  // 4s ambient breathing glow behind calendar after settled (3.8s onwards)
+  const ambientGlowPulse = cElapsed >= 3800
+    ? 0.22 + Math.sin(((cElapsed - 3800) / 4000) * Math.PI * 2) * 0.08
+    : 0.15;
+
+  // Copy calculations based on real numbers
+  const consistencyHeadline = useMemo(() => {
+    const ratio = calendarData.daysInMonth > 0 ? activeDays / calendarData.daysInMonth : 0;
+    if (ratio >= 0.8) return 'You barely missed a day.';
+    if (ratio >= 0.5) return 'More days on than off.';
+    return 'Every day you showed up counted.';
+  }, [activeDays, calendarData.daysInMonth]);
+
+  const consistencyObservation = useMemo(() => {
+    if (completedTasks > 0 && activeDays > 0) {
+      const perDay = (completedTasks / activeDays).toFixed(1).replace(/\.0$/, '');
+      return `That's about ${perDay} ${perDay === '1' ? 'task' : 'tasks'} on every day you studied.`;
+    }
+    if (activeDays > 0) {
+      const hrsPerDay = ((totalSeconds / 3600) / activeDays).toFixed(1).replace(/\.0$/, '');
+      return `You dedicated an average of ${hrsPerDay} hours each time you showed up.`;
+    }
+    return 'Every study session added up to your season total.';
+  }, [completedTasks, activeDays, totalSeconds]);
+
+  const displayedActiveDays = prefersReducedMotion ? activeDays : litActiveCount;
+  const displayedStreak = prefersReducedMotion ? (longestStreak || calendarData.totalStreak) : litStreakCount;
+  const displayedTasks = prefersReducedMotion ? completedTasks : tasksCountDisplay;
 
   return (
     <div
@@ -537,11 +789,15 @@ export default function RecapPresentation({
                 transition={{ duration: 0.4 }}
                 className="text-xs sm:text-sm font-mono tracking-widest uppercase text-zinc-400 font-bold"
               >
-                // SEASON PERFORMANCE DOSSIER
+                // TOTAL TIME IN FOCUS
               </motion.div>
 
-              <h2 className="text-xl sm:text-3xl font-hud font-bold text-slate-300 tracking-wider uppercase">
-                Last season, you locked in for…
+              <h2 className="text-xl sm:text-3xl font-hud font-bold text-slate-300 tracking-wider">
+                {totalHoursNum >= 50
+                  ? 'You put in serious time this season.'
+                  : totalHoursNum >= 15
+                  ? 'You showed real dedication this season.'
+                  : 'Every focused minute counted.'}
               </h2>
 
               <div className="relative py-4">
@@ -555,8 +811,8 @@ export default function RecapPresentation({
                 </div>
               </div>
 
-              <p className="text-xs sm:text-sm text-zinc-400 font-mono max-w-md">
-                Every focused second forged your rank standings in {seasonDisplayName}.
+              <p className="text-xs sm:text-sm text-zinc-400 font-sans max-w-md">
+                In {seasonDisplayName}, you dedicated {totalHoursNum} hours to sharpening your knowledge.
               </p>
             </motion.div>
           )}
@@ -572,26 +828,27 @@ export default function RecapPresentation({
               className="w-full max-w-xl flex flex-col items-center justify-center text-center space-y-6"
             >
               <div className="text-xs font-mono tracking-widest uppercase text-zinc-400 font-bold">
-                // INTELLECTUAL FOCUS
+                // DOMINANT SUBJECT
               </div>
 
-              <h2 className="text-xl sm:text-2xl font-hud font-bold text-slate-300 tracking-wider uppercase">
-                Your Dominant Subject Was
+              <h2 className="text-xl sm:text-2xl font-hud font-bold text-slate-300 tracking-wide">
+                {topSubject || 'General Study'} took the lion's share of your focus.
               </h2>
 
               <div className="text-4xl sm:text-6xl font-black font-hud text-white tracking-wide drop-shadow-md">
                 {topSubject || 'General Study'}
               </div>
 
-              <div className="text-sm font-mono font-bold text-amber-400">
-                {(topSubjectSeconds / 3600).toFixed(1)} HOURS LOGGED
+              <div className="text-sm font-sans font-medium text-amber-400">
+                You spent {(topSubjectSeconds / 3600).toFixed(1)} hours on {topSubject || 'your top subject'}
+                {totalSeconds > 0 ? ` — that's ${Math.round((topSubjectSeconds / totalSeconds) * 100)}% of your study time.` : '.'}
               </div>
 
               {/* Subject Breakdown Mini Bar Chart */}
               {subjectBreakdown.length > 0 && (
                 <div className="w-full bg-white/[0.03] backdrop-blur-md border border-white/10 rounded-2xl p-5 space-y-3 mt-4 text-left">
-                  <div className="text-[11px] font-mono uppercase tracking-widest text-zinc-500 font-bold mb-2">
-                    Subject Distribution
+                  <div className="text-[11px] font-sans uppercase tracking-wider text-zinc-500 font-semibold mb-2">
+                    Subject breakdown
                   </div>
                   {subjectBreakdown.slice(0, 4).map((sub, i) => {
                     const ratio = topSubjectSeconds > 0 ? (sub.seconds / topSubjectSeconds) * 100 : 0;
@@ -599,9 +856,9 @@ export default function RecapPresentation({
 
                     return (
                       <div key={sub.name} className="space-y-1">
-                        <div className="flex items-center justify-between text-xs font-mono text-zinc-300">
+                        <div className="flex items-center justify-between text-xs font-sans text-zinc-300">
                           <span className="truncate max-w-[200px] font-semibold">{sub.name}</span>
-                          <span className="text-zinc-400">{hours}h</span>
+                          <span className="text-zinc-400 font-mono">{hours}h</span>
                         </div>
                         <div className="w-full bg-white/[0.05] h-2 rounded-full overflow-hidden">
                           <motion.div
@@ -637,12 +894,12 @@ export default function RecapPresentation({
                 // PEAK RHYTHM
               </div>
 
-              <h2 className="text-2xl sm:text-3xl font-hud font-black text-amber-400 tracking-wider uppercase">
-                {bestWeekday} Was Your Power Day
+              <h2 className="text-2xl sm:text-3xl font-hud font-black text-amber-400 tracking-wide">
+                {bestWeekday} was when you were most in the zone.
               </h2>
 
-              <p className="text-xs sm:text-sm text-zinc-400 font-mono">
-                Your highest focus density occurred on {bestWeekday}s, peaking around{' '}
+              <p className="text-xs sm:text-sm text-zinc-400 font-sans">
+                Most of your deep work happened on {bestWeekday}s, hitting peak momentum around{' '}
                 <strong className="text-white font-mono">{peakHour !== null && peakHour !== undefined ? `${peakHour}:00` : '14:00'} UTC</strong>.
               </p>
 
@@ -678,7 +935,7 @@ export default function RecapPresentation({
             </motion.div>
           )}
 
-          {/* SLIDE 3: CONSISTENCY & STATS */}
+          {/* SLIDE 3: REDESIGNED CONSISTENCY CALENDAR & CHOREOGRAPHY */}
           {activeSlideId === 'consistency' && (
             <motion.div
               key="consistency"
@@ -686,55 +943,169 @@ export default function RecapPresentation({
               animate={{ opacity: 1, x: 0 }}
               exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, x: -20 }}
               transition={{ duration: 0.35, ease: 'easeOut' }}
-              className="w-full max-w-2xl flex flex-col items-center justify-center text-center space-y-6"
+              className="w-full max-w-3xl flex flex-col items-center justify-center text-center space-y-6 sm:space-y-8"
             >
-              <div className="text-xs font-mono tracking-widest uppercase text-zinc-400 font-bold">
-                // DISCIPLINE INDEX
+              {/* Header: Human Headline & Eyebrow with staggered slide/blur */}
+              <div className="space-y-2 max-w-xl mx-auto">
+                <div
+                  className="text-xs font-mono tracking-widest uppercase text-amber-400 font-bold transition-all duration-300"
+                  style={{
+                    opacity: eyebrowP,
+                    transform: `translateY(${(1 - eyebrowP) * 12}px)`,
+                    filter: `blur(${(1 - eyebrowP) * 6}px)`,
+                  }}
+                >
+                  How you showed up
+                </div>
+
+                <h2
+                  className="text-2xl sm:text-4xl font-hud font-black text-slate-100 tracking-wide transition-all duration-300"
+                  style={{
+                    opacity: headlineP,
+                    transform: `translateY(${(1 - headlineP) * 12}px)`,
+                    filter: `blur(${(1 - headlineP) * 6}px)`,
+                  }}
+                >
+                  {consistencyHeadline}
+                </h2>
               </div>
 
-              <h2 className="text-xl sm:text-3xl font-hud font-bold text-slate-300 tracking-wider uppercase">
-                Consistency That Builds Champions
-              </h2>
+              {/* Main Content: Desktop Left/Right, Mobile Top/Bottom */}
+              <div className="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-14 w-full">
+                {/* 1. LEFT (DESKTOP) / TOP (MOBILE): 7-Column Season Calendar Grid */}
+                <div className="relative flex flex-col items-center shrink-0">
+                  {/* Ambient breathing glow behind calendar */}
+                  <div
+                    className="absolute -inset-6 rounded-3xl pointer-events-none transition-opacity duration-500 blur-2xl"
+                    style={{
+                      backgroundColor: `rgba(245, 158, 11, ${ambientGlowPulse})`,
+                    }}
+                  />
 
-              {/* 3 Cybernetic Stat Tiles */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full mt-4">
-                {/* Active Days */}
-                <div className="bg-white/[0.03] backdrop-blur-md border border-white/10 rounded-2xl p-5 flex flex-col items-center justify-center space-y-2 hover:border-amber-500/30 transition-colors">
-                  <Calendar className="w-5 h-5 text-amber-400" />
-                  <div className="text-3xl sm:text-4xl font-black font-hud text-white">
-                    {activeDays}
+                  {/* Weekday Letters Row */}
+                  <div
+                    className="grid grid-cols-7 gap-1.5 sm:gap-2 mb-2 text-center w-full transition-opacity duration-300"
+                    style={{ opacity: gridAppearP }}
+                  >
+                    {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((letter, i) => (
+                      <div
+                        key={i}
+                        className="w-8 sm:w-9 text-[10px] sm:text-[11px] font-mono font-bold tracking-wider text-zinc-500 uppercase"
+                      >
+                        {letter}
+                      </div>
+                    ))}
                   </div>
-                  <div className="text-[10px] font-mono uppercase tracking-widest text-zinc-400 font-bold">
-                    Active Days
+
+                  {/* Calendar Days Matrix */}
+                  <div
+                    className="grid grid-cols-7 gap-1.5 sm:gap-2 w-full transition-opacity duration-300"
+                    style={{ opacity: gridAppearP }}
+                  >
+                    {/* Leading blanks for month offset */}
+                    {Array.from({ length: calendarData.firstDayWeekday }).map((_, i) => (
+                      <div key={`blank-${i}`} className="w-8 h-8 sm:w-9 sm:h-9" />
+                    ))}
+
+                    {/* Day Cells */}
+                    {calendarData.cells.map((cell) => {
+                      const cellStartTime = 800 + cell.activeOrderIndex * activeInterval;
+                      const isLit = cell.isActive && cElapsed >= cellStartTime;
+                      const flashAge = cell.isActive ? cElapsed - cellStartTime : -1;
+                      const isFlashing = isLit && flashAge >= 0 && flashAge < 160;
+
+                      const streakStartTime = 2000 + cell.streakOrderIndex * streakInterval;
+                      const isStreakLit = cell.isStreak && cElapsed >= streakStartTime;
+
+                      // Check if next day in row is also streak-lit (for horizontal ribbon connector)
+                      const nextCell = calendarData.cells[cell.dayNum]; // next day is at index dayNum
+                      const isNextStreakLit =
+                        nextCell &&
+                        nextCell.isStreak &&
+                        cElapsed >= (2000 + nextCell.streakOrderIndex * streakInterval) &&
+                        cell.colIndex < 6;
+
+                      return (
+                        <div
+                          key={cell.dateStr}
+                          className={`relative w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center text-[10px] sm:text-[11px] font-mono select-none transition-transform duration-150 ${
+                            !cell.isActive
+                              ? 'bg-white/[0.03] border border-white/[0.06] text-zinc-600'
+                              : isFlashing
+                              ? 'bg-amber-300 text-black font-black border-white shadow-[0_0_20px_rgba(251,191,36,0.9)] scale-110 z-10'
+                              : isStreakLit
+                              ? 'bg-gradient-to-br from-amber-400 to-amber-500 text-black font-black border border-amber-300 shadow-[0_0_14px_rgba(245,158,11,0.65)]'
+                              : isLit
+                              ? 'bg-amber-500/25 border border-amber-400/50 text-amber-200 shadow-[0_0_10px_rgba(245,158,11,0.35)]'
+                              : 'bg-white/[0.03] border border-white/[0.06] text-zinc-600'
+                          }`}
+                        >
+                          <span>{cell.dayNum}</span>
+
+                          {/* Connected run: horizontal connector to next day in same week */}
+                          {isStreakLit && isNextStreakLit && (
+                            <div className="absolute top-1/2 -translate-y-1/2 right-[-6px] sm:right-[-8px] w-[6px] sm:w-[8px] h-1.5 sm:h-2 bg-gradient-to-r from-amber-400 to-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)] z-10 pointer-events-none" />
+                          )}
+
+                          {/* Flame mark on the last day of the run */}
+                          {cell.isStreakEnd && flamePopP > 0 && (
+                            <div
+                              className="absolute -top-2.5 -right-2.5 sm:-top-3 sm:-right-3 z-20 pointer-events-none"
+                              style={{
+                                transform: `scale(${flamePopP})`,
+                                transition: prefersReducedMotion ? 'none' : 'transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                              }}
+                            >
+                              <CustomFlameMark className="w-5 h-5 sm:w-6 sm:h-6" />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
-                {/* Longest Streak */}
-                <div className="bg-white/[0.03] backdrop-blur-md border border-white/10 rounded-2xl p-5 flex flex-col items-center justify-center space-y-2 hover:border-amber-500/30 transition-colors">
-                  <Flame className="w-5 h-5 text-orange-400" />
-                  <div className="text-3xl sm:text-4xl font-black font-hud text-white">
-                    {longestStreak || Math.min(activeDays, 7)}
+                {/* 2. RIGHT (DESKTOP) / BOTTOM (MOBILE): Three Plain Stat Lines (No Boxes, No Icons) */}
+                <div className="flex flex-col justify-center space-y-5 sm:space-y-7 text-left shrink-0">
+                  {/* Stat 1: Days you showed up */}
+                  <div className="flex flex-col sm:space-y-0.5">
+                    <div className="text-4xl sm:text-5xl md:text-6xl font-black font-hud text-white tracking-tight leading-none">
+                      {displayedActiveDays}
+                    </div>
+                    <div className="text-sm sm:text-base text-zinc-300 font-sans normal-case">
+                      days you showed up
+                    </div>
                   </div>
-                  <div className="text-[10px] font-mono uppercase tracking-widest text-zinc-400 font-bold">
-                    Day Streak
-                  </div>
-                </div>
 
-                {/* Tasks Completed */}
-                <div className="bg-white/[0.03] backdrop-blur-md border border-white/10 rounded-2xl p-5 flex flex-col items-center justify-center space-y-2 hover:border-amber-500/30 transition-colors">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-                  <div className="text-3xl sm:text-4xl font-black font-hud text-white">
-                    {completedTasks}
+                  {/* Stat 2: Days in a row at your best */}
+                  <div className="flex flex-col sm:space-y-0.5">
+                    <div className="text-4xl sm:text-5xl md:text-6xl font-black font-hud text-amber-400 tracking-tight leading-none">
+                      {displayedStreak}
+                    </div>
+                    <div className="text-sm sm:text-base text-zinc-300 font-sans normal-case">
+                      days in a row at your best
+                    </div>
                   </div>
-                  <div className="text-[10px] font-mono uppercase tracking-widest text-zinc-400 font-bold">
-                    Tasks Cleared
+
+                  {/* Stat 3: Tasks checked off */}
+                  <div className="flex flex-col sm:space-y-0.5">
+                    <div className="text-4xl sm:text-5xl md:text-6xl font-black font-hud text-emerald-400 tracking-tight leading-none">
+                      {displayedTasks}
+                    </div>
+                    <div className="text-sm sm:text-base text-zinc-300 font-sans normal-case">
+                      tasks checked off
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <p className="text-xs text-zinc-500 font-mono">
-                Consistency compounds faster than raw hours.
-              </p>
+              {/* Data-driven honest bottom line observation */}
+              <div
+                className="text-xs sm:text-sm text-zinc-400 font-sans max-w-md mx-auto text-center pt-2 transition-opacity duration-300"
+                style={{ opacity: bottomLineOpacity }}
+              >
+                {consistencyObservation}
+              </div>
             </motion.div>
           )}
 
@@ -948,7 +1319,9 @@ export default function RecapPresentation({
       {/* ══════════════════════════════════════════════════════════ */}
       {/* BOTTOM FOOTER: TAP HINT & NAVIGATION CHEVRONS             */}
       {/* ══════════════════════════════════════════════════════════ */}
-      <footer className="relative z-30 w-full max-w-4xl mx-auto pb-8 px-4 flex items-center justify-between text-xs font-mono text-zinc-500">
+      <footer className={`relative z-30 w-full max-w-4xl mx-auto px-4 flex items-center justify-between text-xs font-mono text-zinc-500 transition-all ${
+        isDevPreview ? 'pb-24 sm:pb-28' : 'pb-8'
+      }`}>
         <button
           type="button"
           onClick={(e) => {
