@@ -8,7 +8,7 @@ import { getRankFromRp, calculateRpFromSeconds, RankTierName, RankDivision, Rank
 import { getRankTheme } from '../../lib/rankTheme';
 import { getLevelFromLifetimeXP } from '../../lib/gamification';
 import { LeaderboardEntry } from '../../types';
-import { Clock, Trophy } from 'lucide-react';
+import { Clock, Trophy, Sparkles } from 'lucide-react';
 import { soundFx } from '../../lib/audio';
 import { RankCrestBadge } from '../common/RankCrestBadge';
 import { useRankTheme } from '../../hooks/useRankTheme';
@@ -653,31 +653,47 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                   {trackerText}
                 </span>
               </div>
-              <div className="inline-flex items-center p-1 bg-white/[0.04] border border-white/[0.08] rounded-xl gap-1">
-                {(
-                  [
-                    { label: 'TODAY', value: 'today' },
-                    { label: 'THIS WEEK', value: 'week' },
-                    { label: 'THIS MONTH', value: 'month' },
-                    { label: 'ALL TIME', value: 'all' },
-                  ] as const
-                ).map((tab) => {
-                  const isActive = timeframe === tab.value;
-                  return (
-                    <button
-                      key={tab.value}
-                      type="button"
-                      onClick={() => setTimeframe(tab.value)}
-                      className={
-                        isActive
-                          ? 'px-3 py-1.5 text-xs font-mono font-semibold text-white bg-white/[0.1] border border-white/[0.15] rounded-lg shadow-sm transition-all cursor-pointer'
-                          : 'px-3 py-1.5 text-xs font-mono font-medium text-zinc-400 hover:text-white transition-colors rounded-lg cursor-pointer'
-                      }
-                    >
-                      {tab.label}
-                    </button>
-                  );
-                })}
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                <Link
+                  href="/recap"
+                  onClick={() => {
+                    try {
+                      soundFx.resumeContext();
+                    } catch {}
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 hover:border-amber-500/50 text-xs font-hud font-bold uppercase tracking-wider text-amber-300 hover:text-amber-200 transition-all shadow-sm shadow-amber-500/10 active:scale-95 cursor-pointer"
+                  title="Watch your recap from the previous completed season"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Watch Last Season's Recap</span>
+                </Link>
+
+                <div className="inline-flex items-center p-1 bg-white/[0.04] border border-white/[0.08] rounded-xl gap-1">
+                  {(
+                    [
+                      { label: 'TODAY', value: 'today' },
+                      { label: 'THIS WEEK', value: 'week' },
+                      { label: 'THIS MONTH', value: 'month' },
+                      { label: 'ALL TIME', value: 'all' },
+                    ] as const
+                  ).map((tab) => {
+                    const isActive = timeframe === tab.value;
+                    return (
+                      <button
+                        key={tab.value}
+                        type="button"
+                        onClick={() => setTimeframe(tab.value)}
+                        className={
+                          isActive
+                            ? 'px-3 py-1.5 text-xs font-mono font-semibold text-white bg-white/[0.1] border border-white/[0.15] rounded-lg shadow-sm transition-all cursor-pointer'
+                            : 'px-3 py-1.5 text-xs font-mono font-medium text-zinc-400 hover:text-white transition-colors rounded-lg cursor-pointer'
+                        }
+                      >
+                        {tab.label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
