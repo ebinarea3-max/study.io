@@ -10,21 +10,21 @@ import { RankThemePalette } from '../lib/rankTheme';
 // This palette is rank-independent and will NEVER change regardless of the
 // user's current rank. All UI elements always use these fixed values.
 const PERMANENT_THEME: RankThemePalette = {
-  tier: 'Platinum',
-  accent: '#10B981',
-  glow: 'rgba(16, 185, 129, 0.35)',
-  border: 'rgba(16, 185, 129, 0.2)',
+  tier: 'Bronze', // nominal tier label (unused for styling)
+  accent: '#FFFFFF',
+  glow: 'rgba(255, 255, 255, 0.25)',
+  border: 'rgba(255, 255, 255, 0.12)',
   surface: '#0F1117',
   bg: '#08090C',
   base: '#08090C',
   cardTexture: 'none',
-  icon: 'Sparkles',
-  accentRgb: '16, 185, 129',
-  accentHover: '#34D399',
-  surfaceHigh: 'rgba(16, 185, 129, 0.08)',
-  gradient: 'linear-gradient(135deg, #10B981 0%, #34D399 50%, #059669 100%)',
-  badgeBg: 'rgba(16, 185, 129, 0.12)',
-  textAccent: '#34D399',
+  icon: 'Star',
+  accentRgb: '255, 255, 255',
+  accentHover: '#E2E8F0',
+  surfaceHigh: 'rgba(255, 255, 255, 0.08)',
+  gradient: 'linear-gradient(135deg, #FFFFFF 0%, #E2E8F0 50%, #94A3B8 100%)',
+  badgeBg: 'rgba(255, 255, 255, 0.08)',
+  textAccent: '#FFFFFF',
 };
 
 export function useRankTheme(): {

@@ -915,13 +915,13 @@ export function StudyTimer() {
                 disabled={isStudying}
                 onClick={() => { if (!isStudying) setTimerMode(mode); }}
                 className={`relative px-4 py-1.5 text-xs font-medium rounded-full transition-colors z-10 ${
-                  isActive ? 'text-emerald-300 font-semibold' : 'text-zinc-400 hover:text-zinc-200'
+                  isActive ? 'text-white' : 'text-zinc-400 hover:text-zinc-200'
                 } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
               >
                 {isActive && (
                   <motion.div
                     layoutId="activeTimerMode"
-                    className="absolute inset-0 bg-emerald-500/15 border border-emerald-500/30 rounded-full shadow-[0_0_12px_rgba(16,185,129,0.2)]"
+                    className="absolute inset-0 bg-white/[0.12] border border-white/[0.1] rounded-full shadow-sm"
                     transition={shouldReduceMotion ? { duration: 0 } : { type: 'tween', duration: 0.2 }}
                   />
                 )}
@@ -942,7 +942,7 @@ export function StudyTimer() {
                 onClick={() => { if (!isStudying) setPomodoroPreset(preset); }}
                 className={`px-3 py-1 text-xs font-mono rounded-full border transition-colors ${
                   pomodoroPreset === preset
-                    ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300 font-medium shadow-[0_0_10px_rgba(16,185,129,0.15)]'
+                    ? 'bg-white/[0.1] border-white/20 text-white font-medium shadow-sm'
                     : 'bg-transparent border-white/[0.06] text-zinc-400 hover:text-zinc-200'
                 } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
               >
@@ -964,20 +964,20 @@ export function StudyTimer() {
               }
             }}
             disabled={isStudying || isRemoteTransitioning}
-            className={`inline-flex items-center justify-between gap-3 min-w-[220px] sm:min-w-[260px] max-w-[340px] px-5 py-2.5 sm:py-3 rounded-full border bg-white/[0.04] hover:bg-white/[0.08] hover:border-emerald-500/30 active:scale-[0.98] transition-all text-sm font-semibold cursor-pointer shadow-sm ${
+            className={`inline-flex items-center justify-between gap-3 min-w-[220px] sm:min-w-[260px] max-w-[340px] px-5 py-2.5 sm:py-3 rounded-full border bg-white/[0.04] hover:bg-white/[0.08] active:scale-[0.98] transition-all text-sm font-semibold cursor-pointer shadow-sm ${
               subjectWarning
                 ? 'border-amber-500/60 ring-1 ring-amber-500/30'
-                : 'border-white/[0.1]'
+                : 'border-white/[0.1] hover:border-white/[0.18]'
             } ${isStudying ? 'opacity-90 cursor-not-allowed' : ''}`}
           >
             <div className="flex items-center gap-2.5 min-w-0 truncate">
               <span
-                className="w-2.5 h-2.5 rounded-full flex-shrink-0 shadow-[0_0_10px_currentColor]"
+                className="w-2.5 h-2.5 rounded-full flex-shrink-0 shadow-[0_0_8px_rgba(255,255,255,0.2)]"
                 style={{
                   backgroundColor: selectedSubject
                     ? (selectedSubject.color || '#10B981')
                     : activeSubjects.length === 0
-                    ? '#10B981'
+                    ? 'var(--accent)'
                     : '#71717A',
                 }}
               />
@@ -985,7 +985,7 @@ export function StudyTimer() {
                 {selectedSubject?.name || 'Choose a subject'}
               </span>
               {isStudying && (
-                <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 flex-shrink-0">
+                <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-white/[0.08] text-zinc-400 flex-shrink-0">
                   Locked
                 </span>
               )}
@@ -1013,7 +1013,7 @@ export function StudyTimer() {
                       }}
                       className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs sm:text-sm transition-colors cursor-pointer ${
                         sub.id === selectedSubjectId
-                          ? 'bg-emerald-500/15 text-emerald-300 font-medium border border-emerald-500/25'
+                          ? 'bg-white/[0.1] text-white font-medium'
                           : 'text-zinc-400 hover:text-white hover:bg-white/[0.05]'
                       }`}
                     >
@@ -1034,9 +1034,9 @@ export function StudyTimer() {
                   <button
                     type="button"
                     onClick={handleOpenSubjectManager}
-                    className="w-full flex items-center justify-center gap-2 py-1.5 rounded-lg text-xs font-medium text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 transition-colors cursor-pointer"
+                    className="w-full flex items-center justify-center gap-2 py-1.5 rounded-lg text-xs font-medium text-zinc-400 hover:text-white hover:bg-white/[0.05] transition-colors cursor-pointer"
                   >
-                    <FolderPlus className="w-3.5 h-3.5 text-emerald-400" />
+                    <FolderPlus className="w-3.5 h-3.5 text-zinc-400" />
                     <span>Manage subjects</span>
                   </button>
                 </div>
@@ -1082,7 +1082,7 @@ export function StudyTimer() {
                 }
               }}
               disabled={isSaving || isRemoteTransitioning}
-              className="flex-1 h-[52px] rounded-full font-bold text-sm text-zinc-950 bg-gradient-to-r from-emerald-400 via-emerald-500 to-teal-400 shadow-[0_0_25px_rgba(16,185,129,0.35)] hover:shadow-[0_0_35px_rgba(16,185,129,0.5)] hover:brightness-105 active:scale-[0.98] transition-all duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              className="flex-1 h-[52px] rounded-full font-medium text-sm text-zinc-950 bg-white hover:brightness-105 active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
               {isSaving ? (
                 <>
@@ -1117,7 +1117,7 @@ export function StudyTimer() {
               <button
                 onClick={startPomodoroBreak}
                 disabled={isSaving || isRemoteTransitioning}
-                className="flex-1 h-[52px] rounded-full font-bold text-sm text-zinc-950 bg-gradient-to-r from-emerald-400 via-emerald-500 to-teal-400 shadow-[0_0_25px_rgba(16,185,129,0.35)] hover:shadow-[0_0_35px_rgba(16,185,129,0.5)] hover:brightness-105 active:scale-[0.98] transition-all duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                className="flex-1 h-[52px] rounded-full font-medium text-sm text-zinc-950 bg-white hover:brightness-105 active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 <Play className="w-4 h-4 fill-current" />
                 <span>Start break</span>
@@ -1134,7 +1134,7 @@ export function StudyTimer() {
             <button
               onClick={handleReset}
               disabled={isSaving || isRemoteTransitioning}
-              className="w-full max-w-[360px] sm:w-[240px] h-[52px] rounded-full border border-emerald-500/30 bg-emerald-500/[0.08] hover:bg-emerald-500/[0.15] text-emerald-300 font-medium text-sm active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              className="w-full max-w-[360px] sm:w-[240px] h-[52px] rounded-full border border-white/20 bg-white/[0.04] hover:bg-white/[0.08] text-zinc-200 font-medium text-sm active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
               <span>End break</span>
             </button>
@@ -1146,7 +1146,7 @@ export function StudyTimer() {
               handleStartSession();
             }}
             disabled={isSaving || isRemoteTransitioning}
-            className="w-full max-w-[360px] sm:w-[240px] h-[52px] rounded-full font-bold text-sm text-zinc-950 bg-gradient-to-r from-emerald-400 via-emerald-500 to-teal-400 shadow-[0_0_25px_rgba(16,185,129,0.35)] hover:shadow-[0_0_35px_rgba(16,185,129,0.5)] hover:brightness-105 active:scale-[0.98] transition-all duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+            className="w-full max-w-[360px] sm:w-[240px] h-[52px] rounded-full font-semibold text-sm text-zinc-950 bg-white hover:brightness-105 active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
           >
             <Flame className="w-4 h-4 fill-current" />
             <span>Start focus session</span>
@@ -1162,7 +1162,7 @@ export function StudyTimer() {
                   setShowDropdown(true);
                 }
               }}
-              className="w-full max-w-[360px] sm:w-[240px] h-[52px] rounded-full font-medium text-sm bg-white/[0.06] text-zinc-400 hover:text-emerald-300 hover:bg-emerald-500/10 border border-white/[0.08] hover:border-emerald-500/30 active:scale-[0.98] transition-all duration-120 flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full max-w-[360px] sm:w-[240px] h-[52px] rounded-full font-medium text-sm bg-white/[0.08] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.12] border border-white/[0.06] active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer"
               title="Choose a subject to start"
             >
               <span>Choose a subject to start</span>
@@ -1172,7 +1172,7 @@ export function StudyTimer() {
               type="button"
               onClick={handleStartSession}
               disabled={isSaving || isRemoteTransitioning}
-              className="w-full max-w-[360px] sm:w-[240px] h-[52px] rounded-full font-bold text-sm text-zinc-950 bg-gradient-to-r from-emerald-400 via-emerald-500 to-teal-400 shadow-[0_0_25px_rgba(16,185,129,0.35)] hover:shadow-[0_0_35px_rgba(16,185,129,0.5)] hover:brightness-105 active:scale-[0.98] transition-all duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              className="w-full max-w-[360px] sm:w-[240px] h-[52px] rounded-full font-semibold text-sm text-zinc-950 bg-white shadow-sm hover:brightness-105 active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
               <Play className="w-4 h-4 fill-current" />
               <span>Start session</span>
@@ -1184,7 +1184,7 @@ export function StudyTimer() {
               type="button"
               onClick={handlePause}
               disabled={isSaving || isRemoteTransitioning}
-              className="flex-1 h-[52px] rounded-full border border-emerald-500/35 bg-emerald-500/[0.08] hover:bg-emerald-500/[0.16] text-emerald-300 font-semibold text-sm active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shadow-[0_0_12px_rgba(16,185,129,0.15)]"
+              className="flex-1 h-[52px] rounded-full border border-white/20 bg-white/[0.04] hover:bg-white/[0.08] text-white font-medium text-sm active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
               <Pause className="w-4 h-4" />
               <span>Pause</span>
@@ -1193,7 +1193,7 @@ export function StudyTimer() {
               type="button"
               onClick={handleStopAndSave}
               disabled={isSaving || isRemoteTransitioning}
-              className="flex-1 h-[52px] rounded-full border border-rose-500/40 bg-rose-500/[0.08] hover:bg-rose-500/18 text-rose-300 font-medium text-sm active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              className="flex-1 h-[52px] rounded-full border border-rose-500/40 bg-rose-500/[0.06] hover:bg-rose-500/15 text-rose-300 font-medium text-sm active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
               {isSaving ? (
                 <>
@@ -1214,7 +1214,7 @@ export function StudyTimer() {
               type="button"
               onClick={handleResume}
               disabled={isSaving || isRemoteTransitioning}
-              className="flex-1 h-[52px] rounded-full font-bold text-sm text-zinc-950 bg-gradient-to-r from-emerald-400 via-emerald-500 to-teal-400 shadow-[0_0_20px_rgba(16,185,129,0.35)] hover:brightness-105 active:scale-[0.98] transition-all duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              className="flex-1 h-[52px] rounded-full font-semibold text-sm text-zinc-950 bg-white hover:brightness-105 active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
               <Play className="w-4 h-4 fill-current" />
               <span>Resume</span>
@@ -1223,7 +1223,7 @@ export function StudyTimer() {
               type="button"
               onClick={handleStopAndSave}
               disabled={isSaving || isRemoteTransitioning}
-              className="flex-1 h-[52px] rounded-full border border-rose-500/40 bg-rose-500/[0.08] hover:bg-rose-500/18 text-rose-300 font-medium text-sm active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              className="flex-1 h-[52px] rounded-full border border-rose-500/40 bg-rose-500/[0.06] hover:bg-rose-500/15 text-rose-300 font-medium text-sm active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
               {isSaving ? (
                 <>
@@ -1241,7 +1241,7 @@ export function StudyTimer() {
               type="button"
               onClick={handleReset}
               disabled={isSaving || isRemoteTransitioning}
-              className="w-12 h-[52px] rounded-full border border-white/20 bg-white/[0.04] hover:bg-white/[0.08] hover:text-white text-zinc-400 active:scale-[0.98] transition-transform duration-120 flex items-center justify-center cursor-pointer shrink-0 disabled:opacity-50"
+              className="w-12 h-[52px] rounded-full border border-white/20 bg-white/[0.04] hover:bg-white/[0.08] text-zinc-400 hover:text-white active:scale-[0.98] transition-transform duration-120 flex items-center justify-center cursor-pointer shrink-0 disabled:opacity-50"
               title="Reset timer"
             >
               <RotateCcw className="w-4 h-4" />
@@ -1257,15 +1257,11 @@ export function StudyTimer() {
           <button
             type="button"
             onClick={() => setIsAmbientMenuOpen(!isAmbientMenuOpen)}
-            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border text-xs transition-colors cursor-pointer select-none ${
-              ambientSound !== 'none'
-                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.15)]'
-                : 'border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06] text-zinc-400 hover:text-zinc-200'
-            }`}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06] text-zinc-400 hover:text-zinc-200 text-xs transition-colors cursor-pointer select-none"
           >
-            <Music className={`w-3.5 h-3.5 ${ambientSound !== 'none' ? 'text-emerald-400' : 'text-zinc-400'}`} />
+            <Music className={`w-3.5 h-3.5 ${ambientSound !== 'none' ? 'text-white' : 'text-zinc-400'}`} />
             <span>Atmosphere: {ambientLabel}</span>
-            {ambientSound !== 'none' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse ml-0.5" />}
+            {ambientSound !== 'none' && <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse ml-0.5" />}
           </button>
 
           {isAmbientMenuOpen && (
@@ -1292,7 +1288,7 @@ export function StudyTimer() {
                       }}
                       className={`flex items-center justify-between rounded-xl px-3 py-2 text-xs transition-colors cursor-pointer ${
                         ambientSound === option.id
-                          ? 'bg-emerald-500/15 text-emerald-300 font-medium border border-emerald-500/20'
+                          ? 'bg-white/[0.1] text-white font-medium'
                           : 'text-zinc-400 hover:text-white hover:bg-white/[0.05]'
                       }`}
                     >
@@ -1300,7 +1296,7 @@ export function StudyTimer() {
                         {option.icon}
                         <span>{option.label}</span>
                       </div>
-                      {ambientSound === option.id && <Check className="w-3.5 h-3.5 text-emerald-400" />}
+                      {ambientSound === option.id && <Check className="w-3.5 h-3.5 text-white" />}
                     </button>
                   ))}
                 </div>
@@ -1316,7 +1312,7 @@ export function StudyTimer() {
                       value={ambientVolume}
                       onClick={(e) => e.stopPropagation()}
                       onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
-                      className="flex-1 accent-emerald-500 bg-white/10 rounded-lg cursor-pointer h-1.5"
+                      className="flex-1 accent-white bg-white/10 rounded-lg cursor-pointer h-1.5"
                     />
                   </div>
                 )}
@@ -1344,7 +1340,7 @@ export function StudyTimer() {
               setTimeout(lockLandscape, 100);
             }
           }}
-          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] hover:bg-emerald-500/10 hover:border-emerald-500/30 text-zinc-400 hover:text-emerald-300 text-xs transition-colors cursor-pointer select-none"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06] text-zinc-400 hover:text-zinc-200 text-xs transition-colors cursor-pointer select-none"
           title="Fullscreen Focus Mode"
         >
           <Maximize2 className="w-3.5 h-3.5" />
@@ -1352,9 +1348,9 @@ export function StudyTimer() {
         </button>
       </div>
 
-      {/* 6. Today total one-liner with emerald highlight */}
-      <div className="mt-4 text-xs font-mono text-zinc-400 select-none">
-        Today: <span className="text-emerald-400 font-semibold">{formatHoursAndMins(overviewTodaySeconds)}</span>
+      {/* 6. Today total one-liner */}
+      <div className="mt-4 text-xs font-mono text-zinc-500 select-none">
+        Today: {formatHoursAndMins(overviewTodaySeconds)}
       </div>
 
       {/* Countdown Editor Modal */}

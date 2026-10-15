@@ -249,10 +249,10 @@ export function Navbar({
               onClick={() => setActiveTab('timer')}
               className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-xl text-xs font-hud font-bold tracking-wider transition-all cursor-pointer ${
                 activeTab === 'timer'
-                  ? 'text-emerald-300 shadow-sm'
+                  ? 'text-white shadow-sm'
                   : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
               }`}
-              style={activeTab === 'timer' ? { background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#34D399', fontWeight: 600, boxShadow: '0 0 12px rgba(16, 185, 129, 0.2)' } : undefined}
+              style={activeTab === 'timer' ? { background: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#FFFFFF', fontWeight: 600 } : undefined}
             >
               <Timer className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>TIMER</span>
@@ -262,10 +262,10 @@ export function Navbar({
               onClick={() => setActiveTab('tasks')}
               className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-xl text-xs font-hud font-bold tracking-wider transition-all cursor-pointer ${
                 activeTab === 'tasks'
-                  ? 'text-emerald-300 shadow-sm'
+                  ? 'text-white shadow-sm'
                   : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
               }`}
-              style={activeTab === 'tasks' ? { background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#34D399', fontWeight: 600, boxShadow: '0 0 12px rgba(16, 185, 129, 0.2)' } : undefined}
+              style={activeTab === 'tasks' ? { background: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#FFFFFF', fontWeight: 600 } : undefined}
             >
               <CheckSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>TASKS</span>
@@ -275,10 +275,10 @@ export function Navbar({
               onClick={() => setActiveTab('analytics')}
               className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-xl text-xs font-hud font-bold tracking-wider transition-all cursor-pointer ${
                 activeTab === 'analytics'
-                  ? 'text-emerald-300 shadow-sm'
+                  ? 'text-white shadow-sm'
                   : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
               }`}
-              style={activeTab === 'analytics' ? { background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#34D399', fontWeight: 600, boxShadow: '0 0 12px rgba(16, 185, 129, 0.2)' } : undefined}
+              style={activeTab === 'analytics' ? { background: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#FFFFFF', fontWeight: 600 } : undefined}
             >
               <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>STATS</span>
@@ -288,10 +288,10 @@ export function Navbar({
               onClick={() => setActiveTab('leaderboard')}
               className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-xl text-xs font-hud font-bold tracking-wider transition-all cursor-pointer ${
                 activeTab === 'leaderboard'
-                  ? 'text-emerald-300 shadow-sm'
+                  ? 'text-white shadow-sm'
                   : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
               }`}
-              style={activeTab === 'leaderboard' ? { background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#34D399', fontWeight: 600, boxShadow: '0 0 12px rgba(16, 185, 129, 0.2)' } : undefined}
+              style={activeTab === 'leaderboard' ? { background: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#FFFFFF', fontWeight: 600 } : undefined}
             >
               <FacetedTrophyIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>LEADERBOARD</span>
@@ -301,10 +301,10 @@ export function Navbar({
               onClick={() => setActiveTab('rooms')}
               className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-xl text-xs font-hud font-bold tracking-wider transition-all cursor-pointer ${
                 activeTab === 'rooms'
-                  ? 'text-emerald-300 shadow-sm'
+                  ? 'text-white shadow-sm'
                   : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
               }`}
-              style={activeTab === 'rooms' ? { background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#34D399', fontWeight: 600, boxShadow: '0 0 12px rgba(16, 185, 129, 0.2)' } : undefined}
+              style={activeTab === 'rooms' ? { background: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#FFFFFF', fontWeight: 600 } : undefined}
             >
               <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>ROOMS</span>
@@ -599,7 +599,7 @@ export function Navbar({
       <div className="relative flex items-center justify-between w-full">
         {/* Sliding active indicator pill in Tier Accent */}
         <div
-          className="absolute top-0.5 bottom-0.5 rounded-full transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none bg-emerald-500/15 border border-emerald-500/35 shadow-[0_0_12px_rgba(16,185,129,0.2)]"
+          className="absolute top-0.5 bottom-0.5 rounded-full transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none bg-white/[0.14] border border-white/20 shadow-sm"
           style={{
             width: '20%',
             transform: `translateX(${activeTab === 'timer' ? '0%' : activeTab === 'tasks' ? '100%' : activeTab === 'analytics' ? '200%' : activeTab === 'leaderboard' ? '300%' : '400%' })`
@@ -611,7 +611,7 @@ export function Navbar({
           onClick={() => setActiveTab('timer')}
           className={`relative z-10 flex-1 flex flex-col items-center justify-center py-1.5 rounded-full transition-all active:scale-95 cursor-pointer ${
             activeTab === 'timer'
-              ? 'text-emerald-400 font-bold drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]'
+              ? 'text-white font-bold drop-shadow-sm'
               : 'text-neutral-400 hover:text-white'
           }`}
           aria-label="Timer"
@@ -625,7 +625,7 @@ export function Navbar({
           onClick={() => setActiveTab('tasks')}
           className={`relative z-10 flex-1 flex flex-col items-center justify-center py-1.5 rounded-full transition-all active:scale-95 cursor-pointer ${
             activeTab === 'tasks'
-              ? 'text-emerald-400 font-bold drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]'
+              ? 'text-white font-bold drop-shadow-sm'
               : 'text-neutral-400 hover:text-white'
           }`}
           aria-label="Tasks"
@@ -639,7 +639,7 @@ export function Navbar({
           onClick={() => setActiveTab('analytics')}
           className={`relative z-10 flex-1 flex flex-col items-center justify-center py-1.5 rounded-full transition-all active:scale-95 cursor-pointer ${
             activeTab === 'analytics'
-              ? 'text-emerald-400 font-bold drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]'
+              ? 'text-white font-bold drop-shadow-sm'
               : 'text-neutral-400 hover:text-white'
           }`}
           aria-label="Analytics"
@@ -653,7 +653,7 @@ export function Navbar({
           onClick={() => setActiveTab('leaderboard')}
           className={`relative z-10 flex-1 flex flex-col items-center justify-center py-1.5 rounded-full transition-all active:scale-95 cursor-pointer ${
             activeTab === 'leaderboard'
-              ? 'text-emerald-400 font-bold drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]'
+              ? 'text-white font-bold drop-shadow-sm'
               : 'text-neutral-400 hover:text-white'
           }`}
           aria-label="Leaderboard"
@@ -667,7 +667,7 @@ export function Navbar({
           onClick={() => setActiveTab('rooms')}
           className={`relative z-10 flex-1 flex flex-col items-center justify-center py-1.5 rounded-full transition-all active:scale-95 cursor-pointer ${
             activeTab === 'rooms'
-              ? 'text-emerald-400 font-bold drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]'
+              ? 'text-white font-bold drop-shadow-sm'
               : 'text-neutral-400 hover:text-white'
           }`}
           aria-label="Rooms"
