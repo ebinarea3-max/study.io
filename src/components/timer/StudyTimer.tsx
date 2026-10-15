@@ -777,9 +777,17 @@ export function StudyTimer() {
     };
   }, [isLoading, user?.streakDays, overviewTodaySeconds, todaySessions.length, lockedEmptyQuote]);
 
+  // Sweep arc for dial (1 rev/min in stopwatch while active, or progress percent in countdown/pomodoro)
+  const dialSweepPercent = useMemo(() => {
+    if (timerMode === 'pomodoro' || timerMode === 'countdown') {
+      return progressPercent;
+    }
+    return isStudying && !isPaused ? ((elapsedSeconds % 60) / 60) * 100 : 0;
+  }, [timerMode, progressPercent, isStudying, isPaused, elapsedSeconds]);
+
   return (
-    <div className="max-w-3xl w-full mx-auto flex flex-col items-center justify-center max-md:py-2 py-6 px-4 max-md:h-[calc(100dvh-8.5rem)] max-md:overflow-hidden md:overflow-visible">
-      {/* Subject Manager Modal - Conditionally mounted strictly when open (Stop Background Rendering) */}
+    <div className="max-w-[580px] w-full mx-auto flex flex-col items-center justify-center py-4 sm:py-8 px-4 animate-in fade-in duration-250">
+      {/* Subject Manager Modal - Conditionally mounted strictly when open */}
       {isManageSubjectsOpen && (
         <ErrorBoundary
           fallbackTitle="Subject Manager"
@@ -793,166 +801,83 @@ export function StudyTimer() {
         </ErrorBoundary>
       )}
 
-      {/* Main Left Column (Timer & Subject Goal Progress) */}
-      <div className="w-full h-full flex flex-col justify-between max-md:overflow-hidden md:overflow-visible space-y-0 md:space-y-3">
-        {/* Main Timer Game-HUD Card with Targeting Reticle Corner Brackets */}
-        <div
-          className="relative w-full h-full md:rounded-2xl max-md:bg-transparent md:bg-[#0b0e14]/90 max-md:p-0 sm:p-8 max-md:shadow-none md:shadow-2xl overflow-hidden max-md:backdrop-blur-none md:backdrop-blur-xl flex flex-col justify-between transition-all"
-        >
-          {/* Dial Backlight Illumination (Removed for clean dot-grid background) */}
-
-          {/* Angular Targeting Reticle Corner Brackets */}
-          <div className="hidden md:block hud-corner-bracket hud-corner-tl" />
-          <div className="hidden md:block hud-corner-bracket hud-corner-tr" />
-          <div className="hidden md:block hud-corner-bracket hud-corner-bl" />
-          <div className="hidden md:block hud-corner-bracket hud-corner-br" />
-
-          {/* Session Resumed Alert Banner */}
-          {showRecoveryBanner && (
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 w-[90%] max-w-sm px-4 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 backdrop-blur-md flex items-center justify-between shadow-lg z-50 animate-in fade-in slide-in-from-top-4">
-              <div className="flex items-center gap-2 text-amber-300 text-[10px] font-bold">
-                <Zap className="w-3.5 h-3.5 fill-current animate-pulse" />
-                <span className="font-hud tracking-wide">PREVIOUS SESSION RESTORED (PAUSED)</span>
-              </div>
-              <button
-                onClick={() => setShowRecoveryBanner(false)}
-                className="p-1.5 rounded-xl hover:bg-amber-500/20 text-amber-300 transition-colors cursor-pointer"
-                title="Dismiss"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
+      {/* Main Timer Card */}
+      <div className="relative w-full rounded-2xl border border-white/[0.08] bg-[#0c0e14]/70 backdrop-blur-xl p-5 sm:p-7 shadow-sm overflow-hidden flex flex-col justify-between transition-all">
+        {/* Session Resumed Alert Banner */}
+        {showRecoveryBanner && (
+          <div className="mb-4 w-full px-3.5 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20 backdrop-blur-md flex items-center justify-between shadow-sm z-50 animate-in fade-in slide-in-from-top-2">
+            <div className="flex items-center gap-2 text-amber-300 text-xs font-medium">
+              <Zap className="w-3.5 h-3.5 fill-current animate-pulse" />
+              <span>Previous session restored (paused)</span>
             </div>
-          )}
+            <button
+              onClick={() => setShowRecoveryBanner(false)}
+              className="p-1 rounded-lg hover:bg-amber-500/20 text-amber-300 transition-colors cursor-pointer"
+              title="Dismiss"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
 
-          <div className="flex flex-col items-center gap-1.5 w-full relative z-20">
-          {/* Top Controls: Mode Switcher & Compact Focus Mode on Single Balanced Row */}
-          <div className="w-full flex flex-col px-1 pt-1.5 pb-0.5 relative z-10 flex-shrink-0 gap-1">
-            {/* Row 1: Mode tabs + Focus button */}
-            <div className="w-full flex items-center justify-between gap-2">
-              {/* Mode Segmented Pill — bigger tap targets on mobile */}
-              <div className="inline-flex items-center p-1 bg-white/[0.04] border border-white/[0.08] rounded-xl gap-0.5">
-                <button
-                  type="button"
-                  onClick={() => { if (!isStudying) setTimerMode('stopwatch'); }}
-                  disabled={isStudying}
-                  className={`px-3 py-1.5 text-[11px] sm:text-xs font-mono font-semibold rounded-lg transition-colors ${
-                    timerMode === 'stopwatch'
-                      ? 'bg-white/[0.1] text-white shadow-sm border border-white/[0.08]'
-                      : 'text-zinc-400 hover:text-zinc-200'
-                  } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
-                >
-                  <span className="hidden sm:inline">STOPWATCH</span>
-                  <span className="sm:hidden">STOP</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { if (!isStudying) setTimerMode('countdown'); }}
-                  disabled={isStudying}
-                  className={`px-3 py-1.5 text-[11px] sm:text-xs font-mono font-semibold rounded-lg transition-colors ${
-                    timerMode === 'countdown'
-                      ? 'bg-white/[0.1] text-white shadow-sm border border-white/[0.08]'
-                      : 'text-zinc-400 hover:text-zinc-200'
-                  } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
-                >
-                  <span className="hidden sm:inline">COUNTDOWN</span>
-                  <span className="sm:hidden">TIMER</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { if (!isStudying) setTimerMode('pomodoro'); }}
-                  disabled={isStudying}
-                  className={`px-3 py-1.5 text-[11px] sm:text-xs font-mono font-semibold rounded-lg transition-colors ${
-                    timerMode === 'pomodoro'
-                      ? 'bg-white/[0.1] text-white shadow-sm border border-white/[0.08]'
-                      : 'text-zinc-400 hover:text-zinc-200'
-                  } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
-                >
-                  <span className="hidden sm:inline">POMODORO</span>
-                  <span className="sm:hidden">POMO</span>
-                </button>
-              </div>
+        {/* Top Controls: Mode Switcher & Ghost Focus Button */}
+        <div className="w-full flex items-center justify-between gap-2 flex-wrap">
+          {/* Mode Segmented Control in Sentence Case */}
+          <div className="inline-flex items-center p-1 bg-white/[0.04] border border-white/[0.08] rounded-full gap-0.5">
+            <button
+              type="button"
+              onClick={() => { if (!isStudying) setTimerMode('stopwatch'); }}
+              disabled={isStudying}
+              className={`px-3.5 py-1.5 text-xs font-medium rounded-full transition-all duration-150 active:scale-[0.98] ${
+                timerMode === 'stopwatch'
+                  ? 'bg-white/[0.1] text-white shadow-sm border border-white/[0.15]'
+                  : 'text-zinc-400 hover:text-zinc-200'
+              } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+            >
+              Stopwatch
+            </button>
+            <button
+              type="button"
+              onClick={() => { if (!isStudying) setTimerMode('countdown'); }}
+              disabled={isStudying}
+              className={`px-3.5 py-1.5 text-xs font-medium rounded-full transition-all duration-150 active:scale-[0.98] ${
+                timerMode === 'countdown'
+                  ? 'bg-white/[0.1] text-white shadow-sm border border-white/[0.15]'
+                  : 'text-zinc-400 hover:text-zinc-200'
+              } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+            >
+              Countdown
+            </button>
+            <button
+              type="button"
+              onClick={() => { if (!isStudying) setTimerMode('pomodoro'); }}
+              disabled={isStudying}
+              className={`px-3.5 py-1.5 text-xs font-medium rounded-full transition-all duration-150 active:scale-[0.98] ${
+                timerMode === 'pomodoro'
+                  ? 'bg-white/[0.1] text-white shadow-sm border border-white/[0.15]'
+                  : 'text-zinc-400 hover:text-zinc-200'
+              } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+            >
+              Pomodoro
+            </button>
+          </div>
 
-              {/* Compact Focus Mode Action — always on Row 1, never pushed off */}
-              <button
-                type="button"
-                onClick={() => {
-                  setIsFocusModeOpen(true);
-                  const el = document.documentElement;
-                  const lockLandscape = () => {
-                    const orientation = window.screen?.orientation as any;
-                    if (orientation && orientation.lock) {
-                      orientation.lock('landscape').catch(() => {});
-                    }
-                  };
-                  if (el.requestFullscreen) {
-                    el.requestFullscreen().then(lockLandscape).catch(() => {});
-                  } else if ((el as any).webkitRequestFullscreen) {
-                    (el as any).webkitRequestFullscreen();
-                    setTimeout(lockLandscape, 100);
-                  }
-                }}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-white/[0.1] bg-white/[0.04] text-zinc-300 hover:text-white hover:bg-white/[0.08] transition-colors text-[11px] sm:text-xs font-mono font-semibold cursor-pointer shrink-0"
-                title="Fullscreen Focus Mode"
-              >
-                <Maximize2 className="w-3.5 h-3.5" />
-                <span className="hidden min-[380px]:inline">Focus</span>
-              </button>
-            </div>
-
-            {/* Row 2 (mobile only): Pomodoro Preset Pills on their own line */}
-            {timerMode === 'pomodoro' && (
-              <div className="sm:hidden w-full flex items-center gap-1.5 animate-in fade-in zoom-in-95 duration-200">
-                <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider mr-0.5">Preset</span>
-                <div
-                  className="inline-flex items-center p-0.5 bg-white/[0.04] border border-white/[0.08] rounded-lg gap-0.5"
-                  title={isStudying ? "Interval presets are locked while session is running" : "Choose focus / break interval preset"}
-                >
-                  <button
-                    type="button"
-                    onClick={() => { if (!isStudying) setPomodoroPreset('25/5'); }}
-                    disabled={isStudying}
-                    className={`px-2 py-1 rounded-md font-mono text-xs transition-colors ${
-                      pomodoroPreset === '25/5'
-                        ? 'bg-amber-500/15 text-amber-400 font-semibold border border-amber-500/30'
-                        : 'text-zinc-500 hover:text-zinc-300'
-                    } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
-                    title="25m Focus / 5m Break"
-                  >
-                    25/5
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { if (!isStudying) setPomodoroPreset('50/10'); }}
-                    disabled={isStudying}
-                    className={`px-2 py-1 rounded-md font-mono text-xs transition-colors ${
-                      pomodoroPreset === '50/10'
-                        ? 'bg-amber-500/15 text-amber-400 font-semibold border border-amber-500/30'
-                        : 'text-zinc-500 hover:text-zinc-300'
-                    } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
-                    title="50m Focus / 10m Break"
-                  >
-                    50/10
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Desktop: POMO presets inline next to mode tabs (sm+) */}
+          <div className="flex items-center gap-2">
+            {/* Pomodoro Presets */}
             {timerMode === 'pomodoro' && (
               <div
-                className="hidden sm:inline-flex items-center p-0.5 bg-white/[0.04] border border-white/[0.08] rounded-lg gap-0.5 animate-in fade-in zoom-in-95 duration-200 self-start"
-                title={isStudying ? "Interval presets are locked while session is running" : "Choose focus / break interval preset"}
+                className="inline-flex items-center p-0.5 bg-white/[0.04] border border-white/[0.08] rounded-full gap-0.5 animate-in fade-in duration-150"
+                title={isStudying ? "Interval presets are locked while session is running" : "Choose interval preset"}
               >
                 <button
                   type="button"
                   onClick={() => { if (!isStudying) setPomodoroPreset('25/5'); }}
                   disabled={isStudying}
-                  className={`px-2 py-1 rounded-md font-mono text-xs transition-colors ${
+                  className={`px-2.5 py-1 rounded-full text-xs font-mono transition-colors ${
                     pomodoroPreset === '25/5'
-                      ? 'bg-amber-500/15 text-amber-400 font-semibold border border-amber-500/30'
-                      : 'text-zinc-500 hover:text-zinc-300'
+                      ? 'bg-white/[0.1] text-white font-medium border border-white/[0.15]'
+                      : 'text-zinc-400 hover:text-zinc-200'
                   } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
-                  title="25m Focus / 5m Break"
                 >
                   25/5
                 </button>
@@ -960,705 +885,521 @@ export function StudyTimer() {
                   type="button"
                   onClick={() => { if (!isStudying) setPomodoroPreset('50/10'); }}
                   disabled={isStudying}
-                  className={`px-2 py-1 rounded-md font-mono text-xs transition-colors ${
+                  className={`px-2.5 py-1 rounded-full text-xs font-mono transition-colors ${
                     pomodoroPreset === '50/10'
-                      ? 'bg-amber-500/15 text-amber-400 font-semibold border border-amber-500/30'
-                      : 'text-zinc-500 hover:text-zinc-300'
+                      ? 'bg-white/[0.1] text-white font-medium border border-white/[0.15]'
+                      : 'text-zinc-400 hover:text-zinc-200'
                   } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
-                  title="50m Focus / 10m Break"
                 >
                   50/10
                 </button>
               </div>
             )}
-          </div>
 
-          {/* Subject Selection Bar - Compact on Mobile */}
-          <div className="relative z-20 w-full max-md:mt-1 mt-2 sm:mt-4 sm:mb-5 flex-shrink-0">
-            {/* Subject warning banner */}
-            {subjectWarning && (
-              <div className="mb-2 sm:mb-3 flex items-center justify-between gap-2.5 px-3 py-2 rounded-2xl bg-amber-500/15 border border-amber-500/40 text-amber-200 text-xs font-semibold backdrop-blur-md shadow-lg shadow-amber-500/10 animate-in fade-in slide-in-from-top-2 duration-200">
-                <div className="flex items-center gap-2">
-                  <span className="text-amber-400 text-xs">⚠️</span>
-                  <span className="text-[10px] sm:text-xs">
-                    {activeSubjects.length === 0 ? 'Please add a subject before starting.' : 'Please select a subject before starting.'}
+            {/* Quiet Ghost Focus Button */}
+            <button
+              type="button"
+              onClick={() => {
+                setIsFocusModeOpen(true);
+                const el = document.documentElement;
+                const lockLandscape = () => {
+                  const orientation = window.screen?.orientation as any;
+                  if (orientation && orientation.lock) {
+                    orientation.lock('landscape').catch(() => {});
+                  }
+                };
+                if (el.requestFullscreen) {
+                  el.requestFullscreen().then(lockLandscape).catch(() => {});
+                } else if ((el as any).webkitRequestFullscreen) {
+                  (el as any).webkitRequestFullscreen();
+                  setTimeout(lockLandscape, 100);
+                }
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/[0.08] hover:border-white/[0.18] bg-transparent hover:bg-white/[0.04] text-zinc-400 hover:text-zinc-200 transition-all duration-150 text-xs font-normal cursor-pointer shrink-0 active:scale-[0.98]"
+              title="Fullscreen Focus Mode"
+            >
+              <Maximize2 className="w-3.5 h-3.5" />
+              <span>Focus</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Subject warning banner */}
+        {subjectWarning && (
+          <div className="mt-3 flex items-center justify-between gap-2.5 px-3.5 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs font-medium backdrop-blur-md animate-in fade-in slide-in-from-top-2 duration-150">
+            <span>
+              {activeSubjects.length === 0 ? 'Please add a subject before starting.' : 'Please select a subject before starting.'}
+            </span>
+            <button
+              onClick={() => setSubjectWarning(false)}
+              className="p-1 rounded-lg hover:bg-amber-500/20 text-amber-300 transition-colors cursor-pointer"
+              title="Dismiss"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
+        {/* Subject Selector & Atmosphere in One Tidy Row */}
+        <div className="w-full flex items-center gap-2.5 mt-4 mb-2 relative z-20">
+          {/* Subject Dropdown */}
+          <div className="relative flex-1 min-w-0">
+            <button
+              type="button"
+              onClick={(e) => {
+                if (activeSubjects.length === 0) {
+                  handleOpenSubjectManager(e);
+                } else {
+                  setShowDropdown(!showDropdown);
+                }
+              }}
+              disabled={isStudying || isRemoteTransitioning}
+              title={isStudying ? "Subject cannot be changed while session is active" : "Select a subject to focus on"}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 bg-white/[0.03] hover:bg-white/[0.06] border rounded-xl text-xs sm:text-sm font-medium transition-all duration-150 disabled:opacity-75 disabled:cursor-not-allowed cursor-pointer ${
+                subjectWarning
+                  ? 'border-amber-500/60 ring-1 ring-amber-500/30'
+                  : 'border-white/[0.08]'
+              }`}
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span
+                  className="w-2.5 h-2.5 rounded-full shrink-0 transition-colors"
+                  style={{ backgroundColor: selectedSubject ? (selectedSubject?.color || subjectColor) : '#64748B' }}
+                />
+                <span className={`truncate ${selectedSubject?.name ? "text-white/90" : "text-zinc-400"}`}>
+                  {selectedSubject?.name || (activeSubjects.length === 0 ? 'Add a subject' : 'Select a subject')}
+                </span>
+                {isStudying && (
+                  <span className="text-[10px] text-zinc-500 bg-white/[0.05] px-1.5 py-0.5 rounded ml-1 shrink-0">
+                    Locked
                   </span>
+                )}
+              </div>
+              <ChevronDown className="w-3.5 h-3.5 text-zinc-400 shrink-0 ml-1" />
+            </button>
+
+            {showDropdown && !isStudying && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-[#0e1015]/95 backdrop-blur-xl border border-white/[0.08] rounded-xl shadow-xl p-2 z-50 animate-in fade-in zoom-in-95 duration-150">
+                <div className="px-2.5 py-1 text-[10px] uppercase font-mono tracking-wider text-zinc-500 border-b border-white/[0.06] mb-1">
+                  Subjects
                 </div>
-                <button
-                  onClick={() => setSubjectWarning(false)}
-                  className="p-1 rounded-lg hover:bg-amber-500/20 text-amber-300 transition-colors cursor-pointer"
-                  title="Dismiss"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
+                <div className="max-h-60 overflow-y-auto space-y-0.5">
+                  {activeSubjects.map(sub => (
+                    <button
+                      type="button"
+                      key={sub?.id || Math.random().toString()}
+                      onClick={() => {
+                        if (sub?.id) {
+                          setSelectedSubjectId(sub.id);
+                        }
+                        setShowDropdown(false);
+                        setSubjectWarning(false);
+                      }}
+                      className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                        sub?.id && sub.id === selectedSubjectId
+                          ? 'bg-white/[0.08] text-white'
+                          : 'text-zinc-400 hover:text-white hover:bg-white/[0.04]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span
+                          className="w-2 h-2 rounded-full shrink-0"
+                          style={{ backgroundColor: sub?.color || '#10B981' }}
+                        />
+                        <span className="truncate">{sub?.name || 'Untitled subject'}</span>
+                      </div>
+                      <span className="text-[11px] text-zinc-500 font-mono shrink-0 ml-2">
+                        {Math.floor((sub?.targetMinutesPerDay || 60) / 60)}h goal
+                      </span>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="pt-1.5 mt-1.5 border-t border-white/[0.06]">
+                  <button
+                    type="button"
+                    onClick={handleOpenSubjectManager}
+                    className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-medium text-zinc-400 hover:text-white hover:bg-white/[0.04] transition-colors cursor-pointer"
+                  >
+                    <FolderPlus className="w-3.5 h-3.5" />
+                    <span>Manage subjects</span>
+                  </button>
+                </div>
               </div>
             )}
-
-            <div className="flex items-center justify-between gap-2.5 sm:gap-3">
-              {/* Subject Dropdown */}
-              <div className="relative flex-1 min-w-0 w-full">
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    if (activeSubjects.length === 0) {
-                      handleOpenSubjectManager(e);
-                    } else {
-                      setShowDropdown(!showDropdown);
-                    }
-                  }}
-                  disabled={isStudying || isRemoteTransitioning}
-                  title={isStudying ? "Subject cannot be changed while session is active" : "Select a subject to focus on"}
-                  className={`w-full flex items-center justify-between px-3.5 sm:px-4 py-2.5 sm:py-3 bg-black/40 hover:bg-black/60 border rounded-2xl text-sm font-semibold transition-all disabled:opacity-85 disabled:cursor-not-allowed cursor-pointer ${
-                    subjectWarning
-                      ? 'border-amber-500/80 ring-2 ring-amber-500/30 shadow-lg shadow-amber-500/10'
-                      : isStudying
-                      ? 'border-[var(--border)] bg-white/[0.02]'
-                      : 'border-[var(--border)]'
-                  }`}
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <span
-                      className="w-3 h-3 rounded-full flex-shrink-0 shadow-sm transition-colors"
-                      style={{ backgroundColor: selectedSubject ? (selectedSubject?.color || subjectColor) : activeSubjects.length === 0 ? 'var(--tier-accent)' : '#64748B' }}
-                    />
-                    <span className={`truncate text-sm ${selectedSubject?.name ? "text-white font-bold tracking-tight" : activeSubjects.length === 0 ? "text-primary font-bold tracking-tight" : "text-neutral-400 font-medium"}`}>
-                      {selectedSubject?.name || (activeSubjects.length === 0 ? '[ + Add a Subject ]' : '[ Select a Subject ]')}
-                    </span>
-                    {isStudying && (
-                      <span className="text-[10px] uppercase font-bold text-neutral-400 bg-white/[0.08] px-1.5 py-0.5 rounded-md flex-shrink-0 ml-1">
-                        Locked
-                      </span>
-                    )}
-                  </div>
-                  <ChevronDown className={`w-4 h-4 text-neutral-300 flex-shrink-0 ml-1 transition-transform ${isStudying ? 'opacity-40' : ''}`} />
-                </button>
-
-                {showDropdown && !isStudying && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-[var(--surface)] backdrop-blur-xl border border-[var(--border)] rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95 duration-150">
-                    <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-neutral-500 select-none border-b border-white/[0.06] mb-1">
-                      Select a subject to focus on
-                    </div>
-                    <div className="max-h-60 overflow-y-auto space-y-1">
-                      {activeSubjects.map(sub => {
-                        const itemColor =
-                          sub?.color || 'var(--accent)';
-
-                        return (
-                          <button
-                            type="button"
-                            key={sub?.id || Math.random().toString()}
-                            onClick={() => {
-                              if (sub?.id) {
-                                setSelectedSubjectId(sub.id);
-                              }
-                              setShowDropdown(false);
-                              setSubjectWarning(false);
-                            }}
-                            className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                              sub?.id && sub.id === selectedSubjectId
-                                ? 'bg-white/[0.08] text-white'
-                                : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
-                            }`}
-                          >
-                            <div className="flex items-center gap-2 min-w-0">
-                              <span
-                                className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                                style={{ backgroundColor: itemColor }}
-                              />
-                              <span className="truncate">{sub?.name || 'Untitled Subject'}</span>
-                            </div>
-                            <span className="text-[10px] text-neutral-400 font-mono flex-shrink-0 ml-2">
-                              {Math.floor((sub?.targetMinutesPerDay || 60) / 60)}h goal
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    <div className="pt-2 mt-2 border-t border-[var(--border)]">
-                      <button
-                        type="button"
-                        onClick={handleOpenSubjectManager}
-                        className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold text-[#8FA3A1] hover:bg-white/[0.06] transition-colors cursor-pointer"
-                      >
-                        <FolderPlus className="w-3.5 h-3.5 text-[#8FA3A1]" />
-                        <span>Manage / Add Subjects</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Atmosphere UI (Desktop - Replaces Edit Subjects) */}
-              <div className="relative hidden sm:block flex-shrink-0">
-                <button
-                  onClick={() => setIsAmbientMenuOpen(!isAmbientMenuOpen)}
-                  className="bg-white/[0.05] border border-white/15 hover:border-[var(--tier-border)] text-zinc-100 font-medium text-xs px-3.5 py-2.5 rounded-2xl flex items-center gap-2 transition-all cursor-pointer select-none h-full shadow-sm"
-                >
-                  <Music className={`w-3.5 h-3.5 ${ambientSound !== 'none' ? 'text-[var(--tier-accent)]' : 'text-zinc-300'}`} />
-                  <span className="tracking-tight hidden sm:inline">
-                    Atmosphere: {
-                      ambientSound === 'pinknoise' ? 'Pink Noise' :
-                      ambientSound === 'brownnoise' ? 'Brown Noise' :
-                      ambientSound === 'whitenoise' ? 'White Noise' :
-                      ambientSound === 'rain' ? 'Rain' :
-                      ambientSound === 'campfire' ? 'Fireplace' : 'Silent'
-                    }
-                  </span>
-                  <span className="tracking-tight sm:hidden">
-                    Sound
-                  </span>
-                  {ambientSound !== 'none' && <span className="w-1.5 h-1.5 rounded-full bg-[var(--tier-accent)] animate-pulse ml-0.5" />}
-                  <ChevronUp className={`w-3.5 h-3.5 text-neutral-500 transition-transform ${isAmbientMenuOpen ? 'rotate-180' : ''}`} />
-                </button>
-
-                {isAmbientMenuOpen && (
-                  <>
-                    <div 
-                      className="fixed inset-0 z-40" 
-                      onClick={() => setIsAmbientMenuOpen(false)} 
-                    />
-                    <div className="absolute top-full right-0 mt-2 z-[100] bg-[#0e1015]/95 backdrop-blur-md border border-white/10 rounded-2xl p-2.5 shadow-2xl min-w-[220px] animate-in slide-in-from-top-2 fade-in duration-200">
-                      <div className="flex flex-col gap-1">
-                        {[
-                          { id: 'none', label: 'Silent', icon: <span className="w-3.5 h-3.5 rounded-full bg-neutral-300 mx-0.5" /> },
-                          { id: 'pinknoise', label: 'Pink Noise', icon: <Radio className="w-4 h-4" /> },
-                          { id: 'brownnoise', label: 'Brown Noise', icon: <Headphones className="w-4 h-4" /> },
-                          { id: 'whitenoise', label: 'White Noise', icon: <Radio className="w-4 h-4" /> },
-                          { id: 'rain', label: 'Rain', icon: <CloudRain className="w-4 h-4" /> },
-                          { id: 'campfire', label: 'Fireplace', icon: <Flame className="w-4 h-4" /> }
-                        ].map(option => (
-                          <button
-                            key={option.id}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleAmbientChange(option.id as any);
-                              setTimeout(() => setIsAmbientMenuOpen(false), 50);
-                            }}
-                            className={`flex items-center justify-between rounded-xl px-3 py-2 text-sm transition-colors cursor-pointer ${
-                              ambientSound === option.id 
-                                ? 'bg-[var(--tier-accent)]/[0.15] text-[var(--tier-accent)]' 
-                                : 'text-neutral-400 hover:text-white hover:bg-white/[0.06]'
-                            }`}
-                          >
-                            <div className="flex items-center gap-2.5">
-                              {option.icon}
-                              <span>{option.label}</span>
-                            </div>
-                            {ambientSound === option.id && <Check className="w-4 h-4 text-[var(--tier-accent)]" />}
-                          </button>
-                        ))}
-                      </div>
-
-                      {ambientSound !== 'none' && (
-                        <div className="mt-2 pt-2 border-t border-white/10 flex items-center gap-3 px-2">
-                          <Volume2 className="w-4 h-4 text-neutral-500" />
-                          <input
-                            type="range"
-                            min="0"
-                            max="1"
-                            step="0.05"
-                            value={ambientVolume}
-                            onClick={e => e.stopPropagation()}
-                            onChange={e => handleVolumeChange(parseFloat(e.target.value))}
-                            className="flex-1 accent-[var(--tier-accent)] bg-white/10 rounded-lg cursor-pointer h-1.5"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
           </div>
 
+          {/* Atmosphere Selector in Same Row */}
+          <div className="relative shrink-0">
+            <button
+              type="button"
+              onClick={() => setIsAmbientMenuOpen(!isAmbientMenuOpen)}
+              className="px-3.5 py-2.5 rounded-xl border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06] text-zinc-300 hover:text-white text-xs sm:text-sm font-medium flex items-center gap-2 transition-all duration-150 cursor-pointer select-none"
+            >
+              <Music className={`w-3.5 h-3.5 ${ambientSound !== 'none' ? 'text-[var(--tier-accent)]' : 'text-zinc-400'}`} />
+              <span className="hidden sm:inline">
+                {ambientSound === 'pinknoise' ? 'Pink Noise' :
+                 ambientSound === 'brownnoise' ? 'Brown Noise' :
+                 ambientSound === 'whitenoise' ? 'White Noise' :
+                 ambientSound === 'rain' ? 'Rain' :
+                 ambientSound === 'campfire' ? 'Fireplace' : 'Atmosphere'}
+              </span>
+              <span className="sm:hidden">Sound</span>
+              {ambientSound !== 'none' && <span className="w-1.5 h-1.5 rounded-full bg-[var(--tier-accent)] animate-pulse" />}
+              <ChevronDown className={`w-3.5 h-3.5 text-zinc-400 transition-transform ${isAmbientMenuOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {isAmbientMenuOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setIsAmbientMenuOpen(false)}
+                />
+                <div className="absolute top-full right-0 mt-2 z-[100] bg-[#0e1015]/95 backdrop-blur-md border border-white/[0.08] rounded-xl p-2 shadow-xl min-w-[210px] animate-in fade-in duration-150">
+                  <div className="flex flex-col gap-0.5">
+                    {[
+                      { id: 'none', label: 'Silent', icon: <span className="w-3.5 h-3.5 rounded-full bg-zinc-600 mx-0.5" /> },
+                      { id: 'pinknoise', label: 'Pink Noise', icon: <Radio className="w-3.5 h-3.5 text-zinc-400" /> },
+                      { id: 'brownnoise', label: 'Brown Noise', icon: <Headphones className="w-3.5 h-3.5 text-zinc-400" /> },
+                      { id: 'whitenoise', label: 'White Noise', icon: <Radio className="w-3.5 h-3.5 text-zinc-400" /> },
+                      { id: 'rain', label: 'Rain', icon: <CloudRain className="w-3.5 h-3.5 text-zinc-400" /> },
+                      { id: 'campfire', label: 'Fireplace', icon: <Flame className="w-3.5 h-3.5 text-zinc-400" /> }
+                    ].map(option => (
+                      <button
+                        key={option.id}
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleAmbientChange(option.id as any);
+                          setTimeout(() => setIsAmbientMenuOpen(false), 50);
+                        }}
+                        className={`flex items-center justify-between rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors cursor-pointer ${
+                          ambientSound === option.id
+                            ? 'bg-white/[0.08] text-white'
+                            : 'text-zinc-400 hover:text-white hover:bg-white/[0.04]'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          {option.icon}
+                          <span>{option.label}</span>
+                        </div>
+                        {ambientSound === option.id && <Check className="w-3.5 h-3.5 text-[var(--tier-accent)]" />}
+                      </button>
+                    ))}
                   </div>
 
-          {/* Center Timer Display - Game HUD Radar / Reactor Core Display */}
-          <div className="relative z-10 flex flex-col items-center justify-center max-md:py-0 py-2 sm:py-8 my-auto w-full">
-            {/* ── Mobile Circular Dial Wrapper (< sm) ── */}
-            <div className="relative sm:hidden flex items-center justify-center mx-auto flex-shrink-0 w-full max-w-[260px] aspect-square">
-              {/* Mobile Ambient Glow (Removed) */}
-
-              {/* Mobile SVG Ring */}
-              <svg viewBox="0 0 300 300" className="absolute inset-0 w-full h-full pointer-events-none select-none">
-                <defs>
-                  <linearGradient id="mobileTimerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="var(--accent)" />
-                    <stop offset="100%" stopColor="var(--accent)" />
-                  </linearGradient>
-                </defs>
-                {/* Tick marks */}
-                <g opacity="0.7">
-                  {Array.from({ length: 12 }).map((_, i) => {
-                    const angle = (i * 30 - 90) * (Math.PI / 180);
-                    const isActiveTick = (i / 12) * 100 <= progressPercent && progressPercent > 0;
-                    const rOuter = 144;
-                    const rInner = isActiveTick ? 133 : 137;
-                    return (
-                      <line
-                        key={i}
-                        x1={150 + rOuter * Math.cos(angle)}
-                        y1={150 + rOuter * Math.sin(angle)}
-                        x2={150 + rInner * Math.cos(angle)}
-                        y2={150 + rInner * Math.sin(angle)}
-                        stroke={isActiveTick ? 'var(--accent)' : 'rgba(255,255,255,0.06)'}
-                        strokeWidth={isActiveTick ? 2.5 : 1}
-                        strokeLinecap="round"
+                  {ambientSound !== 'none' && (
+                    <div className="mt-2 pt-2 border-t border-white/[0.08] flex items-center gap-2.5 px-2">
+                      <Volume2 className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.05"
+                        value={ambientVolume}
+                        onClick={e => e.stopPropagation()}
+                        onChange={e => handleVolumeChange(parseFloat(e.target.value))}
+                        className="flex-1 accent-[var(--tier-accent)] bg-white/10 rounded-lg cursor-pointer h-1.5"
                       />
-                    );
-                  })}
-                </g>
-                {/* Background ring */}
-                <circle cx="150" cy="150" r="124" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="2.5" />
-                {/* Progress arc */}
-                <circle
-                  cx="150" cy="150" r="124"
-                  fill="none"
-                  stroke="url(#mobileTimerGrad)"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  strokeDasharray={2 * Math.PI * 124}
-                  strokeDashoffset={2 * Math.PI * 124 - (progressPercent / 100) * (2 * Math.PI * 124)}
-                  style={{ filter: 'drop-shadow(0 0 4px rgba(var(--tier-accent-rgb), 0.6))' }}
-                  transform="rotate(-90 150 150)"
-                />
-                {/* Inner circle backdrop */}
-                <circle cx="150" cy="150" r="116" fill="rgba(10,12,18,0.7)" />
-              </svg>
-
-              {/* Mobile Clock Content — only the time, nothing else */}
-              <div className="relative z-10 flex items-center justify-center w-full h-full">
-                <div className="font-mono tabular-nums font-black text-white drop-shadow-[0_2px_24px_rgba(255,255,255,0.15)] text-[clamp(2.2rem,10.5vw,3rem)] text-center select-none tracking-tight leading-none">
-                  {timerMode === 'countdown' && !isStudying ? (
-                    isEditingCountdown ? (
-                      <CountdownEditor
-                        initialSeconds={countdownTarget}
-                        onSave={(seconds) => { setCountdownTarget(seconds); setIsEditingCountdown(false); }}
-                        onCancel={() => setIsEditingCountdown(false)}
-                      />
-                    ) : (
-                      <span onClick={() => setIsEditingCountdown(true)} className="cursor-pointer hover:text-amber-400 transition-colors pointer-events-auto" title="Click to edit duration">
-                        {displayTime}
-                      </span>
-                    )
-                  ) : (
-                    <span>{displayTime}</span>
+                    </div>
                   )}
                 </div>
-              </div>
-            </div>
+              </>
+            )}
+          </div>
+        </div>
 
-            {/* ── Desktop Circular Dial (≥ sm) ── */}
-            <div className="relative hidden sm:flex items-center justify-center group p-4 w-80 h-80 md:w-96 md:h-96 mx-auto aspect-square rounded-full flex-shrink-0">
-              {/* Outer Ambient Halo (Removed) */}
+        {/* Dial Display Area */}
+        <div className="relative z-10 flex flex-col items-center justify-center py-4 sm:py-6 my-auto w-full">
+          {/* Circular Dial with Soft Accent Glow Behind */}
+          <div className="relative flex items-center justify-center mx-auto aspect-square w-64 h-64 sm:w-80 sm:h-80 shrink-0">
+            {/* Soft Low-Opacity Accent Glow behind dial */}
+            <div
+              className="absolute inset-4 rounded-full opacity-[0.07] blur-3xl pointer-events-none transition-opacity duration-500"
+              style={{ backgroundColor: 'var(--tier-accent)' }}
+            />
 
-              {/* Segmented Radar / Reactor Core SVG Ring */}
-              <svg viewBox="0 0 300 300" className="absolute inset-0 w-full h-full pointer-events-none select-none">
-                <defs>
-                  <linearGradient id="timerTierGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor={'var(--accent)'} />
-                    <stop offset="50%" stopColor={'var(--accent)'} />
-                    <stop offset="100%" stopColor={'var(--accent)'} />
-                  </linearGradient>
-                </defs>
-                <g opacity="0.85">
-                  {Array.from({ length: 12 }).map((_, i) => {
-                    const angle = (i * 30 - 90) * (Math.PI / 180);
-                    const isActiveTick = (i / 12) * 100 <= progressPercent && progressPercent > 0;
-                    const rOuter = 144;
-                    const rInner = isActiveTick ? 133 : 137;
-                    return (
-                      <line
-                        key={i}
-                        x1={150 + rOuter * Math.cos(angle)}
-                        y1={150 + rOuter * Math.sin(angle)}
-                        x2={150 + rInner * Math.cos(angle)}
-                        y2={150 + rInner * Math.sin(angle)}
-                        stroke={isActiveTick ? 'var(--accent)' : 'rgba(255,255,255,0.04)'}
-                        strokeWidth={isActiveTick ? 2 : 1}
-                        strokeLinecap="round"
-                        className="opacity-60"
-                      />
-                    );
-                  })}
-                </g>
-                <circle cx="150" cy="150" r="124" fill="none" stroke="rgba(255, 255, 255, 0.04)" strokeWidth="2.5" />
+            {/* SVG Ring Track & Ticks */}
+            <svg viewBox="0 0 300 300" className="absolute inset-0 w-full h-full pointer-events-none select-none">
+              {/* 12 Sparse tick marks raised to ~30% white */}
+              <g stroke="rgba(255, 255, 255, 0.30)" strokeWidth="1.5" strokeLinecap="round">
+                {Array.from({ length: 12 }).map((_, i) => {
+                  const angle = (i * 30 - 90) * (Math.PI / 180);
+                  const rOuter = 142;
+                  const rInner = 133;
+                  return (
+                    <line
+                      key={i}
+                      x1={150 + rOuter * Math.cos(angle)}
+                      y1={150 + rOuter * Math.sin(angle)}
+                      x2={150 + rInner * Math.cos(angle)}
+                      y2={150 + rInner * Math.sin(angle)}
+                    />
+                  );
+                })}
+              </g>
+
+              {/* 2px Ring Track visible at ~12% white */}
+              <circle
+                cx="150"
+                cy="150"
+                r="124"
+                fill="none"
+                stroke="rgba(255, 255, 255, 0.12)"
+                strokeWidth="2"
+              />
+
+              {/* Sweeping accent arc */}
+              {dialSweepPercent > 0 && (
                 <circle
-                  cx="150" cy="150" r="124"
+                  cx="150"
+                  cy="150"
+                  r="124"
                   fill="none"
-                  stroke="url(#timerTierGrad)"
+                  stroke="var(--tier-accent)"
                   strokeWidth="2.5"
                   strokeLinecap="round"
                   strokeDasharray={2 * Math.PI * 124}
-                  strokeDashoffset={2 * Math.PI * 124 - (progressPercent / 100) * (2 * Math.PI * 124)}
-                  style={{ filter: 'drop-shadow(0 0 3px rgba(var(--tier-accent-rgb), 0.5))' }}
+                  strokeDashoffset={2 * Math.PI * 124 - (dialSweepPercent / 100) * (2 * Math.PI * 124)}
                   transform="rotate(-90 150 150)"
+                  className="transition-[stroke-dashoffset] duration-300 ease-linear"
                 />
-              </svg>
-
-              {/* Inner Dial */}
-              <div className="w-64 h-64 md:w-80 md:h-80 border border-white/[0.08] bg-[#0c0d12]/60 backdrop-blur-sm rounded-full relative shadow-[inset_0_1px_1px_rgba(255,255,255,0.06),0_12px_40px_rgba(0,0,0,0.6)] flex-shrink-0 flex flex-col items-center justify-center">
-                <div className="absolute top-4 left-1/2 -translate-x-1/2 w-0.5 h-2 bg-white/10 rounded-full" />
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-0.5 h-2 bg-white/10 rounded-full" />
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 w-2 h-0.5 bg-white/10 rounded-full" />
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 w-2 h-0.5 bg-white/10 rounded-full" />
-
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10 [&>div]:pointer-events-auto">
-                  <div className="hidden sm:block h-6 mt-2" aria-hidden="true" />
-                  <div className="font-mono tabular-nums font-bold text-white drop-shadow-[0_0_24px_rgba(255,255,255,0.12)] text-5xl md:text-6xl w-full text-center flex items-center justify-center select-none tracking-normal">
-                    {timerMode === 'countdown' && !isStudying ? (
-                      isEditingCountdown ? (
-                        <CountdownEditor
-                          initialSeconds={countdownTarget}
-                          onSave={(seconds) => { setCountdownTarget(seconds); setIsEditingCountdown(false); }}
-                          onCancel={() => setIsEditingCountdown(false)}
-                        />
-                      ) : (
-                        <span onClick={() => setIsEditingCountdown(true)} className="cursor-pointer hover:text-amber-400 transition-colors pointer-events-auto font-mono tabular-nums inline-block text-center" title="Click to edit duration">
-                          {displayTime}
-                        </span>
-                      )
-                    ) : (
-                      <span className="font-mono tabular-nums inline-block text-center">{displayTime}</span>
-                    )}
-                  </div>
-                  {isStudying ? (
-                    <div className="h-6 text-[11px] uppercase tracking-[0.2em] text-white/70 font-semibold flex items-center justify-center gap-2 mt-2 animate-in fade-in duration-200">
-                      <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${!isPaused ? 'bg-green-500 animate-pulse' : 'bg-amber-400'}`} />
-                      <span className="text-center">{isPaused ? 'PAUSED' : 'RUNNING'}</span>
-                      <div className="w-1.5 h-1.5 rounded-full flex-shrink-0 opacity-0 pointer-events-none" aria-hidden="true" />
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-            </div>
-
-            {/* Focus Block Complete Alert Banner */}
-            {pomodoroCompletedPhase === 'work' && (
-              <div
-                className="mt-6 w-full max-w-md flex items-center justify-between gap-3 px-5 py-3.5 rounded-2xl border text-xs font-semibold backdrop-blur-md shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-300"
-                style={{
-                  backgroundColor: theme.badgeBg,
-                  borderColor: 'var(--border)',
-                  boxShadow: '0 0 20px var(--glow)',
-                }}
-              >
-                <div className="flex items-center gap-2.5">
-                  <div
-                    className="w-8 h-8 rounded-xl border flex items-center justify-center flex-shrink-0"
-                    style={{
-                      backgroundColor: theme.badgeBg,
-                      borderColor: 'var(--border)',
-                      color: 'var(--accent)',
-                    }}
-                  >
-                    <Sparkles className="w-4 h-4 animate-pulse" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-hud font-black text-white tracking-wide">FOCUS BLOCK COMPLETE</div>
-                    <div className="text-[10px] text-slate-300 font-normal">
-                      Save session to trigger rank settlement and pause for break, or skip.
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Break Over Alert Banner */}
-            {pomodoroCompletedPhase === 'break' && (
-              <div className="mt-6 w-full max-w-md flex items-center justify-between gap-3 px-5 py-3.5 rounded-2xl bg-amber-500/15 border border-amber-500/40 text-amber-200 text-xs font-semibold backdrop-blur-md shadow-xl shadow-amber-500/10 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center flex-shrink-0">
-                    <Flame className="w-4 h-4 text-amber-300 animate-pulse" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-hud font-black text-white tracking-wide">BREAK OVER // READY TO STUDY?</div>
-                    <div className="text-[10px] text-amber-300/90 font-normal">
-                      Timer switched back to focus mode. Click start when ready.
-                    </div>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setPomodoroCompletedPhase(null)}
-                  className="p-1 rounded-lg hover:bg-amber-500/20 text-amber-300 transition-colors cursor-pointer"
-                  title="Dismiss"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            )}
-
-            {/* Action Buttons: Context-aware HUD controls */}
-            <div className="max-md:mb-1 pt-3 flex flex-wrap items-center justify-center gap-2 sm:gap-3 relative z-10 w-full max-w-sm flex-shrink-0 mx-auto">
-              {pomodoroCompletedPhase === 'work' ? (
-                /* Prompt 1: Focus Block Complete -> Save & Start Break / Skip Break */
-                <>
-                  <button
-                    onClick={async () => {
-                      setIsSaving(true);
-                      try {
-                        await saveAndStartBreak();
-                      } finally {
-                        setIsSaving(false);
-                      }
-                    }}
-                    disabled={isSaving || isRemoteTransitioning}
-                    className="px-6 sm:px-8 py-3.5 rounded-xl font-hud font-bold text-xs sm:text-sm text-slate-950 transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[150px] uppercase tracking-wider hud-btn-primary"
-                    style={{ backgroundColor: 'var(--accent)' }}
-                  >
-                    {isSaving ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
-                        <span>SAVING...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Coffee className="w-4 h-4 fill-current" />
-                        <span>SAVE &amp; START BREAK</span>
-                      </>
-                    )}
-                  </button>
-
-                  <button
-                    onClick={async () => {
-                      setIsSaving(true);
-                      try {
-                        await skipPomodoroBreak();
-                      } finally {
-                        setIsSaving(false);
-                      }
-                    }}
-                    disabled={isSaving || isRemoteTransitioning}
-                    className="px-5 sm:px-6 py-3.5 rounded-xl bg-[var(--surface)] backdrop-blur-xl hover:bg-[#1B2028] border border-[var(--border)] text-slate-300 hover:text-white font-hud font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[120px] uppercase tracking-wider"
-                  >
-                    <SkipForward className="w-4 h-4" />
-                    <span>SKIP BREAK</span>
-                  </button>
-                </>
-              ) : timerMode === 'pomodoro' && pomodoroPhase === 'shortBreak' ? (
-                /* Prompt 2: Break Mode Controls (Paused awaiting click vs Running) */
-                isPaused ? (
-                  <>
-                    <button
-                      onClick={startPomodoroBreak}
-                      disabled={isSaving || isRemoteTransitioning}
-                      className="px-6 sm:px-8 py-3.5 rounded-xl font-hud font-bold text-xs sm:text-sm text-slate-950 transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[140px] uppercase tracking-wider hud-btn-primary"
-                      style={{ backgroundColor: 'var(--accent)' }}
-                    >
-                      <Play className="w-4 h-4 fill-current" />
-                      <span>START BREAK</span>
-                    </button>
-                    <button
-                      onClick={handleReset}
-                      disabled={isSaving || isRemoteTransitioning}
-                      className="px-5 sm:px-6 py-3.5 rounded-xl bg-[var(--surface)] backdrop-blur-xl hover:bg-[#1B2028] border border-[var(--border)] text-slate-400 hover:text-white font-hud font-bold text-xs sm:text-sm transition-colors active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[110px] uppercase tracking-wider"
-                    >
-                      <span>SKIP BREAK</span>
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      onClick={handleReset}
-                      disabled={isSaving || isRemoteTransitioning}
-                      className="px-5 sm:px-6 py-3 rounded-xl bg-[var(--surface)] backdrop-blur-xl hover:bg-[#1B2028] border border-[var(--border)] text-slate-400 hover:text-white font-hud font-bold text-xs sm:text-sm transition-colors active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[110px] uppercase tracking-wider"
-                    >
-                      <span>END BREAK</span>
-                    </button>
-                  </>
-                )
-              ) : pomodoroCompletedPhase === 'break' ? (
-                /* Break completed, waiting for user click */
-                <button
-                  onClick={() => {
-                    setPomodoroCompletedPhase(null);
-                    handleStartSession();
-                  }}
-                  disabled={isSaving || isRemoteTransitioning}
-                  className="px-8 sm:px-10 py-3.5 sm:py-4 font-sans font-bold text-sm uppercase tracking-wide transition-all flex items-center justify-center gap-2.5 w-full xs:w-auto rounded-xl cursor-pointer hover:scale-[1.02]"
-                  style={{ backgroundColor: "#05070a", color: "var(--accent)", fontWeight: 900, border: "1px solid var(--accent)", boxShadow: `0 8px 32px rgba(0,0,0,0.8), inset 0 2px 10px ${theme.glow}15` }}
-                >
-                  <Flame className="w-4 sm:w-5 h-4 sm:h-5 fill-current" />
-                  <span>START FOCUS SESSION</span>
-                </button>
-              ) : !isStudying ? (
-                /* 1. IDLE State: Primary Tactical Amber CTA Button */
-                <button
-                  onClick={handleStartSession}
-                  disabled={!selectedSubject?.id || isSaving || isRemoteTransitioning}
-                  className={`w-full py-4 rounded-xl font-bold font-mono tracking-wider uppercase text-black bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 shadow-[0_0_25px_rgba(245,158,11,0.25)] hover:shadow-[0_0_35px_rgba(245,158,11,0.4)] hover:brightness-105 active:scale-[0.99] transition-all duration-200 flex items-center justify-center gap-2 ${
-                    !selectedSubject?.id || isRemoteTransitioning
-                      ? 'opacity-40 cursor-not-allowed shadow-none hover:brightness-100 hover:shadow-none'
-                      : 'cursor-pointer'
-                  }`}
-                  title={!selectedSubject?.id ? 'Please select a subject before starting the timer' : 'Start Focus Session'}
-                >
-                  <Play className="w-5 h-5 fill-current" />
-                  <span>START SESSION</span>
-                </button>
-              ) : !isPaused ? (
-                /* 2. RUNNING State: Two buttons (Pause & Stop & Save) */
-                <>
-                  <button
-                    onClick={handlePause}
-                    disabled={isSaving || isRemoteTransitioning}
-                    className="px-5 sm:px-7 py-3 rounded-xl bg-[var(--surface)] backdrop-blur-xl hover:bg-[#1B2028] text-amber-300 font-hud font-bold text-xs sm:text-sm border border-amber-500/40 transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[120px] shadow-sm tracking-wider uppercase"
-                  >
-                    <Pause className="w-4 h-4" />
-                    <span>PAUSE</span>
-                  </button>
-
-                  <button
-                    onClick={handleStopAndSave}
-                    disabled={isSaving || isRemoteTransitioning}
-                    className="px-5 sm:px-7 py-3 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/40 text-rose-300 font-hud font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[140px] shadow-sm tracking-wider uppercase"
-                    title={isSaving ? "Saving session..." : "Stop and save session"}
-                  >
-                    {isSaving ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-rose-300 border-t-transparent rounded-full animate-spin" />
-                        <span>SAVING...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Square className="w-4 h-4 fill-current" />
-                        <span>STOP &amp; SAVE</span>
-                      </>
-                    )}
-                  </button>
-                </>
-              ) : (
-                /* 3. PAUSED State: Resume, Stop & Save, Reset */
-                <>
-                  <button
-                    onClick={handleResume}
-                    disabled={isSaving || isRemoteTransitioning}
-                    className="px-6 sm:px-8 py-3 rounded-xl font-hud font-bold text-xs sm:text-sm text-slate-950 transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[120px] tracking-wider uppercase hud-btn-primary"
-                    style={{ background: theme.gradient, color: "#000000", fontWeight: 800, border: "none", boxShadow: `0 8px 32px ${theme.glow}60, inset 0 2px 4px rgba(255,255,255,0.3)` }}
-                  >
-                    <Play className="w-4 h-4 fill-current" />
-                    <span>RESUME</span>
-                  </button>
-
-                  <button
-                    onClick={handleStopAndSave}
-                    disabled={isSaving || isRemoteTransitioning}
-                    className="px-5 sm:px-7 py-3 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/40 text-rose-300 font-hud font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-1 xs:flex-initial min-w-[140px] shadow-sm tracking-wider uppercase"
-                    title={isSaving ? "Saving session..." : "Stop and save session"}
-                  >
-                    {isSaving ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-rose-300 border-t-transparent rounded-full animate-spin" />
-                        <span>SAVING...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Square className="w-4 h-4 fill-current" />
-                        <span>STOP &amp; SAVE</span>
-                      </>
-                    )}
-                  </button>
-
-                  <button
-                    onClick={handleReset}
-                    disabled={isSaving || isRemoteTransitioning}
-                    className="p-3 rounded-xl bg-[var(--surface)] backdrop-blur-xl hover:bg-[#1B2028] border border-[var(--border)] text-slate-400 hover:text-white transition-colors active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
-                    title="Reset Timer"
-                  >
-                    <RotateCcw className="w-4 h-4" />
-                  </button>
-                </>
               )}
-            </div>
-          </div>
-              {/* Atmosphere UI (Mobile) */}
-              <div className="relative sm:hidden max-md:mb-8 mb-6 max-md:mt-2 mt-3 flex justify-center w-full">
-                <button
-                  type="button"
-                  onClick={() => setIsAmbientMenuOpen(!isAmbientMenuOpen)}
-                  className="bg-white/[0.05] border border-white/10 text-zinc-300 font-medium text-xs px-3 py-1.5 rounded-xl flex items-center gap-2 transition-all cursor-pointer select-none shadow-sm"
-                >
-                  <Music className={`w-3.5 h-3.5 ${ambientSound !== 'none' ? 'text-[var(--tier-accent)]' : 'text-zinc-300'}`} />
-                  <span className="tracking-tight hidden sm:inline">
-                    Atmosphere: {
-                      ambientSound === 'pinknoise' ? 'Pink Noise' :
-                      ambientSound === 'brownnoise' ? 'Brown Noise' :
-                      ambientSound === 'whitenoise' ? 'White Noise' :
-                      ambientSound === 'rain' ? 'Rain' :
-                      ambientSound === 'campfire' ? 'Fireplace' : 'Silent'
-                    }
-                  </span>
-                  <span className="tracking-tight sm:hidden">
-                    Sound
-                  </span>
-                  {ambientSound !== 'none' && <span className="w-1.5 h-1.5 rounded-full bg-[var(--tier-accent)] animate-pulse ml-0.5" />}
-                  <ChevronUp className={`w-3.5 h-3.5 text-neutral-500 transition-transform ${isAmbientMenuOpen ? 'rotate-180' : ''}`} />
-                </button>
+            </svg>
 
-                {isAmbientMenuOpen && (
-                  <>
-                    <div 
-                      className="fixed inset-0 z-40" 
-                      onClick={() => setIsAmbientMenuOpen(false)} 
+            {/* Center Numerals and Sentence Case Status Line */}
+            <div className="relative z-10 flex flex-col items-center justify-center text-center">
+              <div className="font-hud font-bold text-white text-5xl sm:text-6xl tabular-nums tracking-tight select-none">
+                {timerMode === 'countdown' && !isStudying ? (
+                  isEditingCountdown ? (
+                    <CountdownEditor
+                      initialSeconds={countdownTarget}
+                      onSave={(seconds) => { setCountdownTarget(seconds); setIsEditingCountdown(false); }}
+                      onCancel={() => setIsEditingCountdown(false)}
                     />
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-[100] bg-[#0e1015]/95 backdrop-blur-md border border-white/10 rounded-2xl p-2.5 shadow-2xl min-w-[220px] animate-in slide-in-from-bottom-2 fade-in duration-200">
-                      <div className="flex flex-col gap-1">
-                        {[
-                          { id: 'none', label: 'Silent', icon: <span className="w-3.5 h-3.5 rounded-full bg-neutral-300 mx-0.5" /> },
-                          { id: 'pinknoise', label: 'Pink Noise', icon: <Radio className="w-4 h-4" /> },
-                          { id: 'brownnoise', label: 'Brown Noise', icon: <Headphones className="w-4 h-4" /> },
-                          { id: 'whitenoise', label: 'White Noise', icon: <Radio className="w-4 h-4" /> },
-                          { id: 'rain', label: 'Rain', icon: <CloudRain className="w-4 h-4" /> },
-                          { id: 'campfire', label: 'Fireplace', icon: <Flame className="w-4 h-4" /> }
-                        ].map(option => (
-                          <button
-                            key={option.id}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleAmbientChange(option.id as any);
-                              setTimeout(() => setIsAmbientMenuOpen(false), 50);
-                            }}
-                            className={`flex items-center justify-between rounded-xl px-3 py-2 text-sm transition-colors cursor-pointer ${
-                              ambientSound === option.id 
-                                ? 'bg-[var(--tier-accent)]/[0.15] text-[var(--tier-accent)]' 
-                                : 'text-neutral-400 hover:text-white hover:bg-white/[0.06]'
-                            }`}
-                          >
-                            <div className="flex items-center gap-2.5">
-                              {option.icon}
-                              <span>{option.label}</span>
-                            </div>
-                            {ambientSound === option.id && <Check className="w-4 h-4 text-[var(--tier-accent)]" />}
-                          </button>
-                        ))}
-                      </div>
-
-                      {ambientSound !== 'none' && (
-                        <div className="mt-2 pt-2 border-t border-white/10 flex items-center gap-3 px-2">
-                          <Volume2 className="w-4 h-4 text-neutral-500" />
-                          <input
-                            type="range"
-                            min="0"
-                            max="1"
-                            step="0.05"
-                            value={ambientVolume}
-                            onClick={e => e.stopPropagation()}
-                            onChange={e => handleVolumeChange(parseFloat(e.target.value))}
-                            className="flex-1 accent-[var(--tier-accent)] bg-white/10 rounded-lg cursor-pointer h-1.5"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </>
+                  ) : (
+                    <span
+                      onClick={() => setIsEditingCountdown(true)}
+                      className="cursor-pointer hover:text-zinc-300 transition-colors pointer-events-auto"
+                      title="Click to edit duration"
+                    >
+                      {displayTime}
+                    </span>
+                  )
+                ) : (
+                  <span>{displayTime}</span>
                 )}
               </div>
+
+              {/* Sentence-case Status line with small dot */}
+              <div className="flex items-center justify-center gap-1.5 text-xs text-zinc-400 font-normal mt-2 select-none">
+                <span
+                  className={`w-1.5 h-1.5 rounded-full ${
+                    !isStudying
+                      ? 'bg-zinc-500'
+                      : isPaused
+                      ? 'bg-amber-400'
+                      : 'bg-[var(--tier-accent)] animate-pulse'
+                  }`}
+                />
+                <span>
+                  {!isStudying ? 'Ready to start' : isPaused ? 'Paused' : 'Studying'}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
 
-        
+        {/* Focus Block Complete Alert Banner */}
+        {pomodoroCompletedPhase === 'work' && (
+          <div className="my-3 w-full max-w-sm mx-auto flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-white/[0.1] bg-white/[0.04] text-xs backdrop-blur-md shadow-sm animate-in fade-in">
+            <div className="flex items-center gap-2.5">
+              <Sparkles className="w-4 h-4 text-[var(--tier-accent)] shrink-0" />
+              <div>
+                <div className="font-medium text-white">Focus block complete</div>
+                <div className="text-[11px] text-zinc-400">Save session to pause for break, or skip.</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Break Over Alert Banner */}
+        {pomodoroCompletedPhase === 'break' && (
+          <div className="my-3 w-full max-w-sm mx-auto flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-200 text-xs backdrop-blur-md shadow-sm animate-in fade-in">
+            <div className="flex items-center gap-2.5">
+              <Flame className="w-4 h-4 text-amber-300 shrink-0" />
+              <div>
+                <div className="font-medium text-white">Break finished</div>
+                <div className="text-[11px] text-zinc-400">Timer switched back to focus mode.</div>
+              </div>
+            </div>
+            <button
+              onClick={() => setPomodoroCompletedPhase(null)}
+              className="p-1 rounded-lg hover:bg-amber-500/20 text-amber-300 transition-colors cursor-pointer"
+              title="Dismiss"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
+        {/* Action Controls: The Only Filled Accent Element on Screen is the Primary Action */}
+        <div className="pt-2 pb-1 flex items-center justify-center relative z-10 w-full">
+          {pomodoroCompletedPhase === 'work' ? (
+            <div className="flex items-center justify-center gap-2.5 w-full max-w-xs mx-auto">
+              <button
+                onClick={async () => {
+                  setIsSaving(true);
+                  try {
+                    await saveAndStartBreak();
+                  } finally {
+                    setIsSaving(false);
+                  }
+                }}
+                disabled={isSaving || isRemoteTransitioning}
+                className="flex-1 py-2.5 px-4 rounded-full text-slate-950 bg-[var(--tier-accent)] hover:brightness-105 active:scale-[0.98] transition-all duration-150 flex items-center justify-center gap-2 text-xs sm:text-sm font-medium cursor-pointer shadow-sm disabled:opacity-50"
+              >
+                {isSaving ? (
+                  <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Coffee className="w-4 h-4" />
+                )}
+                <span>Save &amp; break</span>
+              </button>
+              <button
+                onClick={async () => {
+                  setIsSaving(true);
+                  try {
+                    await skipPomodoroBreak();
+                  } finally {
+                    setIsSaving(false);
+                  }
+                }}
+                disabled={isSaving || isRemoteTransitioning}
+                className="py-2.5 px-4 rounded-full border border-white/[0.12] bg-white/[0.04] text-zinc-300 hover:text-white hover:bg-white/[0.08] active:scale-[0.98] transition-all duration-150 flex items-center justify-center gap-1.5 text-xs sm:text-sm font-medium cursor-pointer disabled:opacity-50"
+              >
+                <SkipForward className="w-4 h-4" />
+                <span>Skip break</span>
+              </button>
+            </div>
+          ) : timerMode === 'pomodoro' && pomodoroPhase === 'shortBreak' ? (
+            isPaused ? (
+              <div className="flex items-center justify-center gap-2.5 w-full max-w-xs mx-auto">
+                <button
+                  onClick={startPomodoroBreak}
+                  disabled={isSaving || isRemoteTransitioning}
+                  className="flex-1 py-2.5 px-4 rounded-full text-slate-950 bg-[var(--tier-accent)] hover:brightness-105 active:scale-[0.98] transition-all duration-150 flex items-center justify-center gap-2 text-xs sm:text-sm font-medium cursor-pointer shadow-sm disabled:opacity-50"
+                >
+                  <Play className="w-4 h-4 fill-current" />
+                  <span>Start break</span>
+                </button>
+                <button
+                  onClick={handleReset}
+                  disabled={isSaving || isRemoteTransitioning}
+                  className="py-2.5 px-4 rounded-full border border-white/[0.12] bg-white/[0.04] text-zinc-300 hover:text-white hover:bg-white/[0.08] active:scale-[0.98] transition-all duration-150 text-xs sm:text-sm font-medium cursor-pointer disabled:opacity-50"
+                >
+                  <span>Skip break</span>
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={handleReset}
+                disabled={isSaving || isRemoteTransitioning}
+                className="w-full max-w-[220px] mx-auto py-2.5 px-5 rounded-full border border-white/[0.12] bg-white/[0.04] text-zinc-300 hover:text-white hover:bg-white/[0.08] active:scale-[0.98] transition-all duration-150 text-xs sm:text-sm font-medium cursor-pointer disabled:opacity-50"
+              >
+                <span>End break</span>
+              </button>
+            )
+          ) : pomodoroCompletedPhase === 'break' ? (
+            <button
+              onClick={() => {
+                setPomodoroCompletedPhase(null);
+                handleStartSession();
+              }}
+              disabled={isSaving || isRemoteTransitioning}
+              className="w-full max-w-[240px] mx-auto py-3 px-6 rounded-full font-medium text-sm text-slate-950 bg-[var(--tier-accent)] hover:brightness-105 active:scale-[0.98] transition-all duration-150 flex items-center justify-center gap-2 shadow-[0_4px_16px_rgba(var(--tier-accent-rgb),0.25)] cursor-pointer"
+            >
+              <Flame className="w-4 h-4 fill-current" />
+              <span>Start session</span>
+            </button>
+          ) : !isStudying ? (
+            /* Idle State: Centered pill button at content width (220-260px) */
+            <button
+              onClick={handleStartSession}
+              disabled={!selectedSubject?.id || isSaving || isRemoteTransitioning}
+              className={`w-full max-w-[240px] mx-auto py-3 px-6 rounded-full font-medium text-sm text-slate-950 bg-[var(--tier-accent)] hover:brightness-105 active:scale-[0.98] transition-all duration-150 flex items-center justify-center gap-2 shadow-[0_4px_16px_rgba(var(--tier-accent-rgb),0.25)] ${
+                !selectedSubject?.id || isRemoteTransitioning
+                  ? 'opacity-40 cursor-not-allowed shadow-none hover:brightness-100'
+                  : 'cursor-pointer'
+              }`}
+              title={!selectedSubject?.id ? 'Please select a subject before starting the timer' : 'Start session'}
+            >
+              <Play className="w-4 h-4 fill-current" />
+              <span>Start session</span>
+            </button>
+          ) : !isPaused ? (
+            /* Running State: Pause and Stop & Save */
+            <div className="flex items-center justify-center gap-3 w-full max-w-xs mx-auto">
+              <button
+                onClick={handlePause}
+                disabled={isSaving || isRemoteTransitioning}
+                className="flex-1 py-2.5 px-5 rounded-full border border-white/[0.12] bg-white/[0.04] text-zinc-200 hover:bg-white/[0.08] active:scale-[0.98] transition-all duration-150 flex items-center justify-center gap-2 text-xs sm:text-sm font-medium cursor-pointer disabled:opacity-50"
+              >
+                <Pause className="w-4 h-4" />
+                <span>Pause</span>
+              </button>
+              <button
+                onClick={handleStopAndSave}
+                disabled={isSaving || isRemoteTransitioning}
+                className="flex-1 py-2.5 px-5 rounded-full border border-rose-500/30 bg-rose-500/10 text-rose-300 hover:bg-rose-500/20 active:scale-[0.98] transition-all duration-150 flex items-center justify-center gap-2 text-xs sm:text-sm font-medium cursor-pointer disabled:opacity-50"
+                title={isSaving ? "Saving session..." : "Stop and save session"}
+              >
+                {isSaving ? (
+                  <div className="w-4 h-4 border-2 border-rose-300 border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Square className="w-4 h-4 fill-current" />
+                )}
+                <span>Stop &amp; save</span>
+              </button>
+            </div>
+          ) : (
+            /* Paused State: Resume, Stop & Save, Reset */
+            <div className="flex items-center justify-center gap-2.5 w-full max-w-sm mx-auto">
+              <button
+                onClick={handleResume}
+                disabled={isSaving || isRemoteTransitioning}
+                className="flex-1 py-2.5 px-5 rounded-full text-slate-950 bg-[var(--tier-accent)] hover:brightness-105 active:scale-[0.98] transition-all duration-150 flex items-center justify-center gap-2 text-xs sm:text-sm font-medium cursor-pointer shadow-sm disabled:opacity-50"
+              >
+                <Play className="w-4 h-4 fill-current" />
+                <span>Resume</span>
+              </button>
+              <button
+                onClick={handleStopAndSave}
+                disabled={isSaving || isRemoteTransitioning}
+                className="flex-1 py-2.5 px-5 rounded-full border border-rose-500/30 bg-rose-500/10 text-rose-300 hover:bg-rose-500/20 active:scale-[0.98] transition-all duration-150 flex items-center justify-center gap-2 text-xs sm:text-sm font-medium cursor-pointer disabled:opacity-50"
+                title={isSaving ? "Saving session..." : "Stop and save session"}
+              >
+                {isSaving ? (
+                  <div className="w-4 h-4 border-2 border-rose-300 border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Square className="w-4 h-4 fill-current" />
+                )}
+                <span>Stop &amp; save</span>
+              </button>
+              <button
+                onClick={handleReset}
+                disabled={isSaving || isRemoteTransitioning}
+                className="p-2.5 rounded-full border border-white/[0.08] bg-white/[0.03] text-zinc-400 hover:text-white hover:bg-white/[0.08] active:scale-[0.98] transition-all duration-150 cursor-pointer disabled:opacity-50"
+                title="Reset timer"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+        </div>
       </div>
+
       {isEditingCountdown && (
         <CountdownEditor
           initialSeconds={countdownTarget}
