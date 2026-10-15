@@ -8,7 +8,7 @@ import { getRankFromRp, calculateRpFromSeconds, RankTierName, RankDivision, Rank
 import { getRankTheme } from '../../lib/rankTheme';
 import { getLevelFromLifetimeXP } from '../../lib/gamification';
 import { LeaderboardEntry } from '../../types';
-import { Clock, Trophy, Sparkles } from 'lucide-react';
+import { Clock, Trophy, Sparkles, ChevronRight } from 'lucide-react';
 import { soundFx } from '../../lib/audio';
 import { RankCrestBadge } from '../common/RankCrestBadge';
 import { useRankTheme } from '../../hooks/useRankTheme';
@@ -661,11 +661,21 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                       soundFx.resumeContext();
                     } catch {}
                   }}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 hover:border-amber-500/50 text-xs font-hud font-bold uppercase tracking-wider text-amber-300 hover:text-amber-200 transition-all shadow-sm shadow-amber-500/10 active:scale-95 cursor-pointer"
+                  className="group relative inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.08] hover:border-amber-400/40 text-xs font-mono text-zinc-300 hover:text-white transition-all duration-200 active:scale-95 cursor-pointer shadow-sm overflow-hidden"
                   title="Watch your recap from the previous completed season"
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Watch Last Season's Recap</span>
+                  {/* Subtle hover gradient sweep */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-400/[0.08] to-transparent -translate-x-full group-hover:translate-x-full duration-700 transition-transform pointer-events-none" />
+
+                  {/* Pulsing amber accent dot */}
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-60"></span>
+                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-400"></span>
+                  </span>
+
+                  <span className="font-medium tracking-wide">Last Season Recap</span>
+
+                  <ChevronRight className="w-3 h-3 text-zinc-500 group-hover:text-amber-300 group-hover:translate-x-0.5 transition-all" />
                 </Link>
 
                 <div className="inline-flex items-center p-1 bg-white/[0.04] border border-white/[0.08] rounded-xl gap-1">
