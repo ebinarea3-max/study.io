@@ -778,7 +778,7 @@ export function StudyTimer() {
   }, [isLoading, user?.streakDays, overviewTodaySeconds, todaySessions.length, lockedEmptyQuote]);
 
   return (
-    <div className="max-w-3xl w-full mx-auto flex flex-col items-center justify-center max-md:py-2 py-6 px-4 max-md:h-[calc(100dvh-8.5rem)] max-md:overflow-hidden md:overflow-visible">
+    <div className="max-w-3xl w-full mx-auto flex flex-col items-center justify-center max-md:py-2 pt-1 sm:pt-2 pb-6 px-4 max-md:h-[calc(100dvh-8.5rem)] max-md:overflow-hidden md:overflow-visible">
       {/* Subject Manager Modal - Conditionally mounted strictly when open (Stop Background Rendering) */}
       {isManageSubjectsOpen && (
         <ErrorBoundary
@@ -1176,7 +1176,7 @@ export function StudyTimer() {
                   </div>
 
           {/* Center Timer Display - Game HUD Radar / Reactor Core Display */}
-          <div className="relative z-10 flex flex-col items-center justify-center max-md:py-0 py-2 sm:py-8 my-auto w-full">
+          <div className="relative z-10 flex flex-col items-center justify-center max-md:py-0 py-1 sm:py-5 -mt-1 sm:-mt-2 my-auto w-full">
             {/* ── Mobile Circular Dial Wrapper (< sm) ── */}
             <div className="relative sm:hidden flex items-center justify-center mx-auto flex-shrink-0 w-full max-w-[260px] aspect-square">
               {/* Mobile Ambient Glow (Removed) */}
@@ -1306,8 +1306,7 @@ export function StudyTimer() {
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 w-2 h-0.5 bg-white/10 rounded-full" />
 
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10 [&>div]:pointer-events-auto">
-                  <div className="hidden sm:block h-6 mt-2" aria-hidden="true" />
-                  <div className="font-mono tabular-nums font-bold text-white drop-shadow-[0_0_24px_rgba(255,255,255,0.12)] text-5xl md:text-6xl w-full text-center flex items-center justify-center select-none tracking-normal">
+                  <div className="font-mono tabular-nums font-bold text-white drop-shadow-[0_0_24px_rgba(255,255,255,0.12)] text-5xl md:text-6xl w-full text-center flex items-center justify-center select-none tracking-normal -translate-y-1">
                     {timerMode === 'countdown' && !isStudying ? (
                       isEditingCountdown ? (
                         <CountdownEditor
@@ -1324,13 +1323,12 @@ export function StudyTimer() {
                       <span className="font-mono tabular-nums inline-block text-center">{displayTime}</span>
                     )}
                   </div>
-                  {isStudying ? (
-                    <div className="h-6 text-[11px] uppercase tracking-[0.2em] text-white/70 font-semibold flex items-center justify-center gap-2 mt-2 animate-in fade-in duration-200">
+                  {isStudying && (
+                    <div className="absolute bottom-8 md:bottom-10 left-0 right-0 h-6 text-[11px] uppercase tracking-[0.2em] text-white/70 font-semibold flex items-center justify-center gap-2 animate-in fade-in duration-200">
                       <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${!isPaused ? 'bg-green-500 animate-pulse' : 'bg-amber-400'}`} />
                       <span className="text-center">{isPaused ? 'PAUSED' : 'RUNNING'}</span>
-                      <div className="w-1.5 h-1.5 rounded-full flex-shrink-0 opacity-0 pointer-events-none" aria-hidden="true" />
                     </div>
-                  ) : null}
+                  )}
                 </div>
               </div>
             </div>

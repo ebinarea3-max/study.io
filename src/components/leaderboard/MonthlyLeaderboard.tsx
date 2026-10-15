@@ -14,6 +14,8 @@ import { RankCrestBadge } from '../common/RankCrestBadge';
 import { useRankTheme } from '../../hooks/useRankTheme';
 import { Logo } from '../Logo';
 import Link from 'next/link';
+import { motion, useReducedMotion } from 'framer-motion';
+import { LeaderboardRow } from './LeaderboardRow';
 export function formatStudyTime(totalSeconds: number): string {
   const safeSeconds = Math.max(0, Math.round(totalSeconds || 0));
   const hours = Math.floor(safeSeconds / 3600);
@@ -485,21 +487,37 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
     }
   }, [sessions.length, isActiveTab, fetchLeaderboard]);
 
-  // Subtle rising chime sound on podium reveal
-  useEffect(() => {
-    if (!isLoading && leaderboard.length > 0 && !hasPlayedRevealRef.current) {
-      hasPlayedRevealRef.current = true;
-      const soundTimer = setTimeout(() => {
-        soundFx.playPodiumReveal();
-      }, 500);
-      return () => clearTimeout(soundTimer);
-    }
-  }, [isLoading, leaderboard.length]);
+  const shouldReduceMotion = useReducedMotion() ?? false;
+
+  const monthYearLabel = useMemo(() => {
+    const now = new Date();
+    const m = now.toLocaleString('en-US', { month: 'long' });
+    const y = now.getFullYear();
+    return `${m} ${y}`;
+  }, []);
 
   // Keep the list limited to the top 50
   const contenders = useMemo(() => {
     return leaderboard.slice(0, 50);
   }, [leaderboard]);
+
+  const topSeconds = useMemo(() => {
+    return contenders[0]?.total_seconds || 0;
+  }, [contenders]);
+
+  const deltaMap = useMemo(() => {
+    const map: Record<string, { delta: number; isNew: boolean }> = {};
+    contenders.forEach((row, idx) => {
+      if (row?.user_id) {
+        map[row.user_id] = getRankDelta(String(row.user_id), idx + 1, timeframe);
+      }
+    });
+    return map;
+  }, [contenders, timeframe]);
+
+  const hasAnyDelta = useMemo(() => {
+    return Object.values(deltaMap).some((info) => info.delta !== 0);
+  }, [deltaMap]);
 
   const checkIsCurrentUser = useCallback(
     (row: LeaderboardEntry | null) => {
@@ -594,45 +612,41 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
     <div
       className={`w-full text-white font-sans ${
         isEmbedded
-          ? 'max-w-5xl mx-auto flex flex-col gap-6 py-4'
-          : 'bg-[#05070a] min-h-screen p-4 sm:p-8 flex flex-col items-center'
+          ? 'max-w-[1100px] mx-auto flex flex-col gap-6 py-4'
+          : 'bg-[#05070a] min-h-screen p-4 sm:p-6 flex flex-col items-center'
       } pb-28 sm:pb-12`}
     >
-      {/* Keyframe Animations */}
-      <style>{`
-        @keyframes listRowFadeSlide {
-          0%   { opacity: 0; transform: translateY(12px); }
-          100% { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
-
-      <div className="w-full max-w-5xl flex flex-col gap-6 relative">
+      <div className="w-full max-w-[1100px] flex flex-col gap-6 relative">
         {/* Loading State */}
         {isLoading ? (
           <div className="w-full flex flex-col gap-6">
-            {/* Table Skeleton */}
-            {/* Table Skeleton */}
-            <div className="w-full bg-white/[0.03] backdrop-blur-2xl border border-white/[0.1] rounded-2xl overflow-hidden divide-y divide-white/[0.04] shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="px-6 py-3.5 flex items-center justify-between animate-pulse">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-4 bg-white/[0.05] rounded" />
-                    <div className="w-9 h-9 rounded-full bg-white/[0.05]" />
-                    <div className="w-28 h-4 bg-white/[0.05] rounded" />
+            <div className="w-full bg-white/[0.02] backdrop-blur-md border border-white/[0.07] rounded-2xl overflow-hidden divide-y divide-white/[0.06] shadow-xl">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="px-4 sm:px-6 py-4 flex items-center justify-between animate-pulse">
+                  <div className="flex items-center gap-3 sm:gap-4">
+                    <div className="w-7 h-7 rounded-full bg-white/[0.04]" />
+                    <div className="w-10 h-10 rounded-full bg-white/[0.04]" />
+                    <div className="flex flex-col gap-1.5">
+                      <div className="w-28 sm:w-36 h-4 bg-white/[0.05] rounded" />
+                      <div className="w-20 h-3 bg-white/[0.03] rounded" />
+                    </div>
                   </div>
-                  <div className="w-20 h-4 bg-white/[0.05] rounded" />
+                  <div className="flex items-center gap-4 sm:gap-8">
+                    <div className="w-9 h-9 rounded-full bg-white/[0.04]" />
+                    <div className="w-16 h-4 bg-white/[0.05] rounded" />
+                  </div>
                 </div>
               ))}
             </div>
           </div>
         ) : leaderboard.length === 0 ? (
           /* Empty State */
-          <div className="w-full bg-white/[0.02] backdrop-blur-2xl border border-white/[0.1] rounded-2xl p-12 text-center flex flex-col items-center justify-center gap-3 shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
-            <div className="w-12 h-12 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 mb-1">
-              <Clock className="w-6 h-6 stroke-[2]" />
+          <div className="w-full bg-white/[0.02] backdrop-blur-md border border-white/[0.07] rounded-2xl p-12 text-center flex flex-col items-center justify-center gap-3 shadow-xl">
+            <div className="w-12 h-12 rounded-full bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-zinc-400 mb-1">
+              <Clock className="w-6 h-6 stroke-[1.75]" />
             </div>
-            <h3 className="text-base font-bold text-white font-mono uppercase tracking-wider">
-              NO SESSIONS RECORDED
+            <h3 className="text-sm font-semibold text-white tracking-wide">
+              No sessions recorded
             </h3>
             <p className="text-xs text-zinc-400 max-w-md">
               {emptyText}
@@ -645,15 +659,19 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
             }`}
           >
             {/* ══════════════════════════════════════════════════════════ */}
-            {/* HEADER & PERIOD SELECTOR                                   */}
+            {/* PAGE HEADER & CONTROLS                                     */}
             {/* ══════════════════════════════════════════════════════════ */}
-            <div className="w-full flex flex-wrap items-center justify-between gap-3 pb-2">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-mono text-zinc-400 uppercase tracking-wider font-bold">
-                  {trackerText}
-                </span>
+            <div className="w-full flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-1">
+              <div>
+                <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-white font-sans">
+                  Leaderboard
+                </h1>
+                <p className="text-sm text-zinc-400 mt-1">
+                  {monthYearLabel} · ranked by focus time
+                </p>
               </div>
-              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+
+              <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
                 <Link
                   href="/recap"
                   onClick={() => {
@@ -661,30 +679,20 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                       soundFx.resumeContext();
                     } catch {}
                   }}
-                  className="group relative inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.08] hover:border-amber-400/40 text-xs font-mono text-zinc-300 hover:text-white transition-all duration-200 active:scale-95 cursor-pointer shadow-sm overflow-hidden"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-xs font-mono text-zinc-400 hover:text-zinc-200 transition-all duration-150 active:scale-95 cursor-pointer shrink-0"
                   title="Watch your recap from the previous completed season"
                 >
-                  {/* Subtle hover gradient sweep */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-400/[0.08] to-transparent -translate-x-full group-hover:translate-x-full duration-700 transition-transform pointer-events-none" />
-
-                  {/* Pulsing amber accent dot */}
-                  <span className="relative flex h-1.5 w-1.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-60"></span>
-                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-400"></span>
-                  </span>
-
-                  <span className="font-medium tracking-wide">Last Season Recap</span>
-
-                  <ChevronRight className="w-3 h-3 text-zinc-500 group-hover:text-amber-300 group-hover:translate-x-0.5 transition-all" />
+                  <span>Last Season Recap</span>
+                  <ChevronRight className="w-3.5 h-3.5 text-zinc-500" />
                 </Link>
 
-                <div className="inline-flex items-center p-1 bg-white/[0.04] border border-white/[0.08] rounded-xl gap-1">
+                <div className="inline-flex items-center p-1 bg-white/[0.03] border border-white/[0.07] rounded-xl gap-1 relative overflow-x-auto max-w-full">
                   {(
                     [
-                      { label: 'TODAY', value: 'today' },
-                      { label: 'THIS WEEK', value: 'week' },
-                      { label: 'THIS MONTH', value: 'month' },
-                      { label: 'ALL TIME', value: 'all' },
+                      { label: 'Today', value: 'today' },
+                      { label: 'This Week', value: 'week' },
+                      { label: 'This Month', value: 'month' },
+                      { label: 'All Time', value: 'all' },
                     ] as const
                   ).map((tab) => {
                     const isActive = timeframe === tab.value;
@@ -693,13 +701,18 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                         key={tab.value}
                         type="button"
                         onClick={() => setTimeframe(tab.value)}
-                        className={
-                          isActive
-                            ? 'px-3 py-1.5 text-xs font-mono font-semibold text-white bg-white/[0.1] border border-white/[0.15] rounded-lg shadow-sm transition-all cursor-pointer'
-                            : 'px-3 py-1.5 text-xs font-mono font-medium text-zinc-400 hover:text-white transition-colors rounded-lg cursor-pointer'
-                        }
+                        className={`relative px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer shrink-0 z-10 ${
+                          isActive ? 'text-white font-semibold' : 'text-zinc-400 hover:text-zinc-200'
+                        }`}
                       >
-                        {tab.label}
+                        {isActive && (
+                          <motion.div
+                            layoutId="leaderboard-period-pill"
+                            className="absolute inset-0 bg-white/[0.1] border border-white/[0.15] rounded-lg shadow-sm -z-10"
+                            transition={{ type: 'tween', duration: 0.18, ease: 'easeOut' }}
+                          />
+                        )}
+                        <span>{tab.label}</span>
                       </button>
                     );
                   })}
@@ -707,236 +720,74 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
               </div>
             </div>
 
-            {/* ══════════════════════════════════════════════════════════ */}
-            {/* RANKED LIST                                                */}
-            {/* ══════════════════════════════════════════════════════════ */}
+            {/* Sticky Current User Rank Indicator */}
             {currentUserEntry && !currentUserRowVisible && (
-              <div className="sticky top-2 z-30 mb-4 flex items-center justify-between rounded-xl border border-amber-500/30 bg-[#0c0e14]/90 px-4 py-2 text-xs font-mono text-zinc-300 backdrop-blur-md shadow-lg">
-                <span>YOUR RANK: <strong className="text-amber-400">#{currentUserEntry.rank}</strong></span>
-                <button 
+              <div className="sticky top-2 z-30 mb-2 flex items-center justify-between rounded-xl border border-white/[0.1] bg-[#0c0e14]/90 px-4 py-2 text-xs font-mono text-zinc-300 backdrop-blur-md shadow-lg">
+                <span>
+                  YOUR RANK: <strong className="text-amber-400">#{currentUserEntry.rank}</strong>
+                </span>
+                <button
                   onClick={() => myRowRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
-                  className="rounded bg-amber-500/20 px-2 py-1 text-amber-300 hover:bg-amber-500/30 cursor-pointer"
+                  className="rounded bg-white/10 hover:bg-white/15 px-2.5 py-1 text-zinc-200 cursor-pointer transition-colors"
                 >
                   Jump to You ↓
                 </button>
               </div>
             )}
-            
+
+            {/* ══════════════════════════════════════════════════════════ */}
+            {/* RANKED LIST PANEL                                          */}
+            {/* ══════════════════════════════════════════════════════════ */}
             {contenders.length > 0 && (
-              <div className="w-full bg-white/[0.03] backdrop-blur-2xl border border-white/[0.1] rounded-2xl overflow-hidden divide-y divide-white/[0.04] shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
-                {/* Column Header Row */}
-                <div className="px-4 sm:px-6 py-3 bg-white/[0.02] text-[10px] font-mono uppercase tracking-widest text-zinc-500 flex items-center justify-between">
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <span className="hidden sm:inline-block w-10 text-left">POS</span>
-                    <span className="hidden sm:inline-block w-10 text-center">DELTA</span>
-                    <span>SCHOLAR</span>
+              <div className="w-full bg-white/[0.02] backdrop-blur-md border border-white/[0.07] rounded-2xl overflow-hidden shadow-2xl divide-y divide-white/[0.06]">
+                {/* Column Labels */}
+                <div className="px-4 sm:px-6 py-3 bg-white/[0.015] text-xs text-zinc-400 font-normal flex items-center justify-between border-b border-white/[0.06] select-none">
+                  <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
+                    <span className="w-7 text-center">#</span>
+                    <span>Scholar</span>
                   </div>
-                  <div className="hidden sm:block w-40 sm:w-48 text-center flex-shrink-0">
-                    <span>TIER</span>
-                  </div>
-                  <div className="text-right flex-shrink-0 sm:w-32">
-                    <span>RECORDED FOCUS</span>
+                  <div className="flex items-center gap-3 sm:gap-4 shrink-0">
+                    <span className="w-12 sm:w-36 text-center sm:text-left">Tier</span>
+                    <span className="w-20 sm:w-28 text-right">Focus time</span>
                   </div>
                 </div>
 
-                {/* Roster Rows */}
-                {contenders.map((row, idx) => {
-                  if (!row) return null;
-
-                  try {
+                {/* Rows with animated fade-in on timeframe change */}
+                <motion.div
+                  key={timeframe}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ type: 'tween', duration: 0.2, ease: 'easeOut' }}
+                  className="divide-y divide-white/[0.06]"
+                >
+                  {contenders.map((row, idx) => {
+                    if (!row) return null;
                     const actualRank = idx + 1;
                     const isCurrentUser = checkIsCurrentUser(row);
-                    
-                    if (idx < 2) console.log('Leaderboard row data:', row);
-
-                    const hoursStudied = (Number(row.total_seconds) || 0) / 3600;
-                    let calculatedTierName = "BRONZE I";
-                    if (hoursStudied >= 10) calculatedTierName = "SILVER I";
-                    else if (hoursStudied >= 5) calculatedTierName = "BRONZE III";
-                    else if (hoursStudied >= 2) calculatedTierName = "BRONZE II";
-
-                    let tierConfig = getRankFromRp(0); // Safe fallback
-                    if (isCurrentUser && userRank) {
-                      tierConfig = getMonthlyRankTierConfig(0, userRank.name);
-                    } else {
-                      const finalRankName = row.rank_title ? String(row.rank_title) : calculatedTierName;
-                      tierConfig = getMonthlyRankTierConfig(row.total_seconds, finalRankName);
-                    }
-                    
-                    const level = row.level ?? getLevelFromLifetimeXP(Number(row.lifetime_xp) || 0);
-                    const displayTierTitle = String(tierConfig.name).toUpperCase();
-                    const theme = getRankTheme(tierConfig.tier || 'Bronze');
-                    
-                    const displayName = String(row.display_name || row.name || row.username || 'Scholar');
-                    const handle = row.username ? String(row.username) : displayName.toLowerCase().replace(/\s+/g, '');
-                    const { h, m } = parseTimeHoursMinutes(Number(row.total_seconds) || 0);
-                    const movement = getRankDelta(String(row.user_id), actualRank, timeframe);
+                    const deltaInfo = deltaMap[row.user_id];
 
                     return (
-                    <div
-                      key={row.user_id}
-                      ref={isCurrentUser ? myRowRef : null}
-                      className="flex flex-col transition-all duration-500 rounded-lg"
-                      style={{
-                        animation: 'listRowFadeSlide 0.4s ease-out both',
-                        animationDelay: `${550 + idx * 40}ms`,
-                      }}
-                    >
-                      {/* Mobile Row (< sm) */}
-                      <div
-                        className={`sm:hidden px-4 py-3 flex items-center justify-between transition-all duration-200 group border-l-2 relative cursor-default ${
-                          isCurrentUser
-                            ? 'border-l-amber-400 bg-amber-500/[0.08] shadow-[inset_0_0_24px_rgba(245,158,11,0.08)]'
-                            : 'border-l-transparent hover:border-l-[var(--row-tier-color)] hover:bg-white/[0.04]'
-                        }`}
-                        style={{
-                          '--row-tier-color': theme.accent,
-                        } as React.CSSProperties}
-                      >
-                        <div className="flex items-center gap-3 min-w-0 flex-1">
-                          {/* Rank Column */}
-                          <span className={`w-9 font-mono text-xs font-bold text-center shrink-0 ${
-                            actualRank === 1 ? 'text-amber-400' :
-                            actualRank === 2 ? 'text-slate-300' :
-                            actualRank === 3 ? 'text-amber-700' :
-                            'text-zinc-400'
-                          }`}>
-                            #{actualRank < 10 ? `0${actualRank}` : actualRank}
-                          </span>
-
-                          {/* Fixed Avatar Slot */}
-                          <div className="relative w-9 h-9 rounded-full overflow-hidden shrink-0 flex items-center justify-center border border-white/10 bg-[#0c0e14] shadow-md">
-                            {row.avatar_url ? (
-                              <img
-                                src={row.avatar_url}
-                                alt={displayName}
-                                className="w-full h-full object-cover rounded-full"
-                                referrerPolicy="no-referrer"
-                              />
-                            ) : (
-                               <div className={`w-full h-full flex items-center justify-center font-mono font-bold bg-gradient-to-br ${getTierAvatarGradient(tierConfig.tier)} text-white text-[11px]`}>
-                                {(displayName || 'S').trim().charAt(0).toUpperCase()}
-                               </div>
-                            )}
-                          </div>
-
-                          {/* User Details (Truncated) */}
-                          <div className="min-w-0 flex-1">
-                            <div className="text-sm font-semibold text-white truncate flex items-center gap-1.5">
-                              <span className="truncate">{displayName}</span>
-                              {actualRank === 1 && <span className="shrink-0">👑</span>}
-                            </div>
-                            <div className="text-[11px] text-zinc-500 font-mono truncate">
-                              @{handle} · {displayTierTitle}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0 pl-2">
-                          <RankCrestBadge
-                            tier={tierConfig.tier as RankTierName}
-                            division={tierConfig.division as RankDivision}
-                            size={20}
-                          />
-                          <span className="text-sm font-mono font-black text-white">
-                            {h}h {m}m
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Desktop Row (>= sm) */}
-                      <div
-                        className={`hidden sm:flex px-6 py-3.5 items-center transition-all duration-200 group border-l-2 relative cursor-default ${
-                          isCurrentUser
-                            ? 'border-l-amber-400 bg-amber-500/[0.08] shadow-[inset_0_0_24px_rgba(245,158,11,0.08)]'
-                            : 'border-l-transparent hover:border-l-[var(--row-tier-color)] hover:bg-white/[0.04]'
-                        }`}
-                        style={{
-                          '--row-tier-color': theme.accent,
-                        } as React.CSSProperties}
-                      >
-                        {/* POS */}
-                        <span className="w-10 text-left text-zinc-500 font-mono text-xs group-hover:text-zinc-300">
-                          #{actualRank < 10 ? `0${actualRank}` : actualRank}
-                        </span>
-
-                        {/* Rank Movement Delta */}
-                        <div className="w-10 text-center flex-shrink-0">
-                          {movement.delta > 0 ? (
-                            <span className="text-emerald-400 font-mono text-[10px] font-bold">▲ +{movement.delta}</span>
-                          ) : movement.delta < 0 ? (
-                            <span className="text-rose-400 font-mono text-[10px] font-bold">▼ {Math.abs(movement.delta)}</span>
-                          ) : movement.isNew ? (
-                            <span className="text-amber-400 font-mono text-[9px] font-bold uppercase">NEW</span>
-                          ) : (
-                            <span className="text-zinc-600 font-mono text-xs">—</span>
-                          )}
-                        </div>
-
-                        {/* Scholar Info */}
-                        <div className="flex items-center gap-3 flex-1 min-w-0 pr-3">
-                          <ScholarAvatar
-                            name={displayName}
-                            avatarUrl={row.avatar_url}
-                            tier={tierConfig.tier}
-                            sizeClass="w-8 h-8 text-[11px]"
-                          />
-
-                          <div className="flex flex-col min-w-0 justify-center">
-                            <div className="flex items-center gap-1.5 truncate">
-                              <span className="font-semibold text-white text-sm tracking-tight truncate">
-                                {displayName}
-                              </span>
-                              {actualRank === 1 && (
-                                <span className="text-[14px]" title="Champion">👑</span>
-                              )}
-                              {isCurrentUser && (
-                                <span className="text-[9px] font-mono font-bold text-amber-400 uppercase px-1.5 py-0.2 rounded bg-amber-500/20 border border-amber-500/40 shadow-[0_0_8px_rgba(245,158,11,0.25)] flex-shrink-0">
-                                  (you)
-                                </span>
-                              )}
-                            </div>
-                            <span className="text-xs font-mono text-zinc-500 truncate mt-0.5">
-                              @{handle} · Lv. {level}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Tier Column with actual Rank Crest Badge + Title */}
-                        <div className="w-40 sm:w-48 flex items-center justify-center flex-shrink-0 gap-2">
-                          <RankCrestBadge
-                            tier={tierConfig.tier as RankTierName}
-                            division={tierConfig.division as RankDivision}
-                            size={30}
-                          />
-                          <span
-                            className="text-xs font-mono tracking-wider uppercase truncate font-semibold"
-                            style={{ color: theme.accent }}
-                          >
-                            {displayTierTitle}
-                          </span>
-                        </div>
-
-                        {/* Recorded Focus Column */}
-                        <div className="w-28 sm:w-32 text-right flex-shrink-0 font-mono flex items-baseline justify-end">
-                          <span className="text-lg sm:text-xl font-black text-white tracking-tighter drop-shadow-sm">{h}</span>
-                          <span className="text-lg sm:text-xl font-black text-zinc-500 tracking-tighter drop-shadow-sm ml-0.5 mr-1.5">H</span>
-                          <span className="text-lg sm:text-xl font-black text-zinc-200 tracking-tighter drop-shadow-sm">{m}</span>
-                          <span className="text-lg sm:text-xl font-black text-zinc-500 tracking-tighter drop-shadow-sm ml-0.5">M</span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                 } catch (err) {
-                   console.error("Leaderboard row render crash:", err, row);
-                   return null;
-                 }
-                })}
+                      <LeaderboardRow
+                        key={row.user_id}
+                        rank={actualRank}
+                        row={row}
+                        isCurrentUser={isCurrentUser}
+                        topSeconds={topSeconds}
+                        hasAnyDelta={hasAnyDelta}
+                        deltaInfo={deltaInfo}
+                        userRankName={userRank?.name}
+                        myRowRef={isCurrentUser ? myRowRef : undefined}
+                        index={idx}
+                        shouldReduceMotion={shouldReduceMotion}
+                      />
+                    );
+                  })}
+                </motion.div>
               </div>
             )}
           </div>
         )}
       </div>
-
     </div>
   );
 }
