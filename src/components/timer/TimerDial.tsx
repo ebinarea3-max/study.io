@@ -52,17 +52,17 @@ const Bezel = React.memo(function Bezel({ litCount }: { litCount: number }) {
 });
 Bezel.displayName = 'Bezel';
 
-// Memoized soft ambient radial glow behind the dial (accent at about 8-10% opacity, very large, blurred)
+// Memoized soft ambient radial glow behind the dial (Electric Emerald & Mint focus aura)
 export const AmbientGlow = React.memo(function AmbientGlow({ isRunning }: { isRunning: boolean }) {
   return (
     <div
       className={`absolute inset-0 -z-10 pointer-events-none transition-opacity duration-300 ${
-        isRunning ? 'opacity-100' : 'opacity-70'
+        isRunning ? 'opacity-100' : 'opacity-75'
       }`}
       style={{
         background:
-          'radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.03) 45%, transparent 70%)',
-        filter: 'blur(50px)',
+          'radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.18) 0%, rgba(16, 185, 129, 0.06) 45%, transparent 72%)',
+        filter: 'blur(55px)',
       }}
     />
   );
@@ -106,8 +106,8 @@ export const TimerDial = React.memo(function TimerDial({
     <div className="relative flex items-center justify-center w-[min(420px,80vw)] h-[min(420px,80vw)] aspect-square mx-auto select-none my-2 sm:my-4">
       <style>{`
         @keyframes timerDotPulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.35; }
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.4; transform: scale(0.9); }
         }
         .timer-status-pulse {
           animation: timerDotPulse 2s ease-in-out infinite;
@@ -149,7 +149,7 @@ export const TimerDial = React.memo(function TimerDial({
           transform="rotate(-90 150 150)"
           style={{
             transition: shouldReduceMotion ? 'none' : 'stroke-dashoffset 1s linear',
-            filter: 'drop-shadow(0 0 4px var(--accent-glow))',
+            filter: 'drop-shadow(0 0 8px rgba(16, 185, 129, 0.65))',
           }}
         />
       </svg>
@@ -170,7 +170,7 @@ export const TimerDial = React.memo(function TimerDial({
             <button
               type="button"
               onClick={onStartCountdownEdit}
-              className="cursor-pointer hover:text-amber-300 transition-colors pointer-events-auto font-mono tabular-nums inline-block text-center"
+              className="cursor-pointer hover:text-emerald-400 transition-colors pointer-events-auto font-mono tabular-nums inline-block text-center"
               title="Click to edit duration"
             >
               {displayTime}
@@ -183,15 +183,15 @@ export const TimerDial = React.memo(function TimerDial({
         {/* Status Line in sentence case with small dot */}
         <div className="flex items-center justify-center gap-1.5 mt-2">
           <span
-            className={`w-1.5 h-1.5 rounded-full ${
+            className={`w-2 h-2 rounded-full transition-colors ${
               isRunning && !shouldReduceMotion
-                ? 'timer-status-pulse bg-emerald-400'
+                ? 'timer-status-pulse bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]'
                 : isPaused
-                ? 'bg-amber-400'
-                : 'bg-zinc-500'
+                ? 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]'
+                : 'bg-emerald-500/30'
             }`}
           />
-          <span className="text-xs font-mono text-zinc-400 font-medium">
+          <span className={`text-xs font-mono font-medium transition-colors ${isRunning ? 'text-emerald-400' : 'text-zinc-400'}`}>
             {statusText}
           </span>
         </div>

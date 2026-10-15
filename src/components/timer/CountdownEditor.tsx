@@ -190,10 +190,10 @@ function WheelColumn({
         aria-valuemin={0}
         aria-valuemax={maxVal}
         onKeyDown={handleKeyDown}
-        className="relative w-20 sm:w-24 h-[132px] overflow-hidden rounded-2xl outline-none focus-visible:ring-1 focus-visible:ring-white/30"
+        className="relative w-20 sm:w-24 h-[132px] overflow-hidden rounded-2xl outline-none focus-visible:ring-1 focus-visible:ring-emerald-500/50"
       >
         {/* Subtle center row selection band */}
-        <div className="absolute top-[44px] left-0 right-0 h-[44px] bg-white/[0.07] border border-white/[0.09] rounded-xl pointer-events-none z-0" />
+        <div className="absolute top-[44px] left-0 right-0 h-[44px] bg-emerald-500/[0.08] border border-emerald-500/25 rounded-xl pointer-events-none z-0 shadow-[0_0_15px_rgba(16,185,129,0.1)]" />
 
         {/* Scroll-Snap Wheel Container */}
         <div
@@ -232,7 +232,7 @@ function WheelColumn({
                 }}
                 className={`snap-center flex items-center justify-center font-mono tabular-nums text-3xl sm:text-4xl font-bold cursor-pointer transition-colors duration-120 ${
                   isSelected
-                    ? 'text-white'
+                    ? 'text-emerald-400 drop-shadow-[0_0_10px_rgba(16,185,129,0.35)]'
                     : 'text-zinc-500 hover:text-zinc-300 opacity-40 hover:opacity-75 scale-90'
                 }`}
               >
@@ -248,7 +248,7 @@ function WheelColumn({
                     onChange={handleInputChange}
                     onBlur={handleInputBlur}
                     onKeyDown={handleInputKeyDown}
-                    className="w-14 h-9 bg-white/[0.12] border border-white/20 rounded-lg text-center font-mono tabular-nums text-2xl font-bold text-white outline-none focus:ring-1 focus:ring-white placeholder-zinc-500"
+                    className="w-14 h-9 bg-emerald-500/[0.15] border border-emerald-400/40 rounded-lg text-center font-mono tabular-nums text-2xl font-bold text-emerald-300 outline-none focus:ring-1 focus:ring-emerald-400 placeholder-zinc-500 shadow-[0_0_10px_rgba(16,185,129,0.2)]"
                     autoFocus
                   />
                 ) : (
@@ -379,11 +379,14 @@ export function CountdownEditor({ initialSeconds, onSave, onCancel }: CountdownE
         transition={{ duration: 0.22, ease: 'easeOut' }}
         className="relative w-full max-w-[440px] bg-[#0c0e14] border border-white/[0.08] rounded-t-[24px] sm:rounded-[24px] shadow-2xl p-5 sm:p-6 overflow-hidden flex flex-col pb-8 sm:pb-6"
       >
+        {/* Ambient Emerald Accent Glow */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-12 bg-emerald-500/15 blur-2xl pointer-events-none" />
+
         {/* Mobile Drag/Grab Handle */}
         <div className="w-10 h-1 bg-white/20 rounded-full mx-auto sm:hidden mb-3" />
 
         {/* Header */}
-        <div className="flex items-start justify-between mb-5">
+        <div className="flex items-start justify-between mb-5 relative z-10">
           <div>
             <h2
               id="countdown-modal-title"
@@ -400,7 +403,7 @@ export function CountdownEditor({ initialSeconds, onSave, onCancel }: CountdownE
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.12, ease: 'easeOut' }}
-                  className="text-xs font-mono text-zinc-400 font-medium"
+                  className="text-xs font-mono text-emerald-400 font-semibold tracking-wide"
                 >
                   {formatPlainWords(totalSeconds)}
                 </motion.span>
@@ -491,7 +494,7 @@ export function CountdownEditor({ initialSeconds, onSave, onCancel }: CountdownE
               className={`px-5 py-2 rounded-xl text-xs font-semibold transition-all duration-120 flex items-center gap-1.5 shadow-sm ${
                 isSaveDisabled
                   ? 'bg-white/10 text-zinc-500 cursor-not-allowed'
-                  : 'bg-white text-zinc-950 hover:brightness-105 active:scale-[0.97] cursor-pointer'
+                  : 'bg-gradient-to-r from-emerald-400 via-emerald-500 to-teal-400 text-zinc-950 font-bold hover:brightness-105 active:scale-[0.97] cursor-pointer shadow-[0_0_20px_rgba(16,185,129,0.35)]'
               }`}
             >
               <Check className="w-3.5 h-3.5 stroke-[2.5]" />
