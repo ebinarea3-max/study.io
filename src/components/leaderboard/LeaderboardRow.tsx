@@ -7,6 +7,8 @@ import { LeaderboardEntry } from '../../types';
 import { RankCrestBadge } from '../common/RankCrestBadge';
 import { RankTierName, RankDivision, getRankFromRp, RANKS, RankTier } from '../../lib/ranks';
 import { getLevelFromLifetimeXP } from '../../lib/gamification';
+import { FlairFrame } from '../../lib/flair';
+import { AvatarFlairRing, FlairStar } from '../common/FlairBadge';
 
 export const TIER_COLORS: Record<string, string> = {
   Bronze: '#C98A4B',
@@ -73,6 +75,7 @@ interface LeaderboardRowProps {
   myRowRef?: React.Ref<HTMLDivElement>;
   index: number;
   shouldReduceMotion?: boolean;
+  flairFrame?: FlairFrame | null;
 }
 
 export const LeaderboardRow = React.memo(function LeaderboardRow({
@@ -86,6 +89,7 @@ export const LeaderboardRow = React.memo(function LeaderboardRow({
   myRowRef,
   index,
   shouldReduceMotion = false,
+  flairFrame,
 }: LeaderboardRowProps) {
   const [avatarError, setAvatarError] = useState(false);
 
@@ -165,6 +169,16 @@ export const LeaderboardRow = React.memo(function LeaderboardRow({
         boxShadow: rankOneGlow,
       }}
     >
+      {/* Soft one-time shimmer when row first appears for flair entries */}
+      {flairFrame && !shouldReduceMotion && (
+        <motion.div
+          initial={{ x: '-100%', opacity: 0 }}
+          animate={{ x: '200%', opacity: [0, 0.4, 0] }}
+          transition={{ duration: 1.2, delay: 0.15 + staggerDelay, ease: 'easeOut' }}
+          className="absolute inset-0 pointer-events-none z-10 bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12"
+        />
+      )}
+
       {/* Soft Proportional Focus Bar Behind Row */}
       {barRatio > 0 && (
         <motion.div
@@ -246,32 +260,34 @@ export const LeaderboardRow = React.memo(function LeaderboardRow({
             )}
           </div>
 
-          {/* Avatar (40px ringed in tier colour) */}
-          <div
-            className="w-10 h-10 rounded-full flex-shrink-0 relative overflow-hidden bg-[#0c0e14] flex items-center justify-center shadow-sm"
-            style={{
-              border: `1.5px solid ${tierColor}`,
-            }}
-          >
-            {row.avatar_url && !avatarError ? (
-              <img
-                src={row.avatar_url}
-                alt={displayName}
-                className="w-full h-full object-cover rounded-full"
-                referrerPolicy="no-referrer"
-                onError={() => setAvatarError(true)}
-              />
-            ) : (
-              <div
-                className="w-full h-full flex items-center justify-center font-mono font-bold text-xs text-white"
-                style={{
-                  background: `linear-gradient(135deg, ${hexToRgba(tierColor, 0.7)} 0%, #18181b 100%)`,
-                }}
-              >
-                {initialLetter}
-              </div>
-            )}
-          </div>
+          {/* Avatar (40px ringed in tier colour or flair gradient) */}
+          <AvatarFlairRing frame={flairFrame} size={40}>
+            <div
+              className="w-10 h-10 rounded-full flex-shrink-0 relative overflow-hidden bg-[#0c0e14] flex items-center justify-center shadow-sm"
+              style={{
+                border: flairFrame ? 'none' : `1.5px solid ${tierColor}`,
+              }}
+            >
+              {row.avatar_url && !avatarError ? (
+                <img
+                  src={row.avatar_url}
+                  alt={displayName}
+                  className="w-full h-full object-cover rounded-full"
+                  referrerPolicy="no-referrer"
+                  onError={() => setAvatarError(true)}
+                />
+              ) : (
+                <div
+                  className="w-full h-full flex items-center justify-center font-mono font-bold text-xs text-white"
+                  style={{
+                    background: `linear-gradient(135deg, ${hexToRgba(tierColor, 0.7)} 0%, #18181b 100%)`,
+                  }}
+                >
+                  {initialLetter}
+                </div>
+              )}
+            </div>
+          </AvatarFlairRing>
 
           {/* Scholar Details */}
           <div className="flex flex-col min-w-0 justify-center">
@@ -279,6 +295,7 @@ export const LeaderboardRow = React.memo(function LeaderboardRow({
               <span className="font-semibold text-[var(--text)] text-sm sm:text-base truncate" title={displayName}>
                 {displayName}
               </span>
+              {flairFrame && <FlairStar frame={flairFrame} />}
               {rank === 1 && (
                 <Crown className="w-3.5 h-3.5 text-amber-400 shrink-0 fill-amber-400/30 inline" />
               )}

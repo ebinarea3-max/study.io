@@ -35,6 +35,8 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { UserAvatar } from '../common/UserAvatar';
+import { FlairFrame, fetchFlairMap } from '../../lib/flair';
+import { AvatarFlairRing, FlairStar } from '../common/FlairBadge';
 import { getSupabase, broadcast } from '../../lib/supabase';
 import {
   updateRoomSettingsAction,
@@ -178,6 +180,9 @@ export default function ActiveRoom({ roomId, onBack, initialTab }: ActiveRoomPro
   const [memberToBan, setMemberToBan] = useState<{ userId: string; username: string } | null>(null);
   const [isBanning, setIsBanning] = useState(false);
   const [isUnbanning, setIsUnbanning] = useState<string | null>(null);
+
+  // Premium flair for room members
+  const [flairMap, setFlairMap] = useState<Record<string, FlairFrame>>({});
 
   useEffect(() => {
     setMounted(true);
@@ -1350,6 +1355,26 @@ CREATE POLICY "Hosts can update their own study rooms"
     roomInfo?.host_id,
   ]);
 
+  // Batch-fetch flair for visible room members
+  useEffect(() => {
+    const uids = displayUsers.map((u) => u.user_id).filter(Boolean);
+    if (uids.length === 0) {
+      setFlairMap({});
+      return;
+    }
+    let active = true;
+    fetchFlairMap(uids)
+      .then((map) => {
+        if (active) setFlairMap(map);
+      })
+      .catch(() => {
+        if (active) setFlairMap({});
+      });
+    return () => {
+      active = false;
+    };
+  }, [displayUsers]);
+
   const handleCopyPassword = () => {
     if (!editPassword) return;
     navigator.clipboard.writeText(editPassword);
@@ -1587,18 +1612,22 @@ CREATE POLICY "Hosts can update their own study rooms"
                   className="flex flex-col items-center gap-2 group relative transition-all duration-300"
                 >
                   <div className="relative">
-                    <UserAvatar
-                      src={u.avatar_url}
-                      name={u.username}
-                      size={64}
-                      className={`border-2 transition-all duration-300 ${
-                        isStudying
-                          ? 'border-amber-500 shadow-[0_0_18px_rgba(245,158,11,0.55)] scale-105'
-                          : u.is_online
-                          ? 'border-slate-500 opacity-90'
-                          : 'border-slate-700/80 opacity-60'
-                      }`}
-                    />
+                    <AvatarFlairRing frame={flairMap[u.user_id]} size={64}>
+                      <UserAvatar
+                        src={u.avatar_url}
+                        name={u.username}
+                        size={64}
+                        className={`border-2 transition-all duration-300 ${
+                          flairMap[u.user_id]
+                            ? 'border-transparent'
+                            : isStudying
+                            ? 'border-amber-500 shadow-[0_0_18px_rgba(245,158,11,0.55)] scale-105'
+                            : u.is_online
+                            ? 'border-slate-500 opacity-90'
+                            : 'border-slate-700/80 opacity-60'
+                        }`}
+                      />
+                    </AvatarFlairRing>
 
                     {/* Status Badge (only when resting/offline; fire icon removed when studying) */}
                     {!isStudying && (
@@ -1663,6 +1692,9 @@ CREATE POLICY "Hosts can update their own study rooms"
                       >
                         {u.username}
                       </p>
+                      {flairMap[u.user_id] && (
+                        <FlairStar frame={flairMap[u.user_id]} size={13} />
+                      )}
                       {u.is_host && (
                         <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 border border-amber-500/30 text-amber-400 font-semibold uppercase tracking-wider flex-shrink-0">
                           Host
@@ -1775,6 +1807,9 @@ CREATE POLICY "Hosts can update their own study rooms"
                             <span className={`text-xs font-hud font-bold tracking-tight ${isMe ? 'text-amber-400' : 'text-slate-200'}`}>
                               {isMe ? 'YOU' : username}
                             </span>
+                            {flairMap[firstMsg.user_id] && (
+                              <FlairStar frame={flairMap[firstMsg.user_id]} size={11} />
+                            )}
                             {isHostUser && (
                               <span className="text-[9px] font-hud font-bold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 uppercase">
                                 HOST
@@ -1804,16 +1839,20 @@ CREATE POLICY "Hosts can update their own study rooms"
                           <div className={`flex gap-3 ${isMe ? 'flex-row-reverse' : ''} items-end max-w-[88%] sm:max-w-[75%]`}>
                             {/* Avatar */}
                             <div className="relative shrink-0">
-                              <UserAvatar
-                                src={avatarUrl}
-                                name={username}
-                                size={36}
-                                className={`rounded-full border transition-all ${
-                                  isStudying
-                                    ? 'border-amber-500 ring-2 ring-amber-500/30 shadow-[0_0_8px_rgba(245,158,11,0.4)]'
-                                    : 'border-white/10'
-                                }`}
-                              />
+                              <AvatarFlairRing frame={flairMap[firstMsg.user_id]} size={36}>
+                                <UserAvatar
+                                  src={avatarUrl}
+                                  name={username}
+                                  size={36}
+                                  className={`rounded-full border transition-all ${
+                                    flairMap[firstMsg.user_id]
+                                      ? 'border-transparent'
+                                      : isStudying
+                                      ? 'border-amber-500 ring-2 ring-amber-500/30 shadow-[0_0_8px_rgba(245,158,11,0.4)]'
+                                      : 'border-white/10'
+                                  }`}
+                                />
+                              </AvatarFlairRing>
                             </div>
 
                             {/* Bubble Stack */}
@@ -2302,17 +2341,24 @@ CREATE POLICY "Hosts can update their own study rooms"
                         className="flex items-center justify-between p-2.5 rounded-xl bg-black/40 border border-white/5 hover:border-white/10 transition-colors"
                       >
                         <div className="flex items-center gap-3 min-w-0">
-                          <UserAvatar
-                            src={member.avatar_url}
-                            name={member.username}
-                            size={32}
-                            className="rounded-full border border-white/10 shrink-0"
-                          />
+                          <AvatarFlairRing frame={flairMap[member.user_id]} size={32}>
+                            <UserAvatar
+                              src={member.avatar_url}
+                              name={member.username}
+                              size={32}
+                              className={`rounded-full border shrink-0 ${
+                                flairMap[member.user_id] ? 'border-transparent' : 'border-white/10'
+                              }`}
+                            />
+                          </AvatarFlairRing>
                           <div className="min-w-0">
                             <div className="flex items-center gap-1.5">
                               <span className="text-sm font-bold text-white truncate max-w-[140px]">
                                 {member.username}
                               </span>
+                              {flairMap[member.user_id] && (
+                                <FlairStar frame={flairMap[member.user_id]} size={12} />
+                              )}
                               {member.is_host && (
                                 <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 border border-amber-500/30 text-amber-400 font-bold uppercase">
                                   HOST

@@ -418,4 +418,71 @@ end $$;
 revoke all on function public.get_my_goal_progress(text) from public;
 grant execute on function public.get_my_goal_progress(text) to authenticated;
 
+-- ====================================================================
+-- 7. Profile Flair Table & get_flair RPC (Phase J)
+-- ====================================================================
+
+-- 7.1 Table profile_flair
+create table if not exists public.profile_flair (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  frame text not null default 'gold' check (frame in ('gold', 'aurora', 'ember')),
+  show_badge boolean not null default true,
+  updated_at timestamptz not null default now()
+);
+
+-- 7.2 RLS on profile_flair
+alter table public.profile_flair enable row level security;
+
+drop policy if exists "owner reads" on public.profile_flair;
+create policy "owner reads" on public.profile_flair
+  for select using (auth.uid() = user_id);
+
+drop policy if exists "insert own flair if premium" on public.profile_flair;
+create policy "insert own flair if premium" on public.profile_flair
+  for insert with check (
+    auth.uid() = user_id
+    and exists (
+      select 1 from public.subscriptions
+      where user_id = auth.uid()
+        and premium_until > now()
+    )
+  );
+
+drop policy if exists "update own flair if premium" on public.profile_flair;
+create policy "update own flair if premium" on public.profile_flair
+  for update using (
+    auth.uid() = user_id
+    and exists (
+      select 1 from public.subscriptions
+      where user_id = auth.uid()
+        and premium_until > now()
+    )
+  )
+  with check (
+    auth.uid() = user_id
+    and exists (
+      select 1 from public.subscriptions
+      where user_id = auth.uid()
+        and premium_until > now()
+    )
+  );
+
+-- 7.3 Public Flair Lookup RPC
+create or replace function public.get_flair(p_user_ids uuid[])
+returns table (user_id uuid, frame text)
+language sql stable security definer set search_path = public as $$
+  select
+    pf.user_id,
+    pf.frame
+  from unnest(coalesce(p_user_ids[1:100], array[]::uuid[])) as input_id
+  join public.profile_flair pf on pf.user_id = input_id
+  join public.subscriptions s on s.user_id = pf.user_id
+  where pf.show_badge = true
+    and s.premium_until > now();
+$$;
+
+revoke all on function public.get_flair(uuid[]) from public;
+grant execute on function public.get_flair(uuid[]) to authenticated, anon;
+
+
 

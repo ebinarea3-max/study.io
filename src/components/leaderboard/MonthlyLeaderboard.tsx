@@ -16,6 +16,7 @@ import { Logo } from '../Logo';
 import Link from 'next/link';
 import { motion, useReducedMotion } from 'framer-motion';
 import { LeaderboardRow } from './LeaderboardRow';
+import { FlairFrame, fetchFlairMap } from '../../lib/flair';
 export function formatStudyTime(totalSeconds: number): string {
   const safeSeconds = Math.max(0, Math.round(totalSeconds || 0));
   const hours = Math.floor(safeSeconds / 3600);
@@ -519,6 +520,20 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
     return Object.values(deltaMap).some((info) => info.delta !== 0);
   }, [deltaMap]);
 
+  // Batch-fetch flair for visible leaderboard scholars
+  const [flairMap, setFlairMap] = useState<Record<string, FlairFrame>>({});
+  useEffect(() => {
+    const userIds = contenders.map((c) => c.user_id).filter(Boolean);
+    if (userIds.length === 0) {
+      setFlairMap({});
+      return;
+    }
+
+    fetchFlairMap(userIds).then((map) => {
+      setFlairMap(map);
+    });
+  }, [contenders]);
+
   const checkIsCurrentUser = useCallback(
     (row: LeaderboardEntry | null) => {
       if (!row) return false;
@@ -779,6 +794,7 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                         myRowRef={isCurrentUser ? myRowRef : undefined}
                         index={idx}
                         shouldReduceMotion={shouldReduceMotion}
+                        flairFrame={flairMap[row.user_id]}
                       />
                     );
                   })}
