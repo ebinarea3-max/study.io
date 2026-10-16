@@ -7,6 +7,7 @@ export interface FlairConfig {
   name: string;
   gradient: string;
   ringBorder: string;
+  crownColor: string;
   starColor: string;
   glowColor: string;
   description: string;
@@ -18,6 +19,7 @@ export const FLAIR_FRAMES: Record<FlairFrame, FlairConfig> = {
     name: 'Imperial Gold',
     gradient: 'linear-gradient(135deg, #F5E6A8 0%, #E6C15A 50%, #B8892B 100%)',
     ringBorder: '#E6C15A',
+    crownColor: '#E6C15A',
     starColor: '#E6C15A',
     glowColor: 'rgba(230, 193, 90, 0.35)',
     description: 'Prestige gold gradient inspired by Free Fire Grandmaster accolades.',
@@ -27,6 +29,7 @@ export const FLAIR_FRAMES: Record<FlairFrame, FlairConfig> = {
     name: 'Aurora Teal',
     gradient: 'linear-gradient(135deg, #2DD4BF 0%, #06B6D4 50%, #3B82F6 100%)',
     ringBorder: '#2DD4BF',
+    crownColor: '#2DD4BF',
     starColor: '#2DD4BF',
     glowColor: 'rgba(45, 212, 191, 0.35)',
     description: 'Vibrant celestial teal and electric cyan glow.',
@@ -36,6 +39,7 @@ export const FLAIR_FRAMES: Record<FlairFrame, FlairConfig> = {
     name: 'Ember Orange',
     gradient: 'linear-gradient(135deg, #F97316 0%, #EF4444 50%, #B91C1C 100%)',
     ringBorder: '#F97316',
+    crownColor: '#F97316',
     starColor: '#F97316',
     glowColor: 'rgba(249, 115, 22, 0.35)',
     description: 'Blazing thermal fire gradient for intense focus champions.',

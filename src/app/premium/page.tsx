@@ -11,7 +11,7 @@ import {
   Shield,
   Palette,
   BarChart3,
-  Star,
+  Crown,
   Settings,
   ArrowLeft,
   Lock,
@@ -144,7 +144,7 @@ export default function PremiumPage() {
                   boxShadow: `0 0 12px ${PREMIUM_GOLD_GLOW}`,
                 }}
               >
-                <Star className="w-3.5 h-3.5 fill-current" />
+                <Crown className="w-3.5 h-3.5 fill-current" />
                 <span>PREMIUM ACTIVE</span>
               </span>
             ) : (
@@ -154,7 +154,7 @@ export default function PremiumPage() {
                 className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-hud font-bold tracking-wider uppercase text-[#1A1405] hover:opacity-95 active:scale-95 transition-all shadow-md cursor-pointer"
                 style={{ background: PREMIUM_GOLD_GRADIENT }}
               >
-                <Star className="w-3.5 h-3.5 fill-current" />
+                <Crown className="w-3.5 h-3.5 fill-current" />
                 <span>UPGRADE</span>
               </button>
             )}
@@ -345,7 +345,7 @@ export default function PremiumPage() {
                   boxShadow: `0 0 20px ${PREMIUM_GOLD_GLOW}`,
                 }}
               >
-                <Star className="w-7 h-7 text-[#1A1405] fill-current" />
+                <Crown className="w-7 h-7 text-[#1A1405] fill-current" />
               </div>
 
               <h2

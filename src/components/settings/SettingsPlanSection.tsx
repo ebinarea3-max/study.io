@@ -2,11 +2,11 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { Sparkles, Star, CreditCard, Check, Shield } from 'lucide-react';
+import { Sparkles, Crown, CreditCard, Check, Shield } from 'lucide-react';
 import { usePremium } from '../../context/PremiumContext';
 import { useAuth } from '../../context/AuthContext';
 import { FlairFrame, FLAIR_FRAMES, getMyFlair, saveMyFlair } from '../../lib/flair';
-import { AvatarFlairRing, FlairStar } from '../common/FlairBadge';
+import { AvatarFlairRing, FlairCrown } from '../common/FlairBadge';
 import { UserAvatar } from '../common/UserAvatar';
 import toast from 'react-hot-toast';
 
@@ -111,7 +111,7 @@ export function SettingsPlanSection() {
         <div className="flex items-center gap-3.5">
           <div className="w-10 h-10 rounded-xl bg-[var(--accent-soft)] border border-[var(--border)] flex items-center justify-center flex-shrink-0 text-[var(--accent)] shadow-sm">
             {isPremium ? (
-              <Star className="w-5 h-5 fill-current" />
+              <Crown className="w-5 h-5 fill-current" />
             ) : (
               <CreditCard className="w-5 h-5" />
             )}
@@ -155,7 +155,7 @@ export function SettingsPlanSection() {
               href="/premium"
               className="px-3 py-1.5 rounded-xl text-xs font-hud font-semibold text-[#E6C15A] hover:bg-[#E6C15A]/10 border border-[#E6C15A]/30 transition-all flex items-center gap-1.5 cursor-pointer self-start sm:self-auto"
             >
-              <Star className="w-3.5 h-3.5 fill-current" />
+              <Crown className="w-3.5 h-3.5 fill-current" />
               <span>View Benefits</span>
             </Link>
           )}
@@ -229,7 +229,7 @@ export function SettingsPlanSection() {
                         <span className="text-xs font-hud font-bold text-[var(--text)] tracking-wider">
                           {frameConfig.name}
                         </span>
-                        {showBadge && <FlairStar frame={frameKey} />}
+                        {showBadge && <FlairCrown frame={frameKey} />}
                       </div>
                       <span className="text-[10px] text-[var(--text-dim)] font-mono block truncate">
                         {frameKey === 'gold' ? 'Prestige Gold' : frameKey === 'aurora' ? 'Celestial Teal' : 'Thermal Fire'}

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { Star } from 'lucide-react';
+import { Crown } from 'lucide-react';
 import { FlairFrame, FLAIR_FRAMES } from '../../lib/flair';
 
 export function AvatarFlairRing({
@@ -53,7 +53,7 @@ export function AvatarFlairRing({
   );
 }
 
-export function FlairStar({
+export function FlairCrown({
   frame,
   className = '',
   size = 14,
@@ -66,14 +66,18 @@ export function FlairStar({
   const flairConfig = FLAIR_FRAMES[frame] || FLAIR_FRAMES.gold;
 
   return (
-    <Star
+    <Crown
       style={{
         width: size,
         height: size,
-        color: flairConfig.starColor,
+        color: flairConfig.crownColor || flairConfig.starColor,
       }}
       className={`fill-current shrink-0 inline drop-shadow-sm ${className}`}
       aria-label={`${flairConfig.name} Pro Scholar`}
     />
   );
 }
+
+// Backwards compatibility alias for components importing FlairStar
+export const FlairStar = FlairCrown;
+

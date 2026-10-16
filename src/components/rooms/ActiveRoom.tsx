@@ -36,7 +36,7 @@ import {
 import toast from 'react-hot-toast';
 import { UserAvatar } from '../common/UserAvatar';
 import { FlairFrame, fetchFlairMap } from '../../lib/flair';
-import { AvatarFlairRing, FlairStar } from '../common/FlairBadge';
+import { AvatarFlairRing, FlairCrown } from '../common/FlairBadge';
 import { getSupabase, broadcast } from '../../lib/supabase';
 import {
   updateRoomSettingsAction,
@@ -1693,7 +1693,7 @@ CREATE POLICY "Hosts can update their own study rooms"
                         {u.username}
                       </p>
                       {flairMap[u.user_id] && (
-                        <FlairStar frame={flairMap[u.user_id]} size={13} />
+                        <FlairCrown frame={flairMap[u.user_id]} size={13} />
                       )}
                       {u.is_host && (
                         <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 border border-amber-500/30 text-amber-400 font-semibold uppercase tracking-wider flex-shrink-0">
@@ -1808,7 +1808,7 @@ CREATE POLICY "Hosts can update their own study rooms"
                               {isMe ? 'YOU' : username}
                             </span>
                             {flairMap[firstMsg.user_id] && (
-                              <FlairStar frame={flairMap[firstMsg.user_id]} size={11} />
+                              <FlairCrown frame={flairMap[firstMsg.user_id]} size={11} />
                             )}
                             {isHostUser && (
                               <span className="text-[9px] font-hud font-bold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 uppercase">
@@ -2357,7 +2357,7 @@ CREATE POLICY "Hosts can update their own study rooms"
                                 {member.username}
                               </span>
                               {flairMap[member.user_id] && (
-                                <FlairStar frame={flairMap[member.user_id]} size={12} />
+                                <FlairCrown frame={flairMap[member.user_id]} size={12} />
                               )}
                               {member.is_host && (
                                 <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 border border-amber-500/30 text-amber-400 font-bold uppercase">

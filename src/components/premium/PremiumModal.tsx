@@ -3,7 +3,7 @@
 import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { X, Sparkles, Palette, BarChart3, Star, Lock, ArrowRight } from 'lucide-react';
+import { X, Sparkles, Palette, BarChart3, Crown, Lock, ArrowRight } from 'lucide-react';
 import { PAYMENTS_ENABLED } from '../../config/billing';
 import { usePremium } from '../../context/PremiumContext';
 
@@ -98,7 +98,7 @@ export function PremiumModal({ isOpen, onClose }: PremiumModalProps) {
             {isPremium && (
               <div className="my-4 p-3.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2 text-[var(--accent)] font-semibold">
-                  <Star className="w-4 h-4 fill-current" />
+                  <Crown className="w-4 h-4 fill-current" />
                   <span>You have study.io Premium</span>
                 </div>
                 {formattedDate && (
@@ -144,14 +144,14 @@ export function PremiumModal({ isOpen, onClose }: PremiumModalProps) {
               {/* 3. Premium Badge */}
               <div className="flex items-start gap-3.5 p-3 rounded-xl bg-[var(--surface-2)]/60 border border-[var(--border)]">
                 <div className="p-2 rounded-lg bg-[var(--surface)] text-[var(--accent)] shrink-0 border border-[var(--border)]">
-                  <Star className="w-4 h-4" />
+                  <Crown className="w-4 h-4" />
                 </div>
                 <div>
                   <h3 className="text-sm font-semibold text-[var(--text)]">
                     Premium Badge
                   </h3>
                   <p className="text-xs text-[var(--text-dim)] mt-0.5 leading-relaxed">
-                    Distinctive gold star mark displayed beside your scholar profile.
+                    Distinctive crown badge displayed beside your scholar profile.
                   </p>
                 </div>
               </div>
@@ -161,7 +161,7 @@ export function PremiumModal({ isOpen, onClose }: PremiumModalProps) {
             <div className="mt-2 pt-3 border-t border-[var(--border)]">
               {isPremium ? (
                 <div className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-[var(--surface-2)] text-[var(--accent)] font-semibold text-xs border border-[var(--border)] select-none">
-                  <Star className="w-4 h-4 fill-current" />
+                  <Crown className="w-4 h-4 fill-current" />
                   <span>Premium Active{formattedDate ? ` • Until ${formattedDate}` : ''}</span>
                 </div>
               ) : !PAYMENTS_ENABLED ? (

@@ -2,13 +2,13 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Crown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Trophy, ArrowUp, ArrowDown } from 'lucide-react';
 import { LeaderboardEntry } from '../../types';
 import { RankCrestBadge } from '../common/RankCrestBadge';
 import { RankTierName, RankDivision, getRankFromRp, RANKS, RankTier } from '../../lib/ranks';
 import { getLevelFromLifetimeXP } from '../../lib/gamification';
 import { FlairFrame } from '../../lib/flair';
-import { AvatarFlairRing, FlairStar } from '../common/FlairBadge';
+import { AvatarFlairRing, FlairCrown } from '../common/FlairBadge';
 
 export const TIER_COLORS: Record<string, string> = {
   Bronze: '#C98A4B',
@@ -295,9 +295,11 @@ export const LeaderboardRow = React.memo(function LeaderboardRow({
               <span className="font-semibold text-[var(--text)] text-sm sm:text-base truncate" title={displayName}>
                 {displayName}
               </span>
-              {flairFrame && <FlairStar frame={flairFrame} />}
+              {flairFrame && <FlairCrown frame={flairFrame} />}
               {rank === 1 && (
-                <Crown className="w-3.5 h-3.5 text-amber-400 shrink-0 fill-amber-400/30 inline" />
+                <span title="Season Leader (#1)" className="inline-flex items-center">
+                  <Trophy className="w-3.5 h-3.5 text-amber-400 shrink-0 fill-amber-400/30 inline" />
+                </span>
               )}
               {isCurrentUser && (
                 <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-amber-400/15 text-amber-300 border border-amber-400/30 shrink-0">

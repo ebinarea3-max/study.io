@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Sparkles, Star, User } from 'lucide-react';
+import { Sparkles, Crown, User } from 'lucide-react';
 
 type FrameStyle = 'gold' | 'aurora' | 'ember';
 
@@ -42,7 +42,7 @@ export function DemoFlairTile() {
       <div>
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <Star className="w-3.5 h-3.5 text-[#E6C15A] fill-current" />
+            <Crown className="w-3.5 h-3.5 text-[#E6C15A] fill-current" />
             <h4 className="font-hud font-bold text-xs uppercase tracking-wider text-[var(--text)]">
               Scholar Profile Flair
             </h4>
@@ -120,7 +120,7 @@ export function DemoFlairTile() {
                     className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-[#E6C15A]/15 text-[#E6C15A] border border-[#E6C15A]/30 text-[9px] font-bold tracking-wider uppercase shrink-0"
                     title="Premium Scholar"
                   >
-                    <Star className="w-2.5 h-2.5 fill-current" />
+                    <Crown className="w-2.5 h-2.5 fill-current" />
                     <span>PRO</span>
                   </span>
                 )}

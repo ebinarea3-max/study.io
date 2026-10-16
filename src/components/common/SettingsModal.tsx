@@ -16,7 +16,7 @@ import {
   Bug,
   Send,
   Paperclip,
-  Star,
+  Crown,
 } from 'lucide-react';
 import { submitReport } from '../../app/actions/report';
 import { soundFx } from '../../lib/audio';
@@ -258,7 +258,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                         className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--border)] text-[10px] font-bold tracking-wider uppercase shrink-0"
                         title="study.io Premium Scholar"
                       >
-                        <Star className="w-3 h-3 fill-current" />
+                        <Crown className="w-3 h-3 fill-current" />
                         <span>Premium</span>
                       </span>
                     )}
