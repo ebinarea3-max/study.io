@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   X,
   Volume2,
@@ -37,9 +37,16 @@ interface SettingsModalProps {
 
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const { user, deleteAccount, updateProfile } = useAuth();
-  const { isPremium } = usePremium();
+  const { isPremium, refresh } = usePremium();
   const { canInstall, isInstalled, isPrompting, deferredPrompt, triggerInstall } = usePwaInstall();
   const { theme } = useRankTheme();
+
+  // Refresh entitlements whenever the Settings modal opens
+  useEffect(() => {
+    if (isOpen) {
+      refresh();
+    }
+  }, [isOpen, refresh]);
 
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [typedEmail, setTypedEmail] = useState('');

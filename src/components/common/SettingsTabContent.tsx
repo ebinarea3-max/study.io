@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Volume2,
   ShieldCheck,
@@ -28,9 +28,14 @@ import { SettingsPlanSection } from '../settings/SettingsPlanSection';
 
 export function SettingsTabContent() {
   const { user, deleteAccount } = useAuth();
-  const { isPremium } = usePremium();
+  const { isPremium, refresh } = usePremium();
   const { canInstall, isInstalled, isPrompting, deferredPrompt, triggerInstall } = usePwaInstall();
   const { theme, userRank } = useRankTheme();
+
+  // Refresh entitlements whenever settings tab is mounted
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
 
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [typedEmail, setTypedEmail] = useState('');

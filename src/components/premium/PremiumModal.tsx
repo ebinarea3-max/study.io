@@ -156,9 +156,14 @@ export function PremiumModal({ isOpen, onClose }: PremiumModalProps) {
               </div>
             </div>
 
-            {/* Purchase CTA / Coming Soon state */}
+            {/* Purchase CTA / Active state */}
             <div className="mt-2 pt-3 border-t border-[var(--border)]">
-              {!PAYMENTS_ENABLED ? (
+              {isPremium ? (
+                <div className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-[var(--surface-2)] text-[var(--accent)] font-semibold text-xs border border-[var(--border)] select-none">
+                  <Star className="w-4 h-4 fill-current" />
+                  <span>Premium Active{formattedDate ? ` • Until ${formattedDate}` : ''}</span>
+                </div>
+              ) : !PAYMENTS_ENABLED ? (
                 <div>
                   <button
                     type="button"

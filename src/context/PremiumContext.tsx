@@ -18,6 +18,7 @@ export interface PremiumContextType {
   premiumUntil: string | null;
   plan: string | null;
   status: string;
+  cancelAtCycleEnd: boolean;
   loading: boolean;
   refresh: () => Promise<void>;
   openPremiumModal: () => void;
@@ -28,36 +29,23 @@ export interface PremiumContextType {
 const PremiumContext = createContext<PremiumContextType | undefined>(undefined);
 
 export function PremiumProvider({ children }: { children: ReactNode }) {
-  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { user } = useAuth();
 
   const [rawIsPremium, setRawIsPremium] = useState<boolean>(false);
-  const [premiumUntil, setPremiumUntil] = useState<string | null>(null);
+  const [premiumUntilDate, setPremiumUntilDate] = useState<Date | null>(null);
   const [plan, setPlan] = useState<string | null>(null);
   const [status, setStatus] = useState<string>('none');
+  const [cancelAtCycleEnd, setCancelAtCycleEnd] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
-  // Tracks the user ID for which entitlements were fetched to avoid redundant re-fetches
-  const fetchedUserIdRef = useRef<string | null>(null);
+  // Single error logging guard
+  const hasLoggedErrorRef = useRef(false);
 
   const fetchEntitlements = useCallback(async (isInitial = false) => {
     const supabase = getSupabase();
-    const userId = user?.id;
-
-    // Check if user is a real authenticated user
-    const isRealUser =
-      Boolean(userId) &&
-      !userId?.startsWith('guest') &&
-      !userId?.startsWith('user-scholar') &&
-      isAuthenticated;
-
-    if (!supabase || !isRealUser) {
-      setRawIsPremium(false);
-      setPremiumUntil(null);
-      setPlan(null);
-      setStatus('none');
+    if (!supabase) {
       setLoading(false);
-      fetchedUserIdRef.current = null;
       return;
     }
 
@@ -66,56 +54,109 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
     }
 
     try {
+      // Check active auth session
+      const { data: sessionData } = await supabase.auth.getSession();
+      const sessionUser = sessionData?.session?.user;
+
+      if (!sessionUser) {
+        setRawIsPremium(false);
+        setPremiumUntilDate(null);
+        setPlan(null);
+        setStatus('none');
+        setCancelAtCycleEnd(false);
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase.rpc('get_my_entitlements');
 
       if (error) {
-        console.warn('[Premium] get_my_entitlements RPC error:', error);
-        setRawIsPremium(false);
-        setPremiumUntil(null);
-        setPlan(null);
-        setStatus('none');
-      } else {
-        const row = Array.isArray(data) ? data[0] : data;
-        if (row) {
-          const rawUntil = row.premium_until ? String(row.premium_until) : null;
-          const isUntilFuture = rawUntil
-            ? new Date(rawUntil).getTime() > Date.now()
-            : false;
-          const active = Boolean(row.is_premium) && isUntilFuture;
-
-          setRawIsPremium(active);
-          setPremiumUntil(rawUntil);
-          setPlan(row.plan ?? null);
-          setStatus(row.status ?? 'none');
-        } else {
-          setRawIsPremium(false);
-          setPremiumUntil(null);
-          setPlan(null);
-          setStatus('none');
+        if (!hasLoggedErrorRef.current) {
+          console.warn('[usePremium] get_my_entitlements error:', error);
+          hasLoggedErrorRef.current = true;
         }
+        // On error, keep previous known value if there is one instead of resetting everything
+      } else {
+        hasLoggedErrorRef.current = false;
+        // Supabase returns table functions as an array of rows
+        const row = Array.isArray(data) ? data[0] : data;
+
+        // Map snake_case columns to app's names:
+        const serverIsPremium = Boolean(row?.is_premium);
+        const parsedUntil = row?.premium_until ? new Date(row.premium_until) : null;
+        const isValidDate = parsedUntil instanceof Date && !isNaN(parsedUntil.getTime());
+        const mappedPlan = row?.plan ?? null;
+        const mappedStatus = row?.status ?? 'none';
+        const mappedCancelAtCycleEnd = Boolean(row?.cancel_at_cycle_end);
+
+        // Trust the server's is_premium value.
+        // The only local check allowed is: if premiumUntil is a VALID date (not NaN)
+        // and current time is past it, treat user as free.
+        // An unparseable or missing date must never turn a premium user into a free one.
+        let isPrem = serverIsPremium;
+        if (serverIsPremium && isValidDate && parsedUntil.getTime() <= Date.now()) {
+          isPrem = false;
+        }
+
+        setRawIsPremium(serverIsPremium);
+        setPremiumUntilDate(isValidDate ? parsedUntil : null);
+        setPlan(mappedPlan);
+        setStatus(mappedStatus);
+        setCancelAtCycleEnd(mappedCancelAtCycleEnd);
       }
     } catch (err) {
-      console.warn('[Premium] Exception while fetching entitlements:', err);
-      setRawIsPremium(false);
-      setPremiumUntil(null);
-      setPlan(null);
-      setStatus('none');
+      if (!hasLoggedErrorRef.current) {
+        console.warn('[usePremium] Exception fetching entitlements:', err);
+        hasLoggedErrorRef.current = true;
+      }
     } finally {
+      // loading must always become false, even when the call fails
       setLoading(false);
-      fetchedUserIdRef.current = userId;
     }
-  }, [user?.id, isAuthenticated]);
+  }, []);
 
-  // Initial fetch once after sign-in
+  // Initial fetch on mount & auth state subscription
   useEffect(() => {
-    if (authLoading) return;
-
-    if (user?.id !== fetchedUserIdRef.current) {
-      fetchEntitlements(true);
+    const supabase = getSupabase();
+    if (!supabase) {
+      setLoading(false);
+      return;
     }
-  }, [user?.id, authLoading, fetchEntitlements]);
 
-  // Refresh on window focus or visibility change
+    fetchEntitlements(true);
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
+      if (
+        event === 'SIGNED_IN' ||
+        event === 'TOKEN_REFRESHED' ||
+        event === 'USER_UPDATED'
+      ) {
+        fetchEntitlements(false);
+      } else if (event === 'SIGNED_OUT') {
+        setRawIsPremium(false);
+        setPremiumUntilDate(null);
+        setPlan(null);
+        setStatus('none');
+        setCancelAtCycleEnd(false);
+        setLoading(false);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [fetchEntitlements]);
+
+  // Refresh on user ID changes if present
+  useEffect(() => {
+    if (user?.id && !user.id.startsWith('guest')) {
+      fetchEntitlements(false);
+    }
+  }, [user?.id, fetchEntitlements]);
+
+  // Refresh on window focus and visibility change
   useEffect(() => {
     const onFocus = () => {
       fetchEntitlements(false);
@@ -138,11 +179,9 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
 
   // Self-expiration: turn isPremium false on its own when current time passes premiumUntil
   useEffect(() => {
-    if (!premiumUntil || !rawIsPremium) return;
+    if (!rawIsPremium || !premiumUntilDate) return;
 
-    const expiryTime = new Date(premiumUntil).getTime();
-    const remainingMs = expiryTime - Date.now();
-
+    const remainingMs = premiumUntilDate.getTime() - Date.now();
     if (remainingMs <= 0) {
       setRawIsPremium(false);
       return;
@@ -153,14 +192,15 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
     }, remainingMs + 50);
 
     return () => clearTimeout(timer);
-  }, [premiumUntil, rawIsPremium]);
+  }, [rawIsPremium, premiumUntilDate]);
 
-  // Dynamic derivation of isPremium: never true if expired
-  const isPremium = Boolean(
-    rawIsPremium &&
-      premiumUntil &&
-      new Date(premiumUntil).getTime() > Date.now()
-  );
+  // The only local check allowed is: if premiumUntil is a VALID date (not NaN) and the current time is past it, treat user as free
+  const isPastExpiry =
+    premiumUntilDate instanceof Date &&
+    !isNaN(premiumUntilDate.getTime()) &&
+    premiumUntilDate.getTime() <= Date.now();
+
+  const isPremium = rawIsPremium && !isPastExpiry;
 
   const refresh = useCallback(async () => {
     await fetchEntitlements(false);
@@ -171,9 +211,10 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
 
   const value: PremiumContextType = {
     isPremium,
-    premiumUntil,
+    premiumUntil: premiumUntilDate ? premiumUntilDate.toISOString() : null,
     plan,
     status,
+    cancelAtCycleEnd,
     loading,
     refresh,
     openPremiumModal,
@@ -192,12 +233,12 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
 export function usePremium(): PremiumContextType {
   const context = useContext(PremiumContext);
   if (!context) {
-    // Return safe fallback if used outside provider (never grants premium)
     return {
       isPremium: false,
       premiumUntil: null,
       plan: null,
       status: 'none',
+      cancelAtCycleEnd: false,
       loading: false,
       refresh: async () => {},
       openPremiumModal: () => {},

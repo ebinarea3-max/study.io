@@ -93,8 +93,8 @@ export function StudyInsights() {
   } | null>(null);
 
   const fetchInsights = useCallback(async () => {
-    // Free users NEVER trigger RPC
-    if (!isPremium) return;
+    // Neither free nor loading state can EVER call get_my_insights
+    if (premiumLoading || !isPremium) return;
 
     const supabase = getSupabase();
     if (!supabase) return;
@@ -130,15 +130,17 @@ export function StudyInsights() {
     } finally {
       setDataLoading(false);
     }
-  }, [isPremium, refresh]);
+  }, [premiumLoading, isPremium, refresh]);
 
   useEffect(() => {
-    if (isPremium) {
+    // Only call get_my_insights when entitlements loading is done AND isPremium is true
+    if (!premiumLoading && isPremium) {
       fetchInsights();
     } else {
       setRealData(null);
+      setDataLoading(false);
     }
-  }, [isPremium, fetchInsights]);
+  }, [premiumLoading, isPremium, fetchInsights]);
 
   // Active data source: real data for premium, fixed sample dataset for free
   const activeData = isPremium ? realData : SAMPLE_INSIGHTS_DATA;
