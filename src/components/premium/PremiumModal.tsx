@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useEffect } from 'react';
+import Link from 'next/link';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { X, Sparkles, Palette, BarChart3, Star, Lock } from 'lucide-react';
+import { X, Sparkles, Palette, BarChart3, Star, Lock, ArrowRight } from 'lucide-react';
 import { PAYMENTS_ENABLED } from '../../config/billing';
 import { usePremium } from '../../context/PremiumContext';
 
@@ -187,6 +188,18 @@ export function PremiumModal({ isOpen, onClose }: PremiumModalProps) {
                   Upgrade to Premium
                 </button>
               )}
+
+              {/* Showcase Link */}
+              <div className="mt-3.5 text-center">
+                <Link
+                  href="/premium"
+                  onClick={onClose}
+                  className="inline-flex items-center gap-1.5 text-xs text-[#E6C15A] hover:underline font-hud font-semibold tracking-wider transition-colors cursor-pointer"
+                >
+                  <span>See everything in Premium</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
             </div>
           </motion.div>
         </div>

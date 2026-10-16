@@ -1006,3 +1006,49 @@ html.light ::selection,
   75% { opacity: 1; }
   100% { transform: translate(40px, -20px); opacity: 0; }
 }
+
+/* Premium Showcase Button Sheen Animation (repeats every 8s) */
+@keyframes buttonSheenSweep {
+  0%, 75% {
+    transform: translateX(-150%);
+    opacity: 0;
+  }
+  76% {
+    opacity: 0.6;
+  }
+  85% {
+    transform: translateX(150%);
+    opacity: 0.6;
+  }
+  86%, 100% {
+    transform: translateX(150%);
+    opacity: 0;
+  }
+}
+
+.button-sheen-sweep {
+  animation: buttonSheenSweep 8s ease-in-out infinite;
+}
+
+/* Premium Showcase Crest Float Animation (6s loop, translateY 8px) */
+@keyframes crestFloat {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(8px);
+  }
+}
+
+.animate-crest-float {
+  animation: crestFloat 6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-crest-float,
+  .button-sheen-sweep {
+    animation: none !important;
+  }
+}
+
+

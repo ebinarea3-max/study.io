@@ -17,7 +17,14 @@ import {
   Trophy,
   CheckSquare,
   Users,
+  Star,
 } from 'lucide-react';
+import { usePremium } from '../../context/PremiumContext';
+import {
+  PREMIUM_GOLD_GRADIENT,
+  PREMIUM_GOLD_BORDER,
+  PREMIUM_GOLD_GLOW,
+} from '../../lib/premium';
 
 import { Logo } from '../Logo';
 import { getRankTier } from '../../lib/ranks';
@@ -49,6 +56,7 @@ export function Navbar({
   const { user, isAuthenticated, isLoading, logout } = useAuth();
   const { isStudying, setIsFocusModeOpen, gamification, sessions } = useStudy();
   const { theme, userRank, totalRP } = useRankTheme();
+  const { isPremium } = usePremium();
 
   const [showPersonaMenu, setShowPersonaMenu] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -311,6 +319,39 @@ export function Navbar({
         {/* Right Action Bar */}
         <div className="flex items-center gap-1.5 sm:gap-3">
 
+          {/* Premium Header Star Link (Free users) or Star Badge (Premium users) */}
+          {!isPremium ? (
+            <Link
+              href="/premium"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl text-xs font-hud font-bold tracking-wider uppercase text-[#1A1405] hover:opacity-95 active:scale-95 transition-all shadow-sm select-none flex-shrink-0"
+              style={{
+                background: PREMIUM_GOLD_GRADIENT,
+                boxShadow: `0 0 10px ${PREMIUM_GOLD_GLOW}`,
+              }}
+              title="See everything in Premium"
+            >
+              <Star className="w-3.5 h-3.5 fill-current" />
+              <span className="hidden sm:inline">PREMIUM</span>
+            </Link>
+          ) : (
+            <Link
+              href="/premium"
+              className="inline-flex items-center justify-center h-8 sm:h-9 px-2 sm:px-2.5 rounded-xl border transition-all hover:scale-105 active:scale-95 select-none flex-shrink-0"
+              style={{
+                background: 'rgba(230, 193, 90, 0.12)',
+                borderColor: PREMIUM_GOLD_BORDER,
+                boxShadow: `0 0 8px ${PREMIUM_GOLD_GLOW}`,
+              }}
+              title="Premium Active — Click to view membership status"
+              aria-label="Premium Active"
+            >
+              <Star className="w-3.5 h-3.5 text-[#E6C15A] fill-[#E6C15A]" />
+              <span className="hidden md:inline text-[10px] font-hud font-bold tracking-wider text-[#E6C15A] ml-1 uppercase">
+                PRO
+              </span>
+            </Link>
+          )}
+
           {/* Sign In Button (if not authenticated) */}
           {!isAuthenticated ? (
             <Link
@@ -445,6 +486,14 @@ export function Navbar({
                   <div className="text-[13px] font-bold text-[var(--text)] leading-tight truncate block max-w-[130px]">
                     {displayName}
                   </div>
+                  {isPremium && (
+                    <span title="Premium Scholar" className="flex items-center self-center flex-shrink-0">
+                      <Star
+                        className="w-3 h-3 text-[#E6C15A] fill-[#E6C15A]"
+                        aria-hidden="true"
+                      />
+                    </span>
+                  )}
                   {user?.username && (
                     <div className="text-[10px] text-[var(--text-dim)] font-mono truncate max-w-[80px]">
                       @{user.username}
@@ -475,7 +524,17 @@ export function Navbar({
                 <div className="pb-3 border-b border-fg/[0.08] relative z-10">
                   <div className="flex items-center justify-between">
                     <div className="min-w-0 pr-2">
-                      <div className="font-bold text-sm text-[var(--text)] truncate">{displayName}</div>
+                      <div className="font-bold text-sm text-[var(--text)] truncate flex items-center gap-1.5">
+                        <span className="truncate">{displayName}</span>
+                        {isPremium && (
+                          <span title="Premium Scholar" className="flex items-center flex-shrink-0">
+                            <Star
+                              className="w-3.5 h-3.5 text-[#E6C15A] fill-[#E6C15A]"
+                              aria-hidden="true"
+                            />
+                          </span>
+                        )}
+                      </div>
                       <div className="text-[10px] font-mono text-[var(--text-dim)] truncate mt-0.5">
                         {user?.username ? `@${user.username} • ` : ''}{user?.email}
                       </div>
@@ -557,6 +616,15 @@ export function Navbar({
                     <FacetedGearIcon className="w-3.5 h-3.5 text-[var(--text-dim)]" />
                     <span>SETTINGS &amp; PREFERENCES</span>
                   </button>
+
+                  <Link
+                    href="/premium"
+                    onClick={() => setShowPersonaMenu(false)}
+                    className="w-full text-left px-3 py-2 rounded-xl text-xs font-hud font-semibold tracking-wider text-[#E6C15A] hover:bg-[#E6C15A]/10 border border-transparent hover:border-[#E6C15A]/20 transition-all flex items-center gap-2.5 cursor-pointer active:scale-[0.99]"
+                  >
+                    <Star className="w-3.5 h-3.5 fill-current" />
+                    <span>{isPremium ? 'PREMIUM MEMBERSHIP' : 'EXPLORE PREMIUM'}</span>
+                  </Link>
 
                   {!isAuthenticated ? (
                     <button

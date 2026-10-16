@@ -32,3 +32,13 @@ export interface UserEntitlements {
   status: string;
   cancelAtCycleEnd: boolean;
 }
+
+/**
+ * Premium accent: a fixed gold gradient (#F5E6A8 to #E6C15A to #B8892B)
+ * used ONLY on premium surfaces and badges, independent of the selected theme.
+ */
+export const PREMIUM_GOLD_GRADIENT = 'linear-gradient(135deg, #F5E6A8 0%, #E6C15A 50%, #B8892B 100%)';
+export const PREMIUM_GOLD_BORDER = 'rgba(230, 193, 90, 0.3)';
+export const PREMIUM_GOLD_GLOW = 'rgba(230, 193, 90, 0.2)';
+export const PREMIUM_GOLD_ACCENT = '#E6C15A';
+

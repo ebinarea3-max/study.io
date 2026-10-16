@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { Sparkles, Star, CreditCard } from 'lucide-react';
 import { usePremium } from '../../context/PremiumContext';
 
@@ -49,7 +50,7 @@ export function SettingsPlanSection() {
       </div>
 
       <div>
-        {!isPremium && (
+        {!isPremium ? (
           <button
             type="button"
             id="settings-see-premium-btn"
@@ -59,6 +60,14 @@ export function SettingsPlanSection() {
             <Sparkles className="w-3.5 h-3.5" />
             <span>See Premium</span>
           </button>
+        ) : (
+          <Link
+            href="/premium"
+            className="px-3 py-1.5 rounded-xl text-xs font-hud font-semibold text-[#E6C15A] hover:bg-[#E6C15A]/10 border border-[#E6C15A]/30 transition-all flex items-center gap-1.5 cursor-pointer self-start sm:self-auto"
+          >
+            <Star className="w-3.5 h-3.5 fill-current" />
+            <span>View Benefits</span>
+          </Link>
         )}
       </div>
     </div>
