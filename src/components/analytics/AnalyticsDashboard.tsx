@@ -3,6 +3,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useStudy } from '../../context/StudyContext';
 import { useAuth } from '../../context/AuthContext';
+import { usePremium } from '../../context/PremiumContext';
+import toast from 'react-hot-toast';
 import { Subject } from '../../types';
 import { Skeleton } from '../common/Skeleton';
 import {
@@ -50,8 +52,7 @@ export function AnalyticsDashboard({ onStartSession, onOpenSettings }: Analytics
   const { user, updateProfile, isLoading } = useAuth();
   const { sessions, subjects, selectedDate, setSelectedDate, refetchSessions, hasHydrated, isLoadingSessions } = useStudy();
   const { theme } = useRankTheme();
-
-
+  const { isPremium, openPremiumModal } = usePremium();
 
   const todayStr = getLocalDateString();
 
@@ -404,6 +405,14 @@ export function AnalyticsDashboard({ onStartSession, onOpenSettings }: Analytics
 
   // Distribution Stepper Navigation Handlers
   const handleDistStep = (direction: 'prev' | 'next') => {
+    if (!isPremium) {
+      openPremiumModal();
+      toast('Historical analytics navigation requires study.io Premium', {
+        id: 'premium-history-guard',
+        icon: '👑',
+      });
+      return;
+    }
     const delta = direction === 'prev' ? -1 : 1;
     const current = parseLocalDateString(distAnchorDate);
 
@@ -519,6 +528,14 @@ export function AnalyticsDashboard({ onStartSession, onOpenSettings }: Analytics
   }, [calMonth, sessionsByDateMap, dailyGoalSeconds, calSelectedDate, todayStr]);
 
   const handleCalSelectDay = (dateKey: string) => {
+    if (!isPremium && dateKey !== todayStr) {
+      openPremiumModal();
+      toast('Browsing historical day breakdown requires study.io Premium', {
+        id: 'premium-history-guard',
+        icon: '👑',
+      });
+      return;
+    }
     setCalSelectedDate(dateKey);
     setDistAnchorDate(dateKey);
     setDistTimeframe('daily');
@@ -526,10 +543,26 @@ export function AnalyticsDashboard({ onStartSession, onOpenSettings }: Analytics
   };
 
   const handleCalPrevMonth = () => {
+    if (!isPremium) {
+      openPremiumModal();
+      toast('Browsing historical calendar months requires study.io Premium', {
+        id: 'premium-history-guard',
+        icon: '👑',
+      });
+      return;
+    }
     setCalMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
   };
 
   const handleCalNextMonth = () => {
+    if (!isPremium) {
+      openPremiumModal();
+      toast('Browsing historical calendar months requires study.io Premium', {
+        id: 'premium-history-guard',
+        icon: '👑',
+      });
+      return;
+    }
     setCalMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
   };
 
@@ -641,6 +674,14 @@ export function AnalyticsDashboard({ onStartSession, onOpenSettings }: Analytics
   }, [focusChartAnchorDate, focusChartTimeframe, sessionsByDateMap, dailyGoalHours, sessions]);
 
   const handleFocusChartStep = (direction: 'prev' | 'next') => {
+    if (!isPremium) {
+      openPremiumModal();
+      toast('Browsing historical focus trends requires study.io Premium', {
+        id: 'premium-history-guard',
+        icon: '👑',
+      });
+      return;
+    }
     const delta = direction === 'prev' ? -1 : 1;
     const current = parseLocalDateString(focusChartAnchorDate);
     if (focusChartTimeframe === 'daily') current.setDate(current.getDate() + delta * 7);
@@ -752,7 +793,7 @@ export function AnalyticsDashboard({ onStartSession, onOpenSettings }: Analytics
                 <button
                   onClick={() => handleDistStep('prev')}
                   className="p-1 rounded-lg hover:bg-fg/[0.08] text-[var(--text-dim)] hover:text-[var(--text)] transition-colors cursor-pointer"
-                  title="Previous period"
+                  title={isPremium ? "Previous period" : "Previous period (Requires Premium)"}
                 >
                   <ChevronLeft className="w-3.5 h-3.5" />
                 </button>
@@ -764,9 +805,11 @@ export function AnalyticsDashboard({ onStartSession, onOpenSettings }: Analytics
                 </button>
                 <button
                   onClick={() => handleDistStep('next')}
-                  disabled={distTimeframe === 'daily' && distAnchorDate >= todayStr}
-                  className="p-1 rounded-lg hover:bg-fg/[0.08] text-[var(--text-dim)] hover:text-[var(--text)] transition-colors cursor-pointer disabled:opacity-30 disabled:pointer-events-none"
-                  title="Next period"
+                  disabled={isPremium && distTimeframe === 'daily' && distAnchorDate >= todayStr}
+                  className={`p-1 rounded-lg hover:bg-fg/[0.08] text-[var(--text-dim)] hover:text-[var(--text)] transition-colors cursor-pointer ${
+                    isPremium && distTimeframe === 'daily' && distAnchorDate >= todayStr ? 'opacity-30 pointer-events-none' : ''
+                  }`}
+                  title={isPremium ? "Next period" : "Next period (Requires Premium)"}
                 >
                   <ChevronRight className="w-3.5 h-3.5" />
                 </button>
@@ -982,6 +1025,7 @@ export function AnalyticsDashboard({ onStartSession, onOpenSettings }: Analytics
               onClick={handleCalPrevMonth}
               aria-label="Previous month"
               className="p-1.5 rounded-lg hover:bg-fg/[0.08] text-[var(--text-dim)] hover:text-[var(--text)] transition-colors cursor-pointer"
+              title={isPremium ? "Previous month" : "Previous month (Requires Premium)"}
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
@@ -995,6 +1039,7 @@ export function AnalyticsDashboard({ onStartSession, onOpenSettings }: Analytics
               onClick={handleCalNextMonth}
               aria-label="Next month"
               className="p-1.5 rounded-lg hover:bg-fg/[0.08] text-[var(--text-dim)] hover:text-[var(--text)] transition-colors cursor-pointer"
+              title={isPremium ? "Next month" : "Next month (Requires Premium)"}
             >
               <ChevronRight className="w-4 h-4" />
             </button>

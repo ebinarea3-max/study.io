@@ -133,10 +133,10 @@ export function PremiumModal({ isOpen, onClose }: PremiumModalProps) {
                 </div>
                 <div>
                   <h3 className="text-sm font-semibold text-[var(--text)]">
-                    Insights
+                    Insights & Historical Analytics
                   </h3>
                   <p className="text-xs text-[var(--text-dim)] mt-0.5 leading-relaxed">
-                    Deep analytics, peak focus hours, and 12-week activity patterns.
+                    Historical date & calendar browsing, deep analytics, peak focus hours, and 12-week patterns.
                   </p>
                 </div>
               </div>
