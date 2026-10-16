@@ -38,7 +38,6 @@ import {
   ReferenceLine,
 } from 'recharts';
 import { useRankTheme } from '../../hooks/useRankTheme';
-import { StudyInsights } from './StudyInsights';
 import { WeeklyReportCard } from './WeeklyReportCard';
 
 type Timeframe = 'daily' | 'weekly' | 'monthly' | 'yearly';
@@ -1265,9 +1264,6 @@ export function AnalyticsDashboard({ onStartSession, onOpenSettings }: Analytics
           </ResponsiveContainer>
         </div>
       </div>
-
-      {/* Premium Insights Section */}
-      <StudyInsights />
 
       {/* Premium Weekly Report Card */}
       <WeeklyReportCard />

@@ -126,17 +126,17 @@ export function PremiumModal({ isOpen, onClose }: PremiumModalProps) {
                 </div>
               </div>
 
-              {/* 2. Insights */}
+              {/* 2. Weekly Report & Analytics */}
               <div className="flex items-start gap-3.5 p-3 rounded-xl bg-[var(--surface-2)]/60 border border-[var(--border)]">
                 <div className="p-2 rounded-lg bg-[var(--surface)] text-[var(--accent)] shrink-0 border border-[var(--border)]">
                   <BarChart3 className="w-4 h-4" />
                 </div>
                 <div>
                   <h3 className="text-sm font-semibold text-[var(--text)]">
-                    Insights & Historical Analytics
+                    Weekly Report & Analytics
                   </h3>
                   <p className="text-xs text-[var(--text-dim)] mt-0.5 leading-relaxed">
-                    Historical date & calendar browsing, deep analytics, peak focus hours, and 12-week patterns.
+                    Week-over-week performance analysis, subject growth breakdown, and historical date browsing.
                   </p>
                 </div>
               </div>
