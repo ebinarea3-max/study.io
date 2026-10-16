@@ -7,6 +7,7 @@ import { RankTierName, getRankTier, getNextTierGapInfo, getRankBadgePath } from 
 import { soundFx } from '../../lib/audio';
 import Link from 'next/link';
 import { Volume2, VolumeX, X, Trophy, Flame, CheckCircle2, Calendar, Share2, Sparkles, ArrowRight } from 'lucide-react';
+import { SeasonShareCard } from './SeasonShareCard';
 
 export interface RecapSubjectItem {
   name: string;
@@ -1255,35 +1256,48 @@ export default function RecapPresentation({
             </motion.div>
           )}
 
-          {/* SLIDE 5: FINAL CTA SLIDE */}
+          {/* SLIDE 5: FINAL CTA SLIDE WITH SEASON SHARE CARD */}
           {activeSlideId === 'cta' && (
             <motion.div
               key="cta"
-              initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.96 }}
+              initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, scale: 1.04 }}
+              exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, scale: 1.02 }}
               transition={{ duration: 0.4 }}
-              className="w-full max-w-lg flex flex-col items-center justify-center text-center space-y-8"
+              className="w-full max-w-xl flex flex-col items-center justify-center text-center space-y-4 my-auto py-2"
             >
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-black font-black shadow-lg shadow-amber-500/30">
-                <Trophy className="w-8 h-8 stroke-[2]" />
-              </div>
-
-              <div className="space-y-2">
-                <h2 className="text-2xl sm:text-4xl font-black font-hud text-white tracking-widest uppercase">
+              <div className="space-y-1">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400/10 border border-amber-400/30 text-amber-300 text-xs font-mono font-bold tracking-widest uppercase">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Save Your Season Card</span>
+                </div>
+                <h2 className="text-xl sm:text-2xl font-black font-hud text-white tracking-widest uppercase">
                   READY FOR THE NEW CLIMB?
                 </h2>
-                <p className="text-xs sm:text-sm text-zinc-400 font-mono max-w-md mx-auto">
-                  Your season reset is complete. The ranked leaderboards are open for new personal bests.
+                <p className="text-xs text-zinc-400 font-mono max-w-md mx-auto">
+                  Your season reset is complete. Save your official high-res story card and climb back higher.
                 </p>
               </div>
 
+              {/* 1080x1920 Season Share Card Preview & Controls */}
+              <SeasonShareCard
+                seasonKey={seasonKey}
+                seasonDisplayName={seasonDisplayName}
+                totalSeconds={totalSeconds}
+                activeDays={activeDays}
+                topSubject={topSubject}
+                previousRank={previousRank}
+                currentRank={currentRank}
+                username={username}
+                isFirstSeason={isFirstSeason}
+              />
+
               {/* Action Buttons */}
-              <div className="w-full flex flex-col sm:flex-row items-center justify-center gap-3">
+              <div className="w-full flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
                 <Link
                   href="/leaderboard"
                   onClick={(e) => e.stopPropagation()}
-                  className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-amber-500 to-amber-400 hover:brightness-110 rounded-xl text-black font-hud font-bold tracking-widest transition-all shadow-lg shadow-amber-500/25 active:scale-95 flex items-center justify-center gap-2"
+                  className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-amber-500 to-amber-400 hover:brightness-110 rounded-xl text-black font-hud font-bold tracking-widest transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 text-xs"
                 >
                   <Sparkles className="w-4 h-4" />
                   <span>START THE GRIND</span>
@@ -1297,7 +1311,7 @@ export default function RecapPresentation({
                       e.stopPropagation();
                       onClose();
                     }}
-                    className="w-full sm:w-auto px-6 py-4 bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 rounded-xl text-amber-300 hover:text-amber-200 font-mono text-xs font-semibold tracking-wider transition-all active:scale-95 text-center cursor-pointer"
+                    className="w-full sm:w-auto px-5 py-3 bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 rounded-xl text-amber-300 hover:text-amber-200 font-mono text-xs font-semibold tracking-wider transition-all active:scale-95 text-center cursor-pointer"
                   >
                     RETURN TO DEV PREVIEW
                   </button>
@@ -1305,7 +1319,7 @@ export default function RecapPresentation({
                   <Link
                     href="/"
                     onClick={(e) => e.stopPropagation()}
-                    className="w-full sm:w-auto px-6 py-4 bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 rounded-xl text-zinc-300 hover:text-white font-mono text-xs font-semibold tracking-wider transition-all active:scale-95 text-center"
+                    className="w-full sm:w-auto px-5 py-3 bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 rounded-xl text-zinc-300 hover:text-white font-mono text-xs font-semibold tracking-wider transition-all active:scale-95 text-center"
                   >
                     RETURN TO DASHBOARD
                   </Link>

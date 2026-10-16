@@ -11,6 +11,7 @@ import {
 } from '../../../lib/rankedSystem';
 import RecapPresentation, { RecapPresentationProps, RecapSubjectItem } from '../../../components/recap/RecapPresentation';
 import EmptyRecapFallback from '../../../components/recap/EmptyRecapFallback';
+import { SeasonShareCard } from '../../../components/recap/SeasonShareCard';
 import { useStudy } from '../../../context/StudyContext';
 import { useAuth } from '../../../context/AuthContext';
 import { getSupabase } from '../../../lib/supabase';
@@ -348,6 +349,16 @@ export default function DevRecapPreviewPage() {
   const [rpcResult, setRpcResult] = useState<any>(null);
   const [isResettingBanner, setIsResettingBanner] = useState(false);
 
+  // Season share card dev preview state
+  const [selectedCardPresetId, setSelectedCardPresetId] = useState<string>('perfect-month');
+  const [cardForcePremium, setCardForcePremium] = useState<boolean>(true);
+
+  const activeCardPreset = useMemo(() => {
+    return PRESETS.find((p) => p.id === selectedCardPresetId) || PRESETS[0];
+  }, [selectedCardPresetId]);
+
+  const activeCardData = (activeCardPreset.data || {}) as Partial<RecapPresentationProps>;
+
   // Target season for override
   const computedSeasonKey = useMemo(() => {
     try {
@@ -649,7 +660,112 @@ export default function DevRecapPreviewPage() {
         </section>
 
         {/* ══════════════════════════════════════════════════════════ */}
-        {/* SECTION 2: CUSTOM CONTROLS                                */}
+        {/* SECTION 2: SEASON SHARE CARD PREVIEW & STYLE SWITCHER      */}
+        {/* ══════════════════════════════════════════════════════════ */}
+        <section className="space-y-4 pt-4 border-t border-white/10">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-amber-400" />
+              <h2 className="text-lg font-hud font-bold text-white uppercase tracking-wider">
+                2. Season Share Card Preview (Phase H)
+              </h2>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-mono text-zinc-500">
+                1080x1920 Story Card
+              </span>
+              <div className="flex items-center gap-1 bg-black/60 p-1 rounded-xl border border-white/10">
+                <button
+                  type="button"
+                  onClick={() => setCardForcePremium(true)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer ${
+                    cardForcePremium
+                      ? 'bg-amber-400 text-black shadow-sm'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  Premium View
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCardForcePremium(false)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer ${
+                    !cardForcePremium
+                      ? 'bg-amber-400 text-black shadow-sm'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  Free (Locked)
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white/[0.02] border border-white/[0.08] rounded-3xl p-6 sm:p-8 flex flex-col md:flex-row items-center md:items-start justify-center gap-8">
+            {/* Left: Controls & Fixture Picker */}
+            <div className="w-full md:w-1/2 space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-mono uppercase text-zinc-400 font-semibold">
+                  Select Fixture Data Scenario
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {PRESETS.filter((p) => !p.isZero).map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => setSelectedCardPresetId(p.id)}
+                      className={`p-2.5 rounded-xl border text-left text-xs font-mono transition-all cursor-pointer ${
+                        selectedCardPresetId === p.id
+                          ? 'bg-amber-400/15 border-amber-400/40 text-amber-300 font-bold'
+                          : 'bg-white/[0.02] border-white/5 text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      <div className="truncate font-semibold">{p.title}</div>
+                      <div className="text-[10px] text-zinc-500 truncate mt-0.5">
+                        {p.data?.previousRank || 'Unranked'} → {p.data?.currentRank}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl bg-black/40 border border-white/5 space-y-2 text-xs font-mono text-zinc-400">
+                <div className="text-zinc-300 font-bold flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                  <span>Fixture Data Telemetry</span>
+                </div>
+                <div>User: <span className="text-white font-semibold">{activeCardData.username || 'Scholar'}</span></div>
+                <div>Hours: <span className="text-white font-semibold">{((activeCardData.totalSeconds || 0) / 3600).toFixed(1)}h</span> ({activeCardData.activeDays || 0} active days)</div>
+                <div>Top Subject: <span className="text-white font-semibold">{activeCardData.topSubject || 'General Study'}</span></div>
+                <div>Progression: <span className="text-white font-semibold">{activeCardData.previousRank || 'None'} → {activeCardData.currentRank || 'BRONZE I'}</span></div>
+              </div>
+
+              <p className="text-[11px] text-zinc-500 font-mono leading-relaxed">
+                Rendered offscreen at 1080x1920 with high-res same-origin rank crests. Click &quot;Download Image&quot; to test high-res PNG export from fixture data.
+              </p>
+            </div>
+
+            {/* Right: Live Interactive Card Preview */}
+            <div className="w-full md:w-1/2 flex justify-center">
+              <SeasonShareCard
+                seasonKey={activeCardData.seasonKey || '2026-09'}
+                seasonDisplayName={activeCardData.seasonDisplayName || 'Season September 2026'}
+                totalSeconds={activeCardData.totalSeconds || 0}
+                activeDays={activeCardData.activeDays || 0}
+                topSubject={activeCardData.topSubject || 'General Study'}
+                previousRank={activeCardData.previousRank || null}
+                currentRank={activeCardData.currentRank || 'BRONZE I'}
+                username={activeCardData.username || 'Scholar'}
+                isFirstSeason={activeCardData.isFirstSeason || false}
+                forcePremium={cardForcePremium}
+                forceLocked={!cardForcePremium}
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* ══════════════════════════════════════════════════════════ */}
+        {/* SECTION 3: CUSTOM CONTROLS                                */}
         {/* ══════════════════════════════════════════════════════════ */}
         <section className="space-y-4 pt-4 border-t border-white/10">
           <div className="flex items-center justify-between">
