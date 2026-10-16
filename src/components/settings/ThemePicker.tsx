@@ -14,9 +14,13 @@ export function ThemePicker() {
       let targetIndex = index;
       const total = themes.length;
 
-      // Determine responsive columns count: 2 on mobile, 3 on sm/md, 4 on lg/desktop
-      const width = typeof window !== 'undefined' ? window.innerWidth : 1024;
-      const cols = width >= 1024 ? 4 : width >= 640 ? 3 : 2;
+      // Determine actual column count from rendered cards in first row
+      let cols = 3;
+      if (cardRefs.current[0] && cardRefs.current[1]) {
+        const firstTop = cardRefs.current[0].offsetTop;
+        const count = cardRefs.current.filter((c) => c && Math.abs(c.offsetTop - firstTop) < 5).length;
+        if (count > 0) cols = count;
+      }
 
       switch (e.key) {
         case 'ArrowRight':
@@ -98,11 +102,12 @@ export function ThemePicker() {
           </button>
         </div>
 
-        {/* Responsive Grid: 2 cols on mobile, 3 on tablet, 4 on wide screens */}
+        {/* Responsive Grid: 3 cols in settings modal, 2 cols on mobile */}
         <div
           role="radiogroup"
           aria-label="Theme selection"
-          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 pt-4"
+          className="grid gap-3 pt-4"
+          style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))' }}
         >
           {themes.map((t, index) => {
             const isSelected = isMounted && theme === t.id;
@@ -120,9 +125,10 @@ export function ThemePicker() {
                 aria-checked={isSelected}
                 aria-pressed={isSelected}
                 tabIndex={isSelected || (!isMounted && index === 0) ? 0 : -1}
+                title={`${t.name}: ${t.description}`}
                 onClick={() => setTheme(t.id)}
                 onKeyDown={(e) => handleKeyDown(e, index)}
-                className={`relative rounded-[14px] p-3 text-left transition-all duration-200 cursor-pointer flex flex-col justify-between overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)] active:scale-[0.98] ${
+                className={`relative rounded-[14px] p-3 text-left transition-all duration-200 cursor-pointer h-full flex flex-col justify-between overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)] active:scale-[0.98] ${
                   isSelected
                     ? 'border-2 border-[var(--accent)] shadow-[0_0_16px_var(--glow)] bg-[var(--surface-2)]'
                     : 'border border-[var(--border)] hover:border-[var(--border-strong)] bg-[var(--surface)] hover:bg-[var(--surface-2)]'
@@ -143,9 +149,9 @@ export function ThemePicker() {
                   </div>
                 )}
 
-                {/* Mini Preview Box */}
+                {/* Mini Preview Box (64px tall for clear visibility) */}
                 <div
-                  className="w-full h-16 rounded-[10px] p-2 relative overflow-hidden flex flex-col justify-between mb-2.5 border"
+                  className="w-full h-16 rounded-[10px] p-2 relative overflow-hidden flex flex-col justify-between mb-2.5 border flex-shrink-0"
                   style={{
                     backgroundColor: bgCol,
                     borderColor: t.isLight ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.08)',
@@ -195,20 +201,14 @@ export function ThemePicker() {
                   />
                 </div>
 
-                {/* Theme Name & Caption */}
-                <div className="w-full min-w-0 pr-5">
-                  <div className="font-hud font-bold text-xs sm:text-sm text-[var(--text)] tracking-wide truncate">
+                {/* Theme Name & Description (Full text, 14px semibold name, 12px text-dim description) */}
+                <div className="w-full min-w-0 flex-1 flex flex-col justify-start">
+                  <div className="font-hud font-semibold text-[14px] leading-tight text-[var(--text)] tracking-wide">
                     {t.name}
                   </div>
-                  {isRank ? (
-                    <div className="text-[10px] text-[var(--text-dim)] font-mono truncate mt-0.5">
-                      {t.caption}
-                    </div>
-                  ) : (
-                    <div className="text-[10px] text-[var(--text-faint)] font-mono truncate mt-0.5">
-                      {t.isLight ? 'Light neutral' : 'Dark obsidian'}
-                    </div>
-                  )}
+                  <div className="text-[12px] leading-snug text-[var(--text-dim)] font-sans mt-1">
+                    {t.description}
+                  </div>
                 </div>
               </button>
             );

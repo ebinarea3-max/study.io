@@ -157,8 +157,8 @@ export const LeaderboardRow = React.memo(function LeaderboardRow({
         isTop3 ? 'min-h-[72px] py-3.5' : 'min-h-[60px] py-2.5'
       } ${
         isCurrentUser
-          ? 'border-l-amber-400 bg-white/[0.04] hover:bg-white/[0.06]'
-          : 'border-l-transparent hover:bg-white/[0.03]'
+          ? 'border-l-amber-400 bg-fg/[0.04] hover:bg-fg/[0.06]'
+          : 'border-l-transparent hover:bg-fg/[0.03]'
       }`}
       style={{
         backgroundImage: washGradient,
@@ -276,7 +276,7 @@ export const LeaderboardRow = React.memo(function LeaderboardRow({
           {/* Scholar Details */}
           <div className="flex flex-col min-w-0 justify-center">
             <div className="flex items-center gap-1.5 min-w-0">
-              <span className="font-semibold text-white text-sm sm:text-base truncate" title={displayName}>
+              <span className="font-semibold text-[var(--text)] text-sm sm:text-base truncate" title={displayName}>
                 {displayName}
               </span>
               {rank === 1 && (
@@ -288,7 +288,7 @@ export const LeaderboardRow = React.memo(function LeaderboardRow({
                 </span>
               )}
             </div>
-            <div className="text-xs text-zinc-400 font-mono truncate mt-0.5">
+            <div className="text-xs text-[var(--text-dim)] font-mono truncate mt-0.5">
               @{handle}
               <span className="hidden sm:inline"> · Lv. {level}</span>
             </div>
@@ -302,17 +302,20 @@ export const LeaderboardRow = React.memo(function LeaderboardRow({
             division={tierConfig.division as RankDivision}
             size={36}
           />
-          <span className="text-xs text-zinc-400 font-normal hidden sm:inline truncate">
+          <span
+            className="text-xs font-normal hidden sm:inline truncate"
+            style={{ color: `color-mix(in srgb, ${tierColor} var(--tier-mix-percent, 100%), black)` }}
+          >
             {formattedTier}
           </span>
         </div>
 
         {/* Right Section: Focus Time */}
         <div className="w-20 sm:w-28 text-right flex-shrink-0 font-mono">
-          <span className="text-base sm:text-lg font-bold text-white tracking-tight">{h}</span>
-          <span className="text-xs sm:text-sm text-zinc-500 font-normal ml-0.5 mr-1 sm:mr-1.5">h</span>
-          <span className="text-base sm:text-lg font-bold text-white tracking-tight">{m}</span>
-          <span className="text-xs sm:text-sm text-zinc-500 font-normal ml-0.5">m</span>
+          <span className="text-base sm:text-lg font-bold text-[var(--text)] tracking-tight">{h}</span>
+          <span className="text-xs sm:text-sm text-[var(--text-dim)] font-normal ml-0.5 mr-1 sm:mr-1.5">h</span>
+          <span className="text-base sm:text-lg font-bold text-[var(--text)] tracking-tight">{m}</span>
+          <span className="text-xs sm:text-sm text-[var(--text-dim)] font-normal ml-0.5">m</span>
         </div>
       </div>
     </motion.div>

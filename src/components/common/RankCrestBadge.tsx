@@ -127,6 +127,14 @@ export function RankCrestBadge({
       
       {/* Grandmaster Rotating Ring removed as requested */}
 
+      {/* Soft round dark tile behind crest in Paper theme only for contrast */}
+      <div
+        className="absolute inset-[8%] rounded-full pointer-events-none opacity-0 [[data-theme='paper']_&]:opacity-100 transition-opacity z-[5]"
+        style={{
+          background: 'radial-gradient(circle, rgba(27, 26, 24, 0.12) 0%, rgba(27, 26, 24, 0.04) 70%, transparent 100%)',
+        }}
+      />
+
       <img
         src={imageSrc}
         alt={`${tier} ${division || ''} Rank Badge`}

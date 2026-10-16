@@ -40,7 +40,7 @@ const Bezel = React.memo(function Bezel({ litCount }: { litCount: number }) {
             y1={tick.y1}
             x2={tick.x2}
             y2={tick.y2}
-            stroke={isLit ? 'var(--accent)' : 'rgba(255, 255, 255, 0.14)'}
+            stroke={isLit ? 'var(--accent)' : tick.isMajor ? 'rgb(var(--fg) / 0.45)' : 'rgb(var(--fg) / 0.28)'}
             strokeWidth={tick.isMajor ? 1.75 : 1}
             strokeLinecap="round"
             className="transition-colors duration-200"
@@ -60,8 +60,9 @@ export const AmbientGlow = React.memo(function AmbientGlow({ isRunning }: { isRu
         isRunning ? 'opacity-100' : 'opacity-70'
       }`}
       style={{
+        display: 'var(--dial-glow-display, block)',
         background:
-          'radial-gradient(circle at 50% 50%, var(--accent-soft) 0%, rgba(255, 255, 255, 0.02) 45%, transparent 70%)',
+          'radial-gradient(circle at 50% 50%, var(--accent-soft) 0%, rgb(var(--fg) / 0.02) 45%, transparent 70%)',
         filter: 'blur(50px)',
       }}
     />
@@ -117,7 +118,7 @@ export const TimerDial = React.memo(function TimerDial({
       {/* Soft Ambient Radial Glow */}
       <AmbientGlow isRunning={isRunning} />
 
-      {/* SVG Bezel and 3px Progress Arc */}
+      {/* SVG Bezel and Progress Arc */}
       <svg
         viewBox="0 0 300 300"
         className="absolute inset-0 w-full h-full pointer-events-none select-none"
@@ -125,14 +126,14 @@ export const TimerDial = React.memo(function TimerDial({
         {/* 60-tick watch bezel */}
         <Bezel litCount={litCount} />
 
-        {/* 3px Faint Background Track */}
+        {/* 2px Faint Background Track (fg at 14%) */}
         <circle
           cx="150"
           cy="150"
           r={RADIUS}
           fill="none"
-          stroke="rgba(255, 255, 255, 0.06)"
-          strokeWidth="3"
+          stroke="rgb(var(--fg) / 0.14)"
+          strokeWidth="2"
         />
 
         {/* 3px Accent Arc with 1s linear transition */}
@@ -156,21 +157,21 @@ export const TimerDial = React.memo(function TimerDial({
 
       {/* Centre Stack */}
       <div className="relative z-10 flex flex-col items-center justify-center text-center px-4 max-w-[75%]">
-        {/* Small subject name above (muted, truncated) */}
+        {/* Small subject name above (text-dim at 13px) */}
         <span
-          className="text-xs font-mono text-zinc-400 truncate max-w-[200px] mb-1 min-h-[16px] tracking-tight"
+          className="text-[13px] font-mono text-[var(--text-dim)] truncate max-w-[200px] mb-1 min-h-[16px] tracking-tight"
           title={subjectName || ''}
         >
           {subjectName || ''}
         </span>
 
         {/* Digits in display font with tabular numerals at about 22% of dial width */}
-        <div className="font-mono tabular-nums font-bold text-white text-5xl sm:text-6xl tracking-tight leading-none text-center select-none py-1">
+        <div className="font-mono tabular-nums font-bold text-[var(--text)] text-5xl sm:text-6xl tracking-tight leading-none text-center select-none py-1">
           {timerMode === 'countdown' && !isStudying ? (
             <button
               type="button"
               onClick={onStartCountdownEdit}
-              className="cursor-pointer hover:text-amber-300 transition-colors pointer-events-auto font-mono tabular-nums inline-block text-center"
+              className="cursor-pointer hover:text-[var(--accent)] transition-colors pointer-events-auto font-mono tabular-nums inline-block text-center"
               title="Click to edit duration"
             >
               {displayTime}
@@ -191,7 +192,7 @@ export const TimerDial = React.memo(function TimerDial({
                 : 'bg-zinc-500'
             }`}
           />
-          <span className="text-xs font-mono text-zinc-400 font-medium">
+          <span className="text-xs font-mono text-[var(--text-dim)] font-medium">
             {statusText}
           </span>
         </div>

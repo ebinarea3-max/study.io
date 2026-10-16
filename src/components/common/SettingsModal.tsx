@@ -175,7 +175,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
       <div
-        className="relative w-full max-w-lg bg-white/[0.07] backdrop-blur-3xl border border-white/20 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.7)] p-6 sm:p-7 overflow-hidden max-h-[90vh] overflow-y-auto"
+        className="relative w-full max-w-lg bg-[var(--surface)] backdrop-blur-3xl border border-[var(--border)] rounded-2xl shadow-card p-6 sm:p-7 overflow-hidden max-h-[90vh] overflow-y-auto"
         style={{ borderColor: `${theme.accent}30` }}
       >
         {/* Ambient background lighting */}
@@ -183,29 +183,29 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           className="absolute -top-24 -right-24 w-52 h-52 rounded-full blur-3xl pointer-events-none opacity-15"
           style={{ backgroundColor: theme.accent }}
         />
-        <div className="absolute -bottom-24 -left-24 w-52 h-52 bg-white/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 -left-24 w-52 h-52 bg-fg/5 rounded-full blur-3xl pointer-events-none" />
 
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-white/10 relative z-10">
+        <div className="flex items-center justify-between pb-4 border-b border-[var(--border)] relative z-10">
           <div className="flex items-center gap-3">
             <div
-              className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/10 flex items-center justify-center shadow-sm"
+              className="w-10 h-10 rounded-xl bg-fg/[0.04] border border-[var(--border)] flex items-center justify-center shadow-sm"
               style={{ color: theme.accent }}
             >
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-hud font-extrabold text-base text-white tracking-wider uppercase">
+              <h3 className="font-hud font-extrabold text-base text-[var(--text)] tracking-wider uppercase">
                 Settings &amp; Preferences
               </h3>
-              <p className="text-xs text-neutral-400 font-mono tracking-tight mt-0.5">
+              <p className="text-xs text-[var(--text-dim)] font-mono tracking-tight mt-0.5">
                 Audio synthesizer, preferences &amp; account controls
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-neutral-400 hover:text-white rounded-xl hover:bg-white/[0.08] transition-colors cursor-pointer"
+            className="p-2 text-[var(--text-dim)] hover:text-[var(--text)] rounded-xl hover:bg-fg/[0.08] transition-colors cursor-pointer"
             aria-label="Close settings"
           >
             <X className="w-5 h-5" />
@@ -217,12 +217,12 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           <ThemePicker />
 
           {/* Section 1: Account & Avatar */}
-          <div className="p-4 rounded-xl bg-white/[0.03] backdrop-blur-md border border-white/[0.08] flex flex-col gap-4">
+          <div className="p-4 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] shadow-sm flex flex-col gap-4">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0">
                 <div className="relative">
                   <div
-                    className="w-12 h-12 rounded-xl border border-white/15 flex items-center justify-center font-bold text-slate-950 text-lg flex-shrink-0 shadow-md overflow-hidden relative"
+                    className="w-12 h-12 rounded-xl border border-[var(--border)] flex items-center justify-center font-bold text-[var(--accent-contrast)] text-lg flex-shrink-0 shadow-md overflow-hidden relative"
                     style={{ background: theme.accent }}
                   >
                     {user.avatarUrl ? (
@@ -235,12 +235,12 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   </div>
                 </div>
                 <div className="min-w-0">
-                  <div className="text-sm font-bold text-white truncate tracking-tight">{user.displayName || 'Scholar'}</div>
-                  <div className="text-xs text-neutral-400 font-mono truncate">{user.email}</div>
+                  <div className="text-sm font-bold text-[var(--text)] truncate tracking-tight">{user.displayName || 'Scholar'}</div>
+                  <div className="text-xs text-[var(--text-dim)] font-mono truncate">{user.email}</div>
                 </div>
               </div>
               <div className="flex-shrink-0 self-start">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.05] border border-white/10 text-[11px] font-mono text-zinc-300">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-fg/[0.05] border border-[var(--border)] text-[11px] font-mono text-[var(--text-dim)]">
                   <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: theme.accent }} />
                   <span>Cloud Synced</span>
                 </span>
@@ -249,23 +249,23 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           </div>
 
           {/* Section 2: Audio & Focus Synthesizer */}
-          <div className="p-4 rounded-xl bg-white/[0.03] backdrop-blur-md border border-white/[0.08] flex items-center justify-between gap-3">
+          <div className="p-4 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] shadow-sm flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div
-                className="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/10 flex items-center justify-center flex-shrink-0"
+                className="w-9 h-9 rounded-xl bg-fg/[0.04] border border-[var(--border)] flex items-center justify-center flex-shrink-0"
                 style={{ color: theme.accent }}
               >
                 <Volume2 className="w-4 h-4" />
               </div>
               <div>
-                <div className="text-xs font-hud font-bold tracking-wider text-white uppercase">Audio &amp; Focus Synthesizer</div>
-                <div className="text-[11px] text-neutral-400 font-mono">Zero-latency Web Audio soundscapes &amp; session bells</div>
+                <div className="text-xs font-hud font-bold tracking-wider text-[var(--text)] uppercase">Audio &amp; Focus Synthesizer</div>
+                <div className="text-[11px] text-[var(--text-dim)] font-mono">Zero-latency Web Audio soundscapes &amp; session bells</div>
               </div>
             </div>
             <button
               type="button"
               onClick={testAudio}
-              className="px-3.5 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-xs font-hud font-bold tracking-wider text-white transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer shadow-sm flex-shrink-0"
+              className="px-3.5 py-1.5 rounded-xl bg-fg/[0.06] hover:bg-fg/[0.12] border border-[var(--border)] text-xs font-hud font-bold tracking-wider text-[var(--text)] transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer shadow-sm flex-shrink-0"
             >
               <Sparkles className="w-3.5 h-3.5" style={{ color: theme.accent }} />
               <span>TEST CHIMES</span>
@@ -273,22 +273,22 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           </div>
 
           {/* Section: Install App / Add to Home Screen */}
-          <div className="p-4 rounded-xl bg-white/[0.03] backdrop-blur-md border border-white/[0.08] flex items-center justify-between gap-3">
+          <div className="p-4 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] shadow-sm flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div
-                className="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/10 flex items-center justify-center flex-shrink-0"
+                className="w-9 h-9 rounded-xl bg-fg/[0.04] border border-[var(--border)] flex items-center justify-center flex-shrink-0"
                 style={{ color: theme.accent }}
               >
                 <Smartphone className="w-4 h-4" />
               </div>
               <div>
-                <div className="text-xs font-hud font-bold tracking-wider text-white uppercase">Install App / Progressive Web App</div>
-                <div className="text-[11px] text-neutral-400 font-mono">Install Study.io on your device for standalone focus</div>
+                <div className="text-xs font-hud font-bold tracking-wider text-[var(--text)] uppercase">Install App / Progressive Web App</div>
+                <div className="text-[11px] text-[var(--text-dim)] font-mono">Install Study.io on your device for standalone focus</div>
               </div>
             </div>
 
             {isInstalled ? (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.05] border border-white/10 text-emerald-400 text-xs font-mono font-medium flex-shrink-0">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-fg/[0.05] border border-[var(--border)] text-emerald-400 text-xs font-mono font-medium flex-shrink-0">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                 <span>Installed</span>
               </div>
@@ -297,7 +297,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 type="button"
                 onClick={handleInstallClick}
                 disabled={isPrompting}
-                className="px-3.5 py-1.5 rounded-xl text-slate-950 text-xs font-hud font-extrabold tracking-wider transition-all active:scale-95 flex items-center gap-1.5 shadow-md cursor-pointer disabled:opacity-50 flex-shrink-0"
+                className="px-3.5 py-1.5 rounded-xl text-[var(--accent-contrast)] text-xs font-hud font-extrabold tracking-wider transition-all active:scale-95 flex items-center gap-1.5 shadow-md cursor-pointer disabled:opacity-50 flex-shrink-0"
                 style={{ background: theme.accent }}
               >
                 {isPrompting ? (
@@ -311,7 +311,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               <button
                 type="button"
                 onClick={handleInstallClick}
-                className="px-3 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-xs font-hud font-bold tracking-wider text-zinc-200 hover:text-white transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer shadow-sm flex-shrink-0"
+                className="px-3 py-1.5 rounded-xl bg-fg/[0.06] hover:bg-fg/[0.12] border border-[var(--border)] text-xs font-hud font-bold tracking-wider text-[var(--text)] transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer shadow-sm flex-shrink-0"
                 title="View manual install instructions"
               >
                 <Smartphone className="w-3.5 h-3.5" style={{ color: theme.accent }} />
@@ -321,31 +321,31 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           </div>
 
           {/* Section: Report a Problem */}
-          <div className="p-4 rounded-xl bg-white/[0.03] backdrop-blur-md border border-white/[0.08] flex items-center justify-between gap-3">
+          <div className="p-4 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] shadow-sm flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div
-                className="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/10 flex items-center justify-center flex-shrink-0"
+                className="w-9 h-9 rounded-xl bg-fg/[0.04] border border-[var(--border)] flex items-center justify-center flex-shrink-0"
                 style={{ color: theme.accent }}
               >
                 <Bug className="w-4 h-4" />
               </div>
               <div>
-                <div className="text-xs font-hud font-bold tracking-wider text-white uppercase">Report a Problem</div>
-                <div className="text-[11px] text-neutral-400 font-mono">Found a bug or have feedback? Let us know.</div>
+                <div className="text-xs font-hud font-bold tracking-wider text-[var(--text)] uppercase">Report a Problem</div>
+                <div className="text-[11px] text-[var(--text-dim)] font-mono">Found a bug or have feedback? Let us know.</div>
               </div>
             </div>
             
             <button
               type="button"
               onClick={() => setShowReportForm(!showReportForm)}
-              className="px-3.5 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-xs font-hud font-bold tracking-wider text-white transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer shadow-sm flex-shrink-0"
+              className="px-3.5 py-1.5 rounded-xl bg-fg/[0.06] hover:bg-fg/[0.12] border border-[var(--border)] text-xs font-hud font-bold tracking-wider text-[var(--text)] transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer shadow-sm flex-shrink-0"
             >
               <span>{showReportForm ? 'CANCEL' : 'REPORT'}</span>
             </button>
           </div>
 
           {showReportForm && (
-            <div className="p-4 rounded-xl bg-white/[0.05] border border-white/10 space-y-3 animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-4 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] space-y-3 animate-in fade-in zoom-in-95 duration-200">
               <form onSubmit={handleReportSubmit} className="space-y-3">
                 <div className="flex flex-wrap gap-2">
                   {['Bug', 'Timer', 'UI Glitch', 'Feedback'].map(cat => (
@@ -353,7 +353,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                       key={cat}
                       type="button"
                       onClick={() => setReportCategory(cat)}
-                      className={`px-3 py-1 rounded-full text-[10px] font-hud font-bold tracking-wider transition-colors border ${reportCategory === cat ? 'bg-white/20 text-white border-white/30' : 'bg-transparent text-neutral-400 border-white/10 hover:border-white/20 hover:text-white'}`}
+                      className={`px-3 py-1 rounded-full text-[10px] font-hud font-bold tracking-wider transition-colors border ${reportCategory === cat ? 'bg-fg/20 text-[var(--text)] border-[var(--border-strong)]' : 'bg-transparent text-[var(--text-dim)] border-[var(--border)] hover:border-[var(--border-strong)] hover:text-[var(--text)]'}`}
                     >
                       {cat.toUpperCase()}
                     </button>
@@ -363,7 +363,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   value={reportMessage}
                   onChange={(e) => setReportMessage(e.target.value)}
                   placeholder="Describe the issue you encountered..."
-                  className="w-full px-3 py-2 bg-black/40 border border-white/10 rounded-xl text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white/30 transition-colors font-mono min-h-[80px]"
+                  className="w-full px-3 py-2 bg-[var(--surface)] border border-[var(--border)] rounded-xl text-xs text-[var(--text)] placeholder-[var(--text-dim)] focus:outline-none focus:border-[var(--accent)] transition-colors font-mono min-h-[80px]"
                   required
                 />
                 
@@ -380,7 +380,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="px-3 py-1.5 rounded-xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-xs font-hud font-bold tracking-wider text-neutral-300 hover:text-white transition-colors flex items-center gap-1.5"
+                      className="px-3 py-1.5 rounded-xl border border-[var(--border)] bg-fg/[0.04] hover:bg-fg/[0.08] text-xs font-hud font-bold tracking-wider text-[var(--text-dim)] hover:text-[var(--text)] transition-colors flex items-center gap-1.5"
                     >
                       <Paperclip className="w-3.5 h-3.5" />
                       <span>ATTACH SCREENSHOT (OPTIONAL)</span>
@@ -390,7 +390,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                       <img
                         src={screenshotPreview}
                         alt="Preview"
-                        className="h-12 w-12 object-cover rounded-lg border border-white/20 shadow-md"
+                        className="h-12 w-12 object-cover rounded-lg border border-[var(--border)] shadow-md"
                       />
                       <button
                         type="button"
@@ -410,7 +410,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   <button
                     type="submit"
                     disabled={isReporting || !reportMessage.trim()}
-                    className="px-4 py-2 rounded-xl text-slate-950 text-xs font-hud font-extrabold tracking-wider transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 shadow-md"
+                    className="px-4 py-2 rounded-xl text-[var(--accent-contrast)] text-xs font-hud font-extrabold tracking-wider transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 shadow-md"
                     style={{ background: theme.accent }}
                   >
                     {isReporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
@@ -428,7 +428,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 <AlertTriangle className="w-4 h-4 text-rose-400 flex-shrink-0" />
                 <div>
                   <div className="text-xs font-hud font-bold tracking-wider text-rose-400 uppercase">Danger Zone</div>
-                  <div className="text-[11px] text-neutral-400 font-mono">Permanent account and focus session data purge</div>
+                  <div className="text-[11px] text-[var(--text-dim)] font-mono">Permanent account and focus session data purge</div>
                 </div>
               </div>
 
@@ -451,16 +451,16 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 </p>
 
                 <div className="space-y-1.5">
-                  <label className="block text-[11px] text-neutral-400 font-mono">
+                  <label className="block text-[11px] text-[var(--text-dim)] font-mono">
                     Type your email to confirm:{' '}
-                    <span className="font-mono text-xs text-white font-bold">{user.email}</span>
+                    <span className="font-mono text-xs text-[var(--text)] font-bold">{user.email}</span>
                   </label>
                   <input
                     type="email"
                     value={typedEmail}
                     onChange={e => setTypedEmail(e.target.value)}
                     placeholder={user.email || 'your@email.com'}
-                    className="w-full px-3 py-2 bg-black/60 border border-rose-500/30 rounded-xl text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-rose-500 transition-colors font-mono"
+                    className="w-full px-3 py-2 bg-[var(--surface)] border border-rose-500/30 rounded-xl text-xs text-[var(--text)] placeholder-[var(--text-dim)] focus:outline-none focus:border-rose-500 transition-colors font-mono"
                   />
                 </div>
 
@@ -476,7 +476,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                       setTypedEmail('');
                       setDeleteError('');
                     }}
-                    className="px-3 py-1.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] text-neutral-400 hover:text-white text-xs font-hud font-bold tracking-wider transition-colors cursor-pointer"
+                    className="px-3 py-1.5 rounded-xl bg-fg/[0.05] hover:bg-fg/[0.1] text-[var(--text-dim)] hover:text-[var(--text)] text-xs font-hud font-bold tracking-wider transition-colors cursor-pointer"
                   >
                     CANCEL
                   </button>
@@ -505,11 +505,11 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         </div>
 
         {/* Bottom Action: Single Clean 'Done' Button */}
-        <div className="pt-3 border-t border-white/10 relative z-10">
+        <div className="pt-3 border-t border-[var(--border)] relative z-10">
           <button
             type="button"
             onClick={onClose}
-            className="w-full py-2.5 px-4 rounded-xl text-slate-950 font-hud font-extrabold text-xs tracking-wider transition-all active:scale-[0.99] shadow-lg cursor-pointer uppercase"
+            className="w-full py-2.5 px-4 rounded-xl text-[var(--accent-contrast)] font-hud font-extrabold text-xs tracking-wider transition-all active:scale-[0.99] shadow-lg cursor-pointer uppercase"
             style={{ background: theme.accent }}
           >
             Done

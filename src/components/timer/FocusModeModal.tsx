@@ -82,6 +82,8 @@ export function FocusModeModal() {
 
   return (
     <div
+      data-theme="rank"
+      style={{ colorScheme: 'dark' }}
       className={`fixed inset-0 z-50 flex flex-col items-center justify-center select-none overflow-hidden animate-in fade-in duration-500 transition-colors bg-black ${
         isIdle ? 'cursor-none' : 'cursor-default'
       }`}

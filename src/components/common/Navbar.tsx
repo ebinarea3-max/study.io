@@ -237,22 +237,21 @@ export function Navbar({
           <div className="flex items-center gap-2.5 cursor-pointer select-none group" onClick={() => setActiveTab('timer')}>
             <Logo className="w-7 h-7 transition-transform group-hover:scale-105" />
             <div className="flex flex-col justify-center">
-              <div className="text-sm sm:text-base font-hud font-extrabold tracking-wider text-white flex items-center gap-1.5 leading-none">
+              <div className="text-sm sm:text-base font-hud font-extrabold tracking-wider text-[var(--text)] flex items-center gap-1.5 leading-none">
                 <span>STUDY.IO</span>
               </div>
             </div>
           </div>
 
           {/* Navigation Tabs - Desktop HUD strip */}
-          <nav className="hidden md:flex items-center gap-1 p-1 rounded-2xl bg-[var(--surface)] border border-[var(--border)]">
+          <nav className="hidden md:flex items-center gap-1 p-1 rounded-2xl bg-[var(--surface)] border border-[var(--border)] shadow-card">
             <button
               onClick={() => setActiveTab('timer')}
               className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-xl text-xs font-hud font-bold tracking-wider transition-all cursor-pointer ${
                 activeTab === 'timer'
-                  ? 'text-white shadow-sm'
-                  : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
+                  ? 'bg-fg/[0.08] [[data-theme="paper"]_&]:bg-[var(--surface)] border border-fg/[0.15] [[data-theme="paper"]_&]:border-[var(--border-strong)] text-[var(--text)] font-semibold shadow-card'
+                  : 'text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-fg/[0.04] border border-transparent'
               }`}
-              style={activeTab === 'timer' ? { background: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#FFFFFF', fontWeight: 600 } : undefined}
             >
               <Timer className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>TIMER</span>
@@ -262,10 +261,9 @@ export function Navbar({
               onClick={() => setActiveTab('tasks')}
               className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-xl text-xs font-hud font-bold tracking-wider transition-all cursor-pointer ${
                 activeTab === 'tasks'
-                  ? 'text-white shadow-sm'
-                  : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
+                  ? 'bg-fg/[0.08] [[data-theme="paper"]_&]:bg-[var(--surface)] border border-fg/[0.15] [[data-theme="paper"]_&]:border-[var(--border-strong)] text-[var(--text)] font-semibold shadow-card'
+                  : 'text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-fg/[0.04] border border-transparent'
               }`}
-              style={activeTab === 'tasks' ? { background: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#FFFFFF', fontWeight: 600 } : undefined}
             >
               <CheckSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>TASKS</span>
@@ -275,10 +273,9 @@ export function Navbar({
               onClick={() => setActiveTab('analytics')}
               className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-xl text-xs font-hud font-bold tracking-wider transition-all cursor-pointer ${
                 activeTab === 'analytics'
-                  ? 'text-white shadow-sm'
-                  : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
+                  ? 'bg-fg/[0.08] [[data-theme="paper"]_&]:bg-[var(--surface)] border border-fg/[0.15] [[data-theme="paper"]_&]:border-[var(--border-strong)] text-[var(--text)] font-semibold shadow-card'
+                  : 'text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-fg/[0.04] border border-transparent'
               }`}
-              style={activeTab === 'analytics' ? { background: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#FFFFFF', fontWeight: 600 } : undefined}
             >
               <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>STATS</span>
@@ -288,10 +285,9 @@ export function Navbar({
               onClick={() => setActiveTab('leaderboard')}
               className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-xl text-xs font-hud font-bold tracking-wider transition-all cursor-pointer ${
                 activeTab === 'leaderboard'
-                  ? 'text-white shadow-sm'
-                  : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
+                  ? 'bg-fg/[0.08] [[data-theme="paper"]_&]:bg-[var(--surface)] border border-fg/[0.15] [[data-theme="paper"]_&]:border-[var(--border-strong)] text-[var(--text)] font-semibold shadow-card'
+                  : 'text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-fg/[0.04] border border-transparent'
               }`}
-              style={activeTab === 'leaderboard' ? { background: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#FFFFFF', fontWeight: 600 } : undefined}
             >
               <FacetedTrophyIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>LEADERBOARD</span>
@@ -301,10 +297,9 @@ export function Navbar({
               onClick={() => setActiveTab('rooms')}
               className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-xl text-xs font-hud font-bold tracking-wider transition-all cursor-pointer ${
                 activeTab === 'rooms'
-                  ? 'text-white shadow-sm'
-                  : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
+                  ? 'bg-fg/[0.08] [[data-theme="paper"]_&]:bg-[var(--surface)] border border-fg/[0.15] [[data-theme="paper"]_&]:border-[var(--border-strong)] text-[var(--text)] font-semibold shadow-card'
+                  : 'text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-fg/[0.04] border border-transparent'
               }`}
-              style={activeTab === 'rooms' ? { background: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#FFFFFF', fontWeight: 600 } : undefined}
             >
               <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>ROOMS</span>
@@ -320,8 +315,8 @@ export function Navbar({
           {!isAuthenticated ? (
             <Link
               href="/login"
-              className="flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-xl text-slate-950 font-bold text-xs transition-all hover:scale-105 active:scale-95 flex-shrink-0 font-hud tracking-wider"
-              style={{ background: theme.gradient, boxShadow: `0 0 14px ${theme.glow}` }}
+              className="flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-xl text-[var(--accent-contrast)] font-bold text-xs transition-all hover:scale-105 active:scale-95 flex-shrink-0 font-hud tracking-wider"
+              style={{ background: 'var(--accent)', boxShadow: `0 0 14px ${theme.glow}` }}
             >
               <LogIn className="w-3.5 h-3.5" />
               <span>SIGN IN</span>
@@ -330,22 +325,22 @@ export function Navbar({
             <div className="flex items-center gap-2">
               {/* Streak Pill */}
               <div
-                className="flex items-center h-8 sm:h-9 px-2 sm:px-3 bg-[var(--surface)] border border-slate-800 text-slate-100 cursor-default select-none rounded-xl gap-1 sm:gap-1.5"
+                className="flex items-center h-8 sm:h-9 px-2 sm:px-3 bg-[var(--surface)] border border-[var(--border)] text-[var(--text)] shadow-card cursor-default select-none rounded-xl gap-1 sm:gap-1.5"
                 title={`${user?.streakDays || 0} Day Streak`}
               >
                 <Flame className="w-4 h-4 text-orange-500 fill-orange-500" />
-                <span className="text-xs font-bold font-mono text-white">{user?.streakDays || 0}</span>
+                <span className="text-xs font-bold font-mono text-[var(--text)]">{user?.streakDays || 0}</span>
               </div>
 
               {/* Rank Status Pill */}
               {isLoading && (!user || user.id.startsWith('user-scholar') || user.id === 'guest') ? (
-                <div className="relative flex items-center h-8 sm:h-9 w-24 sm:w-28 bg-[var(--surface)] border border-slate-800 rounded-xl animate-pulse overflow-hidden">
-                  <div className="w-6 h-6 rounded-full bg-white/10 ml-1.5"></div>
-                  <div className="w-10 h-3 bg-white/10 ml-2 rounded"></div>
+                <div className="relative flex items-center h-8 sm:h-9 w-24 sm:w-28 bg-[var(--surface)] border border-[var(--border)] shadow-card rounded-xl animate-pulse overflow-hidden">
+                  <div className="w-6 h-6 rounded-full bg-fg/10 ml-1.5"></div>
+                  <div className="w-10 h-3 bg-fg/10 ml-2 rounded"></div>
                 </div>
               ) : (
                 <div
-                  className="relative flex items-center h-8 sm:h-9 pl-1 pr-3 sm:pr-4 bg-[var(--surface)] border border-slate-800 text-slate-100 cursor-default select-none rounded-xl"
+                  className="relative flex items-center h-8 sm:h-9 pl-1 pr-3 sm:pr-4 bg-[var(--surface)] border border-[var(--border)] text-[var(--text)] shadow-card cursor-default select-none rounded-xl"
                   title={`Ranked Season RP: ${liveSeasonRp.toLocaleString()} RP (${liveRank.name.toUpperCase()})`}
                 >
                   <div className="flex items-center gap-1.5 sm:gap-2">
@@ -357,11 +352,11 @@ export function Navbar({
                     />
                     <span
                       className="text-xs font-bold tracking-wider font-hud uppercase truncate max-w-[85px] sm:max-w-none"
-                      style={{ color: 'var(--tier-accent)' }}
+                      style={{ color: 'var(--tier-accent-text)' }}
                     >
                       {liveRank.name.toUpperCase()}
                     </span>
-                    <span className="hidden sm:inline text-[11px] text-slate-500 font-mono ml-1">
+                    <span className="hidden sm:inline text-[11px] text-[var(--text-dim)] font-mono ml-1">
                       {liveSeasonRp.toLocaleString()} RP
                     </span>
                   </div>
@@ -375,7 +370,7 @@ export function Navbar({
           {/* Native Fullscreen Toggle Button */}
           <button
             onClick={toggleFullscreen}
-            className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[var(--surface)] border border-slate-800 hover:border-slate-600 text-slate-400 hover:text-slate-200 transition-colors hidden sm:flex items-center justify-center cursor-pointer"
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[var(--surface)] border border-[var(--border)] hover:border-[var(--border-strong)] text-[var(--text-dim)] hover:text-[var(--text)] shadow-card transition-colors hidden sm:flex items-center justify-center cursor-pointer"
             title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
             aria-label={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
           >
@@ -390,7 +385,7 @@ export function Navbar({
           <div className="relative" ref={menuRef}>
             <button
               onClick={() => setShowPersonaMenu(!showPersonaMenu)}
-              className="flex items-center gap-2.5 p-1 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-900 border border-transparent hover:border-slate-200 dark:hover:border-slate-800 transition-all active:scale-[0.98]"
+              className="flex items-center gap-2.5 p-1 rounded-2xl hover:bg-fg/5 border border-[var(--border)] shadow-card transition-all active:scale-[0.98]"
               title={`Level ${effectiveLevel} (${effectiveTitle}) · ${gamification.totalXP} Total XP`}
             >
               {/* Avatar with SVG Circular XP Progress Ring */}
@@ -401,7 +396,8 @@ export function Navbar({
                     cx="19"
                     cy="19"
                     r={radius}
-                    className="stroke-slate-200 dark:stroke-slate-800/80 fill-none"
+                    stroke="rgb(var(--fg) / 0.14)"
+                    fill="none"
                     strokeWidth="2.5"
                   />
                   {/* Dynamic XP Progress Stroke */}
@@ -419,7 +415,7 @@ export function Navbar({
                 </svg>
 
                 {/* Avatar */}
-                <div className="w-[30px] h-[30px] rounded-full overflow-hidden flex items-center justify-center relative shadow-inner bg-slate-800 z-10">
+                <div className="w-[30px] h-[30px] rounded-full overflow-hidden flex items-center justify-center relative shadow-inner bg-[var(--surface-2)] z-10">
                   {effectiveAvatar && !imageError ? (
                     <img
                       src={effectiveAvatar}
@@ -437,7 +433,7 @@ export function Navbar({
 
                 {/* Online/Studying status pulse */}
                 <span
-                  className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-slate-950 ${
+                  className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[var(--surface)] ${
                     isStudying ? 'bg-primary animate-pulse' : 'bg-slate-400 dark:bg-slate-500'
                   }`}
                 />
@@ -446,20 +442,20 @@ export function Navbar({
               {/* User Identity & Level Display */}
               <div className="text-left hidden lg:flex lg:flex-col lg:justify-center">
                 <div className="flex items-baseline gap-1.5">
-                  <div className="text-[13px] font-bold text-slate-900 dark:text-white leading-tight truncate block max-w-[130px]">
+                  <div className="text-[13px] font-bold text-[var(--text)] leading-tight truncate block max-w-[130px]">
                     {displayName}
                   </div>
                   {user?.username && (
-                    <div className="text-[10px] text-neutral-400 font-mono truncate max-w-[80px]">
+                    <div className="text-[10px] text-[var(--text-dim)] font-mono truncate max-w-[80px]">
                       @{user.username}
                     </div>
                   )}
                 </div>
                 <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="text-[10px] font-extrabold text-primary font-mono leading-none">
+                  <span className="text-[10px] font-extrabold font-mono leading-none" style={{ color: 'var(--tier-accent-text)' }}>
                     Lv. {effectiveLevel}
                   </span>
-                  <span className="text-[9px] px-1.5 py-0.2 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium leading-tight border border-slate-200 dark:border-transparent">
+                  <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-[var(--surface-2)] text-[var(--text-dim)] font-medium leading-tight border border-[var(--border)]">
                     {effectiveTierBadge.icon} {effectiveTitle}
                   </span>
                 </div>
@@ -468,7 +464,7 @@ export function Navbar({
 
             {/* Interactive User Account Dropdown with Full Gamification Dashboard */}
             {showPersonaMenu && (
-              <div className="absolute right-0 mt-2.5 w-80 rounded-2xl bg-[var(--surface)]/95 backdrop-blur-2xl border border-[var(--border)] shadow-[0_20px_50px_rgba(0,0,0,0.85)] p-4 z-50 animate-in fade-in zoom-in-95 duration-150 overflow-hidden">
+              <div className="absolute right-0 mt-2.5 w-80 rounded-2xl bg-[var(--surface)] backdrop-blur-2xl border border-[var(--border)] shadow-card p-4 z-50 animate-in fade-in zoom-in-95 duration-150 overflow-hidden">
                 {/* Subtle ambient accent glow */}
                 <div
                   className="absolute -top-12 -right-12 w-32 h-32 rounded-full blur-2xl pointer-events-none opacity-20"
@@ -476,11 +472,11 @@ export function Navbar({
                 />
 
                 {/* User Header */}
-                <div className="pb-3 border-b border-white/[0.08] relative z-10">
+                <div className="pb-3 border-b border-fg/[0.08] relative z-10">
                   <div className="flex items-center justify-between">
                     <div className="min-w-0 pr-2">
-                      <div className="font-bold text-sm text-white truncate">{displayName}</div>
-                      <div className="text-[10px] font-mono text-zinc-400 truncate mt-0.5">
+                      <div className="font-bold text-sm text-[var(--text)] truncate">{displayName}</div>
+                      <div className="text-[10px] font-mono text-[var(--text-dim)] truncate mt-0.5">
                         {user?.username ? `@${user.username} • ` : ''}{user?.email}
                       </div>
                     </div>
@@ -489,7 +485,7 @@ export function Navbar({
 
                   {/* Level & Title Pill + Streak */}
                   <div className="mt-2.5 flex items-center justify-between">
-                    <span className="text-[10px] font-hud font-bold tracking-wider uppercase px-2 py-0.5 rounded-md border border-white/10 bg-white/[0.04] text-zinc-200">
+                    <span className="text-[10px] font-hud font-bold tracking-wider uppercase px-2 py-0.5 rounded-md border border-[var(--border)] bg-[var(--surface-2)] text-[var(--text-dim)]">
                       Lv. {effectiveLevel} · {effectiveTitle}
                     </span>
                     <span className="text-amber-400 font-mono font-bold text-xs flex items-center gap-1">
@@ -500,19 +496,19 @@ export function Navbar({
                 </div>
 
                 {/* Gamification Progress Card */}
-                <div className="my-3 p-3 rounded-xl bg-white/[0.03] backdrop-blur-md border border-white/[0.08] relative z-10">
+                <div className="my-3 p-3 rounded-xl bg-fg/[0.03] backdrop-blur-md border border-fg/[0.08] relative z-10">
                   <div className="flex items-center justify-between text-xs mb-1.5">
-                    <span className="text-zinc-400 font-hud text-[11px] font-bold tracking-wider uppercase flex items-center gap-1.5">
+                    <span className="text-[var(--text-dim)] font-hud text-[11px] font-bold tracking-wider uppercase flex items-center gap-1.5">
                       <Trophy className="w-3.5 h-3.5 text-amber-400" />
                       <span>Total XP</span>
                     </span>
-                    <span className="text-white font-extrabold font-mono text-xs">
+                    <span className="text-[var(--text)] font-extrabold font-mono text-xs">
                       {gamification.totalXP.toLocaleString()} XP
                     </span>
                   </div>
 
                   {/* Mini Progress Bar */}
-                  <div className="w-full h-1.5 rounded-full bg-white/[0.08] overflow-hidden relative">
+                  <div className="w-full h-1.5 rounded-full bg-fg/[0.08] overflow-hidden relative">
                     <div
                       className="h-full rounded-full transition-all duration-500"
                       style={{ background: 'var(--tier-gradient)', width: `${gamification.progressPercent}%` }}
@@ -520,7 +516,7 @@ export function Navbar({
                   </div>
 
                   {/* XP Footnote */}
-                  <div className="mt-1.5 flex items-center justify-between text-[10px] font-mono text-zinc-400">
+                  <div className="mt-1.5 flex items-center justify-between text-[10px] font-mono text-[var(--text-dim)]">
                     <span>{gamification.xpInCurrentLevel} / {gamification.xpNeededForNextLevel} XP</span>
                     <span className="font-semibold font-mono" style={{ color: theme.accent }}>
                       {gamification.xpRemaining} XP to Lv. {gamification.level + 1}
@@ -528,17 +524,17 @@ export function Navbar({
                   </div>
 
                   {/* XP Sources Breakdown */}
-                  <div className="mt-2.5 pt-2 border-t border-white/[0.06] grid grid-cols-3 gap-1.5 text-[9px] text-center font-mono">
-                    <div className="p-1.5 rounded-lg bg-white/[0.02] border border-white/[0.05]">
-                      <div className="text-zinc-400 text-[10px]">Focus</div>
+                  <div className="mt-2.5 pt-2 border-t border-fg/[0.06] grid grid-cols-3 gap-1.5 text-[9px] text-center font-mono">
+                    <div className="p-1.5 rounded-lg bg-fg/[0.02] border border-fg/[0.05]">
+                      <div className="text-[var(--text-dim)] text-[10px]">Focus</div>
                       <div className="font-bold mt-0.5" style={{ color: theme.accent }}>+{gamification.focusXP}</div>
                     </div>
-                    <div className="p-1.5 rounded-lg bg-white/[0.02] border border-white/[0.05]">
-                      <div className="text-zinc-400 text-[10px]">Tasks</div>
+                    <div className="p-1.5 rounded-lg bg-fg/[0.02] border border-fg/[0.05]">
+                      <div className="text-[var(--text-dim)] text-[10px]">Tasks</div>
                       <div className="text-cyan-400 font-bold mt-0.5">+{gamification.todoXP}</div>
                     </div>
-                    <div className="p-1.5 rounded-lg bg-white/[0.02] border border-white/[0.05]">
-                      <div className="text-zinc-400 text-[10px]">Streak</div>
+                    <div className="p-1.5 rounded-lg bg-fg/[0.02] border border-fg/[0.05]">
+                      <div className="text-[var(--text-dim)] text-[10px]">Streak</div>
                       <div className="text-amber-400 font-bold mt-0.5">+{gamification.streakXP}</div>
                     </div>
                   </div>
@@ -548,17 +544,17 @@ export function Navbar({
                 <div className="space-y-1 relative z-10">
                   <button
                     onClick={() => { onOpenProfile(); setShowPersonaMenu(false); }}
-                    className="w-full text-left px-3 py-2 rounded-xl text-xs font-hud font-semibold tracking-wider text-zinc-300 hover:text-white hover:bg-white/[0.06] border border-transparent hover:border-white/10 transition-all flex items-center gap-2.5 cursor-pointer active:scale-[0.99]"
+                    className="w-full text-left px-3 py-2 rounded-xl text-xs font-hud font-semibold tracking-wider text-[var(--text)] hover:bg-fg/[0.06] border border-transparent hover:border-fg/10 transition-all flex items-center gap-2.5 cursor-pointer active:scale-[0.99]"
                   >
-                    <User className="w-3.5 h-3.5 text-zinc-400" />
+                    <User className="w-3.5 h-3.5 text-[var(--text-dim)]" />
                     <span>EDIT PROFILE &amp; GOALS</span>
                   </button>
 
                   <button
                     onClick={() => { onOpenSettings(); setShowPersonaMenu(false); }}
-                    className="w-full text-left px-3 py-2 rounded-xl text-xs font-hud font-semibold tracking-wider text-zinc-300 hover:text-white hover:bg-white/[0.06] border border-transparent hover:border-white/10 transition-all flex items-center gap-2.5 cursor-pointer active:scale-[0.99]"
+                    className="w-full text-left px-3 py-2 rounded-xl text-xs font-hud font-semibold tracking-wider text-[var(--text)] hover:bg-fg/[0.06] border border-transparent hover:border-fg/10 transition-all flex items-center gap-2.5 cursor-pointer active:scale-[0.99]"
                   >
-                    <FacetedGearIcon className="w-3.5 h-3.5 text-zinc-400" />
+                    <FacetedGearIcon className="w-3.5 h-3.5 text-[var(--text-dim)]" />
                     <span>SETTINGS &amp; PREFERENCES</span>
                   </button>
 
@@ -573,7 +569,7 @@ export function Navbar({
                   ) : (
                     <button
                       onClick={() => { logout(); setShowPersonaMenu(false); }}
-                      className="w-full text-left px-3 py-2 rounded-xl text-xs font-hud font-semibold tracking-wider text-zinc-400 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all flex items-center gap-2.5 cursor-pointer"
+                      className="w-full text-left px-3 py-2 rounded-xl text-xs font-hud font-semibold tracking-wider text-[var(--text-dim)] hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all flex items-center gap-2.5 cursor-pointer"
                     >
                       <LogOut className="w-3.5 h-3.5" />
                       <span>SIGN OUT</span>
@@ -591,12 +587,12 @@ export function Navbar({
     <div className="fixed bottom-5 sm:bottom-6 left-0 right-0 z-50 md:hidden flex justify-center px-3 pb-[env(safe-area-inset-bottom,0px)] pointer-events-none">
       <nav
         aria-label="Mobile Floating Dock Navigation"
-        className="w-full max-w-md bg-[var(--surface)]/95 backdrop-blur-xl border border-[var(--border)] rounded-full p-1 shadow-[0_8px_32px_rgba(0,0,0,0.8)] transition-all pointer-events-auto"
+        className="w-full max-w-md bg-[var(--surface)]/95 backdrop-blur-xl border border-[var(--border)] rounded-full p-1 shadow-card transition-all pointer-events-auto"
       >
       <div className="relative flex items-center justify-between w-full">
         {/* Sliding active indicator pill in Tier Accent */}
         <div
-          className="absolute top-0.5 bottom-0.5 rounded-full transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none bg-white/[0.14] border border-white/20 shadow-sm"
+          className="absolute top-0.5 bottom-0.5 rounded-full transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none bg-fg/[0.14] border border-fg/20 shadow-sm"
           style={{
             width: '20%',
             transform: `translateX(${activeTab === 'timer' ? '0%' : activeTab === 'tasks' ? '100%' : activeTab === 'analytics' ? '200%' : activeTab === 'leaderboard' ? '300%' : '400%' })`
@@ -608,8 +604,8 @@ export function Navbar({
           onClick={() => setActiveTab('timer')}
           className={`relative z-10 flex-1 flex flex-col items-center justify-center py-1.5 rounded-full transition-all active:scale-95 cursor-pointer ${
             activeTab === 'timer'
-              ? 'text-white font-bold drop-shadow-sm'
-              : 'text-neutral-400 hover:text-white'
+              ? 'text-[var(--text)] font-bold drop-shadow-sm'
+              : 'text-[var(--text-dim)] hover:text-[var(--text)]'
           }`}
           aria-label="Timer"
         >
@@ -622,8 +618,8 @@ export function Navbar({
           onClick={() => setActiveTab('tasks')}
           className={`relative z-10 flex-1 flex flex-col items-center justify-center py-1.5 rounded-full transition-all active:scale-95 cursor-pointer ${
             activeTab === 'tasks'
-              ? 'text-white font-bold drop-shadow-sm'
-              : 'text-neutral-400 hover:text-white'
+              ? 'text-[var(--text)] font-bold drop-shadow-sm'
+              : 'text-[var(--text-dim)] hover:text-[var(--text)]'
           }`}
           aria-label="Tasks"
         >
@@ -636,8 +632,8 @@ export function Navbar({
           onClick={() => setActiveTab('analytics')}
           className={`relative z-10 flex-1 flex flex-col items-center justify-center py-1.5 rounded-full transition-all active:scale-95 cursor-pointer ${
             activeTab === 'analytics'
-              ? 'text-white font-bold drop-shadow-sm'
-              : 'text-neutral-400 hover:text-white'
+              ? 'text-[var(--text)] font-bold drop-shadow-sm'
+              : 'text-[var(--text-dim)] hover:text-[var(--text)]'
           }`}
           aria-label="Analytics"
         >
@@ -650,8 +646,8 @@ export function Navbar({
           onClick={() => setActiveTab('leaderboard')}
           className={`relative z-10 flex-1 flex flex-col items-center justify-center py-1.5 rounded-full transition-all active:scale-95 cursor-pointer ${
             activeTab === 'leaderboard'
-              ? 'text-white font-bold drop-shadow-sm'
-              : 'text-neutral-400 hover:text-white'
+              ? 'text-[var(--text)] font-bold drop-shadow-sm'
+              : 'text-[var(--text-dim)] hover:text-[var(--text)]'
           }`}
           aria-label="Leaderboard"
         >
@@ -664,8 +660,8 @@ export function Navbar({
           onClick={() => setActiveTab('rooms')}
           className={`relative z-10 flex-1 flex flex-col items-center justify-center py-1.5 rounded-full transition-all active:scale-95 cursor-pointer ${
             activeTab === 'rooms'
-              ? 'text-white font-bold drop-shadow-sm'
-              : 'text-neutral-400 hover:text-white'
+              ? 'text-[var(--text)] font-bold drop-shadow-sm'
+              : 'text-[var(--text-dim)] hover:text-[var(--text)]'
           }`}
           aria-label="Rooms"
         >

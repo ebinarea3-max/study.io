@@ -610,7 +610,7 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
 
   return (
     <div
-      className={`w-full text-white font-sans ${
+      className={`w-full text-[var(--text)] font-sans ${
         isEmbedded
           ? 'max-w-[1100px] mx-auto flex flex-col gap-6 py-4'
           : 'bg-[var(--bg)] min-h-screen p-4 sm:p-6 flex flex-col items-center'
@@ -620,20 +620,20 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
         {/* Loading State */}
         {isLoading ? (
           <div className="w-full flex flex-col gap-6">
-            <div className="w-full bg-white/[0.02] backdrop-blur-md border border-white/[0.07] rounded-2xl overflow-hidden divide-y divide-white/[0.06] shadow-xl">
+            <div className="w-full bg-[var(--surface)] backdrop-blur-md border border-[var(--border)] rounded-2xl overflow-hidden divide-y divide-fg/[0.06] shadow-card">
               {[1, 2, 3, 4, 5].map((i) => (
                 <div key={i} className="px-4 sm:px-6 py-4 flex items-center justify-between animate-pulse">
                   <div className="flex items-center gap-3 sm:gap-4">
-                    <div className="w-7 h-7 rounded-full bg-white/[0.04]" />
-                    <div className="w-10 h-10 rounded-full bg-white/[0.04]" />
+                    <div className="w-7 h-7 rounded-full bg-fg/[0.04]" />
+                    <div className="w-10 h-10 rounded-full bg-fg/[0.04]" />
                     <div className="flex flex-col gap-1.5">
-                      <div className="w-28 sm:w-36 h-4 bg-white/[0.05] rounded" />
-                      <div className="w-20 h-3 bg-white/[0.03] rounded" />
+                      <div className="w-28 sm:w-36 h-4 bg-fg/[0.05] rounded" />
+                      <div className="w-20 h-3 bg-fg/[0.03] rounded" />
                     </div>
                   </div>
                   <div className="flex items-center gap-4 sm:gap-8">
-                    <div className="w-9 h-9 rounded-full bg-white/[0.04]" />
-                    <div className="w-16 h-4 bg-white/[0.05] rounded" />
+                    <div className="w-9 h-9 rounded-full bg-fg/[0.04]" />
+                    <div className="w-16 h-4 bg-fg/[0.05] rounded" />
                   </div>
                 </div>
               ))}
@@ -641,14 +641,14 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
           </div>
         ) : leaderboard.length === 0 ? (
           /* Empty State */
-          <div className="w-full bg-white/[0.02] backdrop-blur-md border border-white/[0.07] rounded-2xl p-12 text-center flex flex-col items-center justify-center gap-3 shadow-xl">
-            <div className="w-12 h-12 rounded-full bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-zinc-400 mb-1">
+          <div className="w-full bg-[var(--surface)] backdrop-blur-md border border-[var(--border)] rounded-2xl p-12 text-center flex flex-col items-center justify-center gap-3 shadow-card">
+            <div className="w-12 h-12 rounded-full bg-fg/[0.04] border border-fg/[0.08] flex items-center justify-center text-[var(--text-dim)] mb-1">
               <Clock className="w-6 h-6 stroke-[1.75]" />
             </div>
-            <h3 className="text-sm font-semibold text-white tracking-wide">
+            <h3 className="text-sm font-semibold text-[var(--text)] tracking-wide">
               No sessions recorded
             </h3>
-            <p className="text-xs text-zinc-400 max-w-md">
+            <p className="text-xs text-[var(--text-dim)] max-w-md">
               {emptyText}
             </p>
           </div>
@@ -663,10 +663,10 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
             {/* ══════════════════════════════════════════════════════════ */}
             <div className="w-full flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-1">
               <div>
-                <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-white font-sans">
+                <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[var(--text)] font-sans">
                   Leaderboard
                 </h1>
-                <p className="text-sm text-zinc-400 mt-1">
+                <p className="text-sm text-[var(--text-dim)] mt-1">
                   {monthYearLabel} · ranked by focus time
                 </p>
               </div>
@@ -679,14 +679,14 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                       soundFx.resumeContext();
                     } catch {}
                   }}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-xs font-mono text-zinc-400 hover:text-zinc-200 transition-all duration-150 active:scale-95 cursor-pointer shrink-0"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--surface)] hover:bg-[var(--surface-2)] border border-[var(--border)] text-xs font-mono text-[var(--text-dim)] hover:text-[var(--text)] transition-all duration-150 active:scale-95 cursor-pointer shrink-0 shadow-card"
                   title="Watch your recap from the previous completed season"
                 >
                   <span>Last Season Recap</span>
-                  <ChevronRight className="w-3.5 h-3.5 text-zinc-500" />
+                  <ChevronRight className="w-3.5 h-3.5 text-[var(--text-faint)]" />
                 </Link>
 
-                <div className="inline-flex items-center p-1 bg-white/[0.03] border border-white/[0.07] rounded-xl gap-1 relative overflow-x-auto max-w-full">
+                <div className="inline-flex items-center p-1 bg-fg/[0.03] border border-fg/[0.07] rounded-xl gap-1 relative overflow-x-auto max-w-full shadow-card">
                   {(
                     [
                       { label: 'Today', value: 'today' },
@@ -702,13 +702,13 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                         type="button"
                         onClick={() => setTimeframe(tab.value)}
                         className={`relative px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer shrink-0 z-10 ${
-                          isActive ? 'text-white font-semibold' : 'text-zinc-400 hover:text-zinc-200'
+                          isActive ? 'text-[var(--text)] font-semibold' : 'text-[var(--text-dim)] hover:text-[var(--text)]'
                         }`}
                       >
                         {isActive && (
                           <motion.div
                             layoutId="leaderboard-period-pill"
-                            className="absolute inset-0 bg-white/[0.1] border border-white/[0.15] rounded-lg shadow-sm -z-10"
+                            className="absolute inset-0 bg-fg/[0.1] [[data-theme='paper']_&]:bg-[var(--surface)] border border-fg/[0.15] [[data-theme='paper']_&]:border-[var(--border-strong)] rounded-lg shadow-card -z-10"
                             transition={{ type: 'tween', duration: 0.18, ease: 'easeOut' }}
                           />
                         )}
@@ -722,13 +722,13 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
 
             {/* Sticky Current User Rank Indicator */}
             {currentUserEntry && !currentUserRowVisible && (
-              <div className="sticky top-2 z-30 mb-2 flex items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--surface)]/95 px-4 py-2 text-xs font-mono text-zinc-300 backdrop-blur-md shadow-lg">
+              <div className="sticky top-2 z-30 mb-2 flex items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--surface)]/95 px-4 py-2 text-xs font-mono text-[var(--text)] backdrop-blur-md shadow-card">
                 <span>
-                  YOUR RANK: <strong style={{ color: 'var(--tier-accent)' }}>#{currentUserEntry.rank}</strong>
+                  YOUR RANK: <strong style={{ color: 'var(--tier-accent-text)' }}>#{currentUserEntry.rank}</strong>
                 </span>
                 <button
                   onClick={() => myRowRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
-                  className="rounded bg-white/10 hover:bg-white/15 px-2.5 py-1 text-zinc-200 cursor-pointer transition-colors"
+                  className="rounded bg-fg/10 hover:bg-fg/15 px-2.5 py-1 text-[var(--text)] cursor-pointer transition-colors"
                 >
                   Jump to You ↓
                 </button>
@@ -739,9 +739,9 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
             {/* RANKED LIST PANEL                                          */}
             {/* ══════════════════════════════════════════════════════════ */}
             {contenders.length > 0 && (
-              <div className="w-full bg-white/[0.02] backdrop-blur-md border border-white/[0.07] rounded-2xl overflow-hidden shadow-2xl divide-y divide-white/[0.06]">
+              <div className="w-full bg-[var(--surface)] backdrop-blur-md border border-[var(--border)] rounded-2xl overflow-hidden shadow-card divide-y divide-fg/[0.06]">
                 {/* Column Labels */}
-                <div className="px-4 sm:px-6 py-3 bg-white/[0.015] text-xs text-zinc-400 font-normal flex items-center justify-between border-b border-white/[0.06] select-none">
+                <div className="px-4 sm:px-6 py-3 bg-[var(--surface-2)] text-xs text-[var(--text-dim)] font-normal flex items-center justify-between border-b border-[var(--border)] select-none">
                   <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
                     <span className="w-7 text-center">#</span>
                     <span>Scholar</span>
@@ -758,7 +758,7 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ type: 'tween', duration: 0.2, ease: 'easeOut' }}
-                  className="divide-y divide-white/[0.06]"
+                  className="divide-y divide-fg/[0.06]"
                 >
                   {contenders.map((row, idx) => {
                     if (!row) return null;

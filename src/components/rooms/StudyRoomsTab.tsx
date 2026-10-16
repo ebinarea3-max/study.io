@@ -759,17 +759,17 @@ CREATE POLICY "Hosts can update their own study rooms"
   }
 
   return (
-    <div className="w-full h-full flex-1 min-h-0 overflow-y-auto px-3 sm:px-6 py-4 sm:py-6 pb-28 md:pb-28 scrollbar-thin text-slate-200">
+    <div className="w-full h-full flex-1 min-h-0 overflow-y-auto px-3 sm:px-6 py-4 sm:py-6 pb-28 md:pb-28 scrollbar-thin text-[var(--text)]">
       <div className="w-full max-w-[1100px] mx-auto flex flex-col gap-6 relative">
         {/* ══════════════════════════════════════════════════════════ */}
         {/* PAGE HEADER & CONTROLS (Leaderboard Pattern)               */}
         {/* ══════════════════════════════════════════════════════════ */}
         <div className="w-full flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-1">
           <div>
-            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-white font-sans">
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[var(--text)] font-sans">
               Rooms
             </h1>
-            <p className="text-sm text-zinc-400 mt-1 font-mono">
+            <p className="text-sm text-[var(--text-dim)] mt-1 font-mono">
               Your joined and hosted focus rooms
             </p>
           </div>
@@ -780,7 +780,7 @@ CREATE POLICY "Hosts can update their own study rooms"
               type="button"
               onClick={() => refreshAll()}
               disabled={isLoading}
-              className="p-2 rounded-lg bg-white/[0.03] hover:bg-white/[0.08] border border-white/10 text-neutral-400 hover:text-white transition-all cursor-pointer active:scale-95 disabled:opacity-50"
+              className="p-2 rounded-lg bg-fg/[0.04] hover:bg-fg/[0.08] border border-[var(--border)] text-[var(--text-dim)] hover:text-[var(--text)] transition-all cursor-pointer active:scale-95 disabled:opacity-50"
               title="Refresh room telemetry"
             >
               <RotateCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-amber-400' : ''}`} />
@@ -790,7 +790,7 @@ CREATE POLICY "Hosts can update their own study rooms"
             <button
               type="button"
               onClick={() => setIsJoinCodeModalOpen(true)}
-              className="px-2.5 py-1.5 rounded-lg bg-white/[0.03] hover:bg-white/[0.08] border border-white/10 text-neutral-400 hover:text-neutral-200 font-hud-mono text-xs font-bold tracking-wider uppercase transition-all cursor-pointer flex items-center gap-1.5"
+              className="px-2.5 py-1.5 rounded-lg bg-fg/[0.04] hover:bg-fg/[0.08] border border-[var(--border)] text-[var(--text-dim)] hover:text-[var(--text)] font-hud-mono text-xs font-bold tracking-wider uppercase transition-all cursor-pointer flex items-center gap-1.5"
               title="Enter 6-digit room code"
             >
               <KeyRound className="w-3.5 h-3.5" />
@@ -798,7 +798,7 @@ CREATE POLICY "Hosts can update their own study rooms"
             </button>
 
             {/* Segmented Filter Pills (MY ROOMS / EXPLORE) */}
-            <div className="inline-flex items-center p-1 bg-white/[0.03] border border-white/[0.07] rounded-xl gap-1">
+            <div className="inline-flex items-center p-1 bg-[var(--surface-2)] border border-[var(--border)] rounded-xl gap-1 shadow-sm">
               <button
                 type="button"
                 onClick={() => {
@@ -807,9 +807,10 @@ CREATE POLICY "Hosts can update their own study rooms"
                 }}
                 className={`px-3 py-1.5 rounded-lg font-hud-mono text-xs font-bold tracking-wider uppercase transition-all cursor-pointer ${
                   view === 'my_groups'
-                    ? 'bg-amber-500 text-slate-950 shadow-sm'
-                    : 'text-neutral-400 hover:text-neutral-200 hover:bg-white/[0.04]'
+                    ? 'shadow-sm'
+                    : 'text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-fg/[0.04]'
                 }`}
+                style={view === 'my_groups' ? { backgroundColor: 'var(--accent)', color: 'var(--accent-contrast)' } : undefined}
               >
                 MY ROOMS ({myGroups.length})
               </button>
@@ -821,9 +822,10 @@ CREATE POLICY "Hosts can update their own study rooms"
                 }}
                 className={`px-3 py-1.5 rounded-lg font-hud-mono text-xs font-bold tracking-wider uppercase transition-all cursor-pointer ${
                   view === 'explorer'
-                    ? 'bg-amber-500 text-slate-950 shadow-sm'
-                    : 'text-neutral-400 hover:text-neutral-200 hover:bg-white/[0.04]'
+                    ? 'shadow-sm'
+                    : 'text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-fg/[0.04]'
                 }`}
+                style={view === 'explorer' ? { backgroundColor: 'var(--accent)', color: 'var(--accent-contrast)' } : undefined}
               >
                 EXPLORE
               </button>
@@ -837,7 +839,8 @@ CREATE POLICY "Hosts can update their own study rooms"
                 setCreateRoomData({ name: '', password: '', max_capacity: 4 });
                 setIsCreateModalOpen(true);
               }}
-              className="px-3.5 py-1.5 text-xs font-hud-mono font-bold text-slate-950 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer hover:brightness-110 active:scale-95 bg-amber-500 uppercase tracking-wider"
+              className="px-3.5 py-1.5 text-xs font-hud-mono font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer hover:brightness-110 active:scale-95 uppercase tracking-wider shadow-sm"
+              style={{ backgroundColor: 'var(--accent)', color: 'var(--accent-contrast)' }}
             >
               <Plus className="w-3.5 h-3.5 stroke-[3]" />
               CREATE
@@ -913,9 +916,9 @@ CREATE POLICY "Hosts can update their own study rooms"
               </div>
             ) : (
               /* Leaderboard Row Table */
-              <div className="w-full bg-white/[0.02] backdrop-blur-md border border-white/[0.07] rounded-2xl overflow-hidden shadow-2xl divide-y divide-white/[0.06]">
+              <div className="w-full bg-[var(--surface)] border border-[var(--border)] shadow-card rounded-2xl overflow-hidden divide-y divide-[var(--border)]">
                 {/* Column Headers */}
-                <div className="px-4 sm:px-6 py-3 bg-white/[0.015] text-[11px] sm:text-xs text-neutral-400 font-hud-mono uppercase tracking-wider flex items-center justify-between border-b border-white/[0.06] select-none">
+                <div className="px-4 sm:px-6 py-3 bg-[var(--surface-2)] text-[11px] sm:text-xs text-[var(--text-dim)] font-hud-mono uppercase tracking-wider flex items-center justify-between border-b border-[var(--border)] select-none">
                   <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
                     <span className="w-7 text-center">#</span>
                     <span>Room // Host</span>
@@ -942,23 +945,23 @@ CREATE POLICY "Hosts can update their own study rooms"
                       onClick={() => setActiveRoomId(room.id)}
                       className={`relative w-full overflow-hidden transition-colors duration-150 flex items-center justify-between px-4 sm:px-6 cursor-pointer border-l-2 min-h-[60px] py-2.5 ${
                         isHost
-                          ? 'border-l-amber-400 bg-white/[0.04] hover:bg-white/[0.06]'
-                          : 'border-l-transparent hover:bg-white/[0.02]'
+                          ? 'border-l-amber-400 bg-fg/[0.04] hover:bg-fg/[0.06]'
+                          : 'border-l-transparent hover:bg-fg/[0.02]'
                       }`}
                     >
                       {/* Left: Index + Avatar + Title & Meta */}
                       <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
-                        <span className="w-7 text-center font-mono text-xs text-neutral-500 font-semibold shrink-0">
+                        <span className="w-7 text-center font-mono text-xs text-[var(--text-dim)] font-semibold shrink-0">
                           {idx + 1}
                         </span>
 
-                        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#0c0e14] border border-white/10 flex-shrink-0 flex items-center justify-center font-mono font-bold text-xs text-amber-400 bg-gradient-to-br from-amber-500/20 to-orange-500/20 shadow-md">
+                        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[var(--surface-2)] border border-[var(--border)] flex-shrink-0 flex items-center justify-center font-mono font-bold text-xs text-amber-400 bg-gradient-to-br from-amber-500/20 to-orange-500/20 shadow-md">
                           {initial}
                         </div>
 
                         <div className="min-w-0 flex flex-col justify-center">
                           <div className="flex items-center gap-2">
-                            <span className="font-sans font-bold text-sm sm:text-base text-white tracking-tight truncate">
+                            <span className="font-sans font-bold text-sm sm:text-base text-[var(--text)] tracking-tight truncate">
                               {room.name}
                             </span>
                             {room.is_private ? (
@@ -974,14 +977,14 @@ CREATE POLICY "Hosts can update their own study rooms"
                             )}
                           </div>
 
-                          <div className="flex items-center gap-2 mt-0.5 text-xs text-neutral-400 font-mono">
+                          <div className="flex items-center gap-2 mt-0.5 text-xs text-[var(--text-dim)] font-mono">
                             {isHost ? (
                               <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 uppercase tracking-wider flex items-center gap-1">
                                 <Crown className="w-2.5 h-2.5" />
                                 YOU (HOST)
                               </span>
                             ) : (
-                              <span className="text-neutral-400 truncate">
+                              <span className="text-[var(--text-dim)] truncate">
                                 @{room.host_id ? String(room.host_id).slice(0, 6) : 'host'}
                               </span>
                             )}
@@ -989,7 +992,7 @@ CREATE POLICY "Hosts can update their own study rooms"
                             <button
                               type="button"
                               onClick={(e) => handleCopyCode(shortCode, room.id, e)}
-                              className="inline-flex items-center gap-1 text-[11px] text-neutral-400 hover:text-white bg-white/[0.03] hover:bg-white/[0.08] px-1.5 py-0.5 rounded border border-white/10 transition-colors cursor-pointer"
+                              className="inline-flex items-center gap-1 text-[11px] text-[var(--text-dim)] hover:text-[var(--text)] bg-fg/[0.04] hover:bg-fg/[0.08] px-1.5 py-0.5 rounded border border-[var(--border)] transition-colors cursor-pointer"
                               title="Copy room code"
                             >
                               <span>#{shortCode}</span>
@@ -1095,28 +1098,28 @@ CREATE POLICY "Hosts can update their own study rooms"
         {!isLoading && view === 'explorer' && (
           <div className="space-y-4">
             {/* Search & Filter Bar (Tasks Quick Add Style) */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 p-3 sm:p-4 rounded-xl bg-black/30 border border-white/10 focus-within:border-amber-500/50 focus-within:ring-1 focus-within:ring-amber-500/20 transition-all relative z-10">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 p-3 sm:p-4 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] shadow-sm focus-within:border-amber-500/50 focus-within:ring-1 focus-within:ring-amber-500/20 transition-all relative z-10">
               <div className="flex-1 flex items-center gap-3 px-1">
-                <Search className="w-5 h-5 text-neutral-500 flex-shrink-0" />
+                <Search className="w-5 h-5 text-[var(--text-dim)] flex-shrink-0" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search focus rooms by title or 6-digit access code..."
-                  className="w-full bg-transparent text-sm sm:text-base text-white placeholder:text-neutral-500 focus:outline-none font-sans py-1"
+                  className="w-full bg-transparent text-sm sm:text-base text-[var(--text)] placeholder:text-[var(--text-dim)] focus:outline-none font-sans py-1"
                 />
                 {searchQuery && (
                   <button
                     type="button"
                     onClick={() => setSearchQuery('')}
-                    className="text-neutral-500 hover:text-white p-1 cursor-pointer"
+                    className="text-[var(--text-dim)] hover:text-[var(--text)] p-1 cursor-pointer"
                   >
                     <X className="w-4 h-4" />
                   </button>
                 )}
               </div>
 
-              <div className="flex flex-wrap items-center gap-1.5 pl-2 sm:pl-0 sm:border-l sm:border-white/10 pt-2 sm:pt-0 border-t border-white/10 sm:border-t-0">
+              <div className="flex flex-wrap items-center gap-1.5 pl-2 sm:pl-0 sm:border-l sm:border-[var(--border)] pt-2 sm:pt-0 border-t border-[var(--border)] sm:border-t-0">
                 {(['all', 'public', 'private'] as const).map((ft) => (
                   <button
                     key={ft}
@@ -1124,9 +1127,10 @@ CREATE POLICY "Hosts can update their own study rooms"
                     onClick={() => setFilterType(ft)}
                     className={`px-2.5 py-1.5 rounded-lg font-hud-mono text-[10px] sm:text-xs font-bold tracking-wider uppercase transition-all cursor-pointer ${
                       filterType === ft
-                        ? 'bg-amber-500 text-slate-950 shadow-sm'
-                        : 'bg-white/[0.03] border border-white/10 text-neutral-400 hover:text-neutral-200 hover:bg-white/[0.08]'
+                        ? 'shadow-sm'
+                        : 'bg-fg/[0.04] border border-[var(--border)] text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-fg/[0.08]'
                     }`}
+                    style={filterType === ft ? { backgroundColor: 'var(--accent)', color: 'var(--accent-contrast)' } : undefined}
                   >
                     {ft === 'all'
                       ? `All (${explorerRooms.length})`
@@ -1185,9 +1189,9 @@ CREATE POLICY "Hosts can update their own study rooms"
               </div>
             ) : (
               /* Table Layout */
-              <div className="w-full bg-white/[0.02] backdrop-blur-md border border-white/[0.07] rounded-2xl overflow-hidden shadow-2xl divide-y divide-white/[0.06]">
+              <div className="w-full bg-[var(--surface)] border border-[var(--border)] shadow-card rounded-2xl overflow-hidden divide-y divide-[var(--border)]">
                 {/* Column Headers */}
-                <div className="px-4 sm:px-6 py-3 bg-white/[0.015] text-[11px] sm:text-xs text-neutral-400 font-hud-mono uppercase tracking-wider flex items-center justify-between border-b border-white/[0.06] select-none">
+                <div className="px-4 sm:px-6 py-3 bg-[var(--surface-2)] text-[11px] sm:text-xs text-[var(--text-dim)] font-hud-mono uppercase tracking-wider flex items-center justify-between border-b border-[var(--border)] select-none">
                   <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
                     <span className="w-7 text-center">#</span>
                     <span>Room // Host</span>
@@ -1215,23 +1219,23 @@ CREATE POLICY "Hosts can update their own study rooms"
                       onClick={() => handleJoinClick(room)}
                       className={`relative w-full overflow-hidden transition-colors duration-150 flex items-center justify-between px-4 sm:px-6 cursor-pointer border-l-2 min-h-[60px] py-2.5 ${
                         isHost
-                          ? 'border-l-amber-400 bg-white/[0.04] hover:bg-white/[0.06]'
-                          : 'border-l-transparent hover:bg-white/[0.02]'
+                          ? 'border-l-amber-400 bg-fg/[0.04] hover:bg-fg/[0.06]'
+                          : 'border-l-transparent hover:bg-fg/[0.02]'
                       }`}
                     >
                       {/* Left: Index + Avatar + Title & Meta */}
                       <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
-                        <span className="w-7 text-center font-mono text-xs text-neutral-500 font-semibold shrink-0">
+                        <span className="w-7 text-center font-mono text-xs text-[var(--text-dim)] font-semibold shrink-0">
                           {idx + 1}
                         </span>
 
-                        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#0c0e14] border border-white/10 flex-shrink-0 flex items-center justify-center font-mono font-bold text-xs text-amber-400 bg-gradient-to-br from-amber-500/20 to-orange-500/20 shadow-md">
+                        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[var(--surface-2)] border border-[var(--border)] flex-shrink-0 flex items-center justify-center font-mono font-bold text-xs text-amber-400 bg-gradient-to-br from-amber-500/20 to-orange-500/20 shadow-md">
                           {initial}
                         </div>
 
                         <div className="min-w-0 flex flex-col justify-center">
                           <div className="flex items-center gap-2">
-                            <span className="font-sans font-bold text-sm sm:text-base text-white tracking-tight truncate">
+                            <span className="font-sans font-bold text-sm sm:text-base text-[var(--text)] tracking-tight truncate">
                               {room.name}
                             </span>
                             {room.is_private ? (
@@ -1247,14 +1251,14 @@ CREATE POLICY "Hosts can update their own study rooms"
                             )}
                           </div>
 
-                          <div className="flex items-center gap-2 mt-0.5 text-xs text-neutral-400 font-mono">
+                          <div className="flex items-center gap-2 mt-0.5 text-xs text-[var(--text-dim)] font-mono">
                             {isHost ? (
                               <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 uppercase tracking-wider flex items-center gap-1">
                                 <Crown className="w-2.5 h-2.5" />
                                 YOU (HOST)
                               </span>
                             ) : (
-                              <span className="text-neutral-400 truncate">
+                              <span className="text-[var(--text-dim)] truncate">
                                 @{room.host_id ? String(room.host_id).slice(0, 6) : 'host'}
                               </span>
                             )}
@@ -1262,7 +1266,7 @@ CREATE POLICY "Hosts can update their own study rooms"
                             <button
                               type="button"
                               onClick={(e) => handleCopyCode(shortCode, room.id, e)}
-                              className="inline-flex items-center gap-1 text-[11px] text-neutral-400 hover:text-white bg-white/[0.03] hover:bg-white/[0.08] px-1.5 py-0.5 rounded border border-white/10 transition-colors cursor-pointer"
+                              className="inline-flex items-center gap-1 text-[11px] text-[var(--text-dim)] hover:text-[var(--text)] bg-fg/[0.04] hover:bg-fg/[0.08] px-1.5 py-0.5 rounded border border-[var(--border)] transition-colors cursor-pointer"
                               title="Copy room code"
                             >
                               <span>#{shortCode}</span>
@@ -1279,7 +1283,7 @@ CREATE POLICY "Hosts can update their own study rooms"
                       {/* Right Columns: Members, Status, Time, Action */}
                       <div className="flex items-center gap-4 sm:gap-6 md:gap-8 shrink-0">
                         {/* Members */}
-                        <div className="w-16 sm:w-24 flex items-center justify-center sm:justify-start gap-1.5 font-mono text-xs sm:text-sm text-neutral-300">
+                        <div className="w-16 sm:w-24 flex items-center justify-center sm:justify-start gap-1.5 font-mono text-xs sm:text-sm text-[var(--text)]">
                           <Users className="w-3.5 h-3.5 text-neutral-500 hidden sm:inline shrink-0" />
                           <span>{memberCount}</span>
                           <span className="text-neutral-600">/</span>
@@ -1361,25 +1365,25 @@ CREATE POLICY "Hosts can update their own study rooms"
           }}
           className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in"
         >
-          <div className="bg-[#0b0e14] border border-white/10 rounded-2xl w-full max-w-sm p-6 shadow-2xl relative text-slate-100">
+          <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl w-full max-w-sm p-6 shadow-card relative text-[var(--text)]">
             <button
               type="button"
               onClick={() => { setIsJoinCodeModalOpen(false); setCodeLookupError(''); }}
-              className="absolute top-4 right-4 text-neutral-400 hover:text-white transition-colors cursor-pointer p-1 rounded-lg hover:bg-white/[0.06]"
+              className="absolute top-4 right-4 text-[var(--text-dim)] hover:text-[var(--text)] transition-colors cursor-pointer p-1 rounded-lg hover:bg-fg/[0.06]"
             >
               <X className="w-5 h-5" />
             </button>
 
             <div>
-              <h2 className="font-hud font-bold text-lg text-white uppercase tracking-wider">
+              <h2 className="font-hud font-bold text-lg text-[var(--text)] uppercase tracking-wider">
                 ENTER ROOM CODE
               </h2>
-              <p className="text-xs text-neutral-400 font-mono mt-1">
+              <p className="text-xs text-[var(--text-dim)] font-mono mt-1">
                 Enter the 6-character room code shared by your squad (e.g. AC9324).
               </p>
             </div>
 
-            <div className="h-px w-full bg-white/[0.08] my-4" />
+            <div className="h-px w-full bg-[var(--border)] my-4" />
 
             {codeLookupError && (
               <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-red-400 flex items-start gap-2 font-mono">
@@ -1390,7 +1394,7 @@ CREATE POLICY "Hosts can update their own study rooms"
 
             <form onSubmit={handleJoinByCode} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="font-hud-mono text-[10px] font-bold text-neutral-400 uppercase tracking-widest block">
+                <label className="font-hud-mono text-[10px] font-bold text-[var(--text-dim)] uppercase tracking-widest block">
                   ACCESS CODE
                 </label>
                 <input
@@ -1398,25 +1402,26 @@ CREATE POLICY "Hosts can update their own study rooms"
                   maxLength={12}
                   value={joinCodeInput}
                   onChange={(e) => setJoinCodeInput(e.target.value.toUpperCase())}
-                  className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-white font-mono tracking-widest text-base uppercase focus:outline-none focus:border-amber-500/50 transition-colors placeholder:text-neutral-600 placeholder:font-sans placeholder:text-xs"
+                  className="w-full bg-[var(--surface-2)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-[var(--text)] font-mono tracking-widest text-base uppercase focus:outline-none focus:border-amber-500/50 transition-colors placeholder:text-[var(--text-dim)] placeholder:font-sans placeholder:text-xs"
                   placeholder="e.g. AC9324"
                   autoFocus
                   required
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-white/[0.08]">
+              <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-[var(--border)]">
                 <button
                   type="button"
                   onClick={() => { setIsJoinCodeModalOpen(false); setCodeLookupError(''); }}
-                  className="px-3.5 py-2 text-xs font-hud-mono font-bold text-neutral-400 hover:text-white bg-white/[0.03] border border-white/10 rounded-lg transition-colors cursor-pointer uppercase tracking-wider"
+                  className="px-3.5 py-2 text-xs font-hud-mono font-bold text-[var(--text-dim)] hover:text-[var(--text)] bg-fg/[0.04] border border-[var(--border)] rounded-lg transition-colors cursor-pointer uppercase tracking-wider"
                 >
                   CANCEL
                 </button>
                 <button
                   type="submit"
                   disabled={isJoining || !joinCodeInput.trim()}
-                  className="px-5 py-2 text-xs font-hud-mono font-bold text-slate-950 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 hover:brightness-110 active:scale-95 bg-amber-500 uppercase tracking-wider"
+                  className="px-5 py-2 text-xs font-hud-mono font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 hover:brightness-110 active:scale-95 uppercase tracking-wider shadow-sm"
+                  style={{ backgroundColor: 'var(--accent)', color: 'var(--accent-contrast)' }}
                 >
                   {isJoining ? 'LOCATING...' : 'JOIN ROOM'}
                 </button>
@@ -1439,30 +1444,30 @@ CREATE POLICY "Hosts can update their own study rooms"
           }}
           className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in"
         >
-          <div className="bg-[#0b0e14] border border-white/10 rounded-2xl w-full max-w-md p-6 shadow-2xl relative text-slate-100">
+          <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl w-full max-w-md p-6 shadow-card relative text-[var(--text)]">
             <button
               type="button"
               onClick={() => setIsCreateModalOpen(false)}
-              className="absolute top-4 right-4 text-neutral-400 hover:text-white transition-colors cursor-pointer p-1 rounded-lg hover:bg-white/[0.06]"
+              className="absolute top-4 right-4 text-[var(--text-dim)] hover:text-[var(--text)] transition-colors cursor-pointer p-1 rounded-lg hover:bg-fg/[0.06]"
             >
               <X className="w-5 h-5" />
             </button>
 
             <div>
-              <h2 className="font-hud font-bold text-lg sm:text-xl text-white uppercase tracking-wider">
+              <h2 className="font-hud font-bold text-lg sm:text-xl text-[var(--text)] uppercase tracking-wider">
                 CREATE FOCUS ROOM
               </h2>
-              <p className="text-xs text-neutral-400 font-mono mt-1">
+              <p className="text-xs text-[var(--text-dim)] font-mono mt-1">
                 Synchronized focus hall for shared telemetry and accountability.
               </p>
             </div>
 
-            <div className="h-px w-full bg-white/[0.08] my-4" />
+            <div className="h-px w-full bg-[var(--border)] my-4" />
 
             <form onSubmit={handleCreateGroup} className="space-y-4">
               {/* Room Name */}
               <div className="space-y-1.5">
-                <label className="font-hud-mono text-[10px] font-bold text-neutral-400 uppercase tracking-widest block">
+                <label className="font-hud-mono text-[10px] font-bold text-[var(--text-dim)] uppercase tracking-widest block">
                   ROOM NAME // DESIGNATION
                 </label>
                 <input
@@ -1470,7 +1475,7 @@ CREATE POLICY "Hosts can update their own study rooms"
                   maxLength={40}
                   value={createRoomData.name}
                   onChange={(e) => setCreateRoomData({ ...createRoomData, name: e.target.value })}
-                  className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50 transition-colors text-sm font-sans"
+                  className="w-full bg-[var(--surface-2)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-[var(--text)] placeholder:text-[var(--text-dim)] focus:outline-none focus:border-amber-500/50 transition-colors text-sm font-sans"
                   placeholder="e.g. Deep Work Chamber"
                   required
                   autoFocus
@@ -1479,7 +1484,7 @@ CREATE POLICY "Hosts can update their own study rooms"
 
               {/* Access Protocol Toggle */}
               <div className="space-y-1.5">
-                <label className="font-hud-mono text-[10px] font-bold text-neutral-400 uppercase tracking-widest block">
+                <label className="font-hud-mono text-[10px] font-bold text-[var(--text-dim)] uppercase tracking-widest block">
                   ACCESS PROTOCOL
                 </label>
                 <div className="flex items-center gap-2">
@@ -1492,7 +1497,7 @@ CREATE POLICY "Hosts can update their own study rooms"
                     className={`px-3 py-1.5 rounded-lg font-hud-mono text-[10px] font-bold tracking-wider uppercase transition-all flex items-center gap-1.5 border cursor-pointer ${
                       !isPrivateCreate
                         ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-                        : 'bg-white/[0.02] border-white/10 text-neutral-400 hover:text-neutral-200 hover:bg-white/[0.05]'
+                        : 'bg-fg/[0.04] border border-[var(--border)] text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-fg/[0.08]'
                     }`}
                   >
                     <div className={`w-1.5 h-1.5 rounded-full ${!isPrivateCreate ? 'bg-emerald-400' : 'bg-neutral-500'}`} />
@@ -1504,7 +1509,7 @@ CREATE POLICY "Hosts can update their own study rooms"
                     className={`px-3 py-1.5 rounded-lg font-hud-mono text-[10px] font-bold tracking-wider uppercase transition-all flex items-center gap-1.5 border cursor-pointer ${
                       isPrivateCreate
                         ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
-                        : 'bg-white/[0.02] border-white/10 text-neutral-400 hover:text-neutral-200 hover:bg-white/[0.05]'
+                        : 'bg-fg/[0.04] border border-[var(--border)] text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-fg/[0.08]'
                     }`}
                   >
                     <div className={`w-1.5 h-1.5 rounded-full ${isPrivateCreate ? 'bg-amber-400' : 'bg-neutral-500'}`} />
@@ -1516,7 +1521,7 @@ CREATE POLICY "Hosts can update their own study rooms"
               {/* Password Input if Private */}
               {isPrivateCreate && (
                 <div className="space-y-1.5 pt-0.5">
-                  <label className="font-hud-mono text-[10px] font-bold text-neutral-400 uppercase tracking-widest block">
+                  <label className="font-hud-mono text-[10px] font-bold text-[var(--text-dim)] uppercase tracking-widest block">
                     ACCESS KEY // PASSWORD
                   </label>
                   <input
@@ -1524,7 +1529,7 @@ CREATE POLICY "Hosts can update their own study rooms"
                     maxLength={30}
                     value={createRoomData.password}
                     onChange={(e) => setCreateRoomData({ ...createRoomData, password: e.target.value })}
-                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-white font-mono placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50 transition-colors text-sm"
+                    className="w-full bg-[var(--surface-2)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-[var(--text)] font-mono placeholder:text-[var(--text-dim)] focus:outline-none focus:border-amber-500/50 transition-colors text-sm"
                     placeholder="Enter authorization key..."
                     required={isPrivateCreate}
                     autoFocus
@@ -1534,7 +1539,7 @@ CREATE POLICY "Hosts can update their own study rooms"
 
               {/* Capacity */}
               <div className="space-y-1.5">
-                <label className="font-hud-mono text-[10px] font-bold text-neutral-400 uppercase tracking-widest block">
+                <label className="font-hud-mono text-[10px] font-bold text-[var(--text-dim)] uppercase tracking-widest block">
                   CAPACITY // SCHOLARS
                 </label>
                 <select
@@ -1542,28 +1547,29 @@ CREATE POLICY "Hosts can update their own study rooms"
                   onChange={(e) =>
                     setCreateRoomData({ ...createRoomData, max_capacity: Number(e.target.value) })
                   }
-                  className="w-full px-3 py-2.5 rounded-xl bg-black/40 border border-white/10 text-neutral-200 text-xs font-hud-mono uppercase tracking-wider focus:outline-none focus:border-amber-500/50 cursor-pointer"
+                  className="w-full px-3 py-2.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] text-[var(--text)] text-xs font-hud-mono uppercase tracking-wider focus:outline-none focus:border-amber-500/50 cursor-pointer"
                 >
-                  <option value={2} className="bg-[#0b0e14] text-neutral-300">2 Scholars // Duo Focus</option>
-                  <option value={4} className="bg-[#0b0e14] text-neutral-300">4 Scholars // Strike Team</option>
-                  <option value={10} className="bg-[#0b0e14] text-neutral-300">10 Scholars // Study Squad</option>
-                  <option value={50} className="bg-[#0b0e14] text-neutral-300">50 Scholars // Open Hall</option>
+                  <option value={2} className="bg-[var(--surface)] text-[var(--text)]">2 Scholars // Duo Focus</option>
+                  <option value={4} className="bg-[var(--surface)] text-[var(--text)]">4 Scholars // Strike Team</option>
+                  <option value={10} className="bg-[var(--surface)] text-[var(--text)]">10 Scholars // Study Squad</option>
+                  <option value={50} className="bg-[var(--surface)] text-[var(--text)]">50 Scholars // Open Hall</option>
                 </select>
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-white/[0.08]">
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[var(--border)]">
                 <button
                   type="button"
                   onClick={() => setIsCreateModalOpen(false)}
-                  className="px-3.5 py-2 text-xs font-hud-mono font-bold text-neutral-400 hover:text-white bg-white/[0.03] border border-white/10 rounded-lg transition-colors cursor-pointer uppercase tracking-wider"
+                  className="px-3.5 py-2 text-xs font-hud-mono font-bold text-[var(--text-dim)] hover:text-[var(--text)] bg-fg/[0.04] border border-[var(--border)] rounded-lg transition-colors cursor-pointer uppercase tracking-wider"
                 >
                   CANCEL
                 </button>
                 <button
                   type="submit"
                   disabled={isCreating || !createRoomData.name.trim() || (isPrivateCreate && !createRoomData.password.trim())}
-                  className="px-5 py-2 text-xs font-hud-mono font-bold text-slate-950 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 hover:brightness-110 active:scale-95 bg-amber-500 uppercase tracking-wider"
+                  className="px-5 py-2 text-xs font-hud-mono font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 hover:brightness-110 active:scale-95 uppercase tracking-wider shadow-sm"
+                  style={{ backgroundColor: 'var(--accent)', color: 'var(--accent-contrast)' }}
                 >
                   {isCreating ? 'INITIALIZING...' : 'LAUNCH ROOM'} <span className="font-sans text-[10px] opacity-70">⏎</span>
                 </button>
@@ -1587,28 +1593,28 @@ CREATE POLICY "Hosts can update their own study rooms"
           }}
           className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in"
         >
-          <div className="bg-[#0b0e14] border border-white/10 rounded-2xl w-full max-w-sm p-6 shadow-2xl relative text-slate-100">
+          <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl w-full max-w-sm p-6 shadow-card relative text-[var(--text)]">
             <button
               type="button"
               onClick={() => {
                 setSelectedRoomToJoin(null);
                 setJoinPassword('');
               }}
-              className="absolute top-4 right-4 text-neutral-400 hover:text-white transition-colors cursor-pointer p-1 rounded-lg hover:bg-white/[0.06]"
+              className="absolute top-4 right-4 text-[var(--text-dim)] hover:text-[var(--text)] transition-colors cursor-pointer p-1 rounded-lg hover:bg-fg/[0.06]"
             >
               <X className="w-5 h-5" />
             </button>
 
             <div>
-              <h2 className="font-hud font-bold text-lg text-white uppercase tracking-wider">
+              <h2 className="font-hud font-bold text-lg text-[var(--text)] uppercase tracking-wider">
                 AUTHORIZATION REQUIRED
               </h2>
-              <p className="text-xs text-neutral-400 font-mono mt-1">
+              <p className="text-xs text-[var(--text-dim)] font-mono mt-1">
                 "{selectedRoomToJoin.name}" requires an access key to enter.
               </p>
             </div>
 
-            <div className="h-px w-full bg-white/[0.08] my-4" />
+            <div className="h-px w-full bg-[var(--border)] my-4" />
 
             {joinError && (
               <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-mono font-bold text-center animate-in fade-in">
@@ -1624,35 +1630,36 @@ CREATE POLICY "Hosts can update their own study rooms"
               className="space-y-4"
             >
               <div className="space-y-1.5">
-                <label className="font-hud-mono text-[10px] font-bold text-neutral-400 uppercase tracking-widest block">
+                <label className="font-hud-mono text-[10px] font-bold text-[var(--text-dim)] uppercase tracking-widest block">
                   ROOM PASSWORD
                 </label>
                 <input
                   type="password"
                   value={joinPassword}
                   onChange={(e) => setJoinPassword(e.target.value)}
-                  className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-white font-mono focus:outline-none focus:border-amber-500/50 transition-colors text-sm"
+                  className="w-full bg-[var(--surface-2)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-[var(--text)] font-mono focus:outline-none focus:border-amber-500/50 transition-colors text-sm"
                   placeholder="Enter access key..."
                   autoFocus
                   required
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-white/[0.08]">
+              <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-[var(--border)]">
                 <button
                   type="button"
                   onClick={() => {
                     setSelectedRoomToJoin(null);
                     setJoinPassword('');
                   }}
-                  className="px-3.5 py-2 text-xs font-hud-mono font-bold text-neutral-400 hover:text-white bg-white/[0.03] border border-white/10 rounded-lg transition-colors cursor-pointer uppercase tracking-wider"
+                  className="px-3.5 py-2 text-xs font-hud-mono font-bold text-[var(--text-dim)] hover:text-[var(--text)] bg-fg/[0.04] border border-[var(--border)] rounded-lg transition-colors cursor-pointer uppercase tracking-wider"
                 >
                   CANCEL
                 </button>
                 <button
                   type="submit"
                   disabled={isJoining}
-                  className="px-5 py-2 text-xs font-hud-mono font-bold text-slate-950 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 hover:brightness-110 active:scale-95 bg-amber-500 uppercase tracking-wider"
+                  className="px-5 py-2 text-xs font-hud-mono font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 hover:brightness-110 active:scale-95 uppercase tracking-wider shadow-sm"
+                  style={{ backgroundColor: 'var(--accent)', color: 'var(--accent-contrast)' }}
                 >
                   {isJoining ? 'VERIFYING...' : 'UNLOCK & JOIN'}
                 </button>
@@ -1675,27 +1682,27 @@ CREATE POLICY "Hosts can update their own study rooms"
           }}
           className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in"
         >
-          <div className="bg-[#0b0e14] border border-red-500/30 rounded-2xl w-full max-w-sm p-6 shadow-2xl relative flex flex-col items-center text-center text-slate-100">
+          <div className="bg-[var(--surface)] border border-red-500/30 rounded-2xl w-full max-w-sm p-6 shadow-card relative flex flex-col items-center text-center text-[var(--text)]">
             <button
               type="button"
               onClick={() => setJoinError('')}
-              className="absolute top-4 right-4 text-neutral-400 hover:text-white transition-colors cursor-pointer p-1 rounded-lg hover:bg-white/[0.06]"
+              className="absolute top-4 right-4 text-[var(--text-dim)] hover:text-[var(--text)] transition-colors cursor-pointer p-1 rounded-lg hover:bg-fg/[0.06]"
             >
               <X className="w-5 h-5" />
             </button>
             <div className="w-10 h-10 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-3 text-red-400">
               <AlertCircle className="w-5 h-5" />
             </div>
-            <h2 className="font-hud font-bold text-lg text-white uppercase tracking-wider mb-1">
+            <h2 className="font-hud font-bold text-lg text-[var(--text)] uppercase tracking-wider mb-1">
               ACCESS DENIED
             </h2>
-            <p className="text-xs text-neutral-400 font-mono mb-6 leading-relaxed">
+            <p className="text-xs text-[var(--text-dim)] font-mono mb-6 leading-relaxed">
               {joinError}
             </p>
             <button
               type="button"
               onClick={() => setJoinError('')}
-              className="w-full bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 text-white font-hud-mono font-bold text-xs uppercase tracking-wider py-2.5 rounded-lg transition-colors cursor-pointer"
+              className="w-full bg-fg/[0.05] hover:bg-fg/[0.1] border border-[var(--border)] text-[var(--text)] font-hud-mono font-bold text-xs uppercase tracking-wider py-2.5 rounded-lg transition-colors cursor-pointer"
             >
               DISMISS
             </button>
@@ -1716,30 +1723,30 @@ CREATE POLICY "Hosts can update their own study rooms"
           }}
           className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in"
         >
-          <div className="bg-[#0b0e14] border border-white/10 rounded-2xl w-full max-w-sm p-6 shadow-2xl relative text-slate-100">
+          <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl w-full max-w-sm p-6 shadow-card relative text-[var(--text)]">
             <button
               type="button"
               onClick={() => setRoomToDelete(null)}
-              className="absolute top-4 right-4 text-neutral-400 hover:text-white transition-colors cursor-pointer p-1 rounded-lg hover:bg-white/[0.06]"
+              className="absolute top-4 right-4 text-[var(--text-dim)] hover:text-[var(--text)] transition-colors cursor-pointer p-1 rounded-lg hover:bg-fg/[0.06]"
               disabled={isDeleting}
             >
               <X className="w-5 h-5" />
             </button>
-            <h2 className="font-hud font-bold text-lg text-white uppercase tracking-wider mb-1">
+            <h2 className="font-hud font-bold text-lg text-[var(--text)] uppercase tracking-wider mb-1">
               {roomToDelete.host_id === user?.id ? 'TERMINATE FOCUS ROOM?' : 'DISCONNECT FROM ROOM?'}
             </h2>
-            <p className="text-xs text-neutral-400 font-mono mb-6 leading-relaxed">
+            <p className="text-xs text-[var(--text-dim)] font-mono mb-6 leading-relaxed">
               {roomToDelete.host_id === user?.id
                 ? `Are you sure you want to delete "${roomToDelete.name}"? This operation cannot be undone and all active members will be disconnected.`
                 : `Are you sure you want to leave "${roomToDelete.name}"? You can rejoin anytime from the explorer.`}
             </p>
 
-            <div className="flex gap-2.5 pt-2 border-t border-white/[0.08]">
+            <div className="flex gap-2.5 pt-2 border-t border-[var(--border)]">
               <button
                 type="button"
                 onClick={() => setRoomToDelete(null)}
                 disabled={isDeleting}
-                className="flex-1 py-2 rounded-lg font-hud-mono text-xs font-bold tracking-wider uppercase text-neutral-300 bg-white/[0.03] border border-white/10 hover:bg-white/[0.08] transition-colors disabled:opacity-50 cursor-pointer"
+                className="flex-1 py-2 rounded-lg font-hud-mono text-xs font-bold tracking-wider uppercase text-[var(--text-dim)] bg-fg/[0.04] border border-[var(--border)] hover:bg-fg/[0.08] transition-colors disabled:opacity-50 cursor-pointer"
               >
                 CANCEL
               </button>
@@ -1769,26 +1776,26 @@ CREATE POLICY "Hosts can update their own study rooms"
           }}
           className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in"
         >
-          <div className="bg-[#0b0e14] border border-white/10 rounded-2xl w-full max-w-md p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto text-slate-100">
+          <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl w-full max-w-md p-6 shadow-card relative max-h-[90vh] overflow-y-auto text-[var(--text)]">
             <button
               type="button"
               onClick={() => setEditingRoom(null)}
-              className="absolute top-4 right-4 text-neutral-400 hover:text-white transition-colors cursor-pointer p-1 rounded-lg hover:bg-white/[0.06]"
+              className="absolute top-4 right-4 text-[var(--text-dim)] hover:text-[var(--text)] transition-colors cursor-pointer p-1 rounded-lg hover:bg-fg/[0.06]"
               disabled={isUpdatingRoom}
             >
               <X className="w-5 h-5" />
             </button>
 
             <div>
-              <h2 className="font-hud font-bold text-lg text-white uppercase tracking-wider">
+              <h2 className="font-hud font-bold text-lg text-[var(--text)] uppercase tracking-wider">
                 ROOM SETTINGS // CONTROLS
               </h2>
-              <p className="text-xs text-neutral-400 font-mono mt-1">
+              <p className="text-xs text-[var(--text-dim)] font-mono mt-1">
                 Host management for #{editingRoom.short_code || editingRoom.id.slice(0, 6).toUpperCase()}
               </p>
             </div>
 
-            <div className="h-px w-full bg-white/[0.08] my-4" />
+            <div className="h-px w-full bg-[var(--border)] my-4" />
 
             {editRoomError && (
               <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-mono font-bold animate-in fade-in flex items-center gap-2">
@@ -1808,7 +1815,7 @@ CREATE POLICY "Hosts can update their own study rooms"
                     </p>
                   </div>
                 </div>
-                <div className="bg-black/60 p-3 rounded-lg border border-white/5 text-[11px] text-slate-300 overflow-x-auto select-all">
+                <div className="bg-[var(--surface-2)] p-3 rounded-lg border border-[var(--border)] text-[11px] text-[var(--text-dim)] overflow-x-auto select-all">
                   <pre>{ROOMS_RLS_SQL}</pre>
                 </div>
                 <div className="flex items-center gap-2 pt-1 flex-wrap">
@@ -1827,7 +1834,7 @@ CREATE POLICY "Hosts can update their own study rooms"
             <form onSubmit={handleSaveRoomSettings} className="space-y-4">
               {/* Room Name */}
               <div className="space-y-1.5">
-                <label className="font-hud-mono text-[10px] font-bold text-neutral-400 uppercase tracking-widest block">
+                <label className="font-hud-mono text-[10px] font-bold text-[var(--text-dim)] uppercase tracking-widest block">
                   ROOM NAME
                 </label>
                 <input
@@ -1835,7 +1842,7 @@ CREATE POLICY "Hosts can update their own study rooms"
                   maxLength={40}
                   value={editRoomName}
                   onChange={(e) => setEditRoomName(e.target.value)}
-                  className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50 transition-colors text-sm font-sans"
+                  className="w-full bg-[var(--surface-2)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-[var(--text)] placeholder:text-[var(--text-dim)] focus:outline-none focus:border-amber-500/50 transition-colors text-sm font-sans"
                   placeholder="e.g. Deep Work Chamber"
                   required
                 />
@@ -1844,7 +1851,7 @@ CREATE POLICY "Hosts can update their own study rooms"
               {/* Password & Privacy */}
               <div className="space-y-2 pt-1">
                 <div className="flex items-center justify-between">
-                  <label className="font-hud-mono text-[10px] font-bold text-neutral-400 uppercase tracking-widest block">
+                  <label className="font-hud-mono text-[10px] font-bold text-[var(--text-dim)] uppercase tracking-widest block">
                     PASSWORD & PRIVACY
                   </label>
                   <span className={`text-[10px] font-hud-mono font-bold px-2 py-0.5 rounded-full border ${
@@ -1863,7 +1870,7 @@ CREATE POLICY "Hosts can update their own study rooms"
                     className={`py-2 px-3 rounded-lg border font-hud-mono text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
                       !editIsPrivate
                         ? 'bg-amber-500 text-slate-950 border-amber-500'
-                        : 'bg-white/[0.02] border-white/10 text-neutral-400 hover:text-white'
+                        : 'bg-fg/[0.04] border border-[var(--border)] text-[var(--text-dim)] hover:text-[var(--text)]'
                     }`}
                   >
                     Public (Open)
@@ -1874,7 +1881,7 @@ CREATE POLICY "Hosts can update their own study rooms"
                     className={`py-2 px-3 rounded-lg border font-hud-mono text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
                       editIsPrivate
                         ? 'bg-amber-500 text-slate-950 border-amber-500'
-                        : 'bg-white/[0.02] border-white/10 text-neutral-400 hover:text-white'
+                        : 'bg-fg/[0.04] border border-[var(--border)] text-[var(--text-dim)] hover:text-[var(--text)]'
                     }`}
                   >
                     Private (Password)
@@ -1890,14 +1897,14 @@ CREATE POLICY "Hosts can update their own study rooms"
                         value={editPassword}
                         onChange={(e) => setEditPassword(e.target.value)}
                         placeholder="Enter room password..."
-                        className="w-full bg-black/40 border border-white/10 rounded-xl pl-4 pr-20 py-2.5 text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50 transition-colors text-sm font-mono"
+                        className="w-full bg-[var(--surface-2)] border border-[var(--border)] rounded-xl pl-4 pr-20 py-2.5 text-[var(--text)] placeholder:text-[var(--text-dim)] focus:outline-none focus:border-amber-500/50 transition-colors text-sm font-mono"
                         required={editIsPrivate}
                       />
                       <div className="absolute right-2 flex items-center gap-1">
                         <button
                           type="button"
                           onClick={() => setShowEditPassword(!showEditPassword)}
-                          className="p-1 rounded text-neutral-400 hover:text-white transition-colors cursor-pointer"
+                          className="p-1 rounded text-[var(--text-dim)] hover:text-[var(--text)] transition-colors cursor-pointer"
                           title={showEditPassword ? 'Hide password' : 'Show password'}
                         >
                           {showEditPassword ? <EyeOff className="w-4 h-4 text-amber-400" /> : <Eye className="w-4 h-4" />}
@@ -1906,7 +1913,7 @@ CREATE POLICY "Hosts can update their own study rooms"
                           type="button"
                           disabled={!editPassword.trim()}
                           onClick={handleCopyEditPassword}
-                          className="p-1 rounded text-neutral-400 hover:text-white transition-colors cursor-pointer disabled:opacity-30"
+                          className="p-1 rounded text-[var(--text-dim)] hover:text-[var(--text)] transition-colors cursor-pointer disabled:opacity-30"
                           title="Copy password"
                         >
                           {copiedEditPassword ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
@@ -1915,7 +1922,7 @@ CREATE POLICY "Hosts can update their own study rooms"
                     </div>
                   </div>
                 ) : (
-                  <p className="text-[11px] text-neutral-500 font-mono">
+                  <p className="text-[11px] text-[var(--text-dim)] font-mono">
                     Anyone can enter this room without typing a password.
                   </p>
                 )}
@@ -1924,7 +1931,7 @@ CREATE POLICY "Hosts can update their own study rooms"
               {/* Room Member Capacity */}
               <div className="space-y-2 pt-1">
                 <div className="flex items-center justify-between">
-                  <label className="font-hud-mono text-[10px] font-bold text-neutral-400 uppercase tracking-widest block">
+                  <label className="font-hud-mono text-[10px] font-bold text-[var(--text-dim)] uppercase tracking-widest block">
                     MEMBER CAPACITY
                   </label>
                   <span className="text-xs font-mono font-bold text-amber-400">
@@ -1932,20 +1939,20 @@ CREATE POLICY "Hosts can update their own study rooms"
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between p-3 rounded-xl bg-black/40 border border-white/10">
-                  <span className="text-xs text-neutral-300 font-mono">Max Scholars</span>
+                <div className="flex items-center justify-between p-3 rounded-xl bg-[var(--surface-2)] border border-[var(--border)]">
+                  <span className="text-xs text-[var(--text-dim)] font-mono">Max Scholars</span>
 
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
                       disabled={editMaxCapacity <= Math.max(2, editingRoom.room_members?.[0]?.count || 1)}
                       onClick={() => setEditMaxCapacity((prev) => Math.max(Math.max(2, editingRoom.room_members?.[0]?.count || 1), prev - 1))}
-                      className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 disabled:opacity-30 border border-white/10 text-white flex items-center justify-center cursor-pointer font-bold"
+                      className="w-8 h-8 rounded-lg bg-fg/[0.04] hover:bg-fg/[0.08] disabled:opacity-30 border border-[var(--border)] text-[var(--text)] flex items-center justify-center cursor-pointer font-bold"
                     >
                       <Minus className="w-3.5 h-3.5" />
                     </button>
 
-                    <span className="min-w-[40px] text-center font-mono font-bold text-white text-base">
+                    <span className="min-w-[40px] text-center font-mono font-bold text-[var(--text)] text-base">
                       {editMaxCapacity}
                     </span>
 
@@ -1976,8 +1983,8 @@ CREATE POLICY "Hosts can update their own study rooms"
                           isSelected
                             ? 'bg-amber-500 text-slate-950 border-amber-400'
                             : isDisabled
-                            ? 'opacity-30 bg-white/[0.02] border-white/5 text-neutral-600 cursor-not-allowed'
-                            : 'bg-white/5 hover:bg-white/10 text-neutral-300 border-white/10'
+                            ? 'opacity-30 bg-fg/[0.02] border-[var(--border)] text-[var(--text-faint)] cursor-not-allowed'
+                            : 'bg-fg/[0.04] hover:bg-fg/[0.08] text-[var(--text-dim)] border border-[var(--border)]'
                         }`}
                       >
                         {num}
@@ -1988,11 +1995,12 @@ CREATE POLICY "Hosts can update their own study rooms"
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-2 pt-3 border-t border-white/[0.08]">
+              <div className="flex flex-col sm:flex-row gap-2 pt-3 border-t border-[var(--border)]">
                 <button
                   type="submit"
                   disabled={isUpdatingRoom}
-                  className="flex-1 py-2.5 px-4 rounded-lg bg-amber-500 hover:brightness-110 text-slate-950 font-hud-mono font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                  className="flex-1 py-2.5 px-4 rounded-lg text-slate-950 font-hud-mono font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shadow-sm"
+                  style={{ backgroundColor: 'var(--accent)', color: 'var(--accent-contrast)' }}
                 >
                   {isUpdatingRoom ? 'SAVING...' : 'SAVE SETTINGS'}
                 </button>
@@ -2005,7 +2013,7 @@ CREATE POLICY "Hosts can update their own study rooms"
                     setActiveRoomInitialTab('settings');
                     setActiveRoomId(id);
                   }}
-                  className="py-2.5 px-4 rounded-lg bg-white/5 hover:bg-white/10 text-neutral-300 hover:text-white border border-white/10 font-hud-mono font-bold text-xs uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                  className="py-2.5 px-4 rounded-lg bg-fg/[0.04] hover:bg-fg/[0.08] text-[var(--text-dim)] hover:text-[var(--text)] border border-[var(--border)] font-hud-mono font-bold text-xs uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1.5"
                   title="Open full controls inside room"
                 >
                   <span>OPEN IN ROOM</span>
@@ -2014,14 +2022,14 @@ CREATE POLICY "Hosts can update their own study rooms"
               </div>
 
               {/* Danger Zone: Delete Room */}
-              <div className="pt-3 mt-1 border-t border-white/5">
+              <div className="pt-3 mt-1 border-t border-[var(--border)]">
                 <div className="flex items-center justify-between p-3 rounded-xl bg-red-500/5 border border-red-500/15">
                   <div className="flex flex-col pr-2">
                     <span className="text-xs font-hud-mono font-bold text-red-400 flex items-center gap-1.5 uppercase">
                       <Trash2 className="w-3.5 h-3.5" />
                       Delete Room
                     </span>
-                    <span className="text-[11px] text-neutral-500 leading-tight mt-0.5 font-mono">
+                    <span className="text-[11px] text-[var(--text-dim)] leading-tight mt-0.5 font-mono">
                       Permanently terminate this room and disconnect all scholars.
                     </span>
                   </div>

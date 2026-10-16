@@ -190,10 +190,10 @@ function WheelColumn({
         aria-valuemin={0}
         aria-valuemax={maxVal}
         onKeyDown={handleKeyDown}
-        className="relative w-20 sm:w-24 h-[132px] overflow-hidden rounded-2xl outline-none focus-visible:ring-1 focus-visible:ring-white/30"
+        className="relative w-20 sm:w-24 h-[132px] overflow-hidden rounded-2xl outline-none focus-visible:ring-1 focus-visible:ring-fg/30"
       >
         {/* Subtle center row selection band */}
-        <div className="absolute top-[44px] left-0 right-0 h-[44px] bg-white/[0.07] border border-white/[0.09] rounded-xl pointer-events-none z-0" />
+        <div className="absolute top-[44px] left-0 right-0 h-[44px] bg-fg/[0.07] border border-fg/[0.09] rounded-xl pointer-events-none z-0" />
 
         {/* Scroll-Snap Wheel Container */}
         <div
@@ -232,8 +232,8 @@ function WheelColumn({
                 }}
                 className={`snap-center flex items-center justify-center font-mono tabular-nums text-3xl sm:text-4xl font-bold cursor-pointer transition-colors duration-120 ${
                   isSelected
-                    ? 'text-white'
-                    : 'text-zinc-500 hover:text-zinc-300 opacity-40 hover:opacity-75 scale-90'
+                    ? 'text-[var(--text)]'
+                    : 'text-[var(--text-dim)] opacity-40 hover:opacity-75 scale-90'
                 }`}
               >
                 {isSelected && isTyping ? (
@@ -248,7 +248,7 @@ function WheelColumn({
                     onChange={handleInputChange}
                     onBlur={handleInputBlur}
                     onKeyDown={handleInputKeyDown}
-                    className="w-14 h-9 bg-white/[0.12] border border-white/20 rounded-lg text-center font-mono tabular-nums text-2xl font-bold text-white outline-none focus:ring-1 focus:ring-white placeholder-zinc-500"
+                    className="w-14 h-9 bg-fg/[0.12] border border-fg/20 rounded-lg text-center font-mono tabular-nums text-2xl font-bold text-[var(--text)] outline-none focus:ring-1 focus:ring-fg placeholder-[var(--text-faint)]"
                     autoFocus
                   />
                 ) : (
@@ -263,12 +263,12 @@ function WheelColumn({
         </div>
 
         {/* Top and Bottom Gradient Fades */}
-        <div className="absolute inset-x-0 top-0 h-9 bg-gradient-to-b from-[#0c0e14] via-[#0c0e14]/80 to-transparent pointer-events-none z-20" />
-        <div className="absolute inset-x-0 bottom-0 h-9 bg-gradient-to-t from-[#0c0e14] via-[#0c0e14]/80 to-transparent pointer-events-none z-20" />
+        <div className="absolute inset-x-0 top-0 h-9 bg-gradient-to-b from-[var(--surface-2)] via-[var(--surface-2)]/80 to-transparent pointer-events-none z-20" />
+        <div className="absolute inset-x-0 bottom-0 h-9 bg-gradient-to-t from-[var(--surface-2)] via-[var(--surface-2)]/80 to-transparent pointer-events-none z-20" />
       </div>
 
       {/* Column Unit Label */}
-      <span className="text-[11px] font-mono text-zinc-400 mt-1 uppercase tracking-wider select-none">
+      <span className="text-[11px] font-mono text-[var(--text-dim)] mt-1 uppercase tracking-wider select-none">
         {label}
       </span>
     </div>
@@ -377,17 +377,17 @@ export function CountdownEditor({ initialSeconds, onSave, onCancel }: CountdownE
             : { opacity: 0, scale: 0.97, y: 16 }
         }
         transition={{ duration: 0.22, ease: 'easeOut' }}
-        className="relative w-full max-w-[440px] bg-[#0c0e14] border border-white/[0.08] rounded-t-[24px] sm:rounded-[24px] shadow-2xl p-5 sm:p-6 overflow-hidden flex flex-col pb-8 sm:pb-6"
+        className="relative w-full max-w-[440px] bg-[var(--surface)] border border-[var(--border)] rounded-t-[24px] sm:rounded-[24px] shadow-card p-5 sm:p-6 overflow-hidden flex flex-col pb-8 sm:pb-6"
       >
         {/* Mobile Drag/Grab Handle */}
-        <div className="w-10 h-1 bg-white/20 rounded-full mx-auto sm:hidden mb-3" />
+        <div className="w-10 h-1 bg-fg/20 rounded-full mx-auto sm:hidden mb-3" />
 
         {/* Header */}
         <div className="flex items-start justify-between mb-5">
           <div>
             <h2
               id="countdown-modal-title"
-              className="text-base sm:text-lg font-bold text-white tracking-tight leading-snug"
+              className="text-base sm:text-lg font-bold text-[var(--text)] tracking-tight leading-snug"
             >
               Set focus time
             </h2>
@@ -400,7 +400,7 @@ export function CountdownEditor({ initialSeconds, onSave, onCancel }: CountdownE
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.12, ease: 'easeOut' }}
-                  className="text-xs font-mono text-zinc-400 font-medium"
+                  className="text-xs font-mono text-[var(--text-dim)] font-medium"
                 >
                   {formatPlainWords(totalSeconds)}
                 </motion.span>
@@ -412,14 +412,14 @@ export function CountdownEditor({ initialSeconds, onSave, onCancel }: CountdownE
             type="button"
             onClick={onCancel}
             aria-label="Close modal"
-            className="p-1.5 rounded-full text-zinc-400 hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer -mr-1 -mt-1"
+            className="p-1.5 rounded-full text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-fg/[0.06] transition-colors cursor-pointer -mr-1 -mt-1"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Wheel Picker */}
-        <div className="relative py-3 px-3 bg-black/20 rounded-2xl border border-white/[0.04] mb-5 flex items-center justify-center gap-2 sm:gap-3">
+        <div className="relative py-3 px-3 bg-[var(--surface-2)] rounded-2xl border border-[var(--border)] mb-5 flex items-center justify-center gap-2 sm:gap-3">
           {/* Hours Column (Up to 24 hours only) */}
           <WheelColumn
             value={hours}
@@ -433,7 +433,7 @@ export function CountdownEditor({ initialSeconds, onSave, onCancel }: CountdownE
             ariaLabel="Hours"
           />
 
-          <span className="text-2xl sm:text-3xl font-mono font-bold text-zinc-600 pb-5 select-none -translate-y-1">
+          <span className="text-2xl sm:text-3xl font-mono font-bold text-[var(--text-faint)] pb-5 select-none -translate-y-1">
             :
           </span>
 
@@ -451,7 +451,7 @@ export function CountdownEditor({ initialSeconds, onSave, onCancel }: CountdownE
             ariaLabel="Minutes"
           />
 
-          <span className="text-2xl sm:text-3xl font-mono font-bold text-zinc-600 pb-5 select-none -translate-y-1">
+          <span className="text-2xl sm:text-3xl font-mono font-bold text-[var(--text-faint)] pb-5 select-none -translate-y-1">
             :
           </span>
 
@@ -469,9 +469,9 @@ export function CountdownEditor({ initialSeconds, onSave, onCancel }: CountdownE
         </div>
 
         {/* Footer Actions */}
-        <div className="flex items-center justify-between pt-4 border-t border-white/[0.06] mt-auto">
+        <div className="flex items-center justify-between pt-4 border-t border-[var(--border)] mt-auto">
           {/* Helper hint when total is 0 or less than 1 minute */}
-          <div className="text-[11px] font-mono text-amber-400/90 min-h-[16px]">
+          <div className="text-[11px] font-mono text-amber-500/90 min-h-[16px]">
             {isSaveDisabled && 'Pick at least 1 minute'}
           </div>
 
@@ -479,7 +479,7 @@ export function CountdownEditor({ initialSeconds, onSave, onCancel }: CountdownE
             <button
               type="button"
               onClick={onCancel}
-              className="px-4 py-2 rounded-xl text-xs font-semibold text-zinc-400 hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer"
+              className="px-4 py-2 rounded-xl text-xs font-semibold text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-fg/[0.06] transition-colors cursor-pointer"
             >
               Cancel
             </button>
@@ -490,8 +490,8 @@ export function CountdownEditor({ initialSeconds, onSave, onCancel }: CountdownE
               disabled={isSaveDisabled}
               className={`px-5 py-2 rounded-xl text-xs font-semibold transition-all duration-120 flex items-center gap-1.5 shadow-sm ${
                 isSaveDisabled
-                  ? 'bg-white/10 text-zinc-500 cursor-not-allowed'
-                  : 'bg-white text-zinc-950 hover:brightness-105 active:scale-[0.97] cursor-pointer'
+                  ? 'bg-fg/10 text-[var(--text-faint)] cursor-not-allowed'
+                  : 'bg-[var(--accent)] text-[var(--accent-contrast)] hover:brightness-105 active:scale-[0.97] cursor-pointer'
               }`}
             >
               <Check className="w-3.5 h-3.5 stroke-[2.5]" />

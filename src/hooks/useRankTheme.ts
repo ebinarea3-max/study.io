@@ -57,8 +57,13 @@ export function useRankTheme(): {
       root.style.setProperty('--tier-accent-rgb', rankPalette.accentRgb || '255, 255, 255');
       root.style.setProperty('--tier-accent-hover', rankPalette.accentHover || rankPalette.accent);
       root.style.setProperty('--tier-gradient', rankPalette.gradient || 'none');
-      root.style.setProperty('--tier-badge-bg', rankPalette.badgeBg || 'rgba(255, 255, 255, 0.08)');
-      root.style.setProperty('--tier-text-accent', rankPalette.textAccent || rankPalette.accent);
+      if (currentTheme === 'paper') {
+        root.style.removeProperty('--tier-accent-text');
+        root.style.removeProperty('--tier-text-accent');
+      } else {
+        root.style.setProperty('--tier-accent-text', rankPalette.textAccent || rankPalette.accent);
+        root.style.setProperty('--tier-text-accent', rankPalette.textAccent || rankPalette.accent);
+      }
 
       if (currentTheme === 'rank') {
         // Default "rank" theme: --accent follows tier
@@ -102,7 +107,7 @@ export function useRankTheme(): {
     surfaceHigh: 'var(--surface-2)',
     gradient: rankPalette.gradient,
     badgeBg: rankPalette.badgeBg,
-    textAccent: rankPalette.textAccent,
+    textAccent: 'var(--tier-accent-text)',
   }), [userRank.tier, rankPalette]);
 
   return {

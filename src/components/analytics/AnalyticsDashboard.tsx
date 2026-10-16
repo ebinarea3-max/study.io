@@ -680,17 +680,17 @@ export function AnalyticsDashboard({ onStartSession, onOpenSettings }: Analytics
 
 
   return (
-    <div className="w-full space-y-5 sm:space-y-6 text-slate-100">
+    <div className="w-full space-y-5 sm:space-y-6 text-[var(--text)]">
       {/* 1. Top Row — 3 Focus Time Metric Cards (Chronological Granularity: Today -> Week -> Month) */}
 
       <div className="grid grid-cols-3 md:grid-cols-3 gap-2 md:gap-4 w-full">
         {/* Card 1 (Left): Focus Time of Today */}
-        <div className="p-2.5 md:p-4 rounded-xl md:rounded-2xl bg-[var(--surface)] border border-[var(--border)] flex flex-col justify-between relative overflow-hidden group">
+        <div className="p-2.5 md:p-4 rounded-xl md:rounded-2xl bg-[var(--surface)] border border-[var(--border)] shadow-card flex flex-col justify-between relative overflow-hidden group">
           <div className="w-4 md:w-6 h-0.5 md:h-1 bg-[var(--accent)] rounded-full mb-1.5" />
-          <span className="text-[9px] sm:text-xs md:text-sm font-mono tracking-wider uppercase text-neutral-400 font-medium truncate leading-tight">
+          <span className="text-[9px] sm:text-xs md:text-sm font-mono tracking-wider uppercase text-[var(--text-dim)] font-medium truncate leading-tight">
             <span className="hidden md:inline">FOCUS TIME // </span>TODAY
           </span>
-          <div className="text-sm sm:text-lg md:text-2xl font-mono font-bold text-neutral-100 tabular-nums mt-1 truncate">
+          <div className="text-sm sm:text-lg md:text-2xl font-mono font-bold text-[var(--text)] tabular-nums mt-1 truncate">
             {(isLoading || isLoadingSessions) && !hasHydrated ? (
               <Skeleton className="h-5 sm:h-6 md:h-7 w-12 sm:w-16 md:w-24 my-0.5 bg-neutral-800" />
             ) : (
@@ -700,12 +700,12 @@ export function AnalyticsDashboard({ onStartSession, onOpenSettings }: Analytics
         </div>
 
         {/* Card 2 (Center): Focus Time of This Week */}
-        <div className="p-2.5 md:p-4 rounded-xl md:rounded-2xl bg-[var(--surface)] border border-[var(--border)] flex flex-col justify-between relative overflow-hidden group">
+        <div className="p-2.5 md:p-4 rounded-xl md:rounded-2xl bg-[var(--surface)] border border-[var(--border)] shadow-card flex flex-col justify-between relative overflow-hidden group">
           <div className="w-4 md:w-6 h-0.5 md:h-1 bg-[var(--accent)] rounded-full mb-1.5" />
-          <span className="text-[9px] sm:text-xs md:text-sm font-mono tracking-wider uppercase text-neutral-400 font-medium truncate leading-tight">
+          <span className="text-[9px] sm:text-xs md:text-sm font-mono tracking-wider uppercase text-[var(--text-dim)] font-medium truncate leading-tight">
             <span className="hidden md:inline">FOCUS TIME // </span>THIS WEEK
           </span>
-          <div className="text-sm sm:text-lg md:text-2xl font-mono font-bold text-neutral-100 tabular-nums mt-1 truncate">
+          <div className="text-sm sm:text-lg md:text-2xl font-mono font-bold text-[var(--text)] tabular-nums mt-1 truncate">
             {(isLoading || isLoadingSessions) && !hasHydrated ? (
               <Skeleton className="h-5 sm:h-6 md:h-7 w-12 sm:w-16 md:w-24 my-0.5 bg-neutral-800" />
             ) : (
@@ -715,12 +715,12 @@ export function AnalyticsDashboard({ onStartSession, onOpenSettings }: Analytics
         </div>
 
         {/* Card 3 (Right): Focus Time of This Month */}
-        <div className="p-2.5 md:p-4 rounded-xl md:rounded-2xl bg-[var(--surface)] border border-[var(--border)] flex flex-col justify-between relative overflow-hidden group">
+        <div className="p-2.5 md:p-4 rounded-xl md:rounded-2xl bg-[var(--surface)] border border-[var(--border)] shadow-card flex flex-col justify-between relative overflow-hidden group">
           <div className="w-4 md:w-6 h-0.5 md:h-1 bg-[var(--accent)] rounded-full mb-1.5" />
-          <span className="text-[9px] sm:text-xs md:text-sm font-mono tracking-wider uppercase text-neutral-400 font-medium truncate leading-tight">
+          <span className="text-[9px] sm:text-xs md:text-sm font-mono tracking-wider uppercase text-[var(--text-dim)] font-medium truncate leading-tight">
             <span className="hidden md:inline">FOCUS TIME // </span>THIS MONTH
           </span>
-          <div className="text-sm sm:text-lg md:text-2xl font-mono font-bold text-neutral-100 tabular-nums mt-1 truncate">
+          <div className="text-sm sm:text-lg md:text-2xl font-mono font-bold text-[var(--text)] tabular-nums mt-1 truncate">
             {(isLoading || isLoadingSessions) && !hasHydrated ? (
               <Skeleton className="h-5 sm:h-6 md:h-7 w-12 sm:w-16 md:w-24 my-0.5 bg-neutral-800" />
             ) : (
@@ -735,10 +735,10 @@ export function AnalyticsDashboard({ onStartSession, onOpenSettings }: Analytics
         {/* Left Card: Project / Subject Time Distribution (7 cols) */}
         <div className="md:col-span-7 hud-surface border border-[var(--border)] rounded-2xl p-4 sm:p-5 flex flex-col justify-start space-y-6 relative overflow-hidden">
           {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-white/[0.06]">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-[var(--border)]">
             <div className="flex items-center gap-2">
               <PieIcon className="w-4 h-4" style={{ color: theme.accent }} />
-              <h2 className="font-hud-mono text-xs uppercase font-bold text-neutral-200 tracking-wider">
+              <h2 className="font-hud-mono text-xs uppercase font-bold text-[var(--text)] tracking-wider">
                 Sector Time Allocation
               </h2>
             </div>
@@ -746,24 +746,24 @@ export function AnalyticsDashboard({ onStartSession, onOpenSettings }: Analytics
             {/* Timeframe Buttons & Navigation */}
             <div className="flex items-center gap-1.5 flex-wrap">
               {/* Stepper buttons */}
-              <div className="flex items-center bg-black/60 border border-[var(--border)] rounded-xl p-0.5">
+              <div className="flex items-center bg-[var(--surface-2)] border border-[var(--border)] rounded-xl p-0.5 shadow-sm">
                 <button
                   onClick={() => handleDistStep('prev')}
-                  className="p-1 rounded-lg hover:bg-white/[0.08] text-neutral-400 hover:text-white transition-colors cursor-pointer"
+                  className="p-1 rounded-lg hover:bg-fg/[0.08] text-[var(--text-dim)] hover:text-[var(--text)] transition-colors cursor-pointer"
                   title="Previous period"
                 >
                   <ChevronLeft className="w-3.5 h-3.5" />
                 </button>
                 <button
                   onClick={handleDistJumpToday}
-                  className="px-2 py-0.5 font-hud-mono text-[10px] font-bold text-neutral-300 hover:text-white transition-colors cursor-pointer tracking-wider"
+                  className="px-2 py-0.5 font-hud-mono text-[10px] font-bold text-[var(--text-dim)] hover:text-[var(--text)] transition-colors cursor-pointer tracking-wider"
                 >
                   TODAY
                 </button>
                 <button
                   onClick={() => handleDistStep('next')}
                   disabled={distTimeframe === 'daily' && distAnchorDate >= todayStr}
-                  className="p-1 rounded-lg hover:bg-white/[0.08] text-neutral-400 hover:text-white transition-colors cursor-pointer disabled:opacity-30 disabled:pointer-events-none"
+                  className="p-1 rounded-lg hover:bg-fg/[0.08] text-[var(--text-dim)] hover:text-[var(--text)] transition-colors cursor-pointer disabled:opacity-30 disabled:pointer-events-none"
                   title="Next period"
                 >
                   <ChevronRight className="w-3.5 h-3.5" />
@@ -771,15 +771,15 @@ export function AnalyticsDashboard({ onStartSession, onOpenSettings }: Analytics
               </div>
 
               {/* [ Daily | Weekly | Monthly | Yearly ] */}
-              <div className="flex items-center bg-black/60 border border-[var(--border)] rounded-xl p-0.5 text-[11px] font-bold">
+              <div className="flex items-center bg-[var(--surface-2)] border border-[var(--border)] rounded-xl p-0.5 text-[11px] font-bold shadow-sm">
                 {(['daily', 'weekly', 'monthly', 'yearly'] as Timeframe[]).map(tf => (
                   <button
                     key={tf}
                     onClick={() => setDistTimeframe(tf)}
                     className={`px-2 sm:px-2.5 py-1 rounded-lg font-hud-mono uppercase text-[10px] tracking-wider transition-all cursor-pointer ${
                       distTimeframe === tf
-                        ? 'text-slate-950 font-bold shadow-sm'
-                        : 'text-neutral-400 hover:text-white'
+                        ? 'text-[var(--accent-contrast)] font-bold shadow-sm'
+                        : 'text-[var(--text-dim)] hover:text-[var(--text)]'
                     }`}
                     style={distTimeframe === tf ? { backgroundColor: theme.accent } : undefined}
                   >
@@ -792,7 +792,7 @@ export function AnalyticsDashboard({ onStartSession, onOpenSettings }: Analytics
 
           {/* Active Range Sub-bar */}
           <div className="flex items-center justify-between px-0.5 pt-2 pb-4">
-            <span className="font-hud-mono text-sm sm:text-base text-neutral-300">{distRange.label}</span>
+            <span className="font-hud-mono text-sm sm:text-base text-[var(--text)]">{distRange.label}</span>
             <span className="font-hud-mono font-bold text-sm sm:text-base" style={{ color: theme.accent }}>
               TOTAL: {formatDurationWithSeconds(distTotalSeconds)}
             </span>
@@ -834,16 +834,16 @@ export function AnalyticsDashboard({ onStartSession, onOpenSettings }: Analytics
                       <div className="font-hud font-bold text-3xl tracking-tight" style={{ color: activeDonutSlice.color }}>
                         {formatDurationWithSeconds(activeDonutSlice.seconds)}
                       </div>
-                      <div className="font-hud-mono text-xs uppercase font-bold tracking-wider text-neutral-500 mt-1 truncate max-w-[120px]">
+                      <div className="font-hud-mono text-xs uppercase font-bold tracking-wider text-[var(--text-dim)] mt-1 truncate max-w-[120px]">
                         {activeDonutSlice.name}
                       </div>
                     </>
                   ) : (
                     <>
-                      <div className="font-hud font-bold text-white text-3xl tracking-tight">
+                      <div className="font-hud font-bold text-[var(--text)] text-3xl tracking-tight">
                         {formatDurationWithSeconds(distTotalSeconds)}
                       </div>
-                      <div className="font-hud-mono text-xs uppercase font-bold tracking-wider text-neutral-500 mt-1">
+                      <div className="font-hud-mono text-xs uppercase font-bold tracking-wider text-[var(--text-dim)] mt-1">
                         Total
                       </div>
                     </>
@@ -868,7 +868,7 @@ export function AnalyticsDashboard({ onStartSession, onOpenSettings }: Analytics
                         <Cell
                           key={`cell-${entry.name}-${entry.color}-${index}`}
                           fill={entry.color}
-                          stroke="#14171D"
+                          stroke="var(--surface)"
                           strokeWidth={2}
                           style={{ outline: 'none' }}
                           tabIndex={-1}
@@ -882,7 +882,7 @@ export function AnalyticsDashboard({ onStartSession, onOpenSettings }: Analytics
                           const item = payload[0].payload;
                           return (
                             <div className="bg-[var(--bg)] border border-[var(--border)] p-2.5 rounded-xl shadow-2xl text-xs font-hud-mono">
-                              <div className="flex items-center gap-1.5 font-bold text-white mb-0.5">
+                              <div className="flex items-center gap-1.5 font-bold text-[var(--text)] mb-0.5">
                                 <span
                                   className="w-2 h-2 rounded-full"
                                   style={{ backgroundColor: item.color }}
@@ -912,21 +912,21 @@ export function AnalyticsDashboard({ onStartSession, onOpenSettings }: Analytics
                           className="w-2.5 h-2.5 rounded-full flex-shrink-0 shadow-sm"
                           style={{ backgroundColor: sub.color }}
                         />
-                        <span className="font-bold text-white text-sm truncate">
+                        <span className="font-bold text-[var(--text)] text-sm truncate">
                           {sub.name}
                         </span>
                       </div>
                       <div className="flex items-center gap-2.5 flex-shrink-0">
-                        <span className="font-hud-mono text-white font-bold text-sm tabular-nums">
+                        <span className="font-hud-mono text-[var(--text)] font-bold text-sm tabular-nums">
                           {formatDurationWithSeconds(sub.seconds)}
                         </span>
-                        <span className="font-hud-mono text-xs text-neutral-400 font-bold tabular-nums">
+                        <span className="font-hud-mono text-xs text-[var(--text-dim)] font-bold tabular-nums">
                           {sub.percentage}%
                         </span>
                       </div>
                     </div>
                     {/* Progress Bar */}
-                    <div className="h-2 w-full rounded-full bg-black/60 overflow-hidden border border-white/[0.05]">
+                    <div className="h-2 w-full rounded-full bg-fg/[0.08] overflow-hidden border border-[var(--border)]">
                       <div
                         className="h-full rounded-full transition-all duration-300"
                         style={{
@@ -945,30 +945,30 @@ export function AnalyticsDashboard({ onStartSession, onOpenSettings }: Analytics
         {/* Right Card: Calendar (5 cols) */}
         <div className="md:col-span-5 hud-surface border border-[var(--border)] rounded-2xl p-4 sm:p-5 flex flex-col justify-between space-y-3 relative overflow-hidden">
           {/* Header */}
-          <div className="flex items-center pb-2.5 border-b border-white/[0.06]">
-            <h2 className="font-hud-mono text-xs uppercase font-bold text-neutral-200 tracking-wider flex items-center gap-2">
+          <div className="flex items-center pb-2.5 border-b border-[var(--border)]">
+            <h2 className="font-hud-mono text-xs uppercase font-bold text-[var(--text)] tracking-wider flex items-center gap-2">
               <CalendarIcon className="w-4 h-4" style={{ color: theme.accent }} />
               <span>Target Discipline Matrix</span>
             </h2>
           </div>
 
           {/* Sub-stats bar */}
-          <div className="grid grid-cols-3 gap-2 text-center bg-black/60 border border-white/[0.06] rounded-2xl p-3 sm:p-4 text-xs">
+          <div className="grid grid-cols-3 gap-2 text-center bg-[var(--surface-2)] border border-[var(--border)] rounded-2xl p-3 sm:p-4 text-xs shadow-sm">
             <div>
-              <div className="font-hud-mono text-neutral-500 uppercase text-[10px] sm:text-xs tracking-widest font-bold">Active Days</div>
-              <div className="font-hud font-bold text-2xl sm:text-3xl text-white tabular-nums mt-1 sm:mt-1.5">
+              <div className="font-hud-mono text-[var(--text-dim)] uppercase text-[10px] sm:text-xs tracking-widest font-bold">Active Days</div>
+              <div className="font-hud font-bold text-2xl sm:text-3xl text-[var(--text)] tabular-nums mt-1 sm:mt-1.5">
                 {calStats.focusDays}
               </div>
             </div>
-            <div className="border-x border-white/[0.06]">
-              <div className="font-hud-mono text-neutral-500 uppercase text-[10px] sm:text-xs tracking-widest font-bold">Target Met</div>
+            <div className="border-x border-[var(--border)]">
+              <div className="font-hud-mono text-[var(--text-dim)] uppercase text-[10px] sm:text-xs tracking-widest font-bold">Target Met</div>
               <div className="font-hud font-bold text-2xl sm:text-3xl tabular-nums mt-1 sm:mt-1.5" style={{ color: theme.accent }}>
                 {calStats.completedGoalDays}
               </div>
             </div>
             <div>
-              <div className="font-hud-mono text-neutral-500 uppercase text-[10px] sm:text-xs tracking-widest font-bold">Clearance Rate</div>
-              <div className="font-hud font-bold text-2xl sm:text-3xl text-white tabular-nums mt-1 sm:mt-1.5">
+              <div className="font-hud-mono text-[var(--text-dim)] uppercase text-[10px] sm:text-xs tracking-widest font-bold">Clearance Rate</div>
+              <div className="font-hud font-bold text-2xl sm:text-3xl text-[var(--text)] tabular-nums mt-1 sm:mt-1.5">
                 {calStats.completionRate}%
               </div>
             </div>
@@ -979,11 +979,11 @@ export function AnalyticsDashboard({ onStartSession, onOpenSettings }: Analytics
             <button
               onClick={handleCalPrevMonth}
               aria-label="Previous month"
-              className="p-1.5 rounded-lg hover:bg-white/[0.08] text-neutral-400 hover:text-white transition-colors cursor-pointer"
+              className="p-1.5 rounded-lg hover:bg-fg/[0.08] text-[var(--text-dim)] hover:text-[var(--text)] transition-colors cursor-pointer"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <span className="font-hud font-bold text-sm tracking-wider uppercase text-white">
+            <span className="font-hud font-bold text-sm tracking-wider uppercase text-[var(--text)]">
               {calMonth.toLocaleDateString('en-US', {
                 month: 'long',
                 year: 'numeric',
@@ -992,7 +992,7 @@ export function AnalyticsDashboard({ onStartSession, onOpenSettings }: Analytics
             <button
               onClick={handleCalNextMonth}
               aria-label="Next month"
-              className="p-1.5 rounded-lg hover:bg-white/[0.08] text-neutral-400 hover:text-white transition-colors cursor-pointer"
+              className="p-1.5 rounded-lg hover:bg-fg/[0.08] text-[var(--text-dim)] hover:text-[var(--text)] transition-colors cursor-pointer"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
@@ -1001,9 +1001,9 @@ export function AnalyticsDashboard({ onStartSession, onOpenSettings }: Analytics
           {/* Standard 7-Column Calendar Grid */}
           <div className="space-y-1.5">
             {/* Weekday Column Labels */}
-            <div className="grid grid-cols-7 text-center font-hud-mono text-[10px] font-bold text-neutral-500">
+            <div className="grid grid-cols-7 text-center font-hud-mono text-[10px] font-bold text-[var(--text-dim)]">
               {['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'].map((d, i) => (
-                <div key={d} className={i >= 5 ? 'text-neutral-600' : ''}>
+                <div key={d} className={i >= 5 ? 'text-[var(--text-faint)]' : ''}>
                   {d}
                 </div>
               ))}
@@ -1031,7 +1031,7 @@ export function AnalyticsDashboard({ onStartSession, onOpenSettings }: Analytics
                 let customStyle: React.CSSProperties = {};
 
                 if (c.isSelected) {
-                  cellClass += ' !ring-2 !ring-white !border-white bg-white/20 text-white font-bold scale-105 z-10 shadow-lg';
+                  cellClass += ' !ring-2 !ring-[var(--accent)] !border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)] font-bold scale-105 z-10 shadow-lg';
                 } else if (c.metGoal) {
                   cellClass += ' font-bold';
                   customStyle = {
@@ -1041,9 +1041,9 @@ export function AnalyticsDashboard({ onStartSession, onOpenSettings }: Analytics
                     boxShadow: '0 0 8px var(--glow)',
                   };
                 } else if (c.hasActivity) {
-                  cellClass += ' border-neutral-700/80 bg-neutral-900/60 text-neutral-300 hover:border-neutral-500';
+                  cellClass += ' border-[var(--border)] bg-fg/[0.04] text-[var(--text)] hover:border-[var(--border-strong)]';
                 } else {
-                  cellClass += ' border-transparent text-neutral-600 hover:text-neutral-300 hover:bg-neutral-900/40';
+                  cellClass += ' border-transparent text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-fg/[0.04]';
                 }
 
                 return (
@@ -1062,7 +1062,7 @@ export function AnalyticsDashboard({ onStartSession, onOpenSettings }: Analytics
                   >
                     <span
                       className={`leading-none ${
-                        c.isToday ? 'font-bold underline decoration-white underline-offset-4' : ''
+                        c.isToday ? 'font-bold underline decoration-[var(--accent)] underline-offset-4' : ''
                       }`}
                     >
                       {c.dayNumber}
@@ -1076,7 +1076,7 @@ export function AnalyticsDashboard({ onStartSession, onOpenSettings }: Analytics
                     {/* Tooltip on hover */}
                     {hoveredCalDay && hoveredCalDay.dateStr === c.dateKey && (
                       <div className="absolute -top-10 left-1/2 -translate-x-1/2 z-50 pointer-events-none bg-[var(--bg)] border border-[var(--border)] px-2.5 py-1 rounded-lg text-[10px] font-hud-mono whitespace-nowrap shadow-2xl">
-                        <span className="text-white font-bold">
+                        <span className="text-[var(--text)] font-bold">
                           {parseLocalDateString(c.dateKey).toLocaleDateString('en-US', {
                             month: 'short',
                             day: 'numeric',
@@ -1101,35 +1101,35 @@ export function AnalyticsDashboard({ onStartSession, onOpenSettings }: Analytics
       {/* 3. Bottom Section — Focus Time Chart (Full Width) */}
       <div className="w-full col-span-full hud-surface border border-[var(--border)] rounded-2xl p-4 sm:p-5 space-y-3 relative overflow-hidden">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-white/[0.06]">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-[var(--border)]">
           <div className="flex items-center gap-2">
             <Clock className="w-4 h-4" style={{ color: theme.accent }} />
-            <h3 className="font-hud-mono text-xs uppercase font-bold text-neutral-200 tracking-wider">Temporal Focus Spectrum</h3>
+            <h3 className="font-hud-mono text-xs uppercase font-bold text-[var(--text)] tracking-wider">Temporal Focus Spectrum</h3>
           </div>
 
           {/* Controls */}
           <div className="flex items-center gap-1.5 flex-wrap sm:flex-nowrap">
-            <span className="text-xs sm:text-sm font-mono text-neutral-300 font-medium mr-2 sm:mr-3 select-none">
+            <span className="text-xs sm:text-sm font-mono text-[var(--text)] font-medium mr-2 sm:mr-3 select-none">
               {currentDateLabel}
             </span>
-            <div className="flex items-center bg-black/60 border border-[var(--border)] rounded-xl p-0.5">
+            <div className="flex items-center bg-[var(--surface-2)] border border-[var(--border)] rounded-xl p-0.5 shadow-sm">
               <button
                 onClick={() => handleFocusChartStep('prev')}
-                className="p-1 rounded-lg hover:bg-white/[0.08] text-neutral-400 hover:text-white transition-colors cursor-pointer"
+                className="p-1 rounded-lg hover:bg-fg/[0.08] text-[var(--text-dim)] hover:text-[var(--text)] transition-colors cursor-pointer"
                 title="Previous period"
               >
                 <ChevronLeft className="w-3.5 h-3.5" />
               </button>
               <button
                 onClick={() => handleFocusChartStep('next')}
-                className="p-1 rounded-lg hover:bg-white/[0.08] text-neutral-400 hover:text-white transition-colors cursor-pointer"
+                className="p-1 rounded-lg hover:bg-fg/[0.08] text-[var(--text-dim)] hover:text-[var(--text)] transition-colors cursor-pointer"
                 title="Next period"
               >
                 <ChevronRight className="w-3.5 h-3.5" />
               </button>
             </div>
 
-            <div className="flex items-center bg-black/60 border border-[var(--border)] rounded-xl p-0.5 text-[11px] font-bold">
+            <div className="flex items-center bg-[var(--surface-2)] border border-[var(--border)] rounded-xl p-0.5 text-[11px] font-bold shadow-sm">
               {(['daily', 'weekly', 'monthly', 'yearly'] as Timeframe[]).map(tf => (
                 <button
                   key={tf}
@@ -1137,7 +1137,7 @@ export function AnalyticsDashboard({ onStartSession, onOpenSettings }: Analytics
                   className={`px-2.5 py-0.5 rounded-lg font-hud-mono uppercase text-[10px] tracking-wider transition-all cursor-pointer ${
                     focusChartTimeframe === tf
                       ? 'font-bold shadow-sm'
-                      : 'text-neutral-400 hover:text-white'
+                      : 'text-[var(--text-dim)] hover:text-[var(--text)]'
                   }`}
                   style={focusChartTimeframe === tf ? { backgroundColor: 'var(--accent)', color: 'var(--accent-contrast)' } : undefined}
                 >
@@ -1149,9 +1149,9 @@ export function AnalyticsDashboard({ onStartSession, onOpenSettings }: Analytics
         </div>
 
         {/* Top Stat Indicators */}
-        <div className="flex items-center justify-between text-xs text-neutral-400 px-0.5 font-hud-mono">
+        <div className="flex items-center justify-between text-xs text-[var(--text-dim)] px-0.5 font-hud-mono">
           <div>
-            PEAK : <span className="text-white font-bold">{focusChartData.topFormatted}</span>
+            PEAK : <span className="text-[var(--text)] font-bold">{focusChartData.topFormatted}</span>
           </div>
           <div>
             AVERAGE : <span className="font-bold" style={{ color: theme.accent }}>{focusChartData.avgFormatted}</span>
@@ -1166,19 +1166,19 @@ export function AnalyticsDashboard({ onStartSession, onOpenSettings }: Analytics
               margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
               style={{ outline: 'none' }}
             >
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgb(var(--fg) / 0.08)" vertical={false} />
               <XAxis
                 dataKey="label"
-                stroke="#64748B"
+                stroke="var(--text-faint)"
                 fontSize={11}
                 tickLine={false}
-                axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+                axisLine={{ stroke: 'rgb(var(--fg) / 0.1)' }}
               />
               <YAxis
-                stroke="#64748B"
+                stroke="var(--text-faint)"
                 fontSize={11}
                 tickLine={false}
-                axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+                axisLine={{ stroke: 'rgb(var(--fg) / 0.1)' }}
                 tickFormatter={val => `${val}h`}
               />
               {focusChartData.items[0]?.goalHours && (
@@ -1196,7 +1196,7 @@ export function AnalyticsDashboard({ onStartSession, onOpenSettings }: Analytics
                     const item = payload[0].payload;
                     return (
                       <div className="bg-[var(--bg)] border border-[var(--border)] p-2.5 rounded-xl shadow-2xl text-xs font-hud-mono">
-                        <div className="font-bold text-white mb-0.5">{item.label}</div>
+                        <div className="font-bold text-[var(--text)] mb-0.5">{item.label}</div>
                         <div className="font-bold" style={{ color: theme.accent }}>
                           {formatDurationWithSeconds(item.rawSec)}
                         </div>

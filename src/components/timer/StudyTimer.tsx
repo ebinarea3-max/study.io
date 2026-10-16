@@ -904,7 +904,7 @@ export function StudyTimer() {
         className="w-full flex flex-col items-center"
       >
         {/* 1. Mode selector */}
-        <div className="relative inline-flex items-center p-1 bg-white/[0.04] border border-white/[0.08] rounded-full">
+        <div className="relative inline-flex items-center p-1 bg-fg/[0.04] border border-fg/[0.08] rounded-full shadow-card">
           {(['stopwatch', 'countdown', 'pomodoro'] as TimerMode[]).map((mode) => {
             const isActive = timerMode === mode;
             const label = mode === 'stopwatch' ? 'Stopwatch' : mode === 'countdown' ? 'Countdown' : 'Pomodoro';
@@ -915,13 +915,13 @@ export function StudyTimer() {
                 disabled={isStudying}
                 onClick={() => { if (!isStudying) setTimerMode(mode); }}
                 className={`relative px-4 py-1.5 text-xs font-medium rounded-full transition-colors z-10 ${
-                  isActive ? 'text-white' : 'text-zinc-400 hover:text-zinc-200'
+                  isActive ? 'text-[var(--text)]' : 'text-[var(--text-dim)] hover:text-[var(--text)]'
                 } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
               >
                 {isActive && (
                   <motion.div
                     layoutId="activeTimerMode"
-                    className="absolute inset-0 bg-white/[0.12] border border-white/[0.1] rounded-full shadow-sm"
+                    className="absolute inset-0 bg-fg/[0.12] [[data-theme='paper']_&]:bg-[var(--surface)] border border-fg/[0.1] [[data-theme='paper']_&]:border-[var(--border-strong)] rounded-full shadow-card"
                     transition={shouldReduceMotion ? { duration: 0 } : { type: 'tween', duration: 0.2 }}
                   />
                 )}
@@ -942,8 +942,8 @@ export function StudyTimer() {
                 onClick={() => { if (!isStudying) setPomodoroPreset(preset); }}
                 className={`px-3 py-1 text-xs font-mono rounded-full border transition-colors ${
                   pomodoroPreset === preset
-                    ? 'bg-white/[0.1] border-white/20 text-white font-medium shadow-sm'
-                    : 'bg-transparent border-white/[0.06] text-zinc-400 hover:text-zinc-200'
+                    ? "bg-fg/[0.1] [[data-theme='paper']_&]:bg-[var(--surface)] border-fg/20 [[data-theme='paper']_&]:border-[var(--border-strong)] text-[var(--text)] font-medium shadow-card"
+                    : 'bg-transparent border-fg/[0.06] text-[var(--text-dim)] hover:text-[var(--text)]'
                 } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
               >
                 {preset}
@@ -964,10 +964,10 @@ export function StudyTimer() {
               }
             }}
             disabled={isStudying || isRemoteTransitioning}
-            className={`inline-flex items-center justify-between gap-3 min-w-[220px] sm:min-w-[260px] max-w-[340px] px-5 py-2.5 sm:py-3 rounded-full border bg-white/[0.04] hover:bg-white/[0.08] active:scale-[0.98] transition-all text-sm font-semibold cursor-pointer shadow-sm ${
+            className={`inline-flex items-center justify-between gap-3 min-w-[220px] sm:min-w-[260px] max-w-[340px] px-5 py-2.5 sm:py-3 rounded-full border bg-[var(--surface)] hover:bg-[var(--surface-2)] active:scale-[0.98] transition-all text-sm font-semibold cursor-pointer shadow-card ${
               subjectWarning
                 ? 'border-amber-500/60 ring-1 ring-amber-500/30'
-                : 'border-white/[0.1] hover:border-white/[0.18]'
+                : 'border-[var(--border)] hover:border-[var(--border-strong)]'
             } ${isStudying ? 'opacity-90 cursor-not-allowed' : ''}`}
           >
             <div className="flex items-center gap-2.5 min-w-0 truncate">
@@ -981,24 +981,24 @@ export function StudyTimer() {
                     : '#71717A',
                 }}
               />
-              <span className={`truncate text-sm sm:text-[15px] ${selectedSubject ? 'text-white font-semibold' : 'text-zinc-400 font-medium'}`}>
+              <span className={`truncate text-sm sm:text-[15px] ${selectedSubject ? 'text-[var(--text)] font-semibold' : 'text-[var(--text-dim)] font-medium'}`}>
                 {selectedSubject?.name || 'Choose a subject'}
               </span>
               {isStudying && (
-                <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-white/[0.08] text-zinc-400 flex-shrink-0">
+                <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-fg/[0.08] text-[var(--text-dim)] flex-shrink-0">
                   Locked
                 </span>
               )}
             </div>
-            <ChevronDown className={`w-4 h-4 text-zinc-400 flex-shrink-0 transition-transform duration-200 ${showDropdown ? 'rotate-180' : ''}`} />
+            <ChevronDown className={`w-4 h-4 text-[var(--text-dim)] flex-shrink-0 transition-transform duration-200 ${showDropdown ? 'rotate-180' : ''}`} />
           </button>
 
           {/* Subject Dropdown Popover */}
           {showDropdown && !isStudying && (
             <>
               <div className="fixed inset-0 z-40" onClick={() => setShowDropdown(false)} />
-              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-72 bg-[#0e1015]/95 backdrop-blur-xl border border-white/10 rounded-2xl p-2.5 shadow-2xl z-50">
-                <div className="px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider text-zinc-500 border-b border-white/[0.06] mb-1">
+              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-72 bg-[var(--surface)] backdrop-blur-xl border border-[var(--border-strong)] rounded-2xl p-2.5 shadow-card z-50 text-[var(--text)]">
+                <div className="px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider text-[var(--text-dim)] border-b border-fg/[0.06] mb-1">
                   Select subject
                 </div>
                 <div className="max-h-56 overflow-y-auto space-y-0.5">
@@ -1013,8 +1013,8 @@ export function StudyTimer() {
                       }}
                       className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs sm:text-sm transition-colors cursor-pointer ${
                         sub.id === selectedSubjectId
-                          ? 'bg-white/[0.1] text-white font-medium'
-                          : 'text-zinc-400 hover:text-white hover:bg-white/[0.05]'
+                          ? 'bg-fg/[0.1] text-[var(--text)] font-medium'
+                          : 'text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-fg/[0.05]'
                       }`}
                     >
                       <div className="flex items-center gap-2.5 truncate">
@@ -1024,19 +1024,19 @@ export function StudyTimer() {
                         />
                         <span className="truncate">{sub.name}</span>
                       </div>
-                      <span className="text-[10px] font-mono text-zinc-500 ml-2 shrink-0">
+                      <span className="text-[10px] font-mono text-[var(--text-dim)] ml-2 shrink-0">
                         {Math.floor((sub.targetMinutesPerDay || 60) / 60)}h goal
                       </span>
                     </button>
                   ))}
                 </div>
-                <div className="pt-2 mt-2 border-t border-white/[0.06]">
+                <div className="pt-2 mt-2 border-t border-fg/[0.06]">
                   <button
                     type="button"
                     onClick={handleOpenSubjectManager}
-                    className="w-full flex items-center justify-center gap-2 py-1.5 rounded-lg text-xs font-medium text-zinc-400 hover:text-white hover:bg-white/[0.05] transition-colors cursor-pointer"
+                    className="w-full flex items-center justify-center gap-2 py-1.5 rounded-lg text-xs font-medium text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-fg/[0.05] transition-colors cursor-pointer"
                   >
-                    <FolderPlus className="w-3.5 h-3.5 text-zinc-400" />
+                    <FolderPlus className="w-3.5 h-3.5 text-[var(--text-dim)]" />
                     <span>Manage subjects</span>
                   </button>
                 </div>
@@ -1106,7 +1106,7 @@ export function StudyTimer() {
                 }
               }}
               disabled={isSaving || isRemoteTransitioning}
-              className="px-5 h-[52px] rounded-full border border-white/20 bg-white/[0.04] hover:bg-white/[0.08] text-zinc-300 font-medium text-sm active:scale-[0.98] transition-transform duration-120 cursor-pointer disabled:opacity-50"
+              className="px-5 h-[52px] rounded-full border border-fg/20 bg-fg/[0.04] hover:bg-fg/[0.08] text-[var(--text)] font-medium text-sm active:scale-[0.98] transition-transform duration-120 cursor-pointer disabled:opacity-50"
             >
               <span>Skip</span>
             </button>
@@ -1125,7 +1125,7 @@ export function StudyTimer() {
               <button
                 onClick={handleReset}
                 disabled={isSaving || isRemoteTransitioning}
-                className="px-5 h-[52px] rounded-full border border-white/20 bg-white/[0.04] hover:bg-white/[0.08] text-zinc-300 font-medium text-sm active:scale-[0.98] transition-transform duration-120 cursor-pointer disabled:opacity-50"
+                className="px-5 h-[52px] rounded-full border border-fg/20 bg-fg/[0.04] hover:bg-fg/[0.08] text-[var(--text)] font-medium text-sm active:scale-[0.98] transition-transform duration-120 cursor-pointer disabled:opacity-50"
               >
                 <span>Skip</span>
               </button>
@@ -1134,7 +1134,7 @@ export function StudyTimer() {
             <button
               onClick={handleReset}
               disabled={isSaving || isRemoteTransitioning}
-              className="w-full max-w-[360px] sm:w-[240px] h-[52px] rounded-full border border-white/20 bg-white/[0.04] hover:bg-white/[0.08] text-zinc-200 font-medium text-sm active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              className="w-full max-w-[360px] sm:w-[240px] h-[52px] rounded-full border border-fg/20 bg-fg/[0.04] hover:bg-fg/[0.08] text-[var(--text)] font-medium text-sm active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
               <span>End break</span>
             </button>
@@ -1162,7 +1162,7 @@ export function StudyTimer() {
                   setShowDropdown(true);
                 }
               }}
-              className="w-full max-w-[360px] sm:w-[240px] h-[52px] rounded-full font-medium text-sm bg-white/[0.08] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.12] border border-white/[0.06] active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full max-w-[360px] sm:w-[240px] h-[52px] rounded-full font-medium text-sm bg-fg/[0.08] text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-fg/[0.12] border border-fg/[0.06] active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer"
               title="Choose a subject to start"
             >
               <span>Choose a subject to start</span>
@@ -1184,7 +1184,7 @@ export function StudyTimer() {
               type="button"
               onClick={handlePause}
               disabled={isSaving || isRemoteTransitioning}
-              className="flex-1 h-[52px] rounded-full border border-white/20 bg-white/[0.04] hover:bg-white/[0.08] text-white font-medium text-sm active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              className="flex-1 h-[52px] rounded-full border border-fg/20 bg-fg/[0.04] hover:bg-fg/[0.08] text-[var(--text)] font-medium text-sm active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
               <Pause className="w-4 h-4" />
               <span>Pause</span>
@@ -1241,7 +1241,7 @@ export function StudyTimer() {
               type="button"
               onClick={handleReset}
               disabled={isSaving || isRemoteTransitioning}
-              className="w-12 h-[52px] rounded-full border border-white/20 bg-white/[0.04] hover:bg-white/[0.08] text-zinc-400 hover:text-white active:scale-[0.98] transition-transform duration-120 flex items-center justify-center cursor-pointer shrink-0 disabled:opacity-50"
+              className="w-12 h-[52px] rounded-full border border-fg/20 bg-fg/[0.04] hover:bg-fg/[0.08] text-[var(--text-dim)] hover:text-[var(--text)] active:scale-[0.98] transition-transform duration-120 flex items-center justify-center cursor-pointer shrink-0 disabled:opacity-50"
               title="Reset timer"
             >
               <RotateCcw className="w-4 h-4" />
@@ -1257,17 +1257,17 @@ export function StudyTimer() {
           <button
             type="button"
             onClick={() => setIsAmbientMenuOpen(!isAmbientMenuOpen)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06] text-zinc-400 hover:text-zinc-200 text-xs transition-colors cursor-pointer select-none"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-fg/[0.08] bg-fg/[0.03] hover:bg-fg/[0.06] text-[var(--text-dim)] hover:text-[var(--text)] text-xs transition-colors cursor-pointer select-none"
           >
-            <Music className={`w-3.5 h-3.5 ${ambientSound !== 'none' ? 'text-white' : 'text-zinc-400'}`} />
+            <Music className={`w-3.5 h-3.5 ${ambientSound !== 'none' ? 'text-[var(--text)]' : 'text-[var(--text-dim)]'}`} />
             <span>Atmosphere: {ambientLabel}</span>
-            {ambientSound !== 'none' && <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse ml-0.5" />}
+            {ambientSound !== 'none' && <span className="w-1.5 h-1.5 rounded-full bg-[var(--text)] animate-pulse ml-0.5" />}
           </button>
 
           {isAmbientMenuOpen && (
             <>
               <div className="fixed inset-0 z-40" onClick={() => setIsAmbientMenuOpen(false)} />
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 bg-[#0e1015]/95 backdrop-blur-xl border border-white/10 rounded-2xl p-2.5 shadow-2xl min-w-[220px]">
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 bg-[var(--surface)] backdrop-blur-xl border border-[var(--border)] rounded-2xl p-2.5 shadow-card min-w-[220px] text-[var(--text)]">
                 <div className="flex flex-col gap-1">
                   {[
                     { id: 'none', label: 'Silent', icon: <span className="w-3.5 h-3.5 rounded-full bg-zinc-500 mx-0.5" /> },
@@ -1288,22 +1288,22 @@ export function StudyTimer() {
                       }}
                       className={`flex items-center justify-between rounded-xl px-3 py-2 text-xs transition-colors cursor-pointer ${
                         ambientSound === option.id
-                          ? 'bg-white/[0.1] text-white font-medium'
-                          : 'text-zinc-400 hover:text-white hover:bg-white/[0.05]'
+                          ? 'bg-fg/[0.1] text-[var(--text)] font-medium'
+                          : 'text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-fg/[0.05]'
                       }`}
                     >
                       <div className="flex items-center gap-2">
                         {option.icon}
                         <span>{option.label}</span>
                       </div>
-                      {ambientSound === option.id && <Check className="w-3.5 h-3.5 text-white" />}
+                      {ambientSound === option.id && <Check className="w-3.5 h-3.5 text-[var(--text)]" />}
                     </button>
                   ))}
                 </div>
 
                 {ambientSound !== 'none' && (
-                  <div className="mt-2 pt-2 border-t border-white/10 flex items-center gap-3 px-2">
-                    <Volume2 className="w-3.5 h-3.5 text-zinc-400" />
+                  <div className="mt-2 pt-2 border-t border-[var(--border)] flex items-center gap-3 px-2">
+                    <Volume2 className="w-3.5 h-3.5 text-[var(--text-dim)]" />
                     <input
                       type="range"
                       min="0"
@@ -1312,7 +1312,7 @@ export function StudyTimer() {
                       value={ambientVolume}
                       onClick={(e) => e.stopPropagation()}
                       onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
-                      className="flex-1 accent-white bg-white/10 rounded-lg cursor-pointer h-1.5"
+                      className="flex-1 accent-[var(--accent)] bg-fg/10 rounded-lg cursor-pointer h-1.5"
                     />
                   </div>
                 )}
@@ -1340,7 +1340,7 @@ export function StudyTimer() {
               setTimeout(lockLandscape, 100);
             }
           }}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06] text-zinc-400 hover:text-zinc-200 text-xs transition-colors cursor-pointer select-none"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-fg/[0.08] bg-fg/[0.03] hover:bg-fg/[0.06] text-[var(--text-dim)] hover:text-[var(--text)] text-xs transition-colors cursor-pointer select-none"
           title="Fullscreen Focus Mode"
         >
           <Maximize2 className="w-3.5 h-3.5" />
@@ -1349,7 +1349,7 @@ export function StudyTimer() {
       </div>
 
       {/* 6. Today total one-liner */}
-      <div className="mt-4 text-xs font-mono text-zinc-500 select-none">
+      <div className="mt-4 text-xs font-mono text-[var(--text-faint)] select-none">
         Today: {formatHoursAndMins(overviewTodaySeconds)}
       </div>
 

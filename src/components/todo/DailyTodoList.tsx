@@ -448,13 +448,13 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
             <Target className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-lg sm:text-xl font-hud font-bold tracking-widest uppercase text-white drop-shadow-md flex items-center gap-2">
+            <h2 className="text-lg sm:text-xl font-hud font-bold tracking-widest uppercase text-[var(--text)] drop-shadow-md flex items-center gap-2">
               TO DO LIST
               {todos.length > 0 && progressPercent === 100 && (
                 <span className="px-1.5 py-0.5 rounded text-[10px] font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 animate-pulse">ALL CLEARED</span>
               )}
             </h2>
-            <div className="text-xs text-neutral-400 font-mono tracking-wider mt-0.5">
+            <div className="text-xs text-[var(--text-dim)] font-mono tracking-wider mt-0.5">
               <span className="text-[var(--accent)] font-bold">{completedTodos.length}</span> / {todos.length} COMPLETED
             </div>
           </div>
@@ -467,10 +467,10 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
               type="button"
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-3 py-1.5 rounded-lg font-hud-mono text-[10px] sm:text-xs font-bold tracking-wider uppercase transition-all whitespace-nowrap cursor-pointer ${
+              className={`px-3 py-1.5 rounded-lg font-hud-mono text-[10px] sm:text-xs font-bold tracking-wider uppercase transition-all whitespace-nowrap cursor-pointer shadow-card ${
                 filter === f
                   ? 'bg-[var(--accent)] text-[var(--accent-contrast)] shadow-[0_0_15px_var(--glow)]'
-                  : 'bg-[var(--surface)] border border-[var(--border)] text-neutral-400 hover:text-neutral-200 hover:bg-[var(--surface-2)]'
+                  : 'bg-[var(--surface)] border border-[var(--border)] text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-[var(--surface-2)]'
               }`}
             >
               {f === 'high' ? 'High Priority' : f}
@@ -495,21 +495,21 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
       {/* Quick Add Bar */}
       <form
         onSubmit={handleAddTask}
-        className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 p-3 sm:p-4 rounded-xl bg-[var(--surface)] border border-[var(--border)] focus-within:border-[var(--accent)] focus-within:ring-1 focus-within:ring-[var(--accent)]/30 transition-all relative z-10"
+        className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 p-3 sm:p-4 rounded-xl bg-[var(--surface)] border border-[var(--border)] shadow-card focus-within:border-[var(--accent)] focus-within:ring-1 focus-within:ring-[var(--accent)]/30 transition-all relative z-10"
       >
         <div className="flex-1 flex items-center gap-3 px-1">
-          <Plus className="w-5 h-5 text-neutral-500 flex-shrink-0" />
+          <Plus className="w-5 h-5 text-[var(--text-dim)] flex-shrink-0" />
           <input
             ref={inputRef}
             type="text"
             value={taskInput}
             onChange={e => setTaskInput(e.target.value)}
             placeholder="Add new mission objective..."
-            className="w-full bg-transparent text-sm sm:text-base text-white placeholder:text-neutral-500 focus:outline-none font-sans py-1"
+            className="w-full bg-transparent text-sm sm:text-base text-[var(--text)] placeholder:text-[var(--text-faint)] focus:outline-none font-sans py-1"
           />
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 pl-2 sm:pl-0 sm:border-l sm:border-white/10 pt-2 sm:pt-0 border-t border-white/10 sm:border-t-0">
+        <div className="flex flex-wrap items-center gap-2 pl-2 sm:pl-0 sm:border-l sm:border-fg/10 pt-2 sm:pt-0 border-t border-fg/10 sm:border-t-0">
           {/* Priority Toggle */}
           <button
             type="button"
@@ -541,11 +541,11 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
           <select
             value={taskSubjectId}
             onChange={e => setTaskSubjectId(e.target.value)}
-            className="px-2 py-1.5 rounded-lg bg-white/[0.05] border border-white/10 text-neutral-300 text-[10px] font-hud-mono uppercase tracking-wider focus:outline-none focus:border-amber-500/50 cursor-pointer"
+            className="px-2 py-1.5 rounded-lg bg-fg/[0.05] border border-fg/10 text-[var(--text)] text-[10px] font-hud-mono uppercase tracking-wider focus:outline-none focus:border-amber-500/50 cursor-pointer"
           >
-            <option value="none" className="bg-[#0f1115] text-neutral-300">General</option>
+            <option value="none" className="bg-[var(--surface)] text-[var(--text)]">General</option>
             {subjects.map(s => (
-              <option key={s.id} value={s.id} className="bg-[#0f1115] text-neutral-300">
+              <option key={s.id} value={s.id} className="bg-[var(--surface)] text-[var(--text)]">
                 {s.name}
               </option>
             ))}
@@ -555,7 +555,7 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
           <button
             type="submit"
             disabled={!taskInput.trim()}
-            className="ml-auto sm:ml-2 px-4 py-1.5 text-xs font-hud-mono font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 active:scale-95 hover:brightness-110"
+            className="ml-auto sm:ml-2 px-4 py-1.5 text-xs font-hud-mono font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 active:scale-95 hover:brightness-110 shadow-sm"
             style={{ backgroundColor: 'var(--accent)', color: 'var(--accent-contrast)' }}
           >
             ADD <span className="hidden sm:inline font-sans text-[10px] opacity-60 ml-1">⏎</span>
@@ -568,16 +568,16 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
         {/* Empty States */}
         {displayActiveTodos.length === 0 && displayCompletedTodos.length === 0 && filter === 'all' && (
           <div className="m-auto flex flex-col items-center justify-center text-center py-12 opacity-60">
-            <div className="w-16 h-16 rounded-full border border-dashed border-white/20 flex items-center justify-center mb-4 bg-white/[0.02]">
-              <CheckCircle2 className="w-8 h-8 text-neutral-500" />
+            <div className="w-16 h-16 rounded-full border border-dashed border-fg/20 flex items-center justify-center mb-4 bg-fg/[0.02]">
+              <CheckCircle2 className="w-8 h-8 text-[var(--text-dim)]" />
             </div>
-            <p className="text-neutral-400 font-hud-mono font-bold tracking-widest uppercase">No Active Directives</p>
-            <p className="text-xs text-neutral-500 mt-2 font-sans">Add an objective above to begin your mission.</p>
+            <p className="text-[var(--text-dim)] font-hud-mono font-bold tracking-widest uppercase">No Active Directives</p>
+            <p className="text-xs text-[var(--text-faint)] mt-2 font-sans">Add an objective above to begin your mission.</p>
           </div>
         )}
 
         {displayActiveTodos.length === 0 && filter !== 'all' && displayCompletedTodos.length === 0 && (
-          <div className="text-center py-8 text-neutral-500 font-hud-mono text-xs uppercase tracking-wider">
+          <div className="text-center py-8 text-[var(--text-faint)] font-hud-mono text-xs uppercase tracking-wider">
             No tasks match the current filter.
           </div>
         )}
@@ -628,7 +628,7 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
                   setDragOverId(null);
                   setDraggableRowId(null);
                 }}
-                className={`group flex items-center gap-3 px-3 py-2.5 sm:py-3 rounded-xl transition-all duration-200 relative overflow-hidden bg-[var(--surface)] border border-[var(--border)] hover:bg-[var(--surface-2)] hover:border-[var(--border-strong)] ${
+                className={`group flex items-center gap-3 px-3 py-2.5 sm:py-3 rounded-xl transition-all duration-200 relative overflow-hidden bg-[var(--surface)] border border-[var(--border)] hover:bg-[var(--surface-2)] hover:border-[var(--border-strong)] shadow-card ${
                   draggingId === item.id
                     ? 'opacity-30 border-dashed !border-[var(--accent)]/50'
                     : dragOverId === item.id
@@ -690,7 +690,7 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
                       setDraggableRowId(null);
                     }
                   }}
-                  className="p-1.5 -ml-1 rounded cursor-grab active:cursor-grabbing text-neutral-600 hover:text-white opacity-40 group-hover:opacity-100 transition-all hover:bg-white/[0.08] flex-shrink-0"
+                  className="p-1.5 -ml-1 rounded cursor-grab active:cursor-grabbing text-[var(--text-faint)] hover:text-[var(--text)] opacity-40 group-hover:opacity-100 transition-all hover:bg-fg/[0.08] flex-shrink-0"
                 >
                   <GripVertical className="w-4 h-4" />
                 </div>
@@ -709,11 +709,11 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
                     type="text"
                     value={item.task}
                     onChange={e => handleUpdateTaskText(item.id, e.target.value)}
-                    className="w-full bg-transparent text-[13px] sm:text-[15px] text-white/95 font-medium focus:text-white focus:outline-none py-0.5 tracking-wide leading-relaxed font-sans placeholder:text-white/30"
+                    className="w-full bg-transparent text-[13px] sm:text-[15px] text-fg/95 font-medium focus:text-[var(--text)] focus:outline-none py-0.5 tracking-wide leading-relaxed font-sans placeholder:text-fg/30"
                   />
                   <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                     {item.subject_id && subjects.find(s => s.id === item.subject_id) && (
-                      <span className="px-1.5 py-0.5 rounded bg-white/10 text-white/70 text-[9px] font-hud-mono tracking-wider uppercase border border-white/5 truncate max-w-[120px]">
+                      <span className="px-1.5 py-0.5 rounded bg-fg/10 text-fg/70 text-[9px] font-hud-mono tracking-wider uppercase border border-fg/5 truncate max-w-[120px]">
                         {subjects.find(s => s.id === item.subject_id)?.name}
                       </span>
                     )}
@@ -739,7 +739,7 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
                     type="button"
                     onClick={() => handleDeleteTask(item.id)}
                     title="Delete item"
-                    className="p-1.5 rounded-lg text-neutral-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer flex-shrink-0"
+                    className="p-1.5 rounded-lg text-[var(--text-faint)] hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer flex-shrink-0"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -751,12 +751,12 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
 
         {/* Completed Items */}
         {displayCompletedTodos.length > 0 && (
-          <div className="pt-4 mt-2 border-t border-white/[0.05]">
+          <div className="pt-4 mt-2 border-t border-fg/[0.05]">
             <div className="flex items-center justify-between mb-3">
               <button
                 type="button"
                 onClick={() => setIsCompletedOpen(!isCompletedOpen)}
-                className="flex items-center gap-1.5 text-xs font-bold text-neutral-500 hover:text-neutral-300 transition-colors cursor-pointer select-none uppercase tracking-widest font-hud-mono"
+                className="flex items-center gap-1.5 text-xs font-bold text-[var(--text-dim)] hover:text-[var(--text)] transition-colors cursor-pointer select-none uppercase tracking-widest font-hud-mono"
               >
                 <ChevronDown
                   className={`w-4 h-4 transition-transform duration-300 ${isCompletedOpen ? '' : '-rotate-90'}`}
@@ -766,7 +766,7 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
               <button
                 type="button"
                 onClick={handleClearCompleted}
-                className="font-hud-mono text-[10px] uppercase font-bold text-neutral-600 hover:text-rose-400 transition-colors cursor-pointer tracking-wider px-2 py-1 rounded hover:bg-rose-500/10"
+                className="font-hud-mono text-[10px] uppercase font-bold text-[var(--text-faint)] hover:text-rose-400 transition-colors cursor-pointer tracking-wider px-2 py-1 rounded hover:bg-rose-500/10"
               >
                 CLEAR ALL
               </button>
@@ -777,7 +777,7 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
                 {displayCompletedTodos.map(item => (
                   <div
                     key={item.id}
-                    className="group flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--surface-2)] transition-colors bg-[var(--surface)]/50 border border-transparent relative overflow-hidden"
+                    className="group flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--surface-2)] transition-colors bg-[var(--surface)]/50 border border-transparent shadow-card relative overflow-hidden"
                   >
                     <div className="w-4 flex-shrink-0" />
                     {/* Checked Box */}
@@ -792,7 +792,7 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
                     </button>
                     {/* Strikethrough Content */}
                     <div className="flex-1 min-w-0 opacity-40 group-hover:opacity-60 transition-opacity z-10">
-                      <span className="block text-xs sm:text-[14px] text-white line-through py-0.5 tracking-wide leading-relaxed font-sans truncate">
+                      <span className="block text-xs sm:text-[14px] text-[var(--text)] line-through py-0.5 tracking-wide leading-relaxed font-sans truncate">
                         {item.task}
                       </span>
                     </div>
@@ -801,7 +801,7 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
                       type="button"
                       onClick={() => handleDeleteTask(item.id)}
                       title="Delete item"
-                      className="opacity-0 group-hover:opacity-100 text-neutral-600 hover:text-rose-500 p-1.5 transition-all cursor-pointer flex-shrink-0 rounded-lg hover:bg-rose-500/10 z-10"
+                      className="opacity-0 group-hover:opacity-100 text-[var(--text-faint)] hover:text-rose-500 p-1.5 transition-all cursor-pointer flex-shrink-0 rounded-lg hover:bg-rose-500/10 z-10"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>

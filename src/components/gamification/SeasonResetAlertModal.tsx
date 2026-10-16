@@ -94,7 +94,7 @@ export function SeasonResetAlertModal({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.92, y: 15 }}
           transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-          className="bg-[#0b0e14] border border-white/10 rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-2xl relative overflow-hidden text-center select-none"
+          className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-card relative overflow-hidden text-center select-none"
         >
           {/* Ambient Obsidian & Amber Glow */}
           <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-64 h-48 bg-amber-500/15 rounded-full blur-3xl pointer-events-none" />
@@ -105,7 +105,7 @@ export function SeasonResetAlertModal({
           <button
             onClick={handleActionDismiss}
             aria-label="Close Season Reset Alert"
-            className="absolute top-4 right-4 text-neutral-400 hover:text-white p-1.5 rounded-lg hover:bg-white/[0.06] transition-colors cursor-pointer z-10"
+            className="absolute top-4 right-4 text-[var(--text-dim)] hover:text-[var(--text)] p-1.5 rounded-lg hover:bg-fg/[0.06] transition-colors cursor-pointer z-10"
           >
             <X className="w-4 h-4" />
           </button>
@@ -119,15 +119,15 @@ export function SeasonResetAlertModal({
           </div>
 
           {/* Season Title */}
-          <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white uppercase mb-2">
+          <h2 className="text-xl sm:text-2xl font-black tracking-tight text-[var(--text)] uppercase mb-2">
             WELCOME TO {displayMonthName}
           </h2>
 
           {/* Tier Transition Display */}
-          <div className="my-5 p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.06] relative flex items-center justify-around gap-2">
+          <div className="my-5 p-3.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] relative flex items-center justify-around gap-2">
             {/* Previous Rank Column */}
             <div className="flex flex-col items-center gap-1.5 flex-1 min-w-0">
-              <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider">
+              <span className="text-[10px] font-mono text-[var(--text-dim)] uppercase tracking-wider">
                 PREVIOUS
               </span>
               <div className="relative w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center filter drop-shadow-[0_4px_12px_rgba(0,0,0,0.6)]">
@@ -140,7 +140,7 @@ export function SeasonResetAlertModal({
                   priority
                 />
               </div>
-              <span className="text-xs font-bold text-neutral-300 font-mono truncate max-w-full">
+              <span className="text-xs font-bold text-[var(--text-dim)] font-mono truncate max-w-full">
                 {prevRankTitle}
               </span>
             </div>
@@ -154,7 +154,7 @@ export function SeasonResetAlertModal({
               >
                 <ArrowRight className="w-4 h-4 stroke-[2.5]" />
               </motion.div>
-              <span className="text-[9px] font-mono text-neutral-400 mt-1 uppercase tracking-widest">
+              <span className="text-[9px] font-mono text-[var(--text-dim)] mt-1 uppercase tracking-widest">
                 RESET
               </span>
             </div>
@@ -181,26 +181,26 @@ export function SeasonResetAlertModal({
           </div>
 
           {/* Explanatory Body Copy */}
-          <p className="text-xs sm:text-[13px] text-neutral-400 leading-relaxed px-1 sm:px-2 mb-5">
+          <p className="text-xs sm:text-[13px] text-[var(--text-dim)] leading-relaxed px-1 sm:px-2 mb-5">
             A new monthly season has begun. Based on your performance last month, your rank has soft-reset to give you a head start for the new season. Keep your focus streak alive and climb back to the top!
           </p>
 
           {/* Stat Strip / Pill */}
-          <div className="bg-white/[0.03] border border-white/[0.08] rounded-xl p-3 mb-6 grid grid-cols-2 divide-x divide-white/[0.08] text-center">
+          <div className="bg-[var(--surface-2)] border border-[var(--border)] rounded-xl p-3 mb-6 grid grid-cols-2 divide-x divide-[var(--border)] text-center">
             <div className="flex flex-col items-center px-2">
-              <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider">
+              <span className="text-[10px] font-mono text-[var(--text-dim)] uppercase tracking-wider">
                 Starting Base RP
               </span>
-              <span className="text-xs sm:text-sm font-black text-white font-mono mt-0.5">
+              <span className="text-xs sm:text-sm font-black text-[var(--text)] font-mono mt-0.5">
                 Starting RP: <span className="text-amber-400">{formattedStartingRP} RP</span>
               </span>
             </div>
 
             <div className="flex flex-col items-center px-2">
-              <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider">
+              <span className="text-[10px] font-mono text-[var(--text-dim)] uppercase tracking-wider">
                 Status
               </span>
-              <span className="text-xs sm:text-sm font-semibold text-neutral-200 font-mono mt-0.5">
+              <span className="text-xs sm:text-sm font-semibold text-[var(--text-dim)] font-mono mt-0.5">
                 Monthly Leaderboard: <span className="text-emerald-400">0h 0m</span>
               </span>
             </div>

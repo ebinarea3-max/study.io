@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 @theme {
+  --color-fg: rgb(var(--fg));
   --color-bg: var(--bg);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
@@ -14,10 +15,14 @@
   --color-accent-soft: var(--accent-soft);
   --color-glow: var(--glow);
   --color-tier-accent: var(--tier-accent);
+  --color-tier-accent-text: var(--tier-accent-text);
+  --shadow-card: var(--shadow-card);
 }
 
 :root {
   color-scheme: dark;
+  --fg: 255 255 255;
+  --shadow-card: none;
   /* Base token set (Default: Rank theme) */
   --bg: #07090e;
   --background: var(--bg);
@@ -39,6 +44,7 @@
   --accent-soft: rgba(255, 255, 255, 0.12);
   --glow: rgba(255, 255, 255, 0.3);
   --accent-glow: var(--glow);
+  --dial-glow-display: block;
   --grid-dot: rgba(255, 255, 255, 0.06);
 
   /* Tier-specific variables (always follow user's rank) */
@@ -50,6 +56,7 @@
   --tier-gradient: linear-gradient(135deg, #FFFFFF 0%, #E2E8F0 50%, #94A3B8 100%);
   --tier-badge-bg: rgba(255, 255, 255, 0.08);
   --tier-text-accent: #FFFFFF;
+  --tier-accent-text: var(--tier-accent);
 
   /* Legacy fallbacks */
   --card-bg: var(--surface);
@@ -219,21 +226,26 @@ html[data-theme="graphite"] {
 /* 9. Paper (Light) */
 html[data-theme="paper"] {
   color-scheme: light;
-  --bg: #F6F4F0;
-  --background: #F6F4F0;
+  --fg: 27 26 24;
+  --bg: #F5F2EC;
+  --background: #F5F2EC;
   --surface: #FFFFFF;
-  --surface-2: #FAF8F5;
-  --border: rgba(0, 0, 0, 0.09);
-  --border-strong: rgba(0, 0, 0, 0.16);
+  --surface-2: #FAF8F4;
+  --border: rgba(40, 30, 20, 0.12);
+  --border-strong: rgba(40, 30, 20, 0.20);
   --text: #1B1A18;
   --foreground: #1B1A18;
-  --text-dim: #5E5A54;
-  --text-faint: #8C877E;
-  --accent: #C96A1B;
+  --text-dim: #57524B;
+  --text-faint: #716B62;
+  --accent: #B45309;
   --accent-contrast: #FFFFFF;
-  --accent-soft: rgba(201, 106, 27, 0.12);
-  --glow: rgba(201, 106, 27, 0.25);
-  --grid-dot: rgba(0, 0, 0, 0.06);
+  --accent-soft: rgba(180, 83, 9, 0.10);
+  --glow: rgba(180, 83, 9, 0); /* No coloured glow in Paper */
+  --accent-glow: none;
+  --dial-glow-display: none;
+  --grid-dot: rgba(40, 30, 20, 0.08);
+  --shadow-card: 0 1px 2px rgba(40, 30, 20, 0.06), 0 8px 24px rgba(40, 30, 20, 0.06);
+  --tier-accent-text: color-mix(in srgb, var(--tier-accent) 55%, black);
 }
 
 /* Smooth color transition when user switches themes */
@@ -303,7 +315,7 @@ body {
   background-color: var(--surface);
   border: 1px solid var(--border);
   border-top: 1px solid var(--border-strong);
-  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-card, 0 10px 30px -10px rgba(0, 0, 0, 0.5));
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
 }
@@ -314,7 +326,11 @@ body {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--border);
-  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--shadow-card, 0 10px 40px -10px rgba(0, 0, 0, 0.6));
+}
+
+.shadow-card {
+  box-shadow: var(--shadow-card);
 }
 
 
