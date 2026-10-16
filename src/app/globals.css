@@ -1,27 +1,47 @@
 @import "tailwindcss";
 
+@theme {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-text: var(--text);
+  --color-dim: var(--text-dim);
+  --color-faint: var(--text-faint);
+  --color-accent: var(--accent);
+  --color-accent-contrast: var(--accent-contrast);
+  --color-accent-soft: var(--accent-soft);
+  --color-glow: var(--glow);
+  --color-tier-accent: var(--tier-accent);
+}
+
 :root {
-  /* Unified Permanent Premium UI Palette */
+  color-scheme: dark;
+  /* Base token set (Default: Rank theme) */
   --bg: #07090e;
-  --background: #07090e;
-  --surface: rgba(255, 255, 255, 0.03);
+  --background: var(--bg);
+  --surface: #0F1117;
+  --surface-2: #141721;
   --border: rgba(255, 255, 255, 0.1);
+  --border-strong: rgba(255, 255, 255, 0.18);
   
-  --text-primary: #FFFFFF;
-  --foreground: #FFFFFF;
-  --text-secondary: #94A3B8;
+  --text: #FFFFFF;
+  --foreground: var(--text);
+  --text-primary: var(--text);
+  --text-dim: #94A3B8;
+  --text-secondary: var(--text-dim);
+  --text-faint: #64748B;
 
-  /* Base brand accent: permanent white/neutral — never changes with rank */
   --accent: #FFFFFF;
-  --primary: #FFFFFF;
-  --accent-glow: rgba(255, 255, 255, 0.3);
+  --primary: var(--accent);
+  --accent-contrast: #08090C;
+  --accent-soft: rgba(255, 255, 255, 0.12);
+  --glow: rgba(255, 255, 255, 0.3);
+  --accent-glow: var(--glow);
+  --grid-dot: rgba(255, 255, 255, 0.06);
 
-  /* Fallbacks for older variables */
-  --card-bg: var(--surface);
-  --card-border: var(--border);
-  --surface-high: rgba(255, 255, 255, 0.08);
-
-  /* Permanent fixed tier theme variables — rank-independent */
+  /* Tier-specific variables (always follow user's rank) */
   --tier-accent: #FFFFFF;
   --tier-accent-rgb: 255, 255, 255;
   --tier-accent-hover: #E2E8F0;
@@ -30,6 +50,199 @@
   --tier-gradient: linear-gradient(135deg, #FFFFFF 0%, #E2E8F0 50%, #94A3B8 100%);
   --tier-badge-bg: rgba(255, 255, 255, 0.08);
   --tier-text-accent: #FFFFFF;
+
+  /* Legacy fallbacks */
+  --card-bg: var(--surface);
+  --card-border: var(--border);
+  --surface-high: rgba(255, 255, 255, 0.08);
+}
+
+/* ─── Themes ─────────────────────────────────────────────────────────── */
+
+/* 1. Rank colors (default): current look, accent follows tier */
+html[data-theme="rank"] {
+  color-scheme: dark;
+  --bg: #07090e;
+  --background: var(--bg);
+  --surface: #0F1117;
+  --surface-2: #141721;
+  --border: rgba(255, 255, 255, 0.1);
+  --border-strong: rgba(255, 255, 255, 0.18);
+  --text: #FFFFFF;
+  --foreground: var(--text);
+  --text-dim: #94A3B8;
+  --text-faint: #64748B;
+  --accent-contrast: #08090C;
+  --grid-dot: rgba(255, 255, 255, 0.06);
+}
+
+/* 2. Midnight */
+html[data-theme="midnight"] {
+  color-scheme: dark;
+  --bg: #090B10;
+  --background: #090B10;
+  --surface: #12151D;
+  --surface-2: #0E1117;
+  --border: rgba(255, 255, 255, 0.07);
+  --border-strong: rgba(255, 255, 255, 0.15);
+  --text: #ECEFF4;
+  --foreground: #ECEFF4;
+  --text-dim: #9AA3B2;
+  --text-faint: #6C7689;
+  --accent: #5B8CFF;
+  --accent-contrast: #08101F;
+  --accent-soft: rgba(91, 140, 255, 0.12);
+  --glow: rgba(91, 140, 255, 0.30);
+  --grid-dot: rgba(255, 255, 255, 0.06);
+}
+
+/* 3. Ember */
+html[data-theme="ember"] {
+  color-scheme: dark;
+  --bg: #0F0B09;
+  --background: #0F0B09;
+  --surface: #1A1410;
+  --surface-2: #130F0C;
+  --border: rgba(255, 190, 130, 0.09);
+  --border-strong: rgba(255, 190, 130, 0.18);
+  --text: #F4ECE4;
+  --foreground: #F4ECE4;
+  --text-dim: #A8957F;
+  --text-faint: #7D6C58;
+  --accent: #F0924A;
+  --accent-contrast: #1A0F05;
+  --accent-soft: rgba(240, 146, 74, 0.12);
+  --glow: rgba(240, 146, 74, 0.30);
+  --grid-dot: rgba(255, 255, 255, 0.06);
+}
+
+/* 4. Forest */
+html[data-theme="forest"] {
+  color-scheme: dark;
+  --bg: #070D0B;
+  --background: #070D0B;
+  --surface: #0F1A16;
+  --surface-2: #0B1411;
+  --border: rgba(120, 230, 180, 0.09);
+  --border-strong: rgba(120, 230, 180, 0.18);
+  --text: #E8F3EE;
+  --foreground: #E8F3EE;
+  --text-dim: #8DA89B;
+  --text-faint: #5F796C;
+  --accent: #3DBE8B;
+  --accent-contrast: #04140D;
+  --accent-soft: rgba(61, 190, 139, 0.12);
+  --glow: rgba(61, 190, 139, 0.30);
+  --grid-dot: rgba(255, 255, 255, 0.06);
+}
+
+/* 5. Ocean */
+html[data-theme="ocean"] {
+  color-scheme: dark;
+  --bg: #060B12;
+  --background: #060B12;
+  --surface: #0E1824;
+  --surface-2: #0A121B;
+  --border: rgba(110, 180, 255, 0.10);
+  --border-strong: rgba(110, 180, 255, 0.20);
+  --text: #E6F0FA;
+  --foreground: #E6F0FA;
+  --text-dim: #8AA2B8;
+  --text-faint: #5B738A;
+  --accent: #4DB6E8;
+  --accent-contrast: #04121C;
+  --accent-soft: rgba(77, 182, 232, 0.12);
+  --glow: rgba(77, 182, 232, 0.30);
+  --grid-dot: rgba(255, 255, 255, 0.06);
+}
+
+/* 6. Rose */
+html[data-theme="rose"] {
+  color-scheme: dark;
+  --bg: #0E0A0C;
+  --background: #0E0A0C;
+  --surface: #1A1216;
+  --surface-2: #130D10;
+  --border: rgba(255, 150, 185, 0.09);
+  --border-strong: rgba(255, 150, 185, 0.18);
+  --text: #F6E9EE;
+  --foreground: #F6E9EE;
+  --text-dim: #B0919D;
+  --text-faint: #7F6470;
+  --accent: #F0709A;
+  --accent-contrast: #1F060F;
+  --accent-soft: rgba(240, 112, 154, 0.12);
+  --glow: rgba(240, 112, 154, 0.30);
+  --grid-dot: rgba(255, 255, 255, 0.06);
+}
+
+/* 7. Nebula */
+html[data-theme="nebula"] {
+  color-scheme: dark;
+  --bg: #0A0812;
+  --background: #0A0812;
+  --surface: #15111F;
+  --surface-2: #0F0C18;
+  --border: rgba(170, 150, 255, 0.11);
+  --border-strong: rgba(170, 150, 255, 0.22);
+  --text: #F0EDFA;
+  --foreground: #F0EDFA;
+  --text-dim: #9D96B8;
+  --text-faint: #6E678A;
+  --accent: #9B8CFF;
+  --accent-contrast: #0D0A1F;
+  --accent-soft: rgba(155, 140, 255, 0.12);
+  --glow: rgba(155, 140, 255, 0.30);
+  --grid-dot: rgba(255, 255, 255, 0.06);
+}
+
+/* 8. Graphite */
+html[data-theme="graphite"] {
+  color-scheme: dark;
+  --bg: #0B0B0C;
+  --background: #0B0B0C;
+  --surface: #151516;
+  --surface-2: #101011;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --text: #F2F2F2;
+  --foreground: #F2F2F2;
+  --text-dim: #A0A0A3;
+  --text-faint: #6E6E72;
+  --accent: #E8E8E8;
+  --accent-contrast: #0B0B0C;
+  --accent-soft: rgba(232, 232, 232, 0.12);
+  --glow: rgba(232, 232, 232, 0.30);
+  --grid-dot: rgba(255, 255, 255, 0.06);
+}
+
+/* 9. Paper (Light) */
+html[data-theme="paper"] {
+  color-scheme: light;
+  --bg: #F6F4F0;
+  --background: #F6F4F0;
+  --surface: #FFFFFF;
+  --surface-2: #FAF8F5;
+  --border: rgba(0, 0, 0, 0.09);
+  --border-strong: rgba(0, 0, 0, 0.16);
+  --text: #1B1A18;
+  --foreground: #1B1A18;
+  --text-dim: #5E5A54;
+  --text-faint: #8C877E;
+  --accent: #C96A1B;
+  --accent-contrast: #FFFFFF;
+  --accent-soft: rgba(201, 106, 27, 0.12);
+  --glow: rgba(201, 106, 27, 0.25);
+  --grid-dot: rgba(0, 0, 0, 0.06);
+}
+
+/* Smooth color transition when user switches themes */
+html.theme-transitioning,
+html.theme-transitioning *,
+html.theme-transitioning *::before,
+html.theme-transitioning *::after {
+  transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease, fill 0.25s ease, stroke 0.25s ease !important;
+  transition-delay: 0s !important;
 }
 
 /* Dynamic Card Texture Backgrounds Removed */
@@ -39,16 +252,12 @@
   z-index: 1;
 }
 
-html, body {
-  transition: background-color 0.25s ease, color 0.2s ease;
-}
-
 body {
-  background-color: var(--background);
-  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-color: var(--bg);
+  background-image: radial-gradient(circle, var(--grid-dot) 1px, transparent 1px);
   background-size: 24px 24px;
   background-attachment: fixed;
-  color: var(--foreground);
+  color: var(--text);
   font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   overflow-x: hidden;
   overscroll-behavior-y: none;
@@ -65,19 +274,9 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* Dark mode explicit overrides */
-html.dark body,
-[data-theme="dark"] body {
-  background-color: #07090e;
-  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
-  background-size: 24px 24px;
-  background-attachment: fixed;
-  color: #E2E8F0;
-}
-
 /* Faint Repeating Dot-Grid Pattern */
 .bg-dot-grid {
-  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-image: radial-gradient(circle, var(--grid-dot) 1px, transparent 1px);
   background-size: 24px 24px;
 }
 
@@ -99,11 +298,11 @@ html.dark body,
   }
 }
 
-/* Solid Near-Black HUD Card Surface (Non-glass per requirement) */
+/* Solid Near-Black HUD Card Surface */
 .hud-surface {
   background-color: var(--surface);
   border: 1px solid var(--border);
-  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  border-top: 1px solid var(--border-strong);
   box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
@@ -111,10 +310,10 @@ html.dark body,
 
 /* Frosted Glass Treatment ONLY for Floating Overlays (Dock, Modals, Sheets) */
 .hud-glass-overlay {
-  background: rgba(14, 18, 24, 0.72);
+  background: var(--surface);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--border);
   box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.6);
 }
 
@@ -209,22 +408,23 @@ html.dark body,
 }
 
 ::-webkit-scrollbar-track {
-  background: #0A0C10;
+  background: var(--bg);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1B2028;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #2E3642;
+  background: var(--border-strong);
 }
 
 /* Thin Scrollbar for mobile/compact containers */
 .scrollbar-thin {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+  scrollbar-color: var(--border-strong) transparent;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -238,7 +438,7 @@ html.dark body,
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--border-strong);
   border-radius: 9999px;
 }
 

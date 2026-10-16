@@ -1,6 +1,7 @@
 'use client';
 
 import React, { ReactNode } from 'react';
+import { ThemeProvider } from '../../context/ThemeContext';
 import { AuthProvider } from '../../context/AuthContext';
 import { StudyProvider } from '../../context/StudyContext';
 import { Toaster } from 'react-hot-toast';
@@ -8,8 +9,9 @@ import { TimerSWBridge } from './TimerSWBridge';
 
 export function Providers({ children }: { children: ReactNode }) {
   return (
-    <AuthProvider>
-      <StudyProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <StudyProvider>
           {/* Bridge timer state → Service Worker for background tracking & notifications */}
           <TimerSWBridge />
           {children}
@@ -17,11 +19,11 @@ export function Providers({ children }: { children: ReactNode }) {
             position="top-center" 
             toastOptions={{
               style: {
-                background: '#0F172A', // Slate 900
-                color: '#F8FAFC', // Slate 50
-                border: '1px solid #1E293B', // Slate 800
+                background: 'var(--surface)',
+                color: 'var(--text)',
+                border: '1px solid var(--border)',
                 borderRadius: '12px',
-                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3)',
+                boxShadow: '0 10px 25px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3)',
                 fontSize: '13px',
                 fontFamily: 'Inter, sans-serif',
                 fontWeight: '500',
@@ -29,20 +31,21 @@ export function Providers({ children }: { children: ReactNode }) {
               },
               success: {
                 iconTheme: {
-                  primary: '#10B981', // Emerald 500
-                  secondary: '#0F172A',
+                  primary: '#10B981',
+                  secondary: 'var(--surface)',
                 },
               },
               error: {
                 iconTheme: {
-                  primary: '#EF4444', // Red 500
-                  secondary: '#0F172A',
+                  primary: '#EF4444',
+                  secondary: 'var(--surface)',
                 },
               },
             }}
           />
-      </StudyProvider>
-    </AuthProvider>
+        </StudyProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

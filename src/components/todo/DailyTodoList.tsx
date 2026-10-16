@@ -442,9 +442,9 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
   return (
     <div className="space-y-4 sm:space-y-6 relative flex flex-col min-h-[70vh] w-full">
       {/* HUD Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/[0.08] relative z-10">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[var(--border)] relative z-10">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.15)]">
+          <div className="p-2.5 rounded-xl bg-[var(--accent-soft)] border border-[var(--border)] flex items-center justify-center text-[var(--accent)] shadow-[0_0_20px_var(--glow)]">
             <Target className="w-5 h-5" />
           </div>
           <div>
@@ -455,7 +455,7 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
               )}
             </h2>
             <div className="text-xs text-neutral-400 font-mono tracking-wider mt-0.5">
-              <span className="text-amber-400 font-bold">{completedTodos.length}</span> / {todos.length} COMPLETED
+              <span className="text-[var(--accent)] font-bold">{completedTodos.length}</span> / {todos.length} COMPLETED
             </div>
           </div>
         </div>
@@ -469,8 +469,8 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
               onClick={() => setFilter(f)}
               className={`px-3 py-1.5 rounded-lg font-hud-mono text-[10px] sm:text-xs font-bold tracking-wider uppercase transition-all whitespace-nowrap cursor-pointer ${
                 filter === f
-                  ? 'bg-amber-500 text-slate-950 shadow-[0_0_15px_rgba(245,158,11,0.4)]'
-                  : 'bg-white/[0.03] border border-white/10 text-neutral-400 hover:text-neutral-200 hover:bg-white/[0.08]'
+                  ? 'bg-[var(--accent)] text-[var(--accent-contrast)] shadow-[0_0_15px_var(--glow)]'
+                  : 'bg-[var(--surface)] border border-[var(--border)] text-neutral-400 hover:text-neutral-200 hover:bg-[var(--surface-2)]'
               }`}
             >
               {f === 'high' ? 'High Priority' : f}
@@ -481,12 +481,12 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
 
       {/* Progress Bar */}
       {todos.length > 0 && (
-        <div className="h-1.5 w-full rounded-full bg-black/60 overflow-hidden border border-white/[0.05] relative z-10 shadow-inner">
+        <div className="h-1.5 w-full rounded-full bg-[var(--surface-2)] overflow-hidden border border-[var(--border)] relative z-10 shadow-inner">
           <div
-            className="h-full rounded-full transition-all duration-700 ease-out shadow-[0_0_10px_rgba(245,158,11,0.6)]"
+            className="h-full rounded-full transition-all duration-700 ease-out shadow-[0_0_10px_var(--glow)]"
             style={{
               width: `${progressPercent}%`,
-              backgroundColor: theme.accent || '#F59E0B',
+              backgroundColor: 'var(--accent)',
             }}
           />
         </div>
@@ -495,7 +495,7 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
       {/* Quick Add Bar */}
       <form
         onSubmit={handleAddTask}
-        className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 p-3 sm:p-4 rounded-xl bg-black/30 border border-white/10 focus-within:border-amber-500/50 focus-within:ring-1 focus-within:ring-amber-500/20 transition-all relative z-10"
+        className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 p-3 sm:p-4 rounded-xl bg-[var(--surface)] border border-[var(--border)] focus-within:border-[var(--accent)] focus-within:ring-1 focus-within:ring-[var(--accent)]/30 transition-all relative z-10"
       >
         <div className="flex-1 flex items-center gap-3 px-1">
           <Plus className="w-5 h-5 text-neutral-500 flex-shrink-0" />
@@ -555,8 +555,8 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
           <button
             type="submit"
             disabled={!taskInput.trim()}
-            className="ml-auto sm:ml-2 px-4 py-1.5 text-xs font-hud-mono font-bold text-slate-950 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 active:scale-95 hover:brightness-110"
-            style={{ backgroundColor: theme.accent || '#F59E0B' }}
+            className="ml-auto sm:ml-2 px-4 py-1.5 text-xs font-hud-mono font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 active:scale-95 hover:brightness-110"
+            style={{ backgroundColor: 'var(--accent)', color: 'var(--accent-contrast)' }}
           >
             ADD <span className="hidden sm:inline font-sans text-[10px] opacity-60 ml-1">⏎</span>
           </button>
@@ -628,13 +628,13 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
                   setDragOverId(null);
                   setDraggableRowId(null);
                 }}
-                className={`group flex items-center gap-3 px-3 py-2.5 sm:py-3 rounded-xl transition-all duration-200 relative overflow-hidden bg-black/20 border border-white/[0.05] hover:bg-white/[0.04] hover:border-white/[0.1] ${
+                className={`group flex items-center gap-3 px-3 py-2.5 sm:py-3 rounded-xl transition-all duration-200 relative overflow-hidden bg-[var(--surface)] border border-[var(--border)] hover:bg-[var(--surface-2)] hover:border-[var(--border-strong)] ${
                   draggingId === item.id
-                    ? 'opacity-30 border-dashed !border-amber-500/50'
+                    ? 'opacity-30 border-dashed !border-[var(--accent)]/50'
                     : dragOverId === item.id
                     ? dragOverPosition === 'above'
-                      ? 'border-t-2 !border-t-amber-400'
-                      : 'border-b-2 !border-b-amber-400'
+                      ? 'border-t-2 !border-t-[var(--accent)]'
+                      : 'border-b-2 !border-b-[var(--accent)]'
                     : ''
                 }`}
               >
@@ -700,7 +700,7 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
                   type="button"
                   onClick={() => handleToggleTask(item.id, item.is_completed)}
                   aria-label="Mark task complete"
-                  className="w-5 h-5 sm:w-6 sm:h-6 rounded-md border-2 border-white/20 hover:border-amber-400 hover:bg-amber-500/10 transition-all flex items-center justify-center flex-shrink-0 cursor-pointer group-hover:border-white/50 active:scale-90 shadow-inner"
+                  className="w-5 h-5 sm:w-6 sm:h-6 rounded-md border-2 border-[var(--border-strong)] hover:border-[var(--accent)] hover:bg-[var(--accent-soft)] transition-all flex items-center justify-center flex-shrink-0 cursor-pointer active:scale-90 shadow-inner"
                 />
 
                 {/* Content */}
@@ -777,7 +777,7 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
                 {displayCompletedTodos.map(item => (
                   <div
                     key={item.id}
-                    className="group flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/[0.02] transition-colors bg-black/10 border border-transparent relative overflow-hidden"
+                    className="group flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--surface-2)] transition-colors bg-[var(--surface)]/50 border border-transparent relative overflow-hidden"
                   >
                     <div className="w-4 flex-shrink-0" />
                     {/* Checked Box */}
@@ -785,8 +785,8 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
                       type="button"
                       onClick={() => handleToggleTask(item.id, item.is_completed)}
                       aria-label="Mark task incomplete"
-                      className="w-5 h-5 sm:w-6 sm:h-6 rounded-md text-slate-950 flex items-center justify-center transition-all cursor-pointer shadow-[0_0_10px_rgba(245,158,11,0.3)] active:scale-95 flex-shrink-0 z-10"
-                      style={{ backgroundColor: theme.accent || '#F59E0B' }}
+                      className="w-5 h-5 sm:w-6 sm:h-6 rounded-md flex items-center justify-center transition-all cursor-pointer shadow-[0_0_10px_var(--glow)] active:scale-95 flex-shrink-0 z-10"
+                      style={{ backgroundColor: 'var(--accent)', color: 'var(--accent-contrast)' }}
                     >
                       <Check className="w-3.5 h-3.5 stroke-[3]" />
                     </button>

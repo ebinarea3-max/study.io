@@ -61,7 +61,7 @@ export const AmbientGlow = React.memo(function AmbientGlow({ isRunning }: { isRu
       }`}
       style={{
         background:
-          'radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.03) 45%, transparent 70%)',
+          'radial-gradient(circle at 50% 50%, var(--accent-soft) 0%, rgba(255, 255, 255, 0.02) 45%, transparent 70%)',
         filter: 'blur(50px)',
       }}
     />

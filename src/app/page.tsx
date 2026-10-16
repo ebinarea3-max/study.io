@@ -150,7 +150,7 @@ export default function Home() {
 
   // Authenticated: Full StudyPulse focus dashboard
   return (
-    <div className={`w-full bg-[#07090e] bg-dot-grid text-slate-100 flex flex-col relative selection:bg-amber-500/30 selection:text-amber-400 px-0 md:px-8 ${
+    <div className={`w-full bg-[var(--bg)] bg-dot-grid text-[var(--text)] flex flex-col relative selection:bg-[var(--accent)]/30 selection:text-[var(--accent)] px-0 md:px-8 ${
       activeTab === "timer"
         ? "h-[100dvh] overflow-hidden md:min-h-screen md:h-auto md:overflow-y-auto pb-28 md:pb-28"
         : activeTab === "rooms"

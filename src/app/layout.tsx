@@ -65,12 +65,20 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} ${rajdhani.variable} ${chakraPetch.variable} dark antialiased`}
     >
-      <body className="min-h-screen overflow-x-hidden flex flex-col text-slate-200 bg-[var(--bg)] dark antialiased selection:bg-[var(--tier-accent)]/30 selection:text-[var(--tier-accent)]">
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('studyio-theme')||'rank';var valid=['rank','midnight','ember','forest','ocean','rose','nebula','graphite','paper'];if(!valid.includes(t))t='rank';document.documentElement.dataset.theme=t;if(t==='paper'){document.documentElement.classList.remove('dark');document.documentElement.classList.add('light');}else{document.documentElement.classList.remove('light');document.documentElement.classList.add('dark');}}catch(e){document.documentElement.dataset.theme='rank';}})();`,
+          }}
+        />
+      </head>
+      <body className="min-h-screen overflow-x-hidden flex flex-col text-[var(--text)] bg-[var(--bg)] dark antialiased selection:bg-[var(--accent)]/30 selection:text-[var(--accent)]">
         <Providers>
           {children}
-          </Providers>
+        </Providers>
       </body>
     </html>
   );

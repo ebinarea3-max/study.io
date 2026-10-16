@@ -357,7 +357,7 @@ export function Navbar({
                     />
                     <span
                       className="text-xs font-bold tracking-wider font-hud uppercase truncate max-w-[85px] sm:max-w-none"
-                      style={{ color: theme.accent }}
+                      style={{ color: 'var(--tier-accent)' }}
                     >
                       {liveRank.name.toUpperCase()}
                     </span>
@@ -468,11 +468,11 @@ export function Navbar({
 
             {/* Interactive User Account Dropdown with Full Gamification Dashboard */}
             {showPersonaMenu && (
-              <div className="absolute right-0 mt-2.5 w-80 rounded-2xl bg-[#0c1017]/85 backdrop-blur-2xl border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.85)] p-4 z-50 animate-in fade-in zoom-in-95 duration-150 overflow-hidden">
+              <div className="absolute right-0 mt-2.5 w-80 rounded-2xl bg-[var(--surface)]/95 backdrop-blur-2xl border border-[var(--border)] shadow-[0_20px_50px_rgba(0,0,0,0.85)] p-4 z-50 animate-in fade-in zoom-in-95 duration-150 overflow-hidden">
                 {/* Subtle ambient accent glow */}
                 <div
                   className="absolute -top-12 -right-12 w-32 h-32 rounded-full blur-2xl pointer-events-none opacity-20"
-                  style={{ backgroundColor: theme.accent }}
+                  style={{ backgroundColor: 'var(--accent)' }}
                 />
 
                 {/* User Header */}
@@ -591,10 +591,7 @@ export function Navbar({
     <div className="fixed bottom-5 sm:bottom-6 left-0 right-0 z-50 md:hidden flex justify-center px-3 pb-[env(safe-area-inset-bottom,0px)] pointer-events-none">
       <nav
         aria-label="Mobile Floating Dock Navigation"
-        className="w-full max-w-md bg-[#0d0f12]/92 backdrop-blur-xl border border-white/10 rounded-full p-1 shadow-[0_8px_32px_rgba(0,0,0,0.8)] transition-all pointer-events-auto"
-        style={{
-          borderColor: `${theme.accent}35`,
-        }}
+        className="w-full max-w-md bg-[var(--surface)]/95 backdrop-blur-xl border border-[var(--border)] rounded-full p-1 shadow-[0_8px_32px_rgba(0,0,0,0.8)] transition-all pointer-events-auto"
       >
       <div className="relative flex items-center justify-between w-full">
         {/* Sliding active indicator pill in Tier Accent */}

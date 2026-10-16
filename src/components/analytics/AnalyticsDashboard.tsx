@@ -685,8 +685,8 @@ export function AnalyticsDashboard({ onStartSession, onOpenSettings }: Analytics
 
       <div className="grid grid-cols-3 md:grid-cols-3 gap-2 md:gap-4 w-full">
         {/* Card 1 (Left): Focus Time of Today */}
-        <div className="p-2.5 md:p-4 rounded-xl md:rounded-2xl bg-[#0b0e14]/90 border border-white/[0.07] flex flex-col justify-between relative overflow-hidden group">
-          <div className="w-4 md:w-6 h-0.5 md:h-1 bg-amber-500 rounded-full mb-1.5" />
+        <div className="p-2.5 md:p-4 rounded-xl md:rounded-2xl bg-[var(--surface)] border border-[var(--border)] flex flex-col justify-between relative overflow-hidden group">
+          <div className="w-4 md:w-6 h-0.5 md:h-1 bg-[var(--accent)] rounded-full mb-1.5" />
           <span className="text-[9px] sm:text-xs md:text-sm font-mono tracking-wider uppercase text-neutral-400 font-medium truncate leading-tight">
             <span className="hidden md:inline">FOCUS TIME // </span>TODAY
           </span>
@@ -700,8 +700,8 @@ export function AnalyticsDashboard({ onStartSession, onOpenSettings }: Analytics
         </div>
 
         {/* Card 2 (Center): Focus Time of This Week */}
-        <div className="p-2.5 md:p-4 rounded-xl md:rounded-2xl bg-[#0b0e14]/90 border border-white/[0.07] flex flex-col justify-between relative overflow-hidden group">
-          <div className="w-4 md:w-6 h-0.5 md:h-1 bg-amber-500 rounded-full mb-1.5" />
+        <div className="p-2.5 md:p-4 rounded-xl md:rounded-2xl bg-[var(--surface)] border border-[var(--border)] flex flex-col justify-between relative overflow-hidden group">
+          <div className="w-4 md:w-6 h-0.5 md:h-1 bg-[var(--accent)] rounded-full mb-1.5" />
           <span className="text-[9px] sm:text-xs md:text-sm font-mono tracking-wider uppercase text-neutral-400 font-medium truncate leading-tight">
             <span className="hidden md:inline">FOCUS TIME // </span>THIS WEEK
           </span>
@@ -715,8 +715,8 @@ export function AnalyticsDashboard({ onStartSession, onOpenSettings }: Analytics
         </div>
 
         {/* Card 3 (Right): Focus Time of This Month */}
-        <div className="p-2.5 md:p-4 rounded-xl md:rounded-2xl bg-[#0b0e14]/90 border border-white/[0.07] flex flex-col justify-between relative overflow-hidden group">
-          <div className="w-4 md:w-6 h-0.5 md:h-1 bg-amber-500 rounded-full mb-1.5" />
+        <div className="p-2.5 md:p-4 rounded-xl md:rounded-2xl bg-[var(--surface)] border border-[var(--border)] flex flex-col justify-between relative overflow-hidden group">
+          <div className="w-4 md:w-6 h-0.5 md:h-1 bg-[var(--accent)] rounded-full mb-1.5" />
           <span className="text-[9px] sm:text-xs md:text-sm font-mono tracking-wider uppercase text-neutral-400 font-medium truncate leading-tight">
             <span className="hidden md:inline">FOCUS TIME // </span>THIS MONTH
           </span>
@@ -1035,10 +1035,10 @@ export function AnalyticsDashboard({ onStartSession, onOpenSettings }: Analytics
                 } else if (c.metGoal) {
                   cellClass += ' font-bold';
                   customStyle = {
-                    borderColor: `${theme.accent}80`,
-                    backgroundColor: `${theme.accent}18`,
-                    color: theme.accent,
-                    boxShadow: `0 0 8px ${theme.glow}`,
+                    borderColor: 'var(--accent)',
+                    backgroundColor: 'var(--accent-soft)',
+                    color: 'var(--accent)',
+                    boxShadow: '0 0 8px var(--glow)',
                   };
                 } else if (c.hasActivity) {
                   cellClass += ' border-neutral-700/80 bg-neutral-900/60 text-neutral-300 hover:border-neutral-500';
@@ -1136,10 +1136,10 @@ export function AnalyticsDashboard({ onStartSession, onOpenSettings }: Analytics
                   onClick={() => setFocusChartTimeframe(tf)}
                   className={`px-2.5 py-0.5 rounded-lg font-hud-mono uppercase text-[10px] tracking-wider transition-all cursor-pointer ${
                     focusChartTimeframe === tf
-                      ? 'text-slate-950 font-bold shadow-sm'
+                      ? 'font-bold shadow-sm'
                       : 'text-neutral-400 hover:text-white'
                   }`}
-                  style={focusChartTimeframe === tf ? { backgroundColor: theme.accent } : undefined}
+                  style={focusChartTimeframe === tf ? { backgroundColor: 'var(--accent)', color: 'var(--accent-contrast)' } : undefined}
                 >
                   {tf}
                 </button>

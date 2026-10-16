@@ -25,6 +25,7 @@ import { InstallInstructionModal } from './InstallInstructionModal';
 import { useRankTheme } from '../../hooks/useRankTheme';
 import { getSupabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
+import { ThemePicker } from '../settings/ThemePicker';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -212,6 +213,9 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         </div>
 
         <div className="py-4 space-y-4 relative z-10">
+          {/* Appearance Section */}
+          <ThemePicker />
+
           {/* Section 1: Account & Avatar */}
           <div className="p-4 rounded-xl bg-white/[0.03] backdrop-blur-md border border-white/[0.08] flex flex-col gap-4">
             <div className="flex items-center justify-between gap-3">

@@ -21,6 +21,7 @@ import { InstallInstructionModal } from './InstallInstructionModal';
 import { useRankTheme } from '../../hooks/useRankTheme';
 import { TierIcon } from './TierIcon';
 import { RankCrestBadge } from './RankCrestBadge';
+import { ThemePicker } from '../settings/ThemePicker';
 
 export function SettingsTabContent() {
   const { user, deleteAccount } = useAuth();
@@ -114,6 +115,9 @@ export function SettingsTabContent() {
           </div>
         </div>
       </div>
+
+      {/* Appearance / Theme Selector */}
+      <ThemePicker />
 
       {/* Account & Session Telemetry */}
       <div className="p-5 rounded-2xl hud-surface border border-[var(--border)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">

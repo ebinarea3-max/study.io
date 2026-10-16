@@ -575,7 +575,7 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
 
   if (hasSeenRecap === false) {
     return (
-      <div className={`w-full text-slate-100 font-sans ${isEmbedded ? 'max-w-5xl mx-auto py-12' : 'bg-[#07090e] min-h-screen p-8 flex flex-col justify-center'} flex items-center justify-center relative`}>
+      <div className={`w-full text-slate-100 font-sans ${isEmbedded ? 'max-w-5xl mx-auto py-12' : 'bg-[var(--bg)] min-h-screen p-8 flex flex-col justify-center'} flex items-center justify-center relative`}>
         {!isEmbedded && (
           <>
             <div className="fixed inset-0 pointer-events-none bg-dot-grid z-0" />
@@ -613,7 +613,7 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
       className={`w-full text-white font-sans ${
         isEmbedded
           ? 'max-w-[1100px] mx-auto flex flex-col gap-6 py-4'
-          : 'bg-[#05070a] min-h-screen p-4 sm:p-6 flex flex-col items-center'
+          : 'bg-[var(--bg)] min-h-screen p-4 sm:p-6 flex flex-col items-center'
       } pb-28 sm:pb-12`}
     >
       <div className="w-full max-w-[1100px] flex flex-col gap-6 relative">
@@ -722,9 +722,9 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
 
             {/* Sticky Current User Rank Indicator */}
             {currentUserEntry && !currentUserRowVisible && (
-              <div className="sticky top-2 z-30 mb-2 flex items-center justify-between rounded-xl border border-white/[0.1] bg-[#0c0e14]/90 px-4 py-2 text-xs font-mono text-zinc-300 backdrop-blur-md shadow-lg">
+              <div className="sticky top-2 z-30 mb-2 flex items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--surface)]/95 px-4 py-2 text-xs font-mono text-zinc-300 backdrop-blur-md shadow-lg">
                 <span>
-                  YOUR RANK: <strong className="text-amber-400">#{currentUserEntry.rank}</strong>
+                  YOUR RANK: <strong style={{ color: 'var(--tier-accent)' }}>#{currentUserEntry.rank}</strong>
                 </span>
                 <button
                   onClick={() => myRowRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })}

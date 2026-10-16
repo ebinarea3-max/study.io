@@ -1082,11 +1082,11 @@ export function StudyTimer() {
                 }
               }}
               disabled={isSaving || isRemoteTransitioning}
-              className="flex-1 h-[52px] rounded-full font-medium text-sm text-zinc-950 bg-white hover:brightness-105 active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              className="flex-1 h-[52px] rounded-full font-medium text-sm text-[var(--accent-contrast)] bg-[var(--accent)] hover:brightness-105 active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shadow-sm"
             >
               {isSaving ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-zinc-950 border-t-transparent rounded-full animate-spin" />
+                  <div className="w-4 h-4 border-2 border-[var(--accent-contrast)] border-t-transparent rounded-full animate-spin" />
                   <span>Saving...</span>
                 </>
               ) : (
@@ -1117,7 +1117,7 @@ export function StudyTimer() {
               <button
                 onClick={startPomodoroBreak}
                 disabled={isSaving || isRemoteTransitioning}
-                className="flex-1 h-[52px] rounded-full font-medium text-sm text-zinc-950 bg-white hover:brightness-105 active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                className="flex-1 h-[52px] rounded-full font-medium text-sm text-[var(--accent-contrast)] bg-[var(--accent)] hover:brightness-105 active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shadow-sm"
               >
                 <Play className="w-4 h-4 fill-current" />
                 <span>Start break</span>
@@ -1146,7 +1146,7 @@ export function StudyTimer() {
               handleStartSession();
             }}
             disabled={isSaving || isRemoteTransitioning}
-            className="w-full max-w-[360px] sm:w-[240px] h-[52px] rounded-full font-semibold text-sm text-zinc-950 bg-white hover:brightness-105 active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+            className="w-full max-w-[360px] sm:w-[240px] h-[52px] rounded-full font-semibold text-sm text-[var(--accent-contrast)] bg-[var(--accent)] hover:brightness-105 active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shadow-sm"
           >
             <Flame className="w-4 h-4 fill-current" />
             <span>Start focus session</span>
@@ -1172,7 +1172,7 @@ export function StudyTimer() {
               type="button"
               onClick={handleStartSession}
               disabled={isSaving || isRemoteTransitioning}
-              className="w-full max-w-[360px] sm:w-[240px] h-[52px] rounded-full font-semibold text-sm text-zinc-950 bg-white shadow-sm hover:brightness-105 active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              className="w-full max-w-[360px] sm:w-[240px] h-[52px] rounded-full font-semibold text-sm text-[var(--accent-contrast)] bg-[var(--accent)] shadow-sm hover:brightness-105 active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
               <Play className="w-4 h-4 fill-current" />
               <span>Start session</span>
@@ -1214,7 +1214,7 @@ export function StudyTimer() {
               type="button"
               onClick={handleResume}
               disabled={isSaving || isRemoteTransitioning}
-              className="flex-1 h-[52px] rounded-full font-semibold text-sm text-zinc-950 bg-white hover:brightness-105 active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              className="flex-1 h-[52px] rounded-full font-semibold text-sm text-[var(--accent-contrast)] bg-[var(--accent)] hover:brightness-105 active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shadow-sm"
             >
               <Play className="w-4 h-4 fill-current" />
               <span>Resume</span>
