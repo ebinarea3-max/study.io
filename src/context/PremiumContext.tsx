@@ -54,32 +54,27 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      // Check active auth session
-      const { data: sessionData } = await supabase.auth.getSession();
-      const sessionUser = sessionData?.session?.user;
-
-      if (!sessionUser) {
-        setRawIsPremium(false);
-        setPremiumUntilDate(null);
-        setPlan(null);
-        setStatus('none');
-        setCancelAtCycleEnd(false);
-        setLoading(false);
-        return;
-      }
-
       const { data, error } = await supabase.rpc('get_my_entitlements');
+      console.log('[usePremium] Raw RPC response:', { data, error });
 
       if (error) {
         if (!hasLoggedErrorRef.current) {
           console.warn('[usePremium] get_my_entitlements error:', error);
           hasLoggedErrorRef.current = true;
         }
-        // On error, keep previous known value if there is one instead of resetting everything
+        // If initial and error occurred (such as unauthenticated), reset to free
+        if (isInitial) {
+          setRawIsPremium(false);
+          setPremiumUntilDate(null);
+          setPlan(null);
+          setStatus('none');
+          setCancelAtCycleEnd(false);
+        }
       } else {
         hasLoggedErrorRef.current = false;
         // Supabase returns table functions as an array of rows
         const row = Array.isArray(data) ? data[0] : data;
+        console.log('[usePremium] Parsed entitlement row:', row);
 
         // Map snake_case columns to app's names:
         const serverIsPremium = Boolean(row?.is_premium);
@@ -98,7 +93,17 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
           isPrem = false;
         }
 
-        setRawIsPremium(serverIsPremium);
+        console.log('[usePremium] Computed entitlement state:', {
+          serverIsPremium,
+          isPrem,
+          parsedUntil,
+          isValidDate,
+          mappedPlan,
+          mappedStatus,
+          mappedCancelAtCycleEnd,
+        });
+
+        setRawIsPremium(isPrem);
         setPremiumUntilDate(isValidDate ? parsedUntil : null);
         setPlan(mappedPlan);
         setStatus(mappedStatus);
@@ -128,8 +133,10 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event) => {
+      console.log('[usePremium] onAuthStateChange event:', event);
       if (
         event === 'SIGNED_IN' ||
+        event === 'INITIAL_SESSION' ||
         event === 'TOKEN_REFRESHED' ||
         event === 'USER_UPDATED'
       ) {
@@ -155,6 +162,17 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
       fetchEntitlements(false);
     }
   }, [user?.id, fetchEntitlements]);
+
+  // Listen to custom auth events from AuthContext
+  useEffect(() => {
+    const handleAuthChanged = () => {
+      fetchEntitlements(false);
+    };
+    window.addEventListener('studypulse:auth-changed', handleAuthChanged);
+    return () => {
+      window.removeEventListener('studypulse:auth-changed', handleAuthChanged);
+    };
+  }, [fetchEntitlements]);
 
   // Refresh on window focus and visibility change
   useEffect(() => {
