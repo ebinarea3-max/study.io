@@ -165,23 +165,18 @@ export function SettingsPlanSection() {
       {/* 2. Premium Flair Customization Section (Premium Only) */}
       {isPremium && (
         <div className="p-4 sm:p-5 rounded-2xl bg-[var(--surface-2)] border border-[var(--border)] shadow-sm space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-2">
-                <Shield className="w-4 h-4 text-amber-400" />
-                <h4 className="text-xs font-hud font-bold text-[var(--text)] tracking-wider uppercase">
-                  Scholar Avatar Flair
-                </h4>
-              </div>
-              <p className="text-xs text-[var(--text-dim)] mt-0.5 font-sans">
-                Choose your signature frame style visible on the Leaderboard and in Study Rooms.
-              </p>
+          <div className="flex items-center justify-between gap-3 pb-3 border-b border-[var(--border)]/50">
+            <div className="flex items-center gap-2">
+              <Shield className="w-4 h-4 text-amber-400 shrink-0" />
+              <h4 className="text-xs font-hud font-bold text-[var(--text)] tracking-wider uppercase">
+                Scholar Avatar Flair
+              </h4>
             </div>
 
-            {/* Toggle: Show my Premium badge to others */}
-            <label className="flex items-center gap-2.5 cursor-pointer select-none">
-              <span className="text-xs font-sans text-[var(--text-dim)] hidden sm:inline">
-                Show my Premium badge to others
+            {/* Toggle: Show Badge */}
+            <label className="flex items-center gap-2 cursor-pointer select-none shrink-0" title="Toggle public premium badge">
+              <span className="text-xs font-hud text-[var(--text-dim)] font-medium">
+                Show Badge
               </span>
               <div className="relative inline-flex items-center">
                 <input
@@ -196,8 +191,12 @@ export function SettingsPlanSection() {
             </label>
           </div>
 
+          <p className="text-xs text-[var(--text-dim)] font-sans -mt-1">
+            Choose your signature frame style visible on the Leaderboard and in Study Rooms.
+          </p>
+
           {/* Three Frame Previews */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3 pt-1">
             {(['gold', 'aurora', 'ember'] as FlairFrame[]).map((frameKey) => {
               const frameConfig = FLAIR_FRAMES[frameKey];
               const isSelected = selectedFrame === frameKey;
@@ -207,15 +206,22 @@ export function SettingsPlanSection() {
                   key={frameKey}
                   type="button"
                   onClick={() => handleFrameChange(frameKey)}
-                  className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col items-center sm:items-start gap-2.5 relative ${
+                  className={`p-2.5 sm:p-3 rounded-xl border transition-all cursor-pointer flex flex-col items-center justify-center text-center gap-1.5 relative ${
                     isSelected
-                      ? 'border-amber-400/50 bg-amber-400/[0.06] shadow-sm'
-                      : 'border-[var(--border)] bg-fg/[0.02] hover:bg-fg/[0.04]'
+                      ? 'border-amber-400/60 bg-amber-400/[0.08] shadow-sm ring-1 ring-amber-400/30'
+                      : 'border-[var(--border)] bg-fg/[0.02] hover:bg-fg/[0.05]'
                   }`}
                 >
-                  {/* Avatar Mini Preview */}
-                  <div className="flex items-center gap-3">
-                    <AvatarFlairRing frame={showBadge ? frameKey : null} size={40}>
+                  {/* Selected checkmark indicator safely placed at top-right with zero text overlap */}
+                  {isSelected && (
+                    <div className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-amber-400 text-black flex items-center justify-center shadow-sm">
+                      <Check className="w-2.5 h-2.5 stroke-[3]" />
+                    </div>
+                  )}
+
+                  {/* Centered Avatar Preview */}
+                  <div className="my-0.5">
+                    <AvatarFlairRing frame={showBadge ? frameKey : null} size={42}>
                       <UserAvatar
                         src={user?.user_metadata?.avatar_url || (user as any)?.avatar_url}
                         name={user?.user_metadata?.full_name || user?.email || 'Scholar'}
@@ -223,25 +229,20 @@ export function SettingsPlanSection() {
                         className="rounded-full"
                       />
                     </AvatarFlairRing>
-
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-hud font-bold text-[var(--text)] tracking-wider">
-                          {frameConfig.name}
-                        </span>
-                        {showBadge && <FlairCrown frame={frameKey} />}
-                      </div>
-                      <span className="text-[10px] text-[var(--text-dim)] font-mono block truncate">
-                        {frameKey === 'gold' ? 'Prestige Gold' : frameKey === 'aurora' ? 'Celestial Teal' : 'Thermal Fire'}
-                      </span>
-                    </div>
                   </div>
 
-                  {isSelected && (
-                    <div className="absolute top-2.5 right-2.5 w-4 h-4 rounded-full bg-amber-400 text-black flex items-center justify-center">
-                      <Check className="w-2.5 h-2.5 stroke-[3]" />
+                  {/* Frame Name & Subtitle */}
+                  <div className="text-center w-full min-w-0 px-0.5">
+                    <div className="flex items-center justify-center gap-1">
+                      <span className="text-[11px] font-hud font-bold text-[var(--text)] tracking-wider truncate">
+                        {frameConfig.name}
+                      </span>
+                      {showBadge && <FlairCrown frame={frameKey} size={11} />}
                     </div>
-                  )}
+                    <span className="text-[9px] text-[var(--text-dim)] font-mono block truncate mt-0.5">
+                      {frameKey === 'gold' ? 'Prestige Gold' : frameKey === 'aurora' ? 'Celestial Teal' : 'Thermal Fire'}
+                    </span>
+                  </div>
                 </button>
               );
             })}

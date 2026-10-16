@@ -186,7 +186,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
       <div
-        className="relative w-full max-w-lg bg-[var(--surface)] backdrop-blur-3xl border border-[var(--border)] rounded-2xl shadow-card p-6 sm:p-7 overflow-hidden max-h-[90vh] overflow-y-auto"
+        className="relative w-full max-w-lg bg-[var(--surface)] backdrop-blur-3xl border border-[var(--border)] rounded-2xl shadow-card overflow-hidden max-h-[90vh] flex flex-col"
         style={{ borderColor: `${theme.accent}30` }}
       >
         {/* Ambient background lighting */}
@@ -196,11 +196,11 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         />
         <div className="absolute -bottom-24 -left-24 w-52 h-52 bg-fg/5 rounded-full blur-3xl pointer-events-none" />
 
-        {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-[var(--border)] relative z-10">
+        {/* Fixed Header (Never scrolls when scrolling through settings) */}
+        <div className="flex items-center justify-between p-5 sm:p-6 pb-4 border-b border-[var(--border)] bg-[var(--surface)]/95 backdrop-blur-xl relative z-20 shrink-0">
           <div className="flex items-center gap-3">
             <div
-              className="w-10 h-10 rounded-xl bg-fg/[0.04] border border-[var(--border)] flex items-center justify-center shadow-sm"
+              className="w-10 h-10 rounded-xl bg-fg/[0.04] border border-[var(--border)] flex items-center justify-center shadow-sm shrink-0"
               style={{ color: theme.accent }}
             >
               <ShieldCheck className="w-5 h-5" />
@@ -216,14 +216,15 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-[var(--text-dim)] hover:text-[var(--text)] rounded-xl hover:bg-fg/[0.08] transition-colors cursor-pointer"
+            className="p-2 text-[var(--text-dim)] hover:text-[var(--text)] rounded-xl hover:bg-fg/[0.08] transition-colors cursor-pointer shrink-0"
             aria-label="Close settings"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="py-4 space-y-4 relative z-10">
+        {/* Scrollable Content Body */}
+        <div className="flex-1 overflow-y-auto p-5 sm:p-6 pt-4 space-y-4 relative z-10 scrollbar-thin overscroll-contain">
           {/* Plan Section */}
           <SettingsPlanSection />
 
@@ -531,8 +532,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           </div>
         </div>
 
-        {/* Bottom Action: Single Clean 'Done' Button */}
-        <div className="pt-3 border-t border-[var(--border)] relative z-10">
+        {/* Fixed Footer */}
+        <div className="p-4 sm:px-6 border-t border-[var(--border)] bg-[var(--surface)]/95 backdrop-blur-xl relative z-20 shrink-0">
           <button
             type="button"
             onClick={onClose}
