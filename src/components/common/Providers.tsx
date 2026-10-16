@@ -5,6 +5,7 @@ import { ThemeProvider } from '../../context/ThemeContext';
 import { AuthProvider } from '../../context/AuthContext';
 import { PremiumProvider } from '../../context/PremiumContext';
 import { StudyProvider } from '../../context/StudyContext';
+import { FocusGoalProvider } from '../../context/FocusGoalContext';
 import { Toaster } from 'react-hot-toast';
 import { TimerSWBridge } from './TimerSWBridge';
 
@@ -14,9 +15,11 @@ export function Providers({ children }: { children: ReactNode }) {
       <PremiumProvider>
         <ThemeProvider>
           <StudyProvider>
-            {/* Bridge timer state → Service Worker for background tracking & notifications */}
-            <TimerSWBridge />
-            {children}
+            <FocusGoalProvider>
+              {/* Bridge timer state → Service Worker for background tracking & notifications */}
+              <TimerSWBridge />
+              {children}
+            </FocusGoalProvider>
             <Toaster 
               position="top-center" 
               toastOptions={{

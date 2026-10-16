@@ -2,8 +2,10 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { Sparkles, Clock, Calendar, BarChart3, Lock, Info } from 'lucide-react';
+import { Sparkles, Clock, Calendar, BarChart3, Lock, Info, Target, Flame, Check } from 'lucide-react';
 import { usePremium } from '../../context/PremiumContext';
+import { useFocusGoals } from '../../context/FocusGoalContext';
+import { useRankTheme } from '../../hooks/useRankTheme';
 import { getSupabase } from '../../lib/supabase';
 import { formatHoursAndMins } from '../../lib/utils';
 
@@ -82,6 +84,40 @@ function formatHourRange(hour: number): string {
 export function StudyInsights() {
   const shouldReduceMotion = useReducedMotion();
   const { isPremium, loading: premiumLoading, refresh, openPremiumModal } = usePremium();
+  const { theme } = useRankTheme();
+  const { goals, saveGoals, isSaving: isSavingGoals } = useFocusGoals();
+
+  const [inputDailyMins, setInputDailyMins] = useState<number>(goals.dailyMinutes || 60);
+  const [inputWeeklyHours, setInputWeeklyHours] = useState<number>(
+    goals.weeklyMinutes ? Math.round((goals.weeklyMinutes / 60) * 10) / 10 : 10
+  );
+  const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
+  const [goalError, setGoalError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (goals.dailyMinutes) {
+      setInputDailyMins(goals.dailyMinutes);
+    }
+    if (goals.weeklyMinutes) {
+      setInputWeeklyHours(Math.round((goals.weeklyMinutes / 60) * 10) / 10);
+    }
+  }, [goals.dailyMinutes, goals.weeklyMinutes]);
+
+  const handleSaveGoals = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isPremium) {
+      openPremiumModal();
+      return;
+    }
+    setGoalError(null);
+    const res = await saveGoals(inputDailyMins, inputWeeklyHours);
+    if (res.success) {
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2500);
+    } else if (res.error) {
+      setGoalError(res.error);
+    }
+  };
 
   const [realData, setRealData] = useState<InsightsData | null>(null);
   const [dataLoading, setDataLoading] = useState<boolean>(false);
@@ -431,6 +467,197 @@ export function StudyInsights() {
                       </>
                     )}
                   </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Goals Row */}
+            <div className="p-4 sm:p-5 rounded-xl bg-[var(--surface-2)]/60 border border-[var(--border)] mb-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 mb-4 border-b border-[var(--border)]">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-1.5 rounded-lg bg-[var(--surface)] text-[var(--accent)] border border-[var(--border)]">
+                    <Target className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-hud font-bold tracking-wider uppercase text-[var(--text)]">
+                      Focus Goals
+                    </h4>
+                    <p className="text-[11px] text-[var(--text-dim)]">
+                      Set daily and weekly focus targets to unlock streak tracking and timer progress telemetry.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Streak Badge (for premium users with streak) or locked badge */}
+                {isPremium ? (
+                  goals.goalStreak > 0 ? (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-bold text-orange-400 bg-orange-500/10 border border-orange-500/20 self-start sm:self-auto">
+                      <Flame className="w-3.5 h-3.5 fill-current" />
+                      <span>{goals.goalStreak} Day Goal Streak</span>
+                    </span>
+                  ) : goals.dailyMinutes ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-mono text-[var(--text-dim)] self-start sm:self-auto">
+                      Goal active &bull; Complete today to build streak
+                    </span>
+                  ) : null
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-hud uppercase tracking-wider font-bold bg-[var(--surface)] text-[var(--text-dim)] border border-[var(--border)] self-start sm:self-auto">
+                    <Lock className="w-2.5 h-2.5" />
+                    <span>Sample</span>
+                  </span>
+                )}
+              </div>
+
+              {/* Goals Body: Inputs on one side, Progress Ring & Streak on other */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-center">
+                {/* Form Inputs (Daily minutes & Weekly hours) */}
+                <form onSubmit={handleSaveGoals} className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[10px] font-hud uppercase tracking-wider text-[var(--text-dim)] mb-1">
+                        Daily Target (min)
+                      </label>
+                      <input
+                        type="number"
+                        min={5}
+                        max={720}
+                        step={5}
+                        disabled={!isPremium || isSavingGoals}
+                        value={isPremium ? inputDailyMins : 90}
+                        onChange={(e) => setInputDailyMins(Number(e.target.value))}
+                        className="w-full px-3 py-2 rounded-xl bg-[var(--surface)] border border-[var(--border)] text-xs font-mono font-semibold text-[var(--text)] focus:border-[var(--accent)] focus:outline-none disabled:opacity-50"
+                        placeholder="60"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-hud uppercase tracking-wider text-[var(--text-dim)] mb-1">
+                        Weekly Target (hrs)
+                      </label>
+                      <input
+                        type="number"
+                        min={0.5}
+                        max={84}
+                        step={0.5}
+                        disabled={!isPremium || isSavingGoals}
+                        value={isPremium ? inputWeeklyHours : 10}
+                        onChange={(e) => setInputWeeklyHours(Number(e.target.value))}
+                        className="w-full px-3 py-2 rounded-xl bg-[var(--surface)] border border-[var(--border)] text-xs font-mono font-semibold text-[var(--text)] focus:border-[var(--accent)] focus:outline-none disabled:opacity-50"
+                        placeholder="10"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {goalError && (
+                    <div className="text-[11px] text-rose-400 font-mono">{goalError}</div>
+                  )}
+
+                  <div className="flex items-center gap-2 pt-1">
+                    {isPremium ? (
+                      <button
+                        type="submit"
+                        disabled={isSavingGoals}
+                        className="px-4 py-2 rounded-xl text-xs font-hud font-bold tracking-wider uppercase bg-[var(--accent)] text-[var(--accent-contrast)] hover:opacity-90 active:scale-95 transition-all shadow-sm cursor-pointer disabled:opacity-50 inline-flex items-center gap-1.5"
+                      >
+                        {isSavingGoals ? (
+                          <span>Saving...</span>
+                        ) : saveSuccess ? (
+                          <>
+                            <Check className="w-3.5 h-3.5" />
+                            <span>Saved!</span>
+                          </>
+                        ) : (
+                          <span>Save Goals</span>
+                        )}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={openPremiumModal}
+                        className="px-4 py-2 rounded-xl text-xs font-hud font-bold tracking-wider uppercase bg-[var(--accent)] text-[var(--accent-contrast)] hover:opacity-90 active:scale-95 transition-all shadow-sm cursor-pointer inline-flex items-center gap-1.5"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>Unlock with Premium</span>
+                      </button>
+                    )}
+                  </div>
+                </form>
+
+                {/* Ring & Telemetry Display */}
+                <div className="p-3.5 rounded-xl bg-[var(--surface)] border border-[var(--border)] flex items-center justify-around gap-4">
+                  {/* SVG Progress Ring */}
+                  {(() => {
+                    const radius = 28;
+                    const circumference = 2 * Math.PI * radius;
+                    const dailyTargetMins = isPremium ? (goals.dailyMinutes || 60) : 90;
+                    const currentMins = isPremium ? Math.floor(goals.todaySeconds / 60) : 65;
+                    const percent = Math.min(100, Math.round((currentMins / dailyTargetMins) * 100));
+                    const strokeOffset = circumference - (percent / 100) * circumference;
+
+                    return (
+                      <div className="relative w-20 h-20 flex items-center justify-center shrink-0">
+                        <svg className="w-20 h-20 -rotate-90" viewBox="0 0 70 70">
+                          <circle
+                            cx="35"
+                            cy="35"
+                            r={radius}
+                            stroke="rgba(255, 255, 255, 0.08)"
+                            strokeWidth="5"
+                            fill="none"
+                          />
+                          <circle
+                            cx="35"
+                            cy="35"
+                            r={radius}
+                            stroke={theme.accent || '#E6C15A'}
+                            strokeWidth="5"
+                            strokeDasharray={circumference}
+                            strokeDashoffset={strokeOffset}
+                            strokeLinecap="round"
+                            fill="none"
+                            style={{
+                              transition: 'stroke-dashoffset 0.3s ease',
+                              filter: `drop-shadow(0 0 4px ${theme.glow || 'rgba(230, 193, 90, 0.3)'})`,
+                            }}
+                          />
+                        </svg>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center select-none">
+                          <span className="font-hud font-extrabold text-base text-[var(--text)]">
+                            {percent}%
+                          </span>
+                          <span className="text-[8px] font-mono text-[var(--text-dim)] uppercase">
+                            today
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Goal Telemetry Summary */}
+                  <div className="space-y-1.5 text-xs font-mono">
+                    <div>
+                      <span className="text-[10px] font-hud uppercase tracking-wider text-[var(--text-dim)] block">
+                        Today&apos;s Progress
+                      </span>
+                      <span className="font-bold text-[var(--text)] text-sm">
+                        {isPremium
+                          ? `${Math.floor(goals.todaySeconds / 60)} / ${goals.dailyMinutes || 60} min`
+                          : '65 / 90 min (Sample)'}
+                      </span>
+                    </div>
+
+                    <div className="pt-1.5 border-t border-[var(--border)]">
+                      <span className="text-[10px] font-hud uppercase tracking-wider text-[var(--text-dim)] block">
+                        Weekly Focus
+                      </span>
+                      <span className="text-[var(--text-dim)]">
+                        {isPremium
+                          ? `${(goals.thisWeekSeconds / 3600).toFixed(1)} / ${(goals.weeklyMinutes ? goals.weeklyMinutes / 60 : 10).toFixed(1)} hrs`
+                          : '7.2 / 10.0 hrs'}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

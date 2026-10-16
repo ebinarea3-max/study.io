@@ -251,3 +251,171 @@ end $$;
 revoke all on function public.get_my_weekly_report(text) from public;
 grant execute on function public.get_my_weekly_report(text) to authenticated;
 
+-- ====================================================================
+-- 6. Focus Goals Table & RPC (Phase I)
+-- ====================================================================
+
+-- 6.1 Table focus_goals
+create table if not exists public.focus_goals (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  daily_minutes int not null check (daily_minutes between 5 and 720),
+  weekly_minutes int not null check (weekly_minutes between 30 and 5040),
+  updated_at timestamptz not null default now()
+);
+
+-- 6.2 RLS on focus_goals
+alter table public.focus_goals enable row level security;
+
+drop policy if exists "read own goal" on public.focus_goals;
+create policy "read own goal" on public.focus_goals
+  for select using (auth.uid() = user_id);
+
+drop policy if exists "insert own goal if premium" on public.focus_goals;
+create policy "insert own goal if premium" on public.focus_goals
+  for insert with check (
+    auth.uid() = user_id
+    and exists (
+      select 1 from public.subscriptions
+      where user_id = auth.uid()
+        and premium_until > now()
+    )
+  );
+
+drop policy if exists "update own goal if premium" on public.focus_goals;
+create policy "update own goal if premium" on public.focus_goals
+  for update using (
+    auth.uid() = user_id
+    and exists (
+      select 1 from public.subscriptions
+      where user_id = auth.uid()
+        and premium_until > now()
+    )
+  )
+  with check (
+    auth.uid() = user_id
+    and exists (
+      select 1 from public.subscriptions
+      where user_id = auth.uid()
+        and premium_until > now()
+    )
+  );
+
+-- 6.3 Goal Progress & Consecutive Daily Streak RPC
+create or replace function public.get_my_goal_progress(p_tz text default 'UTC')
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_premium boolean;
+  v_uid uuid;
+  v_now timestamp;
+  v_today date;
+  v_this_week_start timestamp;
+  v_next_week_start timestamp;
+  v_daily_minutes int;
+  v_weekly_minutes int;
+  v_today_seconds bigint := 0;
+  v_this_week_seconds bigint := 0;
+  v_streak int := 0;
+  v_check_date date;
+  v_day_seconds bigint;
+  v_daily_goal_secs bigint;
+  v_result jsonb;
+begin
+  v_uid := auth.uid();
+  if v_uid is null then
+    raise exception 'not_authenticated' using errcode = '42501';
+  end if;
+
+  -- 1. Enforce premium status on the server
+  select coalesce(s.premium_until > now(), false) into v_premium
+  from subscriptions s where s.user_id = v_uid;
+  if not coalesce(v_premium, false) then
+    raise exception 'premium_required' using errcode = '42501';
+  end if;
+
+  -- 2. Timezone resolution
+  begin
+    v_now := (now() at time zone p_tz);
+  exception when others then
+    v_now := (now() at time zone 'UTC');
+    p_tz := 'UTC';
+  end;
+
+  v_today := v_now::date;
+  v_this_week_start := date_trunc('week', v_now);
+  v_next_week_start := v_this_week_start + interval '7 days';
+
+  -- 3. Read Goal values for current user
+  select daily_minutes, weekly_minutes
+  into v_daily_minutes, v_weekly_minutes
+  from public.focus_goals
+  where user_id = v_uid;
+
+  -- 4. Calculate today seconds
+  select coalesce(sum(duration_seconds), 0)::bigint
+  into v_today_seconds
+  from public.study_sessions
+  where user_id = v_uid
+    and (started_at at time zone p_tz)::date = v_today;
+
+  -- 5. Calculate this-week seconds
+  select coalesce(sum(duration_seconds), 0)::bigint
+  into v_this_week_seconds
+  from public.study_sessions
+  where user_id = v_uid
+    and (started_at at time zone p_tz) >= v_this_week_start
+    and (started_at at time zone p_tz) < v_next_week_start;
+
+  -- 6. Calculate consecutive daily goal streak
+  if v_daily_minutes is not null and v_daily_minutes > 0 then
+    v_daily_goal_secs := v_daily_minutes * 60;
+
+    -- If today already reached the goal, start streak count at 1 and check backwards from yesterday
+    if v_today_seconds >= v_daily_goal_secs then
+      v_streak := 1;
+      v_check_date := v_today - 1;
+    else
+      -- Today is not yet reached, so today does NOT break the streak; count begins from yesterday
+      v_streak := 0;
+      v_check_date := v_today - 1;
+    end if;
+
+    -- Step backwards day by day to count consecutive days reaching daily goal
+    loop
+      select coalesce(sum(duration_seconds), 0)::bigint
+      into v_day_seconds
+      from public.study_sessions
+      where user_id = v_uid
+        and (started_at at time zone p_tz)::date = v_check_date;
+
+      if v_day_seconds >= v_daily_goal_secs then
+        v_streak := v_streak + 1;
+        v_check_date := v_check_date - 1;
+      else
+        exit; -- Streak broke on gap day or sub-goal day
+      end if;
+
+      -- Safety upper limit
+      if v_streak >= 365 then
+        exit;
+      end if;
+    end loop;
+  else
+    v_streak := 0;
+  end if;
+
+  select jsonb_build_object(
+    'daily_minutes', v_daily_minutes,
+    'weekly_minutes', v_weekly_minutes,
+    'today_seconds', v_today_seconds,
+    'this_week_seconds', v_this_week_seconds,
+    'goal_streak', v_streak
+  ) into v_result;
+
+  return v_result;
+end $$;
+
+revoke all on function public.get_my_goal_progress(text) from public;
+grant execute on function public.get_my_goal_progress(text) to authenticated;
+
+

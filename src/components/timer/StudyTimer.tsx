@@ -4,6 +4,8 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { useStudy } from '../../context/StudyContext';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
+import { usePremium } from '../../context/PremiumContext';
+import { useFocusGoals } from '../../context/FocusGoalContext';
 import { DailyTodoList } from '../todo/DailyTodoList';
 import { SubjectManagerModal, SubjectManager } from './SubjectManagerModal';
 import { ErrorBoundary } from '../common/ErrorBoundary';
@@ -62,6 +64,8 @@ export function StudyTimer() {
   const dailyQuote = getDailyQuote();
   const { user, isLoading, updateProfile } = useAuth();
   const { theme, userRank } = useRankTheme();
+  const { isPremium } = usePremium();
+  const { goals, refreshGoals, checkGoalReached } = useFocusGoals();
   const {
     subjects = [],
     selectedSubject,
@@ -514,6 +518,10 @@ export function StudyTimer() {
       if (activeUser?.id) {
         try {
           await refetchSessions();
+          if (isPremium) {
+            checkGoalReached(seconds);
+            await refreshGoals();
+          }
         } catch (refetchErr) {
           console.warn('StudyTimer: Background refetch failed:', refetchErr);
         }
@@ -539,7 +547,19 @@ export function StudyTimer() {
     activeTaskId,
     showRankSettlement,
     updateProfile,
+    isPremium,
+    checkGoalReached,
+    refreshGoals,
   ]);
+
+  // Check if daily focus goal is reached while timer is running
+  useEffect(() => {
+    if (!isStudying || !isPremium || !goals.dailyMinutes || goals.dailyMinutes <= 0) return;
+    const currentTotalSecs = goals.todaySeconds + elapsedSeconds;
+    if (currentTotalSecs >= goals.dailyMinutes * 60) {
+      checkGoalReached(elapsedSeconds);
+    }
+  }, [isStudying, isPremium, goals.dailyMinutes, goals.todaySeconds, elapsedSeconds, checkGoalReached]);
 
   useEffect(() => {
     refetchSessions();
@@ -1140,44 +1160,58 @@ export function StudyTimer() {
             </button>
           )
         ) : pomodoroCompletedPhase === 'break' ? (
-          <button
-            onClick={() => {
-              setPomodoroCompletedPhase(null);
-              handleStartSession();
-            }}
-            disabled={isSaving || isRemoteTransitioning}
-            className="w-full max-w-[360px] sm:w-[240px] h-[52px] rounded-full font-semibold text-sm text-[var(--accent-contrast)] bg-[var(--accent)] hover:brightness-105 active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shadow-sm"
-          >
-            <Flame className="w-4 h-4 fill-current" />
-            <span>Start focus session</span>
-          </button>
-        ) : !isStudying ? (
-          !selectedSubject?.id ? (
+          <div className="flex flex-col items-center">
             <button
-              type="button"
-              onClick={(e) => {
-                if (activeSubjects.length === 0) {
-                  handleOpenSubjectManager(e);
-                } else {
-                  setShowDropdown(true);
-                }
+              onClick={() => {
+                setPomodoroCompletedPhase(null);
+                handleStartSession();
               }}
-              className="w-full max-w-[360px] sm:w-[240px] h-[52px] rounded-full font-medium text-sm bg-fg/[0.08] text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-fg/[0.12] border border-fg/[0.06] active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer"
-              title="Choose a subject to start"
-            >
-              <span>Choose a subject to start</span>
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={handleStartSession}
               disabled={isSaving || isRemoteTransitioning}
-              className="w-full max-w-[360px] sm:w-[240px] h-[52px] rounded-full font-semibold text-sm text-[var(--accent-contrast)] bg-[var(--accent)] shadow-sm hover:brightness-105 active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              className="w-full max-w-[360px] sm:w-[240px] h-[52px] rounded-full font-semibold text-sm text-[var(--accent-contrast)] bg-[var(--accent)] hover:brightness-105 active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shadow-sm"
             >
-              <Play className="w-4 h-4 fill-current" />
-              <span>Start session</span>
+              <Flame className="w-4 h-4 fill-current" />
+              <span>Start focus session</span>
             </button>
-          )
+            {isPremium && goals.dailyMinutes && goals.dailyMinutes > 0 ? (
+              <span className="mt-2 text-xs font-mono text-[var(--text-dim)] select-none">
+                Today {Math.floor(goals.todaySeconds / 60)} of {goals.dailyMinutes} min
+              </span>
+            ) : null}
+          </div>
+        ) : !isStudying ? (
+          <div className="flex flex-col items-center">
+            {!selectedSubject?.id ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  if (activeSubjects.length === 0) {
+                    handleOpenSubjectManager(e);
+                  } else {
+                    setShowDropdown(true);
+                  }
+                }}
+                className="w-full max-w-[360px] sm:w-[240px] h-[52px] rounded-full font-medium text-sm bg-fg/[0.08] text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-fg/[0.12] border border-fg/[0.06] active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer"
+                title="Choose a subject to start"
+              >
+                <span>Choose a subject to start</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleStartSession}
+                disabled={isSaving || isRemoteTransitioning}
+                className="w-full max-w-[360px] sm:w-[240px] h-[52px] rounded-full font-semibold text-sm text-[var(--accent-contrast)] bg-[var(--accent)] shadow-sm hover:brightness-105 active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                <Play className="w-4 h-4 fill-current" />
+                <span>Start session</span>
+              </button>
+            )}
+            {isPremium && goals.dailyMinutes && goals.dailyMinutes > 0 ? (
+              <span className="mt-2 text-xs font-mono text-[var(--text-dim)] select-none">
+                Today {Math.floor(goals.todaySeconds / 60)} of {goals.dailyMinutes} min
+              </span>
+            ) : null}
+          </div>
         ) : !isPaused ? (
           <div className="flex items-center gap-3 w-full max-w-[360px] justify-center">
             <button
