@@ -16,16 +16,19 @@ import {
   Bug,
   Send,
   Paperclip,
+  Star,
 } from 'lucide-react';
 import { submitReport } from '../../app/actions/report';
 import { soundFx } from '../../lib/audio';
 import { useAuth } from '../../context/AuthContext';
+import { usePremium } from '../../context/PremiumContext';
 import { usePwaInstall } from '../../hooks/usePwaInstall';
 import { InstallInstructionModal } from './InstallInstructionModal';
 import { useRankTheme } from '../../hooks/useRankTheme';
 import { getSupabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { ThemePicker } from '../settings/ThemePicker';
+import { SettingsPlanSection } from '../settings/SettingsPlanSection';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -34,6 +37,7 @@ interface SettingsModalProps {
 
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const { user, deleteAccount, updateProfile } = useAuth();
+  const { isPremium } = usePremium();
   const { canInstall, isInstalled, isPrompting, deferredPrompt, triggerInstall } = usePwaInstall();
   const { theme } = useRankTheme();
 
@@ -213,6 +217,9 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         </div>
 
         <div className="py-4 space-y-4 relative z-10">
+          {/* Plan Section */}
+          <SettingsPlanSection />
+
           {/* Appearance Section */}
           <ThemePicker />
 
@@ -235,7 +242,20 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   </div>
                 </div>
                 <div className="min-w-0">
-                  <div className="text-sm font-bold text-[var(--text)] truncate tracking-tight">{user.displayName || 'Scholar'}</div>
+                  <div className="flex items-center gap-1.5 truncate">
+                    <div className="text-sm font-bold text-[var(--text)] truncate tracking-tight">
+                      {user.displayName || 'Scholar'}
+                    </div>
+                    {isPremium && (
+                      <span
+                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--border)] text-[10px] font-bold tracking-wider uppercase shrink-0"
+                        title="study.io Premium Scholar"
+                      >
+                        <Star className="w-3 h-3 fill-current" />
+                        <span>Premium</span>
+                      </span>
+                    )}
+                  </div>
                   <div className="text-xs text-[var(--text-dim)] font-mono truncate">{user.email}</div>
                 </div>
               </div>

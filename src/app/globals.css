@@ -248,6 +248,48 @@ html[data-theme="paper"] {
   --tier-accent-text: color-mix(in srgb, var(--tier-accent) 55%, black);
 }
 
+/* 10. Gold Leaf (Premium) */
+html[data-theme="goldleaf"] {
+  color-scheme: dark;
+  --fg: 246 239 217;
+  --bg: #0C0A06;
+  --background: #0C0A06;
+  --surface: #17130A;
+  --surface-2: #110E07;
+  --border: rgba(230, 193, 90, 0.10);
+  --border-strong: rgba(230, 193, 90, 0.22);
+  --text: #F6EFD9;
+  --foreground: #F6EFD9;
+  --text-dim: #B3A67C;
+  --text-faint: #7E7250;
+  --accent: #E6C15A;
+  --accent-contrast: #1A1405;
+  --accent-soft: rgba(230, 193, 90, 0.12);
+  --glow: rgba(230, 193, 90, 0.30);
+  --grid-dot: rgba(230, 193, 90, 0.06);
+}
+
+/* 11. Crimson (Premium) */
+html[data-theme="crimson"] {
+  color-scheme: dark;
+  --fg: 247 233 234;
+  --bg: #0E0809;
+  --background: #0E0809;
+  --surface: #1A0F11;
+  --surface-2: #130B0D;
+  --border: rgba(229, 72, 77, 0.11);
+  --border-strong: rgba(229, 72, 77, 0.22);
+  --text: #F7E9EA;
+  --foreground: #F7E9EA;
+  --text-dim: #B08F92;
+  --text-faint: #7A5B5E;
+  --accent: #E5484D;
+  --accent-contrast: #1F0506;
+  --accent-soft: rgba(229, 72, 77, 0.12);
+  --glow: rgba(229, 72, 77, 0.30);
+  --grid-dot: rgba(229, 72, 77, 0.06);
+}
+
 /* Smooth color transition when user switches themes */
 html.theme-transitioning,
 html.theme-transitioning *,

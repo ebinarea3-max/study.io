@@ -1,6 +1,9 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { usePremium } from './PremiumContext';
+
+// NOTE: Themes are a cosmetic, client-side feature and therefore only softly gated.
 
 export interface ThemeOption {
   id: string;
@@ -8,6 +11,7 @@ export interface ThemeOption {
   description: string;
   previewColors: [string, string, string]; // [bg, surface, accent]
   isLight?: boolean;
+  isPremium?: boolean;
 }
 
 export const THEMES: ThemeOption[] = [
@@ -66,6 +70,21 @@ export const THEMES: ThemeOption[] = [
     previewColors: ['#F5F2EC', '#FFFFFF', '#B45309'],
     isLight: true,
   },
+  // Premium Themes (added at the end of the Appearance grid)
+  {
+    id: 'goldleaf',
+    name: 'Gold Leaf',
+    description: 'Warm gold on dark leather',
+    previewColors: ['#0C0A06', '#17130A', '#E6C15A'],
+    isPremium: true,
+  },
+  {
+    id: 'crimson',
+    name: 'Crimson',
+    description: 'Deep red on near black',
+    previewColors: ['#0E0809', '#1A0F11', '#E5484D'],
+    isPremium: true,
+  },
 ];
 
 interface ThemeContextType {
@@ -85,8 +104,9 @@ const ThemeContext = createContext<ThemeContextType>({
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [themeId, setThemeId] = useState<string>('rank');
   const [isMounted, setIsMounted] = useState<boolean>(false);
+  const { isPremium, loading: entitlementsLoading } = usePremium();
 
-  // Read saved theme only after mount to prevent hydration mismatch
+  // Read saved theme on mount
   useEffect(() => {
     setIsMounted(true);
     try {
@@ -111,9 +131,46 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Soft gating: If the saved theme is premium and the user is not premium,
+  // apply the fallback theme "rank" in memory only AFTER entitlements have finished loading,
+  // and do NOT overwrite the saved localStorage value (so a brief network failure doesn't lose their choice).
+  useEffect(() => {
+    if (entitlementsLoading || !isMounted) return;
+
+    try {
+      const saved = localStorage.getItem('studyio-theme');
+      const isSavedPremium = saved === 'goldleaf' || saved === 'crimson';
+
+      if (isSavedPremium) {
+        if (!isPremium) {
+          // Free user with saved premium theme -> apply "rank" in-memory only without touching localStorage
+          setThemeId('rank');
+          document.documentElement.dataset.theme = 'rank';
+          document.documentElement.classList.remove('light');
+          document.documentElement.classList.add('dark');
+        } else {
+          // Premium user -> restore saved premium theme
+          setThemeId(saved);
+          document.documentElement.dataset.theme = saved;
+          document.documentElement.classList.remove('light');
+          document.documentElement.classList.add('dark');
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, [entitlementsLoading, isPremium, isMounted]);
+
   const setTheme = useCallback((id: string) => {
-    const valid = THEMES.some(t => t.id === id);
-    const targetId = valid ? id : 'rank';
+    const targetTheme = THEMES.find(t => t.id === id);
+    if (!targetTheme) return;
+
+    // A free user clicking a premium theme is prevented from applying it
+    if (targetTheme.isPremium && !isPremium) {
+      return;
+    }
+
+    const targetId = targetTheme.id;
 
     if (typeof window !== 'undefined') {
       // Smooth color transition unless prefers-reduced-motion
@@ -144,7 +201,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
 
     setThemeId(targetId);
-  }, []);
+  }, [isPremium]);
 
   return (
     <ThemeContext.Provider value={{ theme: themeId, setTheme, themes: THEMES, isMounted }}>

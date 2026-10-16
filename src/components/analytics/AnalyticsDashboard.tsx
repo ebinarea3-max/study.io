@@ -36,6 +36,7 @@ import {
   ReferenceLine,
 } from 'recharts';
 import { useRankTheme } from '../../hooks/useRankTheme';
+import { StudyInsights } from './StudyInsights';
 
 type Timeframe = 'daily' | 'weekly' | 'monthly' | 'yearly';
 
@@ -1218,6 +1219,9 @@ export function AnalyticsDashboard({ onStartSession, onOpenSettings }: Analytics
           </ResponsiveContainer>
         </div>
       </div>
+
+      {/* Premium Insights Section */}
+      <StudyInsights />
     </div>
   );
 }

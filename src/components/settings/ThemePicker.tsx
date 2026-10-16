@@ -2,10 +2,12 @@
 
 import React, { useRef, useCallback } from 'react';
 import { useTheme } from '../../context/ThemeContext';
-import { Check, Sparkles, RotateCcw } from 'lucide-react';
+import { usePremium } from '../../context/PremiumContext';
+import { Check, Sparkles, RotateCcw, Lock } from 'lucide-react';
 
 export function ThemePicker() {
   const { theme, setTheme, themes, isMounted } = useTheme();
+  const { isPremium, openPremiumModal } = usePremium();
   const cardRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   // Arrow key navigation between responsive theme cards
@@ -55,11 +57,16 @@ export function ThemePicker() {
         const nextBtn = cardRefs.current[targetIndex];
         if (nextBtn) {
           nextBtn.focus();
-          setTheme(themes[targetIndex].id);
+          const targetTheme = themes[targetIndex];
+          if (targetTheme.isPremium && !isPremium) {
+            openPremiumModal();
+          } else {
+            setTheme(targetTheme.id);
+          }
         }
       }
     },
-    [themes, setTheme]
+    [themes, setTheme, isPremium, openPremiumModal]
   );
 
   return (
@@ -125,8 +132,14 @@ export function ThemePicker() {
                 aria-checked={isSelected}
                 aria-pressed={isSelected}
                 tabIndex={isSelected || (!isMounted && index === 0) ? 0 : -1}
-                title={`${t.name}: ${t.description}`}
-                onClick={() => setTheme(t.id)}
+                title={`${t.name}: ${t.description}${t.isPremium ? ' (Premium)' : ''}`}
+                onClick={() => {
+                  if (t.isPremium && !isPremium) {
+                    openPremiumModal();
+                    return;
+                  }
+                  setTheme(t.id);
+                }}
                 onKeyDown={(e) => handleKeyDown(e, index)}
                 className={`relative rounded-[14px] p-3 text-left transition-all duration-200 cursor-pointer h-full flex flex-col justify-between overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)] active:scale-[0.98] ${
                   isSelected
@@ -201,10 +214,20 @@ export function ThemePicker() {
                   />
                 </div>
 
-                {/* Theme Name & Description (Full text, 14px semibold name, 12px text-dim description) */}
+                {/* Theme Name, Premium tag, & Description */}
                 <div className="w-full min-w-0 flex-1 flex flex-col justify-start">
-                  <div className="font-hud font-semibold text-[14px] leading-tight text-[var(--text)] tracking-wide">
-                    {t.name}
+                  <div className="flex items-center justify-between gap-1.5">
+                    <div className="font-hud font-semibold text-[14px] leading-tight text-[var(--text)] tracking-wide truncate">
+                      {t.name}
+                    </div>
+                    {t.isPremium && (
+                      <div className="flex items-center gap-1 shrink-0">
+                        {!isPremium && <Lock className="w-3 h-3 text-[var(--text-dim)]" />}
+                        <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-md bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--border)]">
+                          Premium
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <div className="text-[12px] leading-snug text-[var(--text-dim)] font-sans mt-1">
                     {t.description}

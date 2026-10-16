@@ -13,18 +13,22 @@ import {
   Smartphone,
   CheckCircle2,
   Trophy,
+  Star,
 } from 'lucide-react';
 import { soundFx } from '../../lib/audio';
 import { useAuth } from '../../context/AuthContext';
+import { usePremium } from '../../context/PremiumContext';
 import { usePwaInstall } from '../../hooks/usePwaInstall';
 import { InstallInstructionModal } from './InstallInstructionModal';
 import { useRankTheme } from '../../hooks/useRankTheme';
 import { TierIcon } from './TierIcon';
 import { RankCrestBadge } from './RankCrestBadge';
 import { ThemePicker } from '../settings/ThemePicker';
+import { SettingsPlanSection } from '../settings/SettingsPlanSection';
 
 export function SettingsTabContent() {
   const { user, deleteAccount } = useAuth();
+  const { isPremium } = usePremium();
   const { canInstall, isInstalled, isPrompting, deferredPrompt, triggerInstall } = usePwaInstall();
   const { theme, userRank } = useRankTheme();
 
@@ -116,6 +120,9 @@ export function SettingsTabContent() {
         </div>
       </div>
 
+      {/* Plan Section */}
+      <SettingsPlanSection />
+
       {/* Appearance / Theme Selector */}
       <ThemePicker />
 
@@ -129,8 +136,19 @@ export function SettingsTabContent() {
             {user.displayName ? user.displayName.slice(0, 2).toUpperCase() : <User className="w-6 h-6" />}
           </div>
           <div className="min-w-0">
-            <div className="text-sm font-hud font-bold text-white tracking-wide truncate">
-              {user.displayName || 'Focus Operator'}
+            <div className="flex items-center gap-1.5 truncate">
+              <div className="text-sm font-hud font-bold text-white tracking-wide truncate">
+                {user.displayName || 'Focus Operator'}
+              </div>
+              {isPremium && (
+                <span
+                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--border)] text-[10px] font-bold tracking-wider uppercase shrink-0"
+                  title="study.io Premium Scholar"
+                >
+                  <Star className="w-3 h-3 fill-current" />
+                  <span>Premium</span>
+                </span>
+              )}
             </div>
             <div className="text-xs font-mono text-slate-400 truncate">{user.email}</div>
           </div>
