@@ -205,6 +205,18 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // setTimeout only supports up to 2^31 - 1 (~24.8 days) ms.
+    // Values exceeding this cause integer overflow in browser, setting delay to 1ms and firing immediately.
+    const MAX_TIMEOUT_MS = 2147483647;
+    if (remainingMs > MAX_TIMEOUT_MS) {
+      const timer = setTimeout(() => {
+        if (premiumUntilDate.getTime() <= Date.now()) {
+          setRawIsPremium(false);
+        }
+      }, 24 * 60 * 60 * 1000);
+      return () => clearTimeout(timer);
+    }
+
     const timer = setTimeout(() => {
       setRawIsPremium(false);
     }, remainingMs + 50);
