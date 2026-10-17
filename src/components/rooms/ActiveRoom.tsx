@@ -144,8 +144,11 @@ export function cacheMemberProfiles(
   } catch {}
 }
 
+import { usePremium } from '../../context/PremiumContext';
+
 export default function ActiveRoom({ roomId, onBack, initialTab }: ActiveRoomProps) {
   const { user } = useAuth();
+  const { isPremium } = usePremium();
   const { isRunning, elapsedSeconds, getTodayTotalSeconds } = useStudy();
 
   const [roomName, setRoomName] = useState<string>('Loading...');
@@ -1365,15 +1368,26 @@ CREATE POLICY "Hosts can update their own study rooms"
     let active = true;
     fetchFlairMap(uids)
       .then((map) => {
-        if (active) setFlairMap(map);
+        if (active) {
+          if (isPremium && user?.id) {
+            map[user.id] = map[user.id] || 'gold';
+          }
+          setFlairMap(map);
+        }
       })
       .catch(() => {
-        if (active) setFlairMap({});
+        if (active) {
+          const fallback: Record<string, FlairFrame> = {};
+          if (isPremium && user?.id) {
+            fallback[user.id] = 'gold';
+          }
+          setFlairMap(fallback);
+        }
       });
     return () => {
       active = false;
     };
-  }, [displayUsers]);
+  }, [displayUsers, isPremium, user?.id]);
 
   const handleCopyPassword = () => {
     if (!editPassword) return;

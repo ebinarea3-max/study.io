@@ -239,10 +239,13 @@ interface MonthlyLeaderboardProps {
   isActiveTab?: boolean;
 }
 
+import { usePremium } from '../../context/PremiumContext';
+
 export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: MonthlyLeaderboardProps) {
   const { user } = useAuth();
   const { sessions } = useStudy();
   const { userRank } = useRankTheme();
+  const { isPremium } = usePremium();
 
   const [timeframe, setTimeframe] = useState<LeaderboardTimeframe>('month');
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
@@ -530,9 +533,12 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
     }
 
     fetchFlairMap(userIds).then((map) => {
+      if (isPremium && user?.id) {
+        map[user.id] = map[user.id] || 'gold';
+      }
       setFlairMap(map);
     });
-  }, [contenders]);
+  }, [contenders, isPremium, user?.id]);
 
   const checkIsCurrentUser = useCallback(
     (row: LeaderboardEntry | null) => {

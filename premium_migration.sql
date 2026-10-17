@@ -472,12 +472,12 @@ create or replace function public.get_flair(p_user_ids uuid[])
 returns table (user_id uuid, frame text)
 language sql stable security definer set search_path = public as $$
   select
-    pf.user_id,
-    pf.frame
+    s.user_id,
+    coalesce(pf.frame, 'gold') as frame
   from unnest(coalesce(p_user_ids[1:100], array[]::uuid[])) as input_id
-  join public.profile_flair pf on pf.user_id = input_id
-  join public.subscriptions s on s.user_id = pf.user_id
-  where pf.show_badge = true
+  join public.subscriptions s on s.user_id = input_id
+  left join public.profile_flair pf on pf.user_id = s.user_id
+  where coalesce(pf.show_badge, true) = true
     and s.premium_until > now();
 $$;
 

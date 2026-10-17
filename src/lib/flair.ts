@@ -73,8 +73,8 @@ export async function fetchFlairMap(userIds: string[]): Promise<Record<string, F
 
     const map: Record<string, FlairFrame> = {};
     for (const row of data) {
-      if (row?.user_id && row?.frame) {
-        map[row.user_id] = row.frame as FlairFrame;
+      if (row?.user_id) {
+        map[row.user_id] = (row.frame as FlairFrame) || 'gold';
       }
     }
     return map;
@@ -85,7 +85,7 @@ export async function fetchFlairMap(userIds: string[]): Promise<Record<string, F
 }
 
 /**
- * Read the current user's own profile_flair configuration.
+ * Read the current user's own profile_flair configuration. Defaults to 'gold'.
  */
 export async function getMyFlair(userId: string): Promise<{ frame: FlairFrame; showBadge: boolean } | null> {
   if (!userId) return null;
@@ -102,7 +102,7 @@ export async function getMyFlair(userId: string): Promise<{ frame: FlairFrame; s
 
     if (error) {
       console.warn('[Flair] getMyFlair notice:', error.message);
-      return null;
+      return { frame: 'gold', showBadge: true };
     }
 
     if (data) {
@@ -112,10 +112,10 @@ export async function getMyFlair(userId: string): Promise<{ frame: FlairFrame; s
       };
     }
 
-    return null;
+    return { frame: 'gold', showBadge: true };
   } catch (err) {
     console.warn('[Flair] getMyFlair exception:', err);
-    return null;
+    return { frame: 'gold', showBadge: true };
   }
 }
 
