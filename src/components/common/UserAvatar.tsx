@@ -1,14 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Crown } from 'lucide-react';
 
 interface UserAvatarProps {
   src?: string | null;
   name?: string;
   size?: number;
   className?: string;
-  showCrown?: boolean;
 }
 
 const GRADIENT_PALETTES = [
@@ -41,13 +39,7 @@ export function getAvatarGradient(name?: string): string {
   return GRADIENT_PALETTES[index];
 }
 
-export function UserAvatar({
-  src,
-  name,
-  size = 36,
-  className = '',
-  showCrown = false,
-}: UserAvatarProps) {
+export function UserAvatar({ src, name, size = 36, className = '' }: UserAvatarProps) {
   const [hasError, setHasError] = useState(false);
 
   const cleanSrc = typeof src === 'string' && src.trim().length > 0 ? src.trim() : null;
@@ -61,56 +53,33 @@ export function UserAvatar({
   const gradient = getAvatarGradient(name);
   const roundedClass = className.includes('rounded-') ? '' : 'rounded-full';
 
-  const badgeSize = Math.max(13, Math.round(size * 0.38));
-  const crownSize = Math.max(8, Math.round(badgeSize * 0.62));
-
   return (
     <div
-      className={`relative inline-flex shrink-0 select-none ${className}`}
+      className={`relative ${roundedClass} overflow-hidden shrink-0 select-none ${className}`}
       style={{ width: size, height: size, minWidth: size, minHeight: size }}
     >
-      <div className={`relative w-full h-full ${roundedClass} overflow-hidden shadow-sm`}>
-        {/* Background Fallback (Initials) */}
-        <div
-          className={`absolute inset-0 bg-gradient-to-tr ${gradient} flex items-center justify-center font-black text-slate-950 tracking-wider shadow-inner rounded-full`}
-          style={{ fontSize: Math.max(10, Math.floor(size * 0.38)) }}
-          title={name || 'User Profile'}
-        >
-          {initials}
-        </div>
-
-        {/* Foreground Avatar Image */}
-        {cleanSrc && !hasError && (
-          <img
-            src={cleanSrc}
-            alt={name || 'User Avatar'}
-            width={size}
-            height={size}
-            referrerPolicy="no-referrer"
-            onError={() => {
-              setHasError(true);
-            }}
-            className="absolute inset-0 w-full h-full object-cover rounded-full"
-          />
-        )}
+      {/* Background Fallback (Initials) */}
+      <div
+        className={`absolute inset-0 bg-gradient-to-tr ${gradient} flex items-center justify-center font-black text-slate-950 tracking-wider shadow-inner rounded-full`}
+        style={{ fontSize: Math.max(10, Math.floor(size * 0.38)) }}
+        title={name || 'User Profile'}
+      >
+        {initials}
       </div>
 
-      {/* Premium Crown Icon on Bottom Left */}
-      {showCrown && (
-        <div
-          className="absolute -bottom-0.5 -left-0.5 z-10 rounded-full bg-gradient-to-tr from-[#B8892B] via-[#E6C15A] to-[#FDF4D4] border border-[#FFE898] shadow-md flex items-center justify-center text-[#1A1405] pointer-events-none"
-          style={{
-            width: badgeSize,
-            height: badgeSize,
-            boxShadow: '0 1px 4px rgba(0,0,0,0.5), 0 0 8px rgba(230,193,90,0.4)',
+      {/* Foreground Avatar Image */}
+      {cleanSrc && !hasError && (
+        <img
+          src={cleanSrc}
+          alt={name || 'User Avatar'}
+          width={size}
+          height={size}
+          referrerPolicy="no-referrer"
+          onError={() => {
+            setHasError(true);
           }}
-          title="Premium Scholar"
-        >
-          <Crown
-            style={{ width: crownSize, height: crownSize }}
-            className="fill-current drop-shadow-sm"
-          />
-        </div>
+          className="absolute inset-0 w-full h-full object-cover rounded-full"
+        />
       )}
     </div>
   );

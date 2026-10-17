@@ -1,9 +1,40 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Crown } from 'lucide-react';
+import { Sparkles, Crown, User } from 'lucide-react';
+
+type FrameStyle = 'gold' | 'aurora' | 'ember';
+
+interface FrameConfig {
+  id: FrameStyle;
+  name: string;
+  gradient: string;
+  glow: string;
+}
+
+const FRAMES: FrameConfig[] = [
+  {
+    id: 'gold',
+    name: 'Gold Leaf',
+    gradient: 'linear-gradient(135deg, #F5E6A8 0%, #E6C15A 50%, #B8892B 100%)',
+    glow: 'rgba(230, 193, 90, 0.4)',
+  },
+  {
+    id: 'aurora',
+    name: 'Aurora',
+    gradient: 'linear-gradient(135deg, #38BFC4 0%, #2DD4BF 50%, #0D9488 100%)',
+    glow: 'rgba(45, 212, 191, 0.4)',
+  },
+  {
+    id: 'ember',
+    name: 'Ember',
+    gradient: 'linear-gradient(135deg, #F97316 0%, #EF4444 50%, #B91C1C 100%)',
+    glow: 'rgba(249, 115, 22, 0.4)',
+  },
+];
 
 export function DemoFlairTile() {
+  const [selectedFrame, setSelectedFrame] = useState<FrameConfig>(FRAMES[0]);
   const [isPremiumRow, setIsPremiumRow] = useState<boolean>(true);
 
   return (
@@ -13,16 +44,16 @@ export function DemoFlairTile() {
           <div className="flex items-center gap-2">
             <Crown className="w-3.5 h-3.5 text-[#E6C15A] fill-current" />
             <h4 className="font-hud font-bold text-xs uppercase tracking-wider text-[var(--text)]">
-              Scholar Crown Badge
+              Scholar Profile Flair
             </h4>
           </div>
           <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/[0.05] text-[var(--text-dim)] border border-[var(--border)]">
-            Badge Preview
+            Frame Preview
           </span>
         </div>
 
         <p className="text-xs text-[var(--text-dim)] mb-4">
-          Stand out in collaborative study rooms and leaderboard rankings with your signature golden crown icon on the bottom left of your profile icon.
+          Stand out in collaborative study rooms and leaderboard rankings with custom avatar frames and pro badges.
         </p>
 
         {/* Free vs Premium Row Toggle */}
@@ -36,7 +67,7 @@ export function DemoFlairTile() {
                 : 'text-[var(--text-dim)] hover:text-[var(--text)]'
             }`}
           >
-            Free Scholar Look
+            Free Row Look
           </button>
           <button
             type="button"
@@ -47,7 +78,7 @@ export function DemoFlairTile() {
                 : 'text-[var(--text-dim)] hover:text-[var(--text)]'
             }`}
           >
-            Premium Crown Look
+            Premium Flair Row
           </button>
         </div>
 
@@ -58,20 +89,23 @@ export function DemoFlairTile() {
               #1
             </span>
 
-            {/* Avatar with optional bottom-left crown */}
+            {/* Avatar with optional frame */}
             <div className="relative flex-shrink-0">
-              <div className="w-10 h-10 rounded-full border border-[var(--border)] bg-[#0E1017] flex items-center justify-center font-bold text-xs text-[var(--text)] shadow-sm">
-                AR
-              </div>
-              {isPremiumRow && (
+              {isPremiumRow ? (
                 <div
-                  className="absolute -bottom-0.5 -left-0.5 z-10 w-4 h-4 rounded-full bg-gradient-to-tr from-[#B8892B] via-[#E6C15A] to-[#FDF4D4] border border-[#FFE898] shadow-md flex items-center justify-center text-[#1A1405]"
+                  className="w-10 h-10 rounded-full p-[2px] transition-all duration-300"
                   style={{
-                    boxShadow: '0 1px 4px rgba(0,0,0,0.5), 0 0 8px rgba(230,193,90,0.4)',
+                    background: selectedFrame.gradient,
+                    boxShadow: `0 0 10px ${selectedFrame.glow}`,
                   }}
-                  title="Premium Scholar"
                 >
-                  <Crown className="w-2.5 h-2.5 fill-current" />
+                  <div className="w-full h-full rounded-full bg-[#0E1017] flex items-center justify-center font-bold text-xs text-[var(--text)]">
+                    AR
+                  </div>
+                </div>
+              ) : (
+                <div className="w-10 h-10 rounded-full border border-[var(--border)] bg-[#0E1017] flex items-center justify-center font-bold text-xs text-[var(--text)]">
+                  AR
                 </div>
               )}
             </div>
@@ -103,15 +137,38 @@ export function DemoFlairTile() {
         </div>
       </div>
 
-      {/* Feature Explainer */}
-      <div className="mt-4 pt-3 border-t border-[var(--border)] text-xs text-[var(--text-dim)] font-mono">
-        <div className="flex items-center gap-1.5 text-[var(--text)] font-semibold mb-1">
-          <Crown className="w-3.5 h-3.5 text-[#E6C15A] fill-current" />
-          <span>Bottom-Left Profile Crown</span>
+      {/* Frame Style Selector */}
+      <div className="mt-4 pt-3 border-t border-[var(--border)]">
+        <div className="text-[11px] font-mono text-[var(--text-dim)] mb-2 flex items-center justify-between">
+          <span>Choose frame style:</span>
+          <span className="font-semibold text-[var(--text)]">{selectedFrame.name}</span>
         </div>
-        <p className="text-[11px] leading-relaxed">
-          Instantly recognizes verified premium scholars on all leaderboards, study room seatings, and chat feeds.
-        </p>
+        <div className="flex items-center gap-2">
+          {FRAMES.map((f) => {
+            const isSelected = selectedFrame.id === f.id;
+            return (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => {
+                  setSelectedFrame(f);
+                  setIsPremiumRow(true);
+                }}
+                className={`flex-1 py-1.5 px-2 rounded-xl border text-[10px] font-hud font-bold tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  isSelected
+                    ? 'ring-2 ring-offset-2 ring-offset-[var(--bg)] border-white text-white'
+                    : 'border-[var(--border)] text-[var(--text-dim)] hover:text-[var(--text)] opacity-70 hover:opacity-100'
+                }`}
+              >
+                <span
+                  className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                  style={{ background: f.gradient }}
+                />
+                <span className="truncate">{f.name}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

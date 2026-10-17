@@ -478,19 +478,6 @@ export function Navbar({
                     isStudying ? 'bg-primary animate-pulse' : 'bg-slate-400 dark:bg-slate-500'
                   }`}
                 />
-
-                {/* Premium Scholar Crown Icon on Bottom Left */}
-                {isPremium && (
-                  <div
-                    className="absolute -bottom-0.5 -left-0.5 z-20 w-3.5 h-3.5 rounded-full bg-gradient-to-tr from-[#B8892B] via-[#E6C15A] to-[#FDF4D4] border border-[#FFE898] shadow-md flex items-center justify-center text-[#1A1405] pointer-events-none"
-                    style={{
-                      boxShadow: '0 1px 4px rgba(0,0,0,0.5), 0 0 8px rgba(230,193,90,0.4)',
-                    }}
-                    title="Premium Scholar"
-                  >
-                    <Crown className="w-2 h-2 fill-current drop-shadow-sm" />
-                  </div>
-                )}
               </div>
 
               {/* User Identity & Level Display */}
