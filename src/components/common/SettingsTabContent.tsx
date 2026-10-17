@@ -134,11 +134,24 @@ export function SettingsTabContent() {
       {/* Account & Session Telemetry */}
       <div className="p-5 rounded-2xl hud-surface border border-[var(--border)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3.5 min-w-0">
-          <div
-            className="w-12 h-12 rounded-2xl flex items-center justify-center font-hud font-black text-slate-950 text-base flex-shrink-0 shadow-md"
-            style={{ background: theme.gradient }}
-          >
-            {user.displayName ? user.displayName.slice(0, 2).toUpperCase() : <User className="w-6 h-6" />}
+          <div className="relative">
+            <div
+              className="w-12 h-12 rounded-2xl flex items-center justify-center font-hud font-black text-slate-950 text-base flex-shrink-0 shadow-md"
+              style={{ background: theme.gradient }}
+            >
+              {user.displayName ? user.displayName.slice(0, 2).toUpperCase() : <User className="w-6 h-6" />}
+            </div>
+            {isPremium && (
+              <div
+                className="absolute -bottom-1 -left-1 z-10 w-4 h-4 rounded-full bg-gradient-to-tr from-[#B8892B] via-[#E6C15A] to-[#FDF4D4] border border-[#FFE898] shadow-md flex items-center justify-center text-[#1A1405]"
+                style={{
+                  boxShadow: '0 1px 4px rgba(0,0,0,0.5), 0 0 8px rgba(230,193,90,0.4)',
+                }}
+                title="Premium Scholar"
+              >
+                <Crown className="w-2.5 h-2.5 fill-current" />
+              </div>
+            )}
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 truncate">
