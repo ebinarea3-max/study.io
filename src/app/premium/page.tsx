@@ -9,7 +9,6 @@ import {
   Check,
   ArrowRight,
   ArrowLeft,
-  ChevronDown,
   Loader2,
   Calendar,
   Flame,
@@ -751,9 +750,6 @@ export default function PremiumPage() {
     return () => observer.disconnect();
   }, []);
 
-  // FAQ Accordion State
-  const [openFaq, setOpenFaq] = useState<number | null>(null);
-
   // Smooth scroll helpers
   const handleScrollToPricing = () => {
     const el = document.getElementById(isPremium ? 'premium-status-section' : 'pricing');
@@ -1062,7 +1058,7 @@ export default function PremiumPage() {
                   href="/dashboard"
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-xs font-hud font-bold uppercase tracking-wider text-white transition-colors"
                 >
-                  <span>Go to Settings</span>
+                  <span>Go to Dashboard</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </div>
@@ -1167,61 +1163,6 @@ export default function PremiumPage() {
               </div>
             </div>
           )}
-        </section>
-
-        {/* ═══════════════════════════════════════════════════════════════════
-            SECTION 4: FAQ (Three 1-Sentence Collapsible Items)
-            ═══════════════════════════════════════════════════════════════════ */}
-        <section aria-labelledby="faq-heading" className="pt-6 pb-12 max-w-xl mx-auto">
-          <h2
-            id="faq-heading"
-            className="font-hud text-lg font-bold text-white text-center mb-4"
-          >
-            FAQ
-          </h2>
-
-          <div className="space-y-2 text-left">
-            {[
-              {
-                q: 'What happens when my subscription ends?',
-                a: 'When your paid period ends, your account returns to the free tier and your data stays intact.',
-              },
-              {
-                q: 'How do I cancel?',
-                a: 'You can cancel renewal anytime in one click under Settings > Plan without any cancellation fee.',
-              },
-              {
-                q: 'Can I request a refund?',
-                a: '[owner to fill]',
-              },
-            ].map((faq, idx) => {
-              const isOpen = openFaq === idx;
-              return (
-                <div
-                  key={idx}
-                  className="rounded-2xl border border-white/[0.06] bg-white/[0.02] overflow-hidden transition-colors"
-                >
-                  <button
-                    type="button"
-                    onClick={() => setOpenFaq(isOpen ? null : idx)}
-                    className="w-full flex items-center justify-between p-3.5 text-left text-xs font-hud font-bold text-white hover:text-[#E6C15A] transition-colors cursor-pointer"
-                  >
-                    <span>{faq.q}</span>
-                    <ChevronDown
-                      className={`w-3.5 h-3.5 text-white/40 transition-transform duration-200 ${
-                        isOpen ? 'rotate-180' : ''
-                      }`}
-                    />
-                  </button>
-                  {isOpen && (
-                    <div className="px-3.5 pb-3.5 text-xs text-white/60 leading-relaxed border-t border-white/[0.04] pt-2">
-                      {faq.a}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
         </section>
       </main>
 
