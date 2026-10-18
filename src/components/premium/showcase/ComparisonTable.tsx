@@ -60,7 +60,7 @@ const COMPARISON_DATA: ComparisonRow[] = [
     feature: 'Avatar Frames & Leaderboard Flair',
     description: 'Custom Gold, Aurora, and Ember avatar rings in rankings',
     free: false,
-    premium: 'Coming soon',
+    premium: true,
   },
   {
     category: 'Deep Analytics & Telemetry',
@@ -73,19 +73,19 @@ const COMPARISON_DATA: ComparisonRow[] = [
     feature: 'Weekly Report Card',
     description: 'Automated week-over-week growth and subject analysis',
     free: 'Sample preview',
-    premium: 'Coming soon',
+    premium: 'Full report & trends',
   },
   {
     feature: 'Daily Focus Goals',
     description: 'Configurable daily targets and goal streak telemetry',
     free: 'Sample preview',
-    premium: 'Coming soon',
+    premium: 'Custom goals & streaks',
   },
   {
     feature: '1080x1920 Season Recap Card',
     description: 'High-resolution milestone cards for stories and socials',
     free: 'Sample preview',
-    premium: 'Coming soon',
+    premium: 'Unlimited exports',
   },
 ];
 

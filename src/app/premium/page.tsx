@@ -15,6 +15,9 @@ import {
   Settings,
   ArrowLeft,
   Lock,
+  Target,
+  Flame,
+  TrendingUp,
 } from 'lucide-react';
 import { useReducedMotion } from 'framer-motion';
 import { Logo } from '../../components/Logo';
@@ -29,12 +32,6 @@ import {
   PREMIUM_GOLD_GLOW,
 } from '../../lib/premium';
 
-import { DemoThemesTile } from '../../components/premium/showcase/DemoThemesTile';
-import { DemoInsightsTile } from '../../components/premium/showcase/DemoInsightsTile';
-import { DemoWeeklyReportTile } from '../../components/premium/showcase/DemoWeeklyReportTile';
-import { DemoGoalsTile } from '../../components/premium/showcase/DemoGoalsTile';
-import { DemoSeasonCardTile } from '../../components/premium/showcase/DemoSeasonCardTile';
-import { DemoFlairTile } from '../../components/premium/showcase/DemoFlairTile';
 import { ComparisonTable } from '../../components/premium/showcase/ComparisonTable';
 import { useRazorpayCheckout } from '../../hooks/useRazorpayCheckout';
 
@@ -44,6 +41,8 @@ export default function PremiumPage() {
   const { user, isAuthenticated } = useAuth();
   const { isPremium, premiumUntil } = usePremium();
   const { userRank } = useRankTheme();
+
+  const [showFullComparison, setShowFullComparison] = useState(false);
 
   // Dynamic Razorpay checkout & live plan rates
   const {
@@ -61,31 +60,7 @@ export default function PremiumPage() {
     Math.round((1 - yearlyAmount / (monthlyAmount * 12)) * 100)
   );
 
-  // Tiles reveal once on scroll (IntersectionObserver, fade and rise 12px, 60ms stagger)
-  const [tilesRevealed, setTilesRevealed] = useState(false);
-  const tilesGridRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (shouldReduceMotion) {
-      setTilesRevealed(true);
-      return;
-    }
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setTilesRevealed(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    if (tilesGridRef.current) {
-      observer.observe(tilesGridRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, [shouldReduceMotion]);
 
   // Scroll to pricing section helper
   const handleScrollToPricing = () => {
@@ -232,87 +207,255 @@ export default function PremiumPage() {
           </div>
         </section>
 
-        {/* SECTION 2: SEE IT IN ACTION (6 Interactive Demo Tiles) */}
+        {/* SECTION 2: STREAMLINED PREMIUM UPGRADES (BENTO SHOWCASE) */}
         <section
-          aria-labelledby="demo-heading"
-          className="w-full py-10 sm:py-14 border-t border-[var(--border)] bg-black/[0.15]"
+          aria-labelledby="features-heading"
+          className="w-full py-12 sm:py-16 border-t border-[var(--border)] bg-gradient-to-b from-black/[0.25] via-transparent to-black/[0.15]"
         >
-          <div className="max-w-6xl mx-auto px-4 sm:px-6">
-            <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-12">
-              <span className="text-[10px] font-hud uppercase tracking-widest text-[#E6C15A] font-bold block mb-1">
-                Interactive Previews
-              </span>
+          <div className="max-w-5xl mx-auto px-4 sm:px-6">
+            <div className="text-center max-w-xl mx-auto mb-10 sm:mb-12">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E6C15A]/10 border border-[#E6C15A]/25 text-[11px] font-hud uppercase tracking-widest text-[#E6C15A] font-bold mb-3 shadow-sm">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Everything You Get</span>
+              </div>
               <h2
-                id="demo-heading"
-                className="text-2xl sm:text-3xl font-hud font-extrabold tracking-tight text-[var(--text)]"
+                id="features-heading"
+                className="text-2xl sm:text-4xl font-hud font-black tracking-tight text-[var(--text)]"
               >
-                See it in action
+                Four powerful upgrades. Zero fluff.
               </h2>
-              <p className="text-xs sm:text-sm text-[var(--text-dim)] mt-2">
-                Test-drive the premium toolset using live sample telemetry.
+              <p className="text-xs sm:text-sm text-[var(--text-dim)] mt-2.5 leading-relaxed">
+                Designed specifically for serious scholars who want deep focus analytics, handcrafted aesthetics, and prestige.
               </p>
             </div>
 
-            {/* 6 Tiles Grid (Responsive: 1 col on mobile 390px, 2 col on tablet, 3 col on desktop) */}
-            <div
-              ref={tilesGridRef}
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"
-            >
-              {[
-                { component: <DemoThemesTile />, key: 'themes' },
-                { component: <DemoInsightsTile />, key: 'insights' },
-                { component: <DemoWeeklyReportTile />, key: 'weekly' },
-                { component: <DemoGoalsTile />, key: 'goals' },
-                { component: <DemoSeasonCardTile />, key: 'season' },
-                { component: <DemoFlairTile />, key: 'flair' },
-              ].map((item, idx) => {
-                const isRevealed = tilesRevealed || shouldReduceMotion;
-                return (
-                  <div
-                    key={item.key}
-                    className="h-full"
-                    style={{
-                      opacity: isRevealed ? 1 : 0,
-                      transform: isRevealed
-                        ? 'translateY(0px)'
-                        : shouldReduceMotion
-                        ? 'none'
-                        : 'translateY(12px)',
-                      transition: shouldReduceMotion
-                        ? 'none'
-                        : `opacity 0.45s ease-out ${idx * 60}ms, transform 0.45s ease-out ${idx * 60}ms`,
-                    }}
-                  >
-                    {item.component}
+            {/* 4 Core Bento Feature Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {/* Feature 1: Deep Focus Analytics */}
+              <div className="relative overflow-hidden rounded-3xl p-6 sm:p-7 bg-[var(--surface)] border border-[var(--border)] hover:border-[#E6C15A]/40 transition-all shadow-lg flex flex-col justify-between group">
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="w-10 h-10 rounded-2xl bg-[#E6C15A]/15 border border-[#E6C15A]/30 text-[#E6C15A] flex items-center justify-center shadow-[0_0_15px_rgba(230,193,90,0.2)]">
+                      <BarChart3 className="w-5 h-5" />
+                    </div>
+                    <span className="text-[10px] font-hud uppercase tracking-widest font-extrabold px-2.5 py-0.5 rounded-full bg-white/[0.05] text-[var(--text-dim)] border border-[var(--border)]">
+                      Heatmaps &amp; Trends
+                    </span>
                   </div>
-                );
-              })}
-            </div>
-          </div>
-        </section>
+                  <h3 className="font-hud font-bold text-lg sm:text-xl text-[var(--text)] mb-1.5">
+                    Deep Focus Analytics
+                  </h3>
+                  <p className="text-xs sm:text-sm text-[var(--text-dim)] leading-relaxed">
+                    12-week activity heatmap, peak productivity hour breakdown, and automated week-over-week performance reports.
+                  </p>
+                </div>
 
-        {/* SECTION 3: COMPARISON TABLE */}
-        <section
-          aria-labelledby="comparison-heading"
-          className="w-full py-10 sm:py-14 border-t border-[var(--border)]"
-        >
-          <div className="max-w-6xl mx-auto px-4 sm:px-6">
-            <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-12">
-              <span className="text-[10px] font-hud uppercase tracking-widest text-[#E6C15A] font-bold block mb-1">
-                Transparency
+                {/* Micro Visual Graphic */}
+                <div className="mt-6 p-4 rounded-2xl bg-[var(--surface-2)]/80 border border-[var(--border)]/70">
+                  <div className="flex items-end justify-between h-14 px-2 gap-2">
+                    {[
+                      { day: 'M', h: '45%' },
+                      { day: 'T', h: '65%' },
+                      { day: 'W', h: '55%' },
+                      { day: 'T', h: '75%' },
+                      { day: 'F', h: '100%', peak: true },
+                      { day: 'S', h: '60%' },
+                      { day: 'S', h: '40%' },
+                    ].map((bar) => (
+                      <div key={bar.day} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
+                        <div
+                          className={`w-full rounded-md transition-all ${
+                            bar.peak
+                              ? 'bg-gradient-to-t from-[#B8892B] to-[#F5E6A8] shadow-[0_0_10px_rgba(230,193,90,0.4)]'
+                              : 'bg-white/10 group-hover:bg-white/15'
+                          }`}
+                          style={{ height: bar.h }}
+                        />
+                        <span className={`text-[10px] font-mono ${bar.peak ? 'text-[#E6C15A] font-bold' : 'text-[var(--text-dim)]'}`}>
+                          {bar.day}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-3 pt-2.5 border-t border-[var(--border)]/50 flex items-center justify-between text-[11px] text-[var(--text-dim)]">
+                    <span className="flex items-center gap-1 text-[#E6C15A] font-semibold">
+                      <TrendingUp className="w-3.5 h-3.5" />
+                      <span>Peak: Friday (6h 15m)</span>
+                    </span>
+                    <span className="font-mono text-[var(--text)]">+18% vs last week</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Feature 2: Handcrafted Themes */}
+              <div className="relative overflow-hidden rounded-3xl p-6 sm:p-7 bg-[var(--surface)] border border-[var(--border)] hover:border-[#E6C15A]/40 transition-all shadow-lg flex flex-col justify-between group">
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="w-10 h-10 rounded-2xl bg-[#E6C15A]/15 border border-[#E6C15A]/30 text-[#E6C15A] flex items-center justify-center shadow-[0_0_15px_rgba(230,193,90,0.2)]">
+                      <Palette className="w-5 h-5" />
+                    </div>
+                    <span className="text-[10px] font-hud uppercase tracking-widest font-extrabold px-2.5 py-0.5 rounded-full bg-white/[0.05] text-[var(--text-dim)] border border-[var(--border)]">
+                      Exclusive Themes
+                    </span>
+                  </div>
+                  <h3 className="font-hud font-bold text-lg sm:text-xl text-[var(--text)] mb-1.5">
+                    Gold Leaf &amp; Crimson Aesthetics
+                  </h3>
+                  <p className="text-xs sm:text-sm text-[var(--text-dim)] leading-relaxed">
+                    Handcrafted luxury color palettes tailored with warm gold tones and deep ruby velvets to eliminate eye fatigue.
+                  </p>
+                </div>
+
+                {/* Micro Visual Graphic */}
+                <div className="mt-6 grid grid-cols-2 gap-3">
+                  <div className="p-3.5 rounded-2xl bg-[#14120B] border border-[#E6C15A]/40 relative overflow-hidden shadow-inner">
+                    <div className="w-4 h-4 rounded-full bg-[#E6C15A] mb-2 shadow-[0_0_8px_rgba(230,193,90,0.6)]" />
+                    <div className="font-hud font-bold text-xs text-[#F5E6A8]">Gold Leaf</div>
+                    <div className="text-[10px] text-[#E6C15A]/70 mt-0.5">Warm amber &amp; gold luxury</div>
+                  </div>
+                  <div className="p-3.5 rounded-2xl bg-[#170C0F] border border-rose-500/40 relative overflow-hidden shadow-inner">
+                    <div className="w-4 h-4 rounded-full bg-rose-500 mb-2 shadow-[0_0_8px_rgba(244,63,94,0.6)]" />
+                    <div className="font-hud font-bold text-xs text-rose-200">Crimson Velvet</div>
+                    <div className="text-[10px] text-rose-400/70 mt-0.5">Deep wine focus tone</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Feature 3: Scholar Crown & Prestige */}
+              <div className="relative overflow-hidden rounded-3xl p-6 sm:p-7 bg-[var(--surface)] border border-[var(--border)] hover:border-[#E6C15A]/40 transition-all shadow-lg flex flex-col justify-between group">
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="w-10 h-10 rounded-2xl bg-[#E6C15A]/15 border border-[#E6C15A]/30 text-[#E6C15A] flex items-center justify-center shadow-[0_0_15px_rgba(230,193,90,0.2)]">
+                      <Crown className="w-5 h-5 fill-current" />
+                    </div>
+                    <span className="text-[10px] font-hud uppercase tracking-widest font-extrabold px-2.5 py-0.5 rounded-full bg-white/[0.05] text-[var(--text-dim)] border border-[var(--border)]">
+                      Prestige Flair
+                    </span>
+                  </div>
+                  <h3 className="font-hud font-bold text-lg sm:text-xl text-[var(--text)] mb-1.5">
+                    Scholar Crown &amp; Avatar Frames
+                  </h3>
+                  <p className="text-xs sm:text-sm text-[var(--text-dim)] leading-relaxed">
+                    Stand out across public study rooms and season rankings with an official gold crown badge and glowing profile frames.
+                  </p>
+                </div>
+
+                {/* Micro Visual Graphic */}
+                <div className="mt-6 p-3.5 rounded-2xl bg-[var(--surface-2)]/80 border border-[var(--border)]/70 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="relative">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#B8892B] to-[#F5E6A8] p-[2px] shadow-[0_0_12px_rgba(230,193,90,0.3)]">
+                        <div className="w-full h-full rounded-full bg-[var(--surface)] flex items-center justify-center text-xs font-bold font-hud text-[#E6C15A]">
+                          SCH
+                        </div>
+                      </div>
+                      <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-[#E6C15A] text-[#1A1405] flex items-center justify-center shadow-md">
+                        <Crown className="w-3 h-3 fill-current" />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-bold text-[var(--text)]">Verified Scholar</span>
+                        <span className="px-1.5 py-0.2 rounded text-[9px] font-hud font-bold uppercase bg-[#E6C15A]/15 text-[#E6C15A] border border-[#E6C15A]/30">
+                          PRO
+                        </span>
+                      </div>
+                      <div className="text-[10px] text-[var(--text-dim)]">Gold Aura Frame Active</div>
+                    </div>
+                  </div>
+                  <span className="text-[11px] font-hud font-bold text-[#E6C15A] uppercase tracking-wider">
+                    Tier I
+                  </span>
+                </div>
+              </div>
+
+              {/* Feature 4: Focus Goals & Story Recaps */}
+              <div className="relative overflow-hidden rounded-3xl p-6 sm:p-7 bg-[var(--surface)] border border-[var(--border)] hover:border-[#E6C15A]/40 transition-all shadow-lg flex flex-col justify-between group">
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="w-10 h-10 rounded-2xl bg-[#E6C15A]/15 border border-[#E6C15A]/30 text-[#E6C15A] flex items-center justify-center shadow-[0_0_15px_rgba(230,193,90,0.2)]">
+                      <Target className="w-5 h-5" />
+                    </div>
+                    <span className="text-[10px] font-hud uppercase tracking-widest font-extrabold px-2.5 py-0.5 rounded-full bg-white/[0.05] text-[var(--text-dim)] border border-[var(--border)]">
+                      Streaks &amp; Exports
+                    </span>
+                  </div>
+                  <h3 className="font-hud font-bold text-lg sm:text-xl text-[var(--text)] mb-1.5">
+                    Goal Streaks &amp; Season Cards
+                  </h3>
+                  <p className="text-xs sm:text-sm text-[var(--text-dim)] leading-relaxed">
+                    Set daily focus quotas, track unbroken streak counters, and export 1080×1920 high-res recap cards for social stories.
+                  </p>
+                </div>
+
+                {/* Micro Visual Graphic */}
+                <div className="mt-6 p-3.5 rounded-2xl bg-[var(--surface-2)]/80 border border-[var(--border)]/70 flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-xs">
+                    <div className="w-8 h-8 rounded-xl bg-orange-500/15 border border-orange-500/30 text-orange-400 flex items-center justify-center">
+                      <Flame className="w-4 h-4 fill-current" />
+                    </div>
+                    <div>
+                      <div className="font-bold text-[var(--text)]">14-Day Goal Streak</div>
+                      <div className="text-[10px] text-[var(--text-dim)]">Daily quota: 4.0 hrs/day</div>
+                    </div>
+                  </div>
+                  <div className="text-[10px] font-hud font-extrabold text-[#E6C15A] uppercase px-2.5 py-1 rounded-lg bg-[#E6C15A]/10 border border-[#E6C15A]/30">
+                    Story Export
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Feature Checklist */}
+            <div className="mt-10 pt-8 border-t border-[var(--border)]/60 text-center">
+              <span className="text-[10px] font-hud uppercase tracking-widest text-[var(--text-dim)] font-bold block mb-4">
+                Everything Included In Your Membership
               </span>
-              <h2
-                id="comparison-heading"
-                className="text-2xl sm:text-3xl font-hud font-extrabold tracking-tight text-[var(--text)]"
-              >
-                Compare Free vs Premium
-              </h2>
-              <p className="text-xs sm:text-sm text-[var(--text-dim)] mt-2">
-                Honest breakdown of everything included in study.io. All existing free tools stay free forever.
-              </p>
+              <div className="flex flex-wrap justify-center items-center gap-2.5 max-w-3xl mx-auto">
+                {[
+                  '12-Week Focus Heatmap',
+                  'Peak Focus Hours Telemetry',
+                  'Gold Leaf & Crimson Themes',
+                  'Scholar Crown Badge',
+                  'Glowing Avatar Frames',
+                  'Daily Goal Streak Tracking',
+                  'Automated Weekly Reports',
+                  '1080×1920 Story Cards',
+                  'Unlimited History Access',
+                ].map((feat) => (
+                  <span
+                    key={feat}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/[0.03] border border-[var(--border)] text-xs font-medium text-[var(--text)] hover:border-[#E6C15A]/40 transition-colors"
+                  >
+                    <Check className="w-3.5 h-3.5 text-[#E6C15A]" />
+                    <span>{feat}</span>
+                  </span>
+                ))}
+              </div>
             </div>
 
-            <ComparisonTable />
+            {/* Optional Collapsible Side-by-Side Comparison */}
+            <div className="mt-8 text-center">
+              <button
+                type="button"
+                id="toggle-comparison-table-btn"
+                onClick={() => setShowFullComparison(!showFullComparison)}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-hud font-bold tracking-wider text-[var(--text-dim)] hover:text-[var(--text)] bg-[var(--surface-2)] border border-[var(--border)] hover:border-[var(--border-strong)] transition-all cursor-pointer"
+              >
+                <span>{showFullComparison ? 'Hide detailed feature table' : 'Compare Free vs Premium side-by-side'}</span>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                    showFullComparison ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+
+              {showFullComparison && (
+                <div className="mt-6 text-left animate-in fade-in duration-300">
+                  <ComparisonTable />
+                </div>
+              )}
+            </div>
           </div>
         </section>
 
