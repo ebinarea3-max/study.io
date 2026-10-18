@@ -75,12 +75,6 @@ const COMPARISON_DATA: ComparisonRow[] = [
     free: false,
     premium: 'Custom quotas & streaks',
   },
-  {
-    feature: '1080×1920 Season Recap Cards',
-    description: 'High-resolution unblurred milestone cards for stories and socials',
-    free: 'Blurred preview',
-    premium: 'Full unblurred HD PNG',
-  },
 ];
 
 export function ComparisonTable() {

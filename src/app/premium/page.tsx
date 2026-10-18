@@ -13,7 +13,6 @@ import {
   Calendar,
   Flame,
   TrendingUp,
-  Share2,
   Sparkles,
 } from 'lucide-react';
 import { useReducedMotion } from 'framer-motion';
@@ -521,60 +520,6 @@ function ScholarCrownDemo() {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   LIVE DEMO 6: STORY CARDS (9:16 Card with Slow Tilt & Light Sweep)
-   ═══════════════════════════════════════════════════════════════════════════ */
-function StoryCardsDemo({ tier, division }: { tier: RankTierName; division?: string }) {
-  const { ref, isVisible } = useTileVisibility(0.2);
-  const shouldReduceMotion = useReducedMotion();
-  const [sweep, setSweep] = useState(false);
-
-  // Trigger light sweep every 8s
-  useEffect(() => {
-    if (!isVisible || shouldReduceMotion) return;
-    const interval = setInterval(() => {
-      setSweep(true);
-      setTimeout(() => setSweep(false), 1200);
-    }, 8000);
-    return () => clearInterval(interval);
-  }, [isVisible, shouldReduceMotion]);
-
-  return (
-    <div ref={ref} className="flex h-full items-center justify-center py-2">
-      {/* 9:16 Vertical Card */}
-      <div
-        className="relative flex h-52 w-32 flex-col justify-between overflow-hidden rounded-2xl border border-[#E6C15A]/30 bg-gradient-to-b from-[#1C1608] to-[#0A0803] p-3 text-center shadow-xl transition-transform duration-700"
-        style={{
-          boxShadow: '0 10px 25px -5px rgba(0,0,0,0.8), 0 0 20px rgba(230,193,90,0.15)',
-        }}
-      >
-        {/* Light sweep reflection */}
-        <div
-          className={`pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-1000 ${
-            sweep ? 'translate-x-full' : ''
-          }`}
-        />
-
-        <div className="flex items-center justify-between text-[8px] font-mono text-[#E6C15A]">
-          <span>study.io</span>
-          <span>1080×1920</span>
-        </div>
-
-        <div className="my-auto flex flex-col items-center">
-          <RankCrestBadge tier={tier} division={division} size={42} />
-          <span className="mt-1 font-hud text-[11px] font-bold text-white uppercase">
-            {tier}
-          </span>
-          <span className="text-[9px] font-mono text-white/50">48h Season</span>
-        </div>
-
-        <div className="rounded-lg bg-white/5 p-1 text-[8px] font-mono text-[#E6C15A]/90">
-          Unblurred HD Export
-        </div>
-      </div>
-    </div>
-  );
-}
 
 /* ═══════════════════════════════════════════════════════════════════════════
    HERO PRODUCT MOCKUP (Right Column on Desktop)
@@ -952,19 +897,16 @@ export default function PremiumPage() {
               <ThemesDemo />
             </BentoCard>
 
-            {/* ROW 1 & 2: Story Cards (cols 8-12, spans rows 1-2) */}
+            {/* ROW 1: Daily Goals (cols 8-12) */}
             <BentoCard
-              title="Story cards"
-              caption="Share your season in HD."
-              className="lg:col-span-5 lg:row-span-2 min-h-[260px] sm:min-h-[360px]"
+              title="Daily goals"
+              caption="A gold ring that fills as you study."
+              className="lg:col-span-5 min-h-[240px] sm:min-h-[260px]"
               isPremium={isPremium}
-              href="/recap"
+              href="/dashboard"
               delayIndex={1}
             >
-              <StoryCardsDemo
-                tier={userRank.tier}
-                division={userRank.division}
-              />
+              <DailyGoalsDemo />
             </BentoCard>
 
             {/* ROW 2: Weekly Report (cols 1-4) */}
@@ -979,38 +921,26 @@ export default function PremiumPage() {
               <WeeklyReportDemo />
             </BentoCard>
 
-            {/* ROW 2: Daily Goals (cols 5-7) */}
+            {/* ROW 2: Time Travel (cols 5-8) */}
             <BentoCard
-              title="Daily goals"
-              caption="A gold ring that fills as you study."
-              className="lg:col-span-3 min-h-[240px] sm:min-h-[260px]"
+              title="Time travel"
+              caption="Browse every past day and month."
+              className="lg:col-span-4 min-h-[240px] sm:min-h-[260px]"
               isPremium={isPremium}
               href="/dashboard"
               delayIndex={3}
             >
-              <DailyGoalsDemo />
-            </BentoCard>
-
-            {/* ROW 3: Time Travel (cols 1-6) */}
-            <BentoCard
-              title="Time travel"
-              caption="Browse every past day and month."
-              className="lg:col-span-6 min-h-[240px] sm:min-h-[260px]"
-              isPremium={isPremium}
-              href="/dashboard"
-              delayIndex={4}
-            >
               <TimeTravelDemo />
             </BentoCard>
 
-            {/* ROW 3: Scholar Crown (cols 7-12) */}
+            {/* ROW 2: Scholar Crown (cols 9-12) */}
             <BentoCard
               title="Scholar crown"
               caption="Shown beside your name everywhere."
-              className="lg:col-span-6 min-h-[240px] sm:min-h-[260px]"
+              className="lg:col-span-4 min-h-[240px] sm:min-h-[260px]"
               isPremium={isPremium}
               href="/leaderboard"
-              delayIndex={5}
+              delayIndex={4}
             >
               <ScholarCrownDemo />
             </BentoCard>
