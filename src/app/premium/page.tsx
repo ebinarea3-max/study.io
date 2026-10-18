@@ -1,27 +1,21 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  Sparkles,
-  ArrowRight,
-  Check,
-  ChevronDown,
-  ShieldCheck,
-  Palette,
-  BarChart3,
   Crown,
-  Settings,
+  Lock,
+  Check,
+  ArrowRight,
   ArrowLeft,
-  Target,
+  ChevronDown,
+  Loader2,
+  Calendar,
   Flame,
   TrendingUp,
   Share2,
-  Calendar,
-  Loader2,
-  HelpCircle,
-  Clock,
+  Sparkles,
 } from 'lucide-react';
 import { useReducedMotion } from 'framer-motion';
 import { Logo } from '../../components/Logo';
@@ -29,41 +23,738 @@ import { useAuth } from '../../context/AuthContext';
 import { usePremium } from '../../context/PremiumContext';
 import { useRankTheme } from '../../hooks/useRankTheme';
 import { RankCrestBadge } from '../../components/common/RankCrestBadge';
-import {
-  PREMIUM_GOLD_GRADIENT,
-  PREMIUM_GOLD_BORDER,
-  PREMIUM_GOLD_GLOW,
-} from '../../lib/premium';
-
-import { ComparisonTable } from '../../components/premium/showcase/ComparisonTable';
+import { RankTierName } from '../../lib/rankedSystem';
 import { useRazorpayCheckout } from '../../hooks/useRazorpayCheckout';
+import { PAYMENTS_ENABLED } from '../../config/billing';
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   PREMIUM CONSTANTS & TOKENS
+   ═══════════════════════════════════════════════════════════════════════════ */
+const PREMIUM_GOLD_GRADIENT =
+  'linear-gradient(135deg, #F5E6A8 0%, #E6C15A 50%, #B8892B 100%)';
+const PREMIUM_HAIRLINE = 'rgba(230, 193, 90, 0.14)';
+const PREMIUM_GOLD_ACCENT = '#E6C15A';
+
+/* Hook for observing visibility so animations only run while on-screen */
+function useTileVisibility(threshold = 0.15) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof window === 'undefined') return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsVisible(entry.isIntersecting);
+      },
+      { threshold }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [threshold]);
+
+  return { ref, isVisible };
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SPOTLIGHT BENTO CARD WRAPPER
+   ═══════════════════════════════════════════════════════════════════════════ */
+interface BentoCardProps {
+  children: React.ReactNode;
+  title: string;
+  caption: string;
+  className?: string;
+  isPremium: boolean;
+  href?: string;
+  delayIndex?: number;
+}
+
+function BentoCard({
+  children,
+  title,
+  caption,
+  className = '',
+  isPremium,
+  href,
+  delayIndex = 0,
+}: BentoCardProps) {
+  const router = useRouter();
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [coords, setCoords] = useState<{ x: number; y: number } | null>(null);
+  const { ref: inViewRef, isVisible } = useTileVisibility(0.1);
+  const shouldReduceMotion = useReducedMotion();
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (shouldReduceMotion) return;
+    const rect = cardRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    setCoords({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    });
+  };
+
+  const handlePointerLeave = () => {
+    setCoords(null);
+  };
+
+  const handleClick = () => {
+    if (isPremium && href) {
+      router.push(href);
+    }
+  };
+
+  return (
+    <div
+      ref={(el) => {
+        cardRef.current = el;
+        // @ts-ignore
+        inViewRef.current = el;
+      }}
+      onPointerMove={handlePointerMove}
+      onPointerLeave={handlePointerLeave}
+      onClick={handleClick}
+      className={`group relative flex flex-col justify-between overflow-hidden rounded-3xl bg-white/[0.04] p-5 sm:p-6 transition-all duration-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)] ${
+        isPremium && href ? 'cursor-pointer hover:border-[rgba(230,193,90,0.35)]' : ''
+      } ${className}`}
+      style={{
+        border: `1px solid ${PREMIUM_HAIRLINE}`,
+        opacity: isVisible || shouldReduceMotion ? 1 : 0,
+        transform:
+          isVisible || shouldReduceMotion
+            ? 'translateY(0px)'
+            : 'translateY(12px)',
+        transition: shouldReduceMotion
+          ? 'none'
+          : `opacity 0.45s ease-out ${delayIndex * 70}ms, transform 0.45s ease-out ${delayIndex * 70}ms, border-color 0.2s ease`,
+      }}
+    >
+      {/* Spotlight highlight driven by pointer coordinates */}
+      {coords && (
+        <div
+          className="pointer-events-none absolute inset-0 z-0 transition-opacity duration-300"
+          style={{
+            background: `radial-gradient(350px circle at ${coords.x}px ${coords.y}px, rgba(230, 193, 90, 0.08), transparent 80%)`,
+          }}
+        />
+      )}
+
+      {/* Top Bar: Preview tag & Status Badge */}
+      <div className="relative z-10 flex items-center justify-between">
+        <span className="rounded-full bg-white/[0.05] px-2 py-0.5 text-[9px] font-mono uppercase tracking-widest text-white/50 border border-white/[0.06]">
+          Preview
+        </span>
+        <div
+          className={`flex h-6 w-6 items-center justify-center rounded-full border ${
+            isPremium
+              ? 'border-[#E6C15A]/40 bg-[#E6C15A]/15 text-[#E6C15A]'
+              : 'border-white/10 bg-white/5 text-white/40'
+          }`}
+          title={isPremium ? 'Unlocked' : 'Requires Premium'}
+        >
+          {isPremium ? (
+            <Check className="h-3 w-3 stroke-[2.5]" />
+          ) : (
+            <Lock className="h-3 w-3" />
+          )}
+        </div>
+      </div>
+
+      {/* Visual Demo Section (Fills Middle) */}
+      <div className="relative z-10 my-auto flex w-full items-center justify-center py-4">
+        {children}
+      </div>
+
+      {/* Bottom Left Title & Caption */}
+      <div className="relative z-10 pt-2 text-left">
+        <h3 className="font-hud text-sm font-bold tracking-wide text-white">
+          {title}
+        </h3>
+        <p className="mt-0.5 text-xs text-white/60 line-clamp-1">
+          {caption}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LIVE DEMO 1: THEMES (Gold Leaf & Crimson Cross-fade)
+   ═══════════════════════════════════════════════════════════════════════════ */
+function ThemesDemo() {
+  const { ref, isVisible } = useTileVisibility(0.2);
+  const shouldReduceMotion = useReducedMotion();
+  const [activeTheme, setActiveTheme] = useState<'gold' | 'crimson'>('gold');
+
+  // Auto cross-fade every 3s when visible
+  useEffect(() => {
+    if (!isVisible || shouldReduceMotion) return;
+    const interval = setInterval(() => {
+      setActiveTheme((prev) => (prev === 'gold' ? 'crimson' : 'gold'));
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [isVisible, shouldReduceMotion]);
+
+  const isGold = activeTheme === 'gold';
+
+  return (
+    <div ref={ref} className="w-full max-w-sm">
+      {/* Mini App Window */}
+      <div
+        className="relative overflow-hidden rounded-2xl border p-3 transition-colors duration-700 shadow-md"
+        style={{
+          backgroundColor: isGold ? '#0C0A06' : '#0E0809',
+          borderColor: isGold ? 'rgba(230,193,90,0.25)' : 'rgba(229,72,77,0.25)',
+        }}
+      >
+        <div className="flex items-center justify-between pb-2 border-b border-white/[0.06]">
+          <div className="flex items-center gap-1.5">
+            <div
+              className="h-2 w-2 rounded-full transition-colors duration-700"
+              style={{ backgroundColor: isGold ? '#E6C15A' : '#E5484D' }}
+            />
+            <span
+              className="text-[10px] font-hud font-bold tracking-wider uppercase transition-colors duration-700"
+              style={{ color: isGold ? '#E6C15A' : '#E5484D' }}
+            >
+              {isGold ? 'Gold Leaf' : 'Crimson'}
+            </span>
+          </div>
+          <span className="text-[9px] font-mono text-white/40">25:00</span>
+        </div>
+
+        <div className="mt-2.5 flex items-center justify-between gap-2">
+          <div className="h-2 flex-1 rounded-full bg-white/5 overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all duration-700"
+              style={{
+                width: isGold ? '68%' : '84%',
+                backgroundColor: isGold ? '#E6C15A' : '#E5484D',
+              }}
+            />
+          </div>
+          <span
+            className="text-[9px] font-mono font-bold transition-colors duration-700"
+            style={{ color: isGold ? '#F5E6A8' : '#FFA1A6' }}
+          >
+            {isGold ? '68%' : '84%'}
+          </span>
+        </div>
+      </div>
+
+      {/* Manual Swatch Selector */}
+      <div className="mt-3 flex items-center justify-center gap-3">
+        <button
+          type="button"
+          onClick={() => setActiveTheme('gold')}
+          className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-mono transition-all cursor-pointer ${
+            isGold
+              ? 'border border-[#E6C15A]/60 bg-[#E6C15A]/15 text-[#E6C15A]'
+              : 'border border-transparent text-white/40 hover:text-white'
+          }`}
+        >
+          <span className="h-2 w-2 rounded-full bg-[#E6C15A]" />
+          <span>Gold Leaf</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTheme('crimson')}
+          className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-mono transition-all cursor-pointer ${
+            !isGold
+              ? 'border border-[#E5484D]/60 bg-[#E5484D]/15 text-[#E5484D]'
+              : 'border border-transparent text-white/40 hover:text-white'
+          }`}
+        >
+          <span className="h-2 w-2 rounded-full bg-[#E5484D]" />
+          <span>Crimson</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LIVE DEMO 2: TIME TRAVEL (Calendar Date Hopping & Month Flip)
+   ═══════════════════════════════════════════════════════════════════════════ */
+function TimeTravelDemo() {
+  const { ref, isVisible } = useTileVisibility(0.2);
+  const shouldReduceMotion = useReducedMotion();
+  const [step, setStep] = useState(0);
+
+  // Hop between calendar positions every 2s
+  useEffect(() => {
+    if (!isVisible || shouldReduceMotion) return;
+    const interval = setInterval(() => {
+      setStep((prev) => (prev + 1) % 4);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [isVisible, shouldReduceMotion]);
+
+  const monthLabel = step < 2 ? 'OCTOBER' : 'NOVEMBER';
+  const activeDay = step === 0 ? 14 : step === 1 ? 28 : step === 2 ? 4 : 18;
+
+  const days = [
+    [1, 2, 3, 4],
+    [7, 8, 14, 18],
+    [21, 22, 28, 29],
+  ];
+
+  return (
+    <div ref={ref} className="w-full max-w-xs">
+      <div className="rounded-2xl border border-white/[0.08] bg-black/40 p-3 shadow-inner">
+        {/* Month Header */}
+        <div className="flex items-center justify-between pb-2 border-b border-white/[0.06]">
+          <div className="flex items-center gap-1.5 text-[#E6C15A]">
+            <Calendar className="h-3.5 w-3.5" />
+            <span className="font-hud text-[11px] font-bold tracking-wider">
+              {monthLabel}
+            </span>
+          </div>
+          <span className="text-[9px] font-mono text-white/40">2026</span>
+        </div>
+
+        {/* Mini Calendar Grid */}
+        <div className="mt-2.5 grid grid-cols-4 gap-1.5 text-center font-mono text-[10px]">
+          {days.flat().map((d, idx) => {
+            const isTarget = d === activeDay;
+            return (
+              <div
+                key={idx}
+                className={`flex h-7 items-center justify-center rounded-lg transition-all duration-300 ${
+                  isTarget
+                    ? 'border border-[#E6C15A] bg-[#E6C15A] font-bold text-[#141006] shadow-[0_0_12px_rgba(230,193,90,0.5)]'
+                    : 'text-white/40 hover:text-white/70'
+                }`}
+              >
+                {d}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LIVE DEMO 3: WEEKLY REPORT (Growing Bars + "+18%" Chip)
+   ═══════════════════════════════════════════════════════════════════════════ */
+function WeeklyReportDemo() {
+  const { ref, isVisible } = useTileVisibility(0.2);
+  const shouldReduceMotion = useReducedMotion();
+  const [heightFactor, setHeightFactor] = useState(1);
+
+  useEffect(() => {
+    if (!isVisible || shouldReduceMotion) return;
+    const interval = setInterval(() => {
+      setHeightFactor((prev) => (prev === 1 ? 0.35 : 1));
+    }, 2800);
+    return () => clearInterval(interval);
+  }, [isVisible, shouldReduceMotion]);
+
+  const bars = [40, 65, 30, 85, 55, 95, 75];
+
+  return (
+    <div ref={ref} className="w-full max-w-[200px]">
+      {/* Metric Chip */}
+      <div className="mb-3 flex items-center justify-between">
+        <span className="text-[10px] font-mono text-white/40">vs last week</span>
+        <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/30 bg-emerald-400/15 px-2 py-0.5 font-mono text-[10px] font-bold text-emerald-400">
+          <TrendingUp className="h-3 w-3" />
+          <span>+18%</span>
+        </span>
+      </div>
+
+      {/* 7 Bars Container */}
+      <div className="flex h-20 items-end justify-between gap-1.5 rounded-xl border border-white/[0.06] bg-black/30 p-2.5">
+        {bars.map((pct, idx) => {
+          const currentHeight = shouldReduceMotion ? pct : pct * heightFactor;
+          return (
+            <div key={idx} className="relative flex h-full w-full items-end justify-center">
+              {/* Last week's faint bar */}
+              <div
+                className="absolute w-2 rounded-t-sm bg-white/10"
+                style={{ height: `${pct * 0.75}%` }}
+              />
+              {/* This week's active bar */}
+              <div
+                className="relative z-10 w-2 rounded-t-sm bg-[#E6C15A] transition-all duration-700 ease-out"
+                style={{
+                  height: `${currentHeight}%`,
+                  boxShadow: '0 0 8px rgba(230,193,90,0.3)',
+                }}
+              />
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LIVE DEMO 4: DAILY GOALS (Gold Ring Filling to 72% + Streak)
+   ═══════════════════════════════════════════════════════════════════════════ */
+function DailyGoalsDemo() {
+  const { ref, isVisible } = useTileVisibility(0.2);
+  const shouldReduceMotion = useReducedMotion();
+  const [progress, setProgress] = useState(72);
+
+  useEffect(() => {
+    if (!isVisible || shouldReduceMotion) return;
+    const interval = setInterval(() => {
+      setProgress((prev) => (prev === 72 ? 15 : 72));
+    }, 3200);
+    return () => clearInterval(interval);
+  }, [isVisible, shouldReduceMotion]);
+
+  const targetProgress = shouldReduceMotion ? 72 : progress;
+  const radius = 32;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (targetProgress / 100) * circumference;
+
+  return (
+    <div ref={ref} className="relative flex flex-col items-center justify-center">
+      <div className="relative flex h-24 w-24 items-center justify-center">
+        <svg className="h-full w-full -rotate-90 transform" viewBox="0 0 80 80">
+          <circle
+            cx="40"
+            cy="40"
+            r={radius}
+            stroke="rgba(255,255,255,0.08)"
+            strokeWidth="5"
+            fill="transparent"
+          />
+          <circle
+            cx="40"
+            cy="40"
+            r={radius}
+            stroke="#E6C15A"
+            strokeWidth="5"
+            strokeDasharray={circumference}
+            strokeDashoffset={strokeDashoffset}
+            strokeLinecap="round"
+            fill="transparent"
+            style={{
+              transition: shouldReduceMotion ? 'none' : 'stroke-dashoffset 1s ease-out',
+            }}
+          />
+        </svg>
+
+        {/* Center label */}
+        <div className="absolute flex flex-col items-center">
+          <span className="font-hud text-sm font-bold text-white">
+            {targetProgress}%
+          </span>
+          <span className="text-[8px] font-mono uppercase text-[#E6C15A]">
+            Goal
+          </span>
+        </div>
+      </div>
+
+      {/* Streak badge */}
+      <div className="mt-1.5 flex items-center gap-1 rounded-full border border-orange-400/30 bg-orange-400/10 px-2.5 py-0.5 text-[10px] font-mono text-orange-400">
+        <Flame className="h-3 w-3 fill-current" />
+        <span>12d streak</span>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LIVE DEMO 5: SCHOLAR CROWN (Crown Drop-in + Shimmer)
+   ═══════════════════════════════════════════════════════════════════════════ */
+function ScholarCrownDemo() {
+  const { ref, isVisible } = useTileVisibility(0.2);
+  const shouldReduceMotion = useReducedMotion();
+  const [hasDropped, setHasDropped] = useState(false);
+
+  useEffect(() => {
+    if (!isVisible || shouldReduceMotion) {
+      setHasDropped(true);
+      return;
+    }
+    const timer = setTimeout(() => setHasDropped(true), 300);
+    return () => clearTimeout(timer);
+  }, [isVisible, shouldReduceMotion]);
+
+  return (
+    <div ref={ref} className="w-full max-w-sm">
+      <div className="rounded-2xl border border-white/[0.08] bg-black/40 p-3 shadow-inner">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <span className="font-mono text-xs font-bold text-[#E6C15A]">#1</span>
+            <div className="h-8 w-8 rounded-full border border-[#E6C15A]/40 bg-[#1A1406] flex items-center justify-center font-bold text-xs text-[#E6C15A]">
+              S
+            </div>
+            <div className="text-left">
+              <div className="flex items-center gap-1.5">
+                <span className="font-hud text-xs font-bold text-white">
+                  Scholar
+                </span>
+                {/* Gold Crown SVG drops in */}
+                <span
+                  className="inline-flex text-[#E6C15A] transition-all duration-500 ease-out"
+                  style={{
+                    transform: hasDropped ? 'translateY(0)' : 'translateY(-8px)',
+                    opacity: hasDropped ? 1 : 0,
+                    filter: hasDropped
+                      ? 'drop-shadow(0 0 6px rgba(230,193,90,0.8))'
+                      : 'none',
+                  }}
+                >
+                  <Crown className="h-3.5 w-3.5 fill-current" />
+                </span>
+              </div>
+              <span className="text-[9px] font-mono text-white/40">
+                128h focused
+              </span>
+            </div>
+          </div>
+          <span className="rounded-full bg-[#E6C15A]/15 border border-[#E6C15A]/30 px-2 py-0.5 text-[9px] font-mono font-bold text-[#E6C15A]">
+            Top 1%
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LIVE DEMO 6: STORY CARDS (9:16 Card with Slow Tilt & Light Sweep)
+   ═══════════════════════════════════════════════════════════════════════════ */
+function StoryCardsDemo({ tier, division }: { tier: RankTierName; division?: string }) {
+  const { ref, isVisible } = useTileVisibility(0.2);
+  const shouldReduceMotion = useReducedMotion();
+  const [sweep, setSweep] = useState(false);
+
+  // Trigger light sweep every 8s
+  useEffect(() => {
+    if (!isVisible || shouldReduceMotion) return;
+    const interval = setInterval(() => {
+      setSweep(true);
+      setTimeout(() => setSweep(false), 1200);
+    }, 8000);
+    return () => clearInterval(interval);
+  }, [isVisible, shouldReduceMotion]);
+
+  return (
+    <div ref={ref} className="flex h-full items-center justify-center py-2">
+      {/* 9:16 Vertical Card */}
+      <div
+        className="relative flex h-52 w-32 flex-col justify-between overflow-hidden rounded-2xl border border-[#E6C15A]/30 bg-gradient-to-b from-[#1C1608] to-[#0A0803] p-3 text-center shadow-xl transition-transform duration-700"
+        style={{
+          boxShadow: '0 10px 25px -5px rgba(0,0,0,0.8), 0 0 20px rgba(230,193,90,0.15)',
+        }}
+      >
+        {/* Light sweep reflection */}
+        <div
+          className={`pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-1000 ${
+            sweep ? 'translate-x-full' : ''
+          }`}
+        />
+
+        <div className="flex items-center justify-between text-[8px] font-mono text-[#E6C15A]">
+          <span>study.io</span>
+          <span>1080×1920</span>
+        </div>
+
+        <div className="my-auto flex flex-col items-center">
+          <RankCrestBadge tier={tier} division={division} size={42} />
+          <span className="mt-1 font-hud text-[11px] font-bold text-white uppercase">
+            {tier}
+          </span>
+          <span className="text-[9px] font-mono text-white/50">48h Season</span>
+        </div>
+
+        <div className="rounded-lg bg-white/5 p-1 text-[8px] font-mono text-[#E6C15A]/90">
+          Unblurred HD Export
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   HERO PRODUCT MOCKUP (Right Column on Desktop)
+   ═══════════════════════════════════════════════════════════════════════════ */
+function HeroProductMockup({
+  tier,
+  division,
+}: {
+  tier: RankTierName;
+  division?: string;
+}) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
+  const shouldReduceMotion = useReducedMotion();
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (shouldReduceMotion) return;
+    const rect = cardRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const x = (e.clientX - rect.left) / rect.width - 0.5;
+    const y = (e.clientY - rect.top) / rect.height - 0.5;
+    // Up to 6 degrees tilt
+    setTilt({
+      x: -y * 12,
+      y: x * 12,
+    });
+  };
+
+  const handlePointerLeave = () => {
+    setTilt({ x: 0, y: 0 });
+  };
+
+  return (
+    <div
+      ref={cardRef}
+      onPointerMove={handlePointerMove}
+      onPointerLeave={handlePointerLeave}
+      className="relative flex items-center justify-center p-4"
+    >
+      {/* Background Amber Aura */}
+      <div
+        className="pointer-events-none absolute h-64 w-64 rounded-full blur-[100px] opacity-35"
+        style={{ backgroundColor: '#E6C15A' }}
+      />
+
+      {/* Floating Mockup Card */}
+      <div
+        className="relative w-full max-w-[340px] overflow-hidden rounded-3xl border p-6 shadow-2xl transition-transform duration-150 ease-out"
+        style={{
+          backgroundColor: '#0C0A06',
+          borderColor: 'rgba(230, 193, 90, 0.25)',
+          boxShadow:
+            '0 25px 50px -12px rgba(0,0,0,0.8), 0 0 35px rgba(230,193,90,0.12)',
+          transform: shouldReduceMotion
+            ? 'none'
+            : `perspective(900px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
+        }}
+      >
+        {/* Card Header: Scholar Identity with Crown & Crest */}
+        <div className="flex items-center justify-between pb-4 border-b border-white/[0.08]">
+          <div className="flex items-center gap-2.5">
+            <div className="relative">
+              <RankCrestBadge tier={tier} division={division} size={34} />
+              <div className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#E6C15A] text-black">
+                <Crown className="h-2.5 w-2.5 fill-current" />
+              </div>
+            </div>
+            <div>
+              <div className="flex items-center gap-1">
+                <span className="font-hud text-xs font-bold text-white">
+                  Scholar Pro
+                </span>
+              </div>
+              <span className="text-[9px] font-mono text-[#E6C15A]">
+                Gold Leaf Active
+              </span>
+            </div>
+          </div>
+          <span className="rounded-full bg-[#E6C15A]/15 border border-[#E6C15A]/30 px-2.5 py-0.5 text-[9px] font-hud font-bold text-[#E6C15A] uppercase tracking-wider">
+            Premium
+          </span>
+        </div>
+
+        {/* Card Center: Timer with Filling Gold Progress Ring */}
+        <div className="my-6 flex flex-col items-center justify-center">
+          <div className="relative flex h-36 w-36 items-center justify-center">
+            <svg className="h-full w-full -rotate-90 transform" viewBox="0 0 100 100">
+              <circle
+                cx="50"
+                cy="50"
+                r="42"
+                stroke="rgba(255,255,255,0.06)"
+                strokeWidth="4"
+                fill="transparent"
+              />
+              <circle
+                cx="50"
+                cy="50"
+                r="42"
+                stroke="#E6C15A"
+                strokeWidth="4"
+                strokeDasharray={264}
+                strokeDashoffset={66}
+                strokeLinecap="round"
+                fill="transparent"
+                style={{
+                  boxShadow: '0 0 10px rgba(230,193,90,0.5)',
+                }}
+              />
+            </svg>
+            <div className="absolute flex flex-col items-center">
+              <span className="font-hud text-2xl font-black tracking-tight text-white">
+                25:00
+              </span>
+              <span className="text-[9px] font-mono uppercase tracking-widest text-[#E6C15A]">
+                Deep Focus
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Card Footer: Live Telemetry Indicator */}
+        <div className="flex items-center justify-between rounded-xl bg-white/[0.03] border border-white/[0.05] p-2.5 text-[10px] font-mono text-white/60">
+          <span className="flex items-center gap-1.5 text-white">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span>Session in flow</span>
+          </span>
+          <span className="text-[#E6C15A] font-bold">+18% Weekly Growth</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MAIN /PREMIUM PAGE COMPONENT
+   ═══════════════════════════════════════════════════════════════════════════ */
 export default function PremiumPage() {
   const router = useRouter();
   const shouldReduceMotion = useReducedMotion();
-  const { user, isAuthenticated } = useAuth();
-  const { isPremium, premiumUntil } = usePremium();
+  const { user } = useAuth();
+  const { isPremium, premiumUntil, loading: premiumLoading } = usePremium();
   const { userRank } = useRankTheme();
 
-  const [showFullComparison, setShowFullComparison] = useState(false);
-
   // Dynamic Razorpay checkout & live plan rates
-  const {
-    plans,
-    isProcessing,
-    startCheckout,
-  } = useRazorpayCheckout();
+  const { plans, isProcessing, startCheckout } = useRazorpayCheckout();
 
   const monthlyFormatted = plans?.monthly?.formattedAmount || '₹499';
   const yearlyFormatted = plans?.yearly?.formattedAmount || '₹4,999';
   const monthlyAmount = plans?.monthly?.amount ? plans.monthly.amount / 100 : 499;
   const yearlyAmount = plans?.yearly?.amount ? plans.yearly.amount / 100 : 4999;
   const savingPercentage = Math.max(
-    1,
+    0,
     Math.round((1 - yearlyAmount / (monthlyAmount * 12)) * 100)
   );
 
-  // Scroll helpers
+  // Track if pricing section is visible on screen to hide mobile sticky bar
+  const pricingRef = useRef<HTMLDivElement>(null);
+  const [isPricingVisible, setIsPricingVisible] = useState(false);
+
+  useEffect(() => {
+    const el = pricingRef.current;
+    if (!el || typeof window === 'undefined') return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsPricingVisible(entry.isIntersecting);
+      },
+      { threshold: 0.1 }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  // FAQ Accordion State
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
+
+  // Smooth scroll helpers
   const handleScrollToPricing = () => {
     const el = document.getElementById(isPremium ? 'premium-status-section' : 'pricing');
     if (el) {
@@ -87,693 +778,469 @@ export default function PremiumPage() {
     : null;
 
   return (
-    <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] selection:bg-[#E6C15A]/30 selection:text-[#F6EFD9] relative overflow-x-hidden">
-      {/* Background Subtle Ambience */}
-      <div className="fixed inset-0 pointer-events-none bg-dot-grid opacity-40 z-0" />
-      
-      {/* Top Center Amber Glow Orb */}
+    <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] selection:bg-[#E6C15A]/30 selection:text-[#F6EFD9] relative overflow-x-hidden pb-24 lg:pb-12">
+      {/* Barely visible SVG film grain (~3% opacity) */}
+      <svg
+        aria-hidden="true"
+        className="pointer-events-none fixed inset-0 z-[2] h-full w-full opacity-[0.03]"
+      >
+        <filter id="premium-grain">
+          <feTurbulence
+            type="fractalNoise"
+            baseFrequency="0.75"
+            numOctaves="3"
+            stitchTiles="stitch"
+          />
+        </filter>
+        <rect width="100%" height="100%" filter="url(#premium-grain)" />
+      </svg>
+
+      {/* Dotted grid background */}
+      <div className="fixed inset-0 pointer-events-none bg-dot-grid opacity-30 z-0" />
+
+      {/* Two soft warm-gold radial ambient glows */}
       <div
-        className="fixed top-0 left-1/2 -translate-x-1/2 w-[650px] h-[450px] rounded-full blur-[150px] pointer-events-none opacity-25 z-0"
+        className="pointer-events-none fixed -top-24 left-1/4 h-[500px] w-[500px] -translate-x-1/2 rounded-full blur-[160px] opacity-20 z-0"
+        style={{ backgroundColor: '#E6C15A' }}
+      />
+      <div
+        className="pointer-events-none fixed top-1/2 right-0 h-[450px] w-[450px] rounded-full blur-[160px] opacity-15 z-0"
         style={{ backgroundColor: '#E6C15A' }}
       />
 
-      {/* Top Navigation Bar */}
+      {/* Slim Top Navigation Bar */}
       <header className="sticky top-0 z-40 w-full border-b border-[var(--border)] bg-[var(--bg)]/85 backdrop-blur-xl">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <Link
             href="/dashboard"
-            className="flex items-center gap-2.5 text-[var(--text-dim)] hover:text-[var(--text)] transition-colors text-xs font-hud font-bold tracking-wider group cursor-pointer"
+            className="flex items-center gap-2 text-white/60 hover:text-white transition-colors text-xs font-hud font-bold tracking-wider group cursor-pointer"
           >
-            <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+            <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-1" />
             <div className="flex items-center gap-2">
-              <Logo className="w-6 h-6" />
-              <span className="hidden sm:inline">BACK TO DASHBOARD</span>
+              <Logo className="w-5 h-5" />
+              <span>Back to dashboard</span>
             </div>
           </Link>
 
-          <div className="flex items-center gap-3">
-            {isPremium ? (
+          {/* Status chip with skeleton fallback while loading */}
+          <div>
+            {premiumLoading ? (
+              <div className="h-6 w-24 rounded-full bg-white/10 animate-pulse" />
+            ) : isPremium ? (
               <span
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-hud font-bold tracking-wider uppercase border text-[#1A1405]"
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-hud font-bold tracking-wider uppercase text-[#1A1405]"
                 style={{
                   background: PREMIUM_GOLD_GRADIENT,
-                  borderColor: PREMIUM_GOLD_BORDER,
-                  boxShadow: `0 0 12px ${PREMIUM_GOLD_GLOW}`,
+                  boxShadow: '0 0 12px rgba(230,193,90,0.3)',
                 }}
               >
-                <Crown className="w-3.5 h-3.5 fill-current" />
-                <span>PREMIUM ACTIVE</span>
+                <Crown className="w-3 h-3 fill-current" />
+                <span>Premium Active</span>
               </span>
             ) : (
               <button
                 type="button"
                 onClick={handleScrollToPricing}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-hud font-bold tracking-wider uppercase text-[#1A1405] hover:opacity-95 active:scale-95 transition-all shadow-md cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-[10px] font-hud font-bold tracking-wider uppercase text-[#1A1405] hover:opacity-90 active:scale-95 transition-all cursor-pointer"
                 style={{ background: PREMIUM_GOLD_GRADIENT }}
               >
-                <Crown className="w-3.5 h-3.5 fill-current" />
-                <span>UPGRADE</span>
+                <Crown className="w-3 h-3 fill-current" />
+                <span>Upgrade</span>
               </button>
             )}
           </div>
         </div>
       </header>
 
-      <main className="relative z-10">
-        {/* SECTION 1: HERO */}
+      <main className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6">
+        {/* ═══════════════════════════════════════════════════════════════════
+            SECTION 1: ASYMMETRIC HERO
+            ═══════════════════════════════════════════════════════════════════ */}
         <section
           aria-labelledby="hero-heading"
-          className="w-full pt-12 pb-16 sm:pt-20 sm:pb-24 max-w-4xl mx-auto px-4 sm:px-6 flex flex-col items-center text-center relative"
+          className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center pt-10 sm:pt-16 pb-12 sm:pb-16"
         >
-          {/* Floating Crest */}
-          <div className="relative mb-5">
-            <div
-              className={`transition-transform duration-300 ${
-                !shouldReduceMotion ? 'animate-crest-float' : ''
-              }`}
+          {/* Left Column: Text & Buttons */}
+          <div className="lg:col-span-7 flex flex-col items-start text-left">
+            {/* Small Gold Pill */}
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-[rgba(230,193,90,0.3)] bg-[#E6C15A]/10 text-[10px] font-hud font-bold uppercase tracking-widest text-[#E6C15A] mb-4">
+              <Crown className="w-3 h-3 fill-current" />
+              <span>Premium</span>
+            </div>
+
+            {/* Display Headline */}
+            <h1
+              id="hero-heading"
+              className="text-4xl sm:text-5xl lg:text-6xl font-hud font-black tracking-tight leading-[1.08] text-transparent bg-clip-text"
               style={{
-                animationDuration: '6s',
-                animationIterationCount: 'infinite',
-                animationTimingFunction: 'ease-in-out',
+                backgroundImage: PREMIUM_GOLD_GRADIENT,
               }}
             >
-              <RankCrestBadge
-                tier={userRank.tier}
-                division={userRank.division}
-                size={84}
-                className="drop-shadow-2xl"
-              />
-            </div>
-            <div
-              className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-20 h-5 rounded-full blur-xl opacity-60 pointer-events-none"
-              style={{ backgroundColor: '#E6C15A' }}
-            />
-          </div>
+              Study with an unfair advantage.
+            </h1>
 
-          {/* Premium Pill Badge */}
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-[#E6C15A]/15 to-[#B8892B]/10 border border-[#E6C15A]/30 text-xs font-hud font-bold tracking-widest uppercase text-[#F5E6A8] mb-4 shadow-[0_0_20px_rgba(230,193,90,0.12)] backdrop-blur-md">
-            <Crown className="w-3.5 h-3.5 text-[#E6C15A] fill-current" />
-            <span>study.io Premium</span>
-          </div>
-
-          {/* Headline */}
-          <h1
-            id="hero-heading"
-            className="text-3xl sm:text-5xl md:text-6xl font-hud font-black text-[var(--text)] tracking-tight leading-[1.12] max-w-2xl"
-          >
-            Study with an unfair advantage.
-          </h1>
-
-          {/* Subtitle */}
-          <p className="text-sm sm:text-base text-[var(--text-dim)] mt-4 mb-8 max-w-xl leading-relaxed">
-            Handcrafted themes, deep historical analytics, weekly report cards, daily focus quotas, and verified scholar prestige — built for people who take learning seriously.
-          </p>
-
-          {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-            <button
-              type="button"
-              onClick={handleScrollToPricing}
-              className="w-full sm:w-auto relative overflow-hidden px-8 py-3.5 rounded-2xl text-[#1A1405] font-hud font-extrabold text-xs sm:text-sm tracking-wider uppercase transition-all hover:scale-105 active:scale-95 shadow-xl cursor-pointer flex items-center justify-center gap-2"
-              style={{
-                background: PREMIUM_GOLD_GRADIENT,
-                boxShadow: `0 0 24px ${PREMIUM_GOLD_GLOW}`,
-              }}
-            >
-              <span>{isPremium ? 'VIEW YOUR MEMBERSHIP' : 'SEE PLANS & PRICING'}</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-
-            <button
-              type="button"
-              onClick={handleScrollToFeatures}
-              className="w-full sm:w-auto px-6 py-3.5 rounded-2xl text-xs font-hud font-bold tracking-wider uppercase text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-white/[0.04] border border-[var(--border)] transition-all cursor-pointer"
-            >
-              Explore Included Features
-            </button>
-          </div>
-
-          {/* Trust bullet row */}
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-4 text-[11px] text-[var(--text-dim)]">
-            <span className="flex items-center gap-1.5">
-              <Check className="w-3.5 h-3.5 text-[#E6C15A]" />
-              <span>Instant Account Activation</span>
-            </span>
-            <span className="text-[var(--border-strong)]">•</span>
-            <span className="flex items-center gap-1.5">
-              <Check className="w-3.5 h-3.5 text-[#E6C15A]" />
-              <span>Cancel Anytime in Settings</span>
-            </span>
-            <span className="text-[var(--border-strong)]">•</span>
-            <span className="flex items-center gap-1.5">
-              <Check className="w-3.5 h-3.5 text-[#E6C15A]" />
-              <span>Secured by Razorpay</span>
-            </span>
-          </div>
-        </section>
-
-        {/* SECTION 2: THE 6 REAL PREMIUM PRIVILEGES */}
-        <section
-          id="features"
-          aria-labelledby="features-heading"
-          className="w-full py-16 sm:py-24 border-t border-[var(--border)] bg-gradient-to-b from-black/[0.25] via-transparent to-black/[0.15]"
-        >
-          <div className="max-w-6xl mx-auto px-4 sm:px-6">
-            <div className="text-center max-w-xl mx-auto mb-12 sm:mb-16">
-              <span className="text-[10px] font-hud uppercase tracking-widest text-[#E6C15A] font-bold block mb-1">
-                Everything Included
-              </span>
-              <h2
-                id="features-heading"
-                className="text-2xl sm:text-4xl font-hud font-extrabold tracking-tight text-[var(--text)]"
-              >
-                Six powerful tools. Zero clutter.
-              </h2>
-              <p className="text-xs sm:text-sm text-[var(--text-dim)] mt-2.5 leading-relaxed">
-                Every privilege unlocked with study.io Premium is designed to keep you in flow:
-              </p>
-            </div>
-
-            {/* 6 Feature Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {/* Feature 1: Handcrafted Luxury Themes */}
-              <div className="p-6 rounded-3xl bg-[var(--surface)] border border-[var(--border)] hover:border-[#E6C15A]/40 transition-all shadow-md flex flex-col justify-between group">
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="w-10 h-10 rounded-2xl bg-[#E6C15A]/15 border border-[#E6C15A]/30 text-[#E6C15A] flex items-center justify-center shadow-[0_0_15px_rgba(230,193,90,0.15)]">
-                      <Palette className="w-5 h-5" />
-                    </div>
-                    <span className="text-[10px] font-hud uppercase tracking-widest font-extrabold px-2.5 py-0.5 rounded-full bg-white/[0.04] text-[#E6C15A] border border-[#E6C15A]/25">
-                      Aesthetics
-                    </span>
-                  </div>
-                  <h3 className="font-hud font-bold text-base sm:text-lg text-[var(--text)] mb-2">
-                    Gold Leaf &amp; Crimson Themes
-                  </h3>
-                  <p className="text-xs text-[var(--text-dim)] leading-relaxed">
-                    Exclusive handcrafted colorways with warm amber and deep ruby velvet tones, engineered to protect your eyes during late-night study marathons.
-                  </p>
-                </div>
-
-                {/* Color Swatch Visual */}
-                <div className="mt-5 grid grid-cols-2 gap-2.5">
-                  <div className="p-2.5 rounded-xl bg-[#14120B] border border-[#E6C15A]/40 flex items-center gap-2">
-                    <div className="w-3.5 h-3.5 rounded-full bg-[#E6C15A] shadow-[0_0_8px_rgba(230,193,90,0.6)]" />
-                    <span className="text-[11px] font-hud font-bold text-[#F5E6A8]">Gold Leaf</span>
-                  </div>
-                  <div className="p-2.5 rounded-xl bg-[#170C0F] border border-rose-500/40 flex items-center gap-2">
-                    <div className="w-3.5 h-3.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]" />
-                    <span className="text-[11px] font-hud font-bold text-rose-200">Crimson</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Feature 2: Historical Date & Calendar Navigation */}
-              <div className="p-6 rounded-3xl bg-[var(--surface)] border border-[var(--border)] hover:border-[#E6C15A]/40 transition-all shadow-md flex flex-col justify-between group">
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="w-10 h-10 rounded-2xl bg-[#E6C15A]/15 border border-[#E6C15A]/30 text-[#E6C15A] flex items-center justify-center shadow-[0_0_15px_rgba(230,193,90,0.15)]">
-                      <Calendar className="w-5 h-5" />
-                    </div>
-                    <span className="text-[10px] font-hud uppercase tracking-widest font-extrabold px-2.5 py-0.5 rounded-full bg-white/[0.04] text-[#E6C15A] border border-[#E6C15A]/25">
-                      Analytics
-                    </span>
-                  </div>
-                  <h3 className="font-hud font-bold text-base sm:text-lg text-[var(--text)] mb-2">
-                    Deep Calendar History Navigation
-                  </h3>
-                  <p className="text-xs text-[var(--text-dim)] leading-relaxed">
-                    Scrub back through historical days, inspect previous calendar months, and explore your temporal focus chart across all past study seasons.
-                  </p>
-                </div>
-
-                {/* Calendar Navigation Visual */}
-                <div className="mt-5 p-2.5 rounded-xl bg-[var(--surface-2)]/80 border border-[var(--border)] flex items-center justify-between text-[11px] text-[var(--text-dim)]">
-                  <div className="flex items-center gap-1.5 font-hud-mono">
-                    <Clock className="w-3.5 h-3.5 text-[#E6C15A]" />
-                    <span>Past Months &amp; Days</span>
-                  </div>
-                  <span className="text-[#E6C15A] font-semibold">Unlimited History</span>
-                </div>
-              </div>
-
-              {/* Feature 3: Automated Weekly Performance Reports */}
-              <div className="p-6 rounded-3xl bg-[var(--surface)] border border-[var(--border)] hover:border-[#E6C15A]/40 transition-all shadow-md flex flex-col justify-between group">
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="w-10 h-10 rounded-2xl bg-[#E6C15A]/15 border border-[#E6C15A]/30 text-[#E6C15A] flex items-center justify-center shadow-[0_0_15px_rgba(230,193,90,0.15)]">
-                      <TrendingUp className="w-5 h-5" />
-                    </div>
-                    <span className="text-[10px] font-hud uppercase tracking-widest font-extrabold px-2.5 py-0.5 rounded-full bg-white/[0.04] text-[#E6C15A] border border-[#E6C15A]/25">
-                      Reports
-                    </span>
-                  </div>
-                  <h3 className="font-hud font-bold text-base sm:text-lg text-[var(--text)] mb-2">
-                    Weekly Report Cards
-                  </h3>
-                  <p className="text-xs text-[var(--text-dim)] leading-relaxed">
-                    Automated week-over-week performance reports, subject time breakdowns, active days counts, and longest focus session tracking.
-                  </p>
-                </div>
-
-                {/* Metric Visual */}
-                <div className="mt-5 p-2.5 rounded-xl bg-[var(--surface-2)]/80 border border-[var(--border)] flex items-center justify-between text-[11px]">
-                  <span className="text-emerald-400 font-semibold font-mono">+3h 40m vs last week</span>
-                  <span className="text-[var(--text-dim)]">Top: Mathematics</span>
-                </div>
-              </div>
-
-              {/* Feature 4: Daily Focus Goals & Streaks */}
-              <div className="p-6 rounded-3xl bg-[var(--surface)] border border-[var(--border)] hover:border-[#E6C15A]/40 transition-all shadow-md flex flex-col justify-between group">
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="w-10 h-10 rounded-2xl bg-[#E6C15A]/15 border border-[#E6C15A]/30 text-[#E6C15A] flex items-center justify-center shadow-[0_0_15px_rgba(230,193,90,0.15)]">
-                      <Target className="w-5 h-5" />
-                    </div>
-                    <span className="text-[10px] font-hud uppercase tracking-widest font-extrabold px-2.5 py-0.5 rounded-full bg-white/[0.04] text-[#E6C15A] border border-[#E6C15A]/25">
-                      Discipline
-                    </span>
-                  </div>
-                  <h3 className="font-hud font-bold text-base sm:text-lg text-[var(--text)] mb-2">
-                    Focus Goals &amp; Goal Streaks
-                  </h3>
-                  <p className="text-xs text-[var(--text-dim)] leading-relaxed">
-                    Set daily minute quotas, watch live gold progress rings fill around the study timer in real time, and build dedicated daily goal streaks.
-                  </p>
-                </div>
-
-                {/* Streak Visual */}
-                <div className="mt-5 p-2.5 rounded-xl bg-[var(--surface-2)]/80 border border-[var(--border)] flex items-center justify-between text-[11px]">
-                  <span className="flex items-center gap-1.5 text-orange-400 font-bold">
-                    <Flame className="w-3.5 h-3.5 fill-current" />
-                    <span>14-Day Goal Streak</span>
-                  </span>
-                  <span className="text-[#E6C15A] font-mono">Live Timer Ring</span>
-                </div>
-              </div>
-
-              {/* Feature 5: Verified Scholar Crown Badge */}
-              <div className="p-6 rounded-3xl bg-[var(--surface)] border border-[var(--border)] hover:border-[#E6C15A]/40 transition-all shadow-md flex flex-col justify-between group">
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="w-10 h-10 rounded-2xl bg-[#E6C15A]/15 border border-[#E6C15A]/30 text-[#E6C15A] flex items-center justify-center shadow-[0_0_15px_rgba(230,193,90,0.15)]">
-                      <Crown className="w-5 h-5 fill-current" />
-                    </div>
-                    <span className="text-[10px] font-hud uppercase tracking-widest font-extrabold px-2.5 py-0.5 rounded-full bg-white/[0.04] text-[#E6C15A] border border-[#E6C15A]/25">
-                      Prestige
-                    </span>
-                  </div>
-                  <h3 className="font-hud font-bold text-base sm:text-lg text-[var(--text)] mb-2">
-                    Verified Scholar Crown Badge
-                  </h3>
-                  <p className="text-xs text-[var(--text-dim)] leading-relaxed">
-                    Stand out in community study lounges and monthly leaderboard ladders with the signature golden scholar crown badge beside your name.
-                  </p>
-                </div>
-
-                {/* Prestige Visual */}
-                <div className="mt-5 p-2.5 rounded-xl bg-[var(--surface-2)]/80 border border-[var(--border)] flex items-center justify-between text-[11px]">
-                  <div className="flex items-center gap-2">
-                    <span className="text-base leading-none">👑</span>
-                    <span className="font-bold text-[var(--text)]">Verified Scholar</span>
-                  </div>
-                  <span className="text-[#E6C15A] font-hud font-bold tracking-wider text-[10px]">ALL ROOMS &amp; BOARDS</span>
-                </div>
-              </div>
-
-              {/* Feature 6: 1080×1920 Story Cards */}
-              <div className="p-6 rounded-3xl bg-[var(--surface)] border border-[var(--border)] hover:border-[#E6C15A]/40 transition-all shadow-md flex flex-col justify-between group">
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="w-10 h-10 rounded-2xl bg-[#E6C15A]/15 border border-[#E6C15A]/30 text-[#E6C15A] flex items-center justify-center shadow-[0_0_15px_rgba(230,193,90,0.15)]">
-                      <Share2 className="w-5 h-5" />
-                    </div>
-                    <span className="text-[10px] font-hud uppercase tracking-widest font-extrabold px-2.5 py-0.5 rounded-full bg-white/[0.04] text-[#E6C15A] border border-[#E6C15A]/25">
-                      Milestones
-                    </span>
-                  </div>
-                  <h3 className="font-hud font-bold text-base sm:text-lg text-[var(--text)] mb-2">
-                    1080×1920 Season Story Cards
-                  </h3>
-                  <p className="text-xs text-[var(--text-dim)] leading-relaxed">
-                    Export high-definition 1080×1920 seasonal milestone recap cards without watermarks or blur, ready to share on Instagram, WhatsApp, and socials.
-                  </p>
-                </div>
-
-                {/* Export Visual */}
-                <div className="mt-5 p-2.5 rounded-xl bg-[var(--surface-2)]/80 border border-[var(--border)] flex items-center justify-between text-[11px]">
-                  <span className="text-[#E6C15A] font-semibold">1080×1920 PNG Export</span>
-                  <span className="text-emerald-400 font-bold">Unblurred HD</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Quick Summary Pill Row */}
-            <div className="mt-12 pt-8 border-t border-[var(--border)]/60 text-center">
-              <span className="text-[10px] font-hud uppercase tracking-widest text-[var(--text-dim)] font-bold block mb-4">
-                Summary of Included Privileges
-              </span>
-              <div className="flex flex-wrap justify-center items-center gap-2.5 max-w-3xl mx-auto">
-                {[
-                  'Gold Leaf & Crimson Themes',
-                  'Historical Calendar & Date Browsing',
-                  'Automated Weekly Progress Reports',
-                  'Custom Daily & Weekly Focus Goals',
-                  'Live Circular Timer Progress Ring',
-                  'Dedicated Daily Goal Streaks',
-                  'Verified Scholar Crown Badge',
-                  '1080×1920 High-Res Story Cards',
-                  'Zero Advertisements & Pure Focus',
-                ].map((feat) => (
-                  <span
-                    key={feat}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/[0.03] border border-[var(--border)] text-xs font-medium text-[var(--text)] hover:border-[#E6C15A]/40 transition-colors"
-                  >
-                    <Check className="w-3.5 h-3.5 text-[#E6C15A]" />
-                    <span>{feat}</span>
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* SECTION 3: MEMBERSHIP PRICING */}
-        <section
-          id="pricing"
-          aria-labelledby="pricing-heading"
-          className="w-full py-16 sm:py-24 border-t border-[var(--border)] bg-gradient-to-b from-black/[0.3] to-transparent relative"
-        >
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
-            <span className="text-[10px] font-hud uppercase tracking-widest text-[#E6C15A] font-bold block mb-1">
-              Transparent Membership
-            </span>
-            <h2
-              id="pricing-heading"
-              className="text-2xl sm:text-4xl font-hud font-extrabold tracking-tight text-[var(--text)]"
-            >
-              Choose your plan. Elevate your study.
-            </h2>
-            <p className="text-xs sm:text-sm text-[var(--text-dim)] mt-2 mb-10 max-w-md mx-auto">
-              Straightforward pricing with all 6 features included. No hidden tiers, no sudden upgrades.
+            {/* Subline strictly 10 words or fewer */}
+            <p className="mt-3.5 text-base sm:text-lg text-white/70 max-w-lg leading-snug">
+              Themes, goals, reports and flair for serious studiers.
             </p>
 
-            {/* Pricing Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto text-left">
-              {/* Monthly Plan */}
-              <div className="p-7 rounded-3xl bg-[var(--surface)] border border-[var(--border)] hover:border-[var(--border-strong)] transition-all flex flex-col justify-between shadow-xl">
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-hud font-bold text-xs uppercase tracking-wider text-[var(--text-dim)]">
-                      Monthly
-                    </span>
-                    <span className="text-[10px] font-hud uppercase px-2 py-0.5 rounded-full bg-white/[0.05] text-[var(--text-dim)]">
-                      Flexible
-                    </span>
-                  </div>
-                  <div className="text-3xl sm:text-4xl font-hud font-extrabold text-[var(--text)] mt-2">
-                    {monthlyFormatted}
-                    <span className="text-xs font-mono text-[var(--text-dim)] font-normal"> / month</span>
-                  </div>
-                  <p className="text-xs text-[var(--text-dim)] mt-2">
-                    Full access to all 6 premium features. Billed monthly, cancel anytime.
-                  </p>
-
-                  <ul className="mt-6 space-y-2.5 text-xs text-[var(--text-dim)] border-t border-[var(--border)]/70 pt-5">
-                    <li className="flex items-center gap-2 text-[var(--text)]">
-                      <Check className="w-4 h-4 text-[#E6C15A]" />
-                      <span>All 6 Premium features included</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check className="w-4 h-4 text-[#E6C15A]" />
-                      <span>Cancel anytime in 1 click</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check className="w-4 h-4 text-[#E6C15A]" />
-                      <span>Instant account activation</span>
-                    </li>
-                  </ul>
-                </div>
-
+            {/* Action Buttons: Skeleton while loading to prevent upsell flash */}
+            <div className="mt-7 flex flex-wrap items-center gap-3">
+              {premiumLoading ? (
+                <div className="h-11 w-36 rounded-2xl bg-white/10 animate-pulse" />
+              ) : isPremium ? (
                 <button
                   type="button"
-                  id="subscribe-monthly-btn"
-                  onClick={() => startCheckout('monthly')}
-                  disabled={isProcessing}
-                  className="mt-8 w-full py-3 rounded-xl font-hud font-bold text-xs uppercase tracking-wider bg-white/10 hover:bg-white/15 text-[var(--text)] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {isProcessing ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span>Initializing...</span>
-                    </>
-                  ) : (
-                    <span>Subscribe Monthly</span>
-                  )}
-                </button>
-              </div>
-
-              {/* Yearly Plan (Featured) */}
-              <div
-                className="p-7 rounded-3xl bg-[var(--surface)] border flex flex-col justify-between relative overflow-hidden shadow-2xl"
-                style={{
-                  borderColor: PREMIUM_GOLD_BORDER,
-                  boxShadow: `0 0 30px ${PREMIUM_GOLD_GLOW}`,
-                }}
-              >
-                {/* Save Badge */}
-                <div className="absolute top-4 right-4 text-[9px] font-hud uppercase tracking-widest font-extrabold px-2.5 py-1 rounded-full bg-[#E6C15A]/20 text-[#E6C15A] border border-[#E6C15A]/40 shadow-sm">
-                  Save {savingPercentage}% • 2 Months Free
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-hud font-bold text-xs uppercase tracking-wider text-[#E6C15A]">
-                      Yearly Plan
-                    </span>
-                  </div>
-                  <div className="text-3xl sm:text-4xl font-hud font-extrabold text-[var(--text)] mt-2">
-                    {yearlyFormatted}
-                    <span className="text-xs font-mono text-[var(--text-dim)] font-normal"> / year</span>
-                  </div>
-                  <p className="text-xs text-[var(--text-dim)] mt-2">
-                    Billed annually. Best value for dedicated scholars committed to their craft.
-                  </p>
-
-                  <ul className="mt-6 space-y-2.5 text-xs text-[var(--text-dim)] border-t border-[var(--border)]/70 pt-5">
-                    <li className="flex items-center gap-2 text-[var(--text)] font-semibold">
-                      <Check className="w-4 h-4 text-[#E6C15A]" />
-                      <span>All 6 Premium features included</span>
-                    </li>
-                    <li className="flex items-center gap-2 text-[var(--text)]">
-                      <Check className="w-4 h-4 text-[#E6C15A]" />
-                      <span>Save {savingPercentage}% vs monthly billing</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check className="w-4 h-4 text-[#E6C15A]" />
-                      <span>Cancel renewal anytime in Settings</span>
-                    </li>
-                  </ul>
-                </div>
-
-                <button
-                  type="button"
-                  id="subscribe-yearly-btn"
-                  onClick={() => startCheckout('yearly')}
-                  disabled={isProcessing}
-                  className="mt-8 w-full py-3.5 rounded-xl font-hud font-bold text-xs uppercase tracking-wider text-[#1A1405] transition-all cursor-pointer shadow-lg hover:brightness-105 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  onClick={handleScrollToPricing}
+                  className="px-6 py-3 rounded-2xl font-hud font-bold text-xs uppercase tracking-wider text-[#1A1405] hover:opacity-95 active:scale-95 transition-all shadow-lg cursor-pointer flex items-center gap-2"
                   style={{ background: PREMIUM_GOLD_GRADIENT }}
                 >
-                  {isProcessing ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span>Initializing...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-3.5 h-3.5" />
-                      <span>Subscribe Yearly</span>
-                    </>
-                  )}
+                  <span>View your benefits</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
                 </button>
-              </div>
-            </div>
-
-            {/* Assurance footer */}
-            <div className="mt-10 p-4 rounded-2xl bg-[var(--surface-2)]/60 border border-[var(--border)] max-w-xl mx-auto flex items-center justify-center gap-6 text-xs text-[var(--text-dim)]">
-              <span className="flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-[#E6C15A]" />
-                <span>Encrypted Razorpay Checkout</span>
-              </span>
-              <span>•</span>
-              <span className="flex items-center gap-1.5">
-                <Crown className="w-4 h-4 text-[#E6C15A] fill-current" />
-                <span>Instant Pro Status</span>
-              </span>
-            </div>
-
-            {/* Collapsible Comparison Table Trigger */}
-            <div className="mt-12 text-center">
-              <button
-                type="button"
-                id="toggle-comparison-table-btn"
-                onClick={() => setShowFullComparison(!showFullComparison)}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-hud font-bold tracking-wider text-[var(--text-dim)] hover:text-[var(--text)] bg-[var(--surface-2)] border border-[var(--border)] hover:border-[var(--border-strong)] transition-all cursor-pointer shadow-sm"
-              >
-                <span>{showFullComparison ? 'Hide detailed feature breakdown' : 'Compare Free vs Premium side-by-side'}</span>
-                <ChevronDown
-                  className={`w-3.5 h-3.5 transition-transform duration-200 ${
-                    showFullComparison ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
-
-              {showFullComparison && (
-                <div className="mt-8 text-left animate-in fade-in duration-300">
-                  <ComparisonTable />
-                </div>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleScrollToPricing}
+                    className="px-6 py-3 rounded-2xl font-hud font-extrabold text-xs uppercase tracking-wider text-[#1A1405] hover:opacity-95 active:scale-95 transition-all shadow-lg cursor-pointer flex items-center gap-2"
+                    style={{ background: PREMIUM_GOLD_GRADIENT }}
+                  >
+                    <span>Get Premium</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleScrollToFeatures}
+                    className="px-5 py-3 rounded-2xl text-xs font-hud font-bold tracking-wider uppercase text-white/60 hover:text-white hover:bg-white/5 border border-white/10 transition-all cursor-pointer"
+                  >
+                    See what&apos;s included
+                  </button>
+                </>
               )}
             </div>
+
+            {/* True facts line: No fake timers or countdowns */}
+            <p className="mt-4 text-[11px] text-white/40">
+              Billed via Razorpay • Cancel renewal anytime in Settings
+            </p>
+          </div>
+
+          {/* Right Column: Floating CSS Product Mockup */}
+          <div className="lg:col-span-5 flex justify-center lg:justify-end">
+            <HeroProductMockup
+              tier={userRank.tier}
+              division={userRank.division}
+            />
           </div>
         </section>
 
-        {/* SECTION 4: FREQUENTLY ASKED QUESTIONS */}
+        {/* ═══════════════════════════════════════════════════════════════════
+            SECTION 2: FEATURE BENTO GRID (The Main Event)
+            ═══════════════════════════════════════════════════════════════════ */}
         <section
-          aria-labelledby="faq-heading"
-          className="w-full py-14 sm:py-20 border-t border-[var(--border)] bg-black/[0.15]"
+          id="features"
+          aria-labelledby="bento-heading"
+          className="pt-10 sm:pt-14 pb-16 sm:pb-20"
         >
-          <div className="max-w-3xl mx-auto px-4 sm:px-6">
-            <div className="text-center mb-10 sm:mb-12">
-              <span className="text-[10px] font-hud uppercase tracking-widest text-[#E6C15A] font-bold block mb-1">
-                Got Questions?
-              </span>
-              <h2
-                id="faq-heading"
-                className="text-2xl sm:text-3xl font-hud font-extrabold tracking-tight text-[var(--text)]"
-              >
-                Frequently Asked Questions
-              </h2>
-            </div>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            {/* ROW 1: Themes (cols 1-7) */}
+            <BentoCard
+              title="Gold Leaf & Crimson"
+              caption="Two exclusive themes."
+              className="lg:col-span-7 min-h-[240px] sm:min-h-[260px]"
+              isPremium={isPremium}
+              href="/dashboard"
+              delayIndex={0}
+            >
+              <ThemesDemo />
+            </BentoCard>
 
-            <div className="space-y-3.5">
-              {[
-                {
-                  q: 'Can I cancel my subscription anytime?',
-                  a: 'Yes, absolutely. You can cancel at any time with a single click under Settings > Plan. You will retain full access to all premium features until the end of your paid billing period, and your card will never be charged again.',
-                },
-                {
-                  q: 'Do the free study tools stay free forever?',
-                  a: 'Yes, 100%. All core tools — precision focus timers, task checklists, community study rooms, and ranked monthly progression — are permanently free for all scholars.',
-                },
-                {
-                  q: 'What payment methods are supported?',
-                  a: 'We use Razorpay, which securely accepts credit and debit cards (Visa, Mastercard, RuPay, Amex), UPI mandates, and net banking.',
-                },
-                {
-                  q: 'How do I access my premium features after purchasing?',
-                  a: 'Your account is upgraded immediately upon verified payment. Your Gold Leaf and Crimson themes will be unlocked in Settings > Appearance, and your weekly report cards and historical calendar navigation will become active on the Stats tab right away.',
-                },
-              ].map((item, idx) => (
-                <div
-                  key={idx}
-                  className="p-5 rounded-2xl bg-[var(--surface)] border border-[var(--border)] text-left"
-                >
-                  <h3 className="font-hud font-bold text-sm text-[var(--text)] mb-2 flex items-center gap-2">
-                    <HelpCircle className="w-4 h-4 text-[#E6C15A] shrink-0" />
-                    <span>{item.q}</span>
-                  </h3>
-                  <p className="text-xs text-[var(--text-dim)] leading-relaxed pl-6">
-                    {item.a}
-                  </p>
-                </div>
-              ))}
-            </div>
+            {/* ROW 1 & 2: Story Cards (cols 8-12, spans rows 1-2) */}
+            <BentoCard
+              title="Story cards"
+              caption="Share your season in HD."
+              className="lg:col-span-5 lg:row-span-2 min-h-[260px] sm:min-h-[360px]"
+              isPremium={isPremium}
+              href="/recap"
+              delayIndex={1}
+            >
+              <StoryCardsDemo
+                tier={userRank.tier}
+                division={userRank.division}
+              />
+            </BentoCard>
+
+            {/* ROW 2: Weekly Report (cols 1-4) */}
+            <BentoCard
+              title="Weekly report"
+              caption="This week vs last, at a glance."
+              className="lg:col-span-4 min-h-[240px] sm:min-h-[260px]"
+              isPremium={isPremium}
+              href="/dashboard"
+              delayIndex={2}
+            >
+              <WeeklyReportDemo />
+            </BentoCard>
+
+            {/* ROW 2: Daily Goals (cols 5-7) */}
+            <BentoCard
+              title="Daily goals"
+              caption="A gold ring that fills as you study."
+              className="lg:col-span-3 min-h-[240px] sm:min-h-[260px]"
+              isPremium={isPremium}
+              href="/dashboard"
+              delayIndex={3}
+            >
+              <DailyGoalsDemo />
+            </BentoCard>
+
+            {/* ROW 3: Time Travel (cols 1-6) */}
+            <BentoCard
+              title="Time travel"
+              caption="Browse every past day and month."
+              className="lg:col-span-6 min-h-[240px] sm:min-h-[260px]"
+              isPremium={isPremium}
+              href="/dashboard"
+              delayIndex={4}
+            >
+              <TimeTravelDemo />
+            </BentoCard>
+
+            {/* ROW 3: Scholar Crown (cols 7-12) */}
+            <BentoCard
+              title="Scholar crown"
+              caption="Shown beside your name everywhere."
+              className="lg:col-span-6 min-h-[240px] sm:min-h-[260px]"
+              isPremium={isPremium}
+              href="/leaderboard"
+              delayIndex={5}
+            >
+              <ScholarCrownDemo />
+            </BentoCard>
           </div>
         </section>
 
-        {/* SECTION 5: YOU'RE PREMIUM (Only visible if already active) */}
-        {isPremium && (
-          <section
-            id="premium-status-section"
-            aria-labelledby="status-heading"
-            className="w-full py-12 sm:py-16 border-t border-[var(--border)] bg-[#E6C15A]/[0.03]"
-          >
-            <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
-              <div
-                className="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-4 border"
-                style={{
-                  background: PREMIUM_GOLD_GRADIENT,
-                  borderColor: PREMIUM_GOLD_BORDER,
-                  boxShadow: `0 0 20px ${PREMIUM_GOLD_GLOW}`,
-                }}
-              >
-                <Crown className="w-7 h-7 text-[#1A1405] fill-current" />
+        {/* ═══════════════════════════════════════════════════════════════════
+            SECTION 3: PRICING / STATUS (Exact Existing Source Logic)
+            ═══════════════════════════════════════════════════════════════════ */}
+        <section
+          id="pricing"
+          ref={pricingRef}
+          aria-labelledby="pricing-heading"
+          className="pt-8 pb-14 border-t border-white/[0.08]"
+        >
+          {premiumLoading ? (
+            /* Skeleton while entitlements load: Prevents upsell flash! */
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 max-w-2xl mx-auto">
+              <div className="h-72 rounded-3xl bg-white/[0.04] border border-[rgba(230,193,90,0.14)] animate-pulse" />
+              <div className="h-72 rounded-3xl bg-white/[0.04] border border-[rgba(230,193,90,0.14)] animate-pulse" />
+            </div>
+          ) : isPremium ? (
+            /* Premium User Card */
+            <div
+              id="premium-status-section"
+              className="max-w-xl mx-auto rounded-3xl p-6 sm:p-8 text-center bg-white/[0.03] shadow-xl"
+              style={{
+                border: `1px solid ${PREMIUM_HAIRLINE}`,
+              }}
+            >
+              <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[#E6C15A]/15 border border-[#E6C15A]/30 text-[#E6C15A] mb-3">
+                <Crown className="w-6 h-6 fill-current" />
               </div>
-
-              <h2
-                id="status-heading"
-                className="text-2xl sm:text-4xl font-hud font-extrabold text-[var(--text)] tracking-tight"
-              >
-                You&apos;re a Premium Scholar
+              <h2 className="font-hud text-xl sm:text-2xl font-bold text-white">
+                You&apos;re Premium
               </h2>
-
-              <p className="text-xs sm:text-sm text-[var(--text-dim)] mt-2 mb-8">
+              <p className="mt-1.5 text-xs text-white/60">
                 {formattedDate
-                  ? `Your subscription is active until ${formattedDate}. All 6 premium features are unlocked.`
-                  : 'Your subscription is active. All 6 premium features are unlocked.'}
+                  ? `Active until ${formattedDate}. All features are unlocked.`
+                  : 'Your subscription is active. All features are unlocked.'}
               </p>
 
-              {/* Feature Shortcuts Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-left">
+              <div className="mt-6 flex justify-center">
                 <Link
                   href="/dashboard"
-                  className="p-5 rounded-2xl bg-[var(--surface)] border border-[var(--border)] hover:border-[#E6C15A]/40 transition-all block group"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-xs font-hud font-bold uppercase tracking-wider text-white transition-colors"
                 >
-                  <div className="w-10 h-10 rounded-xl bg-[var(--surface-2)] flex items-center justify-center text-[#E6C15A] mb-3 group-hover:scale-110 transition-transform">
-                    <Palette className="w-5 h-5" />
-                  </div>
-                  <h3 className="font-hud font-bold text-sm text-[var(--text)]">
-                    Theme Picker
-                  </h3>
-                  <p className="text-xs text-[var(--text-dim)] mt-1">
-                    Equip Gold Leaf or Crimson from settings.
-                  </p>
-                </Link>
-
-                <Link
-                  href="/dashboard"
-                  className="p-5 rounded-2xl bg-[var(--surface)] border border-[var(--border)] hover:border-[#E6C15A]/40 transition-all block group"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-[var(--surface-2)] flex items-center justify-center text-[#E6C15A] mb-3 group-hover:scale-110 transition-transform">
-                    <TrendingUp className="w-5 h-5" />
-                  </div>
-                  <h3 className="font-hud font-bold text-sm text-[var(--text)]">
-                    Weekly Report
-                  </h3>
-                  <p className="text-xs text-[var(--text-dim)] mt-1">
-                    Inspect your week-over-week trends on the Stats tab.
-                  </p>
-                </Link>
-
-                <Link
-                  href="/dashboard"
-                  className="p-5 rounded-2xl bg-[var(--surface)] border border-[var(--border)] hover:border-[#E6C15A]/40 transition-all block group"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-[var(--surface-2)] flex items-center justify-center text-[#E6C15A] mb-3 group-hover:scale-110 transition-transform">
-                    <Settings className="w-5 h-5" />
-                  </div>
-                  <h3 className="font-hud font-bold text-sm text-[var(--text)]">
-                    Manage Plan
-                  </h3>
-                  <p className="text-xs text-[var(--text-dim)] mt-1">
-                    Check renewal status or cancel under Settings &gt; Plan.
-                  </p>
+                  <span>Go to Settings</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </div>
             </div>
-          </section>
-        )}
+          ) : (
+            /* Free Users: Monthly & Yearly Cards */
+            <div className="max-w-2xl mx-auto">
+              <div className="text-center mb-8">
+                <h2
+                  id="pricing-heading"
+                  className="font-hud text-2xl font-bold text-white"
+                >
+                  Membership
+                </h2>
+                <p className="mt-1 text-xs text-white/50">
+                  Straightforward plans. All features included.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 text-left">
+                {/* Monthly Plan */}
+                <div
+                  className="rounded-3xl bg-white/[0.03] p-6 flex flex-col justify-between"
+                  style={{ border: `1px solid ${PREMIUM_HAIRLINE}` }}
+                >
+                  <div>
+                    <span className="font-hud text-xs font-bold uppercase text-white/60">
+                      Monthly
+                    </span>
+                    <div className="mt-2 text-3xl font-hud font-bold text-white">
+                      {monthlyFormatted}
+                      <span className="text-xs font-mono font-normal text-white/40">
+                        {' '}/ mo
+                      </span>
+                    </div>
+                    <p className="mt-2 text-xs text-white/50">
+                      Billed monthly. Cancel anytime.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => startCheckout('monthly')}
+                    disabled={isProcessing || !PAYMENTS_ENABLED}
+                    className="mt-6 w-full py-2.5 rounded-xl text-xs font-hud font-bold uppercase tracking-wider bg-white/10 hover:bg-white/15 text-white transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {isProcessing ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <span>Subscribe Monthly</span>
+                    )}
+                  </button>
+                </div>
+
+                {/* Yearly Plan (Highlighted) */}
+                <div
+                  className="rounded-3xl bg-white/[0.04] p-6 flex flex-col justify-between relative overflow-hidden"
+                  style={{
+                    border: '1px solid rgba(230, 193, 90, 0.4)',
+                    boxShadow: '0 0 25px rgba(230, 193, 90, 0.08)',
+                  }}
+                >
+                  {/* Real Computed Saving Tag */}
+                  {savingPercentage > 0 && (
+                    <div className="absolute top-4 right-4 rounded-full bg-[#E6C15A]/15 border border-[#E6C15A]/30 px-2.5 py-0.5 text-[9px] font-mono font-bold text-[#E6C15A]">
+                      Save {savingPercentage}%
+                    </div>
+                  )}
+
+                  <div>
+                    <span className="font-hud text-xs font-bold uppercase text-[#E6C15A]">
+                      Yearly
+                    </span>
+                    <div className="mt-2 text-3xl font-hud font-bold text-white">
+                      {yearlyFormatted}
+                      <span className="text-xs font-mono font-normal text-white/40">
+                        {' '}/ yr
+                      </span>
+                    </div>
+                    <p className="mt-2 text-xs text-white/50">
+                      Billed annually. Best value.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => startCheckout('yearly')}
+                    disabled={isProcessing || !PAYMENTS_ENABLED}
+                    className="mt-6 w-full py-3 rounded-xl text-xs font-hud font-bold uppercase tracking-wider text-[#1A1405] transition-all cursor-pointer hover:opacity-95 active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md"
+                    style={{ background: PREMIUM_GOLD_GRADIENT }}
+                  >
+                    {isProcessing ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <>
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>Subscribe Yearly</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </section>
+
+        {/* ═══════════════════════════════════════════════════════════════════
+            SECTION 4: FAQ (Three 1-Sentence Collapsible Items)
+            ═══════════════════════════════════════════════════════════════════ */}
+        <section aria-labelledby="faq-heading" className="pt-6 pb-12 max-w-xl mx-auto">
+          <h2
+            id="faq-heading"
+            className="font-hud text-lg font-bold text-white text-center mb-4"
+          >
+            FAQ
+          </h2>
+
+          <div className="space-y-2 text-left">
+            {[
+              {
+                q: 'What happens when my subscription ends?',
+                a: 'When your paid period ends, your account returns to the free tier and your data stays intact.',
+              },
+              {
+                q: 'How do I cancel?',
+                a: 'You can cancel renewal anytime in one click under Settings > Plan without any cancellation fee.',
+              },
+              {
+                q: 'Can I request a refund?',
+                a: '[owner to fill]',
+              },
+            ].map((faq, idx) => {
+              const isOpen = openFaq === idx;
+              return (
+                <div
+                  key={idx}
+                  className="rounded-2xl border border-white/[0.06] bg-white/[0.02] overflow-hidden transition-colors"
+                >
+                  <button
+                    type="button"
+                    onClick={() => setOpenFaq(isOpen ? null : idx)}
+                    className="w-full flex items-center justify-between p-3.5 text-left text-xs font-hud font-bold text-white hover:text-[#E6C15A] transition-colors cursor-pointer"
+                  >
+                    <span>{faq.q}</span>
+                    <ChevronDown
+                      className={`w-3.5 h-3.5 text-white/40 transition-transform duration-200 ${
+                        isOpen ? 'rotate-180' : ''
+                      }`}
+                    />
+                  </button>
+                  {isOpen && (
+                    <div className="px-3.5 pb-3.5 text-xs text-white/60 leading-relaxed border-t border-white/[0.04] pt-2">
+                      {faq.a}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </section>
       </main>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          MOBILE STICKY BOTTOM BAR (Free Users Only, Hidden When Pricing Visible)
+          ═══════════════════════════════════════════════════════════════════ */}
+      {!isPremium && !premiumLoading && !isPricingVisible && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 p-3 bg-[var(--bg)]/90 backdrop-blur-lg border-t border-white/10 lg:hidden pb-safe">
+          <button
+            type="button"
+            onClick={handleScrollToPricing}
+            className="w-full py-3 rounded-xl font-hud font-bold text-xs uppercase tracking-wider text-[#1A1405] shadow-lg cursor-pointer flex items-center justify-center gap-2"
+            style={{ background: PREMIUM_GOLD_GRADIENT }}
+          >
+            <span>Get Premium</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }
