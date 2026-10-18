@@ -26,6 +26,16 @@ create policy "read own subscription" on public.subscriptions
 
 -- No insert, update or delete policies. Only the server and the SQL editor can write.
 
+-- 2b. Billing Events Idempotency Table
+create table if not exists public.billing_events (
+  id text primary key,              -- Razorpay event id (idempotency)
+  type text not null,
+  payload jsonb not null,
+  received_at timestamptz not null default now()
+);
+alter table public.billing_events enable row level security; -- no policies
+create index if not exists idx_billing_events_received_at on public.billing_events(received_at desc);
+
 -- 3. Entitlements RPC
 create or replace function public.get_my_entitlements()
 returns table (is_premium boolean, premium_until timestamptz, plan text,

@@ -36,6 +36,7 @@ import { DemoGoalsTile } from '../../components/premium/showcase/DemoGoalsTile';
 import { DemoSeasonCardTile } from '../../components/premium/showcase/DemoSeasonCardTile';
 import { DemoFlairTile } from '../../components/premium/showcase/DemoFlairTile';
 import { ComparisonTable } from '../../components/premium/showcase/ComparisonTable';
+import { useRazorpayCheckout } from '../../hooks/useRazorpayCheckout';
 
 export default function PremiumPage() {
   const router = useRouter();
@@ -44,33 +45,20 @@ export default function PremiumPage() {
   const { isPremium, premiumUntil } = usePremium();
   const { userRank } = useRankTheme();
 
-  // Plans state (fetched when PAYMENTS_ENABLED is true)
-  const [plans, setPlans] = useState<{
-    monthly?: { amount: number; currency?: string };
-    yearly?: { amount: number; currency?: string };
-  } | null>(null);
+  // Dynamic Razorpay checkout & live plan rates
+  const {
+    plans,
+    isProcessing,
+    startCheckout,
+  } = useRazorpayCheckout();
 
-  useEffect(() => {
-    if (!PAYMENTS_ENABLED) return;
-    let isCancelled = false;
-    fetch('/api/plans')
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (!isCancelled && data) {
-          setPlans(data);
-        }
-      })
-      .catch(() => {});
-    return () => {
-      isCancelled = true;
-    };
-  }, []);
-
-  const monthlyPrice = plans?.monthly?.amount ?? 4.99;
-  const yearlyPrice = plans?.yearly?.amount ?? 39.99;
+  const monthlyFormatted = plans?.monthly?.formattedAmount || '₹499';
+  const yearlyFormatted = plans?.yearly?.formattedAmount || '₹4,999';
+  const monthlyAmount = plans?.monthly?.amount ? plans.monthly.amount / 100 : 499;
+  const yearlyAmount = plans?.yearly?.amount ? plans.yearly.amount / 100 : 4999;
   const savingPercentage = Math.max(
     1,
-    Math.round((1 - yearlyPrice / (monthlyPrice * 12)) * 100)
+    Math.round((1 - yearlyAmount / (monthlyAmount * 12)) * 100)
   );
 
   // Tiles reveal once on scroll (IntersectionObserver, fade and rise 12px, 60ms stagger)
@@ -467,7 +455,7 @@ export default function PremiumPage() {
                           Monthly
                         </div>
                         <div className="text-3xl font-hud font-extrabold text-[var(--text)] mt-2">
-                          ${monthlyPrice.toFixed(2)}
+                          {monthlyFormatted}
                           <span className="text-xs font-mono text-[var(--text-dim)] font-normal"> / month</span>
                         </div>
                         <p className="text-xs text-[var(--text-dim)] mt-2">
@@ -476,9 +464,12 @@ export default function PremiumPage() {
                       </div>
                       <button
                         type="button"
-                        className="mt-6 w-full py-2.5 rounded-xl font-hud font-bold text-xs uppercase tracking-wider bg-white/10 hover:bg-white/15 text-[var(--text)] transition-colors cursor-pointer"
+                        id="subscribe-monthly-btn"
+                        onClick={() => startCheckout('monthly')}
+                        disabled={isProcessing}
+                        className="mt-6 w-full py-2.5 rounded-xl font-hud font-bold text-xs uppercase tracking-wider bg-white/10 hover:bg-white/15 text-[var(--text)] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        Subscribe Monthly
+                        {isProcessing ? 'Processing...' : 'Subscribe Monthly'}
                       </button>
                     </div>
 
@@ -495,19 +486,22 @@ export default function PremiumPage() {
                           Yearly
                         </div>
                         <div className="text-3xl font-hud font-extrabold text-[var(--text)] mt-2">
-                          ${yearlyPrice.toFixed(2)}
+                          {yearlyFormatted}
                           <span className="text-xs font-mono text-[var(--text-dim)] font-normal"> / year</span>
                         </div>
                         <p className="text-xs text-[var(--text-dim)] mt-2">
-                          Billed annually (${(yearlyPrice / 12).toFixed(2)}/mo equivalent). Best value.
+                          Billed annually. Best overall value.
                         </p>
                       </div>
                       <button
                         type="button"
-                        className="mt-6 w-full py-2.5 rounded-xl font-hud font-bold text-xs uppercase tracking-wider text-[#1A1405] transition-all cursor-pointer shadow-md"
+                        id="subscribe-yearly-btn"
+                        onClick={() => startCheckout('yearly')}
+                        disabled={isProcessing}
+                        className="mt-6 w-full py-2.5 rounded-xl font-hud font-bold text-xs uppercase tracking-wider text-[#1A1405] transition-all cursor-pointer shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                         style={{ background: PREMIUM_GOLD_GRADIENT }}
                       >
-                        Subscribe Yearly
+                        {isProcessing ? 'Processing...' : 'Subscribe Yearly'}
                       </button>
                     </div>
                   </div>
