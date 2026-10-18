@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -14,6 +14,7 @@ import {
   Calendar,
   Flame,
   TrendingUp,
+  Share2,
   Sparkles,
 } from 'lucide-react';
 import { useReducedMotion } from 'framer-motion';
@@ -27,16 +28,12 @@ import { useRazorpayCheckout } from '../../hooks/useRazorpayCheckout';
 import { PAYMENTS_ENABLED } from '../../config/billing';
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   COSMIC IRIS & AURORA PALETTE (Luminous Violet, Indigo & Celestial Cyan)
+   PREMIUM CONSTANTS & TOKENS
    ═══════════════════════════════════════════════════════════════════════════ */
-const PREMIUM_GRADIENT =
-  'linear-gradient(135deg, #C084FC 0%, #818CF8 50%, #38BDF8 100%)';
-const PREMIUM_BUTTON_GRADIENT =
-  'linear-gradient(135deg, #9333EA 0%, #6366F1 50%, #06B6D4 100%)';
-const PREMIUM_HAIRLINE = 'rgba(129, 140, 248, 0.16)';
-const PREMIUM_HAIRLINE_HOVER = 'rgba(129, 140, 248, 0.38)';
-const PREMIUM_GLOW = 'rgba(99, 102, 241, 0.22)';
-const PREMIUM_ACCENT = '#818CF8';
+const PREMIUM_GOLD_GRADIENT =
+  'linear-gradient(135deg, #F5E6A8 0%, #E6C15A 50%, #B8892B 100%)';
+const PREMIUM_HAIRLINE = 'rgba(230, 193, 90, 0.14)';
+const PREMIUM_GOLD_ACCENT = '#E6C15A';
 
 /* Hook for observing visibility so animations only run while on-screen */
 function useTileVisibility(threshold = 0.15) {
@@ -119,8 +116,8 @@ function BentoCard({
       onPointerMove={handlePointerMove}
       onPointerLeave={handlePointerLeave}
       onClick={handleClick}
-      className={`group relative flex flex-col justify-between overflow-hidden rounded-3xl bg-white/[0.03] p-5 sm:p-6 transition-all duration-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.06),0_12px_32px_-8px_rgba(0,0,0,0.6)] ${
-        isPremium && href ? 'cursor-pointer hover:border-[rgba(129,140,248,0.4)]' : ''
+      className={`group relative flex flex-col justify-between overflow-hidden rounded-3xl bg-white/[0.04] p-5 sm:p-6 transition-all duration-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)] ${
+        isPremium && href ? 'cursor-pointer hover:border-[rgba(230,193,90,0.35)]' : ''
       } ${className}`}
       style={{
         border: `1px solid ${PREMIUM_HAIRLINE}`,
@@ -131,7 +128,7 @@ function BentoCard({
             : 'translateY(12px)',
         transition: shouldReduceMotion
           ? 'none'
-          : `opacity 0.45s ease-out ${delayIndex * 70}ms, transform 0.45s ease-out ${delayIndex * 70}ms, border-color 0.25s ease`,
+          : `opacity 0.45s ease-out ${delayIndex * 70}ms, transform 0.45s ease-out ${delayIndex * 70}ms, border-color 0.2s ease`,
       }}
     >
       {/* Spotlight highlight driven by pointer coordinates */}
@@ -139,20 +136,20 @@ function BentoCard({
         <div
           className="pointer-events-none absolute inset-0 z-0 transition-opacity duration-300"
           style={{
-            background: `radial-gradient(350px circle at ${coords.x}px ${coords.y}px, rgba(129, 140, 248, 0.12), transparent 80%)`,
+            background: `radial-gradient(350px circle at ${coords.x}px ${coords.y}px, rgba(230, 193, 90, 0.08), transparent 80%)`,
           }}
         />
       )}
 
       {/* Top Bar: Preview tag & Status Badge */}
       <div className="relative z-10 flex items-center justify-between">
-        <span className="rounded-full bg-indigo-500/10 px-2 py-0.5 text-[9px] font-mono uppercase tracking-widest text-indigo-300/80 border border-indigo-400/20">
+        <span className="rounded-full bg-white/[0.05] px-2 py-0.5 text-[9px] font-mono uppercase tracking-widest text-white/50 border border-white/[0.06]">
           Preview
         </span>
         <div
           className={`flex h-6 w-6 items-center justify-center rounded-full border ${
             isPremium
-              ? 'border-indigo-400/40 bg-indigo-500/15 text-indigo-300'
+              ? 'border-[#E6C15A]/40 bg-[#E6C15A]/15 text-[#E6C15A]'
               : 'border-white/10 bg-white/5 text-white/40'
           }`}
           title={isPremium ? 'Unlocked' : 'Requires Premium'}
@@ -165,7 +162,7 @@ function BentoCard({
         </div>
       </div>
 
-      {/* Visual Demo Section */}
+      {/* Visual Demo Section (Fills Middle) */}
       <div className="relative z-10 my-auto flex w-full items-center justify-center py-4">
         {children}
       </div>
@@ -279,139 +276,7 @@ function ThemesDemo() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   LIVE DEMO 2: DAILY GOALS (Luminous Ring Filling to 72% + Streak)
-   ═══════════════════════════════════════════════════════════════════════════ */
-function DailyGoalsDemo() {
-  const { ref, isVisible } = useTileVisibility(0.2);
-  const shouldReduceMotion = useReducedMotion();
-  const [progress, setProgress] = useState(72);
-
-  useEffect(() => {
-    if (!isVisible || shouldReduceMotion) return;
-    const interval = setInterval(() => {
-      setProgress((prev) => (prev === 72 ? 15 : 72));
-    }, 3200);
-    return () => clearInterval(interval);
-  }, [isVisible, shouldReduceMotion]);
-
-  const targetProgress = shouldReduceMotion ? 72 : progress;
-  const radius = 34;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (targetProgress / 100) * circumference;
-
-  return (
-    <div ref={ref} className="relative flex flex-col items-center justify-center">
-      <div className="relative flex h-24 w-24 items-center justify-center">
-        <svg className="h-full w-full -rotate-90 transform" viewBox="0 0 80 80">
-          <circle
-            cx="40"
-            cy="40"
-            r={radius}
-            stroke="rgba(255,255,255,0.06)"
-            strokeWidth="5"
-            fill="transparent"
-          />
-          <circle
-            cx="40"
-            cy="40"
-            r={radius}
-            stroke="url(#iris-gradient)"
-            strokeWidth="5"
-            strokeDasharray={circumference}
-            strokeDashoffset={strokeDashoffset}
-            strokeLinecap="round"
-            fill="transparent"
-            style={{
-              transition: shouldReduceMotion ? 'none' : 'stroke-dashoffset 1s ease-out',
-            }}
-          />
-          <defs>
-            <linearGradient id="iris-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#C084FC" />
-              <stop offset="50%" stopColor="#818CF8" />
-              <stop offset="100%" stopColor="#38BDF8" />
-            </linearGradient>
-          </defs>
-        </svg>
-
-        {/* Center label */}
-        <div className="absolute flex flex-col items-center">
-          <span className="font-hud text-sm font-bold text-white">
-            {targetProgress}%
-          </span>
-          <span className="text-[8px] font-mono uppercase text-indigo-300">
-            Goal
-          </span>
-        </div>
-      </div>
-
-      {/* Streak badge */}
-      <div className="mt-1.5 flex items-center gap-1 rounded-full border border-indigo-400/30 bg-indigo-500/10 px-2.5 py-0.5 text-[10px] font-mono text-indigo-300">
-        <Flame className="h-3 w-3 fill-current text-indigo-400" />
-        <span>12d streak</span>
-      </div>
-    </div>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   LIVE DEMO 3: WEEKLY REPORT (Growing Bars + "+18%" Chip)
-   ═══════════════════════════════════════════════════════════════════════════ */
-function WeeklyReportDemo() {
-  const { ref, isVisible } = useTileVisibility(0.2);
-  const shouldReduceMotion = useReducedMotion();
-  const [heightFactor, setHeightFactor] = useState(1);
-
-  useEffect(() => {
-    if (!isVisible || shouldReduceMotion) return;
-    const interval = setInterval(() => {
-      setHeightFactor((prev) => (prev === 1 ? 0.35 : 1));
-    }, 2800);
-    return () => clearInterval(interval);
-  }, [isVisible, shouldReduceMotion]);
-
-  const bars = [40, 65, 30, 85, 55, 95, 75];
-
-  return (
-    <div ref={ref} className="w-full max-w-[200px]">
-      {/* Metric Chip */}
-      <div className="mb-3 flex items-center justify-between">
-        <span className="text-[10px] font-mono text-white/40">vs last week</span>
-        <span className="inline-flex items-center gap-1 rounded-full border border-cyan-400/30 bg-cyan-400/15 px-2 py-0.5 font-mono text-[10px] font-bold text-cyan-300">
-          <TrendingUp className="h-3 w-3" />
-          <span>+18%</span>
-        </span>
-      </div>
-
-      {/* 7 Bars Container */}
-      <div className="flex h-20 items-end justify-between gap-1.5 rounded-xl border border-white/[0.06] bg-black/40 p-2.5">
-        {bars.map((pct, idx) => {
-          const currentHeight = shouldReduceMotion ? pct : pct * heightFactor;
-          return (
-            <div key={idx} className="relative flex h-full w-full items-end justify-center">
-              {/* Last week's faint bar */}
-              <div
-                className="absolute w-2 rounded-t-sm bg-white/10"
-                style={{ height: `${pct * 0.75}%` }}
-              />
-              {/* This week's active bar */}
-              <div
-                className="relative z-10 w-2 rounded-t-sm bg-gradient-to-t from-indigo-500 to-cyan-400 transition-all duration-700 ease-out"
-                style={{
-                  height: `${currentHeight}%`,
-                  boxShadow: '0 0 8px rgba(99,102,241,0.35)',
-                }}
-              />
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   LIVE DEMO 4: TIME TRAVEL (Calendar Date Hopping & Month Flip)
+   LIVE DEMO 2: TIME TRAVEL (Calendar Date Hopping & Month Flip)
    ═══════════════════════════════════════════════════════════════════════════ */
 function TimeTravelDemo() {
   const { ref, isVisible } = useTileVisibility(0.2);
@@ -441,7 +306,7 @@ function TimeTravelDemo() {
       <div className="rounded-2xl border border-white/[0.08] bg-black/40 p-3 shadow-inner">
         {/* Month Header */}
         <div className="flex items-center justify-between pb-2 border-b border-white/[0.06]">
-          <div className="flex items-center gap-1.5 text-indigo-300">
+          <div className="flex items-center gap-1.5 text-[#E6C15A]">
             <Calendar className="h-3.5 w-3.5" />
             <span className="font-hud text-[11px] font-bold tracking-wider">
               {monthLabel}
@@ -459,7 +324,7 @@ function TimeTravelDemo() {
                 key={idx}
                 className={`flex h-7 items-center justify-center rounded-lg transition-all duration-300 ${
                   isTarget
-                    ? 'border border-indigo-400 bg-indigo-500 font-bold text-white shadow-[0_0_12px_rgba(99,102,241,0.6)]'
+                    ? 'border border-[#E6C15A] bg-[#E6C15A] font-bold text-[#141006] shadow-[0_0_12px_rgba(230,193,90,0.5)]'
                     : 'text-white/40 hover:text-white/70'
                 }`}
               >
@@ -468,6 +333,131 @@ function TimeTravelDemo() {
             );
           })}
         </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LIVE DEMO 3: WEEKLY REPORT (Growing Bars + "+18%" Chip)
+   ═══════════════════════════════════════════════════════════════════════════ */
+function WeeklyReportDemo() {
+  const { ref, isVisible } = useTileVisibility(0.2);
+  const shouldReduceMotion = useReducedMotion();
+  const [heightFactor, setHeightFactor] = useState(1);
+
+  useEffect(() => {
+    if (!isVisible || shouldReduceMotion) return;
+    const interval = setInterval(() => {
+      setHeightFactor((prev) => (prev === 1 ? 0.35 : 1));
+    }, 2800);
+    return () => clearInterval(interval);
+  }, [isVisible, shouldReduceMotion]);
+
+  const bars = [40, 65, 30, 85, 55, 95, 75];
+
+  return (
+    <div ref={ref} className="w-full max-w-[200px]">
+      {/* Metric Chip */}
+      <div className="mb-3 flex items-center justify-between">
+        <span className="text-[10px] font-mono text-white/40">vs last week</span>
+        <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/30 bg-emerald-400/15 px-2 py-0.5 font-mono text-[10px] font-bold text-emerald-400">
+          <TrendingUp className="h-3 w-3" />
+          <span>+18%</span>
+        </span>
+      </div>
+
+      {/* 7 Bars Container */}
+      <div className="flex h-20 items-end justify-between gap-1.5 rounded-xl border border-white/[0.06] bg-black/30 p-2.5">
+        {bars.map((pct, idx) => {
+          const currentHeight = shouldReduceMotion ? pct : pct * heightFactor;
+          return (
+            <div key={idx} className="relative flex h-full w-full items-end justify-center">
+              {/* Last week's faint bar */}
+              <div
+                className="absolute w-2 rounded-t-sm bg-white/10"
+                style={{ height: `${pct * 0.75}%` }}
+              />
+              {/* This week's active bar */}
+              <div
+                className="relative z-10 w-2 rounded-t-sm bg-[#E6C15A] transition-all duration-700 ease-out"
+                style={{
+                  height: `${currentHeight}%`,
+                  boxShadow: '0 0 8px rgba(230,193,90,0.3)',
+                }}
+              />
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LIVE DEMO 4: DAILY GOALS (Gold Ring Filling to 72% + Streak)
+   ═══════════════════════════════════════════════════════════════════════════ */
+function DailyGoalsDemo() {
+  const { ref, isVisible } = useTileVisibility(0.2);
+  const shouldReduceMotion = useReducedMotion();
+  const [progress, setProgress] = useState(72);
+
+  useEffect(() => {
+    if (!isVisible || shouldReduceMotion) return;
+    const interval = setInterval(() => {
+      setProgress((prev) => (prev === 72 ? 15 : 72));
+    }, 3200);
+    return () => clearInterval(interval);
+  }, [isVisible, shouldReduceMotion]);
+
+  const targetProgress = shouldReduceMotion ? 72 : progress;
+  const radius = 32;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (targetProgress / 100) * circumference;
+
+  return (
+    <div ref={ref} className="relative flex flex-col items-center justify-center">
+      <div className="relative flex h-24 w-24 items-center justify-center">
+        <svg className="h-full w-full -rotate-90 transform" viewBox="0 0 80 80">
+          <circle
+            cx="40"
+            cy="40"
+            r={radius}
+            stroke="rgba(255,255,255,0.08)"
+            strokeWidth="5"
+            fill="transparent"
+          />
+          <circle
+            cx="40"
+            cy="40"
+            r={radius}
+            stroke="#E6C15A"
+            strokeWidth="5"
+            strokeDasharray={circumference}
+            strokeDashoffset={strokeDashoffset}
+            strokeLinecap="round"
+            fill="transparent"
+            style={{
+              transition: shouldReduceMotion ? 'none' : 'stroke-dashoffset 1s ease-out',
+            }}
+          />
+        </svg>
+
+        {/* Center label */}
+        <div className="absolute flex flex-col items-center">
+          <span className="font-hud text-sm font-bold text-white">
+            {targetProgress}%
+          </span>
+          <span className="text-[8px] font-mono uppercase text-[#E6C15A]">
+            Goal
+          </span>
+        </div>
+      </div>
+
+      {/* Streak badge */}
+      <div className="mt-1.5 flex items-center gap-1 rounded-full border border-orange-400/30 bg-orange-400/10 px-2.5 py-0.5 text-[10px] font-mono text-orange-400">
+        <Flame className="h-3 w-3 fill-current" />
+        <span>12d streak</span>
       </div>
     </div>
   );
@@ -495,8 +485,8 @@ function ScholarCrownDemo() {
       <div className="rounded-2xl border border-white/[0.08] bg-black/40 p-3 shadow-inner">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <span className="font-mono text-xs font-bold text-indigo-300">#1</span>
-            <div className="h-8 w-8 rounded-full border border-indigo-400/40 bg-indigo-950/60 flex items-center justify-center font-bold text-xs text-indigo-300">
+            <span className="font-mono text-xs font-bold text-[#E6C15A]">#1</span>
+            <div className="h-8 w-8 rounded-full border border-[#E6C15A]/40 bg-[#1A1406] flex items-center justify-center font-bold text-xs text-[#E6C15A]">
               S
             </div>
             <div className="text-left">
@@ -504,14 +494,14 @@ function ScholarCrownDemo() {
                 <span className="font-hud text-xs font-bold text-white">
                   Scholar
                 </span>
-                {/* Crown SVG drops in with shimmer */}
+                {/* Gold Crown SVG drops in */}
                 <span
-                  className="inline-flex text-amber-400 transition-all duration-500 ease-out"
+                  className="inline-flex text-[#E6C15A] transition-all duration-500 ease-out"
                   style={{
                     transform: hasDropped ? 'translateY(0)' : 'translateY(-8px)',
                     opacity: hasDropped ? 1 : 0,
                     filter: hasDropped
-                      ? 'drop-shadow(0 0 6px rgba(251,191,36,0.8))'
+                      ? 'drop-shadow(0 0 6px rgba(230,193,90,0.8))'
                       : 'none',
                   }}
                 >
@@ -523,9 +513,64 @@ function ScholarCrownDemo() {
               </span>
             </div>
           </div>
-          <span className="rounded-full bg-indigo-500/15 border border-indigo-400/30 px-2 py-0.5 text-[9px] font-mono font-bold text-indigo-300">
+          <span className="rounded-full bg-[#E6C15A]/15 border border-[#E6C15A]/30 px-2 py-0.5 text-[9px] font-mono font-bold text-[#E6C15A]">
             Top 1%
           </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LIVE DEMO 6: STORY CARDS (9:16 Card with Slow Tilt & Light Sweep)
+   ═══════════════════════════════════════════════════════════════════════════ */
+function StoryCardsDemo({ tier, division }: { tier: RankTierName; division?: string }) {
+  const { ref, isVisible } = useTileVisibility(0.2);
+  const shouldReduceMotion = useReducedMotion();
+  const [sweep, setSweep] = useState(false);
+
+  // Trigger light sweep every 8s
+  useEffect(() => {
+    if (!isVisible || shouldReduceMotion) return;
+    const interval = setInterval(() => {
+      setSweep(true);
+      setTimeout(() => setSweep(false), 1200);
+    }, 8000);
+    return () => clearInterval(interval);
+  }, [isVisible, shouldReduceMotion]);
+
+  return (
+    <div ref={ref} className="flex h-full items-center justify-center py-2">
+      {/* 9:16 Vertical Card */}
+      <div
+        className="relative flex h-52 w-32 flex-col justify-between overflow-hidden rounded-2xl border border-[#E6C15A]/30 bg-gradient-to-b from-[#1C1608] to-[#0A0803] p-3 text-center shadow-xl transition-transform duration-700"
+        style={{
+          boxShadow: '0 10px 25px -5px rgba(0,0,0,0.8), 0 0 20px rgba(230,193,90,0.15)',
+        }}
+      >
+        {/* Light sweep reflection */}
+        <div
+          className={`pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-1000 ${
+            sweep ? 'translate-x-full' : ''
+          }`}
+        />
+
+        <div className="flex items-center justify-between text-[8px] font-mono text-[#E6C15A]">
+          <span>study.io</span>
+          <span>1080×1920</span>
+        </div>
+
+        <div className="my-auto flex flex-col items-center">
+          <RankCrestBadge tier={tier} division={division} size={42} />
+          <span className="mt-1 font-hud text-[11px] font-bold text-white uppercase">
+            {tier}
+          </span>
+          <span className="text-[9px] font-mono text-white/50">48h Season</span>
+        </div>
+
+        <div className="rounded-lg bg-white/5 p-1 text-[8px] font-mono text-[#E6C15A]/90">
+          Unblurred HD Export
         </div>
       </div>
     </div>
@@ -570,20 +615,20 @@ function HeroProductMockup({
       onPointerLeave={handlePointerLeave}
       className="relative flex items-center justify-center p-4"
     >
-      {/* Background Soft Aurora Glow */}
+      {/* Background Amber Aura */}
       <div
         className="pointer-events-none absolute h-64 w-64 rounded-full blur-[100px] opacity-35"
-        style={{ backgroundColor: '#6366F1' }}
+        style={{ backgroundColor: '#E6C15A' }}
       />
 
       {/* Floating Mockup Card */}
       <div
         className="relative w-full max-w-[340px] overflow-hidden rounded-3xl border p-6 shadow-2xl transition-transform duration-150 ease-out"
         style={{
-          backgroundColor: '#0C0E17',
-          borderColor: 'rgba(129, 140, 248, 0.25)',
+          backgroundColor: '#0C0A06',
+          borderColor: 'rgba(230, 193, 90, 0.25)',
           boxShadow:
-            '0 25px 50px -12px rgba(0,0,0,0.8), 0 0 35px rgba(99,102,241,0.18)',
+            '0 25px 50px -12px rgba(0,0,0,0.8), 0 0 35px rgba(230,193,90,0.12)',
           transform: shouldReduceMotion
             ? 'none'
             : `perspective(900px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
@@ -594,7 +639,7 @@ function HeroProductMockup({
           <div className="flex items-center gap-2.5">
             <div className="relative">
               <RankCrestBadge tier={tier} division={division} size={34} />
-              <div className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-amber-400 text-black">
+              <div className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#E6C15A] text-black">
                 <Crown className="h-2.5 w-2.5 fill-current" />
               </div>
             </div>
@@ -604,17 +649,17 @@ function HeroProductMockup({
                   Scholar Pro
                 </span>
               </div>
-              <span className="text-[9px] font-mono text-indigo-300">
+              <span className="text-[9px] font-mono text-[#E6C15A]">
                 Gold Leaf Active
               </span>
             </div>
           </div>
-          <span className="rounded-full bg-indigo-500/15 border border-indigo-400/30 px-2.5 py-0.5 text-[9px] font-hud font-bold text-indigo-300 uppercase tracking-wider">
+          <span className="rounded-full bg-[#E6C15A]/15 border border-[#E6C15A]/30 px-2.5 py-0.5 text-[9px] font-hud font-bold text-[#E6C15A] uppercase tracking-wider">
             Premium
           </span>
         </div>
 
-        {/* Card Center: Timer with Filling Progress Ring */}
+        {/* Card Center: Timer with Filling Gold Progress Ring */}
         <div className="my-6 flex flex-col items-center justify-center">
           <div className="relative flex h-36 w-36 items-center justify-center">
             <svg className="h-full w-full -rotate-90 transform" viewBox="0 0 100 100">
@@ -630,29 +675,22 @@ function HeroProductMockup({
                 cx="50"
                 cy="50"
                 r="42"
-                stroke="url(#hero-ring-grad)"
+                stroke="#E6C15A"
                 strokeWidth="4"
                 strokeDasharray={264}
                 strokeDashoffset={66}
                 strokeLinecap="round"
                 fill="transparent"
                 style={{
-                  boxShadow: '0 0 12px rgba(99,102,241,0.5)',
+                  boxShadow: '0 0 10px rgba(230,193,90,0.5)',
                 }}
               />
-              <defs>
-                <linearGradient id="hero-ring-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#C084FC" />
-                  <stop offset="50%" stopColor="#818CF8" />
-                  <stop offset="100%" stopColor="#38BDF8" />
-                </linearGradient>
-              </defs>
             </svg>
             <div className="absolute flex flex-col items-center">
               <span className="font-hud text-2xl font-black tracking-tight text-white">
                 25:00
               </span>
-              <span className="text-[9px] font-mono uppercase tracking-widest text-indigo-300">
+              <span className="text-[9px] font-mono uppercase tracking-widest text-[#E6C15A]">
                 Deep Focus
               </span>
             </div>
@@ -665,7 +703,7 @@ function HeroProductMockup({
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
             <span>Session in flow</span>
           </span>
-          <span className="text-cyan-300 font-bold">+18% Weekly Growth</span>
+          <span className="text-[#E6C15A] font-bold">+18% Weekly Growth</span>
         </div>
       </div>
     </div>
@@ -678,6 +716,7 @@ function HeroProductMockup({
 export default function PremiumPage() {
   const router = useRouter();
   const shouldReduceMotion = useReducedMotion();
+  const { user } = useAuth();
   const { isPremium, premiumUntil, loading: premiumLoading } = usePremium();
   const { userRank } = useRankTheme();
 
@@ -739,11 +778,11 @@ export default function PremiumPage() {
     : null;
 
   return (
-    <div className="min-h-screen bg-[#08090E] text-white selection:bg-indigo-500/30 selection:text-white relative overflow-x-hidden pb-24 lg:pb-12">
-      {/* Barely visible SVG film grain (~2.5% opacity) */}
+    <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] selection:bg-[#E6C15A]/30 selection:text-[#F6EFD9] relative overflow-x-hidden pb-24 lg:pb-12">
+      {/* Barely visible SVG film grain (~3% opacity) */}
       <svg
         aria-hidden="true"
-        className="pointer-events-none fixed inset-0 z-[2] h-full w-full opacity-[0.025]"
+        className="pointer-events-none fixed inset-0 z-[2] h-full w-full opacity-[0.03]"
       >
         <filter id="premium-grain">
           <feTurbulence
@@ -757,24 +796,20 @@ export default function PremiumPage() {
       </svg>
 
       {/* Dotted grid background */}
-      <div className="fixed inset-0 pointer-events-none bg-dot-grid opacity-25 z-0" />
+      <div className="fixed inset-0 pointer-events-none bg-dot-grid opacity-30 z-0" />
 
-      {/* Two soft cosmic radial ambient glows */}
+      {/* Two soft warm-gold radial ambient glows */}
       <div
-        className="pointer-events-none fixed -top-24 left-1/3 h-[520px] w-[520px] -translate-x-1/2 rounded-full blur-[170px] opacity-20 z-0"
-        style={{ backgroundColor: '#6366F1' }}
+        className="pointer-events-none fixed -top-24 left-1/4 h-[500px] w-[500px] -translate-x-1/2 rounded-full blur-[160px] opacity-20 z-0"
+        style={{ backgroundColor: '#E6C15A' }}
       />
       <div
-        className="pointer-events-none fixed top-1/3 right-0 h-[480px] w-[480px] rounded-full blur-[170px] opacity-15 z-0"
-        style={{ backgroundColor: '#06B6D4' }}
-      />
-      <div
-        className="pointer-events-none fixed bottom-1/4 left-0 h-[420px] w-[420px] rounded-full blur-[170px] opacity-15 z-0"
-        style={{ backgroundColor: '#9333EA' }}
+        className="pointer-events-none fixed top-1/2 right-0 h-[450px] w-[450px] rounded-full blur-[160px] opacity-15 z-0"
+        style={{ backgroundColor: '#E6C15A' }}
       />
 
       {/* Slim Top Navigation Bar */}
-      <header className="sticky top-0 z-40 w-full border-b border-white/[0.08] bg-[#08090E]/85 backdrop-blur-xl">
+      <header className="sticky top-0 z-40 w-full border-b border-[var(--border)] bg-[var(--bg)]/85 backdrop-blur-xl">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <Link
             href="/dashboard"
@@ -793,23 +828,23 @@ export default function PremiumPage() {
               <div className="h-6 w-24 rounded-full bg-white/10 animate-pulse" />
             ) : isPremium ? (
               <span
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-hud font-bold tracking-wider uppercase text-white"
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-hud font-bold tracking-wider uppercase text-[#1A1405]"
                 style={{
-                  background: PREMIUM_BUTTON_GRADIENT,
-                  boxShadow: '0 0 14px rgba(99,102,241,0.4)',
+                  background: PREMIUM_GOLD_GRADIENT,
+                  boxShadow: '0 0 12px rgba(230,193,90,0.3)',
                 }}
               >
-                <Crown className="w-3 h-3 fill-current text-amber-300" />
+                <Crown className="w-3 h-3 fill-current" />
                 <span>Premium Active</span>
               </span>
             ) : (
               <button
                 type="button"
                 onClick={handleScrollToPricing}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-xl text-[10px] font-hud font-bold tracking-wider uppercase text-white hover:opacity-90 active:scale-95 transition-all cursor-pointer shadow-sm"
-                style={{ background: PREMIUM_BUTTON_GRADIENT }}
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-[10px] font-hud font-bold tracking-wider uppercase text-[#1A1405] hover:opacity-90 active:scale-95 transition-all cursor-pointer"
+                style={{ background: PREMIUM_GOLD_GRADIENT }}
               >
-                <Crown className="w-3 h-3 fill-current text-amber-300" />
+                <Crown className="w-3 h-3 fill-current" />
                 <span>Upgrade</span>
               </button>
             )}
@@ -827,9 +862,9 @@ export default function PremiumPage() {
         >
           {/* Left Column: Text & Buttons */}
           <div className="lg:col-span-7 flex flex-col items-start text-left">
-            {/* Small Radiant Pill */}
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-indigo-400/30 bg-indigo-500/10 text-[10px] font-hud font-bold uppercase tracking-widest text-indigo-300 mb-4 shadow-[0_0_15px_rgba(99,102,241,0.15)]">
-              <Crown className="w-3 h-3 fill-current text-amber-400" />
+            {/* Small Gold Pill */}
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-[rgba(230,193,90,0.3)] bg-[#E6C15A]/10 text-[10px] font-hud font-bold uppercase tracking-widest text-[#E6C15A] mb-4">
+              <Crown className="w-3 h-3 fill-current" />
               <span>Premium</span>
             </div>
 
@@ -838,7 +873,7 @@ export default function PremiumPage() {
               id="hero-heading"
               className="text-4xl sm:text-5xl lg:text-6xl font-hud font-black tracking-tight leading-[1.08] text-transparent bg-clip-text"
               style={{
-                backgroundImage: 'linear-gradient(135deg, #FFFFFF 0%, #E0E7FF 45%, #A5F3FC 100%)',
+                backgroundImage: PREMIUM_GOLD_GRADIENT,
               }}
             >
               Study with an unfair advantage.
@@ -857,11 +892,8 @@ export default function PremiumPage() {
                 <button
                   type="button"
                   onClick={handleScrollToPricing}
-                  className="px-6 py-3 rounded-2xl font-hud font-bold text-xs uppercase tracking-wider text-white hover:opacity-95 active:scale-95 transition-all shadow-lg cursor-pointer flex items-center gap-2"
-                  style={{
-                    background: PREMIUM_BUTTON_GRADIENT,
-                    boxShadow: '0 0 24px rgba(99,102,241,0.35)',
-                  }}
+                  className="px-6 py-3 rounded-2xl font-hud font-bold text-xs uppercase tracking-wider text-[#1A1405] hover:opacity-95 active:scale-95 transition-all shadow-lg cursor-pointer flex items-center gap-2"
+                  style={{ background: PREMIUM_GOLD_GRADIENT }}
                 >
                   <span>View your benefits</span>
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -871,11 +903,8 @@ export default function PremiumPage() {
                   <button
                     type="button"
                     onClick={handleScrollToPricing}
-                    className="px-6 py-3 rounded-2xl font-hud font-extrabold text-xs uppercase tracking-wider text-white hover:opacity-95 active:scale-95 transition-all shadow-lg cursor-pointer flex items-center gap-2"
-                    style={{
-                      background: PREMIUM_BUTTON_GRADIENT,
-                      boxShadow: '0 0 24px rgba(99,102,241,0.35)',
-                    }}
+                    className="px-6 py-3 rounded-2xl font-hud font-extrabold text-xs uppercase tracking-wider text-[#1A1405] hover:opacity-95 active:scale-95 transition-all shadow-lg cursor-pointer flex items-center gap-2"
+                    style={{ background: PREMIUM_GOLD_GRADIENT }}
                   >
                     <span>Get Premium</span>
                     <ArrowRight className="w-3.5 h-3.5" />
@@ -907,7 +936,7 @@ export default function PremiumPage() {
         </section>
 
         {/* ═══════════════════════════════════════════════════════════════════
-            SECTION 2: FEATURE BENTO GRID (5 Features, Story Cards Removed)
+            SECTION 2: FEATURE BENTO GRID (The Main Event)
             ═══════════════════════════════════════════════════════════════════ */}
         <section
           id="features"
@@ -927,16 +956,19 @@ export default function PremiumPage() {
               <ThemesDemo />
             </BentoCard>
 
-            {/* ROW 1: Daily Goals (cols 8-12) */}
+            {/* ROW 1 & 2: Story Cards (cols 8-12, spans rows 1-2) */}
             <BentoCard
-              title="Daily goals"
-              caption="A gold ring that fills as you study."
-              className="lg:col-span-5 min-h-[240px] sm:min-h-[260px]"
+              title="Story cards"
+              caption="Share your season in HD."
+              className="lg:col-span-5 lg:row-span-2 min-h-[260px] sm:min-h-[360px]"
               isPremium={isPremium}
-              href="/dashboard"
+              href="/recap"
               delayIndex={1}
             >
-              <DailyGoalsDemo />
+              <StoryCardsDemo
+                tier={userRank.tier}
+                division={userRank.division}
+              />
             </BentoCard>
 
             {/* ROW 2: Weekly Report (cols 1-4) */}
@@ -951,26 +983,38 @@ export default function PremiumPage() {
               <WeeklyReportDemo />
             </BentoCard>
 
-            {/* ROW 2: Time Travel (cols 5-8) */}
+            {/* ROW 2: Daily Goals (cols 5-7) */}
             <BentoCard
-              title="Time travel"
-              caption="Browse every past day and month."
-              className="lg:col-span-4 min-h-[240px] sm:min-h-[260px]"
+              title="Daily goals"
+              caption="A gold ring that fills as you study."
+              className="lg:col-span-3 min-h-[240px] sm:min-h-[260px]"
               isPremium={isPremium}
               href="/dashboard"
               delayIndex={3}
             >
+              <DailyGoalsDemo />
+            </BentoCard>
+
+            {/* ROW 3: Time Travel (cols 1-6) */}
+            <BentoCard
+              title="Time travel"
+              caption="Browse every past day and month."
+              className="lg:col-span-6 min-h-[240px] sm:min-h-[260px]"
+              isPremium={isPremium}
+              href="/dashboard"
+              delayIndex={4}
+            >
               <TimeTravelDemo />
             </BentoCard>
 
-            {/* ROW 2: Scholar Crown (cols 9-12) */}
+            {/* ROW 3: Scholar Crown (cols 7-12) */}
             <BentoCard
               title="Scholar crown"
               caption="Shown beside your name everywhere."
-              className="lg:col-span-4 min-h-[240px] sm:min-h-[260px]"
+              className="lg:col-span-6 min-h-[240px] sm:min-h-[260px]"
               isPremium={isPremium}
               href="/leaderboard"
-              delayIndex={4}
+              delayIndex={5}
             >
               <ScholarCrownDemo />
             </BentoCard>
@@ -989,8 +1033,8 @@ export default function PremiumPage() {
           {premiumLoading ? (
             /* Skeleton while entitlements load: Prevents upsell flash! */
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 max-w-2xl mx-auto">
-              <div className="h-72 rounded-3xl bg-white/[0.03] border border-white/10 animate-pulse" />
-              <div className="h-72 rounded-3xl bg-white/[0.03] border border-white/10 animate-pulse" />
+              <div className="h-72 rounded-3xl bg-white/[0.04] border border-[rgba(230,193,90,0.14)] animate-pulse" />
+              <div className="h-72 rounded-3xl bg-white/[0.04] border border-[rgba(230,193,90,0.14)] animate-pulse" />
             </div>
           ) : isPremium ? (
             /* Premium User Card */
@@ -1001,8 +1045,8 @@ export default function PremiumPage() {
                 border: `1px solid ${PREMIUM_HAIRLINE}`,
               }}
             >
-              <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-500/15 border border-indigo-400/30 text-indigo-300 mb-3">
-                <Crown className="w-6 h-6 fill-current text-amber-300" />
+              <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[#E6C15A]/15 border border-[#E6C15A]/30 text-[#E6C15A] mb-3">
+                <Crown className="w-6 h-6 fill-current" />
               </div>
               <h2 className="font-hud text-xl sm:text-2xl font-bold text-white">
                 You&apos;re Premium
@@ -1016,7 +1060,7 @@ export default function PremiumPage() {
               <div className="mt-6 flex justify-center">
                 <Link
                   href="/dashboard"
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-indigo-400/30 bg-indigo-500/15 hover:bg-indigo-500/25 text-xs font-hud font-bold uppercase tracking-wider text-indigo-200 transition-colors shadow-sm"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-xs font-hud font-bold uppercase tracking-wider text-white transition-colors"
                 >
                   <span>Go to Settings</span>
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -1077,19 +1121,19 @@ export default function PremiumPage() {
                 <div
                   className="rounded-3xl bg-white/[0.04] p-6 flex flex-col justify-between relative overflow-hidden"
                   style={{
-                    border: '1px solid rgba(129, 140, 248, 0.45)',
-                    boxShadow: '0 0 30px rgba(99, 102, 241, 0.16)',
+                    border: '1px solid rgba(230, 193, 90, 0.4)',
+                    boxShadow: '0 0 25px rgba(230, 193, 90, 0.08)',
                   }}
                 >
                   {/* Real Computed Saving Tag */}
                   {savingPercentage > 0 && (
-                    <div className="absolute top-4 right-4 rounded-full bg-indigo-500/15 border border-indigo-400/30 px-2.5 py-0.5 text-[9px] font-mono font-bold text-indigo-300">
+                    <div className="absolute top-4 right-4 rounded-full bg-[#E6C15A]/15 border border-[#E6C15A]/30 px-2.5 py-0.5 text-[9px] font-mono font-bold text-[#E6C15A]">
                       Save {savingPercentage}%
                     </div>
                   )}
 
                   <div>
-                    <span className="font-hud text-xs font-bold uppercase text-indigo-300">
+                    <span className="font-hud text-xs font-bold uppercase text-[#E6C15A]">
                       Yearly
                     </span>
                     <div className="mt-2 text-3xl font-hud font-bold text-white">
@@ -1107,17 +1151,14 @@ export default function PremiumPage() {
                     type="button"
                     onClick={() => startCheckout('yearly')}
                     disabled={isProcessing || !PAYMENTS_ENABLED}
-                    className="mt-6 w-full py-3 rounded-xl text-xs font-hud font-bold uppercase tracking-wider text-white transition-all cursor-pointer hover:opacity-95 active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg"
-                    style={{
-                      background: PREMIUM_BUTTON_GRADIENT,
-                      boxShadow: '0 0 20px rgba(99,102,241,0.3)',
-                    }}
+                    className="mt-6 w-full py-3 rounded-xl text-xs font-hud font-bold uppercase tracking-wider text-[#1A1405] transition-all cursor-pointer hover:opacity-95 active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md"
+                    style={{ background: PREMIUM_GOLD_GRADIENT }}
                   >
                     {isProcessing ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     ) : (
                       <>
-                        <Sparkles className="w-3.5 h-3.5 text-cyan-200" />
+                        <Sparkles className="w-3.5 h-3.5" />
                         <span>Subscribe Yearly</span>
                       </>
                     )}
@@ -1163,7 +1204,7 @@ export default function PremiumPage() {
                   <button
                     type="button"
                     onClick={() => setOpenFaq(isOpen ? null : idx)}
-                    className="w-full flex items-center justify-between p-3.5 text-left text-xs font-hud font-bold text-white hover:text-indigo-300 transition-colors cursor-pointer"
+                    className="w-full flex items-center justify-between p-3.5 text-left text-xs font-hud font-bold text-white hover:text-[#E6C15A] transition-colors cursor-pointer"
                   >
                     <span>{faq.q}</span>
                     <ChevronDown
@@ -1188,15 +1229,12 @@ export default function PremiumPage() {
           MOBILE STICKY BOTTOM BAR (Free Users Only, Hidden When Pricing Visible)
           ═══════════════════════════════════════════════════════════════════ */}
       {!isPremium && !premiumLoading && !isPricingVisible && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 p-3 bg-[#08090E]/90 backdrop-blur-lg border-t border-white/10 lg:hidden pb-safe">
+        <div className="fixed bottom-0 left-0 right-0 z-50 p-3 bg-[var(--bg)]/90 backdrop-blur-lg border-t border-white/10 lg:hidden pb-safe">
           <button
             type="button"
             onClick={handleScrollToPricing}
-            className="w-full py-3 rounded-xl font-hud font-bold text-xs uppercase tracking-wider text-white shadow-lg cursor-pointer flex items-center justify-center gap-2"
-            style={{
-              background: PREMIUM_BUTTON_GRADIENT,
-              boxShadow: '0 0 20px rgba(99,102,241,0.4)',
-            }}
+            className="w-full py-3 rounded-xl font-hud font-bold text-xs uppercase tracking-wider text-[#1A1405] shadow-lg cursor-pointer flex items-center justify-center gap-2"
+            style={{ background: PREMIUM_GOLD_GRADIENT }}
           >
             <span>Get Premium</span>
             <ArrowRight className="w-3.5 h-3.5" />
