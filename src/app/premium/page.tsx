@@ -19,9 +19,9 @@ import {
   TrendingUp,
   Share2,
   Calendar,
-  Lock,
   Loader2,
   HelpCircle,
+  Clock,
 } from 'lucide-react';
 import { useReducedMotion } from 'framer-motion';
 import { Logo } from '../../components/Logo';
@@ -63,7 +63,7 @@ export default function PremiumPage() {
     Math.round((1 - yearlyAmount / (monthlyAmount * 12)) * 100)
   );
 
-  // Scroll to section helpers
+  // Scroll helpers
   const handleScrollToPricing = () => {
     const el = document.getElementById(isPremium ? 'premium-status-section' : 'pricing');
     if (el) {
@@ -88,12 +88,12 @@ export default function PremiumPage() {
 
   return (
     <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] selection:bg-[#E6C15A]/30 selection:text-[#F6EFD9] relative overflow-x-hidden">
-      {/* Background Lighting & Grid */}
-      <div className="fixed inset-0 pointer-events-none bg-dot-grid opacity-50 z-0" />
+      {/* Background Subtle Ambience */}
+      <div className="fixed inset-0 pointer-events-none bg-dot-grid opacity-40 z-0" />
       
-      {/* Top Center Amber Mesh Glow */}
+      {/* Top Center Amber Glow Orb */}
       <div
-        className="fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[450px] rounded-full blur-[140px] pointer-events-none opacity-20 z-0"
+        className="fixed top-0 left-1/2 -translate-x-1/2 w-[650px] h-[450px] rounded-full blur-[150px] pointer-events-none opacity-25 z-0"
         style={{ backgroundColor: '#E6C15A' }}
       />
 
@@ -143,9 +143,9 @@ export default function PremiumPage() {
         {/* SECTION 1: HERO */}
         <section
           aria-labelledby="hero-heading"
-          className="w-full pt-12 pb-16 sm:pt-16 sm:pb-20 max-w-5xl mx-auto px-4 sm:px-6 flex flex-col items-center text-center relative"
+          className="w-full pt-12 pb-16 sm:pt-20 sm:pb-24 max-w-4xl mx-auto px-4 sm:px-6 flex flex-col items-center text-center relative"
         >
-          {/* User's Floating Rank Crest */}
+          {/* Floating Crest */}
           <div className="relative mb-5">
             <div
               className={`transition-transform duration-300 ${
@@ -160,18 +160,17 @@ export default function PremiumPage() {
               <RankCrestBadge
                 tier={userRank.tier}
                 division={userRank.division}
-                size={88}
+                size={84}
                 className="drop-shadow-2xl"
               />
             </div>
-            {/* Soft gold glow beneath crest */}
             <div
-              className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-20 h-5 rounded-full blur-xl opacity-50 pointer-events-none"
+              className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-20 h-5 rounded-full blur-xl opacity-60 pointer-events-none"
               style={{ backgroundColor: '#E6C15A' }}
             />
           </div>
 
-          {/* Pill Badge */}
+          {/* Premium Pill Badge */}
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-[#E6C15A]/15 to-[#B8892B]/10 border border-[#E6C15A]/30 text-xs font-hud font-bold tracking-widest uppercase text-[#F5E6A8] mb-4 shadow-[0_0_20px_rgba(230,193,90,0.12)] backdrop-blur-md">
             <Crown className="w-3.5 h-3.5 text-[#E6C15A] fill-current" />
             <span>study.io Premium</span>
@@ -180,14 +179,14 @@ export default function PremiumPage() {
           {/* Headline */}
           <h1
             id="hero-heading"
-            className="text-3xl sm:text-5xl md:text-6xl font-hud font-black text-[var(--text)] tracking-tight leading-[1.15] max-w-3xl"
+            className="text-3xl sm:text-5xl md:text-6xl font-hud font-black text-[var(--text)] tracking-tight leading-[1.12] max-w-2xl"
           >
             Study with an unfair advantage.
           </h1>
 
-          {/* Subtitle with exact value statement */}
+          {/* Subtitle */}
           <p className="text-sm sm:text-base text-[var(--text-dim)] mt-4 mb-8 max-w-xl leading-relaxed">
-            Unlock deep 12-week telemetry, handcrafted themes, daily focus goals, and verified scholar flair — designed for people who take learning seriously.
+            Handcrafted themes, deep historical analytics, weekly report cards, daily focus quotas, and verified scholar prestige — built for people who take learning seriously.
           </p>
 
           {/* CTA Buttons */}
@@ -201,7 +200,7 @@ export default function PremiumPage() {
                 boxShadow: `0 0 24px ${PREMIUM_GOLD_GLOW}`,
               }}
             >
-              <span>{isPremium ? 'VIEW YOUR BENEFITS' : 'SEE PLANS & PRICING'}</span>
+              <span>{isPremium ? 'VIEW YOUR MEMBERSHIP' : 'SEE PLANS & PRICING'}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
 
@@ -210,7 +209,7 @@ export default function PremiumPage() {
               onClick={handleScrollToFeatures}
               className="w-full sm:w-auto px-6 py-3.5 rounded-2xl text-xs font-hud font-bold tracking-wider uppercase text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-white/[0.04] border border-[var(--border)] transition-all cursor-pointer"
             >
-              Explore What&apos;s Included
+              Explore Included Features
             </button>
           </div>
 
@@ -218,7 +217,7 @@ export default function PremiumPage() {
           <div className="mt-8 flex flex-wrap items-center justify-center gap-4 text-[11px] text-[var(--text-dim)]">
             <span className="flex items-center gap-1.5">
               <Check className="w-3.5 h-3.5 text-[#E6C15A]" />
-              <span>Instant Feature Activation</span>
+              <span>Instant Account Activation</span>
             </span>
             <span className="text-[var(--border-strong)]">•</span>
             <span className="flex items-center gap-1.5">
@@ -233,14 +232,14 @@ export default function PremiumPage() {
           </div>
         </section>
 
-        {/* SECTION 2: THE 6 REAL PREMIUM UPGRADES */}
+        {/* SECTION 2: THE 6 REAL PREMIUM PRIVILEGES */}
         <section
           id="features"
           aria-labelledby="features-heading"
-          className="w-full py-14 sm:py-20 border-t border-[var(--border)] bg-gradient-to-b from-black/[0.25] via-transparent to-black/[0.15]"
+          className="w-full py-16 sm:py-24 border-t border-[var(--border)] bg-gradient-to-b from-black/[0.25] via-transparent to-black/[0.15]"
         >
           <div className="max-w-6xl mx-auto px-4 sm:px-6">
-            <div className="text-center max-w-2xl mx-auto mb-12 sm:mb-14">
+            <div className="text-center max-w-xl mx-auto mb-12 sm:mb-16">
               <span className="text-[10px] font-hud uppercase tracking-widest text-[#E6C15A] font-bold block mb-1">
                 Everything Included
               </span>
@@ -248,16 +247,16 @@ export default function PremiumPage() {
                 id="features-heading"
                 className="text-2xl sm:text-4xl font-hud font-extrabold tracking-tight text-[var(--text)]"
               >
-                Six powerful tools. Built for mastery.
+                Six powerful tools. Zero clutter.
               </h2>
               <p className="text-xs sm:text-sm text-[var(--text-dim)] mt-2.5 leading-relaxed">
-                Here is the exact breakdown of every privilege unlocked with study.io Premium:
+                Every privilege unlocked with study.io Premium is designed to keep you in flow:
               </p>
             </div>
 
             {/* 6 Feature Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {/* Feature 1: Handcrafted Themes */}
+              {/* Feature 1: Handcrafted Luxury Themes */}
               <div className="p-6 rounded-3xl bg-[var(--surface)] border border-[var(--border)] hover:border-[#E6C15A]/40 transition-all shadow-md flex flex-col justify-between group">
                 <div>
                   <div className="flex items-center justify-between mb-4">
@@ -272,11 +271,11 @@ export default function PremiumPage() {
                     Gold Leaf &amp; Crimson Themes
                   </h3>
                   <p className="text-xs text-[var(--text-dim)] leading-relaxed">
-                    Unlock exclusive handcrafted colorways with warm amber and deep ruby velvet tones, engineered to protect your eyes during long focus rituals.
+                    Exclusive handcrafted colorways with warm amber and deep ruby velvet tones, engineered to protect your eyes during late-night study marathons.
                   </p>
                 </div>
 
-                {/* Swatch visual */}
+                {/* Color Swatch Visual */}
                 <div className="mt-5 grid grid-cols-2 gap-2.5">
                   <div className="p-2.5 rounded-xl bg-[#14120B] border border-[#E6C15A]/40 flex items-center gap-2">
                     <div className="w-3.5 h-3.5 rounded-full bg-[#E6C15A] shadow-[0_0_8px_rgba(230,193,90,0.6)]" />
@@ -289,40 +288,36 @@ export default function PremiumPage() {
                 </div>
               </div>
 
-              {/* Feature 2: Deep Study Insights */}
+              {/* Feature 2: Historical Date & Calendar Navigation */}
               <div className="p-6 rounded-3xl bg-[var(--surface)] border border-[var(--border)] hover:border-[#E6C15A]/40 transition-all shadow-md flex flex-col justify-between group">
                 <div>
                   <div className="flex items-center justify-between mb-4">
                     <div className="w-10 h-10 rounded-2xl bg-[#E6C15A]/15 border border-[#E6C15A]/30 text-[#E6C15A] flex items-center justify-center shadow-[0_0_15px_rgba(230,193,90,0.15)]">
-                      <BarChart3 className="w-5 h-5" />
+                      <Calendar className="w-5 h-5" />
                     </div>
                     <span className="text-[10px] font-hud uppercase tracking-widest font-extrabold px-2.5 py-0.5 rounded-full bg-white/[0.04] text-[#E6C15A] border border-[#E6C15A]/25">
-                      Telemetry
+                      Analytics
                     </span>
                   </div>
                   <h3 className="font-hud font-bold text-base sm:text-lg text-[var(--text)] mb-2">
-                    12-Week Study Heatmap
+                    Deep Calendar History Navigation
                   </h3>
                   <p className="text-xs text-[var(--text-dim)] leading-relaxed">
-                    Inspect comprehensive study telemetry: your 12-week activity grid, peak focus hours of the day, and active weekday distributions.
+                    Scrub back through historical days, inspect previous calendar months, and explore your temporal focus chart across all past study seasons.
                   </p>
                 </div>
 
-                {/* Heatmap visual */}
+                {/* Calendar Navigation Visual */}
                 <div className="mt-5 p-2.5 rounded-xl bg-[var(--surface-2)]/80 border border-[var(--border)] flex items-center justify-between text-[11px] text-[var(--text-dim)]">
-                  <div className="flex items-center gap-1.5">
-                    <div className="flex gap-1">
-                      <div className="w-2.5 h-2.5 rounded-xs bg-[#E6C15A]/30" />
-                      <div className="w-2.5 h-2.5 rounded-xs bg-[#E6C15A]/60" />
-                      <div className="w-2.5 h-2.5 rounded-xs bg-[#E6C15A]" />
-                    </div>
-                    <span>84 Days Telemetry</span>
+                  <div className="flex items-center gap-1.5 font-hud-mono">
+                    <Clock className="w-3.5 h-3.5 text-[#E6C15A]" />
+                    <span>Past Months &amp; Days</span>
                   </div>
-                  <span className="text-[#E6C15A] font-semibold">Peak: 6 PM – 9 PM</span>
+                  <span className="text-[#E6C15A] font-semibold">Unlimited History</span>
                 </div>
               </div>
 
-              {/* Feature 3: Weekly Performance Reports */}
+              {/* Feature 3: Automated Weekly Performance Reports */}
               <div className="p-6 rounded-3xl bg-[var(--surface)] border border-[var(--border)] hover:border-[#E6C15A]/40 transition-all shadow-md flex flex-col justify-between group">
                 <div>
                   <div className="flex items-center justify-between mb-4">
@@ -337,11 +332,11 @@ export default function PremiumPage() {
                     Weekly Report Cards
                   </h3>
                   <p className="text-xs text-[var(--text-dim)] leading-relaxed">
-                    Receive automated week-over-week performance reports, subject time breakdowns, active days counts, and longest session tracking.
+                    Automated week-over-week performance reports, subject time breakdowns, active days counts, and longest focus session tracking.
                   </p>
                 </div>
 
-                {/* Metric visual */}
+                {/* Metric Visual */}
                 <div className="mt-5 p-2.5 rounded-xl bg-[var(--surface-2)]/80 border border-[var(--border)] flex items-center justify-between text-[11px]">
                   <span className="text-emerald-400 font-semibold font-mono">+3h 40m vs last week</span>
                   <span className="text-[var(--text-dim)]">Top: Mathematics</span>
@@ -356,28 +351,28 @@ export default function PremiumPage() {
                       <Target className="w-5 h-5" />
                     </div>
                     <span className="text-[10px] font-hud uppercase tracking-widest font-extrabold px-2.5 py-0.5 rounded-full bg-white/[0.04] text-[#E6C15A] border border-[#E6C15A]/25">
-                      Goals
+                      Discipline
                     </span>
                   </div>
                   <h3 className="font-hud font-bold text-base sm:text-lg text-[var(--text)] mb-2">
                     Focus Goals &amp; Goal Streaks
                   </h3>
                   <p className="text-xs text-[var(--text-dim)] leading-relaxed">
-                    Set daily minute quotas (from 30m to 8h), watch live progress rings inside the study timer, and build unbroken daily goal streaks.
+                    Set daily minute quotas, watch live gold progress rings fill around the study timer in real time, and build dedicated daily goal streaks.
                   </p>
                 </div>
 
-                {/* Streak visual */}
+                {/* Streak Visual */}
                 <div className="mt-5 p-2.5 rounded-xl bg-[var(--surface-2)]/80 border border-[var(--border)] flex items-center justify-between text-[11px]">
                   <span className="flex items-center gap-1.5 text-orange-400 font-bold">
                     <Flame className="w-3.5 h-3.5 fill-current" />
                     <span>14-Day Goal Streak</span>
                   </span>
-                  <span className="text-[var(--text-dim)]">4.0h Quota</span>
+                  <span className="text-[#E6C15A] font-mono">Live Timer Ring</span>
                 </div>
               </div>
 
-              {/* Feature 5: Scholar Crown & Avatar Flair */}
+              {/* Feature 5: Verified Scholar Crown Badge */}
               <div className="p-6 rounded-3xl bg-[var(--surface)] border border-[var(--border)] hover:border-[#E6C15A]/40 transition-all shadow-md flex flex-col justify-between group">
                 <div>
                   <div className="flex items-center justify-between mb-4">
@@ -389,26 +384,24 @@ export default function PremiumPage() {
                     </span>
                   </div>
                   <h3 className="font-hud font-bold text-base sm:text-lg text-[var(--text)] mb-2">
-                    Scholar Crown &amp; Avatar Frames
+                    Verified Scholar Crown Badge
                   </h3>
                   <p className="text-xs text-[var(--text-dim)] leading-relaxed">
-                    Stand out in collaborative study rooms and leaderboard ladders with an exclusive Gold Crown mark and customizable Gold, Aurora, or Ember frames.
+                    Stand out in community study lounges and monthly leaderboard ladders with the signature golden scholar crown badge beside your name.
                   </p>
                 </div>
 
-                {/* Prestige visual */}
+                {/* Prestige Visual */}
                 <div className="mt-5 p-2.5 rounded-xl bg-[var(--surface-2)]/80 border border-[var(--border)] flex items-center justify-between text-[11px]">
                   <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 rounded-full bg-[#E6C15A] text-[#1A1405] flex items-center justify-center font-bold text-[10px]">
-                      👑
-                    </div>
+                    <span className="text-base leading-none">👑</span>
                     <span className="font-bold text-[var(--text)]">Verified Scholar</span>
                   </div>
-                  <span className="text-[#E6C15A] font-hud font-bold">AURORA FRAME</span>
+                  <span className="text-[#E6C15A] font-hud font-bold tracking-wider text-[10px]">ALL ROOMS &amp; BOARDS</span>
                 </div>
               </div>
 
-              {/* Feature 6: Season Story Cards */}
+              {/* Feature 6: 1080×1920 Story Cards */}
               <div className="p-6 rounded-3xl bg-[var(--surface)] border border-[var(--border)] hover:border-[#E6C15A]/40 transition-all shadow-md flex flex-col justify-between group">
                 <div>
                   <div className="flex items-center justify-between mb-4">
@@ -420,14 +413,14 @@ export default function PremiumPage() {
                     </span>
                   </div>
                   <h3 className="font-hud font-bold text-base sm:text-lg text-[var(--text)] mb-2">
-                    1080×1920 Story Recap Cards
+                    1080×1920 Season Story Cards
                   </h3>
                   <p className="text-xs text-[var(--text-dim)] leading-relaxed">
                     Export high-definition 1080×1920 seasonal milestone recap cards without watermarks or blur, ready to share on Instagram, WhatsApp, and socials.
                   </p>
                 </div>
 
-                {/* Export visual */}
+                {/* Export Visual */}
                 <div className="mt-5 p-2.5 rounded-xl bg-[var(--surface-2)]/80 border border-[var(--border)] flex items-center justify-between text-[11px]">
                   <span className="text-[#E6C15A] font-semibold">1080×1920 PNG Export</span>
                   <span className="text-emerald-400 font-bold">Unblurred HD</span>
@@ -435,21 +428,20 @@ export default function PremiumPage() {
               </div>
             </div>
 
-            {/* Quick Feature Checklist Bar */}
+            {/* Quick Summary Pill Row */}
             <div className="mt-12 pt-8 border-t border-[var(--border)]/60 text-center">
               <span className="text-[10px] font-hud uppercase tracking-widest text-[var(--text-dim)] font-bold block mb-4">
-                Full Summary of Included Privileges
+                Summary of Included Privileges
               </span>
-              <div className="flex flex-wrap justify-center items-center gap-2.5 max-w-4xl mx-auto">
+              <div className="flex flex-wrap justify-center items-center gap-2.5 max-w-3xl mx-auto">
                 {[
-                  '12-Week Focus Heatmap Grid',
-                  'Peak Productivity Hours Telemetry',
                   'Gold Leaf & Crimson Themes',
-                  'Verified Scholar Crown Badge',
-                  'Gold, Aurora & Ember Avatar Frames',
-                  'Custom Daily & Weekly Focus Goals',
-                  'Consecutive Goal Streak Tracking',
+                  'Historical Calendar & Date Browsing',
                   'Automated Weekly Progress Reports',
+                  'Custom Daily & Weekly Focus Goals',
+                  'Live Circular Timer Progress Ring',
+                  'Dedicated Daily Goal Streaks',
+                  'Verified Scholar Crown Badge',
                   '1080×1920 High-Res Story Cards',
                   'Zero Advertisements & Pure Focus',
                 ].map((feat) => (
@@ -679,7 +671,7 @@ export default function PremiumPage() {
                 },
                 {
                   q: 'How do I access my premium features after purchasing?',
-                  a: 'Your account is upgraded immediately upon verified payment. Your Gold Leaf and Crimson themes will be unlocked in Settings > Appearance, and your 12-week heatmap telemetry will become active on the Stats tab right away.',
+                  a: 'Your account is upgraded immediately upon verified payment. Your Gold Leaf and Crimson themes will be unlocked in Settings > Appearance, and your weekly report cards and historical calendar navigation will become active on the Stats tab right away.',
                 },
               ].map((item, idx) => (
                 <div
@@ -753,13 +745,13 @@ export default function PremiumPage() {
                   className="p-5 rounded-2xl bg-[var(--surface)] border border-[var(--border)] hover:border-[#E6C15A]/40 transition-all block group"
                 >
                   <div className="w-10 h-10 rounded-xl bg-[var(--surface-2)] flex items-center justify-center text-[#E6C15A] mb-3 group-hover:scale-110 transition-transform">
-                    <BarChart3 className="w-5 h-5" />
+                    <TrendingUp className="w-5 h-5" />
                   </div>
                   <h3 className="font-hud font-bold text-sm text-[var(--text)]">
-                    Study Insights
+                    Weekly Report
                   </h3>
                   <p className="text-xs text-[var(--text-dim)] mt-1">
-                    Inspect your 12-week heatmap on the Stats tab.
+                    Inspect your week-over-week trends on the Stats tab.
                   </p>
                 </Link>
 

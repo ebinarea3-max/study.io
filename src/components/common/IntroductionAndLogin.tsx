@@ -114,7 +114,7 @@ export function IntroductionAndLogin() {
             </div>
             <h3 className="font-bold text-sm text-slate-200">Advanced Analytics</h3>
             <p className="text-xs text-slate-400 leading-relaxed">
-              Inspect hourly distributions, consistency heatmaps, and per-subject breakdown stats.
+              Inspect hourly distributions, calendar patterns, and per-subject breakdown stats.
             </p>
           </div>
         </div>

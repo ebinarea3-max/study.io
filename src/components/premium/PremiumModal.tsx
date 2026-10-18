@@ -194,7 +194,7 @@ export function PremiumModal({ isOpen, onClose }: PremiumModalProps) {
                         Deep Analytics &amp; Weekly Insights
                       </h3>
                       <p className="text-[11px] text-[var(--text-dim)] leading-relaxed">
-                        Productivity heatmaps, best focus hours, and historical date tracking.
+                        Weekly performance reports, subject progress breakdown, and historical date tracking.
                       </p>
                     </div>
                   </div>

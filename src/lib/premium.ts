@@ -20,8 +20,8 @@ export const PREMIUM_FEATURES: Record<PremiumFeatureKey, PremiumFeature> = {
   },
   insights: {
     key: 'insights',
-    name: 'Insights',
-    description: 'Deep analytics, best focus hours, active days heatmap, and productivity patterns.',
+    name: 'Deep Analytics & Reports',
+    description: 'Weekly performance report cards, subject trends, and unlimited historical date navigation.',
   },
 };
 
