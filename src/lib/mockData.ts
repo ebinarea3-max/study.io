@@ -15,6 +15,8 @@ export const INITIAL_USER: UserProfile = {
   seasonRp: 0,
   last_streak_bonus_date: undefined,
   lastStreakBonusDate: undefined,
+  custom_title: undefined,
+  custom_badge: undefined,
   createdAt: new Date().toISOString(),
 };
 

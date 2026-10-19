@@ -23,6 +23,8 @@ alter table public.profiles add column if not exists current_season_id text defa
 alter table public.profiles add column if not exists season_rp integer default 0;
 alter table public.profiles add column if not exists lifetime_xp bigint default 0;
 alter table public.profiles add column if not exists last_streak_bonus_date text default null;
+alter table public.profiles add column if not exists custom_title text check (char_length(custom_title) <= 20);
+alter table public.profiles add column if not exists custom_badge text check (char_length(custom_badge) <= 15);
 alter table public.subjects add column if not exists is_archived boolean default false;
 
 -- 2. Subjects Table

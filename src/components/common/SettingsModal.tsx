@@ -29,6 +29,7 @@ import { getSupabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { ThemePicker } from '../settings/ThemePicker';
 import { SettingsPlanSection } from '../settings/SettingsPlanSection';
+import { StudyRoomIdentityCard } from '../settings/StudyRoomIdentityCard';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -227,6 +228,9 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         <div className="flex-1 overflow-y-auto p-5 sm:p-6 pt-4 space-y-4 relative z-10 scrollbar-thin overscroll-contain">
           {/* Plan Section */}
           <SettingsPlanSection />
+
+          {/* Study Room Identity */}
+          <StudyRoomIdentityCard />
 
           {/* Appearance Section */}
           <ThemePicker />

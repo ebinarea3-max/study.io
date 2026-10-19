@@ -37,6 +37,7 @@ import toast from 'react-hot-toast';
 import { UserAvatar } from '../common/UserAvatar';
 import { FlairFrame, fetchFlairMap } from '../../lib/flair';
 import { AvatarFlairRing, FlairCrown } from '../common/FlairBadge';
+import { StudyRoomBadge, StudyRoomTitle } from '../study-room/participant-list';
 import { getSupabase, broadcast } from '../../lib/supabase';
 import {
   updateRoomSettingsAction,
@@ -66,6 +67,8 @@ interface RoomMemberInfo {
   user_id: string;
   username: string;
   avatar_url: string | null;
+  custom_title?: string | null;
+  custom_badge?: string | null;
   is_host: boolean;
   is_studying: boolean;
   timer_start_at: number | null;
@@ -92,10 +95,27 @@ export function formatSeconds(totalSeconds: number): string {
   return `${hStr}:${mStr}:${sStr}`;
 }
 
-// In-memory module profile cache to immediately hydrate member avatars and usernames
-const memoryProfileCache = new Map<string, { username: string; avatar_url: string | null }>();
+// In-memory module profile cache to immediately hydrate member avatars, usernames, and custom badges/titles
+const memoryProfileCache = new Map<
+  string,
+  {
+    username: string;
+    avatar_url: string | null;
+    custom_title?: string | null;
+    custom_badge?: string | null;
+  }
+>();
 
-export function getCachedMemberProfile(userId: string): { username?: string; avatar_url?: string | null } | undefined {
+export function getCachedMemberProfile(
+  userId: string
+):
+  | {
+      username?: string;
+      avatar_url?: string | null;
+      custom_title?: string | null;
+      custom_badge?: string | null;
+    }
+  | undefined {
   if (!userId) return undefined;
   if (memoryProfileCache.has(userId)) {
     return memoryProfileCache.get(userId);
@@ -114,11 +134,26 @@ export function getCachedMemberProfile(userId: string): { username?: string; ava
 }
 
 export function cacheMemberProfiles(
-  profiles: { id: string; username?: string; name?: string; avatar_url?: string | null }[]
+  profiles: {
+    id: string;
+    username?: string;
+    name?: string;
+    avatar_url?: string | null;
+    custom_title?: string | null;
+    custom_badge?: string | null;
+  }[]
 ) {
   if (!profiles || profiles.length === 0) return;
   try {
-    let localObj: Record<string, { username: string; avatar_url: string | null }> = {};
+    let localObj: Record<
+      string,
+      {
+        username: string;
+        avatar_url: string | null;
+        custom_title?: string | null;
+        custom_badge?: string | null;
+      }
+    > = {};
     if (typeof window !== 'undefined') {
       try {
         const raw = localStorage.getItem('study_io_profiles_cache');
@@ -133,6 +168,8 @@ export function cacheMemberProfiles(
       const item = {
         username: p.username || p.name || 'Scholar',
         avatar_url: cleanAvatar,
+        custom_title: p.custom_title !== undefined ? p.custom_title : null,
+        custom_badge: p.custom_badge !== undefined ? p.custom_badge : null,
       };
       memoryProfileCache.set(p.id, item);
       localObj[p.id] = item;
@@ -346,9 +383,26 @@ CREATE POLICY "Hosts can update their own study rooms"
         (user as any)?.user_metadata?.picture ||
         null;
       const myName = profile?.username || user?.displayName || user?.email?.split('@')[0] || 'Scholar';
-      cacheMemberProfiles([{ id: user.id, username: myName, avatar_url: myAvatar }]);
+      cacheMemberProfiles([
+        {
+          id: user.id,
+          username: myName,
+          avatar_url: myAvatar,
+          custom_title: user?.custom_title || null,
+          custom_badge: user?.custom_badge || null,
+        },
+      ]);
     }
-  }, [user?.id, profile?.avatar_url, profile?.username, user?.avatarUrl, user?.displayName, user?.email]);
+  }, [
+    user?.id,
+    profile?.avatar_url,
+    profile?.username,
+    user?.avatarUrl,
+    user?.displayName,
+    user?.email,
+    user?.custom_title,
+    user?.custom_badge,
+  ]);
 
 
   // Ticker to smoothly update live study timers every second
@@ -557,7 +611,7 @@ CREATE POLICY "Hosts can update their own study rooms"
       // 3. Fetch user profiles for all members
       const { data: profilesData } = await supabase
         .from('profiles')
-        .select('id, username, name, avatar_url')
+        .select('id, username, name, avatar_url, custom_title, custom_badge')
         .in('id', allUserIds);
 
       if (profilesData && profilesData.length > 0) {
@@ -614,10 +668,22 @@ CREATE POLICY "Hosts can update their own study rooms"
           cached?.avatar_url ||
           (uid === user?.id ? (profileRef.current?.avatar_url || user?.avatarUrl) : null);
 
+        const resolvedCustomTitle =
+          prof?.custom_title !== undefined
+            ? prof.custom_title
+            : (uid === user?.id ? (user?.custom_title ?? null) : (cached?.custom_title ?? null));
+
+        const resolvedCustomBadge =
+          prof?.custom_badge !== undefined
+            ? prof.custom_badge
+            : (uid === user?.id ? (user?.custom_badge ?? null) : (cached?.custom_badge ?? null));
+
         return {
           user_id: uid,
           username: resolvedUsername,
           avatar_url: resolvedAvatar,
+          custom_title: resolvedCustomTitle,
+          custom_badge: resolvedCustomBadge,
           is_host: isHost,
           is_studying: isSessionRunning,
           timer_start_at: startTime,
@@ -849,6 +915,8 @@ CREATE POLICY "Hosts can update their own study rooms"
               client_id: clientIdRef.current,
               username: myUsername,
               avatar_url: myAvatar,
+              custom_title: user?.custom_title || null,
+              custom_badge: user?.custom_badge || null,
               is_studying: isRunning,
               session_start_time: isRunning ? Date.now() - (elapsed * 1000) : null,
               elapsed_seconds: elapsed,
@@ -925,6 +993,8 @@ CREATE POLICY "Hosts can update their own study rooms"
           client_id: clientIdRef.current,
           username: myUsername,
           avatar_url: myAvatar,
+          custom_title: user?.custom_title || null,
+          custom_badge: user?.custom_badge || null,
           is_studying: isRunning,
           session_start_time: isRunning ? Date.now() - (elapsed * 1000) : null,
           elapsed_seconds: elapsed,
@@ -940,6 +1010,8 @@ CREATE POLICY "Hosts can update their own study rooms"
     isTimerRunning,
     elapsedSeconds,
     user?.id,
+    user?.custom_title,
+    user?.custom_badge,
     profile?.username,
     profile?.avatar_url,
     getTodayTotalSeconds,
@@ -956,7 +1028,7 @@ CREATE POLICY "Hosts can update their own study rooms"
       .from('room_messages')
       .select(`
         id, content, created_at, user_id,
-        profiles ( username, avatar_url )
+        profiles ( username, avatar_url, custom_title, custom_badge )
       `)
       .eq('room_id', roomId)
       .order('created_at', { ascending: true })
@@ -1132,7 +1204,7 @@ CREATE POLICY "Hosts can update their own study rooms"
       })
       .select(`
         id, content, created_at, user_id,
-        profiles ( username, avatar_url )
+        profiles ( username, avatar_url, custom_title, custom_badge )
       `)
       .single();
 
@@ -1253,6 +1325,18 @@ CREATE POLICY "Hosts can update their own study rooms"
           cached?.avatar_url ||
           pu?.avatar_url ||
           null,
+        custom_title:
+          (isCurrentUser ? user?.custom_title : null) ||
+          member.custom_title ||
+          pu?.custom_title ||
+          cached?.custom_title ||
+          null,
+        custom_badge:
+          (isCurrentUser ? user?.custom_badge : null) ||
+          member.custom_badge ||
+          pu?.custom_badge ||
+          cached?.custom_badge ||
+          null,
         is_studying: isStudying,
         session_seconds: sessionSeconds,
         today_seconds: baseToday,
@@ -1272,6 +1356,8 @@ CREATE POLICY "Hosts can update their own study rooms"
         user_id: user.id,
         username: profile?.username || user.displayName || cached?.username || 'Scholar',
         avatar_url: profile?.avatar_url || user.avatarUrl || cached?.avatar_url || null,
+        custom_title: user?.custom_title || cached?.custom_title || null,
+        custom_badge: user?.custom_badge || cached?.custom_badge || null,
         is_host: Boolean(user?.id && roomInfo?.host_id === user.id),
         is_studying: isTimerRunning,
         session_seconds: sessionSeconds,
@@ -1313,6 +1399,8 @@ CREATE POLICY "Hosts can update their own study rooms"
           user_id: pu.user_id,
           username: pu.username || cached?.username || 'Scholar',
           avatar_url: pu.avatar_url || cached?.avatar_url || null,
+          custom_title: pu.custom_title || cached?.custom_title || null,
+          custom_badge: pu.custom_badge || cached?.custom_badge || null,
           is_host: Boolean(pu.user_id && roomInfo?.host_id === pu.user_id),
           is_studying: isStudying,
           session_seconds: sessionSeconds,
@@ -1349,6 +1437,8 @@ CREATE POLICY "Hosts can update their own study rooms"
     presentUsers,
     liveFocusMap,
     user?.id,
+    user?.custom_title,
+    user?.custom_badge,
     profile?.username,
     profile?.avatar_url,
     isTimerRunning,
@@ -1698,8 +1788,8 @@ CREATE POLICY "Hosts can update their own study rooms"
                   </div>
 
                   {/* Member Name, Total Time Studied Today (Adds up live when focusing) */}
-                  <div className="text-center mt-1 flex flex-col items-center max-w-[130px]">
-                    <div className="flex items-center gap-1.5 justify-center">
+                  <div className="text-center mt-1 flex flex-col items-center max-w-[140px]">
+                    <div className="flex items-center gap-1.5 justify-center flex-wrap">
                       <p
                         className="text-sm font-bold text-slate-200 truncate max-w-[100px]"
                         title={u.username}
@@ -1714,7 +1804,15 @@ CREATE POLICY "Hosts can update their own study rooms"
                           Host
                         </span>
                       )}
+                      {u.custom_badge && (
+                        <StudyRoomBadge badge={u.custom_badge} />
+                      )}
                     </div>
+
+                    {/* Custom Title (styled with dark-gold muted secondary text) */}
+                    {u.custom_title && (
+                      <StudyRoomTitle title={u.custom_title} />
+                    )}
 
                     {/* Displays Total Focus Time Today with live seconds ticking up from today's total */}
                     <p
@@ -1816,13 +1914,16 @@ CREATE POLICY "Hosts can update their own study rooms"
                           key={`group-${firstMsg.id}`}
                           className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} group`}
                         >
-                          {/* Meta header: name, host badge, focusing status, timestamp, ban action */}
+                          {/* Meta header: name, badge, host badge, focusing status, timestamp, ban action */}
                           <div className={`flex items-center gap-2 mb-1.5 ${isMe ? 'mr-1 flex-row-reverse' : 'ml-1'}`}>
                             <span className={`text-xs font-hud font-bold tracking-tight ${isMe ? 'text-amber-400' : 'text-slate-200'}`}>
                               {isMe ? 'YOU' : username}
                             </span>
                             {flairMap[firstMsg.user_id] && (
                               <FlairCrown frame={flairMap[firstMsg.user_id]} size={11} />
+                            )}
+                            {(senderMember?.custom_badge || cachedUser?.custom_badge || firstMsg.profiles?.custom_badge) && (
+                              <StudyRoomBadge badge={senderMember?.custom_badge || cachedUser?.custom_badge || firstMsg.profiles?.custom_badge} />
                             )}
                             {isHostUser && (
                               <span className="text-[9px] font-hud font-bold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 uppercase">
