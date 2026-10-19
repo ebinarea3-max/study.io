@@ -168,8 +168,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             status: prev.status || 'resting',
             createdAt: profile.created_at || prev.createdAt || new Date().toISOString(),
             is_onboarded: profile.is_onboarded ?? prev.is_onboarded,
-            custom_title: profile.custom_title !== undefined ? profile.custom_title : (prev.custom_title ?? null),
-            custom_badge: profile.custom_badge !== undefined ? profile.custom_badge : (prev.custom_badge ?? null),
             user_metadata: {
               ...(authUser.user_metadata || {}),
               level: Number(profile.level ?? calculatedLevel),
@@ -249,8 +247,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               totalStudySeconds: data.total_study_seconds ?? prev.totalStudySeconds,
               levelTitle: data.rank_title || data.level_title || prev.levelTitle,
               is_onboarded: data.is_onboarded ?? prev.is_onboarded,
-              custom_title: data.custom_title !== undefined ? data.custom_title : (prev.custom_title ?? null),
-              custom_badge: data.custom_badge !== undefined ? data.custom_badge : (prev.custom_badge ?? null),
               user_metadata: {
                 ...(prev.user_metadata || {}),
                 level: data.level ?? prev.level,
@@ -672,12 +668,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         if (updates.dailyGoalHours !== undefined) {
           payload.daily_goal_minutes = Math.round(Number(updates.dailyGoalHours) * 60);
-        }
-        if (updates.custom_title !== undefined) {
-          payload.custom_title = updates.custom_title ? updates.custom_title.trim().slice(0, 20) : null;
-        }
-        if (updates.custom_badge !== undefined) {
-          payload.custom_badge = updates.custom_badge ? updates.custom_badge.trim().slice(0, 15) : null;
         }
 
         if (Object.keys(payload).length > 0) {

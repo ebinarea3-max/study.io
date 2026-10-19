@@ -91,8 +91,6 @@ export type UserProfile = {
     [key: string]: unknown;
   };
   is_onboarded?: boolean;
-  custom_title?: string | null;
-  custom_badge?: string | null;
 };
 
 export type SeasonResetData = {
@@ -158,8 +156,6 @@ export type RoomMember = {
   streakDays: number;
   isBot?: boolean;
   lastActive: string;
-  custom_title?: string | null;
-  custom_badge?: string | null;
 };
 
 export type RoomChatMessage = {

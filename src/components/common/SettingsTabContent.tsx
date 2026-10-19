@@ -25,7 +25,6 @@ import { TierIcon } from './TierIcon';
 import { RankCrestBadge } from './RankCrestBadge';
 import { ThemePicker } from '../settings/ThemePicker';
 import { SettingsPlanSection } from '../settings/SettingsPlanSection';
-import { StudyRoomIdentityCard } from '../settings/StudyRoomIdentityCard';
 
 export function SettingsTabContent() {
   const { user, deleteAccount } = useAuth();
@@ -128,9 +127,6 @@ export function SettingsTabContent() {
 
       {/* Plan Section */}
       <SettingsPlanSection />
-
-      {/* Study Room Identity (Custom Badges & Custom Titles) */}
-      <StudyRoomIdentityCard />
 
       {/* Appearance / Theme Selector */}
       <ThemePicker />
