@@ -1,6 +1,13 @@
 // Web Audio API Sound Synthesizer & Ambient Sound Generator
 
-export type AmbientSoundType = 'pinknoise' | 'brownnoise' | 'whitenoise' | 'rain' | 'campfire';
+export type AmbientSoundType =
+  | 'pinknoise'
+  | 'brownnoise'
+  | 'whitenoise'
+  | 'rain'
+  | 'campfire'
+  | 'waves'
+  | 'lofi';
 
 class AudioEngine {
   private ctx: AudioContext | null = null;
@@ -122,7 +129,7 @@ class AudioEngine {
     } catch {
       // ignore
     }
-  }  // Play subtle rising chime for leaderboard podium reveal (low gain)
+  }  // Play subtle rising chime for leaderboard podium reveal (low gain)
   public playPodiumReveal() {
     try {
       const ctx = this.getContext();
@@ -200,6 +207,8 @@ class AudioEngine {
     'whitenoise': 2.0,
     'rain': 4.0,
     'campfire': 4.0,
+    'waves': 3.5,
+    'lofi': 3.0,
   };
 
   public async startAmbient(type: AmbientSoundType, volume = 0.4) {
@@ -232,6 +241,8 @@ class AudioEngine {
         'whitenoise': '/audio/ambience/white-noise.mp3',
         'pinknoise': '/audio/ambience/pink-noise.mp3',
         'brownnoise': '/audio/ambience/brown-noise.mp3',
+        'waves': '/audio/ambience/waves.mp3',
+        'lofi': '/audio/ambience/lofi.mp3',
       };
       
       const url = urls[type];

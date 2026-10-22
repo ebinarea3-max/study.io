@@ -38,9 +38,11 @@ import {
   CloudRain,
   Radio,
   Headphones,
+  Waves,
   ChevronUp,
 Settings } from 'lucide-react';
 import { soundFx, AmbientSoundType } from '../../lib/audio';
+import { useAtmosphere } from '../focus/useAtmosphere';
 import confetti from 'canvas-confetti';
 import { CountdownEditor } from './CountdownEditor';
 import { getSupabase } from '../../lib/supabase';
@@ -117,31 +119,24 @@ export function StudyTimer() {
   const [isManageSubjectsOpen, setIsManageSubjectsOpen] = useState(false);
   const isSubjectModalOpen = isManageSubjectsOpen;
   const setIsSubjectModalOpen = setIsManageSubjectsOpen;
-  const [ambientSound, setAmbientSound] = useState<AmbientSoundType | 'none'>('none');
-  const [ambientVolume, setAmbientVolume] = useState(0.5);
+  const {
+    ambientSound,
+    ambientVolume,
+    selectAtmosphere,
+    setVolume: setAmbientVolume,
+    activeOption: activeAtmosphereOption,
+  } = useAtmosphere();
   const [isAmbientMenuOpen, setIsAmbientMenuOpen] = useState(false);
   const [countdownTarget, setCountdownTarget] = useState<number>(3600);
   const [customCountdownInput, setCustomCountdownInput] = useState("");
   const [isEditingCountdown, setIsEditingCountdown] = useState(false);
 
-  useEffect(() => {
-    return () => {
-      soundFx.stopAmbient();
-    };
-  }, []);
-
   const handleAmbientChange = (type: AmbientSoundType | 'none') => {
-    setAmbientSound(type);
-    if (type === 'none') {
-      soundFx.stopAmbient();
-    } else {
-      soundFx.startAmbient(type, ambientVolume);
-    }
+    selectAtmosphere(type);
   };
 
   const handleVolumeChange = (vol: number) => {
     setAmbientVolume(vol);
-    soundFx.setAmbientVolume(vol);
   };
 
   const [showDropdown, setShowDropdown] = useState(false);
@@ -750,12 +745,7 @@ export function StudyTimer() {
     statusText = 'Ready';
   }
 
-  const ambientLabel =
-    ambientSound === 'pinknoise' ? 'Pink Noise' :
-    ambientSound === 'brownnoise' ? 'Brown Noise' :
-    ambientSound === 'whitenoise' ? 'White Noise' :
-    ambientSound === 'rain' ? 'Rain' :
-    ambientSound === 'campfire' ? 'Fireplace' : 'Silent';
+  const ambientLabel = activeAtmosphereOption?.label || 'Silent';
 
   // Muted teal-gray (#5A6B6A) for General Focus, neutral slate-gray (#64748B) when no subject is selected
   const subjectColor = !selectedSubject
@@ -1306,11 +1296,13 @@ export function StudyTimer() {
                 <div className="flex flex-col gap-1">
                   {[
                     { id: 'none', label: 'Silent', icon: <span className="w-3.5 h-3.5 rounded-full bg-zinc-500 mx-0.5" /> },
-                    { id: 'pinknoise', label: 'Pink Noise', icon: <Radio className="w-4 h-4" /> },
-                    { id: 'brownnoise', label: 'Brown Noise', icon: <Headphones className="w-4 h-4" /> },
-                    { id: 'whitenoise', label: 'White Noise', icon: <Radio className="w-4 h-4" /> },
-                    { id: 'rain', label: 'Rain', icon: <CloudRain className="w-4 h-4" /> },
+                    { id: 'rain', label: 'Gentle Rain', icon: <CloudRain className="w-4 h-4" /> },
                     { id: 'campfire', label: 'Fireplace', icon: <Flame className="w-4 h-4" /> },
+                    { id: 'waves', label: 'Ocean Waves', icon: <Waves className="w-4 h-4" /> },
+                    { id: 'lofi', label: 'Lo-Fi Chill', icon: <Coffee className="w-4 h-4" /> },
+                    { id: 'brownnoise', label: 'Brown Noise', icon: <Headphones className="w-4 h-4" /> },
+                    { id: 'pinknoise', label: 'Pink Noise', icon: <Radio className="w-4 h-4" /> },
+                    { id: 'whitenoise', label: 'White Noise', icon: <Radio className="w-4 h-4" /> },
                   ].map((option) => (
                     <button
                       key={option.id}
