@@ -69,6 +69,12 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${rajdhani.variable} ${chakraPetch.variable} dark antialiased`}
     >
       <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&family=Space+Grotesk:wght@600;700&display=swap"
+          rel="stylesheet"
+        />
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var t=localStorage.getItem('studyio-theme')||'rank';var valid=['rank','midnight','ember','forest','ocean','rose','nebula','graphite','paper','goldleaf','crimson'];if(!valid.includes(t))t='rank';document.documentElement.dataset.theme=t;if(t==='paper'){document.documentElement.classList.remove('dark');document.documentElement.classList.add('light');}else{document.documentElement.classList.remove('light');document.documentElement.classList.add('dark');}}catch(e){document.documentElement.dataset.theme='rank';}})();`,

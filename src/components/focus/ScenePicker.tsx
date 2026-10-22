@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useCallback } from 'react';
 import { AVAILABLE_SCENES, FocusScene } from './scenes/registry';
 import { Lock, Check, X, Sparkles, Sliders, Crown } from 'lucide-react';
 import { getSceneThumbnailDataUrl } from './scenes/thumbnailRenderer';
+import { getSvgScene } from './scenes/svgScenes';
 
 interface ScenePickerProps {
   isOpen: boolean;
@@ -126,7 +127,8 @@ export function ScenePicker({
           {AVAILABLE_SCENES.map((scene: FocusScene, index: number) => {
             const isSelected = activeSceneId === scene.id;
             const isLocked = scene.premium && !isPremium;
-            const thumbUrl = getSceneThumbnailDataUrl(scene.id);
+            const svgMarkup = getSvgScene(scene.id);
+            const thumbUrl = !svgMarkup ? getSceneThumbnailDataUrl(scene.id) : null;
 
             return (
               <button
@@ -146,16 +148,21 @@ export function ScenePicker({
                 {/* 16:9 Thumbnail preview filling the card */}
                 <div
                   className="w-full aspect-video relative overflow-hidden bg-neutral-900"
-                  style={{ background: thumbUrl ? undefined : scene.thumbnail }}
+                  style={{ background: scene.thumbnail }}
                 >
-                  {thumbUrl && (
+                  {svgMarkup ? (
+                    <div
+                      className="w-full h-full pointer-events-none select-none transition-transform duration-300 group-hover:scale-105 [&_svg]:w-full [&_svg]:h-full [&_svg]:object-cover [&_svg_*]:!animation-none"
+                      dangerouslySetInnerHTML={{ __html: svgMarkup }}
+                    />
+                  ) : thumbUrl ? (
                     /* eslint-disable-next-line @next/next/no-img-element */
                     <img
                       src={thumbUrl}
                       alt={scene.name}
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
-                  )}
+                  ) : null}
 
                   {/* Lock overlay for free users on premium scenes */}
                   {isLocked && (

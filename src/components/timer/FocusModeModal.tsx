@@ -3,10 +3,11 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useStudy } from '../../context/StudyContext';
 import { formatSeconds } from '../../lib/utils';
-import { Minimize2, Sparkles } from 'lucide-react';
+import { Minimize2, Sliders, Crown } from 'lucide-react';
 import { FocusSceneLayer } from '../focus/FocusSceneLayer';
 import { useFocusScene } from '../focus/useFocusScene';
 import { ScenePicker, ScenePreviewPill } from '../focus/ScenePicker';
+import { AVAILABLE_SCENES, getSceneById } from '../focus/scenes/registry';
 
 function exitFullscreenSafely() {
   if (typeof document === 'undefined') return;
@@ -41,14 +42,13 @@ export function FocusModeModal() {
     pomodoroPhase,
     pomodoroWorkDuration,
     pomodoroBreakDuration,
-    isStudying,
-    isPaused,
+    selectedSubject,
   } = useStudy();
 
   const [isIdle, setIsIdle] = useState(false);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const idleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const sceneButtonRef = useRef<HTMLButtonElement | null>(null);
+  const settingsButtonRef = useRef<HTMLButtonElement | null>(null);
 
   // Focus scenes state & soft gating
   const {
@@ -61,9 +61,6 @@ export function FocusModeModal() {
     previewSecondsLeft,
     openPremiumModal,
   } = useFocusScene();
-
-  // Speed multiplier: while timer is running -> 1.0, while idle or paused -> 0.5
-  const speedMultiplier = isStudying && !isPaused ? 1.0 : 0.5;
 
   // Auto-hide UI when mouse is idle (keep visible while picker is open)
   useEffect(() => {
@@ -91,7 +88,7 @@ export function FocusModeModal() {
     };
   }, [isFocusModeOpen, isPickerOpen]);
 
-  // Esc key listener to exit focus mode (only if picker is not open; picker handles its own ESC)
+  // Arrow keys navigation (ArrowLeft / ArrowRight) & Escape key listener
   useEffect(() => {
     if (!isFocusModeOpen) return;
 
@@ -99,12 +96,29 @@ export function FocusModeModal() {
       if (e.key === 'Escape' && !isPickerOpen) {
         setIsFocusModeOpen(false);
         exitFullscreenSafely();
+        return;
+      }
+
+      // Do not trigger arrow cycling if focus is inside an input/slider
+      if (document.activeElement?.tagName === 'INPUT') return;
+
+      const keys = AVAILABLE_SCENES.map((s) => s.id);
+      const curIndex = keys.indexOf(activeSceneId);
+
+      if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        const nextKey = keys[(curIndex + 1) % keys.length];
+        selectScene(nextKey);
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        const prevKey = keys[(curIndex - 1 + keys.length) % keys.length];
+        selectScene(prevKey);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isFocusModeOpen, isPickerOpen, setIsFocusModeOpen]);
+  }, [isFocusModeOpen, isPickerOpen, activeSceneId, selectScene, setIsFocusModeOpen]);
 
   if (!isFocusModeOpen) return null;
 
@@ -118,53 +132,26 @@ export function FocusModeModal() {
 
   const isBreak = timerMode === 'pomodoro' && pomodoroPhase !== 'work';
 
-  // Soft glow text-shadow tinted to the active scene (preserves size, position, and font)
-  let sceneGlow = isBreak
-    ? '0 0 120px rgba(59, 130, 246, 0.25), 0 0 40px rgba(59, 130, 246, 0.15)'
-    : '0 0 100px rgba(255, 255, 255, 0.12)';
+  // Scene ambient text glow matching design concept
+  const activeScene = getSceneById(activeSceneId);
+  const sceneGlow = isBreak
+    ? 'rgba(59, 130, 246, 0.4)'
+    : activeScene?.glow || 'rgba(255,170,120,.45)';
 
-  if (!isBreak) {
-    switch (activeSceneId) {
-      case 'stars':
-        sceneGlow =
-          '0 0 110px rgba(199, 210, 254, 0.32), 0 0 45px rgba(147, 197, 253, 0.22), 0 0 20px rgba(255, 255, 255, 0.35)';
-        break;
-      case 'rain':
-        sceneGlow =
-          '0 0 110px rgba(125, 211, 252, 0.30), 0 0 45px rgba(56, 189, 248, 0.20), 0 0 20px rgba(224, 242, 254, 0.35)';
-        break;
-      case 'library':
-        sceneGlow =
-          '0 0 110px rgba(251, 191, 36, 0.35), 0 0 45px rgba(245, 158, 11, 0.22), 0 0 20px rgba(254, 240, 138, 0.35)';
-        break;
-      case 'aurora':
-        sceneGlow =
-          '0 0 110px rgba(52, 211, 153, 0.35), 0 0 45px rgba(139, 92, 246, 0.22), 0 0 20px rgba(167, 243, 208, 0.35)';
-        break;
-      case 'embers':
-        sceneGlow =
-          '0 0 110px rgba(251, 146, 60, 0.35), 0 0 45px rgba(234, 88, 12, 0.22), 0 0 20px rgba(254, 215, 170, 0.35)';
-        break;
-      default:
-        sceneGlow = '0 0 100px rgba(255, 255, 255, 0.12)';
-        break;
-    }
-  }
+  const subjectSubtitle = isBreak
+    ? 'Rest Phase'
+    : `Studying ${selectedSubject?.name || 'Deep Work'}`;
 
   return (
     <div
       data-theme="rank"
       style={{ colorScheme: 'dark' }}
-      className={`fixed inset-0 z-50 flex flex-col items-center justify-center select-none overflow-hidden animate-in fade-in duration-500 transition-colors bg-black ${
+      className={`fixed inset-0 z-50 flex flex-col items-center justify-center select-none overflow-hidden animate-in fade-in duration-500 transition-colors bg-[#05060a] ${
         isIdle && !isPickerOpen ? 'cursor-none' : 'cursor-default'
       }`}
     >
-      {/* 1. Animated / Living Focus Scene Layer behind all content (z-0, pointer-events none) */}
-      <FocusSceneLayer
-        sceneId={activeSceneId}
-        dim={dim}
-        speedMultiplier={speedMultiplier}
-      />
+      {/* 1. Animated / Living Focus Scene Layer (z-0, pointer-events none) */}
+      <FocusSceneLayer sceneId={activeSceneId} dim={dim} />
 
       {/* 2. Free User 8-Second Preview Toast / Pill */}
       {previewSceneId && previewSecondsLeft > 0 && (
@@ -174,81 +161,132 @@ export function FocusModeModal() {
         />
       )}
 
-      {/* Invisible overlay that can be clicked to exit if they don't know ESC */}
+      {/* Invisible overlay that can be double-clicked to exit */}
       <div
         className="absolute inset-0 z-0"
         onDoubleClick={() => setIsFocusModeOpen(false)}
       />
 
-      {/* 3. Big Timer with high-contrast radial mask and scene-tinted soft glow */}
+      {/* 3. Big Clock with Space Grotesk tabular digits and scene-specific ambient glow */}
       <div
-        className={`relative z-10 flex flex-col items-center justify-center text-center transition-transform duration-700 ease-out ${
+        className={`relative z-10 flex flex-col items-center justify-center text-center pointer-events-none transition-transform duration-700 ease-out ${
           isIdle && !isPickerOpen ? 'scale-105' : 'scale-100'
         }`}
       >
         {timerMode === 'pomodoro' && (
-          <div className="mb-8 text-sm md:text-lg font-bold text-slate-400 tracking-[0.3em] uppercase drop-shadow-md">
+          <div className="mb-3 text-xs md:text-sm font-bold text-white/50 tracking-[0.3em] uppercase drop-shadow">
             {pomodoroPhase === 'work' ? 'Deep Focus' : 'Rest Phase'}
           </div>
         )}
 
         <div
-          className="font-hud font-black tracking-tighter text-white leading-none text-[16vw] md:text-[20vw] tabular-nums drop-shadow-[0_4px_30px_rgba(0,0,0,0.8)]"
-          style={{ textShadow: sceneGlow }}
+          className="font-bold leading-none text-white tabular-nums select-none"
+          style={{
+            fontFamily: "'Space Grotesk', var(--font-hud), sans-serif",
+            fontSize: 'clamp(64px, 14vw, 175px)',
+            letterSpacing: '-0.03em',
+            textShadow: `0 0 60px ${sceneGlow}, 0 2px 26px rgba(0,0,0,.45)`,
+            transition: 'text-shadow 0.9s ease',
+          }}
         >
           {displayTime}
         </div>
+
+        <div
+          className="mt-3.5 text-base sm:text-lg font-medium text-white/75 select-none"
+          style={{
+            fontFamily: "'Outfit', var(--font-geist-sans), sans-serif",
+            textShadow: '0 1px 12px rgba(0,0,0,.5)',
+          }}
+        >
+          {subjectSubtitle}
+        </div>
       </div>
 
-      {/* 4. Floating Control Bar (Scene Picker & Exit Fullscreen) */}
+      {/* 4. Bottom Control Bar: Sleek Scene Pill Selector & Action Buttons */}
       <div
-        className={`absolute bottom-10 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3 transition-all duration-500 ease-in-out ${
+        className={`absolute bottom-[calc(22px+env(safe-area-inset-bottom,0px))] left-1/2 -translate-x-1/2 z-20 flex flex-wrap items-center justify-center gap-2 max-w-[calc(100%-24px)] transition-all duration-500 ease-in-out ${
           isIdle && !isPickerOpen ? 'opacity-0 translate-y-4 pointer-events-none' : 'opacity-100 translate-y-0'
         }`}
       >
-        {/* Scene Picker Trigger Button */}
-        <div className="relative">
+        {/* Pill Group matching concept design */}
+        <div
+          role="group"
+          aria-label="Scene selector"
+          className="flex items-center gap-1 p-1 max-w-[calc(100vw-32px)] overflow-x-auto scrollbar-none rounded-full bg-[rgba(10,12,20,0.55)] border border-white/15 backdrop-blur-xl shadow-2xl"
+        >
+          {AVAILABLE_SCENES.map((scene) => {
+            const isActive = activeSceneId === scene.id;
+            const isLocked = scene.premium && !isPremium;
+
+            return (
+              <button
+                key={scene.id}
+                type="button"
+                aria-pressed={isActive}
+                onClick={() => selectScene(scene.id)}
+                className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-full text-xs sm:text-[13px] font-medium transition-all shrink-0 cursor-pointer ${
+                  isActive
+                    ? 'bg-white/92 text-[#0b0d14] font-semibold shadow-md'
+                    : 'bg-transparent text-white/80 hover:text-white hover:bg-white/10'
+                }`}
+                style={{ fontFamily: "'Outfit', sans-serif" }}
+              >
+                <span>{scene.name}</span>
+                {isLocked && (
+                  <Crown className="w-3 h-3 text-[#E6C15A] fill-[#E6C15A] shrink-0" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Action Controls: Dim / Customize & Exit Fullscreen */}
+        <div className="flex items-center gap-2">
+          {/* Dim & Scene Drawer Toggle */}
           <button
-            ref={sceneButtonRef}
+            ref={settingsButtonRef}
             type="button"
             onClick={() => setIsPickerOpen((prev) => !prev)}
             aria-haspopup="dialog"
             aria-expanded={isPickerOpen}
-            className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/10 text-neutral-300 hover:text-white text-xs sm:text-sm font-semibold transition-all shadow-2xl hover:scale-105 active:scale-95 cursor-pointer"
-            title="Focus scenes"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-[rgba(10,12,20,0.55)] hover:bg-white/15 border border-white/15 text-white/80 hover:text-white text-xs sm:text-[13px] font-medium backdrop-blur-xl shadow-xl transition-all cursor-pointer"
+            title="Adjust dim & options"
           >
-            <Sparkles className="w-4 h-4 text-amber-400" />
-            <span>Scene</span>
+            <Sliders className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Dim</span>
+            <span className="font-mono text-[11px] text-white/60">{dim}%</span>
           </button>
 
-          {/* Scene Picker Popover / Bottom Sheet */}
-          <ScenePicker
-            isOpen={isPickerOpen}
-            onClose={() => setIsPickerOpen(false)}
-            activeSceneId={activeSceneId}
-            onSelectScene={(id) => selectScene(id)}
-            dim={dim}
-            onDimChange={setDim}
-            isPremium={isPremium}
-            triggerButtonRef={sceneButtonRef}
-          />
+          {/* Exit Fullscreen */}
+          <button
+            type="button"
+            onClick={() => {
+              setIsFocusModeOpen(false);
+              exitFullscreenSafely();
+            }}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-[rgba(10,12,20,0.55)] hover:bg-white/15 border border-white/15 text-white/80 hover:text-white text-xs sm:text-[13px] font-medium backdrop-blur-xl shadow-xl transition-all cursor-pointer"
+            title="Exit Fullscreen (ESC)"
+          >
+            <Minimize2 className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Exit</span>
+            <span className="ml-1 px-1 py-0.2 rounded text-[10px] bg-black/40 text-white/50 font-mono">
+              ESC
+            </span>
+          </button>
         </div>
 
-        {/* Exit Fullscreen Button */}
-        <button
-          type="button"
-          onClick={() => {
-            setIsFocusModeOpen(false);
-            exitFullscreenSafely();
-          }}
-          className="flex items-center gap-2.5 px-6 py-3 rounded-2xl bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/10 text-neutral-300 hover:text-white text-xs sm:text-sm font-semibold transition-all shadow-2xl hover:scale-105 active:scale-95 cursor-pointer"
-        >
-          <Minimize2 className="w-4 h-4" />
-          <span>Exit Fullscreen</span>
-          <span className="hidden sm:inline-block ml-2 px-1.5 py-0.5 rounded text-[10px] bg-black/40 text-neutral-400 font-mono">
-            ESC
-          </span>
-        </button>
+        {/* Detailed Scene Drawer Popover */}
+        <ScenePicker
+          isOpen={isPickerOpen}
+          onClose={() => setIsPickerOpen(false)}
+          activeSceneId={activeSceneId}
+          onSelectScene={(id) => selectScene(id)}
+          dim={dim}
+          onDimChange={setDim}
+          isPremium={isPremium}
+          triggerButtonRef={settingsButtonRef}
+        />
       </div>
     </div>
   );

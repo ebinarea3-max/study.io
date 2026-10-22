@@ -17,7 +17,290 @@ export function getSceneThumbnailDataUrl(sceneId: string): string | null {
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
 
-    if (sceneId === 'stars') {
+    if (sceneId === 'dusk') {
+      // Dusk peaks: sunset sky, mountains, warm glow
+      const sky = ctx.createLinearGradient(0, 0, 0, height);
+      sky.addColorStop(0, '#171040');
+      sky.addColorStop(0.35, '#4a2372');
+      sky.addColorStop(0.65, '#b9487c');
+      sky.addColorStop(0.85, '#f58a69');
+      sky.addColorStop(1, '#ffc47c');
+      ctx.fillStyle = sky;
+      ctx.fillRect(0, 0, width, height);
+
+      // Sunset sun
+      const sunGlow = ctx.createRadialGradient(210, 130, 0, 210, 130, 70);
+      sunGlow.addColorStop(0, '#fff0c4');
+      sunGlow.addColorStop(0.25, '#ffb36b');
+      sunGlow.addColorStop(1, 'transparent');
+      ctx.fillStyle = sunGlow;
+      ctx.beginPath();
+      ctx.arc(210, 130, 70, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Ridge layers
+      ctx.fillStyle = '#8a4a86';
+      ctx.beginPath();
+      ctx.moveTo(0, 125);
+      ctx.lineTo(60, 115);
+      ctx.lineTo(130, 130);
+      ctx.lineTo(200, 110);
+      ctx.lineTo(260, 125);
+      ctx.lineTo(320, 118);
+      ctx.lineTo(320, 180);
+      ctx.lineTo(0, 180);
+      ctx.fill();
+
+      ctx.fillStyle = '#552a63';
+      ctx.beginPath();
+      ctx.moveTo(0, 140);
+      ctx.lineTo(90, 125);
+      ctx.lineTo(170, 145);
+      ctx.lineTo(250, 132);
+      ctx.lineTo(320, 148);
+      ctx.lineTo(320, 180);
+      ctx.lineTo(0, 180);
+      ctx.fill();
+
+      ctx.fillStyle = '#2b1646';
+      ctx.beginPath();
+      ctx.moveTo(0, 155);
+      ctx.lineTo(70, 145);
+      ctx.lineTo(160, 160);
+      ctx.lineTo(240, 150);
+      ctx.lineTo(320, 162);
+      ctx.lineTo(320, 180);
+      ctx.lineTo(0, 180);
+      ctx.fill();
+    } else if (sceneId === 'forest') {
+      // Moonlit forest: dark teal sky, moon, pine silhouettes, mist
+      const sky = ctx.createLinearGradient(0, 0, 0, height);
+      sky.addColorStop(0, '#030d14');
+      sky.addColorStop(0.55, '#0a2630');
+      sky.addColorStop(1, '#15494c');
+      ctx.fillStyle = sky;
+      ctx.fillRect(0, 0, width, height);
+
+      // Moon
+      const moonGlow = ctx.createRadialGradient(235, 42, 0, 235, 42, 50);
+      moonGlow.addColorStop(0, '#bff5e6');
+      moonGlow.addColorStop(0.2, '#bff5e6');
+      moonGlow.addColorStop(1, 'transparent');
+      ctx.fillStyle = moonGlow;
+      ctx.beginPath();
+      ctx.arc(235, 42, 50, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#eefaf5';
+      ctx.beginPath();
+      ctx.arc(235, 42, 10, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Moon rays
+      const ray = ctx.createLinearGradient(235, 42, 180, 180);
+      ray.addColorStop(0, 'rgba(207, 255, 240, 0.2)');
+      ray.addColorStop(1, 'transparent');
+      ctx.fillStyle = ray;
+      ctx.beginPath();
+      ctx.moveTo(235, 42);
+      ctx.lineTo(140, 180);
+      ctx.lineTo(200, 180);
+      ctx.closePath();
+      ctx.fill();
+
+      // Pines & hills
+      ctx.fillStyle = '#0b3036';
+      for (let x = 0; x < width + 20; x += 16) {
+        ctx.beginPath();
+        ctx.moveTo(x, 180);
+        ctx.lineTo(x + 8, 120 + ((x * 7) % 25));
+        ctx.lineTo(x + 16, 180);
+        ctx.fill();
+      }
+
+      ctx.fillStyle = '#072329';
+      for (let x = -5; x < width + 20; x += 22) {
+        ctx.beginPath();
+        ctx.moveTo(x, 180);
+        ctx.lineTo(x + 11, 135 + ((x * 11) % 30));
+        ctx.lineTo(x + 22, 180);
+        ctx.fill();
+      }
+
+      // Fireflies
+      ctx.fillStyle = '#e4ff9e';
+      for (let i = 0; i < 12; i++) {
+        const fx = ((i * 47 + 10) % (width - 40)) + 20;
+        const fy = 110 + ((i * 31) % 60);
+        ctx.beginPath();
+        ctx.arc(fx, fy, 1.4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else if (sceneId === 'neon') {
+      // Neon skyline: retro synthwave night, glowing pink sun, city skyline
+      const sky = ctx.createLinearGradient(0, 0, 0, height);
+      sky.addColorStop(0, '#06021a');
+      sky.addColorStop(0.4, '#1a0945');
+      sky.addColorStop(0.7, '#5a1a78');
+      sky.addColorStop(1, '#d1307f');
+      ctx.fillStyle = sky;
+      ctx.fillRect(0, 0, width, height);
+
+      // Glowing Neon Sun
+      const sun = ctx.createRadialGradient(width / 2, 95, 0, width / 2, 95, 75);
+      sun.addColorStop(0, '#ffe08a');
+      sun.addColorStop(0.4, '#ff4f9a');
+      sun.addColorStop(0.85, 'rgba(255, 61, 139, 0.3)');
+      sun.addColorStop(1, 'transparent');
+      ctx.fillStyle = sun;
+      ctx.beginPath();
+      ctx.arc(width / 2, 95, 75, 0, Math.PI * 2);
+      ctx.fill();
+
+      // City buildings
+      ctx.fillStyle = '#2b1163';
+      for (let x = 0; x < width; x += 22) {
+        const bh = 45 + ((x * 17) % 55);
+        ctx.fillRect(x, height - bh - 20, 18, bh + 20);
+      }
+
+      ctx.fillStyle = '#170a3c';
+      for (let x = 5; x < width; x += 28) {
+        const bh = 55 + ((x * 23) % 65);
+        ctx.fillRect(x, height - bh, 24, bh);
+      }
+
+      ctx.fillStyle = '#080419';
+      for (let x = 2; x < width; x += 34) {
+        const bh = 35 + ((x * 19) % 45);
+        ctx.fillRect(x, height - bh, 30, bh);
+        // Neon rooftop line
+        ctx.fillStyle = (x % 2 === 0 ? '#ff3d8b' : '#38e8ff');
+        ctx.fillRect(x, height - bh, 30, 2);
+        ctx.fillStyle = '#080419';
+      }
+
+      // Neon rain lines
+      ctx.strokeStyle = 'rgba(200, 225, 255, 0.45)';
+      ctx.lineWidth = 1;
+      for (let i = 0; i < 20; i++) {
+        const rx = ((i * 37) % width);
+        const ry = ((i * 29) % (height - 30));
+        ctx.beginPath();
+        ctx.moveTo(rx, ry);
+        ctx.lineTo(rx - 3, ry + 12);
+        ctx.stroke();
+      }
+    } else if (sceneId === 'sea') {
+      // Moonlit sea: starry ocean night, moon, shimmer reflection, waves
+      const sky = ctx.createLinearGradient(0, 0, 0, height * 0.65);
+      sky.addColorStop(0, '#040a1c');
+      sky.addColorStop(0.55, '#0c2147');
+      sky.addColorStop(1, '#1f4f80');
+      ctx.fillStyle = sky;
+      ctx.fillRect(0, 0, width, height * 0.65);
+
+      // Sea water
+      const seaGrad = ctx.createLinearGradient(0, height * 0.62, 0, height);
+      seaGrad.addColorStop(0, '#0e3a68');
+      seaGrad.addColorStop(1, '#020813');
+      ctx.fillStyle = seaGrad;
+      ctx.fillRect(0, height * 0.62, width, height * 0.38);
+
+      // Moon
+      const moon = ctx.createRadialGradient(160, 50, 0, 160, 50, 55);
+      moon.addColorStop(0, '#f4f7ff');
+      moon.addColorStop(0.25, '#bcd6ff');
+      moon.addColorStop(1, 'transparent');
+      ctx.fillStyle = moon;
+      ctx.beginPath();
+      ctx.arc(160, 50, 55, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Moon shimmer on water
+      ctx.fillStyle = '#eaf2ff';
+      for (let j = 0; j < 14; j++) {
+        const sw = 50 - j * 2.5;
+        const sy = height * 0.65 + j * 4.5;
+        ctx.globalAlpha = 0.6 - j * 0.03;
+        ctx.fillRect(160 - sw / 2, sy, sw, 1.8);
+      }
+      ctx.globalAlpha = 1.0;
+
+      // Wave strokes
+      ctx.strokeStyle = 'rgba(175, 210, 255, 0.28)';
+      ctx.lineWidth = 1;
+      for (let w = 0; w < 6; w++) {
+        const wy = height * 0.66 + w * 11;
+        ctx.beginPath();
+        ctx.moveTo(0, wy);
+        for (let x = 0; x < width; x += 40) {
+          ctx.quadraticCurveTo(x + 20, wy - 3, x + 40, wy);
+        }
+        ctx.stroke();
+      }
+    } else if (sceneId === 'aurora') {
+      // Polar aurora: arctic night, glowing neon ribbons (cyan, purple, emerald), snowy peaks
+      const sky = ctx.createLinearGradient(0, 0, 0, height);
+      sky.addColorStop(0, '#02060f');
+      sky.addColorStop(0.6, '#07152a');
+      sky.addColorStop(1, '#0c2540');
+      ctx.fillStyle = sky;
+      ctx.fillRect(0, 0, width, height);
+
+      // Aurora ribbon 1 (Emerald/cyan)
+      ctx.save();
+      ctx.globalAlpha = 0.55;
+      const au1 = ctx.createLinearGradient(0, 0, width, 0);
+      au1.addColorStop(0, '#5dffb3');
+      au1.addColorStop(0.5, '#2fd4c9');
+      au1.addColorStop(1, '#8a6bff');
+      ctx.strokeStyle = au1;
+      ctx.lineWidth = 18;
+      ctx.beginPath();
+      ctx.moveTo(-10, 60);
+      ctx.bezierCurveTo(80, 25, 170, 85, 330, 45);
+      ctx.stroke();
+
+      // Aurora ribbon 2 (Magenta/purple/cyan)
+      const au2 = ctx.createLinearGradient(0, 0, width, 0);
+      au2.addColorStop(0, '#ff7ad9');
+      au2.addColorStop(0.5, '#9b7bff');
+      au2.addColorStop(1, '#4fe3ff');
+      ctx.strokeStyle = au2;
+      ctx.lineWidth = 14;
+      ctx.beginPath();
+      ctx.moveTo(-10, 85);
+      ctx.bezierCurveTo(70, 50, 200, 105, 330, 75);
+      ctx.stroke();
+      ctx.restore();
+
+      // Mountain ridges
+      ctx.fillStyle = '#0b1d33';
+      ctx.beginPath();
+      ctx.moveTo(0, 150);
+      ctx.lineTo(80, 130);
+      ctx.lineTo(160, 155);
+      ctx.lineTo(240, 135);
+      ctx.lineTo(320, 160);
+      ctx.lineTo(320, 180);
+      ctx.lineTo(0, 180);
+      ctx.fill();
+
+      ctx.strokeStyle = 'rgba(190, 220, 255, 0.4)';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+
+      ctx.fillStyle = '#050c18';
+      ctx.beginPath();
+      ctx.moveTo(0, 165);
+      ctx.lineTo(100, 150);
+      ctx.lineTo(200, 168);
+      ctx.lineTo(320, 155);
+      ctx.lineTo(320, 180);
+      ctx.lineTo(0, 180);
+      ctx.fill();
+    } else if (sceneId === 'stars') {
       // 1. Sky vertical gradient
       const skyGrad = ctx.createLinearGradient(0, 0, 0, height);
       skyGrad.addColorStop(0, '#0B1030');
