@@ -565,9 +565,10 @@ export function StudyTimer() {
     refetchSessions();
   }, [refetchSessions]);
 
-  // 1. State Persistence Strategy: Persist timer state in localStorage on every tick while running or state change
+  // 1. State Persistence Strategy: Persist timer state in localStorage periodically (every 5s or on pause)
   useEffect(() => {
     if (isStudying && elapsedSeconds > 0) {
+      if (elapsedSeconds % 5 !== 0 && !isPaused) return;
       try {
         localStorage.setItem('studyio_timer_seconds', String(elapsedSeconds));
         const subIdOrName = selectedSubject?.id || selectedSubject?.name || selectedSubjectId;
@@ -584,7 +585,7 @@ export function StudyTimer() {
         console.warn('Failed to persist timer state to localStorage:', e);
       }
     }
-  }, [isStudying, elapsedSeconds, selectedSubject, selectedSubjectId, timerMode]);
+  }, [isStudying, elapsedSeconds, isPaused, selectedSubject, selectedSubjectId, timerMode]);
 
   // 2. On Component Mount / Page Load: Check localStorage and recover session in Paused state
   useEffect(() => {

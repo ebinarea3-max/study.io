@@ -122,6 +122,11 @@ export function TimerSWBridge() {
     }
   }, [isRunning, isStudying, isPaused]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const elapsedRef = useRef(elapsedSeconds);
+  useEffect(() => {
+    elapsedRef.current = elapsedSeconds;
+  }, [elapsedSeconds]);
+
   // Send TIMER_TICK to SW every 10s while running — mobile only
   useEffect(() => {
     if (!IS_MOBILE || !isRunning) return;
@@ -129,12 +134,12 @@ export function TimerSWBridge() {
       postToSW({
         type: 'TIMER_TICK',
         startTime: startTimeRef?.current ?? undefined,
-        elapsed: elapsedSeconds,
+        elapsed: elapsedRef.current,
         subject: selectedSubject?.name || '',
       });
     }, 10000);
     return () => clearInterval(id);
-  }, [isRunning, elapsedSeconds, selectedSubject?.name, postToSW]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isRunning, selectedSubject?.name, postToSW]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Visibility change — mobile only
   useEffect(() => {

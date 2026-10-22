@@ -44,6 +44,7 @@ export default function Home() {
     dismissSeasonRecap,
     seasonResetAlert,
     dismissSeasonResetAlert,
+    isFocusModeOpen,
   } = useStudy();
 
   // Navigation tabs: Timer, Tasks, Analytics, and Settings
@@ -172,69 +173,75 @@ export default function Home() {
         onDismiss={dismissXpNotification}
       />
 
-      {/* Top Navigation Bar */}
-      <Navbar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        onOpenAuth={() => setIsAuthOpen(true)}
-        onOpenProfile={() => setIsProfileOpen(true)}
-        onOpenSettings={() => setIsSettingsOpen(true)}
-      />
-
-      {/* Monthly Season Settlement Recap Banner */}
-      {seasonRecap && (
-        <SeasonRecapBanner
-          recap={seasonRecap}
-          onDismiss={dismissSeasonRecap}
+      {/* Full Dashboard Content (hidden during Focus Mode for zero background jank) */}
+      <div
+        className="w-full flex flex-col items-center flex-1"
+        style={{ display: isFocusModeOpen ? 'none' : undefined }}
+      >
+        {/* Top Navigation Bar */}
+        <Navbar
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          onOpenAuth={() => setIsAuthOpen(true)}
+          onOpenProfile={() => setIsProfileOpen(true)}
+          onOpenSettings={() => setIsSettingsOpen(true)}
         />
-      )}
 
-      {/* Main Content Area with Mobile Swipe Navigation */}
-      <main className={`w-full flex flex-col items-center relative z-10 ${
-        activeTab === "timer" 
-          ? "h-full md:min-h-screen pt-3.5 px-3 sm:px-4 md:px-0" 
-          : activeTab === "rooms"
-          ? "flex-1 min-h-0 w-full overflow-hidden pt-0 px-0"
-          : "min-h-screen pt-3.5 px-3 sm:px-4 md:px-0"
-      }`}>
-        <SwipeTabContainer activeTab={activeTab} onChangeTab={setActiveTab}>
-          {{
-            timer: (
-              <ErrorBoundary fallbackTitle="Focus Timer">
-                <StudyTimer />
-              </ErrorBoundary>
-            ),
-            tasks: (
-              <ErrorBoundary fallbackTitle="Tasks Overview">
-                <TasksOverview />
-              </ErrorBoundary>
-            ),
-            analytics: (
-              <ErrorBoundary fallbackTitle="Analytics Dashboard">
-                <AnalyticsDashboard
-                  onStartSession={() => setActiveTab('timer')}
-                  onOpenSettings={() => setIsSettingsOpen(true)}
-                />
-              </ErrorBoundary>
-            ),
-            leaderboard: (
-              <ErrorBoundary fallbackTitle="Monthly Leaderboard">
-                <MonthlyLeaderboard isEmbedded isActiveTab={activeTab === 'leaderboard'} />
-              </ErrorBoundary>
-            ),
-            rooms: (
-              <ErrorBoundary fallbackTitle="Study Rooms">
-                <StudyRoomsTab onBackToDashboard={() => setActiveTab('timer')} isActiveTab={activeTab === 'rooms'} />
-              </ErrorBoundary>
-            ),
-            settings: (
-              <ErrorBoundary fallbackTitle="Settings & Preferences">
-                <SettingsTabContent />
-              </ErrorBoundary>
-            ),
-          }}
-        </SwipeTabContainer>
-      </main>
+        {/* Monthly Season Settlement Recap Banner */}
+        {seasonRecap && (
+          <SeasonRecapBanner
+            recap={seasonRecap}
+            onDismiss={dismissSeasonRecap}
+          />
+        )}
+
+        {/* Main Content Area with Mobile Swipe Navigation */}
+        <main className={`w-full flex flex-col items-center relative z-10 ${
+          activeTab === "timer" 
+            ? "h-full md:min-h-screen pt-3.5 px-3 sm:px-4 md:px-0" 
+            : activeTab === "rooms"
+            ? "flex-1 min-h-0 w-full overflow-hidden pt-0 px-0"
+            : "min-h-screen pt-3.5 px-3 sm:px-4 md:px-0"
+        }`}>
+          <SwipeTabContainer activeTab={activeTab} onChangeTab={setActiveTab}>
+            {{
+              timer: (
+                <ErrorBoundary fallbackTitle="Focus Timer">
+                  <StudyTimer />
+                </ErrorBoundary>
+              ),
+              tasks: (
+                <ErrorBoundary fallbackTitle="Tasks Overview">
+                  <TasksOverview />
+                </ErrorBoundary>
+              ),
+              analytics: (
+                <ErrorBoundary fallbackTitle="Analytics Dashboard">
+                  <AnalyticsDashboard
+                    onStartSession={() => setActiveTab('timer')}
+                    onOpenSettings={() => setIsSettingsOpen(true)}
+                  />
+                </ErrorBoundary>
+              ),
+              leaderboard: (
+                <ErrorBoundary fallbackTitle="Monthly Leaderboard">
+                  <MonthlyLeaderboard isEmbedded isActiveTab={activeTab === 'leaderboard'} />
+                </ErrorBoundary>
+              ),
+              rooms: (
+                <ErrorBoundary fallbackTitle="Study Rooms">
+                  <StudyRoomsTab onBackToDashboard={() => setActiveTab('timer')} isActiveTab={activeTab === 'rooms'} />
+                </ErrorBoundary>
+              ),
+              settings: (
+                <ErrorBoundary fallbackTitle="Settings & Preferences">
+                  <SettingsTabContent />
+                </ErrorBoundary>
+              ),
+            }}
+          </SwipeTabContainer>
+        </main>
+      </div>
 
       {/* Modals & Celebrations */}
       <ErrorBoundary fallbackTitle="Authentication">

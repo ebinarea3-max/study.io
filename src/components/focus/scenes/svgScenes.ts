@@ -234,7 +234,8 @@ function campfireEmbers(r: () => number, count: number) {
 
     s += `<g transform="translate(${startX}, ${startY})">` +
       `<g class="focus-ember" style="--ex1:${ex1}px;--ex2:${ex2}px;--em-dur:${dur}s;--em-del:${del}s">` +
-      `<circle cx="0" cy="0" r="${rad}" fill="${color}" filter="drop-shadow(0 0 5px ${color})"/>` +
+      `<circle cx="0" cy="0" r="${(parseFloat(rad) * 2.2).toFixed(1)}" fill="${color}" opacity="0.25"/>` +
+      `<circle cx="0" cy="0" r="${rad}" fill="${color}"/>` +
       `</g></g>`;
   }
   return s;

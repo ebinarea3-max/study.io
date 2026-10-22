@@ -81,6 +81,12 @@ function FocusSceneLayerComponent({
       className={`fixed inset-0 z-0 pointer-events-none select-none overflow-hidden bg-[#05060a] ${
         isPageHidden ? 'scene-hidden' : ''
       }`}
+      style={{
+        contain: 'strict',
+        transform: 'translate3d(0, 0, 0)',
+        willChange: 'transform',
+        isolation: 'isolate',
+      }}
     >
       {/* Previous Scene Layer Fading Out over 900ms */}
       {sceneState.previous && previousSvg && (
@@ -89,6 +95,9 @@ function FocusSceneLayerComponent({
           className="absolute inset-0 pointer-events-none select-none [&_svg]:w-full [&_svg]:h-full"
           style={{
             animation: 'sceneFadeOut 900ms ease forwards',
+            contain: 'strict',
+            transform: 'translate3d(0, 0, 0)',
+            willChange: 'opacity',
           }}
           dangerouslySetInnerHTML={{ __html: previousSvg }}
         />
@@ -101,6 +110,9 @@ function FocusSceneLayerComponent({
           className="absolute inset-0 pointer-events-none select-none [&_svg]:w-full [&_svg]:h-full"
           style={{
             animation: sceneState.previous ? 'sceneFadeIn 900ms ease forwards' : 'none',
+            contain: 'strict',
+            transform: 'translate3d(0, 0, 0)',
+            willChange: sceneState.previous ? 'opacity' : 'auto',
           }}
           dangerouslySetInnerHTML={{ __html: currentSvg }}
         />
@@ -113,6 +125,8 @@ function FocusSceneLayerComponent({
             background:
               'radial-gradient(ellipse at 50% 50%, #171b29 0%, #0c0e17 60%, #05060a 100%)',
             animation: sceneState.previous ? 'sceneFadeIn 900ms ease forwards' : 'none',
+            contain: 'strict',
+            transform: 'translate3d(0, 0, 0)',
           }}
         />
       )}
@@ -123,6 +137,8 @@ function FocusSceneLayerComponent({
         style={{
           background:
             'radial-gradient(ellipse at center, rgba(0,0,0,.24) 0, transparent 36%), radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.55) 100%)',
+          contain: 'strict',
+          transform: 'translate3d(0, 0, 0)',
         }}
       />
 
@@ -132,6 +148,8 @@ function FocusSceneLayerComponent({
         style={{
           opacity: dimOpacity,
           transition: 'opacity 200ms ease',
+          contain: 'strict',
+          transform: 'translate3d(0, 0, 0)',
         }}
       />
     </div>

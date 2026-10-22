@@ -1058,20 +1058,20 @@ html.light ::selection,
 
 /* Seamless Parallax Rain (Translates exactly H=900px so duplicate drops align perfectly at 100% -> 0%) */
 @keyframes focusRainLoopFar {
-  0% { transform: translate(0, 0); }
-  100% { transform: translate(-30px, 900px); }
+  0% { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(-30px, 900px, 0); }
 }
 
 @keyframes focusRainLoopNear {
-  0% { transform: translate(0, 0); }
-  100% { transform: translate(-45px, 900px); }
+  0% { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(-45px, 900px, 0); }
 }
 
 /* Continuous Cloud Drift */
 @keyframes focusCloudDrift {
-  0% { transform: translateX(-40px); }
-  50% { transform: translateX(40px); }
-  100% { transform: translateX(-40px); }
+  0% { transform: translate3d(-40px, 0, 0); }
+  50% { transform: translate3d(40px, 0, 0); }
+  100% { transform: translate3d(-40px, 0, 0); }
 }
 
 /* Star Twinkle */
@@ -1082,11 +1082,11 @@ html.light ::selection,
 
 /* Smooth Firefly Floating (Lissajous curves) */
 @keyframes focusFireflyMotion {
-  0% { transform: translate(0, 0); opacity: 0.25; }
-  25% { transform: translate(var(--fx1, 20px), var(--fy1, -25px)); opacity: 0.95; }
-  50% { transform: translate(var(--fx2, -15px), var(--fy2, -10px)); opacity: 0.35; }
-  75% { transform: translate(var(--fx3, 25px), var(--fy3, 15px)); opacity: 1; }
-  100% { transform: translate(0, 0); opacity: 0.25; }
+  0% { transform: translate3d(0, 0, 0); opacity: 0.25; }
+  25% { transform: translate3d(var(--fx1, 20px), var(--fy1, -25px), 0); opacity: 0.95; }
+  50% { transform: translate3d(var(--fx2, -15px), var(--fy2, -10px), 0); opacity: 0.35; }
+  75% { transform: translate3d(var(--fx3, 25px), var(--fy3, 15px), 0); opacity: 1; }
+  100% { transform: translate3d(0, 0, 0); opacity: 0.25; }
 }
 
 /* Neon Pulse */
@@ -1098,7 +1098,7 @@ html.light ::selection,
 /* Sakura Petal Natural Wind Flow */
 @keyframes focusPetalFall {
   0% {
-    transform: translate(0, 0) rotate(0deg);
+    transform: translate3d(0, 0, 0) rotate(0deg);
     opacity: 0;
   }
   8% {
@@ -1108,44 +1108,44 @@ html.light ::selection,
     opacity: 0.95;
   }
   100% {
-    transform: translate(var(--pdx, 400px), 940px) rotate(var(--prot, 360deg));
+    transform: translate3d(var(--pdx, 400px), 940px, 0) rotate(var(--prot, 360deg));
     opacity: 0;
   }
 }
 
 /* Hanging Lantern Pendular Sway */
 @keyframes focusLanternSway {
-  0%, 100% { transform: rotate(-3deg); }
-  50% { transform: rotate(3deg); }
+  0%, 100% { transform: rotate(-3deg) translateZ(0); }
+  50% { transform: rotate(3deg) translateZ(0); }
 }
 
 /* Campfire Embers Smooth Rise */
 @keyframes focusEmberRise {
   0% {
-    transform: translate(0, 0) scale(1);
+    transform: translate3d(0, 0, 0) scale(1);
     opacity: 0;
   }
   12% {
     opacity: 0.95;
   }
   50% {
-    transform: translate(var(--ex1, 15px), -360px) scale(0.85);
+    transform: translate3d(var(--ex1, 15px), -360px, 0) scale(0.85);
     opacity: 0.85;
   }
   85% {
     opacity: 0.6;
   }
   100% {
-    transform: translate(var(--ex2, -15px), -750px) scale(0.4);
+    transform: translate3d(var(--ex2, -15px), -750px, 0) scale(0.4);
     opacity: 0;
   }
 }
 
 /* Campfire Hearth Flame Pulse */
 @keyframes focusHearthPulse {
-  0%, 100% { opacity: 0.7; transform: scale(0.98); }
-  40% { opacity: 0.95; transform: scale(1.02); }
-  75% { opacity: 0.8; transform: scale(0.99); }
+  0%, 100% { opacity: 0.7; transform: scale(0.98) translateZ(0); }
+  40% { opacity: 0.95; transform: scale(1.02) translateZ(0); }
+  75% { opacity: 0.8; transform: scale(0.99) translateZ(0); }
 }
 
 /* Moon Rays Pulse */
@@ -1158,58 +1158,70 @@ html.light ::selection,
 .focus-rain-far {
   animation: focusRainLoopFar 1.25s linear infinite;
   will-change: transform;
+  transform: translateZ(0);
 }
 
 .focus-rain-near {
   animation: focusRainLoopNear 0.85s linear infinite;
   will-change: transform;
+  transform: translateZ(0);
 }
 
 .focus-cloud-drift {
   animation: focusCloudDrift var(--cd-dur, 55s) ease-in-out infinite;
   will-change: transform;
+  transform: translateZ(0);
 }
 
 .focus-star {
   animation: focusStarTwinkle var(--st-dur, 3.5s) ease-in-out infinite;
   animation-delay: var(--st-del, 0s);
+  will-change: opacity;
 }
 
 .focus-firefly {
   animation: focusFireflyMotion var(--ff-dur, 8s) ease-in-out infinite;
   animation-delay: var(--ff-del, 0s);
-  will-change: transform;
+  will-change: transform, opacity;
+  transform: translateZ(0);
 }
 
 .focus-neon-pulse {
   animation: focusNeonPulse var(--np-dur, 3.5s) ease-in-out infinite;
+  will-change: opacity;
 }
 
 .focus-petal {
   animation: focusPetalFall var(--pt-dur, 11s) linear infinite;
   animation-delay: var(--pt-del, 0s);
-  will-change: transform;
+  will-change: transform, opacity;
+  transform: translateZ(0);
 }
 
 .focus-lantern {
   animation: focusLanternSway 5.5s ease-in-out infinite;
   transform-origin: 230px 140px;
   will-change: transform;
+  transform: translateZ(0);
 }
 
 .focus-ember {
   animation: focusEmberRise var(--em-dur, 6.5s) linear infinite;
   animation-delay: var(--em-del, 0s);
-  will-change: transform;
+  will-change: transform, opacity;
+  transform: translateZ(0);
 }
 
 .focus-hearth {
   animation: focusHearthPulse 4.2s ease-in-out infinite;
   transform-origin: 800px 780px;
+  will-change: transform, opacity;
+  transform: translateZ(0);
 }
 
 .focus-moon-rays {
   animation: focusMoonRays 7s ease-in-out infinite;
+  will-change: opacity;
 }
 
 /* When window is hidden, pause all focus animations */

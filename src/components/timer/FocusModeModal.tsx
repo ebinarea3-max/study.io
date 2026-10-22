@@ -64,10 +64,11 @@ export function FocusModeModal() {
   } = useFocusScene();
 
   // Auto-hide UI when mouse is idle (keep visible while picker is open)
-  // Throttled & guarded to guarantee 0 re-renders while the user moves the mouse
+  // Debounced with requestAnimationFrame to eliminate all mousemove main-thread jank
   useEffect(() => {
     if (!isFocusModeOpen) return;
 
+    let rafId: number | null = null;
     let lastActivityTime = 0;
 
     const handlePointerActivity = () => {
@@ -92,16 +93,25 @@ export function FocusModeModal() {
       }
     };
 
-    window.addEventListener('mousemove', handlePointerActivity, { passive: true });
-    window.addEventListener('mousedown', handlePointerActivity, { passive: true });
-    window.addEventListener('keydown', handlePointerActivity, { passive: true });
+    const onPointerEvent = () => {
+      if (rafId !== null) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        handlePointerActivity();
+      });
+    };
+
+    window.addEventListener('mousemove', onPointerEvent, { passive: true });
+    window.addEventListener('mousedown', onPointerEvent, { passive: true });
+    window.addEventListener('keydown', onPointerEvent, { passive: true });
 
     handlePointerActivity();
 
     return () => {
-      window.removeEventListener('mousemove', handlePointerActivity);
-      window.removeEventListener('mousedown', handlePointerActivity);
-      window.removeEventListener('keydown', handlePointerActivity);
+      window.removeEventListener('mousemove', onPointerEvent);
+      window.removeEventListener('mousedown', onPointerEvent);
+      window.removeEventListener('keydown', onPointerEvent);
+      if (rafId !== null) cancelAnimationFrame(rafId);
       if (idleTimeoutRef.current) clearTimeout(idleTimeoutRef.current);
     };
   }, [isFocusModeOpen, isPickerOpen]);
@@ -164,7 +174,7 @@ export function FocusModeModal() {
     <div
       data-theme="rank"
       style={{ colorScheme: 'dark' }}
-      className={`fixed inset-0 z-50 flex flex-col items-center justify-center select-none overflow-hidden animate-in fade-in duration-500 transition-colors bg-[#05060a] ${
+      className={`fixed inset-0 z-50 flex flex-col items-center justify-center select-none overflow-hidden animate-in fade-in duration-500 bg-[#05060a] ${
         isIdle && !isPickerOpen ? 'cursor-none' : 'cursor-default'
       }`}
     >
@@ -181,19 +191,25 @@ export function FocusModeModal() {
 
       {/* Invisible overlay that can be double-clicked to exit */}
       <div
-        className="absolute inset-0 z-0"
+        className="absolute inset-0 z-0 pointer-events-auto"
         onDoubleClick={() => setIsFocusModeOpen(false)}
       />
 
       {/* 3. Big Clock with Space Grotesk tabular digits and scene-specific ambient glow */}
-      <div className="relative z-10 flex flex-col items-center justify-center text-center pointer-events-none">
+      <div
+        className="relative z-10 flex flex-col items-center justify-center text-center pointer-events-none"
+        style={{
+          contain: 'layout style',
+          transform: 'translate3d(0, 0, 0)',
+          isolation: 'isolate',
+        }}
+      >
         {/* Soft GPU-accelerated ambient glow layer behind clock (zero per-tick rasterization lag) */}
         <div
           className="absolute inset-0 -z-10 pointer-events-none"
           style={{
             background: `radial-gradient(ellipse 70% 50% at 50% 50%, ${sceneGlow} 0%, transparent 75%)`,
             opacity: 0.75,
-            filter: 'blur(30px)',
             transition: 'background 0.9s ease',
           }}
         />
@@ -230,9 +246,17 @@ export function FocusModeModal() {
 
       {/* 4. Bottom Control Bar: Sleek Scene Pill Selector & Action Buttons */}
       <div
-        className={`absolute bottom-[calc(22px+env(safe-area-inset-bottom,0px))] left-1/2 -translate-x-1/2 z-20 flex flex-wrap items-center justify-center gap-2 max-w-[calc(100%-24px)] transition-[opacity,transform] duration-250 ease-out will-change-[opacity,transform] ${
-          isIdle && !isPickerOpen ? 'opacity-0 translate-y-3 pointer-events-none' : 'opacity-100 translate-y-0'
+        className={`absolute bottom-[calc(22px+env(safe-area-inset-bottom,0px))] left-1/2 z-20 flex flex-wrap items-center justify-center gap-2 max-w-[calc(100%-24px)] transition-[opacity,transform] duration-250 ease-out will-change-[opacity,transform] ${
+          isIdle && !isPickerOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'
         }`}
+        style={{
+          transform: isIdle && !isPickerOpen
+            ? 'translate3d(-50%, 12px, 0)'
+            : 'translate3d(-50%, 0, 0)',
+          contain: 'layout style',
+          isolation: 'isolate',
+          backfaceVisibility: 'hidden',
+        }}
       >
         {/* Pill Group matching concept design without heavy backdrop-filter blur passes */}
         <div
