@@ -46,6 +46,7 @@ export function FocusModeModal() {
   } = useStudy();
 
   const [isIdle, setIsIdle] = useState(false);
+  const isIdleRef = useRef(false);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const idleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const settingsButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -63,27 +64,44 @@ export function FocusModeModal() {
   } = useFocusScene();
 
   // Auto-hide UI when mouse is idle (keep visible while picker is open)
+  // Throttled & guarded to guarantee 0 re-renders while the user moves the mouse
   useEffect(() => {
     if (!isFocusModeOpen) return;
 
-    const resetIdleTimer = () => {
-      setIsIdle(false);
+    let lastActivityTime = 0;
+
+    const handlePointerActivity = () => {
+      const now = Date.now();
+
+      // Only update React state if currently idle (prevents re-renders while moving mouse)
+      if (isIdleRef.current) {
+        isIdleRef.current = false;
+        setIsIdle(false);
+      }
+
+      // Throttle timeout resets to at most once per 250ms
+      if (now - lastActivityTime < 250) return;
+      lastActivityTime = now;
+
       if (idleTimeoutRef.current) clearTimeout(idleTimeoutRef.current);
       if (!isPickerOpen) {
-        idleTimeoutRef.current = setTimeout(() => setIsIdle(true), 2500);
+        idleTimeoutRef.current = setTimeout(() => {
+          isIdleRef.current = true;
+          setIsIdle(true);
+        }, 3000);
       }
     };
 
-    window.addEventListener('mousemove', resetIdleTimer);
-    window.addEventListener('mousedown', resetIdleTimer);
-    window.addEventListener('keydown', resetIdleTimer);
+    window.addEventListener('mousemove', handlePointerActivity, { passive: true });
+    window.addEventListener('mousedown', handlePointerActivity, { passive: true });
+    window.addEventListener('keydown', handlePointerActivity, { passive: true });
 
-    resetIdleTimer();
+    handlePointerActivity();
 
     return () => {
-      window.removeEventListener('mousemove', resetIdleTimer);
-      window.removeEventListener('mousedown', resetIdleTimer);
-      window.removeEventListener('keydown', resetIdleTimer);
+      window.removeEventListener('mousemove', handlePointerActivity);
+      window.removeEventListener('mousedown', handlePointerActivity);
+      window.removeEventListener('keydown', handlePointerActivity);
       if (idleTimeoutRef.current) clearTimeout(idleTimeoutRef.current);
     };
   }, [isFocusModeOpen, isPickerOpen]);
@@ -168,11 +186,7 @@ export function FocusModeModal() {
       />
 
       {/* 3. Big Clock with Space Grotesk tabular digits and scene-specific ambient glow */}
-      <div
-        className={`relative z-10 flex flex-col items-center justify-center text-center pointer-events-none transition-transform duration-700 ease-out ${
-          isIdle && !isPickerOpen ? 'scale-105' : 'scale-100'
-        }`}
-      >
+      <div className="relative z-10 flex flex-col items-center justify-center text-center pointer-events-none">
         {/* Soft GPU-accelerated ambient glow layer behind clock (zero per-tick rasterization lag) */}
         <div
           className="absolute inset-0 -z-10 pointer-events-none"
@@ -216,15 +230,15 @@ export function FocusModeModal() {
 
       {/* 4. Bottom Control Bar: Sleek Scene Pill Selector & Action Buttons */}
       <div
-        className={`absolute bottom-[calc(22px+env(safe-area-inset-bottom,0px))] left-1/2 -translate-x-1/2 z-20 flex flex-wrap items-center justify-center gap-2 max-w-[calc(100%-24px)] transition-all duration-500 ease-in-out ${
-          isIdle && !isPickerOpen ? 'opacity-0 translate-y-4 pointer-events-none' : 'opacity-100 translate-y-0'
+        className={`absolute bottom-[calc(22px+env(safe-area-inset-bottom,0px))] left-1/2 -translate-x-1/2 z-20 flex flex-wrap items-center justify-center gap-2 max-w-[calc(100%-24px)] transition-[opacity,transform] duration-250 ease-out will-change-[opacity,transform] ${
+          isIdle && !isPickerOpen ? 'opacity-0 translate-y-3 pointer-events-none' : 'opacity-100 translate-y-0'
         }`}
       >
-        {/* Pill Group matching concept design */}
+        {/* Pill Group matching concept design without heavy backdrop-filter blur passes */}
         <div
           role="group"
           aria-label="Scene selector"
-          className="flex items-center gap-1 p-1 max-w-[calc(100vw-32px)] overflow-x-auto scrollbar-none rounded-full bg-[rgba(10,12,20,0.72)] border border-white/15 backdrop-blur-md shadow-2xl"
+          className="flex items-center gap-1 p-1 max-w-[calc(100vw-32px)] overflow-x-auto scrollbar-none rounded-full bg-[#090b14]/92 border border-white/15 shadow-[0_12px_40px_rgba(0,0,0,0.7)]"
         >
           {AVAILABLE_SCENES.map((scene) => {
             const isActive = activeSceneId === scene.id;
@@ -236,7 +250,7 @@ export function FocusModeModal() {
                 type="button"
                 aria-pressed={isActive}
                 onClick={() => selectScene(scene.id)}
-                className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-full text-xs sm:text-[13px] font-medium transition-all shrink-0 cursor-pointer ${
+                className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-full text-xs sm:text-[13px] font-medium transition-colors shrink-0 cursor-pointer ${
                   isActive
                     ? 'bg-white/92 text-[#0b0d14] font-semibold shadow-md'
                     : 'bg-transparent text-white/80 hover:text-white hover:bg-white/10'
@@ -261,7 +275,7 @@ export function FocusModeModal() {
             onClick={() => setIsPickerOpen((prev) => !prev)}
             aria-haspopup="dialog"
             aria-expanded={isPickerOpen}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-[rgba(10,12,20,0.55)] hover:bg-white/15 border border-white/15 text-white/80 hover:text-white text-xs sm:text-[13px] font-medium backdrop-blur-xl shadow-xl transition-all cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-[#090b14]/92 hover:bg-white/15 border border-white/15 text-white/80 hover:text-white text-xs sm:text-[13px] font-medium shadow-[0_8px_24px_rgba(0,0,0,0.5)] transition-colors cursor-pointer"
             title="Adjust dim & options"
           >
             <Sliders className="w-3.5 h-3.5" />
@@ -276,7 +290,7 @@ export function FocusModeModal() {
               setIsFocusModeOpen(false);
               exitFullscreenSafely();
             }}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-[rgba(10,12,20,0.55)] hover:bg-white/15 border border-white/15 text-white/80 hover:text-white text-xs sm:text-[13px] font-medium backdrop-blur-xl shadow-xl transition-all cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-[#090b14]/92 hover:bg-white/15 border border-white/15 text-white/80 hover:text-white text-xs sm:text-[13px] font-medium shadow-[0_8px_24px_rgba(0,0,0,0.5)] transition-colors cursor-pointer"
             title="Exit Fullscreen (ESC)"
           >
             <Minimize2 className="w-3.5 h-3.5" />

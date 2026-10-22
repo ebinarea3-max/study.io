@@ -10,7 +10,7 @@ const R = (a: number) => () => {
 };
 
 const svg = (s: string) =>
-  `<svg viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" width="100%" height="100%">${s}</svg>`;
+  `<svg viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" width="100%" height="100%" pointer-events="none">${s}</svg>`;
 
 const stop = (o: number, c: string, a?: number) =>
   `<stop offset="${o}" stop-color="${c}"${a === undefined ? '' : ` stop-opacity="${a}"`}/>`;
