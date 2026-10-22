@@ -39,13 +39,13 @@ function renderSceneItem(id: string, speedMultiplier: number) {
 
 interface FocusSceneLayerProps {
   sceneId: string;
-  dim?: number; // 0 to 60 (default 35)
+  dim?: number; // 0 to 60 (default 20)
   speedMultiplier?: number;
 }
 
 export function FocusSceneLayer({
   sceneId,
-  dim = 35,
+  dim = 20,
   speedMultiplier = 1,
 }: FocusSceneLayerProps) {
   // Track current scene and any previous scene being cross-faded

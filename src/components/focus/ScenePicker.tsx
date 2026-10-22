@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import { AVAILABLE_SCENES, FocusScene } from './scenes/registry';
-import { Lock, Check, X, Sparkles, Sliders } from 'lucide-react';
+import { Lock, Check, X, Sparkles, Sliders, Crown } from 'lucide-react';
+import { getSceneThumbnailDataUrl } from './scenes/thumbnailRenderer';
 
 interface ScenePickerProps {
   isOpen: boolean;
@@ -26,10 +27,8 @@ export function ScenePicker({
   triggerButtonRef,
 }: ScenePickerProps) {
   const cardRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const containerRef = useRef<HTMLDivElement | null>(null);
-
   // Return focus to trigger button when picker closes
-  const handleClose = React.useCallback(() => {
+  const handleClose = useCallback(() => {
     onClose();
     if (triggerButtonRef?.current) {
       triggerButtonRef.current.focus();
@@ -96,36 +95,38 @@ export function ScenePicker({
         onClick={handleClose}
       />
 
-      {/* Popover / Bottom Sheet */}
+      {/* Picker: bottom sheet on mobile (<640px) and anchored side panel on desktop to avoid covering center timer digits */}
       <div
-        ref={containerRef}
         role="dialog"
         aria-label="Focus scenes picker"
-        className="fixed sm:absolute bottom-0 sm:bottom-full left-0 right-0 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:mb-3 z-50 w-full sm:w-[420px] bg-neutral-950/95 sm:bg-black/90 backdrop-blur-2xl border border-white/10 sm:rounded-3xl rounded-t-3xl p-5 shadow-2xl text-white animate-in slide-in-from-bottom-3 fade-in duration-200"
+        className="fixed z-50 bg-neutral-950/95 sm:bg-neutral-950/90 backdrop-blur-2xl border border-white/10 shadow-2xl text-white animate-in slide-in-from-bottom-3 fade-in duration-200
+          max-sm:inset-x-0 max-sm:bottom-0 max-sm:rounded-t-3xl max-sm:p-5 max-sm:max-h-[75vh] max-sm:overflow-y-auto
+          sm:right-8 sm:bottom-8 sm:w-[420px] sm:rounded-3xl sm:p-5"
       >
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-4">
+        <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-3.5">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[var(--tier-accent,rgb(245,158,11))]" />
-            <h3 className="text-sm font-bold tracking-tight text-white uppercase font-hud">
+            <span className="w-2 h-2 rounded-full bg-[var(--tier-accent,#f59e0b)] shadow-[0_0_8px_rgba(245,158,11,0.6)]" />
+            <h3 className="text-xs sm:text-sm font-bold tracking-tight text-white uppercase font-hud">
               Focus Scenes
             </h3>
           </div>
           <button
             type="button"
             onClick={handleClose}
-            className="p-1 rounded-full text-neutral-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+            className="p-1.5 rounded-full text-neutral-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
             aria-label="Close scenes picker"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* 2-column Grid of Scene Cards */}
-        <div className="grid grid-cols-2 gap-2.5 mb-4">
+        {/* 2-column Grid of 16:9 Scene Cards */}
+        <div className="grid grid-cols-2 gap-3 mb-4">
           {AVAILABLE_SCENES.map((scene: FocusScene, index: number) => {
             const isSelected = activeSceneId === scene.id;
             const isLocked = scene.premium && !isPremium;
+            const thumbUrl = getSceneThumbnailDataUrl(scene.id);
 
             return (
               <button
@@ -136,59 +137,65 @@ export function ScenePicker({
                 type="button"
                 aria-pressed={isSelected}
                 onClick={() => onSelectScene(scene.id)}
-                className={`relative flex flex-col text-left p-2.5 rounded-2xl border transition-all duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[var(--tier-accent,#f59e0b)] group ${
+                className={`relative flex flex-col rounded-2xl border overflow-hidden transition-all duration-200 cursor-pointer outline-none group text-left ${
                   isSelected
-                    ? 'border-[var(--tier-accent,#f59e0b)] bg-white/[0.08] shadow-lg shadow-[var(--tier-accent,#f59e0b)]/10 ring-1 ring-[var(--tier-accent,#f59e0b)]/40'
-                    : 'border-white/10 bg-white/[0.03] hover:bg-white/[0.06] hover:border-white/20'
+                    ? 'border-[var(--tier-accent,#f59e0b)] ring-2 ring-[var(--tier-accent,#f59e0b)]/60 shadow-[0_0_24px_rgba(245,158,11,0.35)] scale-[1.01]'
+                    : 'border-white/10 bg-white/[0.03] hover:border-white/30 hover:bg-white/[0.06] hover:scale-[1.01]'
                 }`}
               >
-                {/* Thumbnail gradient preview */}
+                {/* 16:9 Thumbnail preview filling the card */}
                 <div
-                  className="w-full h-16 rounded-xl mb-2 relative overflow-hidden border border-white/10"
-                  style={{ background: scene.thumbnail }}
+                  className="w-full aspect-video relative overflow-hidden bg-neutral-900"
+                  style={{ background: thumbUrl ? undefined : scene.thumbnail }}
                 >
-                  {/* Lock icon for premium scenes when user is not premium */}
+                  {thumbUrl && (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={thumbUrl}
+                      alt={scene.name}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                  )}
+
+                  {/* Lock overlay for free users on premium scenes */}
                   {isLocked && (
-                    <div className="absolute top-1.5 right-1.5 p-1 rounded-md bg-black/60 backdrop-blur-md text-amber-400 border border-amber-400/30">
-                      <Lock className="w-3 h-3" />
+                    <div className="absolute inset-0 bg-black/45 backdrop-blur-[1px] flex items-center justify-center">
+                      <div className="p-1.5 rounded-full bg-black/75 border border-amber-400/40 text-[#E6C15A] shadow-md">
+                        <Lock className="w-3.5 h-3.5" />
+                      </div>
                     </div>
                   )}
 
                   {/* Check badge when selected */}
                   {isSelected && (
-                    <div className="absolute top-1.5 right-1.5 p-1 rounded-md bg-[var(--tier-accent,#f59e0b)] text-slate-950 font-bold">
+                    <div className="absolute top-2 right-2 p-1 rounded-md bg-[var(--tier-accent,#f59e0b)] text-slate-950 font-bold shadow-md z-10">
                       <Check className="w-3 h-3 stroke-[3]" />
                     </div>
                   )}
-                </div>
 
-                {/* Name & Description */}
-                <div className="flex items-center justify-between w-full">
-                  <span className="text-xs font-semibold text-neutral-100 group-hover:text-white truncate">
-                    {scene.name}
-                  </span>
-                  {scene.premium && (
-                    <span className="text-[10px] uppercase font-bold text-amber-400/90 font-mono tracking-wider ml-1">
-                      PRO
+                  {/* Soft bottom gradient overlay with name and crown */}
+                  <div className="absolute inset-x-0 bottom-0 pt-6 pb-2 px-2.5 bg-gradient-to-t from-black/95 via-black/60 to-transparent flex items-center justify-between pointer-events-none">
+                    <span className="text-[11px] sm:text-xs font-semibold text-white drop-shadow-md truncate">
+                      {scene.name}
                     </span>
-                  )}
+                    {scene.premium && (
+                      <Crown className="w-3.5 h-3.5 text-[#E6C15A] fill-[#E6C15A] shrink-0 drop-shadow ml-1" />
+                    )}
+                  </div>
                 </div>
-                <p className="text-[11px] text-neutral-400 leading-tight mt-0.5 line-clamp-1">
-                  {scene.description}
-                </p>
               </button>
             );
           })}
         </div>
 
-        {/* Dim slider (0 to 60%) */}
-        <div className="pt-3 border-t border-white/10 mb-3">
+        {/* Background Dim slider (default 20%, range 0 to 60%) */}
+        <div className="pt-2.5 border-t border-white/10 mb-2.5">
           <div className="flex items-center justify-between mb-1.5 text-xs">
             <span className="flex items-center gap-1.5 text-neutral-300 font-medium">
-              <Sliders className="w-3.5 h-3.5 text-neutral-400" />
+              <Sliders className="w-3 h-3 text-neutral-400" />
               <span>Background Dim</span>
             </span>
-            <span className="font-mono text-neutral-400 font-semibold">{dim}%</span>
+            <span className="font-mono text-neutral-400 text-[11px] font-semibold">{dim}%</span>
           </div>
           <input
             type="range"
@@ -197,14 +204,14 @@ export function ScenePicker({
             step="1"
             value={dim}
             onChange={(e) => onDimChange(parseInt(e.target.value, 10))}
-            className="w-full h-1.5 bg-white/15 rounded-lg appearance-none cursor-pointer accent-[var(--tier-accent,#f59e0b)]"
+            className="w-full h-1 bg-white/15 rounded-lg appearance-none cursor-pointer accent-[var(--tier-accent,#f59e0b)]"
             aria-label="Background Dim"
           />
         </div>
 
-        {/* Short muted battery note */}
-        <div className="text-[11px] text-neutral-500 text-center leading-normal">
-          Scenes use more battery. Choose Default to turn them off.
+        {/* Quiet battery consumption note */}
+        <div className="text-[10px] text-neutral-400 text-center tracking-tight">
+          Scenes use more battery • Choose Default to turn off
         </div>
       </div>
     </>

@@ -6,7 +6,7 @@ import { FOCUS_SCENES, getSceneById, DEFAULT_SCENE_ID } from './scenes/registry'
 
 const SCENE_STORAGE_KEY = 'studyio-focus-scene';
 const DIM_STORAGE_KEY = 'studyio-focus-dim';
-const DEFAULT_DIM = 35;
+const DEFAULT_DIM = 20;
 const STORAGE_EVENT = 'studyio-focus-storage-update';
 
 function subscribeStorage(callback: () => void) {

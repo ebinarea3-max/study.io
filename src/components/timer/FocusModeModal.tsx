@@ -117,7 +117,39 @@ export function FocusModeModal() {
   }
 
   const isBreak = timerMode === 'pomodoro' && pomodoroPhase !== 'work';
-  const glowColor = isBreak ? 'rgba(59, 130, 246, 0.15)' : 'rgba(255, 255, 255, 0.1)';
+
+  // Soft glow text-shadow tinted to the active scene (preserves size, position, and font)
+  let sceneGlow = isBreak
+    ? '0 0 120px rgba(59, 130, 246, 0.25), 0 0 40px rgba(59, 130, 246, 0.15)'
+    : '0 0 100px rgba(255, 255, 255, 0.12)';
+
+  if (!isBreak) {
+    switch (activeSceneId) {
+      case 'stars':
+        sceneGlow =
+          '0 0 110px rgba(199, 210, 254, 0.32), 0 0 45px rgba(147, 197, 253, 0.22), 0 0 20px rgba(255, 255, 255, 0.35)';
+        break;
+      case 'rain':
+        sceneGlow =
+          '0 0 110px rgba(125, 211, 252, 0.30), 0 0 45px rgba(56, 189, 248, 0.20), 0 0 20px rgba(224, 242, 254, 0.35)';
+        break;
+      case 'library':
+        sceneGlow =
+          '0 0 110px rgba(251, 191, 36, 0.35), 0 0 45px rgba(245, 158, 11, 0.22), 0 0 20px rgba(254, 240, 138, 0.35)';
+        break;
+      case 'aurora':
+        sceneGlow =
+          '0 0 110px rgba(52, 211, 153, 0.35), 0 0 45px rgba(139, 92, 246, 0.22), 0 0 20px rgba(167, 243, 208, 0.35)';
+        break;
+      case 'embers':
+        sceneGlow =
+          '0 0 110px rgba(251, 146, 60, 0.35), 0 0 45px rgba(234, 88, 12, 0.22), 0 0 20px rgba(254, 215, 170, 0.35)';
+        break;
+      default:
+        sceneGlow = '0 0 100px rgba(255, 255, 255, 0.12)';
+        break;
+    }
+  }
 
   return (
     <div
@@ -148,7 +180,7 @@ export function FocusModeModal() {
         onDoubleClick={() => setIsFocusModeOpen(false)}
       />
 
-      {/* 3. Big Timer with high-contrast radial mask */}
+      {/* 3. Big Timer with high-contrast radial mask and scene-tinted soft glow */}
       <div
         className={`relative z-10 flex flex-col items-center justify-center text-center transition-transform duration-700 ease-out ${
           isIdle && !isPickerOpen ? 'scale-105' : 'scale-100'
@@ -162,7 +194,7 @@ export function FocusModeModal() {
 
         <div
           className="font-hud font-black tracking-tighter text-white leading-none text-[16vw] md:text-[20vw] tabular-nums drop-shadow-[0_4px_30px_rgba(0,0,0,0.8)]"
-          style={{ textShadow: `0 0 120px ${glowColor}` }}
+          style={{ textShadow: sceneGlow }}
         >
           {displayTime}
         </div>
