@@ -46,22 +46,43 @@ export const FOCUS_SCENES: readonly FocusScene[] = [
       'radial-gradient(circle at 50% 55%, #ff6ab0 0%, transparent 55%), linear-gradient(180deg, #06021a 0%, #1a0945 40%, #5a1a78 70%, #d1307f 100%)',
   },
   {
+    id: 'sakura',
+    name: 'Sakura night',
+    description: 'Moonlit cherry blossoms drifting in the night breeze.',
+    premium: true,
+    glow: 'rgba(255, 180, 210, 0.45)',
+    thumbnail:
+      'radial-gradient(circle at 75% 28%, #ffeef6 0%, transparent 35%), linear-gradient(180deg, #09091e 0%, #17153b 45%, #2e2354 80%, #462c68 100%)',
+  },
+  {
+    id: 'campfire',
+    name: 'Campfire night',
+    description: 'Warm glowing embers rising into the starry forest sky.',
+    premium: true,
+    glow: 'rgba(255, 150, 50, 0.48)',
+    thumbnail:
+      'radial-gradient(circle at 50% 85%, #ff9800 0%, #e65100 25%, transparent 60%), linear-gradient(180deg, #040814 0%, #0c1527 50%, #1b263b 85%, #282035 100%)',
+  },
+  // Compatibility entries for previously saved choices
+  {
     id: 'sea',
     name: 'Moonlit sea',
-    description: 'Ocean swells and moon shimmer.',
+    description: 'Replaced by Sakura night',
     premium: true,
-    glow: 'rgba(150,190,255,.4)',
+    glow: 'rgba(255, 180, 210, 0.45)',
     thumbnail:
       'radial-gradient(circle at 50% 30%, #bcd6ff 0%, transparent 45%), linear-gradient(180deg, #040a1c 0%, #0c2147 55%, #1f4f80 100%)',
+    disabled: true,
   },
   {
     id: 'aurora',
     name: 'Polar aurora',
-    description: 'Northern lights dancing over snowy ridges.',
+    description: 'Replaced by Campfire night',
     premium: true,
-    glow: 'rgba(100,255,190,.35)',
+    glow: 'rgba(255, 150, 50, 0.48)',
     thumbnail:
       'linear-gradient(135deg, #5dffb3 0%, #2fd4c9 40%, #8a6bff 100%)',
+    disabled: true,
   },
   // Compatibility entries for previously saved choices
   {

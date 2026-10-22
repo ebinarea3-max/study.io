@@ -1046,9 +1046,159 @@ html.light ::selection,
 
 @media (prefers-reduced-motion: reduce) {
   .animate-crest-float,
-  .button-sheen-sweep {
+  .button-sheen-sweep,
+  .focus-anim {
     animation: none !important;
   }
 }
+
+/* =========================================================================
+   FOCUS MODE PROCEDURAL VECTOR ANIMATIONS (GPU-COMPOSITED, ZERO-JANK)
+   ========================================================================= */
+
+@keyframes focusRainFar {
+  0% { transform: translate3d(0, -900px, 0); }
+  100% { transform: translate3d(-60px, 900px, 0); }
+}
+
+@keyframes focusRainNear {
+  0% { transform: translate3d(0, -900px, 0); }
+  100% { transform: translate3d(-100px, 900px, 0); }
+}
+
+@keyframes focusCloudDrift {
+  0% { transform: translate3d(-50px, 0, 0); }
+  50% { transform: translate3d(50px, 0, 0); }
+  100% { transform: translate3d(-50px, 0, 0); }
+}
+
+@keyframes focusStarTwinkle {
+  0%, 100% { opacity: var(--star-min, 0.2); }
+  50% { opacity: var(--star-max, 0.9); }
+}
+
+@keyframes focusFirefly {
+  0% { transform: translate3d(0, 0, 0); opacity: 0.2; }
+  25% { transform: translate3d(var(--fx1, 20px), var(--fy1, -25px), 0); opacity: 0.95; }
+  50% { transform: translate3d(var(--fx2, -15px), var(--fy2, -10px), 0); opacity: 0.35; }
+  75% { transform: translate3d(var(--fx3, 25px), var(--fy3, 15px), 0); opacity: 1; }
+  100% { transform: translate3d(0, 0, 0); opacity: 0.2; }
+}
+
+@keyframes focusNeonPulse {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+
+@keyframes focusPetalFall {
+  0% {
+    transform: translate3d(var(--px0, 0px), -60px, 0) rotate(0deg);
+    opacity: 0;
+  }
+  8% {
+    opacity: 0.95;
+  }
+  88% {
+    opacity: 0.95;
+  }
+  100% {
+    transform: translate3d(calc(var(--px0, 0px) + var(--drift-x, 380px)), 960px, 0) rotate(var(--rot, 360deg));
+    opacity: 0;
+  }
+}
+
+@keyframes focusLanternSway {
+  0%, 100% { transform: rotate(-3.5deg); }
+  50% { transform: rotate(3.5deg); }
+}
+
+@keyframes focusEmberRise {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.95;
+  }
+  30% {
+    transform: translate3d(var(--ex1, 15px), -240px, 0) scale(0.9);
+    opacity: 0.9;
+  }
+  60% {
+    transform: translate3d(var(--ex2, -18px), -520px, 0) scale(0.75);
+    opacity: 0.75;
+  }
+  85% {
+    transform: translate3d(var(--ex3, 22px), -780px, 0) scale(0.55);
+    opacity: 0.45;
+  }
+  100% {
+    transform: translate3d(var(--ex4, -10px), -980px, 0) scale(0.3);
+    opacity: 0;
+  }
+}
+
+@keyframes focusHearthPulse {
+  0%, 100% { opacity: 0.65; transform: scale(0.97); }
+  35% { opacity: 0.95; transform: scale(1.03); }
+  70% { opacity: 0.75; transform: scale(0.99); }
+}
+
+/* Scene classes */
+.focus-rain-far {
+  animation: focusRainFar var(--rf-dur, 1.4s) linear infinite;
+  will-change: transform;
+}
+
+.focus-rain-near {
+  animation: focusRainNear var(--rn-dur, 0.95s) linear infinite;
+  will-change: transform;
+}
+
+.focus-cloud-drift {
+  animation: focusCloudDrift var(--cd-dur, 55s) ease-in-out infinite;
+  will-change: transform;
+}
+
+.focus-star {
+  animation: focusStarTwinkle var(--st-dur, 3.5s) ease-in-out infinite;
+  animation-delay: var(--st-del, 0s);
+}
+
+.focus-firefly {
+  animation: focusFirefly var(--ff-dur, 8s) ease-in-out infinite;
+  animation-delay: var(--ff-del, 0s);
+  will-change: transform;
+}
+
+.focus-neon-pulse {
+  animation: focusNeonPulse var(--np-dur, 3.5s) ease-in-out infinite;
+}
+
+.focus-petal {
+  animation: focusPetalFall var(--pt-dur, 11s) linear infinite;
+  animation-delay: var(--pt-del, 0s);
+  will-change: transform;
+}
+
+.focus-lantern {
+  animation: focusLanternSway 5.5s ease-in-out infinite;
+  transform-origin: 230px 140px;
+  will-change: transform;
+}
+
+.focus-ember {
+  animation: focusEmberRise var(--em-dur, 6s) linear infinite;
+  animation-delay: var(--em-del, 0s);
+  will-change: transform;
+}
+
+.focus-hearth {
+  animation: focusHearthPulse 4.2s ease-in-out infinite;
+  transform-origin: 800px 780px;
+}
+
+/* When window is hidden, pause all focus animations */
+.scene-hidden svg * {
+  animation-play-state: paused !important;
+}
+
 
 

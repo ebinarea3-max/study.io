@@ -10,12 +10,14 @@ interface FocusSceneLayerProps {
 }
 
 function resolveSceneKey(id: string): string {
+  if (id === 'sea') return 'sakura';
+  if (id === 'aurora') return 'campfire';
   if (id === 'rain') return 'neon';
   if (id === 'stars') return 'dusk';
   return id;
 }
 
-export function FocusSceneLayer({
+function FocusSceneLayerComponent({
   sceneId,
   dim = 20,
 }: FocusSceneLayerProps) {
@@ -80,98 +82,6 @@ export function FocusSceneLayer({
         isPageHidden ? 'scene-hidden' : ''
       }`}
     >
-      <style>{`
-        /* Core procedural SVG animations from design reference */
-        @keyframes drift {
-          to { transform: translateX(var(--x)); }
-        }
-        .drift {
-          animation: drift var(--d) ease-in-out infinite alternate;
-        }
-
-        @keyframes tw {
-          0%, 100% { opacity: var(--o1); }
-          50% { opacity: var(--o2); }
-        }
-        .tw {
-          animation: tw var(--d) ease-in-out infinite;
-          animation-delay: var(--l);
-        }
-
-        @keyframes ffm {
-          to { transform: translate(var(--dx), var(--dy)); }
-        }
-        @keyframes ffg {
-          0%, 100% { opacity: 0.12; }
-          50% { opacity: 1; }
-        }
-        .ff {
-          animation: ffm var(--t) ease-in-out infinite alternate, ffg var(--g) ease-in-out infinite;
-          animation-delay: var(--l);
-        }
-
-        @keyframes rain {
-          to { transform: translate(-60px, 1100px); }
-        }
-        .rain {
-          animation: rain var(--d) linear infinite;
-          animation-delay: var(--l);
-        }
-
-        @keyframes wave {
-          to { transform: translateX(-1600px); }
-        }
-        .wv {
-          animation: wave var(--d) linear infinite;
-        }
-
-        @keyframes au {
-          from { transform: translateX(-50px) scaleY(0.9); }
-          to { transform: translateX(50px) scaleY(1.1); }
-        }
-        .au {
-          animation: au var(--d) ease-in-out infinite alternate;
-          transform-origin: 800px 300px;
-        }
-
-        @keyframes pulse {
-          0%, 100% { opacity: 0.55; }
-          50% { opacity: 1; }
-        }
-        .pu {
-          animation: pulse var(--d) ease-in-out infinite;
-        }
-
-        @keyframes shim {
-          0%, 100% { opacity: 0.12; }
-          50% { opacity: 0.7; }
-        }
-        .sh {
-          animation: shim var(--d) ease-in-out infinite;
-          animation-delay: var(--l);
-        }
-
-        /* 0.9s ease scene cross-fade */
-        @keyframes sceneFadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes sceneFadeOut {
-          from { opacity: 1; }
-          to { opacity: 0; }
-        }
-
-        /* Reduced motion compliance */
-        @media (prefers-reduced-motion: reduce) {
-          svg * { animation: none !important; }
-        }
-
-        /* Pause GPU animations when document is hidden */
-        .scene-hidden svg * {
-          animation-play-state: paused !important;
-        }
-      `}</style>
-
       {/* Previous Scene Layer Fading Out over 900ms */}
       {sceneState.previous && previousSvg && (
         <div
@@ -227,3 +137,10 @@ export function FocusSceneLayer({
     </div>
   );
 }
+
+// React.memo prevents FocusSceneLayer from re-rendering every second when elapsedSeconds ticks in the parent modal
+export const FocusSceneLayer = React.memo(
+  FocusSceneLayerComponent,
+  (prev, next) => prev.sceneId === next.sceneId && prev.dim === next.dim
+);
+
