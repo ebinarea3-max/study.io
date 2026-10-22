@@ -177,24 +177,24 @@ function continuousRain(r: () => number) {
   let nearDrops = '';
 
   for (let i = 0; i < 45; i++) {
-    const x = (r() * 1700 - 50) | 0;
+    const x = (r() * 1750 - 50) | 0;
     const y = (r() * 900) | 0;
-    farDrops += `M${x} ${y}l-6 32`;
-    // Duplicate offset by 900 for seamless looping
-    farDrops += `M${x} ${y - 900}l-6 32`;
+    farDrops += `M${x} ${y}l-5 28`;
+    // Duplicate offset by (x + 30, y - 900) for mathematically seamless wrap
+    farDrops += `M${x + 30} ${y - 900}l-5 28`;
   }
 
   for (let i = 0; i < 35; i++) {
-    const x = (r() * 1700 - 50) | 0;
+    const x = (r() * 1750 - 50) | 0;
     const y = (r() * 900) | 0;
-    nearDrops += `M${x} ${y}l-8 44`;
-    // Duplicate offset by 900 for seamless looping
-    nearDrops += `M${x} ${y - 900}l-8 44`;
+    nearDrops += `M${x} ${y}l-7 40`;
+    // Duplicate offset by (x + 45, y - 900) for mathematically seamless wrap
+    nearDrops += `M${x + 45} ${y - 900}l-7 40`;
   }
 
   return (
-    `<g class="focus-rain-far" style="--rf-dur:1.35s"><path d="${farDrops}" stroke="rgba(180,215,255,.32)" stroke-width="1.2" fill="none"/></g>` +
-    `<g class="focus-rain-near" style="--rn-dur:0.92s"><path d="${nearDrops}" stroke="rgba(220,240,255,.52)" stroke-width="1.6" fill="none"/></g>`
+    `<g class="focus-rain-far"><path d="${farDrops}" stroke="rgba(180,215,255,.32)" stroke-width="1.2" fill="none"/></g>` +
+    `<g class="focus-rain-near"><path d="${nearDrops}" stroke="rgba(220,240,255,.55)" stroke-width="1.6" fill="none"/></g>`
   );
 }
 
@@ -202,17 +202,19 @@ function continuousRain(r: () => number) {
 function sakuraPetals(r: () => number, count: number) {
   let s = '';
   for (let i = 0; i < count; i++) {
-    const px0 = ((i / count) * 1600 - 150) | 0;
-    const dur = (9 + r() * 7).toFixed(1);
-    const del = -((i / count) * 14).toFixed(1);
-    const driftX = (340 + r() * 220) | 0;
+    const px0 = ((i / count) * 1650 - 200) | 0;
+    const py0 = -40;
+    const dur = (9.5 + r() * 5.5).toFixed(1);
+    const del = -((i / count) * 12).toFixed(1);
+    const driftX = (340 + r() * 200) | 0;
     const rot = (240 + r() * 240) | 0;
-    const scale = (0.7 + r() * 0.6).toFixed(2);
+    const scale = (0.7 + r() * 0.55).toFixed(2);
     const petalColor = r() < 0.65 ? '#ffb9d8' : '#ffe4f0';
 
-    s += `<g class="focus-petal" style="--px0:${px0}px;--drift-x:${driftX}px;--rot:${rot}deg;--pt-dur:${dur}s;--pt-del:${del}s">` +
+    s += `<g transform="translate(${px0}, ${py0})">` +
+      `<g class="focus-petal" style="--pdx:${driftX}px;--prot:${rot}deg;--pt-dur:${dur}s;--pt-del:${del}s">` +
       `<path transform="scale(${scale})" d="M0 0 C-6 -10, -10 -22, 0 -30 C10 -22, 6 -10, 0 0 Z" fill="${petalColor}" opacity="0.88" />` +
-      `</g>`;
+      `</g></g>`;
   }
   return s;
 }
@@ -221,16 +223,17 @@ function sakuraPetals(r: () => number, count: number) {
 function campfireEmbers(r: () => number, count: number) {
   let s = '';
   for (let i = 0; i < count; i++) {
-    const dur = (5.5 + r() * 4.5).toFixed(1);
-    const del = -((i / count) * 8.5).toFixed(1);
+    const dur = (5 + r() * 4).toFixed(1);
+    const del = -((i / count) * 7.5).toFixed(1);
+    const startX = 800 + (((r() - 0.5) * 50) | 0);
+    const startY = 770;
     const ex1 = (((r() - 0.5) * 50) | 0);
-    const ex2 = (((r() - 0.5) * 70) | 0);
-    const ex3 = (((r() - 0.5) * 90) | 0);
-    const ex4 = (((r() - 0.5) * 110) | 0);
+    const ex2 = (((r() - 0.5) * 80) | 0);
     const rad = (1.8 + r() * 2.2).toFixed(1);
     const color = r() < 0.6 ? '#ffb74d' : r() < 0.85 ? '#ffa726' : '#ffe082';
 
-    s += `<g transform="translate(800, 770)"><g class="focus-ember" style="--ex1:${ex1}px;--ex2:${ex2}px;--ex3:${ex3}px;--ex4:${ex4}px;--em-dur:${dur}s;--em-del:${del}s">` +
+    s += `<g transform="translate(${startX}, ${startY})">` +
+      `<g class="focus-ember" style="--ex1:${ex1}px;--ex2:${ex2}px;--em-dur:${dur}s;--em-del:${del}s">` +
       `<circle cx="0" cy="0" r="${rad}" fill="${color}" filter="drop-shadow(0 0 5px ${color})"/>` +
       `</g></g>`;
   }

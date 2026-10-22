@@ -173,6 +173,17 @@ export function FocusModeModal() {
           isIdle && !isPickerOpen ? 'scale-105' : 'scale-100'
         }`}
       >
+        {/* Soft GPU-accelerated ambient glow layer behind clock (zero per-tick rasterization lag) */}
+        <div
+          className="absolute inset-0 -z-10 pointer-events-none"
+          style={{
+            background: `radial-gradient(ellipse 70% 50% at 50% 50%, ${sceneGlow} 0%, transparent 75%)`,
+            opacity: 0.75,
+            filter: 'blur(30px)',
+            transition: 'background 0.9s ease',
+          }}
+        />
+
         {timerMode === 'pomodoro' && (
           <div className="mb-3 text-xs md:text-sm font-bold text-white/50 tracking-[0.3em] uppercase drop-shadow">
             {pomodoroPhase === 'work' ? 'Deep Focus' : 'Rest Phase'}
@@ -185,7 +196,7 @@ export function FocusModeModal() {
             fontFamily: "'Space Grotesk', var(--font-hud), sans-serif",
             fontSize: 'clamp(64px, 14vw, 175px)',
             letterSpacing: '-0.03em',
-            textShadow: `0 0 60px ${sceneGlow}, 0 2px 26px rgba(0,0,0,.45)`,
+            textShadow: `0 0 20px ${sceneGlow}, 0 2px 14px rgba(0,0,0,0.6)`,
             transition: 'text-shadow 0.9s ease',
           }}
         >
@@ -213,7 +224,7 @@ export function FocusModeModal() {
         <div
           role="group"
           aria-label="Scene selector"
-          className="flex items-center gap-1 p-1 max-w-[calc(100vw-32px)] overflow-x-auto scrollbar-none rounded-full bg-[rgba(10,12,20,0.55)] border border-white/15 backdrop-blur-xl shadow-2xl"
+          className="flex items-center gap-1 p-1 max-w-[calc(100vw-32px)] overflow-x-auto scrollbar-none rounded-full bg-[rgba(10,12,20,0.72)] border border-white/15 backdrop-blur-md shadow-2xl"
         >
           {AVAILABLE_SCENES.map((scene) => {
             const isActive = activeSceneId === scene.id;

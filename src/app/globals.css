@@ -1053,46 +1053,52 @@ html.light ::selection,
 }
 
 /* =========================================================================
-   FOCUS MODE PROCEDURAL VECTOR ANIMATIONS (GPU-COMPOSITED, ZERO-JANK)
+   FOCUS MODE PROCEDURAL VECTOR ANIMATIONS (GPU-ACCELERATED & MATHEMATICALLY SEAMLESS)
    ========================================================================= */
 
-@keyframes focusRainFar {
-  0% { transform: translate3d(0, -900px, 0); }
-  100% { transform: translate3d(-60px, 900px, 0); }
+/* Seamless Parallax Rain (Translates exactly H=900px so duplicate drops align perfectly at 100% -> 0%) */
+@keyframes focusRainLoopFar {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(-30px, 900px); }
 }
 
-@keyframes focusRainNear {
-  0% { transform: translate3d(0, -900px, 0); }
-  100% { transform: translate3d(-100px, 900px, 0); }
+@keyframes focusRainLoopNear {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(-45px, 900px); }
 }
 
+/* Continuous Cloud Drift */
 @keyframes focusCloudDrift {
-  0% { transform: translate3d(-50px, 0, 0); }
-  50% { transform: translate3d(50px, 0, 0); }
-  100% { transform: translate3d(-50px, 0, 0); }
+  0% { transform: translateX(-40px); }
+  50% { transform: translateX(40px); }
+  100% { transform: translateX(-40px); }
 }
 
+/* Star Twinkle */
 @keyframes focusStarTwinkle {
   0%, 100% { opacity: var(--star-min, 0.2); }
-  50% { opacity: var(--star-max, 0.9); }
+  50% { opacity: var(--star-max, 0.95); }
 }
 
-@keyframes focusFirefly {
-  0% { transform: translate3d(0, 0, 0); opacity: 0.2; }
-  25% { transform: translate3d(var(--fx1, 20px), var(--fy1, -25px), 0); opacity: 0.95; }
-  50% { transform: translate3d(var(--fx2, -15px), var(--fy2, -10px), 0); opacity: 0.35; }
-  75% { transform: translate3d(var(--fx3, 25px), var(--fy3, 15px), 0); opacity: 1; }
-  100% { transform: translate3d(0, 0, 0); opacity: 0.2; }
+/* Smooth Firefly Floating (Lissajous curves) */
+@keyframes focusFireflyMotion {
+  0% { transform: translate(0, 0); opacity: 0.25; }
+  25% { transform: translate(var(--fx1, 20px), var(--fy1, -25px)); opacity: 0.95; }
+  50% { transform: translate(var(--fx2, -15px), var(--fy2, -10px)); opacity: 0.35; }
+  75% { transform: translate(var(--fx3, 25px), var(--fy3, 15px)); opacity: 1; }
+  100% { transform: translate(0, 0); opacity: 0.25; }
 }
 
+/* Neon Pulse */
 @keyframes focusNeonPulse {
   0%, 100% { opacity: 0.55; }
   50% { opacity: 1; }
 }
 
+/* Sakura Petal Natural Wind Flow */
 @keyframes focusPetalFall {
   0% {
-    transform: translate3d(var(--px0, 0px), -60px, 0) rotate(0deg);
+    transform: translate(0, 0) rotate(0deg);
     opacity: 0;
   }
   8% {
@@ -1102,53 +1108,60 @@ html.light ::selection,
     opacity: 0.95;
   }
   100% {
-    transform: translate3d(calc(var(--px0, 0px) + var(--drift-x, 380px)), 960px, 0) rotate(var(--rot, 360deg));
+    transform: translate(var(--pdx, 400px), 940px) rotate(var(--prot, 360deg));
     opacity: 0;
   }
 }
 
+/* Hanging Lantern Pendular Sway */
 @keyframes focusLanternSway {
-  0%, 100% { transform: rotate(-3.5deg); }
-  50% { transform: rotate(3.5deg); }
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg); }
 }
 
+/* Campfire Embers Smooth Rise */
 @keyframes focusEmberRise {
   0% {
-    transform: translate3d(0, 0, 0) scale(1);
+    transform: translate(0, 0) scale(1);
+    opacity: 0;
+  }
+  12% {
     opacity: 0.95;
   }
-  30% {
-    transform: translate3d(var(--ex1, 15px), -240px, 0) scale(0.9);
-    opacity: 0.9;
-  }
-  60% {
-    transform: translate3d(var(--ex2, -18px), -520px, 0) scale(0.75);
-    opacity: 0.75;
+  50% {
+    transform: translate(var(--ex1, 15px), -360px) scale(0.85);
+    opacity: 0.85;
   }
   85% {
-    transform: translate3d(var(--ex3, 22px), -780px, 0) scale(0.55);
-    opacity: 0.45;
+    opacity: 0.6;
   }
   100% {
-    transform: translate3d(var(--ex4, -10px), -980px, 0) scale(0.3);
+    transform: translate(var(--ex2, -15px), -750px) scale(0.4);
     opacity: 0;
   }
 }
 
+/* Campfire Hearth Flame Pulse */
 @keyframes focusHearthPulse {
-  0%, 100% { opacity: 0.65; transform: scale(0.97); }
-  35% { opacity: 0.95; transform: scale(1.03); }
-  70% { opacity: 0.75; transform: scale(0.99); }
+  0%, 100% { opacity: 0.7; transform: scale(0.98); }
+  40% { opacity: 0.95; transform: scale(1.02); }
+  75% { opacity: 0.8; transform: scale(0.99); }
 }
 
-/* Scene classes */
+/* Moon Rays Pulse */
+@keyframes focusMoonRays {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.85; }
+}
+
+/* Scene CSS utility classes with GPU compositor hints */
 .focus-rain-far {
-  animation: focusRainFar var(--rf-dur, 1.4s) linear infinite;
+  animation: focusRainLoopFar 1.25s linear infinite;
   will-change: transform;
 }
 
 .focus-rain-near {
-  animation: focusRainNear var(--rn-dur, 0.95s) linear infinite;
+  animation: focusRainLoopNear 0.85s linear infinite;
   will-change: transform;
 }
 
@@ -1163,7 +1176,7 @@ html.light ::selection,
 }
 
 .focus-firefly {
-  animation: focusFirefly var(--ff-dur, 8s) ease-in-out infinite;
+  animation: focusFireflyMotion var(--ff-dur, 8s) ease-in-out infinite;
   animation-delay: var(--ff-del, 0s);
   will-change: transform;
 }
@@ -1185,7 +1198,7 @@ html.light ::selection,
 }
 
 .focus-ember {
-  animation: focusEmberRise var(--em-dur, 6s) linear infinite;
+  animation: focusEmberRise var(--em-dur, 6.5s) linear infinite;
   animation-delay: var(--em-del, 0s);
   will-change: transform;
 }
@@ -1195,10 +1208,15 @@ html.light ::selection,
   transform-origin: 800px 780px;
 }
 
+.focus-moon-rays {
+  animation: focusMoonRays 7s ease-in-out infinite;
+}
+
 /* When window is hidden, pause all focus animations */
 .scene-hidden svg * {
   animation-play-state: paused !important;
 }
+
 
 
 
