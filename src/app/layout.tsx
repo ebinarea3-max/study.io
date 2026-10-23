@@ -81,7 +81,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="min-h-screen overflow-x-hidden flex flex-col text-[var(--text)] bg-[var(--bg)] dark antialiased selection:bg-[var(--accent)]/30 selection:text-[var(--accent)]">
+      <body className="min-h-screen overflow-x-clip flex flex-col text-[var(--text)] bg-[var(--bg)] dark antialiased selection:bg-[var(--accent)]/30 selection:text-[var(--accent)]">
         <Providers>
           {children}
         </Providers>

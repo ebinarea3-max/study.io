@@ -151,12 +151,12 @@ export default function Home() {
 
   // Authenticated: Full StudyPulse focus dashboard
   return (
-    <div className={`w-full bg-[var(--bg)] bg-dot-grid text-[var(--text)] flex flex-col relative selection:bg-[var(--accent)]/30 selection:text-[var(--accent)] px-0 md:px-8 ${
+    <div className={`w-full bg-[var(--bg)] bg-dot-grid text-[var(--text)] flex flex-col relative selection:bg-[var(--accent)]/30 selection:text-[var(--accent)] ${
       activeTab === "timer"
-        ? "h-[100dvh] overflow-hidden md:min-h-screen md:h-auto md:overflow-y-auto pb-28 md:pb-28"
+        ? "h-[100dvh] overflow-hidden md:min-h-screen md:h-auto pb-28 md:pb-28"
         : activeTab === "rooms"
         ? "h-[100dvh] md:h-screen overflow-hidden pb-0 md:pb-0"
-        : "min-h-screen overflow-y-auto pb-28 md:pb-28"
+        : "min-h-screen pb-28 md:pb-28"
     }`}>
       {/* Subtle Background Dot Grid Texture */}
       <div className="fixed inset-0 pointer-events-none bg-dot-grid z-0" />
@@ -196,7 +196,7 @@ export default function Home() {
         )}
 
         {/* Main Content Area with Mobile Swipe Navigation */}
-        <main className={`w-full flex flex-col items-center relative z-10 ${
+        <main className={`w-full flex flex-col items-center relative z-10 px-0 md:px-8 ${
           activeTab === "timer" 
             ? "h-full md:min-h-screen pt-3.5 px-3 sm:px-4 md:px-0" 
             : activeTab === "rooms"

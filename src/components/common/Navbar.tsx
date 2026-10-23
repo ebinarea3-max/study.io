@@ -238,7 +238,7 @@ export function Navbar({
 
   return (
     <>
-    <header className="sticky top-0 z-40 w-full border-b border-[var(--border)] bg-[var(--bg)]/90 backdrop-blur-xl transition-colors">
+    <header className="sticky top-0 z-40 w-full border-b border-[var(--border)] bg-[var(--bg)]/95 backdrop-blur-xl transition-colors">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 h-16 flex items-center justify-between gap-2 sm:gap-4">
         {/* Logo & Brand */}
         <div className="flex items-center gap-2.5 sm:gap-6">

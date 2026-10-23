@@ -719,7 +719,7 @@ export default function PremiumPage() {
     : null;
 
   return (
-    <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] selection:bg-[#E6C15A]/30 selection:text-[#F6EFD9] relative overflow-x-hidden pb-24 lg:pb-12">
+    <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] selection:bg-[#E6C15A]/30 selection:text-[#F6EFD9] relative overflow-x-clip pb-24 lg:pb-12">
       {/* Barely visible SVG film grain (~3% opacity) */}
       <svg
         aria-hidden="true"

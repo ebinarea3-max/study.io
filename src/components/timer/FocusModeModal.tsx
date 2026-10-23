@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useStudy } from '../../context/StudyContext';
 import { formatSeconds } from '../../lib/utils';
-import { Minimize2, Sliders, Crown, Music } from 'lucide-react';
+import { Minimize2, Sliders, Crown, Music, Play, Pause, Square } from 'lucide-react';
 import { FocusSceneLayer } from '../focus/FocusSceneLayer';
 import { useFocusScene } from '../focus/useFocusScene';
 import { ScenePicker, ScenePreviewPill } from '../focus/ScenePicker';
@@ -45,8 +45,16 @@ export function FocusModeModal() {
     pomodoroWorkDuration,
     pomodoroBreakDuration,
     selectedSubject,
+    isStudying,
+    isPaused,
+    isRunning,
+    pauseTimer,
+    resumeTimer,
+    stopTimer,
+    startTimer,
   } = useStudy();
 
+  const [isSaving, setIsSaving] = useState(false);
   const [isIdle, setIsIdle] = useState(false);
   const isIdleRef = useRef(false);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
@@ -54,6 +62,36 @@ export function FocusModeModal() {
   const idleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const settingsButtonRef = useRef<HTMLButtonElement | null>(null);
   const atmosphereButtonRef = useRef<HTMLButtonElement | null>(null);
+
+  const handlePause = () => {
+    pauseTimer();
+  };
+
+  const handleResume = () => {
+    resumeTimer();
+  };
+
+  const handleStop = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
+    try {
+      setIsFocusModeOpen(false);
+      exitFullscreenSafely();
+      await stopTimer();
+    } catch (err) {
+      console.error('Error stopping focus session:', err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleStart = () => {
+    if (selectedSubject?.id) {
+      startTimer(selectedSubject.id);
+    } else {
+      startTimer();
+    }
+  };
 
   // Focus scenes state & soft gating
   const {
@@ -142,8 +180,21 @@ export function FocusModeModal() {
         return;
       }
 
-      // Do not trigger arrow cycling if focus is inside an input/slider
-      if (document.activeElement?.tagName === 'INPUT') return;
+      // Do not trigger shortcuts if focus is inside an input, textarea or slider
+      if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return;
+
+      // Spacebar toggles pause / resume / start
+      if (e.code === 'Space' || e.key === ' ') {
+        e.preventDefault();
+        if (isStudying && !isPaused) {
+          handlePause();
+        } else if (isStudying && isPaused) {
+          handleResume();
+        } else if (!isStudying) {
+          handleStart();
+        }
+        return;
+      }
 
       const keys = AVAILABLE_SCENES.map((s) => s.id);
       const curIndex = keys.indexOf(activeSceneId);
@@ -161,7 +212,19 @@ export function FocusModeModal() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isFocusModeOpen, isPickerOpen, activeSceneId, selectScene, setIsFocusModeOpen]);
+  }, [
+    isFocusModeOpen,
+    isPickerOpen,
+    isAtmosphereOpen,
+    activeSceneId,
+    selectScene,
+    setIsFocusModeOpen,
+    isStudying,
+    isPaused,
+    handlePause,
+    handleResume,
+    handleStart,
+  ]);
 
   if (!isFocusModeOpen) return null;
 
@@ -249,13 +312,18 @@ export function FocusModeModal() {
         </div>
 
         <div
-          className="mt-3.5 text-base sm:text-lg font-medium text-white/75 select-none"
+          className="mt-3.5 text-base sm:text-lg font-medium text-white/75 select-none flex items-center justify-center gap-2.5"
           style={{
             fontFamily: "'Outfit', var(--font-geist-sans), sans-serif",
             textShadow: '0 1px 12px rgba(0,0,0,.5)',
           }}
         >
-          {subjectSubtitle}
+          <span>{subjectSubtitle}</span>
+          {isPaused && (
+            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-hud font-bold tracking-wider uppercase bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm animate-pulse">
+              Paused
+            </span>
+          )}
         </div>
       </div>
 
@@ -305,8 +373,87 @@ export function FocusModeModal() {
           })}
         </div>
 
-        {/* Action Controls: Atmosphere, Dim & Exit Fullscreen */}
+        {/* Action Controls: Timer Controls (Pause/Resume, Stop), Atmosphere, Dim & Exit Fullscreen */}
         <div className="flex items-center gap-2">
+          {/* Primary Timer Controls: Pause / Resume & Stop */}
+          {isStudying && !isPaused ? (
+            <>
+              <button
+                type="button"
+                onClick={handlePause}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white/15 hover:bg-white/25 border border-white/25 text-white text-xs sm:text-[13px] font-medium shadow-[0_8px_24px_rgba(0,0,0,0.5)] transition-all cursor-pointer active:scale-95"
+                title="Pause timer (Space)"
+              >
+                <Pause className="w-3.5 h-3.5 fill-current" />
+                <span>Pause</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleStop}
+                disabled={isSaving}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/35 text-rose-200 text-xs sm:text-[13px] font-medium shadow-[0_8px_24px_rgba(0,0,0,0.5)] transition-all cursor-pointer active:scale-95 disabled:opacity-50"
+                title="Stop & save session"
+              >
+                {isSaving ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-rose-300 border-t-transparent rounded-full animate-spin" />
+                    <span>Saving...</span>
+                  </>
+                ) : (
+                  <>
+                    <Square className="w-3.5 h-3.5 fill-current" />
+                    <span>Stop</span>
+                  </>
+                )}
+              </button>
+            </>
+          ) : isStudying && isPaused ? (
+            <>
+              <button
+                type="button"
+                onClick={handleResume}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/40 text-emerald-200 text-xs sm:text-[13px] font-semibold shadow-[0_8px_24px_rgba(0,0,0,0.5)] transition-all cursor-pointer active:scale-95"
+                title="Resume timer (Space)"
+              >
+                <Play className="w-3.5 h-3.5 fill-current" />
+                <span>Resume</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleStop}
+                disabled={isSaving}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/35 text-rose-200 text-xs sm:text-[13px] font-medium shadow-[0_8px_24px_rgba(0,0,0,0.5)] transition-all cursor-pointer active:scale-95 disabled:opacity-50"
+                title="Stop & save session"
+              >
+                {isSaving ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-rose-300 border-t-transparent rounded-full animate-spin" />
+                    <span>Saving...</span>
+                  </>
+                ) : (
+                  <>
+                    <Square className="w-3.5 h-3.5 fill-current" />
+                    <span>Stop</span>
+                  </>
+                )}
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={handleStart}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white/90 hover:bg-white text-black text-xs sm:text-[13px] font-semibold shadow-[0_8px_24px_rgba(0,0,0,0.5)] transition-all cursor-pointer active:scale-95"
+              title="Start timer (Space)"
+            >
+              <Play className="w-3.5 h-3.5 fill-current" />
+              <span>Start</span>
+            </button>
+          )}
+
+          <div className="w-[1px] h-4 bg-white/20 mx-0.5 hidden sm:block" />
+
           {/* Atmosphere Audio Soundscapes Toggle */}
           <button
             ref={atmosphereButtonRef}
