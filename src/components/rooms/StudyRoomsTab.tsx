@@ -59,7 +59,6 @@ interface StudyRoomsTabProps {
 export default function StudyRoomsTab({ onBackToDashboard, isActiveTab }: StudyRoomsTabProps) {
   const { user } = useAuth();
   const [mounted, setMounted] = useState(false);
-  const [view, setView] = useState<'my_groups' | 'explorer'>('my_groups');
 
   useEffect(() => {
     setMounted(true);
@@ -242,14 +241,10 @@ CREATE POLICY "Hosts can update their own study rooms"
     await Promise.all([fetchMyGroups(), fetchExplorerRooms()]);
   }, [fetchMyGroups, fetchExplorerRooms]);
 
-  // Initial and view-based data fetching
+  // Initial data fetching
   useEffect(() => {
-    if (view === 'my_groups') {
-      fetchMyGroups();
-    } else {
-      fetchExplorerRooms();
-    }
-  }, [view, user?.id, fetchMyGroups, fetchExplorerRooms]);
+    refreshAll();
+  }, [user?.id, refreshAll]);
 
   // Auto-refresh when tab becomes active in SPA
   useEffect(() => {
@@ -774,7 +769,7 @@ CREATE POLICY "Hosts can update their own study rooms"
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+          <div className="flex items-center gap-2">
             {/* Refresh icon button */}
             <button
               type="button"
@@ -782,56 +777,12 @@ CREATE POLICY "Hosts can update their own study rooms"
               disabled={isLoading}
               className="p-2 rounded-lg bg-fg/[0.04] hover:bg-fg/[0.08] border border-[var(--border)] text-[var(--text-dim)] hover:text-[var(--text)] transition-all cursor-pointer active:scale-95 disabled:opacity-50"
               title="Refresh room telemetry"
+              aria-label="Refresh room telemetry"
             >
               <RotateCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-amber-400' : ''}`} />
             </button>
 
-            {/* Direct Join by Code Modal Button */}
-            <button
-              type="button"
-              onClick={() => setIsJoinCodeModalOpen(true)}
-              className="px-2.5 py-1.5 rounded-lg bg-fg/[0.04] hover:bg-fg/[0.08] border border-[var(--border)] text-[var(--text-dim)] hover:text-[var(--text)] font-hud-mono text-xs font-bold tracking-wider uppercase transition-all cursor-pointer flex items-center gap-1.5"
-              title="Enter 6-digit room code"
-            >
-              <KeyRound className="w-3.5 h-3.5" />
-              <span>CODE</span>
-            </button>
-
-            {/* Segmented Filter Pills (MY ROOMS / EXPLORE) */}
-            <div className="inline-flex items-center p-1 bg-[var(--surface-2)] border border-[var(--border)] rounded-xl gap-1 shadow-sm">
-              <button
-                type="button"
-                onClick={() => {
-                  setView('my_groups');
-                  fetchMyGroups();
-                }}
-                className={`px-3 py-1.5 rounded-lg font-hud-mono text-xs font-bold tracking-wider uppercase transition-all cursor-pointer ${
-                  view === 'my_groups'
-                    ? 'shadow-sm'
-                    : 'text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-fg/[0.04]'
-                }`}
-                style={view === 'my_groups' ? { backgroundColor: 'var(--accent)', color: 'var(--accent-contrast)' } : undefined}
-              >
-                MY ROOMS ({myGroups.length})
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setView('explorer');
-                  fetchExplorerRooms();
-                }}
-                className={`px-3 py-1.5 rounded-lg font-hud-mono text-xs font-bold tracking-wider uppercase transition-all cursor-pointer ${
-                  view === 'explorer'
-                    ? 'shadow-sm'
-                    : 'text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-fg/[0.04]'
-                }`}
-                style={view === 'explorer' ? { backgroundColor: 'var(--accent)', color: 'var(--accent-contrast)' } : undefined}
-              >
-                EXPLORE
-              </button>
-            </div>
-
-            {/* Create Room Button (Tasks style) */}
+            {/* Create Room Button (Plus icon only) */}
             <button
               type="button"
               onClick={() => {
@@ -839,11 +790,12 @@ CREATE POLICY "Hosts can update their own study rooms"
                 setCreateRoomData({ name: '', password: '', max_capacity: 4 });
                 setIsCreateModalOpen(true);
               }}
-              className="px-3.5 py-1.5 text-xs font-hud-mono font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer hover:brightness-110 active:scale-95 uppercase tracking-wider shadow-sm"
+              className="p-2 rounded-lg transition-all flex items-center justify-center cursor-pointer hover:brightness-110 active:scale-95 shadow-sm"
               style={{ backgroundColor: 'var(--accent)', color: 'var(--accent-contrast)' }}
+              title="Create Room"
+              aria-label="Create Room"
             >
-              <Plus className="w-3.5 h-3.5 stroke-[3]" />
-              CREATE
+              <Plus className="w-4 h-4 stroke-[2.5]" />
             </button>
           </div>
         </div>
@@ -857,245 +809,9 @@ CREATE POLICY "Hosts can update their own study rooms"
         )}
 
         {/* ══════════════════════════════════════════════════════════ */}
-        {/* VIEW 1: MY GROUPS                                          */}
+        {/* EXPLORE ROOMS                                               */}
         {/* ══════════════════════════════════════════════════════════ */}
-        {!isLoading && view === 'my_groups' && (
-          <>
-            {myGroups.length === 0 ? (
-              /* Telemetry Empty State (Stats Style) */
-              <div className="py-16 sm:py-24 flex flex-col items-center justify-center text-center space-y-3">
-                <svg
-                  className="w-14 h-14 mx-auto text-neutral-600 opacity-60"
-                  viewBox="0 0 64 64"
-                  fill="none"
-                >
-                  <path
-                    d="M32 8L52 19.5V42.5L32 54L12 42.5V19.5L32 8Z"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M32 8V31M52 19.5L32 31M12 19.5L32 31M32 31V54"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-                <div className="font-hud-mono text-xs font-bold text-neutral-400 tracking-widest uppercase">
-                  NO FOCUS ROOMS LOGGED
-                </div>
-                <p className="text-xs text-neutral-500 max-w-sm font-mono">
-                  No synchronized focus operations active for this operative.
-                </p>
-                <div className="flex items-center gap-2.5 pt-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsPrivateCreate(false);
-                      setCreateRoomData({ name: '', password: '', max_capacity: 4 });
-                      setIsCreateModalOpen(true);
-                    }}
-                    className="px-3.5 py-1.5 rounded-lg bg-amber-500 hover:brightness-110 text-slate-950 font-hud-mono text-xs font-bold tracking-wider uppercase transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
-                  >
-                    <Plus className="w-3.5 h-3.5 stroke-[3]" />
-                    CREATE ROOM
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setView('explorer');
-                      fetchExplorerRooms();
-                    }}
-                    className="px-3.5 py-1.5 rounded-lg bg-white/[0.03] border border-white/10 text-neutral-400 hover:text-neutral-200 hover:bg-white/[0.08] font-hud-mono text-xs font-bold tracking-wider uppercase transition-all cursor-pointer flex items-center gap-1.5"
-                  >
-                    <Search className="w-3.5 h-3.5" />
-                    EXPLORE ROOMS
-                  </button>
-                </div>
-              </div>
-            ) : (
-              /* Leaderboard Row Table */
-              <div className="w-full bg-[var(--surface)] border border-[var(--border)] shadow-card rounded-2xl overflow-hidden divide-y divide-[var(--border)]">
-                {/* Column Headers */}
-                <div className="px-4 sm:px-6 py-3 bg-[var(--surface-2)] text-[11px] sm:text-xs text-[var(--text-dim)] font-hud-mono uppercase tracking-wider flex items-center justify-between border-b border-[var(--border)] select-none">
-                  <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
-                    <span className="w-7 text-center">#</span>
-                    <span>Room // Host</span>
-                  </div>
-                  <div className="flex items-center gap-4 sm:gap-6 md:gap-8 shrink-0">
-                    <span className="w-16 sm:w-24 text-center sm:text-left">Members</span>
-                    <span className="w-16 sm:w-20 text-center">Status</span>
-                    <span className="w-20 sm:w-28 text-right hidden md:inline">Focus Time</span>
-                    <span className="w-24 sm:w-32 text-right">Action</span>
-                  </div>
-                </div>
-
-                {/* Rows */}
-                {myGroups.map((room, idx) => {
-                  const isHost = room.host_id === user?.id;
-                  const shortCode = room.short_code || room.id.slice(0, 6).toUpperCase();
-                  const memberCount = room.room_members?.[0]?.count || 1;
-                  const initial = (room.name || 'R').trim().charAt(0).toUpperCase();
-                  const formattedTime = formatRoomFocusTime(room.total_focus_time);
-
-                  return (
-                    <div
-                      key={room.id}
-                      onClick={() => setActiveRoomId(room.id)}
-                      className={`relative w-full overflow-hidden transition-colors duration-150 flex items-center justify-between px-4 sm:px-6 cursor-pointer border-l-2 min-h-[60px] py-2.5 ${
-                        isHost
-                          ? 'border-l-amber-400 bg-fg/[0.04] hover:bg-fg/[0.06]'
-                          : 'border-l-transparent hover:bg-fg/[0.02]'
-                      }`}
-                    >
-                      {/* Left: Index + Avatar + Title & Meta */}
-                      <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
-                        <span className="w-7 text-center font-mono text-xs text-[var(--text-dim)] font-semibold shrink-0">
-                          {idx + 1}
-                        </span>
-
-                        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[var(--surface-2)] border border-[var(--border)] flex-shrink-0 flex items-center justify-center font-mono font-bold text-xs text-amber-400 bg-gradient-to-br from-amber-500/20 to-orange-500/20 shadow-md">
-                          {initial}
-                        </div>
-
-                        <div className="min-w-0 flex flex-col justify-center">
-                          <div className="flex items-center gap-2">
-                            <span className="font-sans font-bold text-sm sm:text-base text-[var(--text)] tracking-tight truncate">
-                              {room.name}
-                            </span>
-                            {room.is_private ? (
-                              <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-hud-mono font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">
-                                <Lock className="w-2.5 h-2.5" />
-                                <span className="hidden sm:inline">PROTECTED</span>
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-hud-mono font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
-                                <Globe className="w-2.5 h-2.5" />
-                                <span className="hidden sm:inline">PUBLIC</span>
-                              </span>
-                            )}
-                          </div>
-
-                          <div className="flex items-center gap-2 mt-0.5 text-xs text-[var(--text-dim)] font-mono">
-                            {isHost ? (
-                              <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 uppercase tracking-wider flex items-center gap-1">
-                                <Crown className="w-2.5 h-2.5" />
-                                YOU (HOST)
-                              </span>
-                            ) : (
-                              <span className="text-[var(--text-dim)] truncate">
-                                @{room.host_id ? String(room.host_id).slice(0, 6) : 'host'}
-                              </span>
-                            )}
-                            <span className="text-neutral-600">·</span>
-                            <button
-                              type="button"
-                              onClick={(e) => handleCopyCode(shortCode, room.id, e)}
-                              className="inline-flex items-center gap-1 text-[11px] text-[var(--text-dim)] hover:text-[var(--text)] bg-fg/[0.04] hover:bg-fg/[0.08] px-1.5 py-0.5 rounded border border-[var(--border)] transition-colors cursor-pointer"
-                              title="Copy room code"
-                            >
-                              <span>#{shortCode}</span>
-                              {copiedCodeId === room.id ? (
-                                <Check className="w-3 h-3 text-emerald-400" />
-                              ) : (
-                                <Copy className="w-3 h-3 opacity-60" />
-                              )}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Right Columns: Members, Status, Time, Action */}
-                      <div className="flex items-center gap-4 sm:gap-6 md:gap-8 shrink-0">
-                        {/* Members */}
-                        <div className="w-16 sm:w-24 flex items-center justify-center sm:justify-start gap-1.5 font-mono text-xs sm:text-sm text-neutral-300">
-                          <Users className="w-3.5 h-3.5 text-neutral-500 hidden sm:inline shrink-0" />
-                          <span>{memberCount}</span>
-                          <span className="text-neutral-600">/</span>
-                          <span className="text-neutral-500">{room.max_capacity || 4}</span>
-                        </div>
-
-                        {/* Status */}
-                        <div className="w-16 sm:w-20 flex items-center justify-center gap-1.5 font-hud-mono text-[10px] sm:text-xs font-bold tracking-wider">
-                          {memberCount > 0 ? (
-                            <>
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                              <span className="text-emerald-400">LIVE</span>
-                            </>
-                          ) : (
-                            <>
-                              <span className="w-1.5 h-1.5 rounded-full bg-neutral-600" />
-                              <span className="text-neutral-500">IDLE</span>
-                            </>
-                          )}
-                        </div>
-
-                        {/* Focus Time */}
-                        <div className="w-20 sm:w-28 text-right hidden md:block font-hud-mono text-xs sm:text-sm text-neutral-200 tabular-nums">
-                          {formattedTime ? (
-                            <span>{formattedTime}</span>
-                          ) : (
-                            <span className="text-neutral-600 font-mono">--</span>
-                          )}
-                        </div>
-
-                        {/* Action */}
-                        <div className="w-24 sm:w-32 flex items-center justify-end gap-1.5">
-                          {isHost ? (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setEditingRoom(room);
-                                setEditRoomName(room.name);
-                                setEditIsPrivate(room.is_private);
-                                setEditPassword(room.password || '');
-                                setEditMaxCapacity(room.max_capacity || 4);
-                              }}
-                              className="p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer"
-                              title="Room Settings"
-                            >
-                              <Settings className="w-4 h-4" />
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setRoomToDelete(room);
-                              }}
-                              className="p-1.5 rounded-lg text-neutral-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
-                              title="Leave Room"
-                            >
-                              <LogOut className="w-4 h-4" />
-                            </button>
-                          )}
-
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setActiveRoomId(room.id);
-                            }}
-                            className="px-3 py-1.5 rounded-lg font-hud-mono text-xs font-bold uppercase tracking-wider bg-amber-500 text-slate-950 hover:brightness-110 active:scale-95 transition-all cursor-pointer"
-                          >
-                            OPEN
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </>
-        )}
-
-        {/* ══════════════════════════════════════════════════════════ */}
-        {/* VIEW 2: EXPLORE GROUPS                                     */}
-        {/* ══════════════════════════════════════════════════════════ */}
-        {!isLoading && view === 'explorer' && (
+        {!isLoading && (
           <div className="space-y-4">
             {/* Search & Filter Bar (Tasks Quick Add Style) */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 p-3 sm:p-4 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] shadow-sm focus-within:border-amber-500/50 focus-within:ring-1 focus-within:ring-amber-500/20 transition-all relative z-10">
@@ -1317,17 +1033,47 @@ CREATE POLICY "Hosts can update their own study rooms"
                         {/* Action */}
                         <div className="w-24 sm:w-32 flex items-center justify-end gap-1.5">
                           {isMember ? (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setActiveRoomId(room.id);
-                              }}
-                              className="px-3 py-1.5 rounded-lg font-hud-mono text-xs font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 transition-all cursor-pointer flex items-center gap-1"
-                            >
-                              <span>OPEN</span>
-                              <ArrowRight className="w-3 h-3" />
-                            </button>
+                            <>
+                              {isHost ? (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setEditingRoom(room);
+                                    setEditRoomName(room.name);
+                                    setEditIsPrivate(room.is_private);
+                                    setEditPassword(room.password || '');
+                                    setEditMaxCapacity(room.max_capacity || 4);
+                                  }}
+                                  className="p-1.5 rounded-lg text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-fg/[0.08] transition-colors cursor-pointer"
+                                  title="Room Settings"
+                                >
+                                  <Settings className="w-4 h-4" />
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setRoomToDelete(room);
+                                  }}
+                                  className="p-1.5 rounded-lg text-neutral-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                                  title="Leave Room"
+                                >
+                                  <LogOut className="w-4 h-4" />
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveRoomId(room.id);
+                                }}
+                                className="px-3 py-1.5 rounded-lg font-hud-mono text-xs font-bold uppercase tracking-wider bg-amber-500 text-slate-950 hover:brightness-110 active:scale-95 transition-all cursor-pointer flex items-center gap-1"
+                              >
+                                <span>OPEN</span>
+                              </button>
+                            </>
                           ) : (
                             <button
                               type="button"

@@ -186,8 +186,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
       <div
-        className="relative w-full max-w-lg bg-[var(--surface)] backdrop-blur-3xl border border-[var(--border)] rounded-2xl shadow-card overflow-hidden max-h-[90vh] flex flex-col"
-        style={{ borderColor: `${theme.accent}30` }}
+        className="relative w-full max-w-lg bg-[var(--surface)] backdrop-blur-3xl rounded-2xl shadow-card overflow-hidden max-h-[90vh] flex flex-col"
       >
         {/* Ambient background lighting */}
         <div
