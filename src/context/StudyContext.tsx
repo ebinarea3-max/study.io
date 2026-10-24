@@ -2502,6 +2502,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     setIsStudying(true);
     setIsPaused(false);
     soundFx.playStartChime();
+    soundFx.resumeAmbient();
     console.log('[Timer Write: startTimer]', {
       timestamp: new Date().toISOString(),
       accumulated_seconds_before: accumulatedSecondsRef.current,
@@ -2552,6 +2553,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     }
     setIsPaused(true);
     soundFx.playStopChime();
+    soundFx.pauseAmbient();
     updateProfile({ status: 'resting' });
     syncActiveSessionToDb('paused', {
       startedAt: null,
@@ -2576,6 +2578,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     setIsPaused(false);
     setPomodoroCompletedPhase(null);
     soundFx.playStartChime();
+    soundFx.resumeAmbient();
     console.log('[Timer Write: resumeTimer]', {
       timestamp: new Date().toISOString(),
       accumulated_seconds: accumulatedSecondsRef.current,
@@ -2604,6 +2607,19 @@ export function StudyProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     resumeTimerRef.current = resumeTimer;
   }, [resumeTimer]);
+
+  // Synchronize atmosphere audio with session study & pause state transitions
+  useEffect(() => {
+    if (!isStudying) {
+      return;
+    }
+
+    if (isPaused) {
+      soundFx.pauseAmbient();
+    } else {
+      soundFx.resumeAmbient();
+    }
+  }, [isStudying, isPaused]);
 
   // Restore recovered timer session in paused state
   const restoreTimerSession = useCallback((seconds: number, mode?: TimerMode, subjectIdOrName?: string) => {
@@ -3004,6 +3020,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       accumulatedSecondsRef.current = 0;
       setIsStudying(false);
       setIsPaused(false);
+      soundFx.pauseAmbient();
       setElapsedSeconds(0);
       setActiveTaskId(null);
       setCurrentNotes('');
@@ -3022,6 +3039,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     accumulatedSecondsRef.current = 0;
     setIsStudying(false);
     setIsPaused(false);
+    soundFx.pauseAmbient();
     setElapsedSeconds(0);
     setActiveTaskId(null);
     setCurrentNotes('');
@@ -3202,6 +3220,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     clientSessionIdRef.current = null;
     setIsStudying(false);
     setIsPaused(false);
+    soundFx.stopAmbient();
     setElapsedSeconds(0);
     setPomodoroCompletedPhase(null);
     setPomodoroPhase('work');

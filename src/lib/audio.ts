@@ -17,6 +17,10 @@ class AudioEngine {
   private htmlAudio: HTMLAudioElement | null = null;
   private noiseInterval: number | null = null;
   private activeNodes: (AudioNode & { stop?: () => void })[] = [];
+  private isAmbientPaused: boolean = false;
+  private pausedAmbientType: AmbientSoundType | null = null;
+  private pausedAmbientVolume: number = 0.5;
+  private currentAmbientVolume: number = 0.5;
 
   private getContext(): AudioContext {
     if (typeof window === 'undefined') {
@@ -218,13 +222,16 @@ class AudioEngine {
       const ctx = this.getContext();
 
       // Guard: if already playing this exact type, do not restart to prevent stuttering
-      if (this.currentAmbientType === type && this.ambientGain && this.ambientSource) {
+      if (this.currentAmbientType === type && this.ambientGain && this.ambientSource && !this.isAmbientPaused) {
          this.setAmbientVolume(volume);
          return;
       }
       
       this.stopAmbient();
       this.currentAmbientType = type;
+      this.isAmbientPaused = false;
+      this.pausedAmbientType = null;
+      this.currentAmbientVolume = volume;
 
       const masterGain = ctx.createGain();
       masterGain.gain.setValueAtTime(0.001, ctx.currentTime);
@@ -287,6 +294,10 @@ class AudioEngine {
   }
 
   public setAmbientVolume(vol: number) {
+    this.currentAmbientVolume = vol;
+    if (this.isAmbientPaused) {
+      this.pausedAmbientVolume = vol;
+    }
     if (this.ambientGain && this.ctx && this.currentAmbientType) {
       const compFactor = this.volumeCompensation[this.currentAmbientType] || 1.0;
       const target = Math.max(0, vol * compFactor);
@@ -294,6 +305,101 @@ class AudioEngine {
       this.ambientGain.gain.setValueAtTime(this.ambientGain.gain.value, this.ctx.currentTime);
       this.ambientGain.gain.linearRampToValueAtTime(target, this.ctx.currentTime + 0.1);
     }
+  }
+
+  public isPausedAmbient(): boolean {
+    return this.isAmbientPaused;
+  }
+
+  public pauseAmbient() {
+    // If not playing and not having a current ambient, check saved preference
+    if (!this.currentAmbientType && !this.ambientGain) {
+      if (typeof window !== 'undefined') {
+        try {
+          const saved = localStorage.getItem('studyio-atmosphere-sound');
+          if (saved && saved !== 'none') {
+            this.pausedAmbientType = saved as AmbientSoundType;
+            this.isAmbientPaused = true;
+          }
+        } catch {
+          // ignore
+        }
+      }
+      return;
+    }
+
+    this.isAmbientPaused = true;
+    this.pausedAmbientType = this.currentAmbientType;
+    this.pausedAmbientVolume = this.currentAmbientVolume;
+
+    if (this.ambientGain && this.ctx) {
+      try {
+        this.ambientGain.gain.cancelScheduledValues(this.ctx.currentTime);
+        this.ambientGain.gain.setValueAtTime(this.ambientGain.gain.value, this.ctx.currentTime);
+        this.ambientGain.gain.linearRampToValueAtTime(0.0001, this.ctx.currentTime + 0.25);
+      } catch {
+        // ignore
+      }
+    }
+
+    const nodesToStop = [...this.activeNodes];
+    this.activeNodes = [];
+
+    setTimeout(() => {
+      nodesToStop.forEach((node) => {
+        try {
+          if (typeof node.stop === 'function') node.stop();
+          node.disconnect();
+        } catch {
+          // ignore
+        }
+      });
+    }, 300);
+
+    if (this.noiseInterval) {
+      clearInterval(this.noiseInterval);
+      this.noiseInterval = null;
+    }
+    this.currentAmbientType = null;
+    this.ambientSource = null;
+  }
+
+  public resumeAmbient(forcedType?: AmbientSoundType, volume?: number) {
+    let typeToResume = forcedType || this.pausedAmbientType;
+
+    if (!typeToResume && typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('studyio-atmosphere-sound');
+        if (saved && saved !== 'none') {
+          typeToResume = saved as AmbientSoundType;
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    if (!typeToResume) {
+      this.isAmbientPaused = false;
+      this.pausedAmbientType = null;
+      return;
+    }
+
+    let vol = volume !== undefined ? volume : this.pausedAmbientVolume;
+    if (typeof window !== 'undefined' && volume === undefined) {
+      try {
+        const savedVol = localStorage.getItem('studyio-atmosphere-volume');
+        if (savedVol !== null) {
+          const parsed = parseFloat(savedVol);
+          if (!isNaN(parsed) && parsed >= 0) vol = parsed;
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    this.isAmbientPaused = false;
+    this.pausedAmbientType = null;
+    this.startAmbient(typeToResume, vol);
   }
 
   // Play esports victory rank settlement fanfare
@@ -754,11 +860,13 @@ class AudioEngine {
   }
 
   public stopAmbient() {
+    this.isAmbientPaused = false;
+    this.pausedAmbientType = null;
     if (this.ambientGain && this.ctx) {
       try {
         this.ambientGain.gain.cancelScheduledValues(this.ctx.currentTime);
         this.ambientGain.gain.setValueAtTime(this.ambientGain.gain.value, this.ctx.currentTime);
-        this.ambientGain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.4);
+        this.ambientGain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.35);
       } catch {
         // ignore
       }

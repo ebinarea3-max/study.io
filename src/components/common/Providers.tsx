@@ -8,6 +8,7 @@ import { StudyProvider } from '../../context/StudyContext';
 import { FocusGoalProvider } from '../../context/FocusGoalContext';
 import { Toaster } from 'react-hot-toast';
 import { TimerSWBridge } from './TimerSWBridge';
+import { RankBadgePreloader } from './RankBadgePreloader';
 
 export function Providers({ children }: { children: ReactNode }) {
   return (
@@ -18,6 +19,8 @@ export function Providers({ children }: { children: ReactNode }) {
             <FocusGoalProvider>
               {/* Bridge timer state → Service Worker for background tracking & notifications */}
               <TimerSWBridge />
+              {/* Asset preloading for instant rank badge rendering */}
+              <RankBadgePreloader />
               {children}
             </FocusGoalProvider>
             <Toaster 

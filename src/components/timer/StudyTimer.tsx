@@ -1285,8 +1285,17 @@ export function StudyTimer() {
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-fg/[0.08] bg-fg/[0.03] hover:bg-fg/[0.06] text-[var(--text-dim)] hover:text-[var(--text)] text-xs transition-colors cursor-pointer select-none"
           >
             <Music className={`w-3.5 h-3.5 ${ambientSound !== 'none' ? 'text-[var(--text)]' : 'text-[var(--text-dim)]'}`} />
-            <span>Atmosphere: {ambientLabel}</span>
-            {ambientSound !== 'none' && <span className="w-1.5 h-1.5 rounded-full bg-[var(--text)] animate-pulse ml-0.5" />}
+            <span>
+              Atmosphere: {ambientLabel}
+              {isPaused && ambientSound !== 'none' ? ' (Paused)' : ''}
+            </span>
+            {ambientSound !== 'none' && (
+              <span
+                className={`w-1.5 h-1.5 rounded-full ml-0.5 ${
+                  isPaused ? 'bg-amber-400' : 'bg-[var(--text)] animate-pulse'
+                }`}
+              />
+            )}
           </button>
 
           {isAmbientMenuOpen && (

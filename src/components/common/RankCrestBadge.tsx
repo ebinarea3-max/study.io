@@ -1,5 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import { RankTierName, RANK_TIERS } from '../../lib/rankedSystem';
+import React, { useEffect, useState, useMemo } from 'react';
+import { RankTierName } from '../../lib/rankedSystem';
+import { getRankTheme } from '../../lib/rankTheme';
+import {
+  getRankBadgeSources,
+  isRankBadgeCached,
+  markRankBadgeCached,
+} from '../../lib/preloadRankBadges';
 
 interface RankCrestBadgeProps {
   tier: RankTierName;
@@ -9,6 +15,7 @@ interface RankCrestBadgeProps {
   isGhost?: boolean;
   ghostColor?: string;
   isSettled?: boolean;
+  priority?: boolean;
 }
 
 const TIER_SCALES: Record<string, number> = {
@@ -22,11 +29,6 @@ const TIER_SCALES: Record<string, number> = {
   Grandmaster: 1.50,
 };
 
-const DIVISION_MAP: Record<string, string> = {
-  'I': '1', 'II': '2', 'III': '3', 'IV': '4',
-  '1': '1', '2': '2', '3': '3', '4': '4',
-};
-
 export function RankCrestBadge({
   tier,
   division,
@@ -35,12 +37,15 @@ export function RankCrestBadge({
   isGhost = false,
   ghostColor,
   isSettled = true,
+  priority = false,
 }: RankCrestBadgeProps) {
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  });
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    setPrefersReducedMotion(mediaQuery.matches);
     const handler = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
     mediaQuery.addEventListener('change', handler);
     return () => mediaQuery.removeEventListener('change', handler);
@@ -49,17 +54,63 @@ export function RankCrestBadge({
   const scale = TIER_SCALES[tier] || 1.0;
   const actualSize = typeof size === 'number' ? size * scale : `calc(${size} * ${scale})`;
 
-  const tierLower = tier.toLowerCase();
-  let imageFileName = `${tierLower}.png`;
-  
-  if (division && !['Champion', 'Master', 'Grandmaster'].includes(tier)) {
-      const divisionNumber = DIVISION_MAP[division] || '1';
-      imageFileName = `${tierLower}-${divisionNumber}.png`;
-  }
-  const imageSrc = `/images/ranks/${imageFileName}`;
+  const sources = getRankBadgeSources(tier, division);
+  const theme = getRankTheme(tier);
+
+  // Track dynamically loaded URLs in component state
+  const [loadedMap, setLoadedMap] = useState<Record<string, boolean>>({});
+  const [hasError, setHasError] = useState(false);
+
+  // Instant display if already cached in browser memory, otherwise resolve via effect
+  const isLoaded = Boolean(
+    isRankBadgeCached(sources.webp) ||
+    isRankBadgeCached(sources.png) ||
+    loadedMap[sources.webp] ||
+    loadedMap[sources.png]
+  );
+
+  useEffect(() => {
+    if (isRankBadgeCached(sources.webp) || isRankBadgeCached(sources.png)) {
+      return;
+    }
+
+    let active = true;
+    const img = new Image();
+    if (priority && 'fetchPriority' in img) {
+      (img as HTMLImageElement & { fetchPriority: string }).fetchPriority = 'high';
+    }
+    img.onload = () => {
+      markRankBadgeCached(sources.webp);
+      markRankBadgeCached(sources.png);
+      if (active) {
+        setLoadedMap((prev) => ({ ...prev, [sources.webp]: true }));
+      }
+    };
+    img.onerror = () => {
+      // Fallback to png if webp failed
+      const fallbackImg = new Image();
+      fallbackImg.onload = () => {
+        markRankBadgeCached(sources.png);
+        if (active) {
+          setLoadedMap((prev) => ({ ...prev, [sources.png]: true }));
+        }
+      };
+      fallbackImg.onerror = () => {
+        if (active) {
+          setHasError(true);
+        }
+      };
+      fallbackImg.src = sources.png;
+    };
+    img.src = sources.webp;
+
+    return () => {
+      active = false;
+    };
+  }, [sources.webp, sources.png, priority]);
 
   const showEffects = isSettled && !isGhost && !prefersReducedMotion;
-  
+
   // Animation classes
   let breatheClass = '';
   let effectCycle = '4s';
@@ -104,7 +155,19 @@ export function RankCrestBadge({
     hasOrbit = true; sparklesCount = 4; sparklesColor = '#FFD700';
   }
 
+  // Precompute deterministic sparkle positions to ensure render purity
+  const sparkleMotes = useMemo(() => {
+    return Array.from({ length: 8 }).map((_, i) => ({
+      left: 20 + ((i * 37) % 60),
+      top: 30 + ((i * 43) % 50),
+      delay: (i * 0.7) % 4,
+      dur: 3 + ((i * 0.9) % 3),
+      size: 2 + ((i * 0.8) % 2.5),
+    }));
+  }, []);
+
   const staticFilter = isGhost && ghostColor ? `drop-shadow(0 0 10px ${ghostColor})` : `drop-shadow(0 4px 12px rgba(0,0,0,0.5))`;
+  const tierLower = tier.toLowerCase();
 
   return (
     <div
@@ -113,19 +176,17 @@ export function RankCrestBadge({
     >
       {/* Glow Layer */}
       {showEffects ? (
-        <div 
+        <div
           className="absolute inset-0 rounded-full"
           style={{
             animation: `${breatheClass} ${effectCycle} ease-in-out infinite`,
             willChange: 'filter',
-            zIndex: 0
+            zIndex: 0,
           }}
         />
       ) : (
         <div className="absolute inset-0" style={{ filter: staticFilter, zIndex: 0 }} />
       )}
-      
-      {/* Grandmaster Rotating Ring removed as requested */}
 
       {/* Soft round dark tile behind crest in Paper theme only for contrast */}
       <div
@@ -135,12 +196,133 @@ export function RankCrestBadge({
         }}
       />
 
-      <img
-        src={imageSrc}
-        alt={`${tier} ${division || ''} Rank Badge`}
-        className="relative w-full h-full object-contain transition-all duration-500 z-10"
-        draggable={false}
-      />
+      {/* =========================================================================
+          IMMEDIATE FALLBACK / SKELETON PLACEHOLDER
+          Displays a glowing vector crest shield with active shimmer so there is
+          never an empty void or layout shift while the image is loading.
+          ========================================================================= */}
+      <div
+        className={`absolute inset-0 flex items-center justify-center pointer-events-none z-[6] transition-opacity duration-300 ${
+          isLoaded && !hasError ? 'opacity-0' : 'opacity-100'
+        }`}
+      >
+        <div className="relative w-full h-full flex items-center justify-center animate-crest-pulse">
+          {/* Radial ambient glow matching the tier's authentic accent color */}
+          <div
+            className="absolute inset-[15%] rounded-full blur-xl pointer-events-none"
+            style={{
+              background: `radial-gradient(circle, ${theme.accent}38 0%, ${theme.accent}12 55%, transparent 75%)`,
+            }}
+          />
+
+          {/* Stylized Vector Crest Shield Silhouette */}
+          <svg
+            viewBox="0 0 100 100"
+            className="w-[82%] h-[82%] overflow-visible"
+            style={{
+              filter: `drop-shadow(0 0 10px ${theme.accent}55)`,
+            }}
+          >
+            <defs>
+              <linearGradient id={`crest-bg-${tierLower}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor={theme.accent} stopOpacity="0.25" />
+                <stop offset="50%" stopColor={theme.accent} stopOpacity="0.10" />
+                <stop offset="100%" stopColor={theme.accent} stopOpacity="0.03" />
+              </linearGradient>
+              <linearGradient id={`crest-border-${tierLower}`} x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor={theme.accent} stopOpacity="0.75" />
+                <stop offset="50%" stopColor={theme.accent} stopOpacity="0.35" />
+                <stop offset="100%" stopColor={theme.accent} stopOpacity="0.15" />
+              </linearGradient>
+              <clipPath id={`crest-clip-${tierLower}`}>
+                <path d="M50 8 L84 24 L76 72 L50 94 L24 72 L16 24 Z" />
+              </clipPath>
+            </defs>
+
+            {/* Shield Outline Body */}
+            <path
+              d="M50 8 L84 24 L76 72 L50 94 L24 72 L16 24 Z"
+              fill={`url(#crest-bg-${tierLower})`}
+              stroke={`url(#crest-border-${tierLower})`}
+              strokeWidth="2.2"
+              strokeLinejoin="round"
+            />
+
+            {/* Inner faceted chevron lines */}
+            <path
+              d="M50 20 L72 32 L66 64 L50 80 L34 64 L28 32 Z"
+              fill="none"
+              stroke={theme.accent}
+              strokeOpacity="0.25"
+              strokeWidth="1.2"
+              strokeDasharray="2 3"
+            />
+
+            {/* Shield Center Ribs */}
+            <line x1="50" y1="12" x2="50" y2="86" stroke={theme.accent} strokeOpacity="0.2" strokeWidth="1" />
+            <line x1="28" y1="50" x2="72" y2="50" stroke={theme.accent} strokeOpacity="0.15" strokeWidth="1" />
+
+            {/* Dynamic Light Shimmer Sweep across the shield */}
+            {!prefersReducedMotion && (
+              <g clipPath={`url(#crest-clip-${tierLower})`}>
+                <rect
+                  x="-80"
+                  y="-30"
+                  width="45"
+                  height="160"
+                  fill="white"
+                  opacity="0.15"
+                  className="animate-crest-shimmer pointer-events-none"
+                />
+              </g>
+            )}
+
+            {/* Center Tier / Division Monogram */}
+            <text
+              x="50"
+              y="53"
+              textAnchor="middle"
+              dominantBaseline="central"
+              fill={theme.accent}
+              fontSize="14"
+              fontWeight="700"
+              letterSpacing="0.06em"
+              opacity="0.7"
+              className="font-mono select-none"
+            >
+              {division || tier.charAt(0)}
+            </text>
+          </svg>
+        </div>
+      </div>
+
+      {/* =========================================================================
+          OPTIMIZED BADGE IMAGE: Primary WebP with PNG fallback
+          ========================================================================= */}
+      <picture className="relative w-full h-full flex items-center justify-center z-10">
+        <source srcSet={sources.webp} type="image/webp" />
+        <img
+          src={sources.png}
+          alt={`${tier} ${division || ''} Rank Badge`}
+          loading="eager"
+          decoding="async"
+          onLoad={() => {
+            markRankBadgeCached(sources.webp);
+            markRankBadgeCached(sources.png);
+            setLoadedMap((prev) => ({ ...prev, [sources.webp]: true, [sources.png]: true }));
+          }}
+          onError={() => {
+            // If primary image fails, mark error so the crisp vector skeleton remains
+            if (!isLoaded) {
+              setHasError(true);
+            }
+          }}
+          className={`relative w-full h-full object-contain select-none transition-opacity duration-300 ${
+            isLoaded && !hasError ? 'opacity-100' : 'opacity-0'
+          }`}
+          draggable={false}
+        />
+      </picture>
 
       {/* Sweep Layer */}
       {showEffects && hasSweep && (
@@ -170,7 +352,7 @@ export function RankCrestBadge({
                     className="absolute w-[80%] h-[80%]"
                     style={{
                       animation: `spin 8s linear infinite`,
-                      animationDelay: `-${i * (8 / sparklesCount)}s`
+                      animationDelay: `-${i * (8 / sparklesCount)}s`,
                     }}
                   >
                     <div
@@ -194,39 +376,35 @@ export function RankCrestBadge({
                 </div>
               );
             }
-            
-            const left = 20 + Math.random() * 60;
-            const top = 30 + Math.random() * 50;
-            const delay = Math.random() * 4;
-            const dur = 3 + Math.random() * 3;
-            const size = 2 + Math.random() * 2;
-            
+
+            const mote = sparkleMotes[i % sparkleMotes.length];
+
             return (
               <div
                 key={i}
                 className="absolute rounded-full opacity-0"
                 style={{
-                  left: `${left}%`,
-                  top: `${top}%`,
-                  width: `${size}px`,
-                  height: `${size}px`,
+                  left: `${mote.left}%`,
+                  top: `${mote.top}%`,
+                  width: `${mote.size}px`,
+                  height: `${mote.size}px`,
                   backgroundColor: sparklesColor,
                   boxShadow: `0 0 6px ${sparklesColor}`,
-                  animation: `driftUpward ${dur}s ease-in infinite ${delay}s`
+                  animation: `driftUpward ${mote.dur}s ease-in infinite ${mote.delay}s`,
                 }}
               />
-            )
+            );
           })}
         </div>
       )}
 
       {/* Diamond Glint */}
       {showEffects && hasGlint && (
-        <div 
+        <div
           className="absolute top-[25%] right-[30%] w-3 h-3 rounded-full bg-white opacity-0 z-30 pointer-events-none"
           style={{
             boxShadow: '0 0 15px 5px rgba(255,255,255,0.8)',
-            animation: 'glintFlash 8s infinite 2s'
+            animation: 'glintFlash 8s infinite 2s',
           }}
         />
       )}

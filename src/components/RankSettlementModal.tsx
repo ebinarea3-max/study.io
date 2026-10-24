@@ -9,9 +9,10 @@ import { RankSettlementData } from '../types';
 import { ChevronRight, X } from 'lucide-react';
 import { TierIcon } from './common/TierIcon';
 import { RankCrestBadge } from './common/RankCrestBadge';
+import { preloadRankAdvancement } from '../lib/preloadRankBadges';
 import Image from 'next/image';
 import { AnimatePresence, motion } from 'framer-motion';
-import { getRankIconPath } from '../utils/rankIcons';
+
 interface RankSettlementModalProps {
   isOpen: boolean;
   data: RankSettlementData | null;
@@ -54,11 +55,13 @@ export function RankSettlementModal({
   onContinue,
 }: RankSettlementModalProps) {
   // Accessibility: Prefers-reduced-motion check
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  });
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    setPrefersReducedMotion(mediaQuery.matches);
     const handler = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
     mediaQuery.addEventListener('change', handler);
     return () => mediaQuery.removeEventListener('change', handler);
@@ -89,6 +92,18 @@ export function RankSettlementModal({
   const [displayRank, setDisplayRank] = useState<RankTier>(
     isRankUp ? prevRankDetails : newRankDetails
   );
+
+  // Instantly preload both previous and upcoming rank badge assets before animation triggers
+  useEffect(() => {
+    if (isOpen && data) {
+      preloadRankAdvancement(
+        prevRankDetails.tier,
+        prevRankDetails.division,
+        newRankDetails.tier,
+        newRankDetails.division
+      );
+    }
+  }, [isOpen, data, prevRankDetails, newRankDetails]);
 
   // Stage & Feedback States
   const [animPhase, setAnimPhase] = useState<'slam' | 'impact' | 'title' | 'progress' | 'ready'>('slam');
@@ -702,6 +717,7 @@ export function RankSettlementModal({
                     tier={displayRank.tier}
                     division={displayRank.division}
                     size={192}
+                    priority={true}
                     className={animPhase !== 'slam' && animPhase !== 'impact' && punchMode === 'idle' ? "animate-in zoom-in spin-in-12 duration-700 ease-out" : ""}
                     isSettled={animPhase !== 'slam' && animPhase !== 'impact' && punchMode === 'idle'}
                   />
@@ -757,11 +773,11 @@ export function RankSettlementModal({
                     {Array.from({ length: 8 }).map((_, i) => (
                       <div key={i} className="absolute w-1 h-1 bg-amber-400 rounded-full"
                            style={{
-                             left: `${50 + (Math.random() - 0.5) * 120}%`,
-                             top: `${50 + (Math.random() - 0.5) * 20}%`,
-                             animation: `particleBurstAnim 1s ease-out infinite ${Math.random()}s`,
-                             ['--target-x' as string]: `${(Math.random() - 0.5) * 30}px`,
-                             ['--target-y' as string]: `${(Math.random() - 0.5) * 30}px`,
+                             left: `${50 + (((i * 47) % 120) - 60)}%`,
+                             top: `${50 + (((i * 31) % 20) - 10)}%`,
+                             animation: `particleBurstAnim 1s ease-out infinite ${((i * 13) % 10) / 10}s`,
+                             ['--target-x' as string]: `${(((i * 29) % 30) - 15)}px`,
+                             ['--target-y' as string]: `${(((i * 23) % 30) - 15)}px`,
                              ['--target-rot' as string]: `0deg`,
                            }}
                       />

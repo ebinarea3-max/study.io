@@ -475,10 +475,14 @@ export function FocusModeModal() {
             <span>Atmosphere</span>
             {ambientSound !== 'none' ? (
               <span className="flex items-center gap-1">
-                <span className="font-mono text-[11px] text-white/80 max-w-[85px] truncate hidden sm:inline">
-                  {activeAtmosphereOption?.label}
+                <span className="font-mono text-[11px] text-white/80 max-w-[95px] truncate hidden sm:inline">
+                  {activeAtmosphereOption?.label} {isPaused ? '(Paused)' : ''}
                 </span>
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse ml-0.5" />
+                <span
+                  className={`w-1.5 h-1.5 rounded-full ml-0.5 ${
+                    isPaused ? 'bg-amber-400' : 'bg-emerald-400 animate-pulse'
+                  }`}
+                />
               </span>
             ) : null}
           </button>
