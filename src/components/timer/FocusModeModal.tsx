@@ -325,6 +325,92 @@ export function FocusModeModal() {
             </span>
           )}
         </div>
+
+        {/* Center Timer Controls: Start / (Pause or Resume) & Stop */}
+        <div
+          className={`mt-6 sm:mt-7 flex items-center justify-center gap-3 sm:gap-4 pointer-events-auto transition-[opacity,transform] duration-250 ease-out will-change-[opacity,transform] ${
+            isIdle && isStudying && !isPaused && !isPickerOpen && !isAtmosphereOpen
+              ? 'opacity-0 pointer-events-none translate-y-2'
+              : 'opacity-100 pointer-events-auto translate-y-0'
+          }`}
+          onDoubleClick={(e) => e.stopPropagation()}
+        >
+          {isStudying && !isPaused ? (
+            <>
+              <button
+                type="button"
+                onClick={handlePause}
+                className="group flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 rounded-full bg-white/15 hover:bg-white/25 border border-white/25 hover:border-white/40 text-white font-medium text-sm sm:text-base backdrop-blur-md shadow-[0_8px_30px_rgba(0,0,0,0.5)] hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer"
+                title="Pause timer (Space)"
+              >
+                <Pause className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
+                <span className="tracking-wide">Pause</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleStop}
+                disabled={isSaving}
+                className="group flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 rounded-full bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 hover:border-rose-400 text-rose-200 font-medium text-sm sm:text-base backdrop-blur-md shadow-[0_8px_30px_rgba(244,63,94,0.2)] hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer disabled:opacity-50"
+                title="Stop & save session"
+              >
+                {isSaving ? (
+                  <>
+                    <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-rose-300 border-t-transparent rounded-full animate-spin" />
+                    <span className="tracking-wide">Saving...</span>
+                  </>
+                ) : (
+                  <>
+                    <Square className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
+                    <span className="tracking-wide">Stop</span>
+                  </>
+                )}
+              </button>
+            </>
+          ) : isStudying && isPaused ? (
+            <>
+              <button
+                type="button"
+                onClick={handleResume}
+                className="group flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 rounded-full bg-emerald-500/25 hover:bg-emerald-500/35 border border-emerald-400/50 hover:border-emerald-300 text-emerald-200 font-semibold text-sm sm:text-base backdrop-blur-md shadow-[0_8px_30px_rgba(16,185,129,0.25)] hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer"
+                title="Resume timer (Space)"
+              >
+                <Play className="w-4 h-4 sm:w-5 sm:h-5 fill-current ml-0.5" />
+                <span className="tracking-wide">Resume</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleStop}
+                disabled={isSaving}
+                className="group flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 rounded-full bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 hover:border-rose-400 text-rose-200 font-medium text-sm sm:text-base backdrop-blur-md shadow-[0_8px_30px_rgba(244,63,94,0.2)] hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer disabled:opacity-50"
+                title="Stop & save session"
+              >
+                {isSaving ? (
+                  <>
+                    <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-rose-300 border-t-transparent rounded-full animate-spin" />
+                    <span className="tracking-wide">Saving...</span>
+                  </>
+                ) : (
+                  <>
+                    <Square className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
+                    <span className="tracking-wide">Stop</span>
+                  </>
+                )}
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={handleStart}
+              className="group flex items-center gap-2.5 px-7 sm:px-8 py-2.5 sm:py-3 rounded-full bg-white hover:bg-neutral-100 text-neutral-950 font-semibold text-sm sm:text-base shadow-[0_8px_30px_rgba(255,255,255,0.3)] hover:shadow-[0_10px_36px_rgba(255,255,255,0.45)] hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer"
+              title="Start timer (Space)"
+            >
+              <Play className="w-4 h-4 sm:w-5 sm:h-5 fill-current ml-0.5 transition-transform group-hover:scale-110" />
+              <span className="tracking-wide">Start</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* 4. Bottom Control Bar: Sleek Scene Pill Selector & Action Buttons */}
@@ -373,86 +459,8 @@ export function FocusModeModal() {
           })}
         </div>
 
-        {/* Action Controls: Timer Controls (Pause/Resume, Stop), Atmosphere, Dim & Exit Fullscreen */}
+        {/* Action Controls: Atmosphere, Dim & Exit Fullscreen */}
         <div className="flex items-center gap-2">
-          {/* Primary Timer Controls: Pause / Resume & Stop */}
-          {isStudying && !isPaused ? (
-            <>
-              <button
-                type="button"
-                onClick={handlePause}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white/15 hover:bg-white/25 border border-white/25 text-white text-xs sm:text-[13px] font-medium shadow-[0_8px_24px_rgba(0,0,0,0.5)] transition-all cursor-pointer active:scale-95"
-                title="Pause timer (Space)"
-              >
-                <Pause className="w-3.5 h-3.5 fill-current" />
-                <span>Pause</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={handleStop}
-                disabled={isSaving}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/35 text-rose-200 text-xs sm:text-[13px] font-medium shadow-[0_8px_24px_rgba(0,0,0,0.5)] transition-all cursor-pointer active:scale-95 disabled:opacity-50"
-                title="Stop & save session"
-              >
-                {isSaving ? (
-                  <>
-                    <div className="w-3.5 h-3.5 border-2 border-rose-300 border-t-transparent rounded-full animate-spin" />
-                    <span>Saving...</span>
-                  </>
-                ) : (
-                  <>
-                    <Square className="w-3.5 h-3.5 fill-current" />
-                    <span>Stop</span>
-                  </>
-                )}
-              </button>
-            </>
-          ) : isStudying && isPaused ? (
-            <>
-              <button
-                type="button"
-                onClick={handleResume}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/40 text-emerald-200 text-xs sm:text-[13px] font-semibold shadow-[0_8px_24px_rgba(0,0,0,0.5)] transition-all cursor-pointer active:scale-95"
-                title="Resume timer (Space)"
-              >
-                <Play className="w-3.5 h-3.5 fill-current" />
-                <span>Resume</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={handleStop}
-                disabled={isSaving}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/35 text-rose-200 text-xs sm:text-[13px] font-medium shadow-[0_8px_24px_rgba(0,0,0,0.5)] transition-all cursor-pointer active:scale-95 disabled:opacity-50"
-                title="Stop & save session"
-              >
-                {isSaving ? (
-                  <>
-                    <div className="w-3.5 h-3.5 border-2 border-rose-300 border-t-transparent rounded-full animate-spin" />
-                    <span>Saving...</span>
-                  </>
-                ) : (
-                  <>
-                    <Square className="w-3.5 h-3.5 fill-current" />
-                    <span>Stop</span>
-                  </>
-                )}
-              </button>
-            </>
-          ) : (
-            <button
-              type="button"
-              onClick={handleStart}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white/90 hover:bg-white text-black text-xs sm:text-[13px] font-semibold shadow-[0_8px_24px_rgba(0,0,0,0.5)] transition-all cursor-pointer active:scale-95"
-              title="Start timer (Space)"
-            >
-              <Play className="w-3.5 h-3.5 fill-current" />
-              <span>Start</span>
-            </button>
-          )}
-
-          <div className="w-[1px] h-4 bg-white/20 mx-0.5 hidden sm:block" />
 
           {/* Atmosphere Audio Soundscapes Toggle */}
           <button
