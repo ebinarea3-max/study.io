@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useStudy } from '../../context/StudyContext';
-import { X, Target, User, Loader2, Save, Camera, Upload, Plus, Dices } from 'lucide-react';
+import { usePremium } from '../../context/PremiumContext';
+import { X, Target, User, Loader2, Save, Plus, Dices, Crown, Lock, Sparkles } from 'lucide-react';
 
 import { getRankFromRp } from '../../lib/ranks';
 import { getRankTheme } from '../../lib/rankTheme';
@@ -47,9 +48,34 @@ const PRESET_AVATARS = [
   'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=Nexus&backgroundColor=0d1117',
   'https://api.dicebear.com/9.x/shapes/svg?seed=FocusSigil&backgroundColor=0d1117',
   'https://api.dicebear.com/9.x/micah/svg?seed=Nocturne&backgroundColor=0d1117',
+  'https://api.dicebear.com/9.x/lorelei/svg?seed=Lyra&backgroundColor=0d1117',
 ];
 
-const VAULT_CATEGORIES = [
+const VAULT_CATEGORIES: {
+  name: string;
+  isPremium?: boolean;
+  badge?: string;
+  avatars: string[];
+}[] = [
+  {
+    name: 'PREMIUM // ELITE SCHOLARS',
+    isPremium: true,
+    badge: 'PRO EXCLUSIVE',
+    avatars: [
+      'https://api.dicebear.com/9.x/lorelei/svg?seed=Archmage&backgroundColor=241d0b',
+      'https://api.dicebear.com/9.x/lorelei/svg?seed=Solaris&backgroundColor=1f142b',
+      'https://api.dicebear.com/9.x/adventurer/svg?seed=Grandmaster&backgroundColor=28190e',
+      'https://api.dicebear.com/9.x/adventurer/svg?seed=Celestial&backgroundColor=0e2329',
+      'https://api.dicebear.com/9.x/lorelei/svg?seed=Empress&backgroundColor=1a1625',
+      'https://api.dicebear.com/9.x/adventurer/svg?seed=ValkyriePrime&backgroundColor=1c1526',
+      'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=ApexCore&backgroundColor=1a1a2e',
+      'https://api.dicebear.com/9.x/shapes/svg?seed=GoldenSigil&backgroundColor=2b1e09',
+      'https://api.dicebear.com/9.x/micah/svg?seed=ChronoLord&backgroundColor=1c1328',
+      'https://api.dicebear.com/9.x/lorelei/svg?seed=Sovereign&backgroundColor=141f2d',
+      'https://api.dicebear.com/9.x/adventurer/svg?seed=PhantomBlade&backgroundColor=151824',
+      'https://api.dicebear.com/9.x/shapes/svg?seed=StarlightCrown&backgroundColor=251b0d',
+    ],
+  },
   {
     name: 'SCHOLARS & ARCHIVISTS',
     avatars: [
@@ -59,7 +85,13 @@ const VAULT_CATEGORIES = [
       'https://api.dicebear.com/9.x/micah/svg?seed=Raven',
       'https://api.dicebear.com/9.x/micah/svg?seed=Atlas',
       'https://api.dicebear.com/9.x/micah/svg?seed=Zenith',
-    ]
+      'https://api.dicebear.com/9.x/micah/svg?seed=Orion',
+      'https://api.dicebear.com/9.x/micah/svg?seed=Lyra',
+      'https://api.dicebear.com/9.x/micah/svg?seed=Kaelen',
+      'https://api.dicebear.com/9.x/micah/svg?seed=Nova',
+      'https://api.dicebear.com/9.x/micah/svg?seed=Vesper',
+      'https://api.dicebear.com/9.x/micah/svg?seed=Rowan',
+    ],
   },
   {
     name: 'ADVENTURERS & STRATEGISTS',
@@ -70,7 +102,24 @@ const VAULT_CATEGORIES = [
       'https://api.dicebear.com/9.x/adventurer/svg?seed=Oracle',
       'https://api.dicebear.com/9.x/adventurer/svg?seed=Vanguard',
       'https://api.dicebear.com/9.x/adventurer/svg?seed=Chronos',
-    ]
+      'https://api.dicebear.com/9.x/adventurer/svg?seed=Shinobi',
+      'https://api.dicebear.com/9.x/adventurer/svg?seed=Sorcerer',
+      'https://api.dicebear.com/9.x/adventurer/svg?seed=Paladin',
+      'https://api.dicebear.com/9.x/adventurer/svg?seed=Ranger',
+      'https://api.dicebear.com/9.x/adventurer/svg?seed=Glitch',
+      'https://api.dicebear.com/9.x/adventurer/svg?seed=Explorer',
+    ],
+  },
+  {
+    name: 'CYBERNETIC COGNITION',
+    avatars: [
+      'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=QuantumCore',
+      'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=CyberZen',
+      'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=NeuroByte',
+      'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=EchoProtocol',
+      'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=MatrixSoul',
+      'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=Axiom',
+    ],
   },
   {
     name: 'MINIMALIST SIGILS',
@@ -79,12 +128,17 @@ const VAULT_CATEGORIES = [
       'https://api.dicebear.com/9.x/shapes/svg?seed=Catalyst',
       'https://api.dicebear.com/9.x/shapes/svg?seed=Vector',
       'https://api.dicebear.com/9.x/shapes/svg?seed=Prism',
-    ]
-  }
+      'https://api.dicebear.com/9.x/shapes/svg?seed=Eclipse',
+      'https://api.dicebear.com/9.x/shapes/svg?seed=NexusOrbit',
+      'https://api.dicebear.com/9.x/shapes/svg?seed=Hypercube',
+      'https://api.dicebear.com/9.x/shapes/svg?seed=Monolith',
+    ],
+  },
 ];
 
 export function ProfileModal({ isOpen, onClose, user: parentUser, profile }: ProfileModalProps) {
   const { user: contextUser, updateProfile } = useAuth();
+  const { isPremium, openPremiumModal } = usePremium();
   const user = parentUser || contextUser; // Use parentUser if provided, fallback to contextUser
   const { gamification } = useStudy();
 
@@ -96,7 +150,6 @@ export function ProfileModal({ isOpen, onClose, user: parentUser, profile }: Pro
   const [avatarUrl, setAvatarUrl] = useState('');
   
   const [isSaving, setIsSaving] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
   const [isVaultOpen, setIsVaultOpen] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [isGeneratingIdentity, setIsGeneratingIdentity] = useState(false);
@@ -185,42 +238,6 @@ export function ProfileModal({ isOpen, onClose, user: parentUser, profile }: Pro
   
   const cooldownDaysLeft = getCooldownDays();
   const isCooldownActive = cooldownDaysLeft > 0;
-
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error('Image must be under 2MB');
-      return;
-    }
-
-    setIsUploading(true);
-    try {
-      const supabase = getSupabase();
-      if (!supabase) throw new Error('Supabase not initialized');
-
-      const fileExt = file.name.split('.').pop();
-      const filePath = `${user.id}/${Date.now()}.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file, { upsert: true });
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
-
-      setAvatarUrl(publicUrl);
-      toast.success('Avatar uploaded! Save profile to apply.');
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to upload avatar');
-    } finally {
-      setIsUploading(false);
-    }
-  };
 
   const handleClose = async () => {
     if (!user.is_onboarded) {
@@ -326,7 +343,13 @@ export function ProfileModal({ isOpen, onClose, user: parentUser, profile }: Pro
           {/* Compact Top Header with Avatar Picker */}
           <div className="flex flex-col gap-3 bg-white/[0.05] backdrop-blur-xl border border-white/10 p-4 rounded-xl shadow-[inset_0_1px_10px_rgba(255,255,255,0.02)]">
             <div className="flex items-center gap-4">
-              <label className="relative group cursor-pointer shrink-0 rounded-full w-16 h-16 overflow-hidden flex items-center justify-center border-2 border-amber-500/80 shadow-lg shadow-amber-500/10 transition-transform hover:scale-105">
+              <button
+                type="button"
+                onClick={() => setIsVaultOpen(true)}
+                className="relative group cursor-pointer shrink-0 rounded-full w-16 h-16 overflow-hidden flex items-center justify-center border-2 border-amber-500/80 shadow-lg shadow-amber-500/10 transition-transform hover:scale-105"
+                title="Change Avatar"
+                aria-label="Change Avatar"
+              >
                 {avatarUrl ? (
                   <img
                     src={avatarUrl}
@@ -340,20 +363,9 @@ export function ProfileModal({ isOpen, onClose, user: parentUser, profile }: Pro
                   </div>
                 )}
                 <div className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  {isUploading ? (
-                    <Loader2 className="w-5 h-5 text-white animate-spin" />
-                  ) : (
-                    <Camera className="w-5 h-5 text-white" />
-                  )}
+                  <Sparkles className="w-5 h-5 text-amber-400" />
                 </div>
-                <input
-                  type="file"
-                  accept="image/png, image/jpeg, image/webp"
-                  className="hidden"
-                  onChange={handleAvatarUpload}
-                  disabled={isUploading}
-                />
-              </label>
+              </button>
               <div className="min-w-0">
                 <div className="font-bold text-base text-white truncate">{displayName || user.displayName || 'Scholar'}</div>
                 <div className="text-sm text-neutral-400 font-mono truncate mt-0.5">@{cleanedHandle || 'handle'}</div>
@@ -376,7 +388,6 @@ export function ProfileModal({ isOpen, onClose, user: parentUser, profile }: Pro
                       type="button"
                       key={i}
                       onClick={() => setAvatarUrl(url)}
-                      disabled={isUploading}
                       className={`relative w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden transition-all shrink-0 cursor-pointer ${
                         isActive
                           ? 'ring-2 ring-amber-500 scale-105 z-10 shadow-[0_0_15px_rgba(245,158,11,0.3)]'
@@ -540,7 +551,7 @@ export function ProfileModal({ isOpen, onClose, user: parentUser, profile }: Pro
                   CHOOSE SCHOLAR AVATAR
                 </h3>
                 <p className="text-xs text-neutral-400 font-mono tracking-tight mt-1">
-                  Select an avatar that matches your study persona or upload your own.
+                  Select an avatar that matches your study persona.
                 </p>
               </div>
               <button
@@ -553,64 +564,76 @@ export function ProfileModal({ isOpen, onClose, user: parentUser, profile }: Pro
             
             {/* Vault Content */}
             <div className="p-6 overflow-y-auto space-y-8 scrollbar-thin scrollbar-thumb-white/10">
-              
-              {/* Custom Upload Section */}
-              <div className="bg-white/[0.03] border border-white/10 p-4 rounded-xl flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500 border border-amber-500/20">
-                    <Upload className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-bold text-white uppercase tracking-wider">Custom Photo</div>
-                    <div className="text-[10px] font-mono text-neutral-500 mt-0.5">PNG, JPG, WEBP (Max 2MB)</div>
-                  </div>
-                </div>
-                <label className="px-4 py-2 bg-white/[0.05] hover:bg-amber-500/10 border border-white/10 hover:border-amber-500/50 rounded-lg text-xs font-bold text-neutral-300 hover:text-amber-400 transition-all cursor-pointer uppercase tracking-wider flex items-center gap-2">
-                  {isUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
-                  <span>Upload</span>
-                  <input
-                    type="file"
-                    accept="image/png, image/jpeg, image/webp"
-                    className="hidden"
-                    onChange={(e) => {
-                      handleAvatarUpload(e);
-                      setIsVaultOpen(false);
-                    }}
-                    disabled={isUploading}
-                  />
-                </label>
-              </div>
-
-              {/* Preset Categories */}
+              {/* Preset & Premium Categories */}
               <div className="space-y-6">
-                {VAULT_CATEGORIES.map((category, idx) => (
-                  <div key={idx} className="space-y-3">
-                    <h4 className="text-[11px] font-mono font-bold text-neutral-500 uppercase tracking-widest pl-1">
-                      {category.name}
-                    </h4>
-                    <div className="grid grid-cols-4 sm:grid-cols-6 gap-3">
-                      {category.avatars.map((url, i) => {
-                        const isActive = avatarUrl === url;
-                        return (
-                          <button
-                            key={i}
-                            onClick={() => {
-                              setAvatarUrl(url);
-                              setIsVaultOpen(false);
-                            }}
-                            className={`aspect-square rounded-xl flex items-center justify-center overflow-hidden transition-all cursor-pointer border ${
-                              isActive
-                                ? 'ring-2 ring-amber-500 border-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.2)] scale-105 z-10'
-                                : 'border-white/10 bg-white/[0.03] hover:scale-105 hover:border-amber-500/50 hover:bg-amber-500/10'
+                {VAULT_CATEGORIES.map((category, idx) => {
+                  const isCatPremium = !!category.isPremium;
+                  return (
+                    <div key={idx} className="space-y-3">
+                      <div className="flex items-center justify-between pl-1">
+                        <div className="flex items-center gap-2">
+                          {isCatPremium && <Crown className="w-3.5 h-3.5 text-amber-400" />}
+                          <h4
+                            className={`text-[11px] font-mono font-bold uppercase tracking-widest ${
+                              isCatPremium ? 'text-amber-400' : 'text-neutral-500'
                             }`}
                           >
-                            <img src={url} alt={`Vault ${idx}-${i}`} className="w-full h-full object-cover" />
-                          </button>
-                        );
-                      })}
+                            {category.name}
+                          </h4>
+                        </div>
+                        {isCatPremium && (
+                          <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold tracking-wider uppercase bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-1">
+                            <Sparkles className="w-2.5 h-2.5 text-amber-400" />
+                            {category.badge || 'PRO EXCLUSIVE'}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-4 sm:grid-cols-6 gap-3">
+                        {category.avatars.map((url, i) => {
+                          const isActive = avatarUrl === url;
+                          const isLocked = isCatPremium && !isPremium;
+                          return (
+                            <button
+                              type="button"
+                              key={i}
+                              onClick={() => {
+                                if (isLocked) {
+                                  toast.error('Study.io Pro unlocks this exclusive avatar! ✨');
+                                  openPremiumModal();
+                                  return;
+                                }
+                                setAvatarUrl(url);
+                                setIsVaultOpen(false);
+                              }}
+                              className={`aspect-square rounded-xl flex items-center justify-center overflow-hidden transition-all cursor-pointer relative border ${
+                                isActive
+                                  ? 'ring-2 ring-amber-500 border-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.3)] scale-105 z-10'
+                                  : isCatPremium
+                                  ? 'border-amber-500/30 bg-amber-500/[0.04] hover:scale-105 hover:border-amber-400 hover:shadow-[0_0_15px_rgba(245,158,11,0.25)]'
+                                  : 'border-white/10 bg-white/[0.03] hover:scale-105 hover:border-amber-500/50 hover:bg-amber-500/10'
+                              }`}
+                            >
+                              <img src={url} alt={`Vault ${idx}-${i}`} className="w-full h-full object-cover" />
+                              {isCatPremium && (
+                                <div
+                                  className={`absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center shadow-md ${
+                                    isLocked
+                                      ? 'bg-black/80 text-amber-400 border border-amber-500/40'
+                                      : 'bg-amber-500 text-slate-950 font-bold'
+                                  }`}
+                                  title={isLocked ? 'Study.io Pro Exclusive' : 'Pro Unlocked'}
+                                >
+                                  {isLocked ? <Lock className="w-2.5 h-2.5" /> : <Crown className="w-2.5 h-2.5" />}
+                                </div>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               
             </div>
