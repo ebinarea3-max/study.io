@@ -45,6 +45,7 @@ import { soundFx, AmbientSoundType } from '../../lib/audio';
 import { useAtmosphere } from '../focus/useAtmosphere';
 import confetti from 'canvas-confetti';
 import { CountdownEditor } from './CountdownEditor';
+import { exitFullscreenSafely } from './FocusModeModal';
 import { getSupabase } from '../../lib/supabase';
 import { getDailyQuote } from '../../lib/quotes';
 import { motion, useReducedMotion } from 'framer-motion';
@@ -75,6 +76,8 @@ export function StudyTimer() {
     setSelectedSubjectId,
     timerMode,
     setTimerMode,
+    countdownTarget,
+    setCountdownTarget,
     isStudying,
     isPaused,
     isRunning,
@@ -127,7 +130,6 @@ export function StudyTimer() {
     activeOption: activeAtmosphereOption,
   } = useAtmosphere();
   const [isAmbientMenuOpen, setIsAmbientMenuOpen] = useState(false);
-  const [countdownTarget, setCountdownTarget] = useState<number>(3600);
   const [customCountdownInput, setCustomCountdownInput] = useState("");
   const [isEditingCountdown, setIsEditingCountdown] = useState(false);
 
@@ -654,9 +656,11 @@ export function StudyTimer() {
         new Notification('Countdown completed! 🚀', { body: 'Your timer is up!', icon: iconUrl });
       }
       confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 } });
+      setIsFocusModeOpen(false);
+      exitFullscreenSafely();
       handleStopAndSave();
     }
-  }, [timerMode, isStudying, elapsedSeconds, countdownTarget, handleStopAndSave]);
+  }, [timerMode, isStudying, elapsedSeconds, countdownTarget, handleStopAndSave, setIsFocusModeOpen]);
 
   // Filtered sessions for Today (browser-local timezone)
   const todaySessions = useMemo(() => {

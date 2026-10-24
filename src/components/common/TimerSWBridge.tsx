@@ -34,6 +34,7 @@ export function TimerSWBridge() {
     elapsedSeconds,
     selectedSubject,
     timerMode,
+    countdownTarget,
     pomodoroWorkDuration,
     pomodoroBreakDuration,
     pomodoroPhase,
@@ -75,8 +76,11 @@ export function TimerSWBridge() {
     if (timerMode === 'pomodoro') {
       return pomodoroPhase === 'work' ? pomodoroWorkDuration : pomodoroBreakDuration;
     }
+    if (timerMode === 'countdown') {
+      return countdownTarget;
+    }
     return null;
-  }, [timerMode, pomodoroPhase, pomodoroWorkDuration, pomodoroBreakDuration]);
+  }, [timerMode, pomodoroPhase, pomodoroWorkDuration, pomodoroBreakDuration, countdownTarget]);
 
   // Sync timer state transitions to SW — mobile only
   useEffect(() => {

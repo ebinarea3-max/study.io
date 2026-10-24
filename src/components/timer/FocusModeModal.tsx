@@ -11,7 +11,7 @@ import { AtmospherePicker } from '../focus/AtmospherePicker';
 import { useAtmosphere } from '../focus/useAtmosphere';
 import { AVAILABLE_SCENES, getSceneById } from '../focus/scenes/registry';
 
-function exitFullscreenSafely() {
+export function exitFullscreenSafely() {
   if (typeof document === 'undefined') return;
 
   interface VendorDoc extends Document {
@@ -41,6 +41,7 @@ export function FocusModeModal() {
     setIsFocusModeOpen,
     elapsedSeconds,
     timerMode,
+    countdownTarget,
     pomodoroPhase,
     pomodoroWorkDuration,
     pomodoroBreakDuration,
@@ -234,6 +235,10 @@ export function FocusModeModal() {
     const target = pomodoroPhase === 'work' ? pomodoroWorkDuration : pomodoroBreakDuration;
     const remaining = Math.max(0, target - elapsedSeconds);
     displayTime = formatSeconds(remaining);
+  } else if (timerMode === 'countdown') {
+    const target = countdownTarget || 3600;
+    const remaining = Math.max(0, target - elapsedSeconds);
+    displayTime = formatSeconds(remaining);
   }
 
   const isBreak = timerMode === 'pomodoro' && pomodoroPhase !== 'work';
@@ -294,6 +299,11 @@ export function FocusModeModal() {
         {timerMode === 'pomodoro' && (
           <div className="mb-3 text-xs md:text-sm font-bold text-white/50 tracking-[0.3em] uppercase drop-shadow">
             {pomodoroPhase === 'work' ? 'Deep Focus' : 'Rest Phase'}
+          </div>
+        )}
+        {timerMode === 'countdown' && (
+          <div className="mb-3 text-xs md:text-sm font-bold text-white/50 tracking-[0.3em] uppercase drop-shadow">
+            Countdown
           </div>
         )}
 

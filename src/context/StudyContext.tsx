@@ -78,6 +78,8 @@ interface StudyContextType {
   setSelectedSubjectId: (id: string) => void;
   timerMode: TimerMode;
   setTimerMode: (mode: TimerMode) => void;
+  countdownTarget: number;
+  setCountdownTarget: (target: number) => void;
   isStudying: boolean;
   isPaused: boolean;
   isRunning: boolean;
@@ -395,6 +397,28 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     }
     return 'stopwatch';
   });
+
+  const [countdownTarget, setCountdownTargetState] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('studyio_timer_countdown_target');
+        if (saved) {
+          const parsed = parseInt(saved, 10);
+          if (!isNaN(parsed) && parsed > 0) return parsed;
+        }
+      } catch (e) {}
+    }
+    return 3600;
+  });
+
+  const setCountdownTarget = useCallback((target: number) => {
+    setCountdownTargetState(target);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('studyio_timer_countdown_target', String(target));
+      } catch (e) {}
+    }
+  }, []);
   
   const [isStudying, setIsStudying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -3605,6 +3629,8 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         setSelectedSubjectId,
         timerMode,
         setTimerMode,
+        countdownTarget,
+        setCountdownTarget,
         isStudying,
         isPaused,
         elapsedSeconds,
