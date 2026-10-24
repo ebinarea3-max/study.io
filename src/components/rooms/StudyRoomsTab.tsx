@@ -70,6 +70,9 @@ export default function StudyRoomsTab({ onBackToDashboard, isActiveTab }: StudyR
   const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
   const [activeRoomInitialTab, setActiveRoomInitialTab] = useState<'home' | 'chat' | 'settings'>('home');
 
+  // Available Rooms Modal State (Discover / Join)
+  const [isAvailableRoomsOpen, setIsAvailableRoomsOpen] = useState(false);
+
   // Search & Filter state for Explorer
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'public' | 'private'>('all');
@@ -401,6 +404,7 @@ CREATE POLICY "Hosts can update their own study rooms"
         await fetchMyGroups();
         await fetchExplorerRooms();
         setIsCreateModalOpen(false);
+        setIsAvailableRoomsOpen(false);
         setIsPrivateCreate(false);
         setCreateRoomData({ name: '', password: '', max_capacity: 4 });
         // Automatically enter the newly created room for instant gratification
@@ -522,6 +526,7 @@ CREATE POLICY "Hosts can update their own study rooms"
     const isMember = myGroups.some((g) => g.id === room.id) || room.host_id === user.id;
     if (isMember) {
       // If already a member or host, directly enter the room
+      setIsAvailableRoomsOpen(false);
       setActiveRoomId(room.id);
       return;
     }
@@ -586,6 +591,7 @@ CREATE POLICY "Hosts can update their own study rooms"
       if (existingMember) {
         setSelectedRoomToJoin(null);
         setJoinPassword('');
+        setIsAvailableRoomsOpen(false);
         setActiveRoomId(roomId);
         setIsJoining(false);
         return;
@@ -644,6 +650,7 @@ CREATE POLICY "Hosts can update their own study rooms"
         if (error.code === '23505') {
           setSelectedRoomToJoin(null);
           setJoinPassword('');
+          setIsAvailableRoomsOpen(false);
           setActiveRoomId(roomId);
         } else {
           setJoinError('Failed to join room: ' + error.message);
@@ -653,6 +660,7 @@ CREATE POLICY "Hosts can update their own study rooms"
         setJoinPassword('');
         broadcastRoomChange();
         await fetchMyGroups();
+        setIsAvailableRoomsOpen(false);
         setActiveRoomId(roomId);
       }
     } catch (err: any) {
@@ -703,6 +711,7 @@ CREATE POLICY "Hosts can update their own study rooms"
       // If already a member or host, enter directly
       const isMember = myGroups.some((g) => g.id === foundRoom.id) || foundRoom.host_id === user.id;
       if (isMember) {
+        setIsAvailableRoomsOpen(false);
         setActiveRoomId(foundRoom.id);
         return;
       }
@@ -782,18 +791,17 @@ CREATE POLICY "Hosts can update their own study rooms"
               <RotateCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-amber-400' : ''}`} />
             </button>
 
-            {/* Create Room Button (Plus icon only) */}
+            {/* Plus Button: Opens Available Rooms modal */}
             <button
               type="button"
               onClick={() => {
-                setIsPrivateCreate(false);
-                setCreateRoomData({ name: '', password: '', max_capacity: 4 });
-                setIsCreateModalOpen(true);
+                fetchExplorerRooms();
+                setIsAvailableRoomsOpen(true);
               }}
               className="p-2 rounded-lg transition-all flex items-center justify-center cursor-pointer hover:brightness-110 active:scale-95 shadow-sm"
               style={{ backgroundColor: 'var(--accent)', color: 'var(--accent-contrast)' }}
-              title="Create Room"
-              aria-label="Create Room"
+              title="Available Rooms & Create"
+              aria-label="Available Rooms & Create"
             >
               <Plus className="w-4 h-4 stroke-[2.5]" />
             </button>
@@ -809,59 +817,13 @@ CREATE POLICY "Hosts can update their own study rooms"
         )}
 
         {/* ══════════════════════════════════════════════════════════ */}
-        {/* EXPLORE ROOMS                                               */}
+        {/* JOINED ROOMS (NORMAL ROOMS SECTION)                        */}
         {/* ══════════════════════════════════════════════════════════ */}
         {!isLoading && (
           <div className="space-y-4">
-            {/* Search & Filter Bar (Tasks Quick Add Style) */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 p-3 sm:p-4 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] shadow-sm focus-within:border-amber-500/50 focus-within:ring-1 focus-within:ring-amber-500/20 transition-all relative z-10">
-              <div className="flex-1 flex items-center gap-3 px-1">
-                <Search className="w-5 h-5 text-[var(--text-dim)] flex-shrink-0" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search focus rooms by title or 6-digit access code..."
-                  className="w-full bg-transparent text-sm sm:text-base text-[var(--text)] placeholder:text-[var(--text-dim)] focus:outline-none font-sans py-1"
-                />
-                {searchQuery && (
-                  <button
-                    type="button"
-                    onClick={() => setSearchQuery('')}
-                    className="text-[var(--text-dim)] hover:text-[var(--text)] p-1 cursor-pointer"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-
-              <div className="flex flex-wrap items-center gap-1.5 pl-2 sm:pl-0 sm:border-l sm:border-[var(--border)] pt-2 sm:pt-0 border-t border-[var(--border)] sm:border-t-0">
-                {(['all', 'public', 'private'] as const).map((ft) => (
-                  <button
-                    key={ft}
-                    type="button"
-                    onClick={() => setFilterType(ft)}
-                    className={`px-2.5 py-1.5 rounded-lg font-hud-mono text-[10px] sm:text-xs font-bold tracking-wider uppercase transition-all cursor-pointer ${
-                      filterType === ft
-                        ? 'shadow-sm'
-                        : 'bg-fg/[0.04] border border-[var(--border)] text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-fg/[0.08]'
-                    }`}
-                    style={filterType === ft ? { backgroundColor: 'var(--accent)', color: 'var(--accent-contrast)' } : undefined}
-                  >
-                    {ft === 'all'
-                      ? `All (${explorerRooms.length})`
-                      : ft === 'public'
-                      ? `Public (${explorerRooms.filter((r) => !r.is_private).length})`
-                      : `Protected (${explorerRooms.filter((r) => r.is_private).length})`}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Filtered Rooms List */}
-            {filteredExplorerRooms.length === 0 ? (
+            {myGroups.length === 0 ? (
               /* Telemetry Empty State */
-              <div className="py-16 sm:py-24 flex flex-col items-center justify-center text-center space-y-3">
+              <div className="py-16 sm:py-24 flex flex-col items-center justify-center text-center space-y-3 bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-8 shadow-card">
                 <svg
                   className="w-14 h-14 mx-auto text-neutral-600 opacity-60"
                   viewBox="0 0 64 64"
@@ -881,25 +843,22 @@ CREATE POLICY "Hosts can update their own study rooms"
                   />
                 </svg>
                 <div className="font-hud-mono text-xs font-bold text-neutral-400 tracking-widest uppercase">
-                  NO MATCHING ROOMS FOUND
+                  NO JOINED ROOMS YET
                 </div>
                 <p className="text-xs text-neutral-500 max-w-sm font-mono">
-                  {searchQuery
-                    ? `No telemetry records match query "${searchQuery}".`
-                    : 'No active focus rooms logged for this sector.'}
+                  You haven't joined or hosted any focus rooms yet. Click the + button at the top right to discover and join available rooms or create one.
                 </p>
-                <div className="pt-2">
+                <div className="pt-2 flex items-center gap-3">
                   <button
                     type="button"
                     onClick={() => {
-                      setIsPrivateCreate(false);
-                      setCreateRoomData({ name: '', password: '', max_capacity: 4 });
-                      setIsCreateModalOpen(true);
+                      fetchExplorerRooms();
+                      setIsAvailableRoomsOpen(true);
                     }}
-                    className="px-3.5 py-1.5 rounded-lg bg-amber-500 hover:brightness-110 text-slate-950 font-hud-mono text-xs font-bold tracking-wider uppercase transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
+                    className="px-3.5 py-2 rounded-lg bg-amber-500 hover:brightness-110 text-slate-950 font-hud-mono text-xs font-bold tracking-wider uppercase transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 shadow-sm"
                   >
                     <Plus className="w-3.5 h-3.5 stroke-[3]" />
-                    CREATE ROOM
+                    BROWSE AVAILABLE ROOMS
                   </button>
                 </div>
               </div>
@@ -920,9 +879,8 @@ CREATE POLICY "Hosts can update their own study rooms"
                   </div>
                 </div>
 
-                {/* Rows */}
-                {filteredExplorerRooms.map((room, idx) => {
-                  const isMember = myGroups.some((g) => g.id === room.id) || room.host_id === user?.id;
+                {/* Rows for myGroups */}
+                {myGroups.map((room, idx) => {
                   const isHost = room.host_id === user?.id;
                   const shortCode = room.short_code || room.id.slice(0, 6).toUpperCase();
                   const memberCount = room.room_members?.[0]?.count || 1;
@@ -932,7 +890,7 @@ CREATE POLICY "Hosts can update their own study rooms"
                   return (
                     <div
                       key={room.id}
-                      onClick={() => handleJoinClick(room)}
+                      onClick={() => setActiveRoomId(room.id)}
                       className={`relative w-full overflow-hidden transition-colors duration-150 flex items-center justify-between px-4 sm:px-6 cursor-pointer border-l-2 min-h-[60px] py-2.5 ${
                         isHost
                           ? 'border-l-amber-400 bg-fg/[0.04] hover:bg-fg/[0.06]'
@@ -1032,61 +990,45 @@ CREATE POLICY "Hosts can update their own study rooms"
 
                         {/* Action */}
                         <div className="w-24 sm:w-32 flex items-center justify-end gap-1.5">
-                          {isMember ? (
-                            <>
-                              {isHost ? (
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setEditingRoom(room);
-                                    setEditRoomName(room.name);
-                                    setEditIsPrivate(room.is_private);
-                                    setEditPassword(room.password || '');
-                                    setEditMaxCapacity(room.max_capacity || 4);
-                                  }}
-                                  className="p-1.5 rounded-lg text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-fg/[0.08] transition-colors cursor-pointer"
-                                  title="Room Settings"
-                                >
-                                  <Settings className="w-4 h-4" />
-                                </button>
-                              ) : (
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setRoomToDelete(room);
-                                  }}
-                                  className="p-1.5 rounded-lg text-neutral-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
-                                  title="Leave Room"
-                                >
-                                  <LogOut className="w-4 h-4" />
-                                </button>
-                              )}
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setActiveRoomId(room.id);
-                                }}
-                                className="px-3 py-1.5 rounded-lg font-hud-mono text-xs font-bold uppercase tracking-wider bg-amber-500 text-slate-950 hover:brightness-110 active:scale-95 transition-all cursor-pointer flex items-center gap-1"
-                              >
-                                <span>OPEN</span>
-                              </button>
-                            </>
+                          {isHost ? (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingRoom(room);
+                                setEditRoomName(room.name);
+                                setEditIsPrivate(room.is_private);
+                                setEditPassword(room.password || '');
+                                setEditMaxCapacity(room.max_capacity || 4);
+                              }}
+                              className="p-1.5 rounded-lg text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-fg/[0.08] transition-colors cursor-pointer"
+                              title="Room Settings"
+                            >
+                              <Settings className="w-4 h-4" />
+                            </button>
                           ) : (
                             <button
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleJoinClick(room);
+                                setRoomToDelete(room);
                               }}
-                              className="px-3 py-1.5 rounded-lg font-hud-mono text-xs font-bold uppercase tracking-wider bg-amber-500 text-slate-950 hover:brightness-110 active:scale-95 transition-all cursor-pointer flex items-center gap-1"
+                              className="p-1.5 rounded-lg text-neutral-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                              title="Leave Room"
                             >
-                              {room.is_private && <Lock className="w-3 h-3" />}
-                              <span>JOIN</span>
+                              <LogOut className="w-4 h-4" />
                             </button>
                           )}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveRoomId(room.id);
+                            }}
+                            className="px-3 py-1.5 rounded-lg font-hud-mono text-xs font-bold uppercase tracking-wider bg-amber-500 text-slate-950 hover:brightness-110 active:scale-95 transition-all cursor-pointer flex items-center gap-1 shadow-sm"
+                          >
+                            <span>OPEN</span>
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -1097,6 +1039,231 @@ CREATE POLICY "Hosts can update their own study rooms"
           </div>
         )}
       </div>
+
+      {/* ══════════════════════════════════════════════════════════ */}
+      {/* MODAL 0: AVAILABLE ROOMS (DISCOVER & JOIN)                  */}
+      {/* ══════════════════════════════════════════════════════════ */}
+      {mounted && typeof document !== 'undefined' && isAvailableRoomsOpen && createPortal(
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setIsAvailableRoomsOpen(false);
+            }
+          }}
+          className="fixed inset-0 z-[9990] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in"
+        >
+          <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col p-5 sm:p-6 shadow-2xl relative text-[var(--text)] overflow-hidden">
+            {/* Header with Title and "Create Room" Option */}
+            <div className="flex items-center justify-between gap-3 pb-3 border-b border-[var(--border)] shrink-0">
+              <div>
+                <h2 className="font-hud font-bold text-lg sm:text-xl text-[var(--text)] uppercase tracking-wider">
+                  AVAILABLE ROOMS
+                </h2>
+                <p className="text-xs text-[var(--text-dim)] font-mono mt-0.5">
+                  Rooms available to join or launch your own focus room.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {/* CREATE ROOM OPTION - Requested by user */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsPrivateCreate(false);
+                    setCreateRoomData({ name: '', password: '', max_capacity: 4 });
+                    setIsCreateModalOpen(true);
+                  }}
+                  className="px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer hover:brightness-110 active:scale-95 shadow-sm font-hud-mono text-xs font-bold uppercase tracking-wider"
+                  style={{ backgroundColor: 'var(--accent)', color: 'var(--accent-contrast)' }}
+                  title="Create Room"
+                >
+                  <Plus className="w-3.5 h-3.5 stroke-[3]" />
+                  <span>CREATE ROOM</span>
+                </button>
+
+                {/* Close Button */}
+                <button
+                  type="button"
+                  onClick={() => setIsAvailableRoomsOpen(false)}
+                  className="text-[var(--text-dim)] hover:text-[var(--text)] transition-colors cursor-pointer p-1.5 rounded-lg hover:bg-fg/[0.06]"
+                  title="Close"
+                  aria-label="Close"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Search & Filter Bar inside the Available Rooms modal */}
+            <div className="pt-3 pb-2 space-y-2 shrink-0">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-2 sm:p-2.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] shadow-sm focus-within:border-amber-500/50">
+                <div className="flex-1 flex items-center gap-2 px-1">
+                  <Search className="w-4 h-4 text-[var(--text-dim)] flex-shrink-0" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search available rooms by name or 6-digit access code..."
+                    className="w-full bg-transparent text-xs sm:text-sm text-[var(--text)] placeholder:text-[var(--text-dim)] focus:outline-none font-sans py-0.5"
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery('')}
+                      className="text-[var(--text-dim)] hover:text-[var(--text)] p-0.5 cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-1 pl-1 sm:pl-0 sm:border-l sm:border-[var(--border)] pt-1.5 sm:pt-0 border-t border-[var(--border)] sm:border-t-0">
+                  {(['all', 'public', 'private'] as const).map((ft) => (
+                    <button
+                      key={ft}
+                      type="button"
+                      onClick={() => setFilterType(ft)}
+                      className={`px-2 py-1 rounded-md font-hud-mono text-[10px] font-bold tracking-wider uppercase transition-all cursor-pointer ${
+                        filterType === ft
+                          ? 'shadow-sm'
+                          : 'bg-fg/[0.04] border border-[var(--border)] text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-fg/[0.08]'
+                      }`}
+                      style={filterType === ft ? { backgroundColor: 'var(--accent)', color: 'var(--accent-contrast)' } : undefined}
+                    >
+                      {ft === 'all'
+                        ? `All (${explorerRooms.length})`
+                        : ft === 'public'
+                        ? `Public (${explorerRooms.filter((r) => !r.is_private).length})`
+                        : `Protected (${explorerRooms.filter((r) => r.is_private).length})`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Scrollable list of available rooms */}
+            <div className="flex-1 overflow-y-auto min-h-0 space-y-2 pr-1 py-1 scrollbar-thin">
+              {filteredExplorerRooms.length === 0 ? (
+                <div className="py-12 flex flex-col items-center justify-center text-center space-y-2">
+                  <div className="font-hud-mono text-xs font-bold text-neutral-400 tracking-widest uppercase">
+                    NO AVAILABLE ROOMS MATCH
+                  </div>
+                  <p className="text-xs text-neutral-500 max-w-sm font-mono">
+                    {searchQuery
+                      ? `No rooms found matching "${searchQuery}".`
+                      : 'No available rooms found at this moment.'}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsPrivateCreate(false);
+                      setCreateRoomData({ name: '', password: '', max_capacity: 4 });
+                      setIsCreateModalOpen(true);
+                    }}
+                    className="mt-2 px-3 py-1.5 rounded-lg bg-amber-500 hover:brightness-110 text-slate-950 font-hud-mono text-xs font-bold uppercase transition-all flex items-center gap-1 cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5 stroke-[3]" />
+                    CREATE ROOM
+                  </button>
+                </div>
+              ) : (
+                filteredExplorerRooms.map((room) => {
+                  const isMember = myGroups.some((g) => g.id === room.id) || room.host_id === user?.id;
+                  const isHost = room.host_id === user?.id;
+                  const shortCode = room.short_code || room.id.slice(0, 6).toUpperCase();
+                  const memberCount = room.room_members?.[0]?.count || 1;
+                  const initial = (room.name || 'R').trim().charAt(0).toUpperCase();
+
+                  return (
+                    <div
+                      key={room.id}
+                      className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
+                        isMember
+                          ? 'bg-fg/[0.04] border-amber-500/30'
+                          : 'bg-[var(--surface-2)] border-[var(--border)] hover:border-fg/[0.15]'
+                      }`}
+                    >
+                      {/* Left: Avatar + Details */}
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className="w-9 h-9 rounded-full bg-[var(--surface)] border border-[var(--border)] flex-shrink-0 flex items-center justify-center font-mono font-bold text-xs text-amber-400 bg-gradient-to-br from-amber-500/20 to-orange-500/20 shadow-sm">
+                          {initial}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-sans font-bold text-sm text-[var(--text)] tracking-tight truncate">
+                              {room.name}
+                            </span>
+                            {room.is_private ? (
+                              <span className="inline-flex items-center gap-1 text-[9px] font-hud-mono font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">
+                                <Lock className="w-2.5 h-2.5" />
+                                <span>PROTECTED</span>
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-[9px] font-hud-mono font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
+                                <Globe className="w-2.5 h-2.5" />
+                                <span>PUBLIC</span>
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 mt-0.5 text-xs text-[var(--text-dim)] font-mono">
+                            {isHost ? (
+                              <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 uppercase tracking-wider flex items-center gap-1">
+                                <Crown className="w-2.5 h-2.5" />
+                                YOU (HOST)
+                              </span>
+                            ) : isMember ? (
+                              <span className="text-emerald-400 font-semibold text-[10px]">JOINED</span>
+                            ) : (
+                              <span className="text-[var(--text-dim)] truncate">
+                                @{room.host_id ? String(room.host_id).slice(0, 6) : 'host'}
+                              </span>
+                            )}
+                            <span className="text-neutral-600">·</span>
+                            <span className="text-[11px] text-[var(--text-dim)]">#{shortCode}</span>
+                            <span className="text-neutral-600">·</span>
+                            <span className="flex items-center gap-1 text-[11px]">
+                              <Users className="w-3 h-3 text-neutral-500" />
+                              {memberCount}/{room.max_capacity || 4}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Right: Action */}
+                      <div className="flex items-center gap-2 shrink-0 ml-3">
+                        {isMember ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsAvailableRoomsOpen(false);
+                              setActiveRoomId(room.id);
+                            }}
+                            className="px-3 py-1.5 rounded-lg font-hud-mono text-xs font-bold uppercase tracking-wider bg-amber-500 text-slate-950 hover:brightness-110 active:scale-95 transition-all cursor-pointer flex items-center gap-1 shadow-sm"
+                          >
+                            <span>OPEN</span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              handleJoinClick(room);
+                            }}
+                            className="px-3.5 py-1.5 rounded-lg font-hud-mono text-xs font-bold uppercase tracking-wider bg-amber-500 text-slate-950 hover:brightness-110 active:scale-95 transition-all cursor-pointer flex items-center gap-1 shadow-sm"
+                          >
+                            {room.is_private && <Lock className="w-3 h-3" />}
+                            <span>JOIN</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
 
       {/* ══════════════════════════════════════════════════════════ */}
       {/* MODAL 1: DIRECT JOIN BY CODE                               */}
