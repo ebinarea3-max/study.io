@@ -105,9 +105,9 @@ export function useRankTheme(): {
     accentRgb: rankPalette.accentRgb,
     accentHover: rankPalette.accentHover,
     surfaceHigh: 'var(--surface-2)',
-    gradient: rankPalette.gradient,
-    badgeBg: rankPalette.badgeBg,
-    textAccent: 'var(--tier-accent-text)',
+    gradient: 'var(--gradient)',
+    badgeBg: 'var(--accent-soft)',
+    textAccent: 'var(--accent)',
   }), [userRank.tier, rankPalette]);
 
   return {

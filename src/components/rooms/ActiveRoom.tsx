@@ -1582,14 +1582,17 @@ CREATE POLICY "Hosts can update their own study rooms"
               }}
               className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-hud font-bold uppercase tracking-wider transition-all cursor-pointer relative ${
                 roomTab === 'chat'
-                  ? 'bg-amber-500/15 border border-amber-500/40 text-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.2)]'
+                  ? 'bg-[var(--accent-soft)] border border-[var(--border)] text-[var(--accent)] shadow-sm'
                   : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
               }`}
             >
               <MessageCircle className="w-3.5 h-3.5" />
               <span>CHAT</span>
               {unreadCount > 0 && (
-                <span className="ml-0.5 bg-amber-500 text-slate-950 text-[10px] font-hud-mono font-bold px-1.5 py-0.2 rounded-full border border-amber-300 shadow-[0_0_8px_rgba(245,158,11,0.5)] animate-in zoom-in duration-200">
+                <span
+                  className="ml-0.5 text-[10px] font-hud-mono font-bold px-1.5 py-0.2 rounded-full border border-[var(--border)] animate-in zoom-in duration-200"
+                  style={{ backgroundColor: 'var(--accent)', color: 'var(--accent-contrast)', boxShadow: '0 0 8px var(--glow)' }}
+                >
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
               )}
@@ -1901,20 +1904,21 @@ CREATE POLICY "Hosts can update their own study rooms"
             </div>
 
             {/* Input Form Dock positioned neatly above mobile floating bottom dock */}
-            <form onSubmit={handleSendMessage} className="px-3 pt-2 pb-[calc(4.75rem+env(safe-area-inset-bottom,0px))] md:pb-4 md:pt-4 md:px-4 border-t border-white/[0.08] bg-[#07090e]/95 backdrop-blur-md shrink-0 z-20">
+            <form onSubmit={handleSendMessage} className="px-3 pt-2 pb-[calc(4.75rem+env(safe-area-inset-bottom,0px))] md:pb-4 md:pt-4 md:px-4 border-t border-[var(--border)] bg-[var(--surface)]/95 backdrop-blur-md shrink-0 z-20">
               <div className="max-w-3xl w-full mx-auto">
-                <div className="w-full bg-black/60 border border-white/10 focus-within:border-amber-500/60 focus-within:ring-2 focus-within:ring-amber-500/20 rounded-2xl p-1.5 pl-4 flex items-center gap-2 transition-all shadow-inner">
+                <div className="w-full bg-[var(--surface-2)] border border-[var(--border)] focus-within:border-[var(--accent)]/60 focus-within:ring-2 focus-within:ring-[var(--accent)]/20 rounded-2xl p-1.5 pl-4 flex items-center gap-2 transition-all shadow-inner">
                   <input
                     type="text"
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     placeholder="Transmit message to room..."
-                    className="w-full bg-transparent text-sm text-white placeholder:text-neutral-500 focus:outline-none font-sans"
+                    className="w-full bg-transparent text-sm text-[var(--text)] placeholder:text-[var(--text-dim)] focus:outline-none font-sans"
                   />
                   <button
                     type="submit"
                     disabled={!newMessage.trim() || isSending}
-                    className="px-4 sm:px-5 py-2.5 rounded-xl font-hud font-bold text-xs uppercase tracking-wider text-black bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 shadow-[0_0_15px_rgba(245,158,11,0.25)] hover:brightness-110 active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0"
+                    className="px-4 sm:px-5 py-2.5 rounded-xl font-hud font-bold text-xs uppercase tracking-wider hover:brightness-110 active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0 shadow-sm"
+                    style={{ backgroundColor: 'var(--accent)', color: 'var(--accent-contrast)', boxShadow: '0 0 15px var(--glow)' }}
                   >
                     <Send className="w-3.5 h-3.5" />
                     <span className="hidden sm:inline">SEND</span>
@@ -2019,7 +2023,7 @@ CREATE POLICY "Hosts can update their own study rooms"
                     setEditName(e.target.value);
                   }}
                   placeholder="e.g., Deep Work Grind"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-slate-600 focus:outline-none focus:border-amber-500/50 transition-colors text-sm font-medium"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-slate-600 focus:outline-none focus:border-[var(--accent)]/50 focus:ring-1 focus:ring-[var(--accent)]/20 transition-colors text-sm font-medium"
                   required
                 />
               </div>
@@ -2028,14 +2032,14 @@ CREATE POLICY "Hosts can update their own study rooms"
               <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-5 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Lock className="w-4 h-4 text-amber-400" />
+                    <Lock className="w-4 h-4 text-[var(--accent)]" />
                     <h3 className="text-sm font-bold text-white tracking-wide">
                       Password & Room Privacy
                     </h3>
                   </div>
                   <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${
                     isPrivate
-                      ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                      ? 'bg-[var(--accent-soft)] text-[var(--accent)] border-[var(--border)]'
                       : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
                   }`}>
                     {isPrivate ? 'Protected' : 'Public Access'}
@@ -2056,7 +2060,7 @@ CREATE POLICY "Hosts can update their own study rooms"
                     }}
                     className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                       !isPrivate
-                        ? 'bg-white/10 border-amber-500 text-white shadow-md'
+                        ? 'bg-white/10 border-[var(--border)] text-white shadow-md'
                         : 'bg-white/[0.02] border-white/5 text-slate-400 hover:text-white hover:bg-white/5'
                     }`}
                   >
@@ -2072,11 +2076,11 @@ CREATE POLICY "Hosts can update their own study rooms"
                     }}
                     className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                       isPrivate
-                        ? 'bg-amber-500/15 border-amber-500/40 text-amber-400 shadow-md'
+                        ? 'bg-[var(--accent-soft)] border-[var(--border)] text-[var(--accent)] shadow-md'
                         : 'bg-white/[0.02] border-white/5 text-slate-400 hover:text-white hover:bg-white/5'
                     }`}
                   >
-                    <Lock className="w-3.5 h-3.5 text-amber-400" />
+                    <Lock className="w-3.5 h-3.5 text-[var(--accent)]" />
                     <span>Private (Password)</span>
                   </button>
                 </div>
@@ -2105,7 +2109,7 @@ CREATE POLICY "Hosts can update their own study rooms"
                           setEditPassword(e.target.value);
                         }}
                         placeholder="Enter room password..."
-                        className="w-full bg-white/5 border border-white/10 rounded-xl pl-4 pr-24 py-3 text-white placeholder:text-slate-600 focus:outline-none focus:border-amber-500/50 transition-colors text-sm font-mono tracking-wider"
+                        className="w-full bg-white/5 border border-white/10 rounded-xl pl-4 pr-24 py-3 text-white placeholder:text-slate-600 focus:outline-none focus:border-[var(--accent)]/50 focus:ring-1 focus:ring-[var(--accent)]/20 transition-colors text-sm font-mono tracking-wider"
                         required={isPrivate}
                       />
 
@@ -2117,7 +2121,7 @@ CREATE POLICY "Hosts can update their own study rooms"
                           title={showPassword ? 'Hide password' : 'See password'}
                         >
                           {showPassword ? (
-                            <EyeOff className="w-4 h-4 text-amber-400" />
+                            <EyeOff className="w-4 h-4 text-[var(--accent)]" />
                           ) : (
                             <Eye className="w-4 h-4" />
                           )}
@@ -2157,12 +2161,12 @@ CREATE POLICY "Hosts can update their own study rooms"
               <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-5 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4 text-amber-400" />
+                    <Users className="w-4 h-4 text-[var(--accent)]" />
                     <h3 className="text-sm font-bold text-white tracking-wide">
                       Room Member Capacity
                     </h3>
                   </div>
-                  <span className="text-xs font-mono font-bold text-amber-400 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/20">
+                  <span className="text-xs font-mono font-bold text-[var(--accent)] bg-[var(--accent-soft)] px-2.5 py-0.5 rounded-full border border-[var(--border)]">
                     {dbMembers.length} / {editMaxCapacity} Members
                   </span>
                 </div>
@@ -2232,7 +2236,8 @@ CREATE POLICY "Hosts can update their own study rooms"
                         isFormDirtyRef.current = true;
                         setEditMaxCapacity((prev) => Math.min(100, prev + 1));
                       }}
-                      className="w-10 h-10 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-30 border border-amber-400/40 text-slate-950 flex items-center justify-center transition-all cursor-pointer font-bold text-lg shadow-md shadow-amber-500/20"
+                      className="w-10 h-10 rounded-xl hover:brightness-110 disabled:opacity-30 border border-[var(--border)] flex items-center justify-center transition-all cursor-pointer font-bold text-lg shadow-md"
+                      style={{ backgroundColor: 'var(--accent)', color: 'var(--accent-contrast)' }}
                       title="Increase capacity"
                     >
                       <Plus className="w-4 h-4" />
@@ -2267,11 +2272,12 @@ CREATE POLICY "Hosts can update their own study rooms"
                           }}
                           className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
                             isSelected
-                              ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-md shadow-amber-500/20'
+                              ? 'border-[var(--border)] shadow-md'
                               : isDisabled
                               ? 'opacity-30 bg-white/[0.02] border-white/5 text-slate-600 cursor-not-allowed'
                               : 'bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border-white/10'
                           }`}
+                          style={isSelected ? { backgroundColor: 'var(--accent)', color: 'var(--accent-contrast)' } : undefined}
                         >
                           {preset.label}
                         </button>
@@ -2286,7 +2292,8 @@ CREATE POLICY "Hosts can update their own study rooms"
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="flex-1 py-3.5 px-6 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-amber-500/25 disabled:opacity-50"
+                  className="flex-1 py-3.5 px-6 rounded-xl hover:brightness-110 font-bold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg disabled:opacity-50"
+                  style={{ backgroundColor: 'var(--accent)', color: 'var(--accent-contrast)', boxShadow: '0 4px 20px var(--glow)' }}
                 >
                   {isSaving ? (
                     <>

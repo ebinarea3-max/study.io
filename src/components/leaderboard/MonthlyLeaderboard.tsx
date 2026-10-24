@@ -603,14 +603,14 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
             <div className="fixed inset-0 pointer-events-none bg-hud-grid opacity-[0.03] z-0" />
           </>
         )}
-        <div className="relative z-10 bg-white/[0.03] backdrop-blur-2xl border border-white/[0.1] rounded-3xl p-12 text-center flex flex-col items-center justify-center gap-6 shadow-[0_8px_32px_rgba(0,0,0,0.5)] max-w-lg w-full">
-          <div className="w-20 h-20 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 mb-2 relative animate-pulse">
+        <div className="relative z-10 bg-[var(--surface)] backdrop-blur-2xl border border-[var(--border)] rounded-3xl p-12 text-center flex flex-col items-center justify-center gap-6 shadow-card max-w-lg w-full">
+          <div className="w-20 h-20 rounded-full bg-[var(--accent-soft)] border border-[var(--border)] flex items-center justify-center text-[var(--accent)] mb-2 relative animate-pulse">
             <Trophy className="w-10 h-10 stroke-[1.5]" />
           </div>
-          <h2 className="text-2xl md:text-3xl font-black font-hud tracking-widest uppercase">
+          <h2 className="text-2xl md:text-3xl font-black font-hud tracking-widest uppercase text-[var(--text)]">
             A New Season Has Begun
           </h2>
-          <p className="text-slate-400 font-hud tracking-wider text-sm mb-4">
+          <p className="text-[var(--text-dim)] font-hud tracking-wider text-sm mb-4">
             Discover your personalized performance recap and unlock the new season's leaderboard.
           </p>
           <Link
@@ -620,7 +620,8 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                 soundFx.resumeContext();
               } catch {}
             }}
-            className="inline-block w-full py-4 bg-amber-500 hover:bg-amber-400 rounded-xl text-black font-hud font-bold tracking-widest transition-all shadow-lg shadow-amber-500/20 active:scale-95"
+            className="inline-block w-full py-4 rounded-xl font-hud font-bold tracking-widest transition-all shadow-lg active:scale-95 hover:brightness-110"
+            style={{ backgroundColor: 'var(--accent)', color: 'var(--accent-contrast)', boxShadow: '0 4px 20px var(--glow)' }}
           >
             WATCH SEASON RECAP TO UNLOCK
           </Link>

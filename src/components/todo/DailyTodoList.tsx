@@ -541,7 +541,7 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
           <select
             value={taskSubjectId}
             onChange={e => setTaskSubjectId(e.target.value)}
-            className="px-2 py-1.5 rounded-lg bg-fg/[0.05] border border-fg/10 text-[var(--text)] text-[10px] font-hud-mono uppercase tracking-wider focus:outline-none focus:border-amber-500/50 cursor-pointer"
+            className="px-2 py-1.5 rounded-lg bg-fg/[0.05] border border-fg/10 text-[var(--text)] text-[10px] font-hud-mono uppercase tracking-wider focus:outline-none focus:border-[var(--accent)]/50 focus:ring-1 focus:ring-[var(--accent)]/20 cursor-pointer"
           >
             <option value="none" className="bg-[var(--surface)] text-[var(--text)]">General</option>
             {subjects.map(s => (

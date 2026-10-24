@@ -90,35 +90,29 @@ export function SettingsTabContent() {
             <RankCrestBadge tier={userRank.tier as any} division={userRank.division} size={48} className="drop-shadow-lg" />
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="font-hud text-lg sm:text-xl font-black text-white tracking-wider uppercase">
+                <h2 className="font-hud text-lg sm:text-xl font-black text-[var(--text)] tracking-wider uppercase">
                   SYSTEM CONFIG &amp; PREFERENCES
                 </h2>
                 <span
-                  className="px-2 py-0.5 rounded text-[10px] font-hud font-bold tracking-widest uppercase border"
+                  className="px-2 py-0.5 rounded text-[10px] font-hud font-bold tracking-widest uppercase border border-[var(--border)] bg-[var(--accent-soft)]"
                   style={{
-                    backgroundColor: theme.badgeBg,
-                    borderColor: `${theme.accent}50`,
-                    color: theme.accent,
+                    color: 'var(--accent)',
                   }}
                 >
                   ACTIVE
                 </span>
               </div>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className="text-xs text-[var(--text-dim)] mt-0.5">
                 Device telemetry, audio synthesizers, rank protocols, and security parameters.
               </p>
             </div>
           </div>
 
           <div
-            className="px-3.5 py-1.5 rounded-xl border flex items-center gap-2 self-start sm:self-auto"
-            style={{
-              backgroundColor: theme.badgeBg,
-              borderColor: `${theme.accent}40`,
-            }}
+            className="px-3.5 py-1.5 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] flex items-center gap-2 self-start sm:self-auto"
           >
-            <TierIcon size={20} className="flex-shrink-0 -ml-1 -mr-0.5 drop-shadow-sm" style={{ color: theme.accent }} />
-            <span className="font-hud text-xs font-bold tracking-wider" style={{ color: theme.textAccent }}>
+            <TierIcon size={20} className="flex-shrink-0 -ml-1 -mr-0.5 drop-shadow-sm" style={{ color: 'var(--accent)' }} />
+            <span className="font-hud text-xs font-bold tracking-wider" style={{ color: 'var(--accent)' }}>
               {userRank.name.toUpperCase()} // {(user?.seasonRp || 0)} RP
             </span>
           </div>
@@ -135,14 +129,14 @@ export function SettingsTabContent() {
       <div className="p-5 rounded-2xl hud-surface border border-[var(--border)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3.5 min-w-0">
           <div
-            className="w-12 h-12 rounded-2xl flex items-center justify-center font-hud font-black text-slate-950 text-base flex-shrink-0 shadow-md"
-            style={{ background: theme.gradient }}
+            className="w-12 h-12 rounded-2xl flex items-center justify-center font-hud font-black text-[var(--accent-contrast)] text-base flex-shrink-0 shadow-md"
+            style={{ backgroundColor: 'var(--accent)' }}
           >
             {user.displayName ? user.displayName.slice(0, 2).toUpperCase() : <User className="w-6 h-6" />}
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 truncate">
-              <div className="text-sm font-hud font-bold text-white tracking-wide truncate">
+              <div className="text-sm font-hud font-bold text-[var(--text)] tracking-wide truncate">
                 {user.displayName || 'Focus Operator'}
               </div>
               {isPremium && (
@@ -155,19 +149,17 @@ export function SettingsTabContent() {
                 </span>
               )}
             </div>
-            <div className="text-xs font-mono text-slate-400 truncate">{user.email}</div>
+            <div className="text-xs font-mono text-[var(--text-dim)] truncate">{user.email}</div>
           </div>
         </div>
         <div className="flex items-center gap-2 self-start sm:self-auto">
           <span
-            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-[11px] font-hud font-bold tracking-wider uppercase"
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-[var(--border)] bg-[var(--accent-soft)] text-[11px] font-hud font-bold tracking-wider uppercase"
             style={{
-              backgroundColor: theme.badgeBg,
-              borderColor: `${theme.accent}40`,
-              color: theme.textAccent,
+              color: 'var(--accent)',
             }}
           >
-            <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: theme.accent }} />
+            <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: 'var(--accent)' }} />
             <span>CLOUD SYNCHRONIZED</span>
           </span>
         </div>
@@ -177,20 +169,18 @@ export function SettingsTabContent() {
       <div className="p-5 rounded-2xl hud-surface border border-[var(--border)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3.5">
           <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 border"
+            className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 border border-[var(--border)] bg-[var(--accent-soft)]"
             style={{
-              backgroundColor: theme.badgeBg,
-              borderColor: `${theme.accent}30`,
-              color: theme.accent,
+              color: 'var(--accent)',
             }}
           >
             <Volume2 className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-xs font-hud font-bold text-white tracking-wider uppercase">
+            <div className="text-xs font-hud font-bold text-[var(--text)] tracking-wider uppercase">
               AUDIO &amp; CHIME SYNTHESIZER
             </div>
-            <div className="text-[11px] text-slate-400 mt-0.5">
+            <div className="text-[11px] text-[var(--text-dim)] mt-0.5">
               Zero-latency Web Audio focus frequencies and milestone alerts
             </div>
           </div>
@@ -198,9 +188,9 @@ export function SettingsTabContent() {
         <button
           type="button"
           onClick={testAudio}
-          className="px-4 py-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] border border-[var(--border)] text-xs font-hud font-bold tracking-wider text-white transition-all active:scale-95 flex items-center gap-2 cursor-pointer shadow-sm self-start sm:self-auto"
+          className="px-4 py-2 rounded-xl bg-fg/[0.04] hover:bg-fg/[0.08] border border-[var(--border)] text-xs font-hud font-bold tracking-wider text-[var(--text)] transition-all active:scale-95 flex items-center gap-2 cursor-pointer shadow-sm self-start sm:self-auto"
         >
-          <Sparkles className="w-3.5 h-3.5" style={{ color: theme.accent }} />
+          <Sparkles className="w-3.5 h-3.5" style={{ color: 'var(--accent)' }} />
           <span>TEST CHIMES</span>
         </button>
       </div>
@@ -209,20 +199,18 @@ export function SettingsTabContent() {
       <div className="p-5 rounded-2xl hud-surface border border-[var(--border)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3.5">
           <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 border"
+            className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 border border-[var(--border)] bg-[var(--accent-soft)]"
             style={{
-              backgroundColor: theme.badgeBg,
-              borderColor: `${theme.accent}30`,
-              color: theme.accent,
+              color: 'var(--accent)',
             }}
           >
             <Smartphone className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-xs font-hud font-bold text-white tracking-wider uppercase">
+            <div className="text-xs font-hud font-bold text-[var(--text)] tracking-wider uppercase">
               STANDALONE CLIENT / PWA
             </div>
-            <div className="text-[11px] text-slate-400 mt-0.5">
+            <div className="text-[11px] text-[var(--text-dim)] mt-0.5">
               Launch study.io directly from your home screen in distraction-free mode
             </div>
           </div>
@@ -230,11 +218,9 @@ export function SettingsTabContent() {
 
         {isInstalled ? (
           <div
-            className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-xs font-hud font-bold tracking-wider self-start sm:self-auto"
+            className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl border border-[var(--border)] bg-[var(--accent-soft)] text-xs font-hud font-bold tracking-wider self-start sm:self-auto"
             style={{
-              backgroundColor: theme.badgeBg,
-              borderColor: `${theme.accent}40`,
-              color: theme.accent,
+              color: 'var(--accent)',
             }}
           >
             <CheckCircle2 className="w-4 h-4" />

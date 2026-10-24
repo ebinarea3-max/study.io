@@ -108,8 +108,8 @@ export function LevelUpModal({
           
           <button
             onClick={onClose}
-            className="w-full py-3 px-6 rounded-2xl text-black font-black text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg active:scale-[0.98]"
-            style={{ background: theme.gradient, boxShadow: `0 4px 20px ${theme.accent}40` }}
+            className="w-full py-3 px-6 rounded-2xl font-black text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg active:scale-[0.98] hover:brightness-110"
+            style={{ backgroundColor: 'var(--accent)', color: 'var(--accent-contrast)', boxShadow: '0 4px 20px var(--glow)' }}
           >
             <span>Confirm & Continue</span>
           </button>

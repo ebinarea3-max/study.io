@@ -46,6 +46,7 @@
   --accent-glow: var(--glow);
   --dial-glow-display: block;
   --grid-dot: rgba(255, 255, 255, 0.06);
+  --gradient: linear-gradient(135deg, #FFFFFF 0%, #E2E8F0 100%);
 
   /* Tier-specific variables (always follow user's rank) */
   --tier-accent: #FFFFFF;
@@ -69,6 +70,7 @@
 /* 1. Rank colors (default): current look, accent follows tier */
 html[data-theme="rank"] {
   color-scheme: dark;
+  --fg: 255 255 255;
   --bg: #07090e;
   --background: var(--bg);
   --surface: #0F1117;
@@ -81,11 +83,13 @@ html[data-theme="rank"] {
   --text-faint: #64748B;
   --accent-contrast: #08090C;
   --grid-dot: rgba(255, 255, 255, 0.06);
+  --gradient: var(--tier-gradient);
 }
 
 /* 2. Midnight */
 html[data-theme="midnight"] {
   color-scheme: dark;
+  --fg: 236 239 244;
   --bg: #090B10;
   --background: #090B10;
   --surface: #12151D;
@@ -101,11 +105,13 @@ html[data-theme="midnight"] {
   --accent-soft: rgba(91, 140, 255, 0.12);
   --glow: rgba(91, 140, 255, 0.30);
   --grid-dot: rgba(255, 255, 255, 0.06);
+  --gradient: linear-gradient(135deg, #5B8CFF 0%, #3B66FF 100%);
 }
 
 /* 3. Ember */
 html[data-theme="ember"] {
   color-scheme: dark;
+  --fg: 244 236 228;
   --bg: #0F0B09;
   --background: #0F0B09;
   --surface: #1A1410;
@@ -121,11 +127,13 @@ html[data-theme="ember"] {
   --accent-soft: rgba(240, 146, 74, 0.12);
   --glow: rgba(240, 146, 74, 0.30);
   --grid-dot: rgba(255, 255, 255, 0.06);
+  --gradient: linear-gradient(135deg, #F0924A 0%, #D86B20 100%);
 }
 
 /* 4. Forest */
 html[data-theme="forest"] {
   color-scheme: dark;
+  --fg: 232 243 238;
   --bg: #070D0B;
   --background: #070D0B;
   --surface: #0F1A16;
@@ -141,11 +149,13 @@ html[data-theme="forest"] {
   --accent-soft: rgba(61, 190, 139, 0.12);
   --glow: rgba(61, 190, 139, 0.30);
   --grid-dot: rgba(255, 255, 255, 0.06);
+  --gradient: linear-gradient(135deg, #3DBE8B 0%, #209968 100%);
 }
 
 /* 5. Ocean */
 html[data-theme="ocean"] {
   color-scheme: dark;
+  --fg: 230 240 250;
   --bg: #060B12;
   --background: #060B12;
   --surface: #0E1824;
@@ -161,11 +171,13 @@ html[data-theme="ocean"] {
   --accent-soft: rgba(77, 182, 232, 0.12);
   --glow: rgba(77, 182, 232, 0.30);
   --grid-dot: rgba(255, 255, 255, 0.06);
+  --gradient: linear-gradient(135deg, #4DB6E8 0%, #1A8AC2 100%);
 }
 
 /* 6. Rose */
 html[data-theme="rose"] {
   color-scheme: dark;
+  --fg: 246 233 238;
   --bg: #0E0A0C;
   --background: #0E0A0C;
   --surface: #1A1216;
@@ -181,11 +193,13 @@ html[data-theme="rose"] {
   --accent-soft: rgba(240, 112, 154, 0.12);
   --glow: rgba(240, 112, 154, 0.30);
   --grid-dot: rgba(255, 255, 255, 0.06);
+  --gradient: linear-gradient(135deg, #F0709A 0%, #D84272 100%);
 }
 
 /* 7. Nebula */
 html[data-theme="nebula"] {
   color-scheme: dark;
+  --fg: 240 237 250;
   --bg: #0A0812;
   --background: #0A0812;
   --surface: #15111F;
@@ -201,11 +215,13 @@ html[data-theme="nebula"] {
   --accent-soft: rgba(155, 140, 255, 0.12);
   --glow: rgba(155, 140, 255, 0.30);
   --grid-dot: rgba(255, 255, 255, 0.06);
+  --gradient: linear-gradient(135deg, #9B8CFF 0%, #7058F5 100%);
 }
 
 /* 8. Graphite */
 html[data-theme="graphite"] {
   color-scheme: dark;
+  --fg: 242 242 242;
   --bg: #0B0B0C;
   --background: #0B0B0C;
   --surface: #151516;
@@ -221,6 +237,7 @@ html[data-theme="graphite"] {
   --accent-soft: rgba(232, 232, 232, 0.12);
   --glow: rgba(232, 232, 232, 0.30);
   --grid-dot: rgba(255, 255, 255, 0.06);
+  --gradient: linear-gradient(135deg, #E8E8E8 0%, #B8B8B8 100%);
 }
 
 /* 9. Paper (Light) */
@@ -246,6 +263,7 @@ html[data-theme="paper"] {
   --grid-dot: rgba(40, 30, 20, 0.08);
   --shadow-card: 0 1px 2px rgba(40, 30, 20, 0.06), 0 8px 24px rgba(40, 30, 20, 0.06);
   --tier-accent-text: color-mix(in srgb, var(--tier-accent) 55%, black);
+  --gradient: linear-gradient(135deg, #B45309 0%, #92400E 100%);
 }
 
 /* 10. Gold Leaf (Premium) */
@@ -267,6 +285,7 @@ html[data-theme="goldleaf"] {
   --accent-soft: rgba(230, 193, 90, 0.12);
   --glow: rgba(230, 193, 90, 0.30);
   --grid-dot: rgba(230, 193, 90, 0.06);
+  --gradient: linear-gradient(135deg, #E6C15A 0%, #C49826 100%);
 }
 
 /* 11. Crimson (Premium) */
@@ -288,6 +307,7 @@ html[data-theme="crimson"] {
   --accent-soft: rgba(229, 72, 77, 0.12);
   --glow: rgba(229, 72, 77, 0.30);
   --grid-dot: rgba(229, 72, 77, 0.06);
+  --gradient: linear-gradient(135deg, #E5484D 0%, #B8242A 100%);
 }
 
 /* Smooth color transition when user switches themes */

@@ -3,7 +3,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { NavTabType } from './Navbar';
 
-const TABS: NavTabType[] = ['timer', 'tasks', 'analytics', 'leaderboard', 'rooms'];
+const TABS: NavTabType[] = ['timer', 'tasks', 'analytics', 'leaderboard', 'rooms', 'settings'];
 
 interface SwipeTabContainerProps {
   activeTab: NavTabType;
