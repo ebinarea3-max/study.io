@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useStudy } from '../../context/StudyContext';
 import { formatSeconds } from '../../lib/utils';
-import { Minimize2, Sliders, Crown, Music, Play, Pause, Square } from 'lucide-react';
+import { Minimize2, Sliders, Crown, Music, Play, Pause } from 'lucide-react';
 import { FocusSceneLayer } from '../focus/FocusSceneLayer';
 import { useFocusScene } from '../focus/useFocusScene';
 import { ScenePicker, ScenePreviewPill } from '../focus/ScenePicker';
@@ -51,11 +51,9 @@ export function FocusModeModal() {
     isRunning,
     pauseTimer,
     resumeTimer,
-    stopTimer,
     startTimer,
   } = useStudy();
 
-  const [isSaving, setIsSaving] = useState(false);
   const [isIdle, setIsIdle] = useState(false);
   const isIdleRef = useRef(false);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
@@ -70,20 +68,6 @@ export function FocusModeModal() {
 
   const handleResume = () => {
     resumeTimer();
-  };
-
-  const handleStop = async () => {
-    if (isSaving) return;
-    setIsSaving(true);
-    try {
-      setIsFocusModeOpen(false);
-      exitFullscreenSafely();
-      await stopTimer();
-    } catch (err) {
-      console.error('Error stopping focus session:', err);
-    } finally {
-      setIsSaving(false);
-    }
   };
 
   const handleStart = () => {
@@ -350,78 +334,24 @@ export function FocusModeModal() {
           backfaceVisibility: 'hidden',
         }}
       >
-        {/* Compact Timer Playback Controls (Start / Pause / Resume / Stop) positioned right above scene pills */}
-        <div className="flex items-center justify-center gap-2">
+        {/* Compact Timer Playback Controls (Start / Pause only) positioned right above scene pills */}
+        <div className="flex items-center justify-center">
           {isStudying && !isPaused ? (
-            <>
-              <button
-                type="button"
-                onClick={handlePause}
-                className="flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-white/15 hover:bg-white/25 border border-white/25 hover:border-white/40 text-white font-medium text-xs sm:text-[13px] backdrop-blur-md shadow-[0_4px_16px_rgba(0,0,0,0.4)] hover:scale-105 active:scale-95 transition-all cursor-pointer"
-                title="Pause timer (Space)"
-              >
-                <Pause className="w-3.5 h-3.5 fill-current" />
-                <span>Pause</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={handleStop}
-                disabled={isSaving}
-                className="flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 hover:border-rose-400 text-rose-200 font-medium text-xs sm:text-[13px] backdrop-blur-md shadow-[0_4px_16px_rgba(244,63,94,0.2)] hover:scale-105 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
-                title="Stop & save session"
-              >
-                {isSaving ? (
-                  <>
-                    <div className="w-3.5 h-3.5 border-2 border-rose-300 border-t-transparent rounded-full animate-spin" />
-                    <span>Saving...</span>
-                  </>
-                ) : (
-                  <>
-                    <Square className="w-3.5 h-3.5 fill-current" />
-                    <span>Stop</span>
-                  </>
-                )}
-              </button>
-            </>
-          ) : isStudying && isPaused ? (
-            <>
-              <button
-                type="button"
-                onClick={handleResume}
-                className="flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-emerald-500/25 hover:bg-emerald-500/35 border border-emerald-400/50 hover:border-emerald-300 text-emerald-200 font-semibold text-xs sm:text-[13px] backdrop-blur-md shadow-[0_4px_16px_rgba(16,185,129,0.25)] hover:scale-105 active:scale-95 transition-all cursor-pointer"
-                title="Resume timer (Space)"
-              >
-                <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
-                <span>Resume</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={handleStop}
-                disabled={isSaving}
-                className="flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 hover:border-rose-400 text-rose-200 font-medium text-xs sm:text-[13px] backdrop-blur-md shadow-[0_4px_16px_rgba(244,63,94,0.2)] hover:scale-105 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
-                title="Stop & save session"
-              >
-                {isSaving ? (
-                  <>
-                    <div className="w-3.5 h-3.5 border-2 border-rose-300 border-t-transparent rounded-full animate-spin" />
-                    <span>Saving...</span>
-                  </>
-                ) : (
-                  <>
-                    <Square className="w-3.5 h-3.5 fill-current" />
-                    <span>Stop</span>
-                  </>
-                )}
-              </button>
-            </>
+            <button
+              type="button"
+              onClick={handlePause}
+              className="flex items-center gap-1.5 px-4 sm:px-4.5 py-1.5 sm:py-2 rounded-full bg-white/15 hover:bg-white/25 border border-white/25 hover:border-white/40 text-white font-medium text-xs sm:text-[13px] backdrop-blur-md shadow-[0_4px_16px_rgba(0,0,0,0.4)] hover:scale-105 active:scale-95 transition-all cursor-pointer"
+              title="Pause timer (Space)"
+            >
+              <Pause className="w-3.5 h-3.5 fill-current" />
+              <span>Pause</span>
+            </button>
           ) : (
             <button
               type="button"
-              onClick={handleStart}
+              onClick={isStudying ? handleResume : handleStart}
               className="flex items-center gap-1.5 px-4 sm:px-4.5 py-1.5 sm:py-2 rounded-full bg-white hover:bg-neutral-100 text-neutral-950 font-semibold text-xs sm:text-[13px] shadow-[0_4px_16px_rgba(255,255,255,0.25)] hover:scale-105 active:scale-95 transition-all cursor-pointer"
-              title="Start timer (Space)"
+              title={isStudying ? "Resume timer (Space)" : "Start timer (Space)"}
             >
               <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
               <span>Start</span>
