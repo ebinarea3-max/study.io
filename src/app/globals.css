@@ -963,38 +963,129 @@ html.light ::selection,
   animation: floating 3s ease-in-out infinite;
 }
 
-/* --- Rank Ambient Animations --- */
+/* --- High-Fidelity Rank Ambient Animations --- */
 @keyframes rankBreatheBronze {
-  0%, 100% { filter: drop-shadow(0 0 8px rgba(184, 115, 51, 0.15)); }
-  50% { filter: drop-shadow(0 0 14px rgba(184, 115, 51, 0.2)); }
+  0%, 100% {
+    filter: drop-shadow(0 0 8px rgba(217, 119, 6, 0.4)) drop-shadow(0 4px 10px rgba(146, 64, 14, 0.3));
+    transform: translateY(0);
+  }
+  50% {
+    filter: drop-shadow(0 0 16px rgba(245, 158, 11, 0.65)) drop-shadow(0 6px 16px rgba(180, 83, 9, 0.45));
+    transform: translateY(-2px);
+  }
 }
+
 @keyframes rankBreatheSilver {
-  0%, 100% { filter: drop-shadow(0 0 8px rgba(192, 192, 192, 0.22)); }
-  50% { filter: drop-shadow(0 0 14px rgba(192, 192, 192, 0.28)); }
+  0%, 100% {
+    filter: drop-shadow(0 0 8px rgba(203, 213, 225, 0.45)) drop-shadow(0 4px 10px rgba(100, 116, 139, 0.3));
+    transform: translateY(0);
+  }
+  50% {
+    filter: drop-shadow(0 0 18px rgba(241, 245, 249, 0.75)) drop-shadow(0 6px 18px rgba(148, 163, 184, 0.5));
+    transform: translateY(-3px);
+  }
 }
+
 @keyframes rankBreatheGold {
-  0%, 100% { filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.3)); }
-  50% { filter: drop-shadow(0 0 16px rgba(255, 215, 0, 0.4)); }
+  0%, 100% {
+    filter: drop-shadow(0 0 10px rgba(234, 179, 8, 0.5)) drop-shadow(0 4px 12px rgba(161, 98, 7, 0.4));
+    transform: translateY(0);
+  }
+  50% {
+    filter: drop-shadow(0 0 24px rgba(253, 224, 71, 0.85)) drop-shadow(0 6px 20px rgba(202, 138, 4, 0.6));
+    transform: translateY(-3px);
+  }
 }
+
 @keyframes rankBreathePlatinum {
-  0%, 100% { filter: drop-shadow(0 0 8px rgba(0, 255, 255, 0.35)); }
-  50% { filter: drop-shadow(0 0 18px rgba(0, 255, 255, 0.45)); }
+  0%, 100% {
+    filter: drop-shadow(0 0 12px rgba(6, 182, 212, 0.55)) drop-shadow(0 4px 14px rgba(14, 116, 144, 0.4));
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    filter: drop-shadow(0 0 26px rgba(103, 232, 249, 0.85)) drop-shadow(0 6px 22px rgba(6, 182, 212, 0.6));
+    transform: translateY(-4px) rotate(0.4deg);
+  }
 }
+
 @keyframes rankBreatheDiamond {
-  0%, 100% { filter: drop-shadow(0 0 10px rgba(220, 240, 255, 0.4)); }
-  50% { filter: drop-shadow(0 0 20px rgba(220, 240, 255, 0.5)); }
+  0%, 100% {
+    filter: drop-shadow(0 0 12px rgba(168, 85, 247, 0.6)) drop-shadow(0 0 20px rgba(56, 189, 248, 0.4)) drop-shadow(0 4px 12px rgba(0,0,0,0.5));
+    transform: translateY(0);
+  }
+  50% {
+    filter: drop-shadow(0 0 28px rgba(217, 70, 239, 0.9)) drop-shadow(0 0 34px rgba(165, 243, 252, 0.75)) drop-shadow(0 6px 20px rgba(0,0,0,0.6));
+    transform: translateY(-4px);
+  }
 }
+
 @keyframes rankBreatheChampion {
-  0%, 100% { filter: drop-shadow(0 0 12px rgba(138, 43, 226, 0.45)) drop-shadow(0 0 12px rgba(255, 215, 0, 0.45)); }
-  50% { filter: drop-shadow(0 0 24px rgba(138, 43, 226, 0.55)) drop-shadow(0 0 24px rgba(255, 215, 0, 0.55)); }
+  0%, 100% {
+    filter: drop-shadow(0 0 14px rgba(178, 79, 232, 0.65)) drop-shadow(0 0 22px rgba(234, 179, 8, 0.45));
+    transform: translateY(0);
+  }
+  50% {
+    filter: drop-shadow(0 0 32px rgba(192, 132, 252, 0.95)) drop-shadow(0 0 38px rgba(250, 204, 21, 0.8));
+    transform: translateY(-5px);
+  }
 }
+
 @keyframes rankBreatheMaster {
-  0%, 100% { filter: drop-shadow(0 0 12px rgba(255, 69, 0, 0.48)); }
-  50% { filter: drop-shadow(0 0 25px rgba(255, 69, 0, 0.6)); }
+  0%, 100% {
+    filter: drop-shadow(0 0 16px rgba(99, 102, 241, 0.7)) drop-shadow(0 0 26px rgba(225, 29, 72, 0.55));
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    filter: drop-shadow(0 0 36px rgba(129, 140, 248, 0.95)) drop-shadow(0 0 44px rgba(244, 63, 94, 0.85));
+    transform: translateY(-5px) scale(1.02);
+  }
 }
+
 @keyframes rankBreatheGrandmaster {
-  0%, 100% { filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.55)); }
-  50% { filter: drop-shadow(0 0 30px rgba(138, 43, 226, 0.65)); }
+  0%, 100% {
+    filter: drop-shadow(0 0 20px rgba(255, 51, 102, 0.85)) drop-shadow(0 0 30px rgba(234, 179, 8, 0.65)) drop-shadow(0 0 12px rgba(255, 255, 255, 0.9));
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    filter: drop-shadow(0 0 42px rgba(255, 51, 102, 1)) drop-shadow(0 0 52px rgba(250, 204, 21, 0.9)) drop-shadow(0 0 24px rgba(255, 255, 255, 1));
+    transform: translateY(-6px) scale(1.035);
+  }
+}
+
+@keyframes rankAuraPulse {
+  0%, 100% { transform: scale(0.9); opacity: 0.35; }
+  50% { transform: scale(1.18); opacity: 0.75; }
+}
+
+@keyframes rankGleamSweep {
+  0%, 65% { transform: translateX(-160%) rotate(30deg); opacity: 0; }
+  70% { opacity: 0.75; }
+  85% { transform: translateX(160%) rotate(30deg); opacity: 0; }
+  100% { transform: translateX(160%) rotate(30deg); opacity: 0; }
+}
+
+@keyframes rankStarGlint {
+  0%, 100% { transform: scale(0) rotate(0deg); opacity: 0; }
+  45% { transform: scale(0.3) rotate(45deg); opacity: 0.4; }
+  50% { transform: scale(1.25) rotate(90deg); opacity: 1; filter: drop-shadow(0 0 8px #fff); }
+  55% { transform: scale(0.3) rotate(135deg); opacity: 0.4; }
+  60% { transform: scale(0) rotate(180deg); opacity: 0; }
+}
+
+@keyframes rankCoronaExpand {
+  0% { transform: scale(0.65); opacity: 0.9; }
+  60% { opacity: 0.35; }
+  100% { transform: scale(1.55); opacity: 0; }
+}
+
+@keyframes orbitStarClockwise {
+  from { transform: rotate(0deg) translateX(54px) rotate(0deg); }
+  to { transform: rotate(360deg) translateX(54px) rotate(-360deg); }
+}
+
+@keyframes orbitStarCounter {
+  from { transform: rotate(360deg) translateX(46px) rotate(-360deg); }
+  to { transform: rotate(0deg) translateX(46px) rotate(0deg); }
 }
 
 @keyframes sweepConic {
@@ -1002,22 +1093,11 @@ html.light ::selection,
   to { transform: rotate(360deg); }
 }
 
-@keyframes glintFlash {
-  0%, 98% { opacity: 0; transform: scale(0.5); }
-  99% { opacity: 1; transform: scale(1.5); }
-  100% { opacity: 0; transform: scale(0.5); }
-}
-
 @keyframes driftUpward {
-  0% { transform: translateY(0) scale(0.8); opacity: 0; }
-  20% { opacity: 1; }
-  80% { opacity: 0.8; }
-  100% { transform: translateY(-40px) scale(1.2); opacity: 0; }
-}
-
-@keyframes orbitStar {
-  from { transform: rotate(0deg) translateX(45px) rotate(0deg); }
-  to { transform: rotate(360deg) translateX(45px) rotate(-360deg); }
+  0% { transform: translateY(0) scale(0.7); opacity: 0; }
+  25% { opacity: 0.95; }
+  75% { opacity: 0.8; }
+  100% { transform: translateY(-44px) translateX(var(--drift-x, 4px)) scale(1.15); opacity: 0; }
 }
 
 @keyframes silverSparkPath {
