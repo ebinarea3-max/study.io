@@ -64,6 +64,7 @@ export default function RankPreviewPage() {
                   delay={idx * 0.3}
                   size={160} 
                   alt={config.fullTitle}
+                  rankTitle={config.fullTitle}
                 />
               </div>
               <h3 className="text-white font-bold tracking-widest mt-6 mb-4 text-center">{config.fullTitle}</h3>

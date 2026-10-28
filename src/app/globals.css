@@ -1488,7 +1488,7 @@ html.light ::selection,
   }
 }
 
-/* 4. Sparkles: Twinkle (fade and scale in and out) over 3s */
+/* 4. Sparkles (Gold only): 3px twinkling dots over 4s */
 @keyframes rankBadgeSparkle {
   0%, 100% {
     transform: scale(0);
@@ -1496,21 +1496,71 @@ html.light ::selection,
   }
   50% {
     transform: scale(1);
+    opacity: 0.9;
+  }
+}
+
+/* 5. Aura Pulse (Platinum and Diamond+): soft breathing radial glow 0.15 to 0.40 over 4s */
+@keyframes rankBadgeAuraPulse {
+  0%, 100% {
+    opacity: 0.15;
+    transform: scale(0.96);
+  }
+  50% {
+    opacity: 0.40;
+    transform: scale(1.04);
+  }
+}
+
+/* 6. Rising Motes (Platinum and Diamond+): 3px dots drifting upward ~40px over 5s */
+@keyframes rankBadgeMoteRise {
+  0% {
+    transform: translateY(0px);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.85;
+  }
+  75% {
+    opacity: 0.75;
+  }
+  100% {
+    transform: translateY(-40px);
+    opacity: 0;
+  }
+}
+
+/* 7. Facet Glint (Diamond+): 4-point star flare popping on a corner every ~4s */
+@keyframes rankBadgeFacetGlint {
+  0%, 75%, 100% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  84% {
+    transform: scale(1);
     opacity: 0.95;
   }
-}
-
-/* 5. Orbit Ring: Slow-rotating (20s) */
-@keyframes rankBadgeRotate {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
+  92% {
+    transform: scale(0.15);
+    opacity: 0;
   }
 }
 
-/* 6. Hover transition & Reduced Motion Rules */
+/* 8. Core Pulse (Brain-emblem ranks): soft brightness & glow pulse every 3s */
+@keyframes rankBadgeCorePulse {
+  0%, 100% {
+    filter: brightness(1);
+    opacity: 0.55;
+    transform: scale(0.95);
+  }
+  50% {
+    filter: brightness(1.25);
+    opacity: 0.95;
+    transform: scale(1.05);
+  }
+}
+
+/* 9. Hover transition & Reduced Motion Rules */
 .rank-badge-interactive {
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
