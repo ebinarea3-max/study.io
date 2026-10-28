@@ -24,12 +24,39 @@ const TIER_GLOW_RGB: Record<RankBadgeTier, string> = {
   bronze: '190, 120, 60',
 };
 
-// Normalized scales so visible shield width matches Silver (~145px) in a 160x160 box
-const TIER_SCALES: Record<RankBadgeTier, number> = {
+// Exact scales measured from PNG shield boundaries to match Silver II/III/IV (width = 940px / 146.9px)
+export const RANK_EXACT_SCALES: Record<string, number> = {
+  'bronze-1': 1.127,
+  'bronze-2': 1.141,
+  'bronze-3': 1.094,
+  'bronze-4': 1.094,
+  'silver-1': 1.135,
+  'silver-2': 1.000,
+  'silver-3': 1.000,
+  'silver-4': 1.000,
+  'gold-1': 1.158,
+  'gold-2': 1.078,
+  'gold-3': 1.050,
+  'gold-4': 1.006,
+  'platinum-1': 1.193,
+  'platinum-2': 1.190,
+  'platinum-3': 1.159,
+  'platinum-4': 1.094,
+  'diamond-1': 1.221,
+  'diamond-2': 1.257,
+  'diamond-3': 1.191,
+  'diamond-4': 1.197,
+  champion: 1.093,
+  master: 1.068,
+  grandmaster: 1.042,
+};
+
+// Fallback tier scales if specific division key is unavailable
+export const TIER_SCALES: Record<RankBadgeTier, number> = {
   silver: 1.0,
   gold: 1.08,
-  platinum: 1.15,
-  diamond: 1.18,
+  platinum: 1.16,
+  diamond: 1.20,
   bronze: 1.10,
 };
 
@@ -88,7 +115,17 @@ export function RankBadge({
 }: RankBadgeProps) {
   const tierKey: RankBadgeTier = tier || 'silver';
   const glowRgb = TIER_GLOW_RGB[tierKey] || TIER_GLOW_RGB.silver;
-  const badgeScale = scale !== undefined ? scale : (TIER_SCALES[tierKey] || 1.0);
+
+  const rankKey = (src || '')
+    .split('/')
+    .pop()
+    ?.replace(/\.(png|webp)$/i, '')
+    .toLowerCase() || '';
+
+  const badgeScale =
+    scale !== undefined
+      ? scale
+      : (RANK_EXACT_SCALES[rankKey] || TIER_SCALES[tierKey] || 1.0);
 
   const titleLower = (rankTitle || alt || '').toLowerCase();
   const isGold = tierKey === 'gold';
@@ -167,7 +204,7 @@ export function RankBadge({
           <div
             className="relative w-full h-full flex items-center justify-center overflow-visible"
             style={{
-              transform: 'scale(var(--badge-scale, 1))',
+              transform: `scale(var(--badge-scale, ${badgeScale}))`,
               willChange: 'transform',
             }}
           >
