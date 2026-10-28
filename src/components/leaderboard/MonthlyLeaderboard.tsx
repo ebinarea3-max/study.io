@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useAuth } from '../../context/AuthContext';
 import { useStudy } from '../../context/StudyContext';
 import { getSupabase } from '../../lib/supabase';
-import { getRankFromRp, calculateRpFromSeconds, RankTierName, RankDivision, RankTier, RANKS } from '../../lib/ranks';
+import { getRankTier, calculateSeasonRp, calculateRpFromSeconds, RankTierName, RankDivision, RankTier, RANKS } from '../../lib/ranks';
 import { getRankTheme } from '../../lib/rankTheme';
 import { getLevelFromLifetimeXP } from '../../lib/gamification';
 import { LeaderboardEntry } from '../../types';
@@ -83,14 +83,15 @@ function AnimatedDigit({
 
 /**
  * Resolves the display rank tier label from row data.
- * Ensures valid 23-rank monthly tiers (e.g. "BRONZE I", "SILVER II", "GOLD I").
+ * Evaluates getRankTier as single source of truth across all 23 monthly ranks.
  */
 export function getMonthlyRankTierTitle(rankTitle?: string, totalSeconds?: number): string {
   if (rankTitle) {
     const found = RANKS.find(r => r.name.toUpperCase() === rankTitle.toUpperCase());
     if (found) return found.name.toUpperCase();
   }
-  return getRankFromRp(0).name.toUpperCase();
+  const rp = totalSeconds ? Math.floor(totalSeconds / 36) : 0;
+  return getRankTier(rp).name.toUpperCase();
 }
 
 export function getMonthlyRankTierConfig(totalSeconds?: number, rankTitle?: string): RankTier {
@@ -98,8 +99,8 @@ export function getMonthlyRankTierConfig(totalSeconds?: number, rankTitle?: stri
     const found = RANKS.find(r => r.name.toUpperCase() === rankTitle.toUpperCase());
     if (found) return found;
   }
-  // Default to the base rank instead of dynamically calculating based on the period's duration
-  return getRankFromRp(0);
+  const rp = totalSeconds ? Math.floor(totalSeconds / 36) : 0;
+  return getRankTier(rp);
 }
 
 export type LeaderboardTimeframe = 'today' | 'week' | 'month' | 'all';
@@ -335,19 +336,16 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
             entries = res.data.map((row: any) => {
               const isMe = Boolean(row.is_current_user || (currentUser?.id && row.user_id === currentUser.id));
               
-              let computedRank = getRankFromRp(0).name;
+              let computedRank = getRankTier(0).name;
               try {
-                const rpFromSeconds = row.total_seconds ? Math.floor(Number(row.total_seconds) / 60) : 0;
+                const carryoverRp = Math.min(26000, Number(row.carryover_rp ?? row.carryoverRp ?? row.season_base_rp ?? 0));
+                const earnedRp = row.total_seconds ? Math.floor(Number(row.total_seconds) / 36) : 0;
+                const computedSeasonRp = carryoverRp + earnedRp;
                 const explicitRp = (row.season_rp !== undefined && row.season_rp !== null) ? Number(row.season_rp) : 
                                    (row.rp !== undefined && row.rp !== null) ? Number(row.rp) : 0;
                 
-                const bestRp = Math.max(rpFromSeconds, explicitRp);
-                
-                if (bestRp > 0) {
-                  computedRank = getRankFromRp(bestRp).name;
-                } else if (row.rank_title) {
-                  computedRank = String(row.rank_title);
-                }
+                const bestRp = Math.max(computedSeasonRp, explicitRp);
+                computedRank = getRankTier(bestRp).name;
               } catch (e) {}
               
               return {
@@ -404,19 +402,16 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
               if (dbProfiles) {
                 entries = dbProfiles.map((p: any) => {
                   const isMe = p.id === currentUser?.id;
-                  let computedRank = getRankFromRp(0).name;
+                  let computedRank = getRankTier(0).name;
                   try {
-                    const rpFromSeconds = userTotals[p.id] ? Math.floor(userTotals[p.id] / 60) : 0;
+                    const carryoverRp = Math.min(26000, Number(p.season_base_rp ?? p.carryover_rp ?? 0));
+                    const earnedRp = userTotals[p.id] ? Math.floor(userTotals[p.id] / 36) : 0;
+                    const computedSeasonRp = carryoverRp + earnedRp;
                     const explicitRp = (p.season_rp !== undefined && p.season_rp !== null) ? Number(p.season_rp) : 
                                        (p.rp !== undefined && p.rp !== null) ? Number(p.rp) : 0;
                     
-                    const bestRp = Math.max(rpFromSeconds, explicitRp);
-                    
-                    if (bestRp > 0) {
-                      computedRank = getRankFromRp(bestRp).name;
-                    } else if (p.rank_title) {
-                      computedRank = String(p.rank_title);
-                    }
+                    const bestRp = Math.max(computedSeasonRp, explicitRp);
+                    computedRank = getRankTier(bestRp).name;
                   } catch (e) {}
 
                   return {
@@ -447,6 +442,10 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
             .reduce((sum, s) => sum + (s.durationSeconds || 0), 0);
 
           if (currentPeriodSeconds > 0) {
+            const carryoverRp = Math.min(26000, Number((currentUser as any).carryover_rp ?? (currentUser as any).carryoverRp ?? (currentUser as any).season_base_rp ?? 0));
+            const computedRp = carryoverRp + Math.floor(currentPeriodSeconds / 36);
+            const effectiveRp = Math.max(computedRp, Number(currentUser.seasonRp || 0));
+            const userRankTier = getRankTier(effectiveRp);
             entries = [
               {
                 user_id: currentUser.id,
@@ -456,7 +455,7 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                 avatar_url: currentUser.avatarUrl || null,
                 level: currentUser.level,
                 lifetime_xp: Number(currentUser.lifetime_xp ?? currentUser.lifetimeXp ?? currentUser.xp ?? 0),
-                rank_title: currentUser.rank_title || 'Bronze I',
+                rank_title: userRankTier.name.toUpperCase(),
                 total_seconds: currentPeriodSeconds,
                 is_current_user: true,
               },

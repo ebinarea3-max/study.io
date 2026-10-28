@@ -19,13 +19,13 @@ export function RankBadgePreloader() {
   const { userRank } = useRankTheme();
 
   useEffect(() => {
-    if (!userRank) return;
-
-    // 1. High priority preload of current rank and immediate tier divisions
-    preloadRankBadgesForUser(userRank.tier, userRank.division);
-
-    // 2. Background preload of all rank badges during browser idle
+    // 1. Immediately trigger background preload of all 23 rank badge assets into browser memory cache
     preloadAllRankBadges();
+
+    // 2. High priority preload of active rank and surrounding tier divisions
+    if (userRank) {
+      preloadRankBadgesForUser(userRank.tier, userRank.division);
+    }
   }, [userRank]);
 
   if (!userRank) return null;
@@ -34,7 +34,14 @@ export function RankBadgePreloader() {
 
   return (
     <>
-      {/* High-priority browser hint for user's active rank badge */}
+      {/* High-priority browser hints for user's active rank badge (both PNG and WebP) */}
+      <link
+        rel="preload"
+        as="image"
+        type="image/png"
+        href={currentSources.png}
+        fetchPriority="high"
+      />
       <link
         rel="preload"
         as="image"

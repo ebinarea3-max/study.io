@@ -23,6 +23,8 @@ import {
   calculateSessionRP,
   calculateSeasonReset,
   getCurrentSeasonId,
+  getRankTier,
+  HARD_RESET_CAP_RP,
 } from '../lib/rankedSystem';
 
 export const showPushNotification = async (title: string, options?: NotificationOptions) => {
@@ -2902,16 +2904,29 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       } catch {}
       const lastStreakBonusDate = currentUser?.last_streak_bonus_date || currentUser?.lastStreakBonusDate || localStreakBonusDate;
       const hasStreakOrGoal = (currentUser?.streakDays || 0) > 0 || totalToday >= dailyGoalSeconds;
-      const hasCompletedTask = Boolean(activeTaskId);
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+      const currentMonthSeconds = allSessionsNow
+        .filter(s => {
+          const t = new Date(s.startTime).getTime();
+          return t >= startOfMonth;
+        })
+        .reduce((sum, s) => sum + s.durationSeconds, 0);
+
+      const currentMonthSecondsBefore = Math.max(0, currentMonthSeconds - secondsToSave);
+      const carryoverRp = Math.min(HARD_RESET_CAP_RP, Number((currentUser as any)?.carryover_rp ?? (currentUser as any)?.carryoverRp ?? (currentUser as any)?.season_base_rp ?? 0));
+
+      const prevRP = carryoverRp + Math.floor(currentMonthSecondsBefore / 36);
+      const newRP = carryoverRp + Math.floor(currentMonthSeconds / 36);
+      const gainedRP = Math.max(0, newRP - prevRP);
+
       const rpBreakdown = calculateSessionRP(secondsToSave, {
         hasStreakOrGoal,
-        hasCompletedTask,
+        hasCompletedTask: false,
         lastStreakBonusDate,
         todayString,
       });
-
-      const prevRP = Number((currentUser as any)?.rp ?? currentUser?.seasonRp ?? 0);
-      const newRP = prevRP + rpBreakdown.totalGained;
+      rpBreakdown.sessionRP = gainedRP;
+      rpBreakdown.totalGained = gainedRP;
 
       // XP Calculation & Anti-Exploit Rules:
       // Award rate: 10 XP per full minute of recorded focus time: Math.floor(duration_seconds / 60) * 10
@@ -2945,6 +2960,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       const profileUpdates: Partial<UserProfile> = {
         seasonRp: Math.round(newRP),
         rp: Math.round(newRP),
+        rank_title: getRankTier(newRP).fullTitle,
         lifetime_xp: Math.round(newLifetimeXP),
         lifetimeXp: Math.round(newLifetimeXP),
         xp: Math.round(newLifetimeXP),

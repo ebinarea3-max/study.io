@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, useEffect, useRef, ReactNod
 import { UserProfile } from '../types';
 import { INITIAL_USER, cleanupLegacyDemoData } from '../lib/mockData';
 import { getSupabase } from '../lib/supabase';
-import { getRankFromRp, getSoftResetRp } from '../lib/ranks';
+import { getRankFromRp, getSoftResetRp, HARD_RESET_CAP_RP } from '../lib/ranks';
 import { getCurrentSeasonId } from '../lib/rankedSystem';
 import { getLevelFromLifetimeXP, getScholarTitle } from '../lib/gamification';
 
@@ -97,8 +97,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ? dbSessions.reduce((acc: any, s: any) => acc + (Number(s.duration_seconds ?? 0)), 0)
         : 0;
         
-      const carryoverRp = Number(profile?.season_base_rp ?? 0);
-      const calculatedRP = carryoverRp + Math.floor(currentMonthStudySeconds / 60);
+      const carryoverRp = Math.min(HARD_RESET_CAP_RP, Number(profile?.season_base_rp ?? 0));
+      const calculatedRP = carryoverRp + Math.floor(currentMonthStudySeconds / 36);
       
       let currentProfileRP = Number(profile?.rp ?? profile?.season_rp ?? 0);
       
@@ -214,7 +214,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           let lastResetMonth = data.last_reset_month;
 
           if (lastResetMonth !== currentMonthStr) {
-            seasonRp = getSoftResetRp(seasonRp);
+            seasonRp = Math.min(HARD_RESET_CAP_RP, getSoftResetRp(seasonRp));
             lastResetMonth = currentMonthStr;
             const newTier = getRankFromRp(seasonRp);
             

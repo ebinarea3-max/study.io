@@ -231,10 +231,10 @@ export function Navbar({
       })
       .reduce((total: number, s: any) => total + (s.duration || s.durationSeconds || s.duration_seconds || 0), 0);
 
-    const carryoverRp = (user as any)?.carryover_rp || (user as any)?.carryoverRp || 0;
-    const computedRp = carryoverRp + Math.floor(currentMonthSeconds / 60);
+    const carryoverRp = Math.min(26000, Number((user as any)?.carryover_rp ?? (user as any)?.carryoverRp ?? (user as any)?.season_base_rp ?? 0));
+    const computedRp = carryoverRp + Math.floor(currentMonthSeconds / 36);
     return { liveSeasonRp: computedRp, liveRank: getRankTier(computedRp) };
-  }, [sessions, (user as any)?.carryover_rp, (user as any)?.carryoverRp]);
+  }, [sessions, (user as any)?.carryover_rp, (user as any)?.carryoverRp, (user as any)?.season_base_rp]);
 
   return (
     <>

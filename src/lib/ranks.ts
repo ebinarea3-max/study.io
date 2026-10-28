@@ -3,6 +3,7 @@ import {
   RankTierName,
   RankDivision,
   RankTierConfig,
+  HARD_RESET_CAP_RP,
 } from './rankedSystem';
 
 export interface RankTier {
@@ -10,21 +11,15 @@ export interface RankTier {
   division: RankDivision;
   name: string;
   minRp: number;
+  maxRp: number;
   minHours: number;
   softResetRp: number;
+  softResetRank?: string;
   badge: string;
+  imagePath: string;
 }
 
-const SOFT_RESET_MAP: Record<RankTierName, number> = {
-  Grandmaster: 3300,
-  Master: 3300,
-  Champion: 3300,
-  Diamond: 2700,
-  Platinum: 1260,
-  Gold: 900,
-  Silver: 180,
-  Bronze: 0,
-};
+export { HARD_RESET_CAP_RP };
 
 function getBadgeFilename(config: RankTierConfig): string {
   if (config.imagePath) {
@@ -47,18 +42,33 @@ export const RANK_TIERS: RankTier[] = SYSTEM_RANK_TIERS.map((cfg) => ({
   division: cfg.division,
   name: cfg.division ? `${cfg.tier} ${cfg.division}` : cfg.tier,
   minRp: cfg.minRP,
-  minHours: Math.round(cfg.minRP / 60),
-  softResetRp: SOFT_RESET_MAP[cfg.tier] ?? 0,
+  maxRp: cfg.maxRP,
+  minHours: cfg.minHours ?? Math.round(cfg.minRP / 100),
+  softResetRp: cfg.softResetRP ?? 0,
+  softResetRank: cfg.softResetRank,
   badge: getBadgeFilename(cfg),
+  imagePath: cfg.imagePath || `/images/ranks/${getBadgeFilename(cfg)}`,
 }));
 
+/**
+ * Unified Monthly Formula:
+ * Season RP = Carryover RP + Math.floor(Current Month Focus Seconds / 36)
+ * - 1 Hour of Focus   = 100 RP
+ * - 1 Minute of Focus = ~1.67 RP (100 / 60)
+ * - 1 Second of Focus = 1 / 36 RP
+ * - Carryover RP is strictly capped at 26,000 RP (Diamond IV)
+ */
 export function calculateSeasonRp(currentMonthSeconds: number, carryoverRp: number = 0): number {
-  const earnedRp = Math.floor(currentMonthSeconds / 60);
-  return carryoverRp + earnedRp;
+  const safeCarryover = Math.min(HARD_RESET_CAP_RP, Math.max(0, Math.round(carryoverRp || 0)));
+  const earnedRp = Math.floor(Math.max(0, currentMonthSeconds) / 36);
+  return safeCarryover + earnedRp;
 }
 
+/**
+ * Single source of truth to evaluate RankTier from total/season RP
+ */
 export function getRankTier(totalRp: number): RankTier {
-  const safeRp = Math.max(0, totalRp);
+  const safeRp = Math.max(0, Math.round(totalRp || 0));
   for (let i = RANK_TIERS.length - 1; i >= 0; i--) {
     if (safeRp >= RANK_TIERS[i].minRp) {
       return RANK_TIERS[i];
@@ -96,4 +106,5 @@ export const RANKS = RANK_TIERS;
 export const getRankFromRp = getRankTier;
 export const calculateRpFromSeconds = (seconds: number) => calculateSeasonRp(seconds, 0);
 export const getSoftResetRp = (rp: number) => getRankTier(rp).softResetRp;
+
 

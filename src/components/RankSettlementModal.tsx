@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { soundFx } from '../lib/audio';
 import confetti from 'canvas-confetti';
-import { getRankFromRp, RankTierName, RankTier, getMaxRpForTier, RANK_TIERS } from '../lib/ranks';
+import { getRankTier, RankTierName, RankTier, getMaxRpForTier, RANK_TIERS } from '../lib/ranks';
 import { getRankTheme } from '../lib/rankTheme';
 import { RankSettlementData } from '../types';
 import { ChevronRight, X } from 'lucide-react';
@@ -78,8 +78,8 @@ export function RankSettlementModal({
   const streakBonusClaimedToday = Boolean(data?.breakdown.streakBonusClaimedToday);
   const isUnderMinDuration = Boolean(data?.breakdown.isUnderMinDuration ?? (durationSeconds < 60));
 
-  const prevRankDetails = useMemo(() => getRankFromRp(prevRP), [prevRP]);
-  const newRankDetails = useMemo(() => getRankFromRp(newRP), [newRP]);
+  const prevRankDetails = useMemo(() => getRankTier(prevRP), [prevRP]);
+  const newRankDetails = useMemo(() => getRankTier(newRP), [newRP]);
   const isRankUp = newRankDetails.name.toUpperCase() !== prevRankDetails.name.toUpperCase();
   const isMajorTierUp = newRankDetails.tier !== prevRankDetails.tier;
 

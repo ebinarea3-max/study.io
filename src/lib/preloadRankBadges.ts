@@ -195,27 +195,28 @@ let allPreloaded = false;
 
 /**
  * Preload all 23 rank crests in the background during idle time.
- * Runs non-blockingly using requestIdleCallback or queued timeouts.
+ * Prioritizes PNG badges followed by WebP so both are cached in browser memory
+ * ensuring instant modal transitions and crest rendering with zero layout shift.
  */
 export function preloadAllRankBadges(): void {
   if (typeof window === 'undefined' || allPreloaded) return;
   allPreloaded = true;
 
   const startPreload = () => {
-    // Process in batches of 4 to avoid saturating network threads
-    const badges = [...ALL_RANK_BADGES_WEBP];
+    // Both PNG (primary asset specified) and WebP are preloaded into browser cache
+    const badges = [...ALL_RANK_BADGES_PNG, ...ALL_RANK_BADGES_WEBP];
     let index = 0;
 
     const loadNextBatch = () => {
       if (index >= badges.length) return;
-      const batch = badges.slice(index, index + 4);
-      index += 4;
+      const batch = badges.slice(index, index + 6);
+      index += 6;
 
       Promise.allSettled(batch.map((src) => preloadImage(src, false))).then(() => {
         if ('requestIdleCallback' in window) {
           (window as Window & { requestIdleCallback: (cb: () => void) => void }).requestIdleCallback(loadNextBatch);
         } else {
-          setTimeout(loadNextBatch, 80);
+          setTimeout(loadNextBatch, 50);
         }
       });
     };
@@ -223,7 +224,7 @@ export function preloadAllRankBadges(): void {
     if ('requestIdleCallback' in window) {
       (window as Window & { requestIdleCallback: (cb: () => void) => void }).requestIdleCallback(loadNextBatch);
     } else {
-      setTimeout(loadNextBatch, 150);
+      setTimeout(loadNextBatch, 80);
     }
   };
 
