@@ -964,54 +964,190 @@ html.light ::selection,
 }
 
 /* =========================================================================
-   RANK LOGO ANIMATIONS
-   Clean, physical badge floating motion and smooth ambient moving particles.
+   CRAZY HIGH-OCTANE RANK CREST ANIMATIONS
+   AAA Esports Tier VFX: God-rays, energy rings, vortex particles,
+   laser sweeps, shockwaves, and starburst flares.
    ========================================================================= */
 
-/* Calm, weighted levitation for the crest */
+/* Calm weighted levitation */
 @keyframes classicCrestFloat {
   0%, 100% {
     transform: translateY(0px);
   }
   50% {
-    transform: translateY(-4px);
+    transform: translateY(-5px);
   }
 }
 
-/* Silky smooth diagonal specular light sheen across the metallic crest */
-@keyframes classicMetalSheen {
-  0%, 60% {
-    transform: translateX(-160%) rotate(25deg);
+/* Rotating Sunburst / God-Ray Aura */
+@keyframes rankGodRays {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes rankGodRaysReverse {
+  from {
+    transform: rotate(360deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+/* Rotating Cybernetic & Runic Energy Rings */
+@keyframes rankEnergyRingClockwise {
+  0% {
+    transform: rotate(0deg);
+    stroke-dashoffset: 0;
+  }
+  100% {
+    transform: rotate(360deg);
+    stroke-dashoffset: 120;
+  }
+}
+
+@keyframes rankEnergyRingCounter {
+  0% {
+    transform: rotate(360deg);
+    stroke-dashoffset: 0;
+  }
+  100% {
+    transform: rotate(0deg);
+    stroke-dashoffset: -120;
+  }
+}
+
+/* High-Speed Laser Sheen across the crest */
+@keyframes rankLaserSweep {
+  0%, 50% {
+    transform: translateX(-190%) rotate(30deg);
     opacity: 0;
   }
-  65% {
-    opacity: 0.85;
+  55% {
+    opacity: 0.95;
   }
-  80% {
-    transform: translateX(160%) rotate(25deg);
+  70% {
+    transform: translateX(190%) rotate(30deg);
     opacity: 0;
   }
   100% {
-    transform: translateX(160%) rotate(25deg);
+    transform: translateX(190%) rotate(30deg);
     opacity: 0;
   }
 }
 
-/* Moving particles drifting smoothly upward from each rank crest */
-@keyframes rankParticleFloat {
+/* Erupting Shockwave Corona */
+@keyframes rankShockwavePulse {
   0% {
-    transform: translate3d(0, 0, 0) scale(0.6);
+    transform: scale(0.65);
+    opacity: 0.95;
+    border-width: 2.5px;
+  }
+  55% {
+    opacity: 0.45;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+    border-width: 0.5px;
+  }
+}
+
+/* Blinding Starburst Detonations at Facet Points */
+@keyframes rankStarburstFlash {
+  0%, 75%, 100% {
+    transform: scale(0) rotate(0deg);
+    opacity: 0;
+  }
+  78% {
+    transform: scale(0.4) rotate(45deg);
+    opacity: 0.5;
+  }
+  82% {
+    transform: scale(1.4) rotate(90deg);
+    opacity: 1;
+    filter: drop-shadow(0 0 10px #fff) drop-shadow(0 0 18px currentColor);
+  }
+  86% {
+    transform: scale(0.3) rotate(135deg);
+    opacity: 0.3;
+  }
+}
+
+/* Swirling Left-Arced Vortex Particles */
+@keyframes rankVortexLeft {
+  0% {
+    transform: translate3d(0, 12px, 0) scale(0.4);
     opacity: 0;
   }
   20% {
-    opacity: 0.85;
+    opacity: 1;
   }
-  70% {
-    opacity: 0.75;
+  55% {
+    transform: translate3d(-20px, -24px, 0) scale(1.25);
+    opacity: 0.9;
   }
   100% {
-    transform: translate3d(var(--p-drift-x, 4px), var(--p-drift-y, -36px), 0) scale(1.15);
+    transform: translate3d(-34px, -64px, 0) scale(0.3);
     opacity: 0;
+  }
+}
+
+/* Swirling Right-Arced Vortex Particles */
+@keyframes rankVortexRight {
+  0% {
+    transform: translate3d(0, 12px, 0) scale(0.4);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  55% {
+    transform: translate3d(20px, -24px, 0) scale(1.25);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate3d(34px, -64px, 0) scale(0.3);
+    opacity: 0;
+  }
+}
+
+/* Orbiting Swarm Particles */
+@keyframes rankVortexOrbit {
+  0% {
+    transform: rotate(0deg) translateX(var(--orbit-r, 48px)) rotate(0deg) scale(0.6);
+    opacity: 0.3;
+  }
+  50% {
+    transform: rotate(180deg) translateX(var(--orbit-r, 48px)) rotate(-180deg) scale(1.3);
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(360deg) translateX(var(--orbit-r, 48px)) rotate(-360deg) scale(0.6);
+    opacity: 0.3;
+  }
+}
+
+/* Hyper-speed Celestial Comets (Grandmaster) */
+@keyframes rankCometClockwise {
+  from {
+    transform: rotate(0deg) translateX(56px) rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg) translateX(56px) rotate(-360deg);
+  }
+}
+
+@keyframes rankCometCounter {
+  from {
+    transform: rotate(360deg) translateX(48px) rotate(-360deg);
+  }
+  to {
+    transform: rotate(0deg) translateX(48px) rotate(0deg);
   }
 }
 
