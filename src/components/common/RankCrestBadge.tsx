@@ -21,13 +21,13 @@ interface RankCrestBadgeProps {
 
 const TIER_SCALES: Record<string, number> = {
   Bronze: 1.0,
-  Silver: 1.0,
-  Gold: 1.0,
-  Platinum: 1.0,
-  Diamond: 1.0,
-  Champion: 1.0,
-  Master: 1.0,
-  Grandmaster: 1.0,
+  Silver: 1.06,
+  Gold: 1.12,
+  Platinum: 1.18,
+  Diamond: 1.25,
+  Champion: 1.38,
+  Master: 1.44,
+  Grandmaster: 1.50,
 };
 
 // Distinct VFX Configuration per Tier
