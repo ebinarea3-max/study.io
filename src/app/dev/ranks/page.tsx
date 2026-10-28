@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { RANK_TIERS } from '../../../lib/rankedSystem';
-import { RankCrestBadge } from '../../../components/common/RankCrestBadge';
+import { RankBadge, getRankBadgeTier } from '../../../components/common/RankBadge';
+import { getRankBadgeSources } from '../../../lib/preloadRankBadges';
 import { RankSettlementModal } from '../../../components/gamification/RankSettlementModal';
 import { RankSettlementData } from '../../../types';
 
@@ -50,22 +51,29 @@ export default function RankPreviewPage() {
       </p>
       
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8">
-        {RANK_TIERS.map((config, idx) => (
-          <div key={config.fullTitle} className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-6 flex flex-col items-center shadow-lg relative overflow-hidden">
-            <RankCrestBadge 
-              tier={config.tier} 
-              division={config.division} 
-              size={120} 
-            />
-            <h3 className="text-white font-bold tracking-widest mt-6 mb-4 text-center">{config.fullTitle}</h3>
-            <button 
-              onClick={() => handlePreview(idx)}
-              className="w-full py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 rounded-md text-xs font-semibold tracking-wider text-emerald-400 transition-all active:scale-95"
-            >
-              PREVIEW RANK-UP
-            </button>
-          </div>
-        ))}
+        {RANK_TIERS.map((config, idx) => {
+          const sources = getRankBadgeSources(config.tier, config.division);
+          const badgeTier = getRankBadgeTier(config.fullTitle);
+
+          return (
+            <div key={config.fullTitle} className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-6 flex flex-col items-center shadow-lg relative overflow-hidden">
+              <RankBadge 
+                src={sources.png}
+                tier={badgeTier} 
+                delay={idx * 0.3}
+                size={120} 
+                alt={config.fullTitle}
+              />
+              <h3 className="text-white font-bold tracking-widest mt-6 mb-4 text-center">{config.fullTitle}</h3>
+              <button 
+                onClick={() => handlePreview(idx)}
+                className="w-full py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 rounded-md text-xs font-semibold tracking-wider text-emerald-400 transition-all active:scale-95"
+              >
+                PREVIEW RANK-UP
+              </button>
+            </div>
+          );
+        })}
       </div>
 
       <RankSettlementModal
