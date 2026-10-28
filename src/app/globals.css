@@ -964,8 +964,8 @@ html.light ::selection,
 }
 
 /* =========================================================================
-   CLASSIC AESTHETIC RANK ANIMATIONS
-   Clean, luxury, museum-grade physical badge animations for Study.io.
+   RANK LOGO ANIMATIONS
+   Clean, physical badge floating motion and smooth ambient moving particles.
    ========================================================================= */
 
 /* Calm, weighted levitation for the crest */
@@ -975,18 +975,6 @@ html.light ::selection,
   }
   50% {
     transform: translateY(-4px);
-  }
-}
-
-/* Atmospheric ambient back-bloom breathing */
-@keyframes classicAuraBreathe {
-  0%, 100% {
-    transform: scale(0.92);
-    opacity: 0.45;
-  }
-  50% {
-    transform: scale(1.1);
-    opacity: 0.75;
   }
 }
 
@@ -1009,97 +997,21 @@ html.light ::selection,
   }
 }
 
-/* Delicate 4-point jewel glint at facet points for high tiers */
-@keyframes classicJewelGlint {
-  0%, 82%, 100% {
-    transform: scale(0) rotate(0deg);
+/* Moving particles drifting smoothly upward from each rank crest */
+@keyframes rankParticleFloat {
+  0% {
+    transform: translate3d(0, 0, 0) scale(0.6);
     opacity: 0;
   }
-  86% {
-    transform: scale(0.35) rotate(45deg);
-    opacity: 0.4;
+  20% {
+    opacity: 0.85;
   }
-  90% {
-    transform: scale(1.15) rotate(90deg);
-    opacity: 1;
-    filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.95));
+  70% {
+    opacity: 0.75;
   }
-  94% {
-    transform: scale(0.35) rotate(135deg);
-    opacity: 0.3;
-  }
-}
-
-/* Tier-tailored subtle glow breathing (form-fitting drop shadow) */
-@keyframes classicGlowBronze {
-  0%, 100% {
-    filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.45)) drop-shadow(0 0 10px rgba(180, 83, 9, 0.35));
-  }
-  50% {
-    filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 18px rgba(217, 119, 6, 0.55));
-  }
-}
-
-@keyframes classicGlowSilver {
-  0%, 100% {
-    filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.45)) drop-shadow(0 0 10px rgba(148, 163, 184, 0.35));
-  }
-  50% {
-    filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 18px rgba(226, 232, 240, 0.55));
-  }
-}
-
-@keyframes classicGlowGold {
-  0%, 100% {
-    filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.45)) drop-shadow(0 0 12px rgba(202, 138, 4, 0.4));
-  }
-  50% {
-    filter: drop-shadow(0 8px 22px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 22px rgba(250, 204, 21, 0.65));
-  }
-}
-
-@keyframes classicGlowPlatinum {
-  0%, 100% {
-    filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.45)) drop-shadow(0 0 12px rgba(13, 148, 136, 0.4));
-  }
-  50% {
-    filter: drop-shadow(0 8px 22px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 22px rgba(45, 212, 191, 0.65));
-  }
-}
-
-@keyframes classicGlowDiamond {
-  0%, 100% {
-    filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.45)) drop-shadow(0 0 14px rgba(168, 85, 247, 0.45)) drop-shadow(0 0 6px rgba(56, 189, 248, 0.3));
-  }
-  50% {
-    filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 24px rgba(192, 132, 252, 0.7)) drop-shadow(0 0 10px rgba(125, 211, 252, 0.5));
-  }
-}
-
-@keyframes classicGlowChampion {
-  0%, 100% {
-    filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.45)) drop-shadow(0 0 14px rgba(168, 85, 247, 0.48)) drop-shadow(0 0 8px rgba(234, 179, 8, 0.3));
-  }
-  50% {
-    filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 26px rgba(192, 132, 252, 0.75)) drop-shadow(0 0 12px rgba(250, 204, 21, 0.55));
-  }
-}
-
-@keyframes classicGlowMaster {
-  0%, 100% {
-    filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.45)) drop-shadow(0 0 16px rgba(99, 102, 241, 0.5)) drop-shadow(0 0 8px rgba(225, 29, 72, 0.35));
-  }
-  50% {
-    filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 28px rgba(129, 140, 248, 0.8)) drop-shadow(0 0 14px rgba(244, 63, 94, 0.6));
-  }
-}
-
-@keyframes classicGlowGrandmaster {
-  0%, 100% {
-    filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.45)) drop-shadow(0 0 18px rgba(244, 63, 94, 0.55)) drop-shadow(0 0 10px rgba(234, 179, 8, 0.4));
-  }
-  50% {
-    filter: drop-shadow(0 8px 26px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 30px rgba(251, 113, 133, 0.85)) drop-shadow(0 0 16px rgba(250, 204, 21, 0.7));
+  100% {
+    transform: translate3d(var(--p-drift-x, 4px), var(--p-drift-y, -36px), 0) scale(1.15);
+    opacity: 0;
   }
 }
 

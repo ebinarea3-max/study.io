@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { RankTierName } from '../../lib/rankedSystem';
 import { getRankTheme } from '../../lib/rankTheme';
 import {
@@ -30,34 +30,46 @@ const TIER_SCALES: Record<string, number> = {
   Grandmaster: 1.50,
 };
 
-/**
- * Classic 4-pointed jewel star glint SVG for precious gemstones & metals
- */
-function ClassicStarGlint({
-  className = '',
-  style,
-  size = 13,
-}: {
-  className?: string;
-  style?: React.CSSProperties;
-  size?: number;
-}) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      width={size}
-      height={size}
-      className={`absolute pointer-events-none ${className}`}
-      style={style}
-    >
-      <path
-        d="M12 0 C12 6.6 17.4 12 24 12 C17.4 12 12 17.4 12 24 C12 17.4 6.6 12 0 12 C6.6 12 12 6.6 12 0 Z"
-        fill="#FFFFFF"
-      />
-      <circle cx="12" cy="12" r="2.2" fill="#FFFFFF" />
-    </svg>
-  );
+// Moving particle color configurations per rank tier
+interface ParticleConfig {
+  colors: string[];
+  count: number;
 }
+
+const TIER_PARTICLES: Record<RankTierName, ParticleConfig> = {
+  Bronze: {
+    colors: ['#F59E0B', '#D97706', '#FBBF24'],
+    count: 5,
+  },
+  Silver: {
+    colors: ['#FFFFFF', '#E2E8F0', '#CBD5E1'],
+    count: 5,
+  },
+  Gold: {
+    colors: ['#FACC15', '#FEF08A', '#EAB308'],
+    count: 6,
+  },
+  Platinum: {
+    colors: ['#22D3EE', '#67E8F9', '#38BDF8'],
+    count: 6,
+  },
+  Diamond: {
+    colors: ['#E0F2FE', '#C084FC', '#A5F3FC'],
+    count: 7,
+  },
+  Champion: {
+    colors: ['#D8B4FE', '#FDE047', '#E879F9'],
+    count: 7,
+  },
+  Master: {
+    colors: ['#818CF8', '#FB7185', '#C084FC'],
+    count: 8,
+  },
+  Grandmaster: {
+    colors: ['#FF3366', '#FACC15', '#FFFFFF', '#FB7185'],
+    count: 9,
+  },
+};
 
 export function RankCrestBadge({
   tier,
@@ -144,58 +156,38 @@ export function RankCrestBadge({
 
   const showEffects = isSettled && !isGhost && !prefersReducedMotion;
 
-  // Classic Aesthetic Tier Configuration
-  let glowClass = 'classicGlowBronze';
-  let auraGradient = 'radial-gradient(circle at 50% 50%, rgba(180, 83, 9, 0.45) 0%, rgba(120, 53, 15, 0.15) 55%, transparent 75%)';
-  let sheenGradient = 'linear-gradient(105deg, transparent 20%, rgba(251, 191, 36, 0.25) 45%, rgba(255, 255, 255, 0.55) 50%, rgba(251, 191, 36, 0.25) 55%, transparent 80%)';
-  let hasJewelGlint = false;
-  let glintPos: React.CSSProperties = { top: '20%', right: '24%' };
+  // Precompute deterministic moving particles for this rank tier
+  const particleMotes = useMemo(() => {
+    const config = TIER_PARTICLES[tier] || TIER_PARTICLES.Bronze;
+    const count = isCompact ? Math.min(3, config.count) : config.count;
 
-  if (tier === 'Bronze') {
-    glowClass = 'classicGlowBronze';
-    auraGradient = 'radial-gradient(circle at 50% 50%, rgba(180, 83, 9, 0.42) 0%, rgba(120, 53, 15, 0.12) 55%, transparent 75%)';
-    sheenGradient = 'linear-gradient(105deg, transparent 20%, rgba(245, 158, 11, 0.2) 45%, rgba(255, 255, 255, 0.5) 50%, rgba(245, 158, 11, 0.2) 55%, transparent 80%)';
-  } else if (tier === 'Silver') {
-    glowClass = 'classicGlowSilver';
-    auraGradient = 'radial-gradient(circle at 50% 50%, rgba(203, 213, 225, 0.42) 0%, rgba(148, 163, 184, 0.12) 55%, transparent 75%)';
-    sheenGradient = 'linear-gradient(105deg, transparent 20%, rgba(255, 255, 255, 0.3) 45%, rgba(255, 255, 255, 0.75) 50%, rgba(255, 255, 255, 0.3) 55%, transparent 80%)';
-  } else if (tier === 'Gold') {
-    glowClass = 'classicGlowGold';
-    auraGradient = 'radial-gradient(circle at 50% 50%, rgba(234, 179, 8, 0.46) 0%, rgba(161, 98, 7, 0.15) 55%, transparent 75%)';
-    sheenGradient = 'linear-gradient(105deg, transparent 20%, rgba(250, 204, 21, 0.35) 45%, rgba(255, 255, 255, 0.8) 50%, rgba(250, 204, 21, 0.35) 55%, transparent 80%)';
-  } else if (tier === 'Platinum') {
-    glowClass = 'classicGlowPlatinum';
-    auraGradient = 'radial-gradient(circle at 50% 50%, rgba(45, 212, 191, 0.46) 0%, rgba(13, 148, 136, 0.15) 55%, transparent 75%)';
-    sheenGradient = 'linear-gradient(105deg, transparent 20%, rgba(103, 232, 249, 0.35) 45%, rgba(255, 255, 255, 0.8) 50%, rgba(103, 232, 249, 0.35) 55%, transparent 80%)';
-  } else if (tier === 'Diamond') {
-    glowClass = 'classicGlowDiamond';
-    auraGradient = 'radial-gradient(circle at 50% 50%, rgba(168, 85, 247, 0.48) 0%, rgba(56, 189, 248, 0.18) 55%, transparent 75%)';
-    sheenGradient = 'linear-gradient(105deg, transparent 20%, rgba(192, 132, 252, 0.35) 45%, rgba(255, 255, 255, 0.85) 50%, rgba(125, 211, 252, 0.35) 55%, transparent 80%)';
-    hasJewelGlint = true;
-    glintPos = { top: '22%', right: '22%' };
-  } else if (tier === 'Champion') {
-    glowClass = 'classicGlowChampion';
-    auraGradient = 'radial-gradient(circle at 50% 50%, rgba(168, 85, 247, 0.52) 0%, rgba(234, 179, 8, 0.2) 55%, transparent 75%)';
-    sheenGradient = 'linear-gradient(105deg, transparent 20%, rgba(250, 204, 21, 0.38) 45%, rgba(255, 255, 255, 0.85) 50%, rgba(192, 132, 252, 0.38) 55%, transparent 80%)';
-    hasJewelGlint = true;
-    glintPos = { top: '18%', right: '26%' };
-  } else if (tier === 'Master') {
-    glowClass = 'classicGlowMaster';
-    auraGradient = 'radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.52) 0%, rgba(225, 29, 72, 0.22) 55%, transparent 75%)';
-    sheenGradient = 'linear-gradient(105deg, transparent 20%, rgba(129, 140, 248, 0.38) 45%, rgba(255, 255, 255, 0.85) 50%, rgba(244, 63, 94, 0.38) 55%, transparent 80%)';
-    hasJewelGlint = true;
-    glintPos = { top: '16%', right: '28%' };
-  } else if (tier === 'Grandmaster') {
-    glowClass = 'classicGlowGrandmaster';
-    auraGradient = 'radial-gradient(circle at 50% 50%, rgba(244, 63, 94, 0.55) 0%, rgba(234, 179, 8, 0.25) 55%, transparent 75%)';
-    sheenGradient = 'linear-gradient(105deg, transparent 20%, rgba(251, 113, 133, 0.42) 45%, rgba(255, 255, 255, 0.95) 50%, rgba(250, 204, 21, 0.42) 55%, transparent 80%)';
-    hasJewelGlint = true;
-    glintPos = { top: '14%', right: '30%' };
-  }
+    return Array.from({ length: count }).map((_, i) => {
+      const color = config.colors[i % config.colors.length];
+      const left = 10 + ((i * 37) % 78);
+      const bottom = 8 + ((i * 23) % 45);
+      const sizePx = 2.5 + ((i * 0.8) % 2.5);
+      const dur = 2.4 + ((i * 0.7) % 2.0);
+      const delay = (i * 0.5) % 2.8;
+      const driftX = ((i % 2 === 0 ? 1 : -1) * (4 + ((i * 3) % 8))) + 'px';
+      const driftY = (-30 - ((i * 4) % 18)) + 'px';
+
+      return {
+        id: i,
+        color,
+        left: `${left}%`,
+        bottom: `${bottom}%`,
+        sizePx,
+        dur,
+        delay,
+        driftX,
+        driftY,
+      };
+    });
+  }, [tier, isCompact]);
 
   const staticFilter = isGhost && ghostColor
     ? `drop-shadow(0 0 10px ${ghostColor})`
-    : `drop-shadow(0 4px 12px rgba(0,0,0,0.5))`;
+    : `drop-shadow(0 6px 14px rgba(0,0,0,0.45)) drop-shadow(0 0 8px ${theme.accent}33)`;
   const tierLower = tier.toLowerCase();
 
   return (
@@ -205,34 +197,16 @@ export function RankCrestBadge({
     >
       {/* =========================================================================
           SMOOTH LEVITATION & TACTILE HOVER WRAPPER
-          Clean, weighted 3D micro-float with smooth elevation on hover.
           ========================================================================= */}
       <div
         className={`relative w-full h-full flex items-center justify-center ${
-          interactive ? 'transition-transform duration-500 ease-out group-hover/crest:-translate-y-1 group-hover/crest:scale-105 group-active/crest:scale-95' : ''
+          interactive ? 'transition-transform duration-400 ease-out group-hover/crest:-translate-y-1 group-hover/crest:scale-105 group-active/crest:scale-95' : ''
         }`}
         style={{
           animation: showEffects ? 'classicCrestFloat 5.5s ease-in-out infinite' : 'none',
           willChange: 'transform',
         }}
       >
-        {/* =========================================================================
-            ATMOSPHERIC AMBIENT BACK-BLOOM (Soft luxury background halo)
-            ========================================================================= */}
-        {showEffects ? (
-          <div
-            className="absolute inset-[10%] rounded-full blur-2xl pointer-events-none transition-all duration-700 ease-out group-hover/crest:scale-115 group-hover/crest:opacity-90"
-            style={{
-              background: auraGradient,
-              animation: 'classicAuraBreathe 6s ease-in-out infinite',
-              willChange: 'transform, opacity',
-              zIndex: 0,
-            }}
-          />
-        ) : (
-          <div className="absolute inset-0" style={{ filter: staticFilter, zIndex: 0 }} />
-        )}
-
         {/* Soft round dark tile behind crest in Paper theme only for contrast */}
         <div
           className="absolute inset-[8%] rounded-full pointer-events-none opacity-0 [[data-theme='paper']_&]:opacity-100 transition-opacity z-[5]"
@@ -243,8 +217,6 @@ export function RankCrestBadge({
 
         {/* =========================================================================
             IMMEDIATE FALLBACK / SKELETON PLACEHOLDER
-            Displays a glowing vector crest shield with active shimmer so there is
-            never an empty void or layout shift while the image is loading.
             ========================================================================= */}
         <div
           className={`absolute inset-0 flex items-center justify-center pointer-events-none z-[6] transition-opacity duration-300 ${
@@ -327,13 +299,12 @@ export function RankCrestBadge({
         </div>
 
         {/* =========================================================================
-            OPTIMIZED BADGE IMAGE WITH TIER-AUTHENTIC FORM-FITTING SILHOUETTE GLOW
+            BADGE IMAGE (Clean, sharp, static shadow - NO slow blinking)
             ========================================================================= */}
         <picture
           className="relative w-full h-full flex items-center justify-center z-10"
           style={{
-            animation: showEffects ? `${glowClass} 5s ease-in-out infinite` : 'none',
-            willChange: 'filter',
+            filter: staticFilter,
           }}
         >
           <source srcSet={sources.webp} type="image/webp" />
@@ -352,7 +323,7 @@ export function RankCrestBadge({
                 setHasError(true);
               }
             }}
-            className={`relative w-full h-full object-contain select-none transition-all duration-500 ease-out group-hover/crest:brightness-105 ${
+            className={`relative w-full h-full object-contain select-none transition-all duration-400 ease-out group-hover/crest:brightness-105 ${
               isLoaded && !hasError ? 'opacity-100' : 'opacity-0'
             }`}
             draggable={false}
@@ -360,39 +331,27 @@ export function RankCrestBadge({
         </picture>
 
         {/* =========================================================================
-            CLASSIC SPECULAR LIGHT SHEEN (The "Liquid Light" Metal Sweep)
+            MOVING PARTICLES (Tier-specific floating sparks & motes)
             ========================================================================= */}
         {showEffects && isLoaded && (
-          <div
-            className="absolute inset-[6%] rounded-full pointer-events-none mix-blend-screen overflow-hidden opacity-60 group-hover/crest:opacity-90 transition-opacity duration-500 z-20"
-            style={{
-              maskImage: 'radial-gradient(circle at center, black 65%, transparent 80%)',
-              WebkitMaskImage: 'radial-gradient(circle at center, black 65%, transparent 80%)',
-            }}
-          >
-            <div
-              className="w-[180%] h-[32%] -left-[40%] top-[34%] absolute rounded-full blur-[2px]"
-              style={{
-                background: sheenGradient,
-                animation: 'classicMetalSheen 6s cubic-bezier(0.2, 0.8, 0.2, 1) infinite',
-                willChange: 'transform, opacity',
-              }}
-            />
-          </div>
-        )}
-
-        {/* =========================================================================
-            DELICATE JEWEL STAR GLINT (Diamond, Champion, Master, Grandmaster)
-            ========================================================================= */}
-        {showEffects && hasJewelGlint && isLoaded && !isCompact && (
-          <div className="absolute inset-0 pointer-events-none z-30">
-            <ClassicStarGlint
-              size={13}
-              style={{
-                ...glintPos,
-                animation: 'classicJewelGlint 5.5s ease-in-out infinite 2s',
-              }}
-            />
+          <div className="absolute inset-[-15%] pointer-events-none z-20 overflow-visible">
+            {particleMotes.map((p) => (
+              <div
+                key={p.id}
+                className="absolute rounded-full pointer-events-none"
+                style={{
+                  left: p.left,
+                  bottom: p.bottom,
+                  width: `${p.sizePx}px`,
+                  height: `${p.sizePx}px`,
+                  backgroundColor: p.color,
+                  boxShadow: `0 0 5px 1px ${p.color}, 0 0 10px ${p.color}88`,
+                  animation: `rankParticleFloat ${p.dur}s ease-in-out infinite ${p.delay}s`,
+                  ['--p-drift-x' as any]: p.driftX,
+                  ['--p-drift-y' as any]: p.driftY,
+                }}
+              />
+            ))}
           </div>
         )}
       </div>
