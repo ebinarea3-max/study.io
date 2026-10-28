@@ -56,14 +56,16 @@ export default function RankPreviewPage() {
           const badgeTier = getRankBadgeTier(config.fullTitle);
 
           return (
-            <div key={config.fullTitle} className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-6 flex flex-col items-center shadow-lg relative overflow-hidden">
-              <RankBadge 
-                src={sources.png}
-                tier={badgeTier} 
-                delay={idx * 0.3}
-                size={120} 
-                alt={config.fullTitle}
-              />
+            <div key={config.fullTitle} className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-6 flex flex-col items-center shadow-lg relative overflow-visible">
+              <div className="w-[160px] h-[160px] flex items-center justify-center shrink-0 overflow-visible">
+                <RankBadge 
+                  src={sources.png}
+                  tier={badgeTier} 
+                  delay={idx * 0.3}
+                  size={160} 
+                  alt={config.fullTitle}
+                />
+              </div>
               <h3 className="text-white font-bold tracking-widest mt-6 mb-4 text-center">{config.fullTitle}</h3>
               <button 
                 onClick={() => handlePreview(idx)}
