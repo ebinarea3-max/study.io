@@ -30,7 +30,7 @@ export function SettingsTabContent() {
   const { user, deleteAccount } = useAuth();
   const { isPremium, refresh } = usePremium();
   const { canInstall, isInstalled, isPrompting, deferredPrompt, triggerInstall } = usePwaInstall();
-  const { theme, userRank } = useRankTheme();
+  const { theme, userRank, totalRP } = useRankTheme();
 
   // Refresh entitlements whenever settings tab is mounted
   useEffect(() => {
@@ -113,7 +113,7 @@ export function SettingsTabContent() {
           >
             <TierIcon size={20} className="flex-shrink-0 -ml-1 -mr-0.5 drop-shadow-sm" style={{ color: 'var(--accent)' }} />
             <span className="font-hud text-xs font-bold tracking-wider" style={{ color: 'var(--accent)' }}>
-              {userRank.name.toUpperCase()} // {(user?.seasonRp || 0)} RP
+              {userRank.name.toUpperCase()} // {totalRP.toLocaleString()} RP
             </span>
           </div>
         </div>

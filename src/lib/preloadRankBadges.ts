@@ -234,3 +234,22 @@ export function preloadAllRankBadges(): void {
     window.addEventListener('load', startPreload, { once: true });
   }
 }
+
+let immediatePreloadStarted = false;
+
+/**
+ * Instantly preloads all 23 badge PNGs with high priority without waiting for idle cycles.
+ * Resolves as soon as all PNG assets are cached in browser memory to guarantee zero lag or layout shift.
+ */
+export function preloadAllRankBadgesImmediately(): Promise<void> {
+  if (typeof window === 'undefined') return Promise.resolve();
+  if (immediatePreloadStarted) return Promise.resolve();
+  immediatePreloadStarted = true;
+
+  const pngPromises = ALL_RANK_BADGES_PNG.map((src) => preloadImage(src, true));
+  return Promise.allSettled(pngPromises).then(() => {
+    // Also trigger idle background caching for WebP variants
+    preloadAllRankBadges();
+  });
+}
+

@@ -77,6 +77,8 @@ export type UserProfile = {
   rp?: number;
   rank_title?: string;
   season_base_rp?: number;
+  carryover_rp?: number;
+  carryoverRp?: number;
   lifetime_xp?: number;
   lifetimeXp?: number;
   last_streak_bonus_date?: string; // YYYY-MM-DD

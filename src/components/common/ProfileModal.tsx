@@ -6,7 +6,8 @@ import { useStudy } from '../../context/StudyContext';
 import { usePremium } from '../../context/PremiumContext';
 import { X, Target, User, Loader2, Save, Plus, Dices, Crown, Lock, Sparkles } from 'lucide-react';
 
-import { getRankTier } from '../../lib/ranks';
+import { getRankTier, calculateSeasonRp, getCurrentMonthFocusSeconds } from '../../lib/ranks';
+import { useDevRankPreview } from '../../lib/devRankPreview';
 import { getRankTheme } from '../../lib/rankTheme';
 import { getSupabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
@@ -141,22 +142,18 @@ export function ProfileModal({ isOpen, onClose, user: parentUser, profile }: Pro
   const { isPremium, openPremiumModal } = usePremium();
   const user = parentUser || contextUser; // Use parentUser if provided, fallback to contextUser
   const { gamification, sessions } = useStudy();
+  const { previewRp, isPreviewActive } = useDevRankPreview();
 
   const userRank = useMemo(() => {
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
-    const currentMonthSeconds = (sessions || [])
-      .filter((s: any) => {
-        const sessionDate = new Date(s.startTime || s.started_at || s.created_at || s.date).getTime();
-        return sessionDate >= startOfMonth;
-      })
-      .reduce((total: number, s: any) => total + (s.duration || s.durationSeconds || s.duration_seconds || 0), 0);
-
+    if (isPreviewActive && previewRp !== null) {
+      return getRankTier(previewRp);
+    }
+    const currentMonthSeconds = getCurrentMonthFocusSeconds(sessions || []);
     const carryoverRp = Math.min(26000, Number(user?.carryover_rp ?? user?.carryoverRp ?? user?.season_base_rp ?? 0));
-    const computedRp = carryoverRp + Math.floor(currentMonthSeconds / 36);
-    const effectiveRp = Math.max(computedRp, Number(user?.seasonRp ?? user?.rp ?? 0));
+    const computedRp = calculateSeasonRp(currentMonthSeconds, carryoverRp);
+    const effectiveRp = (sessions && sessions.length > 0) ? computedRp : Number(user?.seasonRp ?? user?.rp ?? computedRp);
     return getRankTier(effectiveRp);
-  }, [sessions, user?.carryover_rp, user?.carryoverRp, user?.season_base_rp, user?.seasonRp, user?.rp]);
+  }, [isPreviewActive, previewRp, sessions, user?.carryover_rp, user?.carryoverRp, user?.season_base_rp, user?.seasonRp, user?.rp]);
 
   const [displayName, setDisplayName] = useState(user.name || user.displayName || '');
   const [username, setUsername] = useState(user.username || '');

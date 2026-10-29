@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, useEffect, useRef, ReactNod
 import { UserProfile } from '../types';
 import { INITIAL_USER, cleanupLegacyDemoData } from '../lib/mockData';
 import { getSupabase } from '../lib/supabase';
-import { getRankFromRp, getSoftResetRp, HARD_RESET_CAP_RP } from '../lib/ranks';
+import { getRankFromRp, getSoftResetRp, HARD_RESET_CAP_RP, calculateSeasonRp, getCurrentMonthFocusSeconds, getRankTier } from '../lib/ranks';
 import { getCurrentSeasonId } from '../lib/rankedSystem';
 import { getLevelFromLifetimeXP, getScholarTitle } from '../lib/gamification';
 
@@ -86,30 +86,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .select('id, user_id, subject_id, duration_seconds, started_at, ended_at, notes, mode')
         .eq('user_id', authUser.id);
 
-      const currentMonthStr = new Date().toISOString().substring(0, 7);
-      const currentMonthStudySeconds = dbSessions
-        ? dbSessions
-            .filter((s: any) => s.started_at && s.started_at.startsWith(currentMonthStr))
-            .reduce((acc: any, s: any) => acc + (Number(s.duration_seconds ?? 0)), 0)
-        : 0;
-
+      const currentMonthStudySeconds = getCurrentMonthFocusSeconds(dbSessions || []);
       const totalStudySeconds = dbSessions
         ? dbSessions.reduce((acc: any, s: any) => acc + (Number(s.duration_seconds ?? 0)), 0)
         : 0;
         
-      const carryoverRp = Math.min(HARD_RESET_CAP_RP, Number(profile?.season_base_rp ?? 0));
-      const calculatedRP = carryoverRp + Math.floor(currentMonthStudySeconds / 36);
+      const carryoverRp = Math.min(HARD_RESET_CAP_RP, Number(profile?.season_base_rp ?? profile?.carryover_rp ?? 0));
+      const calculatedRP = calculateSeasonRp(currentMonthStudySeconds, carryoverRp);
       
       let currentProfileRP = Number(profile?.rp ?? profile?.season_rp ?? 0);
       
       // AUTO-REPAIR CORRUPTED PROFILES:
       let needsRepair = false;
-      if (currentProfileRP > calculatedRP + 100 || Number(profile?.total_study_seconds ?? 0) > totalStudySeconds + 3600) {
+      if (Math.abs(currentProfileRP - calculatedRP) > 5 || Number(profile?.total_study_seconds ?? 0) > totalStudySeconds + 3600) {
         currentProfileRP = calculatedRP; // Reset RP
         needsRepair = true;
       }
 
-      const syncedRP = needsRepair ? calculatedRP : Math.max(calculatedRP, currentProfileRP);
+      const syncedRP = calculatedRP;
       let currentLifetimeXP = Number(profile?.lifetime_xp ?? profile?.xp ?? 0);
       if (currentLifetimeXP === 0 && totalStudySeconds > 0) {
         currentLifetimeXP = Math.floor(totalStudySeconds / 60) * 10;
@@ -127,7 +121,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (needsRepair) {
             updatePayload.season_rp = Math.round(calculatedRP);
             updatePayload.rp = Math.round(calculatedRP);
-            updatePayload.rank_title = getRankFromRp(calculatedRP).name.toUpperCase();
+            updatePayload.rank_title = getRankTier(calculatedRP).name.toUpperCase();
           }
           await supabase.from('profiles').update(updatePayload).eq('id', authUser.id);
         } catch (e) {
@@ -161,6 +155,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             currentSeasonId: profile.current_season_id || prev.currentSeasonId || getCurrentSeasonId(),
             seasonRp: syncedRP,
             rp: syncedRP,
+            rank_title: getRankTier(syncedRP).name.toUpperCase(),
+            season_base_rp: carryoverRp,
+            carryover_rp: carryoverRp,
             last_streak_bonus_date: streakBonusDate || prev.last_streak_bonus_date,
             lastStreakBonusDate: streakBonusDate || prev.last_streak_bonus_date,
             last_seen_level: Number((profile as Record<string, unknown>).last_seen_level ?? prev.last_seen_level ?? prev.level ?? 1),
@@ -241,6 +238,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               level: data.level ?? prev.level,
               rp: data.rp ?? prev.rp,
               seasonRp: data.season_rp ?? data.rp ?? prev.seasonRp,
+              season_base_rp: Number(data.season_base_rp ?? prev.season_base_rp ?? 0),
+              carryover_rp: Number(data.season_base_rp ?? prev.carryover_rp ?? 0),
               xp: data.lifetime_xp ?? data.xp ?? prev.xp,
               lifetime_xp: data.lifetime_xp ?? data.xp ?? prev.lifetime_xp,
               lifetimeXp: data.lifetime_xp ?? data.xp ?? prev.lifetimeXp,

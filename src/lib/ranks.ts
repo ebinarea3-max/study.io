@@ -50,6 +50,28 @@ export const RANK_TIERS: RankTier[] = SYSTEM_RANK_TIERS.map((cfg) => ({
   imagePath: cfg.imagePath || `/images/ranks/${getBadgeFilename(cfg)}`,
 }));
 
+export function getSessionTimestamp(s: any): number {
+  if (!s || typeof s !== 'object') return 0;
+  const raw = s.startTime || s.started_at || s.startedAt || s.createdAt || s.created_at || s.date;
+  if (!raw) return 0;
+  const t = new Date(raw).getTime();
+  return isNaN(t) ? 0 : t;
+}
+
+export function getSessionDurationSeconds(s: any): number {
+  if (!s || typeof s !== 'object') return 0;
+  return Number(s.durationSeconds ?? s.duration_seconds ?? s.duration ?? s.seconds ?? 0);
+}
+
+export function getCurrentMonthFocusSeconds(sessions: any[]): number {
+  if (!Array.isArray(sessions) || sessions.length === 0) return 0;
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+  return sessions
+    .filter((s) => getSessionTimestamp(s) >= startOfMonth)
+    .reduce((sum, s) => sum + getSessionDurationSeconds(s), 0);
+}
+
 /**
  * Unified Monthly Formula:
  * Season RP = Carryover RP + Math.floor(Current Month Focus Seconds / 36)

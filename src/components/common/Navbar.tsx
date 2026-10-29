@@ -27,9 +27,10 @@ import {
 } from '../../lib/premium';
 
 import { Logo } from '../Logo';
-import { getRankTier } from '../../lib/ranks';
+import { getRankTier, calculateSeasonRp, getCurrentMonthFocusSeconds } from '../../lib/ranks';
 import { getTierBadge, getLevelTitle } from '../../lib/gamification';
 import { useRankTheme } from '../../hooks/useRankTheme';
+import { useDevRankPreview } from '../../lib/devRankPreview';
 import { TierIcon } from './TierIcon';
 import { RankCrestBadge } from './RankCrestBadge';
 import Image from 'next/image';
@@ -57,6 +58,7 @@ export function Navbar({
   const { isStudying, setIsFocusModeOpen, gamification, sessions } = useStudy();
   const { theme, userRank, totalRP } = useRankTheme();
   const { isPremium } = usePremium();
+  const { previewRp, isPreviewActive } = useDevRankPreview();
 
   const [showPersonaMenu, setShowPersonaMenu] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -221,20 +223,15 @@ export function Navbar({
   const strokeDashoffset = circumference - (gamification.progressPercent / 100) * circumference;
 
   const { liveSeasonRp, liveRank } = useMemo(() => {
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
-
-    const currentMonthSeconds = (sessions || [])
-      .filter((s: any) => {
-        const sessionDate = new Date(s.startTime || s.started_at || s.created_at || s.date).getTime();
-        return sessionDate >= startOfMonth;
-      })
-      .reduce((total: number, s: any) => total + (s.duration || s.durationSeconds || s.duration_seconds || 0), 0);
-
-    const carryoverRp = Math.min(26000, Number((user as any)?.carryover_rp ?? (user as any)?.carryoverRp ?? (user as any)?.season_base_rp ?? 0));
-    const computedRp = carryoverRp + Math.floor(currentMonthSeconds / 36);
-    return { liveSeasonRp: computedRp, liveRank: getRankTier(computedRp) };
-  }, [sessions, (user as any)?.carryover_rp, (user as any)?.carryoverRp, (user as any)?.season_base_rp]);
+    if (isPreviewActive && previewRp !== null) {
+      return { liveSeasonRp: previewRp, liveRank: getRankTier(previewRp) };
+    }
+    const currentMonthSeconds = getCurrentMonthFocusSeconds(sessions || []);
+    const carryoverRp = Math.min(26000, Number((user as any)?.season_base_rp ?? (user as any)?.carryover_rp ?? (user as any)?.carryoverRp ?? 0));
+    const computedRp = calculateSeasonRp(currentMonthSeconds, carryoverRp);
+    const effectiveRp = (sessions && sessions.length > 0) ? computedRp : Number((user as any)?.seasonRp ?? (user as any)?.rp ?? computedRp);
+    return { liveSeasonRp: effectiveRp, liveRank: getRankTier(effectiveRp) };
+  }, [isPreviewActive, previewRp, sessions, (user as any)?.season_base_rp, (user as any)?.carryover_rp, (user as any)?.carryoverRp, (user as any)?.seasonRp, (user as any)?.rp]);
 
   return (
     <>

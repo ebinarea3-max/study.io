@@ -26,6 +26,10 @@ import {
   getRankTier,
   HARD_RESET_CAP_RP,
 } from '../lib/rankedSystem';
+import {
+  calculateSeasonRp,
+  getCurrentMonthFocusSeconds,
+} from '../lib/ranks';
 
 export const showPushNotification = async (title: string, options?: NotificationOptions) => {
   if (typeof window === 'undefined' || !('Notification' in window)) return;
@@ -2048,17 +2052,18 @@ export function StudyProvider({ children }: { children: ReactNode }) {
             setSessions(merged);
             persistSessionsToLocalStorage(merged, activeUserId);
 
-            // Update real streak, total study seconds, and ensure RP matches minimum expected from total study time
+            // Update real streak, total study seconds, and evaluate official monthly Season RP
             const realStreak = calculateStreak(merged);
             const realTotalSeconds = merged.reduce((sum, s) => sum + s.durationSeconds, 0);
-            const totalStudyMinutes = Math.floor(realTotalSeconds / 60);
-            const minExpectedRP = totalStudyMinutes * 1;
-            const currentRP = Number((userRef.current as any)?.rp ?? userRef.current?.seasonRp ?? 0);
-            const finalRP = Math.max(minExpectedRP, currentRP);
+            const currentMonthSeconds = getCurrentMonthFocusSeconds(merged);
+            const carryoverRp = Math.min(HARD_RESET_CAP_RP, Number((userRef.current as any)?.season_base_rp ?? (userRef.current as any)?.carryover_rp ?? (userRef.current as any)?.carryoverRp ?? 0));
+            const currentSeasonRp = calculateSeasonRp(currentMonthSeconds, carryoverRp);
+            const rankDetails = getRankTier(currentSeasonRp);
 
             // Baseline sync for Supabase sessions to guarantee no false level-up on login
-            const computedLevel = Math.max(1, Math.floor(Math.sqrt(Math.max(0, finalRP) / 100)) + 1);
-            const levelTitle = getLevelTitle(computedLevel);
+            const currentLifetimeXP = Number(userRef.current?.lifetime_xp ?? userRef.current?.lifetimeXp ?? userRef.current?.xp ?? 0) || Math.floor(realTotalSeconds / 60) * 10;
+            const computedLevel = getLevelFromLifetimeXP(currentLifetimeXP);
+            const scholarTitle = getScholarTitle(computedLevel);
             const storedLevel = getStoredLastSeenLevel(user.id);
             const updatedBaseline = Math.max(storedLevel ?? 0, computedLevel, user.level || 1);
             setStoredLastSeenLevel(updatedBaseline, user.id);
@@ -2066,15 +2071,21 @@ export function StudyProvider({ children }: { children: ReactNode }) {
             updateProfile({
               streakDays: realStreak,
               totalStudySeconds: realTotalSeconds,
-              seasonRp: finalRP,
-              rp: finalRP,
+              seasonRp: currentSeasonRp,
+              rp: currentSeasonRp,
+              rank_title: rankDetails.fullTitle,
+              season_base_rp: carryoverRp,
+              carryover_rp: carryoverRp,
+              lifetime_xp: currentLifetimeXP,
+              lifetimeXp: currentLifetimeXP,
+              xp: currentLifetimeXP,
               level: computedLevel,
-              levelTitle: levelTitle,
+              levelTitle: scholarTitle,
               last_seen_level: updatedBaseline,
               user_metadata: {
                 ...(userRef.current?.user_metadata || {}),
                 level: computedLevel,
-                levelTitle: levelTitle,
+                levelTitle: scholarTitle,
               },
             });
           }
@@ -2263,24 +2274,32 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         const sessionsToUse = finalMergedSessions.length > 0 ? finalMergedSessions : mappedSessions;
         const realStreak = calculateStreak(sessionsToUse);
         const realTotalSeconds = sessionsToUse.reduce((sum, s) => sum + (s.durationSeconds || (s as any).duration_seconds || 0), 0);
-        const totalStudyMinutes = Math.floor(realTotalSeconds / 60);
-        const minExpectedRP = totalStudyMinutes * 1;
-        const currentRP = Number((currentUser as any)?.rp ?? currentUser.seasonRp ?? 0);
-        const finalRP = Math.max(minExpectedRP, currentRP);
-        const computedLevel = Math.max(1, Math.floor(Math.sqrt(Math.max(0, finalRP) / 100)) + 1);
-        const levelTitle = getLevelTitle(computedLevel);
+        const currentMonthSeconds = getCurrentMonthFocusSeconds(sessionsToUse);
+        const carryoverRp = Math.min(HARD_RESET_CAP_RP, Number((currentUser as any)?.season_base_rp ?? (currentUser as any)?.carryover_rp ?? (currentUser as any)?.carryoverRp ?? 0));
+        const currentSeasonRp = calculateSeasonRp(currentMonthSeconds, carryoverRp);
+        const rankDetails = getRankTier(currentSeasonRp);
+
+        const currentLifetimeXP = Number(currentUser?.lifetime_xp ?? currentUser?.lifetimeXp ?? currentUser?.xp ?? 0) || Math.floor(realTotalSeconds / 60) * 10;
+        const computedLevel = getLevelFromLifetimeXP(currentLifetimeXP);
+        const scholarTitle = getScholarTitle(computedLevel);
 
         updateProfile({
           streakDays: realStreak,
           totalStudySeconds: realTotalSeconds,
-          seasonRp: finalRP,
-          rp: finalRP,
+          seasonRp: currentSeasonRp,
+          rp: currentSeasonRp,
+          rank_title: rankDetails.fullTitle,
+          season_base_rp: carryoverRp,
+          carryover_rp: carryoverRp,
+          lifetime_xp: currentLifetimeXP,
+          lifetimeXp: currentLifetimeXP,
+          xp: currentLifetimeXP,
           level: computedLevel,
-          levelTitle: levelTitle,
+          levelTitle: scholarTitle,
           user_metadata: {
             ...(currentUser.user_metadata || {}),
             level: computedLevel,
-            levelTitle: levelTitle,
+            levelTitle: scholarTitle,
           },
         });
       } else {
@@ -2904,19 +2923,12 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       } catch {}
       const lastStreakBonusDate = currentUser?.last_streak_bonus_date || currentUser?.lastStreakBonusDate || localStreakBonusDate;
       const hasStreakOrGoal = (currentUser?.streakDays || 0) > 0 || totalToday >= dailyGoalSeconds;
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
-      const currentMonthSeconds = allSessionsNow
-        .filter(s => {
-          const t = new Date(s.startTime).getTime();
-          return t >= startOfMonth;
-        })
-        .reduce((sum, s) => sum + s.durationSeconds, 0);
-
+      const currentMonthSeconds = getCurrentMonthFocusSeconds(allSessionsNow);
       const currentMonthSecondsBefore = Math.max(0, currentMonthSeconds - secondsToSave);
-      const carryoverRp = Math.min(HARD_RESET_CAP_RP, Number((currentUser as any)?.carryover_rp ?? (currentUser as any)?.carryoverRp ?? (currentUser as any)?.season_base_rp ?? 0));
+      const carryoverRp = Math.min(HARD_RESET_CAP_RP, Number((currentUser as any)?.season_base_rp ?? (currentUser as any)?.carryover_rp ?? (currentUser as any)?.carryoverRp ?? 0));
 
-      const prevRP = carryoverRp + Math.floor(currentMonthSecondsBefore / 36);
-      const newRP = carryoverRp + Math.floor(currentMonthSeconds / 36);
+      const prevRP = calculateSeasonRp(currentMonthSecondsBefore, carryoverRp);
+      const newRP = calculateSeasonRp(currentMonthSeconds, carryoverRp);
       const gainedRP = Math.max(0, newRP - prevRP);
 
       const rpBreakdown = calculateSessionRP(secondsToSave, {
@@ -2961,6 +2973,8 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         seasonRp: Math.round(newRP),
         rp: Math.round(newRP),
         rank_title: getRankTier(newRP).fullTitle,
+        season_base_rp: carryoverRp,
+        carryover_rp: carryoverRp,
         lifetime_xp: Math.round(newLifetimeXP),
         lifetimeXp: Math.round(newLifetimeXP),
         xp: Math.round(newLifetimeXP),

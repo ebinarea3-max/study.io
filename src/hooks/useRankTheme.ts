@@ -3,8 +3,9 @@
 import { useMemo, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useStudy } from '../context/StudyContext';
-import { getRankFromRp, RankTier } from '../lib/ranks';
+import { getRankFromRp, RankTier, calculateSeasonRp, getCurrentMonthFocusSeconds } from '../lib/ranks';
 import { getRankTheme, RankThemePalette } from '../lib/rankTheme';
+import { useDevRankPreview } from '../lib/devRankPreview';
 
 export function useRankTheme(): {
   theme: RankThemePalette;
@@ -13,21 +14,19 @@ export function useRankTheme(): {
 } {
   const { user } = useAuth();
   const { sessions } = useStudy();
+  const { previewRp, isPreviewActive } = useDevRankPreview();
 
   const totalRP = useMemo(() => {
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    // Development preview override: returns simulated RP if active
+    if (isPreviewActive && previewRp !== null) {
+      return previewRp;
+    }
 
-    const currentMonthSeconds = (sessions || [])
-      .filter((s: any) => {
-        const sessionDate = new Date(s.startTime || s.started_at || s.created_at || s.date).getTime();
-        return sessionDate >= startOfMonth;
-      })
-      .reduce((total: number, s: any) => total + (s.duration || s.durationSeconds || s.duration_seconds || 0), 0);
-
-    const carryoverRp = Math.min(26000, Number((user as any)?.carryover_rp ?? (user as any)?.carryoverRp ?? (user as any)?.season_base_rp ?? 0));
-    return carryoverRp + Math.floor(currentMonthSeconds / 36);
-  }, [(user as any)?.carryover_rp, (user as any)?.carryoverRp, (user as any)?.season_base_rp, sessions]);
+    const currentMonthSeconds = getCurrentMonthFocusSeconds(sessions || []);
+    const carryoverRp = Math.min(26000, Number((user as any)?.season_base_rp ?? (user as any)?.carryover_rp ?? (user as any)?.carryoverRp ?? 0));
+    const computedRp = calculateSeasonRp(currentMonthSeconds, carryoverRp);
+    return (sessions && sessions.length > 0) ? computedRp : Number((user as any)?.seasonRp ?? (user as any)?.rp ?? computedRp);
+  }, [isPreviewActive, previewRp, (user as any)?.season_base_rp, (user as any)?.carryover_rp, (user as any)?.carryoverRp, (user as any)?.seasonRp, (user as any)?.rp, sessions]);
 
   const userRank = useMemo(() => {
     return getRankFromRp(totalRP);

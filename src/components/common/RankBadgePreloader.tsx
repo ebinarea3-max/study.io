@@ -5,6 +5,7 @@ import { useRankTheme } from '../../hooks/useRankTheme';
 import {
   preloadRankBadgesForUser,
   preloadAllRankBadges,
+  preloadAllRankBadgesImmediately,
   getRankBadgeSources,
 } from '../../lib/preloadRankBadges';
 
@@ -20,7 +21,11 @@ export function RankBadgePreloader() {
 
   useEffect(() => {
     // 1. Immediately trigger background preload of all 23 rank badge assets into browser memory cache
-    preloadAllRankBadges();
+    if (process.env.NODE_ENV !== 'production') {
+      preloadAllRankBadgesImmediately();
+    } else {
+      preloadAllRankBadges();
+    }
 
     // 2. High priority preload of active rank and surrounding tier divisions
     if (userRank) {

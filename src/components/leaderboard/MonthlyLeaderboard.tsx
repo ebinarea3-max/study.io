@@ -12,6 +12,7 @@ import { Clock, Trophy, Sparkles, ChevronRight } from 'lucide-react';
 import { soundFx } from '../../lib/audio';
 import { RankCrestBadge } from '../common/RankCrestBadge';
 import { useRankTheme } from '../../hooks/useRankTheme';
+import { useDevRankPreview } from '../../lib/devRankPreview';
 import { Logo } from '../Logo';
 import Link from 'next/link';
 import { motion, useReducedMotion } from 'framer-motion';
@@ -246,6 +247,7 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
   const { user } = useAuth();
   const { sessions } = useStudy();
   const { userRank } = useRankTheme();
+  const { previewRp, isPreviewActive } = useDevRankPreview();
   const { isPremium } = usePremium();
 
   const [timeframe, setTimeframe] = useState<LeaderboardTimeframe>('month');
@@ -443,9 +445,8 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
 
           if (currentPeriodSeconds > 0) {
             const carryoverRp = Math.min(26000, Number((currentUser as any).carryover_rp ?? (currentUser as any).carryoverRp ?? (currentUser as any).season_base_rp ?? 0));
-            const computedRp = carryoverRp + Math.floor(currentPeriodSeconds / 36);
-            const effectiveRp = Math.max(computedRp, Number(currentUser.seasonRp || 0));
-            const userRankTier = getRankTier(effectiveRp);
+            const computedRp = calculateSeasonRp(currentPeriodSeconds, carryoverRp);
+            const userRankTier = getRankTier(computedRp);
             entries = [
               {
                 user_id: currentUser.id,

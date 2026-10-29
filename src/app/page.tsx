@@ -27,6 +27,7 @@ import { SettingsTabContent } from '../components/common/SettingsTabContent';
 import { MonthlyLeaderboard } from '../components/leaderboard/MonthlyLeaderboard';
 import StudyRoomsTab from '../components/rooms/StudyRoomsTab';
 import { useRankTheme } from '../hooks/useRankTheme';
+import { DevRankSwitcher } from '../components/common/DevRankSwitcher';
 
 export default function Home() {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -290,6 +291,9 @@ export default function Home() {
         data={seasonResetAlert}
         onDismiss={dismissSeasonResetAlert}
       />
+
+      {/* Development Rank Preview Floating HUD */}
+      {process.env.NODE_ENV !== 'production' && <DevRankSwitcher />}
     </div>
   );
 }
