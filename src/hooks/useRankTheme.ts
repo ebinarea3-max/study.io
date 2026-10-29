@@ -56,7 +56,7 @@ export function useRankTheme(): {
       root.style.setProperty('--tier-accent-rgb', rankPalette.accentRgb || '255, 255, 255');
       root.style.setProperty('--tier-accent-hover', rankPalette.accentHover || rankPalette.accent);
       root.style.setProperty('--tier-gradient', rankPalette.gradient || 'none');
-      if (currentTheme === 'paper') {
+      if (currentTheme === 'paper' || currentTheme === 'matcha') {
         root.style.removeProperty('--tier-accent-text');
         root.style.removeProperty('--tier-text-accent');
       } else {

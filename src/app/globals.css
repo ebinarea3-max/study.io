@@ -310,6 +310,186 @@ html[data-theme="crimson"] {
   --gradient: linear-gradient(135deg, #E5484D 0%, #B8242A 100%);
 }
 
+/* 12. Cyberpunk (Premium) */
+html[data-theme="cyberpunk"] {
+  color-scheme: dark;
+  --fg: 240 249 255;
+  --bg: #080811;
+  --background: #080811;
+  --surface: #121124;
+  --surface-2: #0C0B1B;
+  --border: rgba(0, 240, 255, 0.12);
+  --border-strong: rgba(0, 240, 255, 0.28);
+  --text: #F0F9FF;
+  --foreground: #F0F9FF;
+  --text-dim: #88D6F7;
+  --text-faint: #3E6E85;
+  --accent: #00F0FF;
+  --accent-contrast: #04151C;
+  --accent-soft: rgba(0, 240, 255, 0.12);
+  --glow: rgba(0, 240, 255, 0.35);
+  --grid-dot: rgba(0, 240, 255, 0.08);
+  --gradient: linear-gradient(135deg, #00F0FF 0%, #D946EF 100%);
+}
+
+/* 13. Sakura (Premium) */
+html[data-theme="sakura"] {
+  color-scheme: dark;
+  --fg: 253 242 248;
+  --bg: #0E0A12;
+  --background: #0E0A12;
+  --surface: #1A1220;
+  --surface-2: #140D1A;
+  --border: rgba(244, 114, 182, 0.13);
+  --border-strong: rgba(244, 114, 182, 0.26);
+  --text: #FDF2F8;
+  --foreground: #FDF2F8;
+  --text-dim: #F4A6D1;
+  --text-faint: #8A5774;
+  --accent: #F472B6;
+  --accent-contrast: #200814;
+  --accent-soft: rgba(244, 114, 182, 0.12);
+  --glow: rgba(244, 114, 182, 0.35);
+  --grid-dot: rgba(244, 114, 182, 0.07);
+  --gradient: linear-gradient(135deg, #F472B6 0%, #FB7185 100%);
+}
+
+/* 14. Nordic Frost (Premium) */
+html[data-theme="nordic"] {
+  color-scheme: dark;
+  --fg: 240 249 255;
+  --bg: #070F18;
+  --background: #070F18;
+  --surface: #0E1B29;
+  --surface-2: #09131F;
+  --border: rgba(56, 189, 248, 0.12);
+  --border-strong: rgba(56, 189, 248, 0.26);
+  --text: #F0F9FF;
+  --foreground: #F0F9FF;
+  --text-dim: #93C5FD;
+  --text-faint: #4B668A;
+  --accent: #38BDF8;
+  --accent-contrast: #031726;
+  --accent-soft: rgba(56, 189, 248, 0.12);
+  --glow: rgba(56, 189, 248, 0.35);
+  --grid-dot: rgba(56, 189, 248, 0.07);
+  --gradient: linear-gradient(135deg, #38BDF8 0%, #06B6D4 100%);
+}
+
+/* 15. Amethyst (Premium) */
+html[data-theme="amethyst"] {
+  color-scheme: dark;
+  --fg: 250 245 255;
+  --bg: #090612;
+  --background: #090612;
+  --surface: #160E25;
+  --surface-2: #10091D;
+  --border: rgba(168, 85, 247, 0.12);
+  --border-strong: rgba(168, 85, 247, 0.26);
+  --text: #FAF5FF;
+  --foreground: #FAF5FF;
+  --text-dim: #D8B4FE;
+  --text-faint: #734B9C;
+  --accent: #A855F7;
+  --accent-contrast: #150524;
+  --accent-soft: rgba(168, 85, 247, 0.12);
+  --glow: rgba(168, 85, 247, 0.35);
+  --grid-dot: rgba(168, 85, 247, 0.07);
+  --gradient: linear-gradient(135deg, #A855F7 0%, #7C3AED 100%);
+}
+
+/* 16. Espresso (Premium) */
+html[data-theme="espresso"] {
+  color-scheme: dark;
+  --fg: 250 244 237;
+  --bg: #0E0B08;
+  --background: #0E0B08;
+  --surface: #1A1410;
+  --surface-2: #130E0A;
+  --border: rgba(212, 163, 115, 0.12);
+  --border-strong: rgba(212, 163, 115, 0.25);
+  --text: #FAF4ED;
+  --foreground: #FAF4ED;
+  --text-dim: #D6BEA9;
+  --text-faint: #806752;
+  --accent: #D4A373;
+  --accent-contrast: #201206;
+  --accent-soft: rgba(212, 163, 115, 0.12);
+  --glow: rgba(212, 163, 115, 0.30);
+  --grid-dot: rgba(212, 163, 115, 0.07);
+  --gradient: linear-gradient(135deg, #D4A373 0%, #A9714B 100%);
+}
+
+/* 17. Emerald (Premium) */
+html[data-theme="emerald"] {
+  color-scheme: dark;
+  --fg: 236 253 245;
+  --bg: #05100B;
+  --background: #05100B;
+  --surface: #0B1E15;
+  --surface-2: #07150E;
+  --border: rgba(16, 185, 129, 0.12);
+  --border-strong: rgba(16, 185, 129, 0.25);
+  --text: #ECFDF5;
+  --foreground: #ECFDF5;
+  --text-dim: #8CE3BA;
+  --text-faint: #3B7E5E;
+  --accent: #10B981;
+  --accent-contrast: #021C11;
+  --accent-soft: rgba(16, 185, 129, 0.12);
+  --glow: rgba(16, 185, 129, 0.35);
+  --grid-dot: rgba(16, 185, 129, 0.07);
+  --gradient: linear-gradient(135deg, #10B981 0%, #059669 100%);
+}
+
+/* 18. OLED Abyss (Premium) */
+html[data-theme="abyss"] {
+  color-scheme: dark;
+  --fg: 255 255 255;
+  --bg: #000000;
+  --background: #000000;
+  --surface: #0E0E0E;
+  --surface-2: #060606;
+  --border: rgba(255, 255, 255, 0.10);
+  --border-strong: rgba(255, 255, 255, 0.22);
+  --text: #FFFFFF;
+  --foreground: #FFFFFF;
+  --text-dim: #A3A3A3;
+  --text-faint: #525252;
+  --accent: #FFFFFF;
+  --accent-contrast: #000000;
+  --accent-soft: rgba(255, 255, 255, 0.12);
+  --glow: rgba(255, 255, 255, 0.25);
+  --grid-dot: rgba(255, 255, 255, 0.05);
+  --gradient: linear-gradient(135deg, #FFFFFF 0%, #737373 100%);
+}
+
+/* 19. Matcha (Premium - Light Mode) */
+html[data-theme="matcha"] {
+  color-scheme: light;
+  --fg: 26 36 22;
+  --bg: #F4F6F0;
+  --background: #F4F6F0;
+  --surface: #FFFFFF;
+  --surface-2: #EAEFE4;
+  --border: rgba(40, 60, 25, 0.12);
+  --border-strong: rgba(40, 60, 25, 0.22);
+  --text: #1C2618;
+  --foreground: #1C2618;
+  --text-dim: #515E4B;
+  --text-faint: #73826C;
+  --accent: #4D7C0F;
+  --accent-contrast: #FFFFFF;
+  --accent-soft: rgba(77, 124, 15, 0.10);
+  --glow: rgba(77, 124, 15, 0);
+  --accent-glow: none;
+  --dial-glow-display: none;
+  --grid-dot: rgba(40, 60, 25, 0.07);
+  --shadow-card: 0 1px 2px rgba(40, 60, 25, 0.06), 0 8px 24px rgba(40, 60, 25, 0.06);
+  --tier-accent-text: color-mix(in srgb, var(--tier-accent) 55%, black);
+  --gradient: linear-gradient(135deg, #4D7C0F 0%, #3F6212 100%);
+}
+
 /* Smooth color transition when user switches themes */
 html.theme-transitioning,
 html.theme-transitioning *,
@@ -1404,4 +1584,41 @@ html.light ::selection,
 /* When window is hidden, pause all focus animations */
 .scene-hidden svg * {
   animation-play-state: paused !important;
+}
+
+/* Header Telemetry Status Capsule Animations */
+@keyframes proChipShimmer {
+  0% {
+    transform: translateX(-150%);
+  }
+  20%, 100% {
+    transform: translateX(250%);
+  }
+}
+
+.animate-pro-shimmer {
+  animation: proChipShimmer 6s ease-in-out infinite;
+}
+
+@keyframes flameFlicker {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.92;
+  }
+  50% {
+    transform: scale(1.06);
+    opacity: 1;
+  }
+}
+
+.animate-flame-flicker {
+  animation: flameFlicker 3s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-pro-shimmer,
+  .animate-flame-flicker {
+    animation: none !important;
+  }
 }

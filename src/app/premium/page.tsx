@@ -181,21 +181,33 @@ function BentoCard({
 /* ═══════════════════════════════════════════════════════════════════════════
    LIVE DEMO 1: THEMES (Gold Leaf & Crimson Cross-fade)
    ═══════════════════════════════════════════════════════════════════════════ */
+const DEMO_PREMIUM_THEMES = [
+  { id: 'gold', name: 'Gold Leaf', bg: '#0C0A06', border: 'rgba(230,193,90,0.25)', accent: '#E6C15A', text: '#F5E6A8', progress: '68%' },
+  { id: 'cyberpunk', name: 'Cyberpunk', bg: '#080811', border: 'rgba(0,240,255,0.25)', accent: '#00F0FF', text: '#7DD3FC', progress: '92%' },
+  { id: 'sakura', name: 'Sakura', bg: '#0E0A12', border: 'rgba(244,114,182,0.25)', accent: '#F472B6', text: '#FBCFE8', progress: '76%' },
+  { id: 'nordic', name: 'Nordic Frost', bg: '#070F18', border: 'rgba(56,189,248,0.25)', accent: '#38BDF8', text: '#BAE6FD', progress: '85%' },
+  { id: 'crimson', name: 'Crimson', bg: '#0E0809', border: 'rgba(229,72,77,0.25)', accent: '#E5484D', text: '#FFA1A6', progress: '84%' },
+];
+
 function ThemesDemo() {
   const { ref, isVisible } = useTileVisibility(0.2);
   const shouldReduceMotion = useReducedMotion();
-  const [activeTheme, setActiveTheme] = useState<'gold' | 'crimson'>('gold');
+  const [activeThemeId, setActiveThemeId] = useState<string>('gold');
 
   // Auto cross-fade every 3s when visible
   useEffect(() => {
     if (!isVisible || shouldReduceMotion) return;
     const interval = setInterval(() => {
-      setActiveTheme((prev) => (prev === 'gold' ? 'crimson' : 'gold'));
+      setActiveThemeId((prev) => {
+        const idx = DEMO_PREMIUM_THEMES.findIndex((t) => t.id === prev);
+        const nextIdx = (idx + 1) % DEMO_PREMIUM_THEMES.length;
+        return DEMO_PREMIUM_THEMES[nextIdx].id;
+      });
     }, 3000);
     return () => clearInterval(interval);
   }, [isVisible, shouldReduceMotion]);
 
-  const isGold = activeTheme === 'gold';
+  const current = DEMO_PREMIUM_THEMES.find((t) => t.id === activeThemeId) || DEMO_PREMIUM_THEMES[0];
 
   return (
     <div ref={ref} className="w-full max-w-sm">
@@ -203,21 +215,21 @@ function ThemesDemo() {
       <div
         className="relative overflow-hidden rounded-2xl border p-3 transition-colors duration-700 shadow-md"
         style={{
-          backgroundColor: isGold ? '#0C0A06' : '#0E0809',
-          borderColor: isGold ? 'rgba(230,193,90,0.25)' : 'rgba(229,72,77,0.25)',
+          backgroundColor: current.bg,
+          borderColor: current.border,
         }}
       >
         <div className="flex items-center justify-between pb-2 border-b border-white/[0.06]">
           <div className="flex items-center gap-1.5">
             <div
               className="h-2 w-2 rounded-full transition-colors duration-700"
-              style={{ backgroundColor: isGold ? '#E6C15A' : '#E5484D' }}
+              style={{ backgroundColor: current.accent }}
             />
             <span
               className="text-[10px] font-hud font-bold tracking-wider uppercase transition-colors duration-700"
-              style={{ color: isGold ? '#E6C15A' : '#E5484D' }}
+              style={{ color: current.accent }}
             >
-              {isGold ? 'Gold Leaf' : 'Crimson'}
+              {current.name}
             </span>
           </div>
           <span className="text-[9px] font-mono text-white/40">25:00</span>
@@ -228,46 +240,45 @@ function ThemesDemo() {
             <div
               className="h-full rounded-full transition-all duration-700"
               style={{
-                width: isGold ? '68%' : '84%',
-                backgroundColor: isGold ? '#E6C15A' : '#E5484D',
+                width: current.progress,
+                backgroundColor: current.accent,
               }}
             />
           </div>
           <span
             className="text-[9px] font-mono font-bold transition-colors duration-700"
-            style={{ color: isGold ? '#F5E6A8' : '#FFA1A6' }}
+            style={{ color: current.text }}
           >
-            {isGold ? '68%' : '84%'}
+            {current.progress}
           </span>
         </div>
       </div>
 
       {/* Manual Swatch Selector */}
-      <div className="mt-3 flex items-center justify-center gap-3">
-        <button
-          type="button"
-          onClick={() => setActiveTheme('gold')}
-          className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-mono transition-all cursor-pointer ${
-            isGold
-              ? 'border border-[#E6C15A]/60 bg-[#E6C15A]/15 text-[#E6C15A]'
-              : 'border border-transparent text-white/40 hover:text-white'
-          }`}
-        >
-          <span className="h-2 w-2 rounded-full bg-[#E6C15A]" />
-          <span>Gold Leaf</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTheme('crimson')}
-          className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-mono transition-all cursor-pointer ${
-            !isGold
-              ? 'border border-[#E5484D]/60 bg-[#E5484D]/15 text-[#E5484D]'
-              : 'border border-transparent text-white/40 hover:text-white'
-          }`}
-        >
-          <span className="h-2 w-2 rounded-full bg-[#E5484D]" />
-          <span>Crimson</span>
-        </button>
+      <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5">
+        {DEMO_PREMIUM_THEMES.map((theme) => {
+          const isSelected = activeThemeId === theme.id;
+          return (
+            <button
+              key={theme.id}
+              type="button"
+              onClick={() => setActiveThemeId(theme.id)}
+              className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-mono transition-all cursor-pointer ${
+                isSelected
+                  ? 'border shadow-sm'
+                  : 'border border-transparent text-white/40 hover:text-white'
+              }`}
+              style={{
+                backgroundColor: isSelected ? `${theme.accent}20` : 'transparent',
+                borderColor: isSelected ? theme.accent : 'transparent',
+                color: isSelected ? theme.accent : undefined,
+              }}
+            >
+              <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: theme.accent }} />
+              <span>{theme.name}</span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

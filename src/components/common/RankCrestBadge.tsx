@@ -8,7 +8,8 @@ import { RankBadge, getRankBadgeTier } from './RankBadge';
 export interface RankCrestBadgeProps {
   tier: RankTierName | string;
   division?: string;
-  size?: number | string;
+  size?: number | string | 'sm' | 'md' | 'lg';
+  compact?: boolean;
   className?: string;
   isGhost?: boolean;
   ghostColor?: string;
@@ -27,6 +28,7 @@ export function RankCrestBadge({
   tier,
   division,
   size = 72,
+  compact = false,
   className = '',
   isGhost = false,
   ghostColor,
@@ -44,6 +46,7 @@ export function RankCrestBadge({
       src={sources.png}
       tier={badgeTier}
       size={size}
+      compact={compact}
       delay={delay}
       alt={`${fullTitle} Rank Badge`}
       rankTitle={fullTitle}

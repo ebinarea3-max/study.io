@@ -16,7 +16,8 @@ export interface RankBadgeProps {
   src: string;
   tier?: RankBadgeTier;
   delay?: number;
-  size?: number | string;
+  size?: number | string | 'sm' | 'md' | 'lg';
+  compact?: boolean;
   className?: string;
   alt?: string;
   priority?: boolean;
@@ -24,46 +25,38 @@ export interface RankBadgeProps {
   rankTitle?: string;
 }
 
-const TIER_GLOW_MAP: Record<RankBadgeTier, { primary: string; secondary: string; backlight: string }> = {
+const TIER_GLOW_MAP: Record<RankBadgeTier, { primary: string; secondary: string }> = {
   bronze: {
-    primary: 'rgba(217, 119, 6, 0.55)',
-    secondary: 'rgba(180, 83, 9, 0.35)',
-    backlight: 'rgba(217, 119, 6, 0.35)',
+    primary: 'rgba(245, 158, 11, 0.70)',
+    secondary: 'rgba(217, 119, 6, 0.40)',
   },
   silver: {
-    primary: 'rgba(203, 213, 225, 0.60)',
-    secondary: 'rgba(148, 163, 184, 0.35)',
-    backlight: 'rgba(186, 206, 235, 0.30)',
+    primary: 'rgba(226, 232, 240, 0.80)',
+    secondary: 'rgba(148, 163, 184, 0.45)',
   },
   gold: {
-    primary: 'rgba(245, 158, 11, 0.65)',
-    secondary: 'rgba(234, 179, 8, 0.40)',
-    backlight: 'rgba(251, 191, 36, 0.40)',
+    primary: 'rgba(251, 191, 36, 0.85)',
+    secondary: 'rgba(245, 158, 11, 0.45)',
   },
   platinum: {
-    primary: 'rgba(6, 182, 212, 0.65)',
-    secondary: 'rgba(56, 189, 248, 0.40)',
-    backlight: 'rgba(6, 182, 212, 0.40)',
+    primary: 'rgba(34, 211, 238, 0.85)',
+    secondary: 'rgba(6, 182, 212, 0.45)',
   },
   diamond: {
-    primary: 'rgba(168, 85, 247, 0.70)',
-    secondary: 'rgba(192, 132, 252, 0.45)',
-    backlight: 'rgba(168, 85, 247, 0.45)',
+    primary: 'rgba(192, 132, 252, 0.85)',
+    secondary: 'rgba(168, 85, 247, 0.45)',
   },
   champion: {
-    primary: 'rgba(192, 70, 240, 0.75)',
-    secondary: 'rgba(147, 51, 234, 0.45)',
-    backlight: 'rgba(178, 79, 232, 0.45)',
+    primary: 'rgba(232, 121, 249, 0.85)',
+    secondary: 'rgba(192, 70, 240, 0.45)',
   },
   master: {
-    primary: 'rgba(99, 102, 241, 0.75)',
-    secondary: 'rgba(129, 140, 248, 0.45)',
-    backlight: 'rgba(99, 102, 241, 0.45)',
+    primary: 'rgba(129, 140, 248, 0.85)',
+    secondary: 'rgba(99, 102, 241, 0.45)',
   },
   grandmaster: {
-    primary: 'rgba(251, 191, 36, 0.80)',
+    primary: 'rgba(251, 191, 36, 0.90)',
     secondary: 'rgba(244, 63, 94, 0.50)',
-    backlight: 'rgba(251, 191, 36, 0.50)',
   },
 };
 
@@ -91,6 +84,7 @@ export function RankBadge({
   src,
   tier,
   size = 160,
+  compact = false,
   className = '',
   alt = 'Rank Badge',
   priority = false,
@@ -110,13 +104,15 @@ export function RankBadge({
 
   const glow = TIER_GLOW_MAP[activeTier] || TIER_GLOW_MAP.silver;
 
-  const numericSize = typeof size === 'number' ? size : parseInt(String(size), 10) || 160;
-  const isCompact = numericSize <= 48;
-  const pixelSize = typeof size === 'number' ? `${size}px` : size;
+  const isSm = size === 'sm' || compact === true;
+  const numericSize = isSm ? 32 : (typeof size === 'number' ? size : parseInt(String(size), 10) || 160);
+  const isCompact = isSm || numericSize <= 48;
+  const pixelSize = `${numericSize}px`;
 
+  // Crisp, radiant glow applied directly to the rank icon itself (zero background aura)
   const glowFilter = isCompact
-    ? `drop-shadow(0 0 5px ${glow.primary}) drop-shadow(0 0 10px ${glow.secondary})`
-    : `drop-shadow(0 0 12px ${glow.primary}) drop-shadow(0 0 26px ${glow.secondary})`;
+    ? `drop-shadow(0 0 2px ${glow.primary}) drop-shadow(0 0 5px ${glow.secondary})`
+    : `drop-shadow(0 0 4px ${glow.primary}) drop-shadow(0 0 10px ${glow.secondary})`;
 
   return (
     <div
@@ -128,18 +124,7 @@ export function RankBadge({
         minHeight: pixelSize,
       }}
     >
-      {/* Static soft ambient backlight glow */}
-      <div
-        className="absolute pointer-events-none rounded-full"
-        style={{
-          inset: isCompact ? '12%' : '16%',
-          background: `radial-gradient(circle, ${glow.backlight} 0%, transparent 72%)`,
-          filter: isCompact ? 'blur(6px)' : 'blur(18px)',
-          opacity: isCompact ? 0.45 : 0.65,
-        }}
-      />
-
-      {/* Badge Crest with layered contour drop-shadow glow */}
+      {/* Badge Crest with contour glow directly on the icon artwork */}
       <img
         src={src}
         alt={alt || rankTitle || 'Rank Badge'}

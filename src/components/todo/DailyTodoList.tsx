@@ -14,9 +14,13 @@ import {
   Target,
   Flag,
   CircleDot,
+  Sparkles,
 } from 'lucide-react';
 import { useRankTheme } from '../../hooks/useRankTheme';
 import { useStudy } from '../../context/StudyContext';
+import toast from 'react-hot-toast';
+import { parseSmartTasks, isMultiTaskPaste } from '../../lib/smartTaskParser';
+import { SmartPasteModal } from './SmartPasteModal';
 
 export interface DailyTodo {
   id: string;
@@ -50,6 +54,8 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
   const [filter, setFilter] = useState<'all' | 'active' | 'completed' | 'high'>('all');
   const [taskPriority, setTaskPriority] = useState<'low' | 'medium' | 'high'>('medium');
   const [taskSubjectId, setTaskSubjectId] = useState<string>('none');
+  const [isSmartModalOpen, setIsSmartModalOpen] = useState(false);
+  const [bulkAddFeedback, setBulkAddFeedback] = useState<{ count: number; visible: boolean }>({ count: 0, visible: false });
 
   const handleFocusTask = (subjectId?: string) => {
     if (subjectId && subjectId !== 'none') {
@@ -224,11 +230,140 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
     };
   }, []);
 
-  // 3. Add Task: Optimistic update + Supabase insert + UUID replacement
+  // 3a. Bulk Add Tasks: Optimistic batch update + Supabase batch insert + UUID replacement
+  const handleBulkAddTasks = async (taskTitles: string[]) => {
+    if (!taskTitles || taskTitles.length === 0) return;
+
+    inFlightOpsRef.current += 1;
+    const now = Date.now();
+
+    const optimisticItems: DailyTodo[] = taskTitles.map((task, idx) => ({
+      id: `temp-${now}-${idx}-${Math.random().toString(36).substring(2, 6)}`,
+      task,
+      is_completed: false,
+      priority: taskPriority,
+      subject_id: taskSubjectId === 'none' ? undefined : taskSubjectId,
+      created_at: new Date(now + idx * 50).toISOString(),
+    }));
+
+    // Immediately update local state and fallback localStorage in a single batch
+    setTodos(prev => {
+      const updated = [...prev, ...optimisticItems];
+      saveLocal(updated);
+      return updated;
+    });
+
+    setTaskInput('');
+    soundFx.playReactionPop();
+
+    // Show temporary feedback indicator
+    setBulkAddFeedback({
+      count: taskTitles.length,
+      visible: true,
+    });
+    setTimeout(() => {
+      setBulkAddFeedback(prev => ({ ...prev, visible: false }));
+    }, 4500);
+
+    // Toast UX feedback
+    toast.success(`Added ${taskTitles.length} task${taskTitles.length === 1 ? '' : 's'} to your list`, {
+      icon: '✨',
+      style: {
+        borderRadius: '12px',
+        background: 'var(--surface, #1e293b)',
+        color: 'var(--text, #ffffff)',
+        border: '1px solid var(--border, rgba(255, 255, 255, 0.1))',
+        fontSize: '13px',
+        fontWeight: '600',
+        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.4)',
+      },
+      duration: 3500,
+    });
+
+    const supabase = getSupabase();
+    if (!supabase) {
+      inFlightOpsRef.current = Math.max(0, inFlightOpsRef.current - 1);
+      return;
+    }
+
+    try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        inFlightOpsRef.current = Math.max(0, inFlightOpsRef.current - 1);
+        return;
+      }
+
+      const rows = optimisticItems.map(item => ({
+        task: item.task,
+        is_completed: false,
+        user_id: user.id,
+        priority: item.priority,
+        subject_id: item.subject_id || null,
+        created_at: item.created_at,
+      }));
+
+      const { data, error } = await supabase
+        .from('todos')
+        .insert(rows)
+        .select();
+
+      if (error) {
+        console.error('Supabase bulk insert error:', error);
+      } else if (data && Array.isArray(data)) {
+        const realTodos = data.map(normalizeTodo);
+        const tempIdSet = new Set(optimisticItems.map(item => item.id));
+
+        setTodos(prev => {
+          const updated = prev.map(t => {
+            if (!tempIdSet.has(t.id)) return t;
+            const match = realTodos.find(r => r.task === t.task);
+            return match ? { ...t, id: match.id, user_id: match.user_id } : t;
+          });
+          saveLocal(updated);
+          return updated;
+        });
+      }
+    } catch (err) {
+      console.error('Supabase bulk insert exception:', err);
+    } finally {
+      inFlightOpsRef.current = Math.max(0, inFlightOpsRef.current - 1);
+    }
+  };
+
+  // 3b. Intercept Multi-line Paste (onPaste)
+  const handleInputPaste = async (e: React.ClipboardEvent<HTMLInputElement>) => {
+    const clipboardText = e.clipboardData.getData('text');
+    if (!clipboardText) return;
+
+    if (isMultiTaskPaste(clipboardText)) {
+      const parsedTasks = parseSmartTasks(clipboardText);
+      if (parsedTasks.length > 1) {
+        e.preventDefault();
+        await handleBulkAddTasks(parsedTasks);
+        return;
+      } else if (parsedTasks.length === 1 && clipboardText.includes('\n')) {
+        // Prevent raw newline block in single-line input, insert cleaned task title
+        e.preventDefault();
+        setTaskInput(parsedTasks[0]);
+        return;
+      }
+    }
+  };
+
+  // 3c. Add Task: Supports single task or multi-line/smart split submission
   const handleAddTask = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newTaskText = taskInput.trim();
-    if (!newTaskText) return;
+    const rawInput = taskInput.trim();
+    if (!rawInput) return;
+
+    // Check if the input contains multiple tasks (e.g. pasted or typed with markers or newlines)
+    const parsedTasks = parseSmartTasks(rawInput);
+    if (parsedTasks.length > 1) {
+      await handleBulkAddTasks(parsedTasks);
+      return;
+    }
+
+    const newTaskText = parsedTasks.length === 1 ? parsedTasks[0] : rawInput;
 
     inFlightOpsRef.current += 1;
 
@@ -504,12 +639,23 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
             type="text"
             value={taskInput}
             onChange={e => setTaskInput(e.target.value)}
-            placeholder="Add new mission objective..."
+            onPaste={handleInputPaste}
+            placeholder="Add mission objective... (or paste multi-line list)"
             className="w-full bg-transparent text-sm sm:text-base text-[var(--text)] placeholder:text-[var(--text-faint)] focus:outline-none font-sans py-1"
           />
         </div>
 
         <div className="flex flex-wrap items-center gap-2 pl-2 sm:pl-0 sm:border-l sm:border-fg/10 pt-2 sm:pt-0 border-t border-fg/10 sm:border-t-0">
+          {/* Smart Paste / Bulk Import Button */}
+          <button
+            type="button"
+            onClick={() => setIsSmartModalOpen(true)}
+            className="px-2.5 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 font-hud-mono text-[10px] font-bold tracking-wider uppercase transition-all flex items-center gap-1.5 cursor-pointer shadow-sm hover:scale-[1.02] active:scale-95 shrink-0"
+            title="Smart Paste: Auto-split WhatsApp messages, syllabi, or notes into individual tasks"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <span className="hidden sm:inline">Smart Paste</span>
+          </button>
           {/* Priority Toggle */}
           <button
             type="button"
@@ -562,6 +708,25 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
           </button>
         </div>
       </form>
+
+      {/* Bulk Add Feedback Banner */}
+      {bulkAddFeedback.visible && (
+        <div className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-hud-mono tracking-wider animate-in fade-in slide-in-from-top-2 duration-200 shadow-sm relative z-10">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-amber-400 shrink-0 animate-pulse" />
+            <span>
+              Added <strong>{bulkAddFeedback.count}</strong> task{bulkAddFeedback.count === 1 ? '' : 's'} from your list!
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setBulkAddFeedback(prev => ({ ...prev, visible: false }))}
+            className="text-amber-400/70 hover:text-amber-300 p-0.5 cursor-pointer text-xs"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Main Task List Container */}
       <div className="flex-1 flex flex-col gap-4 overflow-y-auto pr-1 sm:pr-2 select-none relative z-10">
@@ -812,6 +977,12 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
           </div>
         )}
       </div>
+      {/* Smart Paste / Multi-line Import Modal */}
+      <SmartPasteModal
+        isOpen={isSmartModalOpen}
+        onClose={() => setIsSmartModalOpen(false)}
+        onImport={handleBulkAddTasks}
+      />
     </div>
   );
 }

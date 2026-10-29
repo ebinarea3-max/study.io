@@ -77,7 +77,7 @@ export default function RootLayout({
         />
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('studyio-theme')||'rank';var valid=['rank','midnight','ember','forest','ocean','rose','nebula','graphite','paper','goldleaf','crimson'];if(!valid.includes(t))t='rank';document.documentElement.dataset.theme=t;if(t==='paper'){document.documentElement.classList.remove('dark');document.documentElement.classList.add('light');}else{document.documentElement.classList.remove('light');document.documentElement.classList.add('dark');}}catch(e){document.documentElement.dataset.theme='rank';}})();`,
+            __html: `(function(){try{var t=localStorage.getItem('studyio-theme')||'rank';var valid=['rank','midnight','ember','forest','ocean','rose','nebula','graphite','paper','goldleaf','crimson','cyberpunk','sakura','nordic','amethyst','espresso','emerald','abyss','matcha'];if(!valid.includes(t))t='rank';document.documentElement.dataset.theme=t;if(t==='paper'||t==='matcha'){document.documentElement.classList.remove('dark');document.documentElement.classList.add('light');}else{document.documentElement.classList.remove('light');document.documentElement.classList.add('dark');}}catch(e){document.documentElement.dataset.theme='rank';}})();`,
           }}
         />
       </head>

@@ -24,6 +24,42 @@ const SWATCHES: Swatch[] = [
     border: 'rgba(230, 193, 90, 0.25)',
   },
   {
+    id: 'cyberpunk',
+    name: 'Cyberpunk',
+    bg: '#080811',
+    surface: '#121124',
+    accent: '#00F0FF',
+    accentContrast: '#04151C',
+    border: 'rgba(0, 240, 255, 0.25)',
+  },
+  {
+    id: 'sakura',
+    name: 'Sakura',
+    bg: '#0E0A12',
+    surface: '#1A1220',
+    accent: '#F472B6',
+    accentContrast: '#200814',
+    border: 'rgba(244, 114, 182, 0.25)',
+  },
+  {
+    id: 'nordic',
+    name: 'Nordic Frost',
+    bg: '#070F18',
+    surface: '#0E1B29',
+    accent: '#38BDF8',
+    accentContrast: '#031726',
+    border: 'rgba(56, 189, 248, 0.25)',
+  },
+  {
+    id: 'amethyst',
+    name: 'Amethyst',
+    bg: '#090612',
+    surface: '#160E25',
+    accent: '#A855F7',
+    accentContrast: '#150524',
+    border: 'rgba(168, 85, 247, 0.25)',
+  },
+  {
     id: 'crimson',
     name: 'Crimson',
     bg: '#0E0809',
@@ -31,15 +67,6 @@ const SWATCHES: Swatch[] = [
     accent: '#E5484D',
     accentContrast: '#1F0506',
     border: 'rgba(229, 72, 77, 0.25)',
-  },
-  {
-    id: 'rank',
-    name: 'Rank',
-    bg: '#07090E',
-    surface: '#0F1117',
-    accent: '#38BFC4',
-    accentContrast: '#08090C',
-    border: 'rgba(56, 191, 196, 0.25)',
   },
 ];
 
@@ -126,7 +153,7 @@ export function DemoThemesTile() {
           <span>Click to recolour preview:</span>
           <span className="font-semibold text-[var(--text)]">{selectedSwatch.name}</span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="grid grid-cols-3 gap-1.5">
           {SWATCHES.map((swatch) => {
             const isSelected = selectedSwatch.id === swatch.id;
             return (

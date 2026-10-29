@@ -85,6 +85,63 @@ export const THEMES: ThemeOption[] = [
     previewColors: ['#0E0809', '#1A0F11', '#E5484D'],
     isPremium: true,
   },
+  {
+    id: 'cyberpunk',
+    name: 'Cyberpunk',
+    description: 'Electric neon cyan & fuchsia on hyperdark void',
+    previewColors: ['#080811', '#121124', '#00F0FF'],
+    isPremium: true,
+  },
+  {
+    id: 'sakura',
+    name: 'Sakura',
+    description: 'Delicate cherry blossom on twilight ink',
+    previewColors: ['#0E0A12', '#1A1220', '#F472B6'],
+    isPremium: true,
+  },
+  {
+    id: 'nordic',
+    name: 'Nordic Frost',
+    description: 'Glacial cyan on arctic polar night',
+    previewColors: ['#070F18', '#0E1B29', '#38BDF8'],
+    isPremium: true,
+  },
+  {
+    id: 'amethyst',
+    name: 'Amethyst',
+    description: 'Luminous royal violet on dark velvet',
+    previewColors: ['#090612', '#160E25', '#A855F7'],
+    isPremium: true,
+  },
+  {
+    id: 'espresso',
+    name: 'Espresso',
+    description: 'Warm roasted caramel on dark cocoa',
+    previewColors: ['#0E0B08', '#1A1410', '#D4A373'],
+    isPremium: true,
+  },
+  {
+    id: 'emerald',
+    name: 'Emerald',
+    description: 'Imperial luminous jade on obsidian',
+    previewColors: ['#05100B', '#0B1E15', '#10B981'],
+    isPremium: true,
+  },
+  {
+    id: 'abyss',
+    name: 'OLED Abyss',
+    description: 'True pitch black for maximum focus',
+    previewColors: ['#000000', '#0E0E0E', '#FFFFFF'],
+    isPremium: true,
+  },
+  {
+    id: 'matcha',
+    name: 'Matcha',
+    description: 'Creamy green tea, warm pastel light mode',
+    previewColors: ['#F4F6F0', '#FFFFFF', '#4D7C0F'],
+    isLight: true,
+    isPremium: true,
+  },
 ];
 
 interface ThemeContextType {
@@ -114,7 +171,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       if (saved && THEMES.some(t => t.id === saved)) {
         setThemeId(saved);
         document.documentElement.dataset.theme = saved;
-        if (saved === 'paper') {
+        const isLight = THEMES.some(t => t.id === saved && t.isLight);
+        if (isLight) {
           document.documentElement.classList.remove('dark');
           document.documentElement.classList.add('light');
         } else {
@@ -139,9 +197,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
     try {
       const saved = localStorage.getItem('studyio-theme');
-      const isSavedPremium = saved === 'goldleaf' || saved === 'crimson';
+      const savedPremiumTheme = THEMES.find(t => t.id === saved && t.isPremium);
 
-      if (isSavedPremium) {
+      if (savedPremiumTheme) {
         if (!isPremium) {
           // Free user with saved premium theme -> apply "rank" in-memory only without touching localStorage
           setThemeId('rank');
@@ -150,10 +208,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
           document.documentElement.classList.add('dark');
         } else {
           // Premium user -> restore saved premium theme
-          setThemeId(saved);
-          document.documentElement.dataset.theme = saved;
-          document.documentElement.classList.remove('light');
-          document.documentElement.classList.add('dark');
+          setThemeId(savedPremiumTheme.id);
+          document.documentElement.dataset.theme = savedPremiumTheme.id;
+          if (savedPremiumTheme.isLight) {
+            document.documentElement.classList.remove('dark');
+            document.documentElement.classList.add('light');
+          } else {
+            document.documentElement.classList.remove('light');
+            document.documentElement.classList.add('dark');
+          }
         }
       }
     } catch {
@@ -183,7 +246,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       }
 
       document.documentElement.dataset.theme = targetId;
-      if (targetId === 'paper') {
+      if (targetTheme.isLight) {
         document.documentElement.classList.remove('dark');
         document.documentElement.classList.add('light');
       } else {
