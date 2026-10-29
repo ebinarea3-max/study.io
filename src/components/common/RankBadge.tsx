@@ -70,7 +70,7 @@ export function getRankBadgeTier(rankTitle: string): RankBadgeTier {
 
 /**
  * Reusable RankBadge with Prestige Tiered Ambient Effects:
- * - All ranks: Smooth 6s float, tier-scaled glow breathing (3.5s), polished metallic sheen sweep (5s)
+ * - All ranks: Smooth float, tier-scaled glow breathing (3.5s), polished metallic sheen sweep (5s)
  * - Bronze & Silver: Clean, crisp, polished metallic crest
  * - Gold: Warm golden glow + 3 twinkling stardust sparkles (4s)
  * - Platinum: Icy cyan radiant aura pulse + 3 drifting cyan stardust motes (5s)
@@ -79,7 +79,7 @@ export function getRankBadgeTier(rankTitle: string): RankBadgeTier {
  * - Master: Cosmic indigo aura + golden crown flare (5s) + warm emblem core pulse (3s) + 5 celestial stardust motes
  * - Grandmaster: Supreme astral blue/gold aura + pulsing celestial energy orb (3s) + golden crown flare (5s) + 6 celestial motes
  *
- * Keeps badge box fixed, object-contain, no scale transforms, no card displacement.
+ * Keeps badge box fixed, object-contain, no scale transforms, adapts smoothly to compact sizes (<=48px).
  */
 export function RankBadge({
   src,
@@ -127,6 +127,9 @@ export function RankBadge({
   const cornerIndex = Math.abs(Math.round(delay * 3.33)) % GLINT_CORNERS.length;
   const glintPos = GLINT_CORNERS[cornerIndex];
 
+  const numericSize = typeof size === 'number' ? size : parseInt(String(size), 10) || 160;
+  const isCompact = numericSize <= 48;
+
   // Specific effect toggles
   const hasTrophyCore = isChampion || isMaster;
   const hasCenterOrbPulse = isGrandmaster;
@@ -163,7 +166,9 @@ export function RankBadge({
       {/* 1. Tiered Radiant Aura (Platinum and above): Soft blurred radial glow */}
       {hasAura && (
         <div
-          className="absolute -inset-[16%] rounded-full pointer-events-none filter blur-2xl z-0"
+          className={`absolute pointer-events-none rounded-full z-0 ${
+            isCompact ? '-inset-[8%] filter blur-md opacity-40' : '-inset-[16%] filter blur-2xl opacity-75'
+          }`}
           style={{
             background: isGrandmaster
               ? `radial-gradient(circle at center, rgba(79, 70, 229, 0.55) 0%, rgba(251, 191, 36, 0.35) 40%, rgba(168, 85, 247, 0.20) 60%, transparent 75%)`
@@ -177,11 +182,13 @@ export function RankBadge({
         />
       )}
 
-      {/* 2. Float Wrapper: Drifts up and down 6px over 6s */}
+      {/* 2. Float Wrapper: Drifts up and down (compact = 2px, normal = 6px) */}
       <div
         className="relative w-full h-full flex items-center justify-center overflow-visible z-[1]"
         style={{
-          animation: 'rankBadgeFloat 6s ease-in-out infinite',
+          animation: isCompact
+            ? 'rankBadgeFloatCompact 4s ease-in-out infinite'
+            : 'rankBadgeFloat 6s ease-in-out infinite',
           animationDelay: `${delay}s`,
           willChange: 'transform',
         }}
@@ -239,8 +246,8 @@ export function RankBadge({
                 style={{
                   top: '48%',
                   left: '50%',
-                  width: '44px',
-                  height: '44px',
+                  width: isCompact ? '18px' : '44px',
+                  height: isCompact ? '18px' : '44px',
                   borderRadius: '9999px',
                   transform: 'translate(-50%, -50%)',
                   background: isMaster
@@ -260,8 +267,8 @@ export function RankBadge({
                 style={{
                   top: '49%',
                   left: '50%',
-                  width: '42px',
-                  height: '42px',
+                  width: isCompact ? '16px' : '42px',
+                  height: isCompact ? '16px' : '42px',
                   borderRadius: '9999px',
                   transform: 'translate(-50%, -50%)',
                   background: 'radial-gradient(circle, rgba(255, 255, 255, 0.90) 0%, rgba(251, 191, 36, 0.65) 40%, rgba(168, 85, 247, 0.45) 65%, transparent 75%)',
@@ -275,10 +282,12 @@ export function RankBadge({
             {/* Master & Grandmaster: Golden Apex Crown Flare */}
             {hasCrownFlare && (
               <div
-                className="absolute pointer-events-none flex items-center justify-center w-[20px] h-[20px] z-[6]"
+                className="absolute pointer-events-none flex items-center justify-center z-[6]"
                 style={{
                   top: '18%',
                   left: '50%',
+                  width: isCompact ? '10px' : '20px',
+                  height: isCompact ? '10px' : '20px',
                   transform: 'translate(-50%, -50%)',
                   animation: 'rankBadgeCrownShimmer 5s ease-in-out infinite',
                   animationDelay: `${delay + 0.8}s`,
@@ -286,30 +295,42 @@ export function RankBadge({
                 }}
               >
                 <div
-                  className="absolute w-[22px] h-[1.5px] rounded-full"
+                  className="absolute rounded-full"
                   style={{
+                    width: isCompact ? '11px' : '22px',
+                    height: isCompact ? '1px' : '1.5px',
                     background: 'linear-gradient(90deg, transparent 0%, #FFFFFF 50%, transparent 100%)',
                     boxShadow: '0 0 6px rgba(251, 191, 36, 0.9)',
                   }}
                 />
                 <div
-                  className="absolute w-[1.5px] h-[16px] rounded-full"
+                  className="absolute rounded-full"
                   style={{
+                    width: isCompact ? '1px' : '1.5px',
+                    height: isCompact ? '8px' : '16px',
                     background: 'linear-gradient(180deg, transparent 0%, #FFFFFF 50%, transparent 100%)',
                     boxShadow: '0 0 6px rgba(251, 191, 36, 0.9)',
                   }}
                 />
-                <div className="absolute w-[3px] h-[3px] rounded-full bg-amber-100 shadow-[0_0_6px_#fef08a]" />
+                <div
+                  className="absolute rounded-full bg-amber-100 shadow-[0_0_6px_#fef08a]"
+                  style={{
+                    width: isCompact ? '2px' : '3px',
+                    height: isCompact ? '2px' : '3px',
+                  }}
+                />
               </div>
             )}
 
             {/* Diamond: 4-Point Facet Glint on Shield Corner */}
             {hasFacetGlint && (
               <div
-                className="absolute pointer-events-none flex items-center justify-center w-[14px] h-[14px] z-[6]"
+                className="absolute pointer-events-none flex items-center justify-center z-[6]"
                 style={{
                   left: `var(--glint-x, ${glintPos.x})`,
                   top: `var(--glint-y, ${glintPos.y})`,
+                  width: isCompact ? '8px' : '14px',
+                  height: isCompact ? '8px' : '14px',
                   transform: 'translate(-50%, -50%)',
                   animation: 'rankBadgeFacetGlint 4s ease-in-out infinite',
                   animationDelay: `${delay + 1.2}s`,
@@ -317,26 +338,36 @@ export function RankBadge({
                 }}
               >
                 <div
-                  className="absolute w-[14px] h-[1.5px] rounded-full"
+                  className="absolute rounded-full"
                   style={{
+                    width: isCompact ? '8px' : '14px',
+                    height: isCompact ? '1px' : '1.5px',
                     background: 'linear-gradient(90deg, transparent 0%, #FFFFFF 50%, transparent 100%)',
                     boxShadow: `0 0 4px rgba(${auraRgb}, 0.8)`,
                   }}
                 />
                 <div
-                  className="absolute w-[1.5px] h-[14px] rounded-full"
+                  className="absolute rounded-full"
                   style={{
+                    width: isCompact ? '1px' : '1.5px',
+                    height: isCompact ? '8px' : '14px',
                     background: 'linear-gradient(180deg, transparent 0%, #FFFFFF 50%, transparent 100%)',
                     boxShadow: `0 0 4px rgba(${auraRgb}, 0.8)`,
                   }}
                 />
-                <div className="absolute w-[2.5px] h-[2.5px] rounded-full bg-white shadow-[0_0_4px_#fff]" />
+                <div
+                  className="absolute rounded-full bg-white shadow-[0_0_4px_#fff]"
+                  style={{
+                    width: isCompact ? '1.5px' : '2.5px',
+                    height: isCompact ? '1.5px' : '2.5px',
+                  }}
+                />
               </div>
             )}
           </div>
 
-          {/* Gold Sparkles: 3 tiny 3px glowing dots twinkling over 4s */}
-          {isGold && (
+          {/* Gold Sparkles: 3 tiny 3px glowing dots twinkling over 4s (disabled on compact) */}
+          {isGold && !isCompact && (
             <div className="absolute inset-0 pointer-events-none overflow-visible z-[7]">
               <div
                 className="absolute w-[3px] h-[3px] rounded-full bg-white pointer-events-none"
@@ -374,8 +405,8 @@ export function RankBadge({
             </div>
           )}
 
-          {/* Platinum: 3 Cyan Stardust Motes Drifting Upward */}
-          {hasCyanMotes && (
+          {/* Platinum: 3 Cyan Stardust Motes Drifting Upward (disabled on compact) */}
+          {hasCyanMotes && !isCompact && (
             <div className="absolute inset-0 pointer-events-none overflow-visible z-[7]">
               <div
                 className="absolute w-[3px] h-[3px] rounded-full bg-cyan-100 pointer-events-none"
@@ -413,8 +444,8 @@ export function RankBadge({
             </div>
           )}
 
-          {/* Diamond: 4 Violet / Crystal Stardust Motes Drifting Upward */}
-          {hasDiamondMotes && (
+          {/* Diamond: 4 Violet / Crystal Stardust Motes Drifting Upward (disabled on compact) */}
+          {hasDiamondMotes && !isCompact && (
             <div className="absolute inset-0 pointer-events-none overflow-visible z-[7]">
               {[
                 { left: '26%', bottom: '16%', delayOffset: 0.0 },
@@ -438,8 +469,8 @@ export function RankBadge({
             </div>
           )}
 
-          {/* Champion: 5 Royal Violet Floating Embers Drifting Upward (50px over 6s) */}
-          {hasChampionEmbers && (
+          {/* Champion: 5 Royal Violet Floating Embers Drifting Upward (disabled on compact) */}
+          {hasChampionEmbers && !isCompact && (
             <div className="absolute inset-0 pointer-events-none overflow-visible z-[7]">
               {[
                 { left: '28%', bottom: '18%', delayOffset: 0.0 },
@@ -464,8 +495,8 @@ export function RankBadge({
             </div>
           )}
 
-          {/* Master: 5 Celestial Gold & Indigo Stardust Particles Drifting Upward */}
-          {hasMasterMotes && (
+          {/* Master: 5 Celestial Gold & Indigo Stardust Particles Drifting Upward (disabled on compact) */}
+          {hasMasterMotes && !isCompact && (
             <div className="absolute inset-0 pointer-events-none overflow-visible z-[7]">
               {[
                 { left: '26%', bottom: '18%', delayOffset: 0.0, color: '#fef08a', shadow: 'rgba(245, 158, 11, 0.85)' },
@@ -491,8 +522,8 @@ export function RankBadge({
             </div>
           )}
 
-          {/* Grandmaster: 6 Luminous Astral & Solar Stardust Motes Drifting Upward */}
-          {hasGmMotes && (
+          {/* Grandmaster: 6 Luminous Astral & Solar Stardust Motes Drifting Upward (disabled on compact) */}
+          {hasGmMotes && !isCompact && (
             <div className="absolute inset-0 pointer-events-none overflow-visible z-[7]">
               {[
                 { left: '24%', bottom: '18%', delayOffset: 0.0, color: '#fff', shadow: 'rgba(251, 191, 36, 0.9)' },

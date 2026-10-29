@@ -1423,6 +1423,16 @@ html.light ::selection,
   }
 }
 
+/* Compact Float: For small inline icons (<=48px) in navbar & tables */
+@keyframes rankBadgeFloatCompact {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
 /* 2. Glow Breathing: pulsing drop-shadow between ~25% and ~60% over 3.5s */
 @keyframes rankBadgeGlow-silver {
   0%, 100% {
