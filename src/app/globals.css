@@ -1469,6 +1469,33 @@ html.light ::selection,
   }
 }
 
+@keyframes rankBadgeGlow-champion {
+  0%, 100% {
+    filter: drop-shadow(0 0 10px rgba(168, 85, 247, 0.25)) drop-shadow(0 0 20px rgba(168, 85, 247, 0.15));
+  }
+  50% {
+    filter: drop-shadow(0 0 15px rgba(168, 85, 247, 0.65)) drop-shadow(0 0 30px rgba(168, 85, 247, 0.35));
+  }
+}
+
+@keyframes rankBadgeGlow-master {
+  0%, 100% {
+    filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.25)) drop-shadow(0 0 20px rgba(99, 102, 241, 0.15));
+  }
+  50% {
+    filter: drop-shadow(0 0 15px rgba(245, 158, 11, 0.65)) drop-shadow(0 0 30px rgba(99, 102, 241, 0.35));
+  }
+}
+
+@keyframes rankBadgeGlow-grandmaster {
+  0%, 100% {
+    filter: drop-shadow(0 0 12px rgba(251, 191, 36, 0.30)) drop-shadow(0 0 24px rgba(79, 70, 229, 0.20));
+  }
+  50% {
+    filter: drop-shadow(0 0 18px rgba(251, 191, 36, 0.70)) drop-shadow(0 0 34px rgba(79, 70, 229, 0.40));
+  }
+}
+
 /* 3. Shine Sweep: Diagonal white light streak passes every ~5s */
 @keyframes rankBadgeShine {
   0%, 60% {
@@ -1557,6 +1584,56 @@ html.light ::selection,
     filter: brightness(1.25);
     opacity: 0.95;
     transform: scale(1.05);
+  }
+}
+
+
+/* 9. Prestige Drifting Embers (Champion & High Ranks): 3px particles drifting upward 50px fading over 6s */
+@keyframes rankBadgeEmberRise {
+  0% {
+    transform: translateY(0px) scale(0.6);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.85;
+    transform: translateY(-12px) scale(1);
+  }
+  75% {
+    opacity: 0.70;
+  }
+  100% {
+    transform: translateY(-50px) scale(0.3);
+    opacity: 0;
+  }
+}
+
+/* 10. Crown Flare Shimmer (Master & Grandmaster): Apex golden flare popping on crown every ~5s */
+@keyframes rankBadgeCrownShimmer {
+  0%, 75%, 100% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0;
+  }
+  84% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.90;
+  }
+  92% {
+    transform: translate(-50%, -50%) scale(0.2);
+    opacity: 0;
+  }
+}
+
+/* 11. Grandmaster Core Orb Pulse: Celestial energy core breathing brightness 1 to 1.30 over 3s */
+@keyframes rankBadgeOrbPulse {
+  0%, 100% {
+    filter: brightness(1) blur(4px);
+    opacity: 0.60;
+    transform: translate(-50%, -50%) scale(0.95);
+  }
+  50% {
+    filter: brightness(1.30) blur(6px);
+    opacity: 0.95;
+    transform: translate(-50%, -50%) scale(1.06);
   }
 }
 
