@@ -24,15 +24,6 @@ const TIER_GLOW_RGB: Record<RankBadgeTier, string> = {
   bronze: '190, 120, 60',
 };
 
-// Normalized scales so visible shield width matches Silver (~145px) in a 160x160 box
-const TIER_SCALES: Record<RankBadgeTier, number> = {
-  silver: 1.0,
-  gold: 1.08,
-  platinum: 1.15,
-  diamond: 1.18,
-  bronze: 1.10,
-};
-
 // Distinct Aura colors for higher tiers (violet for diamond, indigo/blue for master/grandmaster)
 const AURA_COLORS: Record<string, string> = {
   platinum: '40, 200, 230',    // cyan
@@ -66,14 +57,14 @@ export function getRankBadgeTier(rankTitle: string): 'silver' | 'gold' | 'platin
 }
 
 /**
- * Reusable RankBadge with subtle, calm idle animations scaled by tier:
+ * Reusable RankBadge with normalized badge artwork (uniform scale 1 across all tiers)
+ * and subtle, calm idle animations scaled by tier:
  * - All ranks: Float (6s), Glow breathing (3.5s), Masked shine sweep (5s)
  * - Silver: nothing extra
  * - Gold: 3 smaller (3px), slower (4s) twinkling sparkles
  * - Platinum: Soft cyan aura pulse (4s) + 3 rising motes drifting ~40px (5s)
  * - Diamond and above: Violet/blue aura pulse + rising motes + 4-point facet glint (4s) + core pulse for brain emblem (3s) + stronger shine
- * - Completely removed all rotating rings
- * - Smooth hover scale to 1.06
+ * - Fixed 160x160 box, object-contain, no scale transforms
  */
 export function RankBadge({
   src,
@@ -83,12 +74,11 @@ export function RankBadge({
   className = '',
   alt = 'Rank Badge',
   priority = false,
-  scale,
+  scale = 1,
   rankTitle = '',
 }: RankBadgeProps) {
   const tierKey: RankBadgeTier = tier || 'silver';
   const glowRgb = TIER_GLOW_RGB[tierKey] || TIER_GLOW_RGB.silver;
-  const badgeScale = scale !== undefined ? scale : (TIER_SCALES[tierKey] || 1.0);
 
   const titleLower = (rankTitle || alt || '').toLowerCase();
   const isGold = tierKey === 'gold';
@@ -127,7 +117,6 @@ export function RankBadge({
         height: pixelSize,
         minWidth: pixelSize,
         minHeight: pixelSize,
-        ['--badge-scale' as any]: badgeScale,
         ['--glint-x' as any]: glintPos.x,
         ['--glint-y' as any]: glintPos.y,
       }}
@@ -163,14 +152,8 @@ export function RankBadge({
             willChange: 'filter',
           }}
         >
-          {/* Inner Scale Wrapper: applies --badge-scale so shield matches Silver ~145px */}
-          <div
-            className="relative w-full h-full flex items-center justify-center overflow-visible"
-            style={{
-              transform: 'scale(var(--badge-scale, 1))',
-              willChange: 'transform',
-            }}
-          >
+          {/* Inner Artwork Wrapper (Uniform Scale 1.0): artwork normalized to exact width */}
+          <div className="relative w-full h-full flex items-center justify-center overflow-visible">
             {/* Badge Image: 100% width/height with object-contain */}
             <img
               src={src}
@@ -255,6 +238,7 @@ export function RankBadge({
               </div>
             )}
           </div>
+
 
           {/* Gold Sparkles: 3 tiny 3px glowing dots twinkling over 4s */}
           {isGold && (

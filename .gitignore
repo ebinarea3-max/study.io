@@ -47,3 +47,6 @@ scratch/
 .vercel
 .env*
 !.env.example
+
+# rank normalization backups
+**/ranks/original/
