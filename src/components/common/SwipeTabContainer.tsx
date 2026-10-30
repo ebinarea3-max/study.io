@@ -23,9 +23,23 @@ export function SwipeTabContainer({
   onChangeTab,
   children,
 }: SwipeTabContainerProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
   const currentIndex = TABS.indexOf(activeTab);
   const [dragX, setDragX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+
+  // Safeguard: Ensure container never retains rogue horizontal scrollLeft from child focus events
+  const handleScroll = useCallback(() => {
+    if (containerRef.current && containerRef.current.scrollLeft !== 0) {
+      containerRef.current.scrollLeft = 0;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (containerRef.current && containerRef.current.scrollLeft !== 0) {
+      containerRef.current.scrollLeft = 0;
+    }
+  }, [activeTab, currentIndex, dragX]);
 
   const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
   const isHorizontalLockRef = useRef<boolean | null>(null);
@@ -134,6 +148,8 @@ export function SwipeTabContainer({
 
   return (
     <div
+      ref={containerRef}
+      onScroll={handleScroll}
       className="w-full h-full min-h-0 overflow-hidden relative flex-1 flex flex-col"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}

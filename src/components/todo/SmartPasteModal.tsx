@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Sparkles, X, ClipboardPaste, CheckCircle2, Trash2 } from 'lucide-react';
 import { parseSmartTasks } from '../../lib/smartTaskParser';
 import { soundFx } from '../../lib/audio';
@@ -12,9 +13,15 @@ interface SmartPasteModalProps {
 }
 
 export function SmartPasteModal({ isOpen, onClose, onImport }: SmartPasteModalProps) {
+  const [mounted, setMounted] = useState(false);
   const [inputText, setInputText] = useState('');
   const [isImporting, setIsImporting] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // SSR-safe mounting
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Automatically parse tasks as input changes
   const parsedTasks = useMemo(() => {
@@ -23,7 +30,9 @@ export function SmartPasteModal({ isOpen, onClose, onImport }: SmartPasteModalPr
 
   useEffect(() => {
     if (isOpen) {
-      setTimeout(() => textareaRef.current?.focus(), 50);
+      setTimeout(() => {
+        textareaRef.current?.focus({ preventScroll: true });
+      }, 50);
     } else {
       setInputText('');
     }
@@ -70,17 +79,17 @@ export function SmartPasteModal({ isOpen, onClose, onImport }: SmartPasteModalPr
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted || typeof document === 'undefined') return null;
 
-  return (
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-200"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-150"
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-xl max-h-[90vh] flex flex-col rounded-2xl bg-[var(--surface)] border border-[var(--border)] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
+        className="relative w-full max-w-xl max-h-[90vh] flex flex-col rounded-2xl bg-[var(--surface)] border border-[var(--border)] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
@@ -143,7 +152,7 @@ export function SmartPasteModal({ isOpen, onClose, onImport }: SmartPasteModalPr
               rows={6}
               value={inputText}
               onChange={e => setInputText(e.target.value)}
-              placeholder={`e.g. Paste here:\n1. Digital Electronics Module 3\n   a) State table\n   b) Reduced state table\n6. All flipflops characteristic equation\nand excitation table design using\nnand gate\n7. Shift registers:\n- SISO\n- SIPO`}
+              placeholder={`e.g. Paste here:\nIA-2 portions\n1.Logic gates\n2.Number conversions\n3.Boolean laws\n4.Demorgan laws\n5.Kmaps\nMod-2\n1.Combinational Circuits\n2.Half adder`}
               className="w-full p-3 rounded-xl bg-[var(--surface-2)]/60 border border-[var(--border)] text-[var(--text)] text-xs sm:text-sm font-sans placeholder:text-[var(--text-faint)] focus:outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)]/30 resize-none transition-all leading-relaxed"
             />
           </div>
@@ -208,7 +217,7 @@ export function SmartPasteModal({ isOpen, onClose, onImport }: SmartPasteModalPr
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
-
