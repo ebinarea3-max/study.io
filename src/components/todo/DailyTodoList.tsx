@@ -20,7 +20,6 @@ import { useRankTheme } from '../../hooks/useRankTheme';
 import { useStudy } from '../../context/StudyContext';
 import toast from 'react-hot-toast';
 import { parseSmartTasks, isMultiTaskPaste } from '../../lib/smartTaskParser';
-import { SmartPasteModal } from './SmartPasteModal';
 
 export interface DailyTodo {
   id: string;
@@ -54,7 +53,6 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
   const [filter, setFilter] = useState<'all' | 'active' | 'completed' | 'high'>('all');
   const [taskPriority, setTaskPriority] = useState<'low' | 'medium' | 'high'>('medium');
   const [taskSubjectId, setTaskSubjectId] = useState<string>('none');
-  const [isSmartModalOpen, setIsSmartModalOpen] = useState(false);
   const [bulkAddFeedback, setBulkAddFeedback] = useState<{ count: number; visible: boolean }>({ count: 0, visible: false });
 
   const handleFocusTask = (subjectId?: string) => {
@@ -646,16 +644,6 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
         </div>
 
         <div className="flex flex-wrap items-center gap-2 pl-2 sm:pl-0 sm:border-l sm:border-fg/10 pt-2 sm:pt-0 border-t border-fg/10 sm:border-t-0">
-          {/* Smart Paste / Bulk Import Button */}
-          <button
-            type="button"
-            onClick={() => setIsSmartModalOpen(true)}
-            className="px-2.5 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 font-hud-mono text-[10px] font-bold tracking-wider uppercase transition-all flex items-center gap-1.5 cursor-pointer shadow-sm hover:scale-[1.02] active:scale-95 shrink-0"
-            title="Smart Paste: Auto-split WhatsApp messages, syllabi, or notes into individual tasks"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            <span className="hidden sm:inline">Smart Paste</span>
-          </button>
           {/* Priority Toggle */}
           <button
             type="button"
@@ -977,12 +965,6 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
           </div>
         )}
       </div>
-      {/* Smart Paste / Multi-line Import Modal */}
-      <SmartPasteModal
-        isOpen={isSmartModalOpen}
-        onClose={() => setIsSmartModalOpen(false)}
-        onImport={handleBulkAddTasks}
-      />
     </div>
   );
 }
