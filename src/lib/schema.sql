@@ -384,3 +384,35 @@ end;
 $$;
 C R E A T E   U N I Q U E   I N D E X   I F   N O T   E X I S T S   u n i q u e _ u s e r _ s u b j e c t _ n a m e   O N   p u b l i c . s u b j e c t s   ( u s e r _ i d ,   L O W E R ( T R I M ( n a m e ) ) ) ;  
  
+
+-- 10. Timetable Schedules Table
+create table if not exists public.timetable_schedules (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users on delete cascade not null,
+  day_of_week text not null, -- 'mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'
+  subject_name text not null,
+  subject_id uuid references public.subjects on delete set null,
+  target_seconds integer not null default 3600,
+  color text default '#F59E0B',
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- 11. Timetable Goal Streaks Table
+create table if not exists public.timetable_streaks (
+  user_id uuid references auth.users on delete cascade primary key,
+  current_streak integer default 0,
+  longest_streak integer default 0,
+  last_completed_date text default null, -- 'YYYY-MM-DD'
+  history jsonb default '{}'::jsonb,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Enable RLS
+alter table public.timetable_schedules enable row level security;
+alter table public.timetable_streaks enable row level security;
+
+create policy "Users can manage own timetable schedules" on public.timetable_schedules
+  for all using (auth.uid() = user_id);
+
+create policy "Users can manage own timetable streaks" on public.timetable_streaks
+  for all using (auth.uid() = user_id);

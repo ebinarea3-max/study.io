@@ -6,6 +6,7 @@ import { AuthProvider } from '../../context/AuthContext';
 import { PremiumProvider } from '../../context/PremiumContext';
 import { StudyProvider } from '../../context/StudyContext';
 import { FocusGoalProvider } from '../../context/FocusGoalContext';
+import { TimetableProvider } from '../../context/TimetableContext';
 import { Toaster } from 'react-hot-toast';
 import { TimerSWBridge } from './TimerSWBridge';
 import { RankBadgePreloader } from './RankBadgePreloader';
@@ -17,11 +18,13 @@ export function Providers({ children }: { children: ReactNode }) {
         <ThemeProvider>
           <StudyProvider>
             <FocusGoalProvider>
-              {/* Bridge timer state → Service Worker for background tracking & notifications */}
-              <TimerSWBridge />
-              {/* Asset preloading for instant rank badge rendering */}
-              <RankBadgePreloader />
-              {children}
+              <TimetableProvider>
+                {/* Bridge timer state → Service Worker for background tracking & notifications */}
+                <TimerSWBridge />
+                {/* Asset preloading for instant rank badge rendering */}
+                <RankBadgePreloader />
+                {children}
+              </TimetableProvider>
             </FocusGoalProvider>
             <Toaster 
               position="top-center" 

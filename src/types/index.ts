@@ -214,3 +214,5 @@ export type LeaderboardEntry = {
   total_seconds: number;
   is_current_user?: boolean;
 };
+
+export * from './timetable';
