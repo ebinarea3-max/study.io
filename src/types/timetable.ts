@@ -54,3 +54,4 @@ export function getTodayDayOfWeek(): DayOfWeek {
 export function getDayConfig(day: DayOfWeek): DayOfWeekConfig {
   return DAYS_OF_WEEK.find(d => d.key === day) || DAYS_OF_WEEK[0];
 }
+

@@ -189,3 +189,4 @@ export function CopyScheduleModal({ isOpen, onClose, fromDay }: CopyScheduleModa
     document.body
   );
 }
+

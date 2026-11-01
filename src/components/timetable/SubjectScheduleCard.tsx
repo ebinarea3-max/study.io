@@ -252,3 +252,4 @@ export function SubjectScheduleCard({ item, onEdit }: SubjectScheduleCardProps) 
     </div>
   );
 }
+

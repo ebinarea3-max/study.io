@@ -161,3 +161,4 @@ export function DaySelectorBar({ onAddSubject, onOpenCopyModal }: DaySelectorBar
     </div>
   );
 }
+

@@ -1,13 +1,13 @@
 'use client';
 
 import React, { useEffect, useMemo, useCallback } from 'react';
-import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SeasonResetData } from '../../types';
 import { getRankBadgePath } from '../../lib/rankedSystem';
 import { soundFx } from '../../lib/audio';
 import confetti from 'canvas-confetti';
-import { X, Sparkles, Trophy, ArrowRight } from 'lucide-react';
+import { X, Sparkles, ArrowRight, Trophy, Flame } from 'lucide-react';
+import { RankBadge } from '../common/RankBadge';
 
 export interface SeasonResetAlertModalProps {
   isOpen: boolean;
@@ -34,6 +34,7 @@ export function SeasonResetAlertModal({
   const newRankTitle = data?.new_rank || 'Bronze I';
   const prevBadgePath = useMemo(() => getRankBadgePath(prevRankTitle), [prevRankTitle]);
   const newBadgePath = useMemo(() => getRankBadgePath(newRankTitle), [newRankTitle]);
+
   const formattedStartingRP = useMemo(() => {
     return (data?.starting_rp ?? 0).toLocaleString();
   }, [data?.starting_rp]);
@@ -48,6 +49,7 @@ export function SeasonResetAlertModal({
         particleCount: 80,
         spread: 60,
         origin: { y: 0.5 },
+        colors: ['#F59E0B', '#10B981', '#3B82F6', '#8B5CF6'],
       });
     } catch {}
     onDismiss();
@@ -58,7 +60,6 @@ export function SeasonResetAlertModal({
     if (!isOpen) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Avoid intercepting if typing inside an input or textarea
       const target = e.target as HTMLElement | null;
       if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) {
         return;
@@ -79,7 +80,7 @@ export function SeasonResetAlertModal({
   return (
     <AnimatePresence>
       <div
-        className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4"
+        className="fixed inset-0 z-[120] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 select-none"
         onClick={(e) => {
           if (e.target === e.currentTarget) {
             handleActionDismiss();
@@ -90,133 +91,155 @@ export function SeasonResetAlertModal({
         aria-label="Season Reset Alert"
       >
         <motion.div
-          initial={{ opacity: 0, scale: 0.92, y: 15 }}
+          initial={{ opacity: 0, scale: 0.94, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.92, y: 15 }}
-          transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-          className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-card relative overflow-hidden text-center select-none"
+          exit={{ opacity: 0, scale: 0.94, y: 15 }}
+          transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+          className="bg-[var(--surface)] border border-[var(--border)] rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl relative overflow-hidden text-center"
         >
-          {/* Ambient Obsidian & Amber Glow */}
-          <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-64 h-48 bg-amber-500/15 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-20 right-0 w-48 h-48 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-amber-400/80 to-transparent pointer-events-none" />
+          {/* Ambient Glowing Background Effect */}
+          <div
+            className="absolute -top-24 left-1/2 -translate-x-1/2 w-72 h-72 rounded-full blur-3xl opacity-20 pointer-events-none"
+            style={{ backgroundColor: 'var(--accent)' }}
+          />
+          <div
+            className="absolute inset-x-0 top-0 h-[2px] pointer-events-none"
+            style={{
+              background: 'linear-gradient(90deg, transparent, var(--accent), transparent)',
+            }}
+          />
 
           {/* Close Icon Button */}
           <button
             onClick={handleActionDismiss}
             aria-label="Close Season Reset Alert"
-            className="absolute top-4 right-4 text-[var(--text-dim)] hover:text-[var(--text)] p-1.5 rounded-lg hover:bg-fg/[0.06] transition-colors cursor-pointer z-10"
+            className="absolute top-4 right-4 text-[var(--text-dim)] hover:text-[var(--text)] p-2 rounded-xl hover:bg-white/[0.06] transition-colors cursor-pointer z-10"
           >
-            <X className="w-4 h-4" />
+            <X className="w-5 h-5" />
           </button>
 
           {/* Header Tag */}
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/25 mb-3.5 shadow-sm shadow-amber-500/10">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-            <span className="text-amber-400 font-mono text-xs font-semibold tracking-widest uppercase">
-              • SEASON RESET •
-            </span>
+          <div
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[var(--accent-soft)] border border-[var(--border)] text-[10px] font-hud font-bold tracking-widest uppercase mb-4"
+            style={{ color: 'var(--accent)' }}
+          >
+            <Sparkles className="w-3.5 h-3.5 shrink-0" />
+            <span>SEASON RESET</span>
           </div>
 
           {/* Season Title */}
-          <h2 className="text-xl sm:text-2xl font-black tracking-tight text-[var(--text)] uppercase mb-2">
+          <h2 className="text-xl sm:text-2xl font-hud font-extrabold tracking-wider text-[var(--text)] uppercase mb-2">
             WELCOME TO {displayMonthName}
           </h2>
 
           {/* Tier Transition Display */}
-          <div className="my-5 p-3.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] relative flex items-center justify-around gap-2">
+          <div className="my-5 p-4 sm:p-5 rounded-2xl bg-[var(--surface-2)] border border-[var(--border)] relative flex items-center justify-around gap-2">
             {/* Previous Rank Column */}
-            <div className="flex flex-col items-center gap-1.5 flex-1 min-w-0">
-              <span className="text-[10px] font-mono text-[var(--text-dim)] uppercase tracking-wider">
+            <div className="flex flex-col items-center gap-2 flex-1 min-w-0">
+              <span className="text-[10px] font-hud-mono font-bold text-[var(--text-dim)] uppercase tracking-widest">
                 PREVIOUS
               </span>
-              <div className="relative w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center filter drop-shadow-[0_4px_12px_rgba(0,0,0,0.6)]">
-                <Image
+              <div className="relative flex items-center justify-center py-1">
+                <RankBadge
                   src={prevBadgePath}
+                  size={76}
+                  rankTitle={prevRankTitle}
                   alt={prevRankTitle}
-                  width={80}
-                  height={80}
-                  className="object-contain max-h-full"
-                  priority
                 />
               </div>
-              <span className="text-xs font-bold text-[var(--text-dim)] font-mono truncate max-w-full">
+              <span className="text-xs font-hud font-bold text-[var(--text-dim)] uppercase tracking-wider truncate max-w-full">
                 {prevRankTitle}
               </span>
             </div>
 
-            {/* Animated Arrow / Transition Indicator */}
+            {/* Transition Arrow Indicator */}
             <div className="flex flex-col items-center justify-center px-1">
-              <motion.div
-                animate={{ x: [0, 4, 0] }}
-                transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
-                className="w-8 h-8 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-md shadow-amber-500/15"
+              <div
+                className="w-8 h-8 rounded-full border flex items-center justify-center shadow-md transition-all"
+                style={{
+                  backgroundColor: 'var(--accent-soft)',
+                  borderColor: 'var(--border)',
+                  color: 'var(--accent)',
+                }}
               >
                 <ArrowRight className="w-4 h-4 stroke-[2.5]" />
-              </motion.div>
-              <span className="text-[9px] font-mono text-[var(--text-dim)] mt-1 uppercase tracking-widest">
+              </div>
+              <span className="text-[9px] font-hud-mono font-bold text-[var(--text-dim)] mt-1.5 uppercase tracking-widest">
                 RESET
               </span>
             </div>
 
-            {/* New Rolled-Back Starting Rank Column */}
-            <div className="flex flex-col items-center gap-1.5 flex-1 min-w-0">
-              <span className="text-[10px] font-mono text-amber-400 font-semibold uppercase tracking-wider">
+            {/* New Starting Rank Column */}
+            <div className="flex flex-col items-center gap-2 flex-1 min-w-0">
+              <span
+                className="text-[10px] font-hud-mono font-bold uppercase tracking-widest"
+                style={{ color: 'var(--accent)' }}
+              >
                 STARTING RANK
               </span>
-              <div className="relative w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center filter drop-shadow-[0_4px_14px_rgba(245,158,11,0.35)]">
-                <Image
+              <div className="relative flex items-center justify-center py-1">
+                <RankBadge
                   src={newBadgePath}
+                  size={76}
+                  rankTitle={newRankTitle}
                   alt={newRankTitle}
-                  width={80}
-                  height={80}
-                  className="object-contain max-h-full"
-                  priority
                 />
               </div>
-              <span className="text-xs font-black text-amber-400 font-mono truncate max-w-full">
+              <span
+                className="text-xs font-hud font-extrabold uppercase tracking-wider truncate max-w-full"
+                style={{ color: 'var(--accent)' }}
+              >
                 {newRankTitle}
               </span>
             </div>
           </div>
 
           {/* Explanatory Body Copy */}
-          <p className="text-xs sm:text-[13px] text-[var(--text-dim)] leading-relaxed px-1 sm:px-2 mb-5">
-            A new monthly season has begun. Based on your performance last month, your rank has soft-reset to give you a head start for the new season. Keep your focus streak alive and climb back to the top!
+          <p className="text-xs sm:text-sm text-[var(--text-dim)] leading-relaxed font-sans px-2 mb-5">
+            A new monthly season has begun. Based on your previous performance, your rank has soft-reset to give you a fresh climb. Keep your focus streak alive and ascend the leaderboards!
           </p>
 
-          {/* Stat Strip / Pill */}
-          <div className="bg-[var(--surface-2)] border border-[var(--border)] rounded-xl p-3 mb-6 grid grid-cols-2 divide-x divide-[var(--border)] text-center">
-            <div className="flex flex-col items-center px-2">
-              <span className="text-[10px] font-mono text-[var(--text-dim)] uppercase tracking-wider">
-                Starting Base RP
+          {/* Stat Cards Grid (Clean layout, no repeated words) */}
+          <div className="grid grid-cols-2 gap-3 mb-6">
+            <div className="bg-[var(--surface-2)] border border-[var(--border)] rounded-xl p-3 flex flex-col items-center text-center">
+              <span className="text-[10px] font-hud-mono font-bold uppercase tracking-widest text-[var(--text-dim)]">
+                STARTING RP
               </span>
-              <span className="text-xs sm:text-sm font-black text-[var(--text)] font-mono mt-0.5">
-                Starting RP: <span className="text-amber-400">{formattedStartingRP} RP</span>
+              <span
+                className="text-base sm:text-lg font-hud font-black mt-0.5"
+                style={{ color: 'var(--accent)' }}
+              >
+                {formattedStartingRP} RP
               </span>
             </div>
 
-            <div className="flex flex-col items-center px-2">
-              <span className="text-[10px] font-mono text-[var(--text-dim)] uppercase tracking-wider">
-                Status
+            <div className="bg-[var(--surface-2)] border border-[var(--border)] rounded-xl p-3 flex flex-col items-center text-center">
+              <span className="text-[10px] font-hud-mono font-bold uppercase tracking-widest text-[var(--text-dim)]">
+                MONTHLY BOARD
               </span>
-              <span className="text-xs sm:text-sm font-semibold text-[var(--text-dim)] font-mono mt-0.5">
-                Monthly Leaderboard: <span className="text-emerald-400">0h 0m</span>
+              <span className="text-base sm:text-lg font-hud font-black text-emerald-400 mt-0.5">
+                0h 00m
               </span>
             </div>
           </div>
 
-          {/* Tactile CTA Action Button */}
+          {/* Tactical CTA Button */}
           <button
+            type="button"
             onClick={handleActionDismiss}
-            className="w-full relative group overflow-hidden rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 text-black font-black font-mono text-sm py-3.5 px-6 shadow-lg shadow-amber-500/25 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2"
+            className="w-full py-3.5 px-6 rounded-xl font-hud font-bold text-xs sm:text-sm tracking-widest uppercase transition-all flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_20px_var(--glow)] hover:scale-[1.02] active:scale-95 hover:opacity-95"
+            style={{
+              backgroundColor: 'var(--accent)',
+              color: 'var(--accent-contrast)',
+            }}
           >
-            <Sparkles className="w-4 h-4 text-black group-hover:rotate-12 transition-transform" />
-            <span className="tracking-wider">[ START NEW SEASON ]</span>
-            <ArrowRight className="w-4 h-4 text-black group-hover:translate-x-0.5 transition-transform" />
+            <Sparkles className="w-4 h-4 fill-current" />
+            <span>START NEW SEASON</span>
+            <ArrowRight className="w-4 h-4" />
           </button>
-          <div className="text-[10px] font-mono text-neutral-400 mt-2">
-            Press <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-neutral-300 text-[9px]">Enter</kbd> or <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-neutral-300 text-[9px]">Space</kbd> to continue
+
+          <div className="text-[10px] font-mono text-[var(--text-dim)] mt-2.5">
+            Press <kbd className="px-1.5 py-0.5 rounded bg-white/[0.08] text-[var(--text)] text-[9px] border border-white/10">Enter</kbd> or <kbd className="px-1.5 py-0.5 rounded bg-white/[0.08] text-[var(--text)] text-[9px] border border-white/10">Space</kbd> to continue
           </div>
         </motion.div>
       </div>
