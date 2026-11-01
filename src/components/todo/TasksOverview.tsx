@@ -5,7 +5,7 @@ import { DailyTodoList } from './DailyTodoList';
 import { StudyTimetable } from '../timetable/StudyTimetable';
 import { useTimetable } from '../../context/TimetableContext';
 import { useStudy } from '../../context/StudyContext';
-import { Calendar, CheckSquare, Layers, Flame, Sparkles } from 'lucide-react';
+import { Calendar, CheckSquare, Layers, Flame } from 'lucide-react';
 
 export function TasksOverview() {
   const { streak, isTodayGoalCompleted } = useTimetable();
@@ -105,8 +105,7 @@ export function TasksOverview() {
         </div>
 
         {/* Quick Streak Tip on Desktop */}
-        <div className="hidden sm:flex items-center gap-2 px-3 text-[11px] font-mono text-[var(--text-dim)]">
-          <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+        <div className="hidden sm:flex items-center gap-1.5 px-3 text-[11px] font-mono text-[var(--text-dim)]">
           <span>
             {isTodayGoalCompleted
               ? 'Goal secured today 🔥'

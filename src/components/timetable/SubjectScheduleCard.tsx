@@ -12,7 +12,6 @@ import {
   Edit2,
   Trash2,
   Plus,
-  Sparkles,
   Check,
   RotateCcw,
 } from 'lucide-react';

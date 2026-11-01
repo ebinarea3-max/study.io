@@ -193,7 +193,7 @@ export function EditSubjectScheduleModal({
                 );
                 setMatchedSubjectId(match?.id);
               }}
-              placeholder="e.g. Digital Logic, Data Structures, IoT"
+              placeholder="e.g. Mathematics, Physics, Chemistry"
               className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] text-sm sm:text-base text-[var(--text)] placeholder:text-[var(--text-faint)] focus:outline-none focus:border-[var(--accent)] font-sans transition-all"
             />
           </div>

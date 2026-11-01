@@ -8,7 +8,7 @@ import { SubjectScheduleCard } from './SubjectScheduleCard';
 import { EditSubjectScheduleModal } from './EditSubjectScheduleModal';
 import { CopyScheduleModal } from './CopyScheduleModal';
 import { TimetableItem, DAYS_OF_WEEK } from '../../types/timetable';
-import { Plus, Sparkles, Moon, RefreshCw, CheckCircle2 } from 'lucide-react';
+import { Plus, Moon, RefreshCw, CheckCircle2 } from 'lucide-react';
 
 export function StudyTimetable() {
   const {
@@ -71,7 +71,7 @@ export function StudyTimetable() {
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+            <div className="flex items-center justify-center pt-2">
               <button
                 type="button"
                 onClick={handleOpenAdd}
@@ -79,15 +79,6 @@ export function StudyTimetable() {
               >
                 <Plus className="w-4 h-4" />
                 <span>Schedule a Subject for {selectedDay.toUpperCase()}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={loadDefaultSchedule}
-                className="px-4 py-2 rounded-xl bg-[var(--surface-2)] hover:bg-white/[0.08] text-[var(--text-dim)] hover:text-[var(--text)] border border-[var(--border)] font-hud-mono text-xs font-semibold tracking-wider uppercase transition-all flex items-center gap-1.5 cursor-pointer"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                <span>Load Starter Routine</span>
               </button>
             </div>
           </div>

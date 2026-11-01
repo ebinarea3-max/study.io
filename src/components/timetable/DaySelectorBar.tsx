@@ -4,7 +4,7 @@ import React from 'react';
 import { useTimetable } from '../../context/TimetableContext';
 import { DAYS_OF_WEEK, DayOfWeek, getTodayDayOfWeek } from '../../types/timetable';
 import { formatHoursAndMins } from '../../lib/utils';
-import { Plus, Copy, Calendar, Sparkles, Moon } from 'lucide-react';
+import { Plus, Copy, Calendar, Moon } from 'lucide-react';
 
 interface DaySelectorBarProps {
   onAddSubject: () => void;

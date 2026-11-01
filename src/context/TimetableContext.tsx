@@ -79,19 +79,24 @@ interface TimetableContextType {
   syncStatus: 'synced' | 'saving' | 'offline';
 }
 
-const DEFAULT_STARTER_SCHEDULE: TimetableItem[] = [
-  { id: 'starter-mon-1', dayOfWeek: 'mon', subjectName: 'Digital Logic', targetSeconds: 7200, color: '#F59E0B' },
-  { id: 'starter-mon-2', dayOfWeek: 'mon', subjectName: 'Data Structures', targetSeconds: 5400, color: '#3B82F6' },
-  { id: 'starter-tue-1', dayOfWeek: 'tue', subjectName: 'Computer Networks', targetSeconds: 7200, color: '#10B981' },
-  { id: 'starter-tue-2', dayOfWeek: 'tue', subjectName: 'Web Development', targetSeconds: 3600, color: '#8B5CF6' },
-  { id: 'starter-wed-1', dayOfWeek: 'wed', subjectName: 'Data Structures', targetSeconds: 7200, color: '#3B82F6' },
-  { id: 'starter-wed-2', dayOfWeek: 'wed', subjectName: 'Operating Systems', targetSeconds: 5400, color: '#EC4899' },
-  { id: 'starter-thu-1', dayOfWeek: 'thu', subjectName: 'Digital Logic', targetSeconds: 5400, color: '#F59E0B' },
-  { id: 'starter-thu-2', dayOfWeek: 'thu', subjectName: 'Computer Networks', targetSeconds: 7200, color: '#10B981' },
-  { id: 'starter-fri-1', dayOfWeek: 'fri', subjectName: 'Web Development', targetSeconds: 7200, color: '#8B5CF6' },
-  { id: 'starter-fri-2', dayOfWeek: 'fri', subjectName: 'Project Lab', targetSeconds: 5400, color: '#06B6D4' },
-  { id: 'starter-sat-1', dayOfWeek: 'sat', subjectName: 'Revision & Practice', targetSeconds: 7200, color: '#F97316' },
-];
+const DEFAULT_STARTER_SCHEDULE: TimetableItem[] = [];
+
+// Helper to identify and discard legacy mock/starter subjects
+const isStarterItem = (item: { id?: string; subjectName?: string; subject_name?: string }) => {
+  const name = item.subjectName || item.subject_name || '';
+  return (
+    Boolean(item.id?.startsWith('starter-')) ||
+    [
+      'Digital Logic',
+      'Data Structures',
+      'Computer Networks',
+      'Web Development',
+      'Operating Systems',
+      'Project Lab',
+      'Revision & Practice',
+    ].includes(name.trim())
+  );
+};
 
 const INITIAL_STREAK: GoalStreakState = {
   currentStreak: 0,
@@ -129,15 +134,24 @@ export function TimetableProvider({ children }: { children: ReactNode }) {
   // 1. Initial Load from LocalStorage
   useEffect(() => {
     try {
-      const itemsKey = `studypulse_timetable_items_${userStorageSuffix}`;
-      const savedItems = localStorage.getItem(itemsKey) || localStorage.getItem('studypulse_timetable_items');
+      // Clear legacy mock data keys so browser caches never show starter subjects
+      try {
+        localStorage.removeItem(`studypulse_timetable_items_${userStorageSuffix}`);
+        localStorage.removeItem('studypulse_timetable_items');
+        localStorage.removeItem('studypulse_timetable_items_guest');
+      } catch {}
+
+      const itemsKey = `studypulse_timetable_v2_items_${userStorageSuffix}`;
+      const savedItems = localStorage.getItem(itemsKey) || localStorage.getItem('studypulse_timetable_v2_items');
       if (savedItems) {
-        setItems(JSON.parse(savedItems));
+        const parsed = JSON.parse(savedItems);
+        const clean = Array.isArray(parsed) ? parsed.filter(it => !isStarterItem(it)) : [];
+        setItems(clean);
       } else {
-        // Initialize starter schedule
-        setItems(DEFAULT_STARTER_SCHEDULE);
+        // Start completely empty (0 subjects)
+        setItems([]);
         try {
-          localStorage.setItem(itemsKey, JSON.stringify(DEFAULT_STARTER_SCHEDULE));
+          localStorage.setItem(itemsKey, JSON.stringify([]));
         } catch {}
       }
 
@@ -179,7 +193,8 @@ export function TimetableProvider({ children }: { children: ReactNode }) {
           .eq('user_id', user.id);
 
         if (!scheduleError && scheduleData && scheduleData.length > 0 && !isCancelled) {
-          const mapped: TimetableItem[] = scheduleData.map(row => ({
+          const cleanData = scheduleData.filter(row => !isStarterItem(row));
+          const mapped: TimetableItem[] = cleanData.map(row => ({
             id: row.id,
             dayOfWeek: row.day_of_week as DayOfWeek,
             subjectId: row.subject_id || undefined,
@@ -190,7 +205,7 @@ export function TimetableProvider({ children }: { children: ReactNode }) {
           }));
           setItems(mapped);
           try {
-            localStorage.setItem(`studypulse_timetable_items_${user.id}`, JSON.stringify(mapped));
+            localStorage.setItem(`studypulse_timetable_v2_items_${user.id}`, JSON.stringify(mapped));
           } catch {}
         }
 
@@ -230,8 +245,8 @@ export function TimetableProvider({ children }: { children: ReactNode }) {
     async (newItems: TimetableItem[]) => {
       setItems(newItems);
       try {
-        localStorage.setItem(`studypulse_timetable_items_${userStorageSuffix}`, JSON.stringify(newItems));
-        localStorage.setItem('studypulse_timetable_items', JSON.stringify(newItems));
+        localStorage.setItem(`studypulse_timetable_v2_items_${userStorageSuffix}`, JSON.stringify(newItems));
+        localStorage.setItem('studypulse_timetable_v2_items', JSON.stringify(newItems));
       } catch {}
 
       if (isAuthenticated && user?.id && !user.id.startsWith('user-scholar-')) {
@@ -639,8 +654,8 @@ export function TimetableProvider({ children }: { children: ReactNode }) {
   );
 
   const loadDefaultSchedule = useCallback(async () => {
-    await saveItems(DEFAULT_STARTER_SCHEDULE);
-    toast.success('Loaded weekly starter schedule');
+    await saveItems([]);
+    toast.success('Cleared timetable schedule');
   }, [saveItems]);
 
   // 9. Manual Offline Adjustments
