@@ -160,10 +160,7 @@ export function resolveLiveSeasonStats(
   );
   const effectiveBaseRp = Math.max(minStartingRp, storedBaseRp);
 
-  const calculatedFromMonth = effectiveBaseRp + earnedThisMonthRp;
-  const explicitRp = Math.min(HARD_RESET_CAP_RP, Number(user?.seasonRp ?? user?.rp ?? 0));
-
-  const finalSeasonRp = Math.max(minStartingRp, calculatedFromMonth, explicitRp);
+  const finalSeasonRp = effectiveBaseRp + earnedThisMonthRp;
   const rankTier = getRankTier(finalSeasonRp);
   const rankTitle = rankTier.name || userReset.newRankTitle;
 

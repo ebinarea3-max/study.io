@@ -719,10 +719,10 @@ export function StudyProvider({ children }: { children: ReactNode }) {
             const rankTitle = pending.new_rank || getRankTier(startRp).fullTitle;
             if (isMounted) {
               updateProfile({
-                rp: Math.max(Number(user.rp || 0), startRp),
-                seasonRp: Math.max(Number(user.seasonRp || 0), startRp),
-                season_base_rp: Math.max(Number((user as any)?.season_base_rp || 0), startRp),
-                carryover_rp: Math.max(Number((user as any)?.carryover_rp || 0), startRp),
+                rp: startRp,
+                seasonRp: startRp,
+                season_base_rp: startRp,
+                carryover_rp: startRp,
                 rank_title: rankTitle,
                 currentSeasonId: currentMonth,
               });
@@ -754,13 +754,14 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       const currentMonthName = new Date().toLocaleString('en-US', { month: 'long' });
 
       // Guarantee state profile does not lag behind dynamic soft-reset baseline
-      if (Number((user as any)?.season_base_rp ?? 0) < userReset.startingRP || Number(user.seasonRp ?? 0) < userReset.startingRP) {
+      const live = resolveLiveSeasonStats(user, activeSessions);
+      if (Number((user as any)?.season_base_rp ?? 0) < userReset.startingRP || user.currentSeasonId !== currentMonth) {
         if (isMounted) {
           updateProfile({
-            rp: Math.max(Number(user.rp || 0), userReset.startingRP),
-            seasonRp: Math.max(Number(user.seasonRp || 0), userReset.startingRP),
-            season_base_rp: Math.max(Number((user as any)?.season_base_rp || 0), userReset.startingRP),
-            carryover_rp: Math.max(Number((user as any)?.carryover_rp || 0), userReset.startingRP),
+            rp: live.seasonRp,
+            seasonRp: live.seasonRp,
+            season_base_rp: userReset.startingRP,
+            carryover_rp: userReset.startingRP,
             rank_title: userReset.newRankTitle,
             currentSeasonId: currentMonth,
           });

@@ -351,11 +351,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (live.startingRp > 0) {
             parsed.season_base_rp = Math.max(Number(parsed.season_base_rp || 0), live.startingRp);
             parsed.carryover_rp = Math.max(Number(parsed.carryover_rp || 0), live.startingRp);
-            parsed.seasonRp = Math.max(Number(parsed.seasonRp || 0), live.seasonRp);
-            parsed.rp = Math.max(Number(parsed.rp || 0), live.seasonRp);
-            if (!parsed.rank_title || parsed.rank_title.toUpperCase() === 'BRONZE I') {
-              parsed.rank_title = live.rankTitle;
-            }
+            parsed.seasonRp = live.seasonRp;
+            parsed.rp = live.seasonRp;
+            parsed.rank_title = live.rankTitle;
           }
           if (!parsed.user_metadata) parsed.user_metadata = {};
           if (parsed.level && !parsed.user_metadata.level) {

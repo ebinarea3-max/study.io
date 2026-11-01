@@ -437,7 +437,7 @@ export function StudyTimer() {
       });
 
       const { seasonRp: liveRp, startingRp: effectiveBaseRp } = resolveLiveSeasonStats(user, sessions);
-      const prevRP = Math.max(liveRp, Number((user as any)?.rp ?? user?.seasonRp ?? 0));
+      const prevRP = liveRp;
       const newRP = prevRP + rpBreakdown.totalGained;
 
       // XP Calculation & Anti-Exploit Rules:

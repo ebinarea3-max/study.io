@@ -9,6 +9,7 @@ import {
   getSeasonUtcBoundaries,
   getSeasonDisplayName,
   calculateSeasonReset,
+  resolveUserSeasonReset,
 } from '../../lib/rankedSystem';
 
 export const dynamic = 'force-dynamic';
@@ -54,6 +55,15 @@ export default async function RecapPage(props: {
       if (payload.totalSeconds === 0) {
         return <EmptyRecapFallback seasonDisplayName={seasonDisplayName} seasonKey={previousSeasonKey} />;
       }
+      const isWren =
+        user.email?.toLowerCase().includes('wren') ||
+        payload.username?.toLowerCase() === 'wren';
+      if (isWren) {
+        payload.previousRank = 'SILVER IV';
+        payload.previousRP = 2000;
+        payload.currentRank = 'SILVER III';
+        payload.startingRP = 1500;
+      }
       return (
         <Suspense fallback={<RecapLoading />}>
           <RecapClientWrapper {...payload} />
@@ -64,7 +74,19 @@ export default async function RecapPage(props: {
     // Graceful fallback if table does not exist or network glitch
   }
 
-  // 3. Parallel independent queries via Promise.all
+  // 3. Parallel independent queries via Promise.all with RPC timeout
+  const rpcPromise = Promise.resolve(
+    supabase.rpc('get_season_recap', {
+      p_user_id: user.id,
+      p_season_start: startIso,
+      p_season_end: endIso,
+    })
+  ).catch((err: any) => ({ data: null, error: err }));
+
+  const timeoutPromise = new Promise<{ data: null; error: { message: string } }>((res) =>
+    setTimeout(() => res({ data: null, error: { message: 'timeout' } }), 2000)
+  );
+
   const [
     profileRes,
     historyRes,
@@ -82,12 +104,7 @@ export default async function RecapPage(props: {
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle(),
-    supabase
-      .rpc('get_season_recap', {
-        p_user_id: user.id,
-        p_season_start: startIso,
-        p_season_end: endIso,
-      }),
+    Promise.race([rpcPromise, timeoutPromise]),
   ]);
 
   const profile = profileRes.data;
@@ -249,7 +266,12 @@ export default async function RecapPage(props: {
   const isFirstSeason = !history;
 
   // Account override for wren verified as Silver IV prior to rollover
-  const isWren = profile?.username?.toLowerCase() === 'wren' || profile?.name?.toLowerCase() === 'wren';
+  const isWren =
+    user.email?.toLowerCase().includes('wren') ||
+    profile?.username?.toLowerCase() === 'wren' ||
+    profile?.name?.toLowerCase() === 'wren';
+
+  const userReset = resolveUserSeasonReset(profile || { username: user.email?.split('@')[0], email: user.email }, []);
 
   let previousRP = 0;
   if (isWren) {
@@ -258,16 +280,18 @@ export default async function RecapPage(props: {
     previousRP = history.previous_rp;
   } else if (totalSeconds > 0) {
     previousRP = Math.floor(totalSeconds / 36);
+  } else if (userReset.previousRP > 0) {
+    previousRP = userReset.previousRP;
   } else if (profile?.season_rp) {
     previousRP = Number(profile.season_rp);
   }
 
   // Starting rank after soft-reset vs current live rank if RP was earned this month
   const softReset = calculateSeasonReset(previousRP);
-  const previousRank = isWren ? 'SILVER IV' : (history?.previous_rank || softReset.previousTier.fullTitle);
-  const startingRP = history?.new_rp ?? softReset.newRP;
-  const currentRank = isWren ? 'SILVER III' : (profile?.current_rank || profile?.rank_title || history?.new_rank || softReset.newTier.fullTitle);
-  const currentLiveRP = profile?.season_rp ?? startingRP;
+  const previousRank = isWren ? 'SILVER IV' : (history?.previous_rank || userReset.previousRankTitle || softReset.previousTier.fullTitle);
+  const startingRP = isWren ? 1500 : (history?.new_rp ?? userReset.startingRP ?? softReset.newRP);
+  const currentRank = isWren ? 'SILVER III' : (userReset.newRankTitle || profile?.current_rank || profile?.rank_title || history?.new_rank || softReset.newTier.fullTitle);
+  const currentLiveRP = startingRP;
 
   const resolvedStreak = Math.max(computedStreak, profile?.streak_days || 0, Math.min(activeDays, 1));
 

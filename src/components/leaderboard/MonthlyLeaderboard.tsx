@@ -8,7 +8,7 @@ import { getRankTier, calculateSeasonRp, calculateRpFromSeconds, RankTierName, R
 import { getRankTheme } from '../../lib/rankTheme';
 import { getLevelFromLifetimeXP } from '../../lib/gamification';
 import { LeaderboardEntry } from '../../types';
-import { Clock, Trophy, Sparkles, ChevronRight } from 'lucide-react';
+import { Clock, Trophy, Sparkles, ChevronRight, Loader2 } from 'lucide-react';
 import { soundFx } from '../../lib/audio';
 import { RankCrestBadge } from '../common/RankCrestBadge';
 import { useRankTheme } from '../../hooks/useRankTheme';
@@ -256,6 +256,7 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
   const [isFetching, setIsFetching] = useState<boolean>(false);
   const [animationKey, setAnimationKey] = useState<number>(0);
   const [hasSeenRecap, setHasSeenRecap] = useState<boolean | null>(null);
+  const [isOpeningRecap, setIsOpeningRecap] = useState<boolean>(false);
 
   const checkIsUnlocked = useCallback(() => {
     if (typeof window === 'undefined') return true;
@@ -390,19 +391,22 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                   const live = resolveLiveSeasonStats(currentUser, currentSessions);
                   computedRank = live.rankTier.name;
                 } else if (row.username?.toLowerCase() === 'wren' || row.display_name?.toLowerCase() === 'wren' || row.name?.toLowerCase() === 'wren') {
-                  computedRank = 'Silver III';
-                } else {
-                  const carryoverRp = Math.min(26000, Number(row.carryover_rp ?? row.carryoverRp ?? row.season_base_rp ?? 0));
                   const earnedRp = row.total_seconds ? Math.floor(Number(row.total_seconds) / 36) : 0;
-                  const computedSeasonRp = carryoverRp + earnedRp;
-                  const explicitRp = (row.season_rp !== undefined && row.season_rp !== null) ? Number(row.season_rp) : 
-                                     (row.rp !== undefined && row.rp !== null) ? Number(row.rp) : 0;
+                  computedRank = getRankTier(1500 + earnedRp).name;
+                } else {
+                  const currentMonthStr = new Date().toISOString().substring(0, 7);
+                  const isResetThisMonth = row.last_reset_month === currentMonthStr;
+                  const earnedRp = row.total_seconds ? Math.floor(Number(row.total_seconds) / 36) : 0;
                   
-                  const bestRp = Math.max(computedSeasonRp, explicitRp);
-                  if (bestRp > 0) {
-                    computedRank = getRankTier(bestRp).name;
-                  } else if (row.rank_title && row.rank_title.toUpperCase() !== 'BRONZE I') {
-                    computedRank = row.rank_title;
+                  if (isResetThisMonth) {
+                    const carryoverRp = Math.min(26000, Number(row.carryover_rp ?? row.carryoverRp ?? row.season_base_rp ?? 0));
+                    computedRank = getRankTier(carryoverRp + earnedRp).name;
+                  } else {
+                    // Soft reset dynamically based on prior season RP
+                    const priorRp = Number(row.season_rp ?? row.rp ?? 0);
+                    const prevTier = getRankTier(priorRp);
+                    const softResetRp = prevTier.softResetRp;
+                    computedRank = getRankTier(softResetRp + earnedRp).name;
                   }
                 }
               } catch (e) {}
@@ -467,17 +471,22 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                       const live = resolveLiveSeasonStats(currentUser, currentSessions);
                       computedRank = live.rankTier.name;
                     } else if (p.username?.toLowerCase() === 'wren' || p.name?.toLowerCase() === 'wren') {
-                      computedRank = 'Silver III';
-                    } else {
-                      const carryoverRp = Math.min(26000, Number(p.season_base_rp ?? p.carryover_rp ?? 0));
                       const earnedRp = userTotals[p.id] ? Math.floor(userTotals[p.id] / 36) : 0;
-                      const computedSeasonRp = carryoverRp + earnedRp;
-                      const explicitRp = (p.season_rp !== undefined && p.season_rp !== null) ? Number(p.season_rp) : 
-                                         (p.rp !== undefined && p.rp !== null) ? Number(p.rp) : 0;
-                      
-                      const bestRp = Math.max(computedSeasonRp, explicitRp);
-                      if (bestRp > 0) {
-                        computedRank = p.current_rank || getRankTier(bestRp).name;
+                      computedRank = getRankTier(1500 + earnedRp).name;
+                    } else {
+                      const currentMonthStr = new Date().toISOString().substring(0, 7);
+                      const isResetThisMonth = p.last_reset_month === currentMonthStr;
+                      const earnedRp = userTotals[p.id] ? Math.floor(userTotals[p.id] / 36) : 0;
+
+                      if (isResetThisMonth) {
+                        const carryoverRp = Math.min(26000, Number(p.season_base_rp ?? p.carryover_rp ?? 0));
+                        computedRank = getRankTier(carryoverRp + earnedRp).name;
+                      } else {
+                        // Soft reset dynamically based on prior season RP
+                        const priorRp = Number(p.season_rp ?? p.rp ?? 0);
+                        const prevTier = getRankTier(priorRp);
+                        const softResetRp = prevTier.softResetRp;
+                        computedRank = getRankTier(softResetRp + earnedRp).name;
                       }
                     }
                   } catch (e) {}
@@ -680,7 +689,9 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
           <div className="w-full flex flex-col gap-3">
             <Link
               href="/recap"
+              prefetch={true}
               onClick={() => {
+                setIsOpeningRecap(true);
                 try {
                   soundFx.resumeContext();
                 } catch {}
@@ -688,7 +699,7 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
               className="inline-block w-full py-4 rounded-xl font-hud font-bold tracking-widest transition-all shadow-lg active:scale-95 hover:brightness-110 text-center"
               style={{ backgroundColor: 'var(--accent)', color: 'var(--accent-contrast)', boxShadow: '0 4px 20px var(--glow)' }}
             >
-              WATCH SEASON RECAP TO UNLOCK
+              {isOpeningRecap ? 'OPENING RECAP...' : 'WATCH SEASON RECAP TO UNLOCK'}
             </Link>
 
             <button
@@ -770,7 +781,9 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
               <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
                 <Link
                   href="/recap"
+                  prefetch={true}
                   onClick={() => {
+                    setIsOpeningRecap(true);
                     try {
                       soundFx.resumeContext();
                     } catch {}
@@ -778,8 +791,17 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--surface)] hover:bg-[var(--surface-2)] border border-[var(--border)] text-xs font-mono text-[var(--text-dim)] hover:text-[var(--text)] transition-all duration-150 active:scale-95 cursor-pointer shrink-0 shadow-card"
                   title="Watch your recap from the previous completed season"
                 >
-                  <span>Last Season Recap</span>
-                  <ChevronRight className="w-3.5 h-3.5 text-[var(--text-faint)]" />
+                  {isOpeningRecap ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-[var(--accent)]" />
+                      <span className="text-[var(--accent)] font-semibold">Opening Recap...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Last Season Recap</span>
+                      <ChevronRight className="w-3.5 h-3.5 text-[var(--text-faint)]" />
+                    </>
+                  )}
                 </Link>
 
                 <div className="inline-flex items-center p-1 bg-fg/[0.03] border border-fg/[0.07] rounded-xl gap-1 relative overflow-x-auto max-w-full shadow-card">

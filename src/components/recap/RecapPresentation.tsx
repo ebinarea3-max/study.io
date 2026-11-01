@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion';
 import { RankCrestBadge } from '../common/RankCrestBadge';
 import { RankTierName, getRankBadgePath } from '../../lib/rankedSystem';
+import { getRankBadgeSources } from '../../lib/preloadRankBadges';
 import { soundFx } from '../../lib/audio';
 import Link from 'next/link';
 import { Volume2, VolumeX, X, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -238,6 +239,20 @@ export default function RecapPresentation({
   // Derived rank objects
   const prevParsed = useMemo(() => parseRank(previousRank), [previousRank]);
   const currParsed = useMemo(() => parseRank(currentRank), [currentRank]);
+
+  // Preload rank crest badges immediately so Slide 5 images are instant
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const prevSources = getRankBadgeSources(prevParsed.tier as any, prevParsed.division as any);
+      const currSources = getRankBadgeSources(currParsed.tier as any, currParsed.division as any);
+      const list = [prevSources.webp, prevSources.png, currSources.webp, currSources.png];
+      list.forEach((url) => {
+        const img = new Image();
+        img.src = url;
+      });
+    } catch {}
+  }, [prevParsed.tier, prevParsed.division, currParsed.tier, currParsed.division]);
 
   // Is user promoted or demoted
   const isPromoted = useMemo(() => {
@@ -1159,6 +1174,7 @@ export default function RecapPresentation({
                       tier={prevParsed.tier}
                       division={prevParsed.division}
                       size={isMobile ? 130 : 190}
+                      priority={true}
                       className="relative z-10"
                     />
                   </div>
@@ -1220,6 +1236,7 @@ export default function RecapPresentation({
                         tier={currParsed.tier}
                         division={currParsed.division}
                         size={isMobile ? 130 : 190}
+                        priority={true}
                         className="relative z-10"
                       />
                     </div>
