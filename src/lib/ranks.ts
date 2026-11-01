@@ -149,25 +149,19 @@ export function resolveLiveSeasonStats(
   rankTitle: string;
 } {
   const userReset = resolveUserSeasonReset(user, sessions);
-  const minStartingRp = Math.min(HARD_RESET_CAP_RP, userReset.startingRP || 0);
+  const startingRp = Math.min(HARD_RESET_CAP_RP, userReset.startingRP || 0);
 
   const currentMonthSeconds = getCurrentMonthFocusSeconds(sessions || []);
   const earnedThisMonthRp = Math.floor(currentMonthSeconds / 36);
 
-  const storedBaseRp = Math.min(
-    HARD_RESET_CAP_RP,
-    Number(user?.season_base_rp ?? user?.carryover_rp ?? user?.carryoverRp ?? 0)
-  );
-  const effectiveBaseRp = Math.max(minStartingRp, storedBaseRp);
-
-  const finalSeasonRp = effectiveBaseRp + earnedThisMonthRp;
+  const finalSeasonRp = startingRp + earnedThisMonthRp;
   const rankTier = getRankTier(finalSeasonRp);
-  const rankTitle = rankTier.name || userReset.newRankTitle;
+  const rankTitle = userReset.newRankTitle || rankTier.name;
 
   return {
     seasonRp: finalSeasonRp,
     rankTier,
-    startingRp: effectiveBaseRp,
+    startingRp,
     currentMonthSeconds,
     rankTitle,
   };

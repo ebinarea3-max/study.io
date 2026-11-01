@@ -92,18 +92,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         : 0;
         
       const currentMonthStr = new Date().toISOString().substring(0, 7);
-      const isNewSeason = profile?.last_reset_month && profile.last_reset_month !== currentMonthStr;
+      const isNewSeason = !profile?.last_reset_month || profile.last_reset_month !== currentMonthStr || profile?.current_season_id !== currentMonthStr;
 
       // Compute exact reset for any user dynamically based on October study sessions & profile
       const userReset = resolveUserSeasonReset(profile, dbSessions || []);
       
-      let carryoverRp = Math.min(HARD_RESET_CAP_RP, Number(profile?.season_base_rp ?? profile?.carryover_rp ?? 0));
-      if (isNewSeason || carryoverRp < userReset.startingRP) {
-        carryoverRp = userReset.startingRP;
-      }
+      const carryoverRp = userReset.startingRP;
       const calculatedRP = calculateSeasonRp(currentMonthStudySeconds, carryoverRp);
       const currentRankObj = getRankTier(calculatedRP);
-      const effectiveRankTitle = currentRankObj.name.toUpperCase();
+      const effectiveRankTitle = (userReset.newRankTitle || currentRankObj.name).toUpperCase();
       const effectiveBadge = currentRankObj.badge;
       
       let currentProfileRP = Number(profile?.season_rp ?? 0);
@@ -113,7 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (isNewSeason) {
         currentProfileRP = calculatedRP;
         needsRepair = true;
-      } else if (carryoverRp < userReset.startingRP) {
+      } else if (Number(profile?.season_base_rp ?? 0) !== userReset.startingRP) {
         currentProfileRP = calculatedRP;
         needsRepair = true;
       } else if (Math.abs(currentProfileRP - calculatedRP) > 5 || Number(profile?.total_study_seconds ?? 0) > totalStudySeconds + 3600) {
@@ -257,7 +254,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const newBadge = liveStats.rankTier.badge;
           let lastResetMonth = data.last_reset_month;
 
-          if (lastResetMonth !== currentMonthStr || Number(data.season_rp ?? 0) < resolvedSeasonRp || Number(data.season_base_rp ?? 0) < newStartingRP) {
+          if (
+            lastResetMonth !== currentMonthStr ||
+            data.current_season_id !== currentMonthStr ||
+            Number(data.season_base_rp ?? 0) !== newStartingRP ||
+            Number(data.season_rp ?? 0) !== resolvedSeasonRp
+          ) {
             lastResetMonth = currentMonthStr;
 
             try {
@@ -754,8 +756,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (updates.rank_title !== undefined) {
           payload.rank_title = updates.rank_title;
         }
+        if ((updates as any).current_rank !== undefined || updates.rank_title !== undefined) {
+          payload.current_rank = (updates as any).current_rank || updates.rank_title;
+        }
+        if ((updates as any).rank_badge !== undefined) {
+          payload.rank_badge = (updates as any).rank_badge;
+        }
         if ((updates as any).last_season_rank !== undefined) {
           payload.last_season_rank = (updates as any).last_season_rank;
+        }
+        if ((updates as any).currentSeasonId !== undefined || (updates as any).current_season_id !== undefined) {
+          payload.current_season_id = (updates as any).currentSeasonId || (updates as any).current_season_id;
+        }
+        if ((updates as any).last_reset_month !== undefined) {
+          payload.last_reset_month = (updates as any).last_reset_month;
         }
 
         if (Object.keys(payload).length > 0) {

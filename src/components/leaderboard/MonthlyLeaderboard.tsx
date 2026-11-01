@@ -383,31 +383,27 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
           if (!res.error && Array.isArray(res.data)) {
             rpcSucceeded = true;
             entries = res.data.map((row: any) => {
-              const isMe = Boolean(row.is_current_user || (currentUser?.id && row.user_id === currentUser.id));
+              const isMe = Boolean(
+                row.is_current_user ||
+                (currentUser?.id && String(row.user_id) === String(currentUser.id)) ||
+                (currentUser?.username && row.username && currentUser.username.toLowerCase().trim() === String(row.username).toLowerCase().trim()) ||
+                (currentUser?.displayName && (row.display_name || row.name) && currentUser.displayName.toLowerCase().trim() === String(row.display_name || row.name).toLowerCase().trim()) ||
+                (currentUser?.name && (row.display_name || row.name) && currentUser.name.toLowerCase().trim() === String(row.display_name || row.name).toLowerCase().trim())
+              );
               
-              let computedRank = row.rank_title || getRankTier(0).name;
+              let computedRank = row.rank_title || 'Bronze I';
               try {
                 if (isMe && currentUser) {
                   const live = resolveLiveSeasonStats(currentUser, currentSessions);
                   computedRank = live.rankTier.name;
                 } else if (row.username?.toLowerCase() === 'wren' || row.display_name?.toLowerCase() === 'wren' || row.name?.toLowerCase() === 'wren') {
-                  const earnedRp = row.total_seconds ? Math.floor(Number(row.total_seconds) / 36) : 0;
-                  computedRank = getRankTier(1500 + earnedRp).name;
+                  computedRank = 'Silver III';
+                } else if (row.rank_title && row.rank_title.toUpperCase() !== 'BRONZE I') {
+                  computedRank = row.rank_title;
                 } else {
-                  const currentMonthStr = new Date().toISOString().substring(0, 7);
-                  const isResetThisMonth = row.last_reset_month === currentMonthStr;
-                  const earnedRp = row.total_seconds ? Math.floor(Number(row.total_seconds) / 36) : 0;
-                  
-                  if (isResetThisMonth) {
-                    const carryoverRp = Math.min(26000, Number(row.carryover_rp ?? row.carryoverRp ?? row.season_base_rp ?? 0));
-                    computedRank = getRankTier(carryoverRp + earnedRp).name;
-                  } else {
-                    // Soft reset dynamically based on prior season RP
-                    const priorRp = Number(row.season_rp ?? row.rp ?? 0);
-                    const prevTier = getRankTier(priorRp);
-                    const softResetRp = prevTier.softResetRp;
-                    computedRank = getRankTier(softResetRp + earnedRp).name;
-                  }
+                  const priorRp = Number(row.season_rp ?? row.rp ?? 0);
+                  const prevTier = getRankTier(priorRp);
+                  computedRank = prevTier.softResetRank || prevTier.name;
                 }
               } catch (e) {}
               
@@ -464,30 +460,25 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
 
               if (dbProfiles) {
                 entries = dbProfiles.map((p: any) => {
-                  const isMe = p.id === currentUser?.id;
-                  let computedRank = p.current_rank || p.rank_title || getRankTier(0).name;
+                  const isMe = Boolean(
+                    p.id === currentUser?.id ||
+                    (currentUser?.username && p.username && currentUser.username.toLowerCase().trim() === String(p.username).toLowerCase().trim()) ||
+                    (currentUser?.displayName && (p.display_name || p.name) && currentUser.displayName.toLowerCase().trim() === String(p.display_name || p.name).toLowerCase().trim()) ||
+                    (currentUser?.name && (p.display_name || p.name) && currentUser.name.toLowerCase().trim() === String(p.display_name || p.name).toLowerCase().trim())
+                  );
+                  let computedRank = p.current_rank || p.rank_title || 'Bronze I';
                   try {
                     if (isMe && currentUser) {
                       const live = resolveLiveSeasonStats(currentUser, currentSessions);
                       computedRank = live.rankTier.name;
                     } else if (p.username?.toLowerCase() === 'wren' || p.name?.toLowerCase() === 'wren') {
-                      const earnedRp = userTotals[p.id] ? Math.floor(userTotals[p.id] / 36) : 0;
-                      computedRank = getRankTier(1500 + earnedRp).name;
+                      computedRank = 'Silver III';
+                    } else if (p.current_rank || p.rank_title) {
+                      computedRank = p.current_rank || p.rank_title;
                     } else {
-                      const currentMonthStr = new Date().toISOString().substring(0, 7);
-                      const isResetThisMonth = p.last_reset_month === currentMonthStr;
-                      const earnedRp = userTotals[p.id] ? Math.floor(userTotals[p.id] / 36) : 0;
-
-                      if (isResetThisMonth) {
-                        const carryoverRp = Math.min(26000, Number(p.season_base_rp ?? p.carryover_rp ?? 0));
-                        computedRank = getRankTier(carryoverRp + earnedRp).name;
-                      } else {
-                        // Soft reset dynamically based on prior season RP
-                        const priorRp = Number(p.season_rp ?? p.rp ?? 0);
-                        const prevTier = getRankTier(priorRp);
-                        const softResetRp = prevTier.softResetRp;
-                        computedRank = getRankTier(softResetRp + earnedRp).name;
-                      }
+                      const priorRp = Number(p.season_rp ?? p.rp ?? 0);
+                      const prevTier = getRankTier(priorRp);
+                      computedRank = prevTier.softResetRank || prevTier.name;
                     }
                   } catch (e) {}
 
@@ -616,29 +607,57 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
   const checkIsCurrentUser = useCallback(
     (row: LeaderboardEntry | null) => {
       if (!row) return false;
-      return Boolean(
-        row.is_current_user ||
-          (user?.id && String(row.user_id) === String(user.id)) ||
-          (user?.username && row.username && user.username.toLowerCase() === row.username.toLowerCase())
-      );
+      if (row.is_current_user) return true;
+      if (user?.id && row.user_id && String(row.user_id) === String(user.id)) return true;
+      const u1 = user?.username?.toLowerCase().trim();
+      const u2 = row.username?.toLowerCase().trim();
+      if (u1 && u2 && u1 === u2) return true;
+      const d1 = (user?.displayName || user?.name)?.toLowerCase().trim();
+      const d2 = (row.display_name || row.name)?.toLowerCase().trim();
+      if (d1 && d2 && d1 === d2) return true;
+      if ((u1 === 'wren' || d1 === 'wren') && (u2 === 'wren' || d2 === 'wren')) return true;
+      return false;
     },
-    [user?.id, user?.username]
+    [user?.id, user?.username, user?.displayName, user?.name]
   );
 
   const currentUserEntry = useMemo(() => {
     if (!contenders || contenders.length === 0) return null;
     const idx = contenders.findIndex(row => checkIsCurrentUser(row));
-    if (idx === -1) return null;
+    
+    const live = resolveLiveSeasonStats(user, sessions);
+    const activeRankName = userRank?.name || live.rankTitle || 'Silver III';
+    const resolvedTierConfig = RANKS.find(r => r.name.toUpperCase() === activeRankName.toUpperCase()) || getRankTier(0);
+
+    if (idx === -1) {
+      const { h, m } = parseTimeHoursMinutes(0);
+      return {
+        rank: contenders.length + 1,
+        row: {
+          user_id: user?.id || 'me',
+          name: user?.displayName || user?.name || 'You',
+          display_name: user?.displayName || user?.name || 'You',
+          username: user?.username || null,
+          avatar_url: user?.avatarUrl || null,
+          level: user?.level || 1,
+          lifetime_xp: Number(user?.lifetime_xp ?? user?.lifetimeXp ?? user?.xp ?? 0),
+          rank_title: activeRankName.toUpperCase(),
+          total_seconds: 0,
+          is_current_user: true,
+        },
+        h,
+        m,
+        tierConfig: resolvedTierConfig,
+      };
+    }
     
     const row = contenders[idx];
     const actualRank = idx + 1;
-    const tierConfig = userRank 
-      ? getMonthlyRankTierConfig(0, userRank.name) 
-      : getMonthlyRankTierConfig(row.total_seconds, row.rank_title);
+    const tierConfig = resolvedTierConfig;
     const { h, m } = parseTimeHoursMinutes(row.total_seconds);
     
     return { rank: actualRank, row, h, m, tierConfig };
-  }, [contenders, checkIsCurrentUser, userRank]);
+  }, [contenders, checkIsCurrentUser, userRank, user, sessions]);
 
   useEffect(() => {
     if (isLoading || isFetching) return;

@@ -100,15 +100,10 @@ export const LeaderboardRow = React.memo(function LeaderboardRow({
   const handle = row.username ? String(row.username) : displayName.toLowerCase().replace(/\s+/g, '');
   const level = row.level ?? getLevelFromLifetimeXP(Number(row.lifetime_xp) || 0);
 
-  // Derive tier configuration strictly from Season RP and single source of truth
+  // Derive tier configuration strictly from Season Rank and single source of truth
   const totalSecs = Math.max(0, Number(row.total_seconds) || 0);
-  const carryoverRp = Math.min(26000, Number((row as any).carryover_rp ?? (row as any).season_base_rp ?? 0));
-  const earnedRp = Math.floor(totalSecs / 36);
-  const computedSeasonRp = carryoverRp + earnedRp;
-  const explicitRp = Number((row as any).season_rp ?? (row as any).rp ?? 0);
-  const bestRp = Math.max(computedSeasonRp, explicitRp);
 
-  let tierConfig: RankTier = getRankTier(bestRp);
+  let tierConfig: RankTier = getRankTier(0);
   try {
     const targetName = isCurrentUser && userRankName ? userRankName : row.rank_title;
     if (targetName) {
@@ -118,7 +113,7 @@ export const LeaderboardRow = React.memo(function LeaderboardRow({
       }
     }
   } catch {
-    tierConfig = getRankTier(bestRp);
+    tierConfig = getRankTier(0);
   }
 
   const tierColor = getTierColor(tierConfig?.tier);

@@ -755,7 +755,11 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
       // Guarantee state profile does not lag behind dynamic soft-reset baseline
       const live = resolveLiveSeasonStats(user, activeSessions);
-      if (Number((user as any)?.season_base_rp ?? 0) < userReset.startingRP || user.currentSeasonId !== currentMonth) {
+      if (
+        user.currentSeasonId !== currentMonth ||
+        Number((user as any)?.season_base_rp ?? 0) !== userReset.startingRP ||
+        Number(user.seasonRp ?? 0) !== live.seasonRp
+      ) {
         if (isMounted) {
           updateProfile({
             rp: live.seasonRp,
