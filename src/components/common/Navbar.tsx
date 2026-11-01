@@ -47,6 +47,20 @@ interface NavbarProps {
   onOpenSettings: () => void;
 }
 
+const StreakBadge = React.memo(function StreakBadge({ streak }: { streak: number }) {
+  return (
+    <div
+      className="flex items-center h-8 sm:h-9 px-2 sm:px-3 bg-[var(--surface)] border border-[var(--border)] text-[var(--text)] shadow-card cursor-default select-none rounded-xl gap-1 sm:gap-1.5 shrink-0"
+      title={`${streak} Day Streak`}
+    >
+      <Flame className="w-4 h-4 text-orange-500 shrink-0" fill="currentColor" strokeWidth={2} />
+      <span className="text-xs font-bold font-mono text-[var(--text)] min-w-[1ch] text-center inline-block">
+        {streak}
+      </span>
+    </div>
+  );
+});
+
 export function Navbar({
   activeTab,
   setActiveTab,
@@ -63,6 +77,12 @@ export function Navbar({
   const [showPersonaMenu, setShowPersonaMenu] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  const streakRef = useRef(user?.streakDays ?? 0);
+  if (user?.streakDays !== undefined && user.streakDays !== null) {
+    streakRef.current = user.streakDays;
+  }
+  const displayStreak = user?.streakDays ?? streakRef.current ?? 0;
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent | TouchEvent) {
@@ -359,13 +379,7 @@ export function Navbar({
           ) : (
             <div className="flex items-center gap-2">
               {/* Streak Pill */}
-              <div
-                className="flex items-center h-8 sm:h-9 px-2 sm:px-3 bg-[var(--surface)] border border-[var(--border)] text-[var(--text)] shadow-card cursor-default select-none rounded-xl gap-1 sm:gap-1.5"
-                title={`${user?.streakDays || 0} Day Streak`}
-              >
-                <Flame className="w-4 h-4 text-orange-500 fill-orange-500" />
-                <span className="text-xs font-bold font-mono text-[var(--text)]">{user?.streakDays || 0}</span>
-              </div>
+              <StreakBadge streak={displayStreak} />
 
               {/* Rank Status Pill */}
               {isLoading && (!user || user.id.startsWith('user-scholar') || user.id === 'guest') ? (

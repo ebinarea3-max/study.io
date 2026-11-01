@@ -121,10 +121,15 @@ export default function Home() {
     setActiveTab('timer');
   }, []);
 
-  // Re-fetch sessions automatically whenever the user navigates back to Dashboard or switches tabs
+  // Re-fetch sessions automatically whenever the user navigates back to Dashboard or switches tabs (throttled)
+  const lastTabRefetchRef = useRef<number>(Date.now());
   useEffect(() => {
     if (isAuthenticated) {
-      refetchSessions();
+      const now = Date.now();
+      if (now - lastTabRefetchRef.current > 30000) {
+        lastTabRefetchRef.current = now;
+        refetchSessions();
+      }
     }
   }, [activeTab, isAuthenticated, refetchSessions]);
 
