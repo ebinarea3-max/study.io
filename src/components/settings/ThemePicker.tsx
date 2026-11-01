@@ -1,14 +1,18 @@
 'use client';
 
-import React, { useRef, useCallback } from 'react';
-import { useTheme } from '../../context/ThemeContext';
+import React, { useRef, useCallback, useMemo } from 'react';
+import { useTheme, ThemeOption } from '../../context/ThemeContext';
 import { usePremium } from '../../context/PremiumContext';
-import { Check, Sparkles, RotateCcw, Lock } from 'lucide-react';
+import { Check, Sparkles, RotateCcw, Lock, Crown } from 'lucide-react';
 
 export function ThemePicker() {
   const { theme, setTheme, themes, isMounted } = useTheme();
   const { isPremium, openPremiumModal } = usePremium();
   const cardRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  // Split into free themes and premium themes
+  const freeThemes = useMemo(() => themes.filter((t) => !t.isPremium), [themes]);
+  const premiumThemes = useMemo(() => themes.filter((t) => t.isPremium), [themes]);
 
   // Arrow key navigation between responsive theme cards
   const handleKeyDown = useCallback(
@@ -69,9 +73,130 @@ export function ThemePicker() {
     [themes, setTheme, isPremium, openPremiumModal]
   );
 
+  const renderThemeCard = (t: ThemeOption) => {
+    const index = themes.findIndex((item) => item.id === t.id);
+    const isSelected = isMounted && theme === t.id;
+    const isRank = t.id === 'rank';
+    const [bgCol, surfaceCol, accentCol] = t.previewColors;
+
+    return (
+      <button
+        key={t.id}
+        ref={(el) => {
+          cardRefs.current[index] = el;
+        }}
+        type="button"
+        role="radio"
+        aria-checked={isSelected}
+        aria-pressed={isSelected}
+        tabIndex={isSelected || (!isMounted && index === 0) ? 0 : -1}
+        title={`${t.name}: ${t.description}${t.isPremium ? ' (Premium)' : ''}`}
+        onClick={() => {
+          if (t.isPremium && !isPremium) {
+            openPremiumModal();
+            return;
+          }
+          setTheme(t.id);
+        }}
+        onKeyDown={(e) => handleKeyDown(e, index)}
+        className={`relative rounded-[14px] p-3 text-left transition-all duration-200 cursor-pointer h-full flex flex-col justify-between overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)] active:scale-[0.98] ${
+          isSelected
+            ? 'border-2 border-[var(--accent)] shadow-[0_0_16px_var(--glow)] bg-[var(--surface-2)]'
+            : 'border border-[var(--border)] hover:border-[var(--border-strong)] bg-[var(--surface)] hover:bg-[var(--surface-2)]'
+        }`}
+        style={{ borderRadius: '14px' }}
+      >
+        {/* Selected Check Badge */}
+        {isSelected && (
+          <div
+            className="absolute top-2.5 right-2.5 w-5 h-5 rounded-full flex items-center justify-center shadow-md z-20 animate-in zoom-in-75 duration-150"
+            style={{
+              backgroundColor: 'var(--accent)',
+              color: 'var(--accent-contrast)',
+            }}
+            aria-hidden="true"
+          >
+            <Check className="w-3 h-3 stroke-[3]" />
+          </div>
+        )}
+
+        {/* Mini Preview Box */}
+        <div
+          className="w-full h-16 rounded-[10px] p-2 relative overflow-hidden flex flex-col justify-between mb-2.5 border flex-shrink-0"
+          style={{
+            backgroundColor: bgCol,
+            borderColor: t.isLight ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.08)',
+          }}
+          aria-hidden="true"
+        >
+          {/* Surface Bar */}
+          <div
+            className="w-full h-4 rounded-[6px] px-1.5 flex items-center gap-1.5 border"
+            style={{
+              backgroundColor: surfaceCol,
+              borderColor: t.isLight ? 'rgba(0, 0, 0, 0.06)' : 'rgba(255, 255, 255, 0.06)',
+            }}
+          >
+            {isRank ? (
+              <div
+                className="w-full h-1.5 rounded-full"
+                style={{
+                  background:
+                    'linear-gradient(90deg, #C98A4B 0%, #A8B4C2 16%, #D4A017 32%, #38BFC4 48%, #6FA8DC 64%, #B24FE8 80%, #E11D48 100%)',
+                }}
+              />
+            ) : (
+              <>
+                <div
+                  className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: accentCol }}
+                />
+                <div
+                  className="h-1.5 rounded-full flex-1 max-w-[42px]"
+                  style={{ backgroundColor: accentCol }}
+                />
+              </>
+            )}
+          </div>
+
+          {/* Accent Highlight Bar */}
+          <div
+            className="h-1.5 rounded-full"
+            style={{
+              width: isRank ? '75%' : '45%',
+              background: isRank
+                ? 'linear-gradient(90deg, #C98A4B, #D4A017, #38BFC4, #B24FE8)'
+                : accentCol,
+            }}
+          />
+        </div>
+
+        {/* Theme Name, Premium tag, & Description */}
+        <div className="w-full min-w-0 flex-1 flex flex-col justify-start">
+          <div className="flex items-center justify-between gap-1.5">
+            <div className="font-hud font-semibold text-[14px] leading-tight text-[var(--text)] tracking-wide truncate">
+              {t.name}
+            </div>
+            {t.isPremium && (
+              <div className="flex items-center gap-1 shrink-0">
+                {!isPremium && <Lock className="w-3 h-3 text-amber-400" />}
+                <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                  PRO
+                </span>
+              </div>
+            )}
+          </div>
+          <div className="text-[12px] leading-snug text-[var(--text-dim)] font-sans mt-1">
+            {t.description}
+          </div>
+        </div>
+      </button>
+    );
+  };
+
   return (
     <section aria-labelledby="appearance-heading" className="w-full">
-      <div className="p-5 sm:p-6 rounded-2xl hud-surface border border-[var(--border)] relative overflow-hidden">
+      <div className="p-5 sm:p-6 rounded-2xl hud-surface border border-[var(--border)] relative overflow-hidden space-y-6">
         {/* Header Bar */}
         <div className="flex items-center justify-between gap-4 pb-4 border-b border-[var(--border)]">
           <div className="flex items-center gap-3">
@@ -93,7 +218,7 @@ export function ThemePicker() {
                 Appearance
               </h3>
               <p className="text-xs text-[var(--text-dim)] mt-0.5">
-                Choose how study.io looks.
+                Customize study.io with free and premium color themes.
               </p>
             </div>
           </div>
@@ -109,133 +234,57 @@ export function ThemePicker() {
           </button>
         </div>
 
-        {/* Responsive Grid: 3 cols in settings modal, 2 cols on mobile */}
-        <div
-          role="radiogroup"
-          aria-label="Theme selection"
-          className="grid gap-3 pt-4"
-          style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))' }}
-        >
-          {themes.map((t, index) => {
-            const isSelected = isMounted && theme === t.id;
-            const isRank = t.id === 'rank';
-            const [bgCol, surfaceCol, accentCol] = t.previewColors;
+        {/* ─── SECTION 1: FREE THEMES ───────────────────────────── */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-hud font-bold tracking-wider uppercase text-[var(--text)]">
+                Free Themes
+              </span>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-[var(--surface-2)] text-[var(--text-dim)] border border-[var(--border)]">
+                {freeThemes.length}
+              </span>
+            </div>
+            <span className="text-[11px] font-sans text-[var(--text-dim)]">
+              Included with all accounts
+            </span>
+          </div>
 
-            return (
-              <button
-                key={t.id}
-                ref={(el) => {
-                  cardRefs.current[index] = el;
-                }}
-                type="button"
-                role="radio"
-                aria-checked={isSelected}
-                aria-pressed={isSelected}
-                tabIndex={isSelected || (!isMounted && index === 0) ? 0 : -1}
-                title={`${t.name}: ${t.description}${t.isPremium ? ' (Premium)' : ''}`}
-                onClick={() => {
-                  if (t.isPremium && !isPremium) {
-                    openPremiumModal();
-                    return;
-                  }
-                  setTheme(t.id);
-                }}
-                onKeyDown={(e) => handleKeyDown(e, index)}
-                className={`relative rounded-[14px] p-3 text-left transition-all duration-200 cursor-pointer h-full flex flex-col justify-between overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)] active:scale-[0.98] ${
-                  isSelected
-                    ? 'border-2 border-[var(--accent)] shadow-[0_0_16px_var(--glow)] bg-[var(--surface-2)]'
-                    : 'border border-[var(--border)] hover:border-[var(--border-strong)] bg-[var(--surface)] hover:bg-[var(--surface-2)]'
-                }`}
-                style={{ borderRadius: '14px' }}
-              >
-                {/* Selected Check Badge */}
-                {isSelected && (
-                  <div
-                    className="absolute top-2.5 right-2.5 w-5 h-5 rounded-full flex items-center justify-center shadow-md z-20 animate-in zoom-in-75 duration-150"
-                    style={{
-                      backgroundColor: 'var(--accent)',
-                      color: 'var(--accent-contrast)',
-                    }}
-                    aria-hidden="true"
-                  >
-                    <Check className="w-3 h-3 stroke-[3]" />
-                  </div>
-                )}
+          <div
+            role="radiogroup"
+            aria-label="Free Themes"
+            className="grid gap-3"
+            style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))' }}
+          >
+            {freeThemes.map((t) => renderThemeCard(t))}
+          </div>
+        </div>
 
-                {/* Mini Preview Box (64px tall for clear visibility) */}
-                <div
-                  className="w-full h-16 rounded-[10px] p-2 relative overflow-hidden flex flex-col justify-between mb-2.5 border flex-shrink-0"
-                  style={{
-                    backgroundColor: bgCol,
-                    borderColor: t.isLight ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.08)',
-                  }}
-                  aria-hidden="true"
-                >
-                  {/* Surface Bar */}
-                  <div
-                    className="w-full h-4 rounded-[6px] px-1.5 flex items-center gap-1.5 border"
-                    style={{
-                      backgroundColor: surfaceCol,
-                      borderColor: t.isLight ? 'rgba(0, 0, 0, 0.06)' : 'rgba(255, 255, 255, 0.06)',
-                    }}
-                  >
-                    {isRank ? (
-                      /* Multi-tier gradient swatch representing all rank tiers */
-                      <div
-                        className="w-full h-1.5 rounded-full"
-                        style={{
-                          background:
-                            'linear-gradient(90deg, #C98A4B 0%, #A8B4C2 16%, #D4A017 32%, #38BFC4 48%, #6FA8DC 64%, #B24FE8 80%, #E11D48 100%)',
-                        }}
-                      />
-                    ) : (
-                      <>
-                        <div
-                          className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                          style={{ backgroundColor: accentCol }}
-                        />
-                        <div
-                          className="h-1.5 rounded-full flex-1 max-w-[42px]"
-                          style={{ backgroundColor: accentCol }}
-                        />
-                      </>
-                    )}
-                  </div>
+        {/* ─── SECTION 2: PREMIUM THEMES ────────────────────────── */}
+        <div className="space-y-3 pt-5 border-t border-[var(--border)]">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-hud font-bold tracking-wider uppercase text-amber-400 flex items-center gap-1.5">
+                <Crown className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                Premium Themes
+              </span>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                {premiumThemes.length}
+              </span>
+            </div>
+            <span className="text-[11px] font-sans text-[var(--text-dim)]">
+              {isPremium ? 'Unlocked with study.io Pro' : '7 Exclusive Scholar Palettes'}
+            </span>
+          </div>
 
-                  {/* Accent Highlight Bar */}
-                  <div
-                    className="h-1.5 rounded-full"
-                    style={{
-                      width: isRank ? '75%' : '45%',
-                      background: isRank
-                        ? 'linear-gradient(90deg, #C98A4B, #D4A017, #38BFC4, #B24FE8)'
-                        : accentCol,
-                    }}
-                  />
-                </div>
-
-                {/* Theme Name, Premium tag, & Description */}
-                <div className="w-full min-w-0 flex-1 flex flex-col justify-start">
-                  <div className="flex items-center justify-between gap-1.5">
-                    <div className="font-hud font-semibold text-[14px] leading-tight text-[var(--text)] tracking-wide truncate">
-                      {t.name}
-                    </div>
-                    {t.isPremium && (
-                      <div className="flex items-center gap-1 shrink-0">
-                        {!isPremium && <Lock className="w-3 h-3 text-[var(--text-dim)]" />}
-                        <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-md bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--border)]">
-                          Premium
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="text-[12px] leading-snug text-[var(--text-dim)] font-sans mt-1">
-                    {t.description}
-                  </div>
-                </div>
-              </button>
-            );
-          })}
+          <div
+            role="radiogroup"
+            aria-label="Premium Themes"
+            className="grid gap-3"
+            style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))' }}
+          >
+            {premiumThemes.map((t) => renderThemeCard(t))}
+          </div>
         </div>
       </div>
     </section>

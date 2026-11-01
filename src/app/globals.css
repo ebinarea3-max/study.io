@@ -354,27 +354,6 @@ html[data-theme="sakura"] {
   --gradient: linear-gradient(135deg, #F472B6 0%, #FB7185 100%);
 }
 
-/* 14. Nordic Frost (Premium) */
-html[data-theme="nordic"] {
-  color-scheme: dark;
-  --fg: 240 249 255;
-  --bg: #070F18;
-  --background: #070F18;
-  --surface: #0E1B29;
-  --surface-2: #09131F;
-  --border: rgba(56, 189, 248, 0.12);
-  --border-strong: rgba(56, 189, 248, 0.26);
-  --text: #F0F9FF;
-  --foreground: #F0F9FF;
-  --text-dim: #93C5FD;
-  --text-faint: #4B668A;
-  --accent: #38BDF8;
-  --accent-contrast: #031726;
-  --accent-soft: rgba(56, 189, 248, 0.12);
-  --glow: rgba(56, 189, 248, 0.35);
-  --grid-dot: rgba(56, 189, 248, 0.07);
-  --gradient: linear-gradient(135deg, #38BDF8 0%, #06B6D4 100%);
-}
 
 /* 15. Amethyst (Premium) */
 html[data-theme="amethyst"] {

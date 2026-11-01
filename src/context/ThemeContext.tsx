@@ -15,6 +15,7 @@ export interface ThemeOption {
 }
 
 export const THEMES: ThemeOption[] = [
+  // ─── FREE THEMES ──────────────────────────────────────────
   {
     id: 'rank',
     name: 'Rank colors',
@@ -32,12 +33,6 @@ export const THEMES: ThemeOption[] = [
     name: 'Ember',
     description: 'Warm amber on charcoal',
     previewColors: ['#0F0B09', '#1A1410', '#F0924A'],
-  },
-  {
-    id: 'forest',
-    name: 'Forest',
-    description: 'Calm green on dark moss',
-    previewColors: ['#070D0B', '#0F1A16', '#3DBE8B'],
   },
   {
     id: 'ocean',
@@ -70,7 +65,26 @@ export const THEMES: ThemeOption[] = [
     previewColors: ['#F5F2EC', '#FFFFFF', '#B45309'],
     isLight: true,
   },
-  // Premium Themes (added at the end of the Appearance grid)
+  {
+    id: 'cyberpunk',
+    name: 'Cyberpunk',
+    description: 'Electric neon cyan & fuchsia on hyperdark void',
+    previewColors: ['#080811', '#121124', '#00F0FF'],
+  },
+  {
+    id: 'amethyst',
+    name: 'Amethyst',
+    description: 'Luminous royal violet on dark velvet',
+    previewColors: ['#090612', '#160E25', '#A855F7'],
+  },
+  {
+    id: 'emerald',
+    name: 'Emerald',
+    description: 'Imperial luminous jade on obsidian',
+    previewColors: ['#05100B', '#0B1E15', '#10B981'],
+  },
+
+  // ─── PREMIUM THEMES (7 EXCLUSIVE THEMES) ─────────────────
   {
     id: 'goldleaf',
     name: 'Gold Leaf',
@@ -86,31 +100,10 @@ export const THEMES: ThemeOption[] = [
     isPremium: true,
   },
   {
-    id: 'cyberpunk',
-    name: 'Cyberpunk',
-    description: 'Electric neon cyan & fuchsia on hyperdark void',
-    previewColors: ['#080811', '#121124', '#00F0FF'],
-    isPremium: true,
-  },
-  {
     id: 'sakura',
     name: 'Sakura',
     description: 'Delicate cherry blossom on twilight ink',
     previewColors: ['#0E0A12', '#1A1220', '#F472B6'],
-    isPremium: true,
-  },
-  {
-    id: 'nordic',
-    name: 'Nordic Frost',
-    description: 'Glacial cyan on arctic polar night',
-    previewColors: ['#070F18', '#0E1B29', '#38BDF8'],
-    isPremium: true,
-  },
-  {
-    id: 'amethyst',
-    name: 'Amethyst',
-    description: 'Luminous royal violet on dark velvet',
-    previewColors: ['#090612', '#160E25', '#A855F7'],
     isPremium: true,
   },
   {
@@ -121,10 +114,10 @@ export const THEMES: ThemeOption[] = [
     isPremium: true,
   },
   {
-    id: 'emerald',
-    name: 'Emerald',
-    description: 'Imperial luminous jade on obsidian',
-    previewColors: ['#05100B', '#0B1E15', '#10B981'],
+    id: 'forest',
+    name: 'Forest',
+    description: 'Calm green on dark moss',
+    previewColors: ['#070D0B', '#0F1A16', '#3DBE8B'],
     isPremium: true,
   },
   {

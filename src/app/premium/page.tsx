@@ -185,7 +185,7 @@ const DEMO_PREMIUM_THEMES = [
   { id: 'gold', name: 'Gold Leaf', bg: '#0C0A06', border: 'rgba(230,193,90,0.25)', accent: '#E6C15A', text: '#F5E6A8', progress: '68%' },
   { id: 'cyberpunk', name: 'Cyberpunk', bg: '#080811', border: 'rgba(0,240,255,0.25)', accent: '#00F0FF', text: '#7DD3FC', progress: '92%' },
   { id: 'sakura', name: 'Sakura', bg: '#0E0A12', border: 'rgba(244,114,182,0.25)', accent: '#F472B6', text: '#FBCFE8', progress: '76%' },
-  { id: 'nordic', name: 'Nordic Frost', bg: '#070F18', border: 'rgba(56,189,248,0.25)', accent: '#38BDF8', text: '#BAE6FD', progress: '85%' },
+  { id: 'forest', name: 'Forest', bg: '#070D0B', border: 'rgba(61,190,139,0.25)', accent: '#3DBE8B', text: '#A7F3D0', progress: '85%' },
   { id: 'crimson', name: 'Crimson', bg: '#0E0809', border: 'rgba(229,72,77,0.25)', accent: '#E5484D', text: '#FFA1A6', progress: '84%' },
 ];
 
