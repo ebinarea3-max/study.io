@@ -131,16 +131,12 @@ export function SeasonResetAlertModal({
           transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
           className="bg-[var(--surface)] border border-[var(--border)] rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl relative overflow-hidden text-center"
         >
-          {/* Ambient Glowing Background Effect */}
+          {/* Ambient Glowing Background Effect - Permanent Amber HUD Theme */}
           <div
-            className="absolute -top-24 left-1/2 -translate-x-1/2 w-72 h-72 rounded-full blur-3xl opacity-20 pointer-events-none"
-            style={{ backgroundColor: 'var(--accent)' }}
+            className="absolute -top-24 left-1/2 -translate-x-1/2 w-72 h-72 rounded-full blur-3xl bg-amber-500/20 pointer-events-none"
           />
           <div
-            className="absolute inset-x-0 top-0 h-[2px] pointer-events-none"
-            style={{
-              background: 'linear-gradient(90deg, transparent, var(--accent), transparent)',
-            }}
+            className="absolute inset-x-0 top-0 h-[2px] pointer-events-none bg-gradient-to-r from-transparent via-amber-500/60 to-transparent"
           />
 
           {/* Close Icon Button */}
@@ -152,12 +148,11 @@ export function SeasonResetAlertModal({
             <X className="w-5 h-5" />
           </button>
 
-          {/* Header Tag */}
+          {/* Header Tag - Permanent Amber */}
           <div
-            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[var(--accent-soft)] border border-[var(--border)] text-[10px] font-hud font-bold tracking-widest uppercase mb-4"
-            style={{ color: 'var(--accent)' }}
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-[10px] font-hud font-bold tracking-widest uppercase text-amber-400 mb-4"
           >
-            <Sparkles className="w-3.5 h-3.5 shrink-0" />
+            <Sparkles className="w-3.5 h-3.5 shrink-0 text-amber-400" />
             <span>SEASON RESET</span>
           </div>
 
@@ -186,15 +181,10 @@ export function SeasonResetAlertModal({
               </span>
             </div>
 
-            {/* Transition Arrow Indicator */}
+            {/* Transition Arrow Indicator - Permanent Amber */}
             <div className="flex flex-col items-center justify-center px-1">
               <div
-                className="w-8 h-8 rounded-full border flex items-center justify-center shadow-md transition-all"
-                style={{
-                  backgroundColor: 'var(--accent-soft)',
-                  borderColor: 'var(--border)',
-                  color: 'var(--accent)',
-                }}
+                className="w-8 h-8 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-400 flex items-center justify-center shadow-md transition-all"
               >
                 <ArrowRight className="w-4 h-4 stroke-[2.5]" />
               </div>
@@ -203,12 +193,9 @@ export function SeasonResetAlertModal({
               </span>
             </div>
 
-            {/* New Starting Rank Column */}
+            {/* New Starting Rank Column - Permanent Amber */}
             <div className="flex flex-col items-center gap-2 flex-1 min-w-0">
-              <span
-                className="text-[10px] font-hud-mono font-bold uppercase tracking-widest"
-                style={{ color: 'var(--accent)' }}
-              >
+              <span className="text-[10px] font-hud-mono font-bold uppercase tracking-widest text-amber-400">
                 STARTING RANK
               </span>
               <div className="relative flex items-center justify-center py-1">
@@ -219,10 +206,7 @@ export function SeasonResetAlertModal({
                   alt={newRankTitle}
                 />
               </div>
-              <span
-                className="text-xs font-hud font-extrabold uppercase tracking-wider truncate max-w-full"
-                style={{ color: 'var(--accent)' }}
-              >
+              <span className="text-xs font-hud font-extrabold uppercase tracking-wider truncate max-w-full text-amber-400">
                 {newRankTitle}
               </span>
             </div>
@@ -233,16 +217,13 @@ export function SeasonResetAlertModal({
             A new monthly season has begun. Based on your previous performance, your rank has soft-reset to give you a fresh climb. Keep your focus streak alive and ascend the leaderboards!
           </p>
 
-          {/* Stat Cards Grid */}
+          {/* Stat Cards Grid - Permanent Amber Starting RP */}
           <div className="grid grid-cols-2 gap-3 mb-6">
             <div className="bg-[var(--surface-2)] border border-[var(--border)] rounded-xl p-3 flex flex-col items-center text-center">
               <span className="text-[10px] font-hud-mono font-bold uppercase tracking-widest text-[var(--text-dim)]">
                 STARTING RP
               </span>
-              <span
-                className="text-base sm:text-lg font-hud font-black mt-0.5"
-                style={{ color: 'var(--accent)' }}
-              >
+              <span className="text-base sm:text-lg font-hud font-black text-amber-400 mt-0.5">
                 {formattedStartingRP} RP
               </span>
             </div>
@@ -257,19 +238,15 @@ export function SeasonResetAlertModal({
             </div>
           </div>
 
-          {/* Tactical CTA Button */}
+          {/* Tactical CTA Button - Fixed Permanent Amber */}
           <button
             type="button"
             onClick={handleActionDismiss}
-            className="w-full py-3.5 px-6 rounded-xl font-hud font-bold text-xs sm:text-sm tracking-widest uppercase transition-all flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_20px_var(--glow)] hover:scale-[1.02] active:scale-95 hover:opacity-95"
-            style={{
-              backgroundColor: 'var(--accent)',
-              color: 'var(--accent-contrast)',
-            }}
+            className="w-full py-3.5 px-6 rounded-xl font-hud font-extrabold text-xs sm:text-sm tracking-widest uppercase transition-all flex items-center justify-center gap-2 cursor-pointer bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black shadow-[0_0_25px_rgba(245,158,11,0.4)] hover:shadow-[0_0_35px_rgba(245,158,11,0.6)] hover:scale-[1.02] active:scale-95"
           >
-            <Sparkles className="w-4 h-4 fill-current" />
+            <Sparkles className="w-4 h-4 fill-black text-black" />
             <span>START NEW SEASON</span>
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight className="w-4 h-4 stroke-[2.5]" />
           </button>
 
           <div className="text-[10px] font-mono text-[var(--text-dim)] mt-2.5">

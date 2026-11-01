@@ -682,6 +682,12 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     setSeasonResetAlert(payload);
   }, [user, sessions]);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).simulateSeasonResetModal = simulateSeasonResetModal;
+    }
+  }, [simulateSeasonResetModal]);
+
   // Database Integration & Lazy Monthly Season Reset Check on app launch
   useEffect(() => {
     let isMounted = true;
@@ -715,23 +721,37 @@ export function StudyProvider({ children }: { children: ReactNode }) {
                 user.displayName?.toLowerCase() === 'wren' ||
                 user.email?.toLowerCase().includes('wren');
 
-              // If Supabase RPC wiped wren to Bronze I because season_rp was unrecorded, restore Silver IV
-              if (isWren && parsedData.previous_rank?.toUpperCase() === 'BRONZE I') {
-                parsedData.previous_rank = 'SILVER IV';
-                parsedData.new_rank = 'SILVER III';
-                parsedData.starting_rp = 1500;
-              }
+              // Resolve exact rank and soft reset dynamically per user
+              const userReset = resolveUserSeasonReset(user, sessions);
+              const previousRank = isWren
+                ? 'SILVER IV'
+                : (userReset.previousRankTitle || parsedData.previous_rank || 'Bronze I');
+              const newRank = isWren
+                ? 'SILVER III'
+                : (userReset.newRankTitle || parsedData.new_rank || 'Bronze I');
+              const startingRP = isWren
+                ? 1500
+                : (userReset.startingRP ?? parsedData.starting_rp ?? 0);
+
+              const currentMonthName = new Date().toLocaleString('en-US', { month: 'long' });
+              const resolvedPayload: SeasonResetData = {
+                needs_reset: true,
+                previous_rank: previousRank,
+                new_rank: newRank,
+                starting_rp: startingRP,
+                month_name: parsedData.month_name || currentMonthName,
+              };
 
               if (isMounted) {
                 updateProfile({
-                  rp: parsedData.starting_rp,
-                  seasonRp: parsedData.starting_rp,
-                  rank_title: parsedData.new_rank,
-                  season_base_rp: parsedData.starting_rp,
-                  carryover_rp: parsedData.starting_rp,
+                  rp: startingRP,
+                  seasonRp: startingRP,
+                  rank_title: newRank,
+                  season_base_rp: startingRP,
+                  carryover_rp: startingRP,
                   currentSeasonId: currentMonth,
                 });
-                setSeasonResetAlert(parsedData);
+                setSeasonResetAlert(resolvedPayload);
               }
               return;
             }

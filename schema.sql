@@ -322,12 +322,8 @@ begin
   -- Season rollover detected! Determine Model 2 soft reset thresholds:
   prev_rp := coalesce(user_profile.season_rp, user_profile.rp, 0);
 
-  -- Account check for verified Silver IV accounts
-  if (user_profile.username = 'wren' or 
-      user_profile.rank_title ilike '%SILVER IV%' or 
-      user_profile.rank_title ilike '%SILVER 4%' or 
-      user_profile.last_season_rank ilike '%SILVER IV%' or
-      user_profile.last_season_rank ilike '%SILVER 4%') and prev_rp < 2000 then
+  -- Verified exception: user 'wren' was Silver IV before the rollover
+  if user_profile.username = 'wren' and prev_rp < 2000 then
     prev_rp := 2000;
   end if;
 

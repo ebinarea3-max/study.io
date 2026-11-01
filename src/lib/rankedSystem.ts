@@ -631,10 +631,21 @@ export function resolveUserSeasonReset(
     user?.displayName?.toLowerCase() === 'wren' ||
     user?.email?.toLowerCase().includes('wren');
 
-  // Check user's recorded rank title from previous season
-  const rawRankTitle = String(
-    user?.last_season_rank || user?.rank_title || user?.levelTitle || ''
-  ).trim().toUpperCase();
+  // Check user's recorded rank title from previous season or current rank
+  // Exclude scholar/level RPG titles (e.g., Novice Scholar, Apprentice Scholar)
+  const isScholarRpgTitle = (title: string) => {
+    const t = String(title || '').toUpperCase();
+    return t.includes('SCHOLAR') || t === 'NOVICE' || t === 'APPRENTICE' || t === 'ADEPT';
+  };
+
+  const candidateRankTitles = [
+    user?.current_rank,
+    user?.last_season_rank,
+    user?.rank_title,
+    user?.levelTitle,
+  ].filter((t): t is string => Boolean(t && typeof t === 'string' && !isScholarRpgTitle(t)));
+
+  const rawRankTitle = candidateRankTitles[0]?.trim().toUpperCase() || '';
 
   // Calculate previous month focus seconds if sessions are available
   let prevMonthRP = 0;
@@ -659,14 +670,10 @@ export function resolveUserSeasonReset(
 
   let matchedTier: RankTierConfig | undefined;
 
-  if (isWren) {
+  // 1. Specific account override for wren (the account verified by user as Silver IV)
+  if (isWren && effectiveRP < 2000) {
     matchedTier = RANK_TIERS.find((t) => t.fullTitle === 'SILVER IV');
-  } else if (
-    rawRankTitle &&
-    rawRankTitle !== 'NOVICE SCHOLAR' &&
-    rawRankTitle !== 'SCHOLAR' &&
-    rawRankTitle !== 'BRONZE I'
-  ) {
+  } else if (rawRankTitle) {
     matchedTier = RANK_TIERS.find(
       (t) =>
         t.fullTitle.toUpperCase() === rawRankTitle ||

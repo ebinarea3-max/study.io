@@ -91,17 +91,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ? dbSessions.reduce((acc: any, s: any) => acc + (Number(s.duration_seconds ?? 0)), 0)
         : 0;
         
-      const isSilver4 =
-        profile?.username === 'wren' ||
-        profile?.name?.toLowerCase().includes('wren') ||
-        authUser.email?.toLowerCase().includes('wren') ||
-        String(profile?.rank_title || '').toUpperCase().includes('SILVER IV') ||
-        String(profile?.rank_title || '').toUpperCase().includes('SILVER 4') ||
-        String(profile?.last_season_rank || '').toUpperCase().includes('SILVER IV') ||
-        String(profile?.last_season_rank || '').toUpperCase().includes('SILVER 4');
+      const isWrenSilver4 =
+        (profile?.username === 'wren' ||
+         profile?.name?.toLowerCase().includes('wren') ||
+         authUser.email?.toLowerCase().includes('wren')) &&
+        (Number(profile?.season_base_rp ?? profile?.carryover_rp ?? 0) < 1500);
 
       let carryoverRp = Math.min(HARD_RESET_CAP_RP, Number(profile?.season_base_rp ?? profile?.carryover_rp ?? 0));
-      if (isSilver4 && carryoverRp < 1500) {
+      if (isWrenSilver4 && carryoverRp < 1500) {
         carryoverRp = 1500;
       }
       const calculatedRP = calculateSeasonRp(currentMonthStudySeconds, carryoverRp);
@@ -110,7 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // AUTO-REPAIR CORRUPTED PROFILES:
       let needsRepair = false;
-      if (isSilver4 && (currentProfileRP < 1500 || Number(profile?.season_base_rp ?? 0) < 1500)) {
+      if (isWrenSilver4 && (currentProfileRP < 1500 || Number(profile?.season_base_rp ?? 0) < 1500)) {
         currentProfileRP = calculatedRP;
         needsRepair = true;
       } else if (Math.abs(currentProfileRP - calculatedRP) > 5 || Number(profile?.total_study_seconds ?? 0) > totalStudySeconds + 3600) {
@@ -138,7 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             updatePayload.rp = Math.round(calculatedRP);
             updatePayload.season_base_rp = carryoverRp;
             updatePayload.rank_title = getRankTier(calculatedRP).name.toUpperCase();
-            if (isSilver4) {
+            if (isWrenSilver4) {
               updatePayload.last_season_rank = 'SILVER IV';
               updatePayload.current_rank = 'Silver III';
               updatePayload.rank_badge = 'silver-3.png';
@@ -231,16 +228,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           let seasonRp = data.season_rp ?? data.rp ?? 0;
           let lastResetMonth = data.last_reset_month;
 
-          const isSilver4 =
-            data.username === 'wren' ||
-            data.name?.toLowerCase().includes('wren') ||
-            user.email?.toLowerCase().includes('wren') ||
-            String(data.rank_title || '').toUpperCase().includes('SILVER IV') ||
-            String(data.rank_title || '').toUpperCase().includes('SILVER 4') ||
-            String(data.last_season_rank || '').toUpperCase().includes('SILVER IV') ||
-            String(data.last_season_rank || '').toUpperCase().includes('SILVER 4');
+          const isWrenSilver4 =
+            (data.username === 'wren' ||
+             data.name?.toLowerCase().includes('wren') ||
+             user.email?.toLowerCase().includes('wren')) &&
+            (seasonRp === 0 || seasonRp < 1500);
 
-          if (isSilver4 && (seasonRp === 0 || seasonRp < 1500)) {
+          if (isWrenSilver4) {
             seasonRp = 2000;
           }
 
@@ -256,7 +250,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               rank_title: newTier.name.toUpperCase(),
               rank_badge: newTier.badge,
               current_rank: newTier.name,
-              last_season_rank: isSilver4 ? 'SILVER IV' : (data.last_season_rank || 'Bronze I'),
+              last_season_rank: isWrenSilver4 ? 'SILVER IV' : (data.last_season_rank || data.current_rank || 'Bronze I'),
             }).eq('id', user.id);
 
             data.season_rp = seasonRp;
