@@ -62,6 +62,17 @@ export default function Home() {
     return 'timer';
   });
 
+  const handleTabChange = useCallback((newTab: NavTabType) => {
+    setActiveTab(newTab);
+    if (typeof window !== 'undefined') {
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.set('tab', newTab);
+        window.history.replaceState({}, '', url.toString());
+      } catch {}
+    }
+  }, []);
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const checkTab = () => {
@@ -203,13 +214,19 @@ export default function Home() {
 
       {/* Full Dashboard Content (hidden during Focus Mode for zero background jank) */}
       <div
-        className="w-full flex flex-col items-center flex-1"
+        className={`w-full flex flex-col items-center flex-1 ${
+          activeTab === 'rooms'
+            ? 'h-full min-h-0 overflow-hidden'
+            : activeTab === 'timer'
+            ? 'h-full md:h-auto min-h-0'
+            : ''
+        }`}
         style={{ display: isFocusModeOpen ? 'none' : undefined }}
       >
         {/* Top Navigation Bar */}
         <Navbar
           activeTab={activeTab}
-          setActiveTab={setActiveTab}
+          setActiveTab={handleTabChange}
           onOpenAuth={() => setIsAuthOpen(true)}
           onOpenProfile={() => setIsProfileOpen(true)}
           onOpenSettings={() => setIsSettingsOpen(true)}
@@ -228,10 +245,10 @@ export default function Home() {
           activeTab === "timer" 
             ? "h-full md:min-h-screen pt-3.5 px-3 sm:px-4 md:px-0" 
             : activeTab === "rooms"
-            ? "flex-1 min-h-0 w-full overflow-hidden pt-0 px-0"
+            ? "flex-1 min-h-0 w-full overflow-hidden pt-0 px-0 h-full"
             : "min-h-screen pt-3.5 px-3 sm:px-4 md:px-0"
         }`}>
-          <SwipeTabContainer activeTab={activeTab} onChangeTab={setActiveTab}>
+          <SwipeTabContainer activeTab={activeTab} onChangeTab={handleTabChange}>
             {{
               timer: (
                 <ErrorBoundary fallbackTitle="Focus Timer">
