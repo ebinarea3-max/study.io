@@ -25,6 +25,7 @@ import {
   getCurrentSeasonId,
   getRankTier,
   HARD_RESET_CAP_RP,
+  resolveUserSeasonReset,
 } from '../lib/rankedSystem';
 import {
   calculateSeasonRp,
@@ -670,15 +671,16 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
   const simulateSeasonResetModal = useCallback((mockData?: Partial<SeasonResetData>) => {
     const currentMonthName = new Date().toLocaleString('en-US', { month: 'long' });
+    const { previousRankTitle, newRankTitle, startingRP } = resolveUserSeasonReset(user, sessions);
     const payload: SeasonResetData = {
       needs_reset: true,
-      previous_rank: mockData?.previous_rank || 'SILVER IV',
-      new_rank: mockData?.new_rank || 'SILVER III',
-      starting_rp: mockData?.starting_rp ?? 1500,
+      previous_rank: mockData?.previous_rank || previousRankTitle,
+      new_rank: mockData?.new_rank || newRankTitle,
+      starting_rp: mockData?.starting_rp ?? startingRP,
       month_name: mockData?.month_name || currentMonthName,
     };
     setSeasonResetAlert(payload);
-  }, []);
+  }, [user, sessions]);
 
   // Database Integration & Lazy Monthly Season Reset Check on app launch
   useEffect(() => {
@@ -707,21 +709,14 @@ export function StudyProvider({ children }: { children: ReactNode }) {
               typeof data === 'string' ? JSON.parse(data) : (data as SeasonResetData);
 
             if (parsedData && parsedData.needs_reset) {
-              const rawTitle = String(user.rank_title || (user as any).levelTitle || (user as any).last_season_rank || '').trim().toUpperCase();
-              const isSilver4 =
+              const isWren =
                 user.username === 'wren' ||
-                user.name?.toLowerCase().includes('wren') ||
-                user.displayName?.toLowerCase().includes('wren') ||
-                user.email?.toLowerCase().includes('wren') ||
-                user.username === 'trial' ||
-                user.displayName === 'trial' ||
-                user.email === 'trial@study.io' ||
-                user.id === 'trial' ||
-                rawTitle.includes('SILVER IV') ||
-                rawTitle.includes('SILVER 4') ||
-                (parsedData.previous_rank === 'Bronze I' && (parsedData.starting_rp === 0 || !parsedData.starting_rp));
+                user.name === 'wren' ||
+                user.displayName?.toLowerCase() === 'wren' ||
+                user.email?.toLowerCase().includes('wren');
 
-              if (isSilver4) {
+              // If Supabase RPC wiped wren to Bronze I because season_rp was unrecorded, restore Silver IV
+              if (isWren && parsedData.previous_rank?.toUpperCase() === 'BRONZE I') {
                 parsedData.previous_rank = 'SILVER IV';
                 parsedData.new_rank = 'SILVER III';
                 parsedData.starting_rp = 1500;
@@ -748,43 +743,25 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
       // 2. Client-side Model 2 check (graceful fallback for local dev, offline, or prior to RPC migration)
       if (user.currentSeasonId && user.currentSeasonId !== currentMonth) {
-        // Check if user was previously Silver IV or has recorded rank
-        const rawTitle = String(user.rank_title || (user as any).levelTitle || (user as any).last_season_rank || '').trim().toUpperCase();
-        const isSilver4 =
-          user.username === 'wren' ||
-          user.name?.toLowerCase().includes('wren') ||
-          user.displayName?.toLowerCase().includes('wren') ||
-          user.email?.toLowerCase().includes('wren') ||
-          user.username === 'trial' ||
-          user.displayName === 'trial' ||
-          user.email === 'trial@study.io' ||
-          user.id === 'trial' ||
-          rawTitle.includes('SILVER IV') ||
-          rawTitle.includes('SILVER 4') ||
-          (user.seasonRp && user.seasonRp >= 2000 && user.seasonRp < 2800);
-
-        const prevRP = isSilver4 ? 2000 : (user.seasonRp ?? user.rp ?? 0);
-        const reset = calculateSeasonReset(prevRP);
+        // Resolve previous rank and soft reset dynamically according to user's rank
+        const { previousRankTitle, newRankTitle, startingRP } = resolveUserSeasonReset(user, sessions);
         const currentMonthName = new Date().toLocaleString('en-US', { month: 'long' });
 
         const resetAlertData: SeasonResetData = {
           needs_reset: true,
-          previous_rank: isSilver4 ? 'SILVER IV' : reset.previousTier.fullTitle,
-          new_rank: isSilver4 ? 'SILVER III' : reset.newTier.fullTitle,
-          starting_rp: isSilver4 ? 1500 : reset.newRP,
+          previous_rank: previousRankTitle,
+          new_rank: newRankTitle,
+          starting_rp: startingRP,
           month_name: currentMonthName,
         };
 
         if (isMounted) {
-          const startingRp = isSilver4 ? 1500 : reset.newRP;
-          const newRank = isSilver4 ? 'SILVER III' : reset.newTier.fullTitle;
-
           updateProfile({
-            rp: startingRp,
-            seasonRp: startingRp,
-            rank_title: newRank,
-            season_base_rp: startingRp,
-            carryover_rp: startingRp,
+            rp: startingRP,
+            seasonRp: startingRP,
+            rank_title: newRankTitle,
+            season_base_rp: startingRP,
+            carryover_rp: startingRP,
             currentSeasonId: currentMonth,
           });
           setSeasonResetAlert(resetAlertData);

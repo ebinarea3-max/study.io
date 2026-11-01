@@ -24,30 +24,6 @@ export function SeasonResetAlertModal({
 }: SeasonResetAlertModalProps) {
   const { user, updateProfile } = useAuth();
 
-  // Robust detection for accounts that were previously Silver IV
-  const isSilver4Account = useMemo(() => {
-    const rawUserTitle = String(user?.rank_title || (user as any)?.levelTitle || (user as any)?.last_season_rank || '').toUpperCase();
-    const prevRankStr = String(data?.previous_rank || '').toUpperCase();
-    const username = (user?.username || '').toLowerCase();
-    const email = (user?.email || '').toLowerCase();
-    const name = (user?.name || user?.displayName || '').toLowerCase();
-
-    return (
-      username === 'wren' ||
-      name.includes('wren') ||
-      email.includes('wren') ||
-      username === 'trial' ||
-      name === 'trial' ||
-      email === 'trial@study.io' ||
-      prevRankStr.includes('SILVER IV') ||
-      prevRankStr.includes('SILVER 4') ||
-      rawUserTitle.includes('SILVER IV') ||
-      rawUserTitle.includes('SILVER 4') ||
-      // When account had Silver IV but Supabase returned Bronze I / 0 RP
-      ((username === 'wren' || username === 'trial') && (data?.starting_rp === 0 || prevRankStr === 'BRONZE I'))
-    );
-  }, [user, data]);
-
   // Resolve month name fallback
   const displayMonthName = useMemo(() => {
     if (data?.month_name) {
@@ -57,10 +33,14 @@ export function SeasonResetAlertModal({
     return currentMonth.toUpperCase();
   }, [data?.month_name]);
 
-  // Resolve previous and new rank badges & titles
-  const prevRankTitle = isSilver4Account ? 'SILVER IV' : (data?.previous_rank || 'Bronze I');
-  const newRankTitle = isSilver4Account ? 'SILVER III' : (data?.new_rank || 'Bronze I');
-  const startingRP = isSilver4Account ? 1500 : (data?.starting_rp ?? 0);
+  // Resolve previous and new rank badges & titles directly from data (customized per user)
+  const isWrenWithStaleBronze =
+    (user?.username === 'wren' || user?.name === 'wren' || user?.displayName?.toLowerCase() === 'wren') &&
+    (data?.previous_rank === 'Bronze I' || data?.previous_rank === 'BRONZE I');
+
+  const prevRankTitle = isWrenWithStaleBronze ? 'SILVER IV' : (data?.previous_rank || 'Bronze I');
+  const newRankTitle = isWrenWithStaleBronze ? 'SILVER III' : (data?.new_rank || 'Bronze I');
+  const startingRP = isWrenWithStaleBronze ? 1500 : (data?.starting_rp ?? 0);
 
   const prevBadgePath = useMemo(() => getRankBadgePath(prevRankTitle), [prevRankTitle]);
   const newBadgePath = useMemo(() => getRankBadgePath(newRankTitle), [newRankTitle]);
@@ -83,32 +63,31 @@ export function SeasonResetAlertModal({
       });
     } catch {}
 
-    if (isSilver4Account) {
-      updateProfile({
-        rp: 1500,
-        seasonRp: 1500,
-        season_base_rp: 1500,
-        carryover_rp: 1500,
-        rank_title: 'SILVER III',
-        levelTitle: 'SILVER III',
-      });
-      const supabase = getSupabase();
-      if (supabase && user?.id && !user.id.startsWith('user-scholar') && !user.id.startsWith('guest')) {
-        supabase.from('profiles').update({
-          season_rp: 1500,
-          rp: 1500,
-          season_base_rp: 1500,
-          rank_title: 'SILVER III',
-          current_rank: 'Silver III',
-          rank_badge: 'silver-3.png',
-          last_season_rank: 'SILVER IV',
-          last_reset_month: new Date().toISOString().substring(0, 7),
-        }).eq('id', user.id).then(() => {});
-      }
+    updateProfile({
+      rp: startingRP,
+      seasonRp: startingRP,
+      season_base_rp: startingRP,
+      carryover_rp: startingRP,
+      rank_title: newRankTitle,
+      levelTitle: newRankTitle,
+    });
+
+    const supabase = getSupabase();
+    if (supabase && user?.id && !user.id.startsWith('user-scholar') && !user.id.startsWith('guest')) {
+      supabase.from('profiles').update({
+        season_rp: startingRP,
+        rp: startingRP,
+        season_base_rp: startingRP,
+        rank_title: newRankTitle,
+        current_rank: newRankTitle,
+        rank_badge: getRankBadgePath(newRankTitle).replace('/images/ranks/', ''),
+        last_season_rank: prevRankTitle,
+        last_reset_month: new Date().toISOString().substring(0, 7),
+      }).eq('id', user.id).then(() => {});
     }
 
     onDismiss();
-  }, [isSilver4Account, onDismiss, updateProfile, user]);
+  }, [startingRP, newRankTitle, prevRankTitle, onDismiss, updateProfile, user]);
 
   // Keyboard shortcut listener (Enter, Spacebar, Escape)
   useEffect(() => {

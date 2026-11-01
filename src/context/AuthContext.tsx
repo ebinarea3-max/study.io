@@ -95,9 +95,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         profile?.username === 'wren' ||
         profile?.name?.toLowerCase().includes('wren') ||
         authUser.email?.toLowerCase().includes('wren') ||
-        profile?.username === 'trial' ||
-        profile?.name === 'trial' ||
-        authUser.email === 'trial@study.io' ||
         String(profile?.rank_title || '').toUpperCase().includes('SILVER IV') ||
         String(profile?.rank_title || '').toUpperCase().includes('SILVER 4') ||
         String(profile?.last_season_rank || '').toUpperCase().includes('SILVER IV') ||
@@ -238,9 +235,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             data.username === 'wren' ||
             data.name?.toLowerCase().includes('wren') ||
             user.email?.toLowerCase().includes('wren') ||
-            data.username === 'trial' ||
-            data.name === 'trial' ||
-            user.email === 'trial@study.io' ||
             String(data.rank_title || '').toUpperCase().includes('SILVER IV') ||
             String(data.rank_title || '').toUpperCase().includes('SILVER 4') ||
             String(data.last_season_rank || '').toUpperCase().includes('SILVER IV') ||

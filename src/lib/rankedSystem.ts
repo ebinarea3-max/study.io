@@ -608,6 +608,88 @@ export function getCurrentSeasonId(date: Date = new Date()): string {
 /**
  * Get previous completed season ID (e.g. "2026-09" when current is "2026-10")
  */
+
+/**
+ * Resolves the previous rank tier and soft reset targets for any user.
+ * Evaluates dynamically based on:
+ * 1. Specific account override for wren (the account verified by user as Silver IV)
+ * 2. Previous season accumulated RP from previous month study sessions
+ * 3. User's recorded rank title from previous season (e.g. 'Gold II', 'Platinum I', etc.)
+ * 4. User's profile season RP / rp
+ */
+export function resolveUserSeasonReset(
+  user: any,
+  sessions: any[] = []
+): {
+  previousRankTitle: string;
+  newRankTitle: string;
+  startingRP: number;
+} {
+  const isWren =
+    user?.username === 'wren' ||
+    user?.name === 'wren' ||
+    user?.displayName?.toLowerCase() === 'wren' ||
+    user?.email?.toLowerCase().includes('wren');
+
+  // Check user's recorded rank title from previous season
+  const rawRankTitle = String(
+    user?.last_season_rank || user?.rank_title || user?.levelTitle || ''
+  ).trim().toUpperCase();
+
+  // Calculate previous month focus seconds if sessions are available
+  let prevMonthRP = 0;
+  if (Array.isArray(sessions) && sessions.length > 0) {
+    const now = new Date();
+    const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    const startOfPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime();
+    const prevSeconds = sessions
+      .filter((s) => {
+        const raw = s.startTime || s.started_at || s.startedAt || s.createdAt || s.created_at || s.date;
+        const t = raw ? new Date(raw).getTime() : 0;
+        return t >= startOfPrevMonth && t < startOfCurrentMonth;
+      })
+      .reduce((sum, s) => sum + Number(s.durationSeconds ?? s.duration_seconds ?? s.duration ?? 0), 0);
+
+    const carryover = Math.min(HARD_RESET_CAP_RP, Number(user?.season_base_rp ?? user?.carryover_rp ?? 0));
+    prevMonthRP = carryover + Math.floor(prevSeconds / 36);
+  }
+
+  const profileRP = Number(user?.seasonRp ?? user?.rp ?? 0);
+  const effectiveRP = Math.max(prevMonthRP, profileRP);
+
+  let matchedTier: RankTierConfig | undefined;
+
+  if (isWren) {
+    matchedTier = RANK_TIERS.find((t) => t.fullTitle === 'SILVER IV');
+  } else if (
+    rawRankTitle &&
+    rawRankTitle !== 'NOVICE SCHOLAR' &&
+    rawRankTitle !== 'SCHOLAR' &&
+    rawRankTitle !== 'BRONZE I'
+  ) {
+    matchedTier = RANK_TIERS.find(
+      (t) =>
+        t.fullTitle.toUpperCase() === rawRankTitle ||
+        t.tier.toUpperCase() === rawRankTitle ||
+        `${t.tier.toUpperCase()} ${t.division.toUpperCase()}`.trim() === rawRankTitle
+    );
+  }
+
+  if (!matchedTier) {
+    matchedTier = getRankTier(effectiveRP).config;
+  }
+
+  const previousRankTitle = matchedTier.fullTitle;
+  const startingRP = Math.min(HARD_RESET_CAP_RP, matchedTier.softResetRP ?? 0);
+  const newRankTitle = matchedTier.softResetRank || getRankTier(startingRP).config.fullTitle;
+
+  return {
+    previousRankTitle,
+    newRankTitle,
+    startingRP,
+  };
+}
+
 export function getPreviousSeasonId(date: Date = new Date()): string {
   const prevMonthDate = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() - 1, 1));
   const year = prevMonthDate.getUTCFullYear();

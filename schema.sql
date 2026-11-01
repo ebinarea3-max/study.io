@@ -323,7 +323,7 @@ begin
   prev_rp := coalesce(user_profile.season_rp, user_profile.rp, 0);
 
   -- Account check for verified Silver IV accounts
-  if (user_profile.username in ('wren', 'trial') or 
+  if (user_profile.username = 'wren' or 
       user_profile.rank_title ilike '%SILVER IV%' or 
       user_profile.rank_title ilike '%SILVER 4%' or 
       user_profile.last_season_rank ilike '%SILVER IV%' or
