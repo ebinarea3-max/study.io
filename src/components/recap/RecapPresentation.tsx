@@ -141,8 +141,6 @@ export default function RecapPresentation({
   const [isMuted, setIsMuted] = useState(soundEnabled !== undefined ? !soundEnabled : false);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const [rankPhase, setRankPhase] = useState<'initial' | 'ended' | 'resetting' | 'impact' | 'settled'>('initial');
-  const [screenShake, setScreenShake] = useState(false);
-  const [showRadialFlash, setShowRadialFlash] = useState(false);
   const [showFirstSlideHint, setShowFirstSlideHint] = useState(true);
 
   // Responsive & Light Theme Scoping
@@ -339,46 +337,30 @@ export default function RecapPresentation({
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [handleNext, handlePrev]);
 
-  // Rank Slide Choreographed Sequence (Tween, about 2.4s)
+  // Rank Slide Calm Transition Sequence (No rank animations, static crests)
   useEffect(() => {
     if (!isRankSlide) {
       setRankPhase('initial');
-      setScreenShake(false);
-      setShowRadialFlash(false);
       return;
     }
 
     const speed = Math.max(0.1, speedMultiplier);
     setRankPhase('ended');
 
-    // 1. Line draws and RP count down begins (400ms - 500ms)
+    // Connector line draws smoothly and RP updates
     const timerReset = setTimeout(() => {
       setRankPhase('resetting');
-    }, 450 / speed);
+    }, 300 / speed);
 
-    // 2. Impact Hit: Current rank crest slams in with tween punch
-    const timerImpact = setTimeout(() => {
-      setRankPhase('impact');
-      setShowRadialFlash(true);
-      setScreenShake(true);
-      if (!isMuted) {
-        soundFx.playImpactThud();
-      }
-      setTimeout(() => setShowRadialFlash(false), 300 / speed);
-      setTimeout(() => setScreenShake(false), 350 / speed);
-    }, 1200 / speed);
-
-    // 3. Settle: Show settled state
     const timerSettled = setTimeout(() => {
       setRankPhase('settled');
-    }, 1800 / speed);
+    }, 1200 / speed);
 
     return () => {
       clearTimeout(timerReset);
-      clearTimeout(timerImpact);
       clearTimeout(timerSettled);
     };
-  }, [isRankSlide, isMuted, speedMultiplier]);
+  }, [isRankSlide, speedMultiplier]);
 
   // RP tick down counter on rank slide
   const [rpDisplay, setRpDisplay] = useState(previousRP);
@@ -619,9 +601,7 @@ export default function RecapPresentation({
         backgroundColor: 'var(--bg, #07090e)',
         color: 'var(--text, #ffffff)',
       }}
-      className={`min-h-screen w-full flex flex-col justify-between relative overflow-hidden select-none cursor-pointer transition-transform duration-100 ${
-        screenShake ? 'translate-y-[6px]' : ''
-      }`}
+      className="min-h-screen w-full flex flex-col justify-between relative overflow-hidden select-none cursor-pointer"
       onMouseDown={() => setIsHolding(true)}
       onMouseUp={() => setIsHolding(false)}
       onTouchStart={() => setIsHolding(true)}
@@ -671,16 +651,6 @@ export default function RecapPresentation({
           background: 'radial-gradient(ellipse at center, transparent 45%, rgba(0, 0, 0, 0.65) 100%)',
         }}
       />
-
-      {/* Radial Impact Flash on Rank Reveal */}
-      {showRadialFlash && (
-        <div
-          className="fixed inset-0 pointer-events-none z-40 transition-opacity duration-300 animate-in fade-in"
-          style={{
-            backgroundColor: `${getTierAccent(currParsed.tier)}22`,
-          }}
-        />
-      )}
 
       {/* ══════════════════════════════════════════════════════════ */}
       {/* 2. TOP CHROME: PROGRESS BARS & CONTROLS                    */}
@@ -1235,24 +1205,9 @@ export default function RecapPresentation({
                     Where you start
                   </div>
 
-                  {/* Right crest: full brightness with soft glow in --tier-accent */}
+                  {/* Right crest: full brightness with soft glow in --tier-accent (static, zero animation) */}
                   <div className="relative w-40 h-40 sm:w-48 sm:h-48 flex items-center justify-center">
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={
-                        rankPhase === 'impact' || rankPhase === 'settled'
-                          ? prefersReducedMotion
-                            ? { opacity: 1, scale: 1 }
-                            : { opacity: 1, scale: [1, 0.9, 1.06, 1] }
-                          : { opacity: 0, scale: 0.9 }
-                      }
-                      transition={{
-                        duration: 0.5,
-                        times: [0, 0.35, 0.7, 1],
-                        ease: 'easeOut',
-                      }}
-                      className="relative z-10 flex items-center justify-center"
-                    >
+                    <div className="relative z-10 flex items-center justify-center">
                       {/* Soft glow in --tier-accent */}
                       <div
                         className="absolute inset-0 blur-[50px] rounded-full pointer-events-none"
@@ -1267,7 +1222,7 @@ export default function RecapPresentation({
                         size={isMobile ? 130 : 190}
                         className="relative z-10"
                       />
-                    </motion.div>
+                    </div>
                   </div>
 
                   <div className="text-2xl sm:text-3xl font-black font-hud text-[var(--text)] uppercase tracking-wider mt-2">
@@ -1279,33 +1234,26 @@ export default function RecapPresentation({
                 </div>
               </div>
 
-              {/* Status pill: "Promoted" or "New season, new climb." */}
+              {/* Status pill: "Promoted" or "New season, new climb." (Calm and static) */}
               <div className="min-h-[44px] flex items-center justify-center">
-                {(rankPhase === 'impact' || rankPhase === 'settled') && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.35, ease: 'easeOut' }}
-                    className="flex flex-col items-center gap-1"
-                  >
-                    {isPromoted ? (
-                      <span
-                        className="text-xs font-mono uppercase px-3.5 py-1 rounded-full font-bold shadow-sm"
-                        style={{
-                          backgroundColor: 'rgba(var(--fg, 255 255 255), 0.12)',
-                          color: 'var(--accent, #ffffff)',
-                          border: '1px solid var(--border)',
-                        }}
-                      >
-                        Promoted
-                      </span>
-                    ) : (
-                      <span className="text-sm font-sans text-[var(--text-dim)]">
-                        New season, new climb.
-                      </span>
-                    )}
-                  </motion.div>
-                )}
+                <div className="flex flex-col items-center gap-1">
+                  {isPromoted ? (
+                    <span
+                      className="text-xs font-mono uppercase px-3.5 py-1 rounded-full font-bold shadow-sm"
+                      style={{
+                        backgroundColor: 'rgba(var(--fg, 255 255 255), 0.12)',
+                        color: 'var(--accent, #ffffff)',
+                        border: '1px solid var(--border)',
+                      }}
+                    >
+                      Promoted
+                    </span>
+                  ) : (
+                    <span className="text-sm font-sans text-[var(--text-dim)]">
+                      New season, new climb.
+                    </span>
+                  )}
+                </div>
               </div>
             </motion.div>
           )}

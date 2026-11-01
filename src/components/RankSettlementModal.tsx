@@ -695,35 +695,18 @@ export function RankSettlementModal({
           
           {/* CHROMATIC ABERRATION PULSE & MASS SLAM REPLACED WITH NEW CREST */}
           <div className="relative mx-auto mb-4 flex items-center justify-center perspective-[1000px] w-full h-[280px]">
-            <motion.div 
-              className="relative w-full h-full flex items-center justify-center transform-gpu z-10"
-              animate={
-                punchMode === 'small' 
-                  ? { scale: [1, 0.88, 1.05, 1], transition: { duration: 0.3, times: [0, 0.35, 0.7, 1], ease: "easeOut" } }
-                  : punchMode === 'large'
-                  ? { scale: [1, 0.75, 1.12, 1], transition: { duration: 0.5, times: [0, 0.35, 0.7, 1], ease: "easeOut" } }
-                  : { scale: 1 }
-              }
-            >
-              <AnimatePresence mode="popLayout">
-                <motion.div
-                  key={displayRank.name.toUpperCase()}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1, transition: { duration: 0.25 } }}
-                  exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
-                  className="absolute inset-0 flex items-center justify-center"
-                >
-                  <RankCrestBadge
-                    tier={displayRank.tier}
-                    division={displayRank.division}
-                    size={192}
-                    priority={true}
-                    className={animPhase !== 'slam' && animPhase !== 'impact' && punchMode === 'idle' ? "animate-in zoom-in spin-in-12 duration-700 ease-out" : ""}
-                    isSettled={animPhase !== 'slam' && animPhase !== 'impact' && punchMode === 'idle'}
-                  />
-                </motion.div>
-              </AnimatePresence>
-            </motion.div>
+            <div className="relative w-full h-full flex items-center justify-center z-10">
+              <div className="absolute inset-0 flex items-center justify-center">
+                <RankCrestBadge
+                  tier={displayRank.tier}
+                  division={displayRank.division}
+                  size={192}
+                  priority={true}
+                  className=""
+                  isSettled={true}
+                />
+              </div>
+            </div>
             
             {/* SHEDDING SHARDS */}
             {shatterShards.length > 0 && !prefersReducedMotion && (
