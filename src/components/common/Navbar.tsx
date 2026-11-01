@@ -466,12 +466,21 @@ export function Navbar({
                   )}
                 </div>
 
-                {/* Online/Studying status pulse */}
-                <span
-                  className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[var(--surface)] ${
-                    isStudying ? 'bg-primary animate-pulse' : 'bg-slate-400 dark:bg-slate-500'
-                  }`}
-                />
+                {/* Online/Studying status or Premium Crown in DP's down right corner */}
+                {isPremium ? (
+                  <div
+                    className="absolute -bottom-0.5 -right-0.5 z-20 flex items-center justify-center w-4 h-4 rounded-full bg-[#12131a] border border-[#E6C15A]/60 shadow-sm pointer-events-none"
+                    title="Premium Scholar"
+                  >
+                    <Crown className="w-2.5 h-2.5 text-[#E6C15A] fill-[#E6C15A]" aria-hidden="true" />
+                  </div>
+                ) : (
+                  <span
+                    className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[var(--surface)] ${
+                      isStudying ? 'bg-primary animate-pulse' : 'bg-slate-400 dark:bg-slate-500'
+                    }`}
+                  />
+                )}
               </div>
 
               {/* User Identity & Level Display */}
@@ -480,14 +489,6 @@ export function Navbar({
                   <div className="text-[13px] font-bold text-[var(--text)] leading-tight truncate block max-w-[130px]">
                     {displayName}
                   </div>
-                  {isPremium && (
-                    <span title="Premium Scholar" className="flex items-center self-center flex-shrink-0">
-                      <Crown
-                        className="w-3 h-3 text-[#E6C15A] fill-[#E6C15A]"
-                        aria-hidden="true"
-                      />
-                    </span>
-                  )}
                   {user?.username && (
                     <div className="text-[10px] text-[var(--text-dim)] font-mono truncate max-w-[80px]">
                       @{user.username}

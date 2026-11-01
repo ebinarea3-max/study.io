@@ -258,33 +258,45 @@ export const LeaderboardRow = React.memo(function LeaderboardRow({
           </div>
 
           {/* Avatar (40px ringed in tier colour or flair gradient) */}
-          <AvatarFlairRing frame={flairFrame} size={40}>
-            <div
-              className="w-10 h-10 rounded-full flex-shrink-0 relative overflow-hidden bg-[#0c0e14] flex items-center justify-center shadow-sm"
-              style={{
-                border: flairFrame ? 'none' : `1.5px solid ${tierColor}`,
-              }}
-            >
-              {row.avatar_url && !avatarError ? (
-                <img
-                  src={row.avatar_url}
-                  alt={displayName}
-                  className="w-full h-full object-cover rounded-full"
-                  referrerPolicy="no-referrer"
-                  onError={() => setAvatarError(true)}
-                />
-              ) : (
-                <div
-                  className="w-full h-full flex items-center justify-center font-mono font-bold text-xs text-white"
-                  style={{
-                    background: `linear-gradient(135deg, ${hexToRgba(tierColor, 0.7)} 0%, #18181b 100%)`,
-                  }}
-                >
-                  {initialLetter}
-                </div>
-              )}
-            </div>
-          </AvatarFlairRing>
+          <div className="relative shrink-0 flex items-center justify-center">
+            <AvatarFlairRing frame={flairFrame} size={40}>
+              <div
+                className="w-10 h-10 rounded-full flex-shrink-0 relative overflow-hidden bg-[#0c0e14] flex items-center justify-center shadow-sm"
+                style={{
+                  border: flairFrame ? 'none' : `1.5px solid ${tierColor}`,
+                }}
+              >
+                {row.avatar_url && !avatarError ? (
+                  <img
+                    src={row.avatar_url}
+                    alt={displayName}
+                    className="w-full h-full object-cover rounded-full"
+                    referrerPolicy="no-referrer"
+                    onError={() => setAvatarError(true)}
+                  />
+                ) : (
+                  <div
+                    className="w-full h-full flex items-center justify-center font-mono font-bold text-xs text-white"
+                    style={{
+                      background: `linear-gradient(135deg, ${hexToRgba(tierColor, 0.7)} 0%, #18181b 100%)`,
+                    }}
+                  >
+                    {initialLetter}
+                  </div>
+                )}
+              </div>
+            </AvatarFlairRing>
+
+            {/* Premium Crown Badge in DP's down right corner */}
+            {flairFrame && (
+              <div
+                className="absolute -bottom-1 -right-1 z-20 flex items-center justify-center w-4 h-4 rounded-full bg-[#12131a] border border-amber-400/60 shadow-md pointer-events-none"
+                title="Premium Scholar"
+              >
+                <FlairCrown frame={flairFrame} size={10} />
+              </div>
+            )}
+          </div>
 
           {/* Scholar Details */}
           <div className="flex flex-col min-w-0 justify-center">
@@ -292,7 +304,6 @@ export const LeaderboardRow = React.memo(function LeaderboardRow({
               <span className="font-semibold text-[var(--text)] text-sm sm:text-base truncate" title={displayName}>
                 {displayName}
               </span>
-              {flairFrame && <FlairCrown frame={flairFrame} />}
               {isCurrentUser && (
                 <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-amber-400/15 text-amber-300 border border-amber-400/30 shrink-0">
                   You
