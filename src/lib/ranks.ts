@@ -4,12 +4,14 @@ import {
   RankDivision,
   RankTierConfig,
   HARD_RESET_CAP_RP,
+  resolveUserSeasonReset,
 } from './rankedSystem';
 
 export interface RankTier {
   tier: RankTierName;
   division: RankDivision;
   name: string;
+  fullTitle?: string;
   minRp: number;
   maxRp: number;
   minHours: number;
@@ -41,6 +43,7 @@ export const RANK_TIERS: RankTier[] = SYSTEM_RANK_TIERS.map((cfg) => ({
   tier: cfg.tier,
   division: cfg.division,
   name: cfg.division ? `${cfg.tier} ${cfg.division}` : cfg.tier,
+  fullTitle: cfg.fullTitle || (cfg.division ? `${cfg.tier} ${cfg.division}` : cfg.tier),
   minRp: cfg.minRP,
   maxRp: cfg.maxRP,
   minHours: cfg.minHours ?? Math.round(cfg.minRP / 100),
@@ -128,5 +131,49 @@ export const RANKS = RANK_TIERS;
 export const getRankFromRp = getRankTier;
 export const calculateRpFromSeconds = (seconds: number) => calculateSeasonRp(seconds, 0);
 export const getSoftResetRp = (rp: number) => getRankTier(rp).softResetRp;
+export { resolveUserSeasonReset };
+
+/**
+ * Resolves the user's accurate live season RP and rank tier in the current month.
+ * Guarantees that season RP never collapses below the soft-reset starting RP baseline,
+ * even before Supabase profile hydration or when current month study seconds is 0.
+ */
+export function resolveLiveSeasonStats(
+  user: any,
+  sessions: any[] = []
+): {
+  seasonRp: number;
+  rankTier: RankTier;
+  startingRp: number;
+  currentMonthSeconds: number;
+  rankTitle: string;
+} {
+  const userReset = resolveUserSeasonReset(user, sessions);
+  const minStartingRp = Math.min(HARD_RESET_CAP_RP, userReset.startingRP || 0);
+
+  const currentMonthSeconds = getCurrentMonthFocusSeconds(sessions || []);
+  const earnedThisMonthRp = Math.floor(currentMonthSeconds / 36);
+
+  const storedBaseRp = Math.min(
+    HARD_RESET_CAP_RP,
+    Number(user?.season_base_rp ?? user?.carryover_rp ?? user?.carryoverRp ?? 0)
+  );
+  const effectiveBaseRp = Math.max(minStartingRp, storedBaseRp);
+
+  const calculatedFromMonth = effectiveBaseRp + earnedThisMonthRp;
+  const explicitRp = Math.min(HARD_RESET_CAP_RP, Number(user?.seasonRp ?? user?.rp ?? 0));
+
+  const finalSeasonRp = Math.max(minStartingRp, calculatedFromMonth, explicitRp);
+  const rankTier = getRankTier(finalSeasonRp);
+  const rankTitle = rankTier.name || userReset.newRankTitle;
+
+  return {
+    seasonRp: finalSeasonRp,
+    rankTier,
+    startingRp: effectiveBaseRp,
+    currentMonthSeconds,
+    rankTitle,
+  };
+}
 
 

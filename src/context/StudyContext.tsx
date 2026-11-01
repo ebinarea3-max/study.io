@@ -30,6 +30,7 @@ import {
 import {
   calculateSeasonRp,
   getCurrentMonthFocusSeconds,
+  resolveLiveSeasonStats,
 } from '../lib/ranks';
 
 export const showPushNotification = async (title: string, options?: NotificationOptions) => {
@@ -714,7 +715,17 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         if (pendingRaw) {
           const pending = JSON.parse(pendingRaw);
           if (pending && pending.needs_reset) {
+            const startRp = Number(pending.starting_rp ?? 0);
+            const rankTitle = pending.new_rank || getRankTier(startRp).fullTitle;
             if (isMounted) {
+              updateProfile({
+                rp: Math.max(Number(user.rp || 0), startRp),
+                seasonRp: Math.max(Number(user.seasonRp || 0), startRp),
+                season_base_rp: Math.max(Number((user as any)?.season_base_rp || 0), startRp),
+                carryover_rp: Math.max(Number((user as any)?.carryover_rp || 0), startRp),
+                rank_title: rankTitle,
+                currentSeasonId: currentMonth,
+              });
               setSeasonResetAlert(pending);
             }
             return;
@@ -741,6 +752,20 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       // Resolve exact rank and soft reset dynamically per user
       const userReset = resolveUserSeasonReset(user, activeSessions);
       const currentMonthName = new Date().toLocaleString('en-US', { month: 'long' });
+
+      // Guarantee state profile does not lag behind dynamic soft-reset baseline
+      if (Number((user as any)?.season_base_rp ?? 0) < userReset.startingRP || Number(user.seasonRp ?? 0) < userReset.startingRP) {
+        if (isMounted) {
+          updateProfile({
+            rp: Math.max(Number(user.rp || 0), userReset.startingRP),
+            seasonRp: Math.max(Number(user.seasonRp || 0), userReset.startingRP),
+            season_base_rp: Math.max(Number((user as any)?.season_base_rp || 0), userReset.startingRP),
+            carryover_rp: Math.max(Number((user as any)?.carryover_rp || 0), userReset.startingRP),
+            rank_title: userReset.newRankTitle,
+            currentSeasonId: currentMonth,
+          });
+        }
+      }
 
       // 2. Supabase RPC check_and_apply_season_reset()
       if (supabase && !user.id.startsWith('user-scholar') && !user.id.startsWith('guest')) {
@@ -2109,10 +2134,10 @@ export function StudyProvider({ children }: { children: ReactNode }) {
             // Update real streak, total study seconds, and evaluate official monthly Season RP
             const realStreak = calculateStreak(merged);
             const realTotalSeconds = merged.reduce((sum, s) => sum + s.durationSeconds, 0);
-            const currentMonthSeconds = getCurrentMonthFocusSeconds(merged);
-            const carryoverRp = Math.min(HARD_RESET_CAP_RP, Number((userRef.current as any)?.season_base_rp ?? (userRef.current as any)?.carryover_rp ?? (userRef.current as any)?.carryoverRp ?? 0));
-            const currentSeasonRp = calculateSeasonRp(currentMonthSeconds, carryoverRp);
-            const rankDetails = getRankTier(currentSeasonRp);
+            const liveStats = resolveLiveSeasonStats(userRef.current, merged);
+            const currentSeasonRp = liveStats.seasonRp;
+            const carryoverRp = liveStats.startingRp;
+            const rankDetails = liveStats.rankTier;
 
             // Baseline sync for Supabase sessions to guarantee no false level-up on login
             const currentLifetimeXP = Number(userRef.current?.lifetime_xp ?? userRef.current?.lifetimeXp ?? userRef.current?.xp ?? 0) || Math.floor(realTotalSeconds / 60) * 10;
@@ -2127,7 +2152,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
               totalStudySeconds: realTotalSeconds,
               seasonRp: currentSeasonRp,
               rp: currentSeasonRp,
-              rank_title: rankDetails.fullTitle,
+              rank_title: rankDetails.name || rankDetails.fullTitle || 'Bronze I',
               season_base_rp: carryoverRp,
               carryover_rp: carryoverRp,
               lifetime_xp: currentLifetimeXP,
@@ -2328,10 +2353,10 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         const sessionsToUse = finalMergedSessions.length > 0 ? finalMergedSessions : mappedSessions;
         const realStreak = calculateStreak(sessionsToUse);
         const realTotalSeconds = sessionsToUse.reduce((sum, s) => sum + (s.durationSeconds || (s as any).duration_seconds || 0), 0);
-        const currentMonthSeconds = getCurrentMonthFocusSeconds(sessionsToUse);
-        const carryoverRp = Math.min(HARD_RESET_CAP_RP, Number((currentUser as any)?.season_base_rp ?? (currentUser as any)?.carryover_rp ?? (currentUser as any)?.carryoverRp ?? 0));
-        const currentSeasonRp = calculateSeasonRp(currentMonthSeconds, carryoverRp);
-        const rankDetails = getRankTier(currentSeasonRp);
+        const liveStats = resolveLiveSeasonStats(currentUser, sessionsToUse);
+        const currentSeasonRp = liveStats.seasonRp;
+        const carryoverRp = liveStats.startingRp;
+        const rankDetails = liveStats.rankTier;
 
         const currentLifetimeXP = Number(currentUser?.lifetime_xp ?? currentUser?.lifetimeXp ?? currentUser?.xp ?? 0) || Math.floor(realTotalSeconds / 60) * 10;
         const computedLevel = getLevelFromLifetimeXP(currentLifetimeXP);
@@ -2342,7 +2367,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
           totalStudySeconds: realTotalSeconds,
           seasonRp: currentSeasonRp,
           rp: currentSeasonRp,
-          rank_title: rankDetails.fullTitle,
+          rank_title: rankDetails.name || rankDetails.fullTitle || 'Bronze I',
           season_base_rp: carryoverRp,
           carryover_rp: carryoverRp,
           lifetime_xp: currentLifetimeXP,
@@ -2977,9 +3002,10 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       } catch {}
       const lastStreakBonusDate = currentUser?.last_streak_bonus_date || currentUser?.lastStreakBonusDate || localStreakBonusDate;
       const hasStreakOrGoal = (currentUser?.streakDays || 0) > 0 || totalToday >= dailyGoalSeconds;
+      const liveStatsNow = resolveLiveSeasonStats(currentUser, allSessionsNow);
+      const carryoverRp = liveStatsNow.startingRp;
       const currentMonthSeconds = getCurrentMonthFocusSeconds(allSessionsNow);
       const currentMonthSecondsBefore = Math.max(0, currentMonthSeconds - secondsToSave);
-      const carryoverRp = Math.min(HARD_RESET_CAP_RP, Number((currentUser as any)?.season_base_rp ?? (currentUser as any)?.carryover_rp ?? (currentUser as any)?.carryoverRp ?? 0));
 
       const prevRP = calculateSeasonRp(currentMonthSecondsBefore, carryoverRp);
       const newRP = calculateSeasonRp(currentMonthSeconds, carryoverRp);

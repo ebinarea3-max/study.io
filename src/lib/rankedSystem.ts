@@ -691,7 +691,9 @@ export function resolveUserSeasonReset(
   }
 
   const previousRankTitle = matchedTier.fullTitle;
-  const startingRP = Math.min(HARD_RESET_CAP_RP, matchedTier.softResetRP ?? 0);
+  const storedStartingRP = Math.min(HARD_RESET_CAP_RP, Number(user?.season_base_rp ?? user?.carryover_rp ?? user?.carryoverRp ?? 0));
+  const calculatedStartingRP = Math.min(HARD_RESET_CAP_RP, matchedTier.softResetRP ?? 0);
+  const startingRP = Math.max(storedStartingRP, calculatedStartingRP);
   const newRankTitle = matchedTier.softResetRank || getRankTier(startingRP).config.fullTitle;
 
   return {

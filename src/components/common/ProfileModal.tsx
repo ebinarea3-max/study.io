@@ -6,7 +6,7 @@ import { useStudy } from '../../context/StudyContext';
 import { usePremium } from '../../context/PremiumContext';
 import { X, Target, User, Loader2, Save, Plus, Dices, Crown, Lock, Sparkles } from 'lucide-react';
 
-import { getRankTier, calculateSeasonRp, getCurrentMonthFocusSeconds } from '../../lib/ranks';
+import { getRankTier, calculateSeasonRp, getCurrentMonthFocusSeconds, resolveLiveSeasonStats } from '../../lib/ranks';
 import { useDevRankPreview } from '../../lib/devRankPreview';
 import { getRankTheme } from '../../lib/rankTheme';
 import { getSupabase } from '../../lib/supabase';
@@ -148,12 +148,9 @@ export function ProfileModal({ isOpen, onClose, user: parentUser, profile }: Pro
     if (isPreviewActive && previewRp !== null) {
       return getRankTier(previewRp);
     }
-    const currentMonthSeconds = getCurrentMonthFocusSeconds(sessions || []);
-    const carryoverRp = Math.min(26000, Number(user?.carryover_rp ?? user?.carryoverRp ?? user?.season_base_rp ?? 0));
-    const computedRp = calculateSeasonRp(currentMonthSeconds, carryoverRp);
-    const effectiveRp = (sessions && sessions.length > 0) ? computedRp : Number(user?.seasonRp ?? user?.rp ?? computedRp);
-    return getRankTier(effectiveRp);
-  }, [isPreviewActive, previewRp, sessions, user?.carryover_rp, user?.carryoverRp, user?.season_base_rp, user?.seasonRp, user?.rp]);
+    const live = resolveLiveSeasonStats(user, sessions || []);
+    return live.rankTier;
+  }, [isPreviewActive, previewRp, sessions, user]);
 
   const [displayName, setDisplayName] = useState(user.name || user.displayName || '');
   const [username, setUsername] = useState(user.username || '');

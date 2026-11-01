@@ -3,7 +3,7 @@
 import { useMemo, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useStudy } from '../context/StudyContext';
-import { getRankFromRp, RankTier, calculateSeasonRp, getCurrentMonthFocusSeconds } from '../lib/ranks';
+import { getRankFromRp, RankTier, resolveLiveSeasonStats } from '../lib/ranks';
 import { getRankTheme, RankThemePalette } from '../lib/rankTheme';
 import { useDevRankPreview } from '../lib/devRankPreview';
 
@@ -16,21 +16,15 @@ export function useRankTheme(): {
   const { sessions } = useStudy();
   const { previewRp, isPreviewActive } = useDevRankPreview();
 
-  const totalRP = useMemo(() => {
+  const { totalRP, userRank } = useMemo(() => {
     // Development preview override: returns simulated RP if active
     if (isPreviewActive && previewRp !== null) {
-      return previewRp;
+      return { totalRP: previewRp, userRank: getRankFromRp(previewRp) };
     }
 
-    const currentMonthSeconds = getCurrentMonthFocusSeconds(sessions || []);
-    const carryoverRp = Math.min(26000, Number((user as any)?.season_base_rp ?? (user as any)?.carryover_rp ?? (user as any)?.carryoverRp ?? 0));
-    const computedRp = calculateSeasonRp(currentMonthSeconds, carryoverRp);
-    return (sessions && sessions.length > 0) ? computedRp : Number((user as any)?.seasonRp ?? (user as any)?.rp ?? computedRp);
-  }, [isPreviewActive, previewRp, (user as any)?.season_base_rp, (user as any)?.carryover_rp, (user as any)?.carryoverRp, (user as any)?.seasonRp, (user as any)?.rp, sessions]);
-
-  const userRank = useMemo(() => {
-    return getRankFromRp(totalRP);
-  }, [totalRP]);
+    const live = resolveLiveSeasonStats(user, sessions || []);
+    return { totalRP: live.seasonRp, userRank: live.rankTier };
+  }, [isPreviewActive, previewRp, user, sessions]);
 
   const rankPalette = useMemo(() => {
     return getRankTheme(userRank.tier);

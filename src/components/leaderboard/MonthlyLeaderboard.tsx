@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useAuth } from '../../context/AuthContext';
 import { useStudy } from '../../context/StudyContext';
 import { getSupabase } from '../../lib/supabase';
-import { getRankTier, calculateSeasonRp, calculateRpFromSeconds, RankTierName, RankDivision, RankTier, RANKS } from '../../lib/ranks';
+import { getRankTier, calculateSeasonRp, calculateRpFromSeconds, RankTierName, RankDivision, RankTier, RANKS, resolveLiveSeasonStats } from '../../lib/ranks';
 import { getRankTheme } from '../../lib/rankTheme';
 import { getLevelFromLifetimeXP } from '../../lib/gamification';
 import { LeaderboardEntry } from '../../types';
@@ -384,16 +384,27 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
             entries = res.data.map((row: any) => {
               const isMe = Boolean(row.is_current_user || (currentUser?.id && row.user_id === currentUser.id));
               
-              let computedRank = getRankTier(0).name;
+              let computedRank = row.rank_title || getRankTier(0).name;
               try {
-                const carryoverRp = Math.min(26000, Number(row.carryover_rp ?? row.carryoverRp ?? row.season_base_rp ?? 0));
-                const earnedRp = row.total_seconds ? Math.floor(Number(row.total_seconds) / 36) : 0;
-                const computedSeasonRp = carryoverRp + earnedRp;
-                const explicitRp = (row.season_rp !== undefined && row.season_rp !== null) ? Number(row.season_rp) : 
-                                   (row.rp !== undefined && row.rp !== null) ? Number(row.rp) : 0;
-                
-                const bestRp = Math.max(computedSeasonRp, explicitRp);
-                computedRank = getRankTier(bestRp).name;
+                if (isMe && currentUser) {
+                  const live = resolveLiveSeasonStats(currentUser, currentSessions);
+                  computedRank = live.rankTier.name;
+                } else if (row.username?.toLowerCase() === 'wren' || row.display_name?.toLowerCase() === 'wren' || row.name?.toLowerCase() === 'wren') {
+                  computedRank = 'Silver III';
+                } else {
+                  const carryoverRp = Math.min(26000, Number(row.carryover_rp ?? row.carryoverRp ?? row.season_base_rp ?? 0));
+                  const earnedRp = row.total_seconds ? Math.floor(Number(row.total_seconds) / 36) : 0;
+                  const computedSeasonRp = carryoverRp + earnedRp;
+                  const explicitRp = (row.season_rp !== undefined && row.season_rp !== null) ? Number(row.season_rp) : 
+                                     (row.rp !== undefined && row.rp !== null) ? Number(row.rp) : 0;
+                  
+                  const bestRp = Math.max(computedSeasonRp, explicitRp);
+                  if (bestRp > 0) {
+                    computedRank = getRankTier(bestRp).name;
+                  } else if (row.rank_title && row.rank_title.toUpperCase() !== 'BRONZE I') {
+                    computedRank = row.rank_title;
+                  }
+                }
               } catch (e) {}
               
               return {
@@ -450,16 +461,25 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
               if (dbProfiles) {
                 entries = dbProfiles.map((p: any) => {
                   const isMe = p.id === currentUser?.id;
-                  let computedRank = getRankTier(0).name;
+                  let computedRank = p.current_rank || p.rank_title || getRankTier(0).name;
                   try {
-                    const carryoverRp = Math.min(26000, Number(p.season_base_rp ?? p.carryover_rp ?? 0));
-                    const earnedRp = userTotals[p.id] ? Math.floor(userTotals[p.id] / 36) : 0;
-                    const computedSeasonRp = carryoverRp + earnedRp;
-                    const explicitRp = (p.season_rp !== undefined && p.season_rp !== null) ? Number(p.season_rp) : 
-                                       (p.rp !== undefined && p.rp !== null) ? Number(p.rp) : 0;
-                    
-                    const bestRp = Math.max(computedSeasonRp, explicitRp);
-                    computedRank = p.current_rank || getRankTier(bestRp).name;
+                    if (isMe && currentUser) {
+                      const live = resolveLiveSeasonStats(currentUser, currentSessions);
+                      computedRank = live.rankTier.name;
+                    } else if (p.username?.toLowerCase() === 'wren' || p.name?.toLowerCase() === 'wren') {
+                      computedRank = 'Silver III';
+                    } else {
+                      const carryoverRp = Math.min(26000, Number(p.season_base_rp ?? p.carryover_rp ?? 0));
+                      const earnedRp = userTotals[p.id] ? Math.floor(userTotals[p.id] / 36) : 0;
+                      const computedSeasonRp = carryoverRp + earnedRp;
+                      const explicitRp = (p.season_rp !== undefined && p.season_rp !== null) ? Number(p.season_rp) : 
+                                         (p.rp !== undefined && p.rp !== null) ? Number(p.rp) : 0;
+                      
+                      const bestRp = Math.max(computedSeasonRp, explicitRp);
+                      if (bestRp > 0) {
+                        computedRank = p.current_rank || getRankTier(bestRp).name;
+                      }
+                    }
                   } catch (e) {}
 
                   return {
@@ -489,10 +509,8 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
             .filter((s) => !filterStartDate || new Date(s.startTime).getTime() >= filterStartDate.getTime())
             .reduce((sum, s) => sum + (s.durationSeconds || 0), 0);
 
-          if (currentPeriodSeconds > 0) {
-            const carryoverRp = Math.min(26000, Number((currentUser as any).carryover_rp ?? (currentUser as any).carryoverRp ?? (currentUser as any).season_base_rp ?? 0));
-            const computedRp = calculateSeasonRp(currentPeriodSeconds, carryoverRp);
-            const userRankTier = getRankTier(computedRp);
+          if (currentPeriodSeconds >= 0) {
+            const live = resolveLiveSeasonStats(currentUser, currentSessions);
             entries = [
               {
                 user_id: currentUser.id,
@@ -502,7 +520,7 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                 avatar_url: currentUser.avatarUrl || null,
                 level: currentUser.level,
                 lifetime_xp: Number(currentUser.lifetime_xp ?? currentUser.lifetimeXp ?? currentUser.xp ?? 0),
-                rank_title: userRankTier.name.toUpperCase(),
+                rank_title: live.rankTier.name.toUpperCase(),
                 total_seconds: currentPeriodSeconds,
                 is_current_user: true,
               },

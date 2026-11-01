@@ -53,7 +53,7 @@ import { TimerDial } from './TimerDial';
 import { StudySession, Subject, TimerMode, UserProfile } from '../../types';
 import { calculateFocusXP, getLevelFromLifetimeXP, getScholarTitle } from '../../lib/gamification';
 import { calculateSessionRP, HARD_RESET_CAP_RP } from '../../lib/rankedSystem';
-import { getCurrentMonthFocusSeconds, calculateSeasonRp, getRankTier } from '../../lib/ranks';
+import { getCurrentMonthFocusSeconds, calculateSeasonRp, getRankTier, resolveLiveSeasonStats } from '../../lib/ranks';
 import { getLocalDateString, isSessionToday, isSessionYesterday } from '../../lib/dateUtils';
 import { Skeleton } from '../common/Skeleton';
 import { useRankTheme } from '../../hooks/useRankTheme';
@@ -436,7 +436,8 @@ export function StudyTimer() {
         todayString,
       });
 
-      const prevRP = Number((user as any)?.rp ?? user?.seasonRp ?? 0);
+      const { seasonRp: liveRp, startingRp: effectiveBaseRp } = resolveLiveSeasonStats(user, sessions);
+      const prevRP = Math.max(liveRp, Number((user as any)?.rp ?? user?.seasonRp ?? 0));
       const newRP = prevRP + rpBreakdown.totalGained;
 
       // XP Calculation & Anti-Exploit Rules:
@@ -472,6 +473,9 @@ export function StudyTimer() {
       const profileUpdates: Partial<UserProfile> = {
         seasonRp: Math.round(newRP),
         rp: Math.round(newRP),
+        season_base_rp: effectiveBaseRp,
+        carryover_rp: effectiveBaseRp,
+        rank_title: getRankTier(newRP).name.toUpperCase(),
         lifetime_xp: Math.round(newLifetimeXP),
         lifetimeXp: Math.round(newLifetimeXP),
         xp: Math.round(newLifetimeXP),

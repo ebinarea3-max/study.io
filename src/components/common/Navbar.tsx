@@ -27,7 +27,7 @@ import {
 } from '../../lib/premium';
 
 import { Logo } from '../Logo';
-import { getRankTier, calculateSeasonRp, getCurrentMonthFocusSeconds } from '../../lib/ranks';
+import { getRankTier, calculateSeasonRp, getCurrentMonthFocusSeconds, resolveLiveSeasonStats } from '../../lib/ranks';
 import { getTierBadge, getLevelTitle } from '../../lib/gamification';
 import { useRankTheme } from '../../hooks/useRankTheme';
 import { useDevRankPreview } from '../../lib/devRankPreview';
@@ -226,12 +226,9 @@ export function Navbar({
     if (isPreviewActive && previewRp !== null) {
       return { liveSeasonRp: previewRp, liveRank: getRankTier(previewRp) };
     }
-    const currentMonthSeconds = getCurrentMonthFocusSeconds(sessions || []);
-    const carryoverRp = Math.min(26000, Number((user as any)?.season_base_rp ?? (user as any)?.carryover_rp ?? (user as any)?.carryoverRp ?? 0));
-    const computedRp = calculateSeasonRp(currentMonthSeconds, carryoverRp);
-    const effectiveRp = (sessions && sessions.length > 0) ? computedRp : Number((user as any)?.seasonRp ?? (user as any)?.rp ?? computedRp);
-    return { liveSeasonRp: effectiveRp, liveRank: getRankTier(effectiveRp) };
-  }, [isPreviewActive, previewRp, sessions, (user as any)?.season_base_rp, (user as any)?.carryover_rp, (user as any)?.carryoverRp, (user as any)?.seasonRp, (user as any)?.rp]);
+    const live = resolveLiveSeasonStats(user, sessions || []);
+    return { liveSeasonRp: live.seasonRp, liveRank: live.rankTier };
+  }, [isPreviewActive, previewRp, sessions, user]);
 
   return (
     <>

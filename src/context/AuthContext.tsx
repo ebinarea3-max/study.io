@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, useEffect, useRef, ReactNod
 import { UserProfile } from '../types';
 import { INITIAL_USER, cleanupLegacyDemoData } from '../lib/mockData';
 import { getSupabase } from '../lib/supabase';
-import { getRankFromRp, getSoftResetRp, HARD_RESET_CAP_RP, calculateSeasonRp, getCurrentMonthFocusSeconds, getRankTier } from '../lib/ranks';
+import { getRankFromRp, getSoftResetRp, HARD_RESET_CAP_RP, calculateSeasonRp, getCurrentMonthFocusSeconds, getRankTier, resolveLiveSeasonStats } from '../lib/ranks';
 import { getCurrentSeasonId, resolveUserSeasonReset, getRankBadgePath } from '../lib/rankedSystem';
 import { getLevelFromLifetimeXP, getScholarTitle } from '../lib/gamification';
 
@@ -243,47 +243,52 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (data && !error) {
           const currentMonthStr = new Date().toISOString().substring(0, 7);
-          let seasonRp = data.season_rp ?? 0;
+          const { data: dbSessions } = await supabase
+            .from('study_sessions')
+            .select('id, user_id, duration_seconds, started_at')
+            .eq('user_id', user.id);
+
+          const liveStats = resolveLiveSeasonStats(data, dbSessions || []);
+          const userReset = resolveUserSeasonReset(data, dbSessions || []);
+          const newStartingRP = liveStats.startingRp;
+          const resolvedSeasonRp = liveStats.seasonRp;
+          const resolvedRankTitle = liveStats.rankTitle || userReset.newRankTitle;
+          const prevRankTitle = userReset.previousRankTitle;
+          const newBadge = liveStats.rankTier.badge;
           let lastResetMonth = data.last_reset_month;
 
-          if (lastResetMonth !== currentMonthStr) {
-            const { data: dbSessions } = await supabase
-              .from('study_sessions')
-              .select('id, user_id, duration_seconds, started_at')
-              .eq('user_id', user.id);
-
-            const userReset = resolveUserSeasonReset(data, dbSessions || []);
-            const newStartingRP = userReset.startingRP;
-            const newRankTitle = userReset.newRankTitle;
-            const prevRankTitle = userReset.previousRankTitle;
-            const newBadge = getRankTier(newStartingRP).badge;
+          if (lastResetMonth !== currentMonthStr || Number(data.season_rp ?? 0) < resolvedSeasonRp || Number(data.season_base_rp ?? 0) < newStartingRP) {
             lastResetMonth = currentMonthStr;
 
-            await supabase.from('profiles').update({
-              season_rp: newStartingRP,
-              season_base_rp: newStartingRP,
-              last_reset_month: lastResetMonth,
-              current_season_id: currentMonthStr,
-              rank_title: newRankTitle,
-              rank_badge: newBadge,
-              current_rank: newRankTitle,
-              last_season_rank: prevRankTitle,
-            }).eq('id', user.id);
+            try {
+              await supabase.from('profiles').update({
+                season_rp: resolvedSeasonRp,
+                season_base_rp: newStartingRP,
+                last_reset_month: lastResetMonth,
+                current_season_id: currentMonthStr,
+                rank_title: resolvedRankTitle,
+                rank_badge: newBadge,
+                current_rank: resolvedRankTitle,
+                last_season_rank: prevRankTitle,
+              }).eq('id', user.id);
+            } catch (syncErr) {
+              console.warn('[AuthContext] Profile update sync warning:', syncErr);
+            }
 
-            data.season_rp = newStartingRP;
+            data.season_rp = resolvedSeasonRp;
             data.season_base_rp = newStartingRP;
             data.last_reset_month = lastResetMonth;
             data.current_season_id = currentMonthStr;
-            data.rank_title = newRankTitle;
+            data.rank_title = resolvedRankTitle;
             data.rank_badge = newBadge;
-            data.current_rank = newRankTitle;
+            data.current_rank = resolvedRankTitle;
             data.last_season_rank = prevRankTitle;
-            if (data.level_title) data.level_title = newRankTitle;
+            if (data.level_title) data.level_title = resolvedRankTitle;
 
             const pendingResetAlert = {
               needs_reset: true,
               previous_rank: prevRankTitle,
-              new_rank: newRankTitle,
+              new_rank: resolvedRankTitle,
               starting_rp: newStartingRP,
               month_name: new Date().toLocaleString('en-US', { month: 'long' }),
             };
@@ -299,20 +304,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               dailyGoalHours: data.daily_goal_hours ?? prev.dailyGoalHours,
               streakDays: data.streak_days ?? prev.streakDays,
               level: data.level ?? prev.level,
-              rp: data.rp ?? prev.rp,
-              seasonRp: data.season_rp ?? data.rp ?? prev.seasonRp,
-              season_base_rp: Number(data.season_base_rp ?? prev.season_base_rp ?? 0),
-              carryover_rp: Number(data.season_base_rp ?? prev.carryover_rp ?? 0),
+              rp: resolvedSeasonRp,
+              seasonRp: resolvedSeasonRp,
+              season_base_rp: newStartingRP,
+              carryover_rp: newStartingRP,
+              rank_title: resolvedRankTitle,
               xp: data.lifetime_xp ?? data.xp ?? prev.xp,
               lifetime_xp: data.lifetime_xp ?? data.xp ?? prev.lifetime_xp,
               lifetimeXp: data.lifetime_xp ?? data.xp ?? prev.lifetimeXp,
               totalStudySeconds: data.total_study_seconds ?? prev.totalStudySeconds,
-              levelTitle: data.rank_title || data.level_title || prev.levelTitle,
+              levelTitle: resolvedRankTitle || data.level_title || prev.levelTitle,
               is_onboarded: data.is_onboarded ?? prev.is_onboarded,
               user_metadata: {
                 ...(prev.user_metadata || {}),
                 level: data.level ?? prev.level,
-                levelTitle: data.rank_title || data.level_title || prev.levelTitle
+                levelTitle: resolvedRankTitle || data.level_title || prev.levelTitle
               }
             };
             try { localStorage.setItem('studypulse_active_user', JSON.stringify(updated)); } catch {}
@@ -341,6 +347,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed && typeof parsed === 'object') {
+          const live = resolveLiveSeasonStats(parsed, []);
+          if (live.startingRp > 0) {
+            parsed.season_base_rp = Math.max(Number(parsed.season_base_rp || 0), live.startingRp);
+            parsed.carryover_rp = Math.max(Number(parsed.carryover_rp || 0), live.startingRp);
+            parsed.seasonRp = Math.max(Number(parsed.seasonRp || 0), live.seasonRp);
+            parsed.rp = Math.max(Number(parsed.rp || 0), live.seasonRp);
+            if (!parsed.rank_title || parsed.rank_title.toUpperCase() === 'BRONZE I') {
+              parsed.rank_title = live.rankTitle;
+            }
+          }
           if (!parsed.user_metadata) parsed.user_metadata = {};
           if (parsed.level && !parsed.user_metadata.level) {
             parsed.user_metadata.level = parsed.level;
