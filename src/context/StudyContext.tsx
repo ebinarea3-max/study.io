@@ -704,9 +704,41 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
       if (isLoading || !isAuthenticated || !user?.id || user.id.startsWith('user-scholar') || user.id.startsWith('guest')) return;
 
+      // 1. Check for pending reset payload stashed during AuthContext login/profile fetch
+      try {
+        const pendingRaw = localStorage.getItem(`studypulse_pending_season_reset_${safeKey}`);
+        if (pendingRaw) {
+          const pending = JSON.parse(pendingRaw);
+          if (pending && pending.needs_reset) {
+            if (isMounted) {
+              setSeasonResetAlert(pending);
+            }
+            return;
+          }
+        }
+      } catch {}
+
       const supabase = getSupabase();
 
-      // 1. Supabase RPC check_and_apply_season_reset()
+      // Ensure we have user's study sessions loaded before evaluating ranks
+      let activeSessions = sessions;
+      if ((!activeSessions || activeSessions.length === 0) && supabase && user?.id) {
+        try {
+          const { data: dbSess } = await supabase
+            .from('study_sessions')
+            .select('*')
+            .eq('user_id', user.id);
+          if (dbSess && dbSess.length > 0) {
+            activeSessions = dbSess;
+          }
+        } catch {}
+      }
+
+      // Resolve exact rank and soft reset dynamically per user
+      const userReset = resolveUserSeasonReset(user, activeSessions);
+      const currentMonthName = new Date().toLocaleString('en-US', { month: 'long' });
+
+      // 2. Supabase RPC check_and_apply_season_reset()
       if (supabase && !user.id.startsWith('user-scholar') && !user.id.startsWith('guest')) {
         try {
           const { data, error } = await supabase.rpc('check_and_apply_season_reset');
@@ -715,25 +747,10 @@ export function StudyProvider({ children }: { children: ReactNode }) {
               typeof data === 'string' ? JSON.parse(data) : (data as SeasonResetData);
 
             if (parsedData && parsedData.needs_reset) {
-              const isWren =
-                user.username === 'wren' ||
-                user.name === 'wren' ||
-                user.displayName?.toLowerCase() === 'wren' ||
-                user.email?.toLowerCase().includes('wren');
+              const previousRank = userReset.previousRankTitle || parsedData.previous_rank || 'Bronze I';
+              const newRank = userReset.newRankTitle || parsedData.new_rank || 'Bronze I';
+              const startingRP = userReset.startingRP ?? parsedData.starting_rp ?? 0;
 
-              // Resolve exact rank and soft reset dynamically per user
-              const userReset = resolveUserSeasonReset(user, sessions);
-              const previousRank = isWren
-                ? 'SILVER IV'
-                : (userReset.previousRankTitle || parsedData.previous_rank || 'Bronze I');
-              const newRank = isWren
-                ? 'SILVER III'
-                : (userReset.newRankTitle || parsedData.new_rank || 'Bronze I');
-              const startingRP = isWren
-                ? 1500
-                : (userReset.startingRP ?? parsedData.starting_rp ?? 0);
-
-              const currentMonthName = new Date().toLocaleString('en-US', { month: 'long' });
               const resolvedPayload: SeasonResetData = {
                 needs_reset: true,
                 previous_rank: previousRank,
@@ -761,27 +778,23 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      // 2. Client-side Model 2 check (graceful fallback for local dev, offline, or prior to RPC migration)
+      // 3. Client-side Model 2 check (graceful fallback for local dev, offline, or prior to RPC migration)
       if (user.currentSeasonId && user.currentSeasonId !== currentMonth) {
-        // Resolve previous rank and soft reset dynamically according to user's rank
-        const { previousRankTitle, newRankTitle, startingRP } = resolveUserSeasonReset(user, sessions);
-        const currentMonthName = new Date().toLocaleString('en-US', { month: 'long' });
-
         const resetAlertData: SeasonResetData = {
           needs_reset: true,
-          previous_rank: previousRankTitle,
-          new_rank: newRankTitle,
-          starting_rp: startingRP,
+          previous_rank: userReset.previousRankTitle,
+          new_rank: userReset.newRankTitle,
+          starting_rp: userReset.startingRP,
           month_name: currentMonthName,
         };
 
         if (isMounted) {
           updateProfile({
-            rp: startingRP,
-            seasonRp: startingRP,
-            rank_title: newRankTitle,
-            season_base_rp: startingRP,
-            carryover_rp: startingRP,
+            rp: userReset.startingRP,
+            seasonRp: userReset.startingRP,
+            rank_title: userReset.newRankTitle,
+            season_base_rp: userReset.startingRP,
+            carryover_rp: userReset.startingRP,
             currentSeasonId: currentMonth,
           });
           setSeasonResetAlert(resetAlertData);

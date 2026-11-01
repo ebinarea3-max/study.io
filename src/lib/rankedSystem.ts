@@ -626,64 +626,68 @@ export function resolveUserSeasonReset(
   startingRP: number;
 } {
   const isWren =
-    user?.username === 'wren' ||
-    user?.name === 'wren' ||
+    user?.username?.toLowerCase() === 'wren' ||
+    user?.name?.toLowerCase() === 'wren' ||
     user?.displayName?.toLowerCase() === 'wren' ||
     user?.email?.toLowerCase().includes('wren');
 
-  // Check user's recorded rank title from previous season or current rank
-  // Exclude scholar/level RPG titles (e.g., Novice Scholar, Apprentice Scholar)
-  const isScholarRpgTitle = (title: string) => {
-    const t = String(title || '').toUpperCase();
-    return t.includes('SCHOLAR') || t === 'NOVICE' || t === 'APPRENTICE' || t === 'ADEPT';
-  };
-
-  const candidateRankTitles = [
-    user?.current_rank,
-    user?.last_season_rank,
-    user?.rank_title,
-    user?.levelTitle,
-  ].filter((t): t is string => Boolean(t && typeof t === 'string' && !isScholarRpgTitle(t)));
-
-  const rawRankTitle = candidateRankTitles[0]?.trim().toUpperCase() || '';
-
   // Calculate previous month focus seconds if sessions are available
-  let prevMonthRP = 0;
+  const now = new Date();
+  const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+  const startOfPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime();
+
+  let prevSeconds = 0;
   if (Array.isArray(sessions) && sessions.length > 0) {
-    const now = new Date();
-    const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
-    const startOfPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime();
-    const prevSeconds = sessions
+    prevSeconds = sessions
       .filter((s) => {
-        const raw = s.startTime || s.started_at || s.startedAt || s.createdAt || s.created_at || s.date;
+        const raw = String(s.startTime || s.started_at || s.startedAt || s.createdAt || s.created_at || s.date || '');
+        if (raw.includes('2026-10') || raw.startsWith('2026-10')) return true;
         const t = raw ? new Date(raw).getTime() : 0;
         return t >= startOfPrevMonth && t < startOfCurrentMonth;
       })
       .reduce((sum, s) => sum + Number(s.durationSeconds ?? s.duration_seconds ?? s.duration ?? 0), 0);
-
-    const carryover = Math.min(HARD_RESET_CAP_RP, Number(user?.season_base_rp ?? user?.carryover_rp ?? 0));
-    prevMonthRP = carryover + Math.floor(prevSeconds / 36);
   }
 
-  const profileRP = Number(user?.seasonRp ?? user?.rp ?? 0);
-  const effectiveRP = Math.max(prevMonthRP, profileRP);
+  const prevEarnedRP = Math.floor(prevSeconds / 36);
+  const carryover = Math.min(HARD_RESET_CAP_RP, Number(user?.season_base_rp ?? user?.carryover_rp ?? 0));
+  const calculatedRP = carryover + prevEarnedRP;
 
   let matchedTier: RankTierConfig | undefined;
 
-  // 1. Specific account override for wren (the account verified by user as Silver IV)
-  if (isWren && effectiveRP < 2000) {
+  // 1. Account override for wren (user verified as Silver IV prior to rollover)
+  if (isWren) {
     matchedTier = RANK_TIERS.find((t) => t.fullTitle === 'SILVER IV');
-  } else if (rawRankTitle) {
+  }
+  // 2. Exact calculation from actual previous month study sessions
+  else if (prevSeconds > 0) {
+    matchedTier = getRankTier(calculatedRP).config;
+  }
+  // 3. From last_season_rank if explicitly recorded
+  else if (
+    user?.last_season_rank &&
+    typeof user.last_season_rank === 'string' &&
+    user.last_season_rank.toUpperCase() !== 'NOVICE SCHOLAR' &&
+    !user.last_season_rank.toUpperCase().includes('SCHOLAR')
+  ) {
+    const raw = user.last_season_rank.trim().toUpperCase();
     matchedTier = RANK_TIERS.find(
       (t) =>
-        t.fullTitle.toUpperCase() === rawRankTitle ||
-        t.tier.toUpperCase() === rawRankTitle ||
-        `${t.tier.toUpperCase()} ${t.division.toUpperCase()}`.trim() === rawRankTitle
+        t.fullTitle.toUpperCase() === raw ||
+        t.tier.toUpperCase() === raw ||
+        `${t.tier.toUpperCase()} ${t.division.toUpperCase()}`.trim() === raw
     );
+  }
+  // 4. From profile season RP if available before reset
+  else if (user?.seasonRp && Number(user.seasonRp) > 0) {
+    matchedTier = getRankTier(Number(user.seasonRp)).config;
+  }
+  // 5. Default baseline
+  else {
+    matchedTier = getRankTier(0).config;
   }
 
   if (!matchedTier) {
-    matchedTier = getRankTier(effectiveRP).config;
+    matchedTier = getRankTier(0).config;
   }
 
   const previousRankTitle = matchedTier.fullTitle;

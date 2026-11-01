@@ -276,12 +276,15 @@ create or replace function public.check_and_apply_season_reset()
 returns jsonb
 language plpgsql
 security definer
-as $$
+as $
 declare
   current_user_id uuid;
   user_profile record;
   current_month text;
   current_month_name text;
+  prev_month_seconds bigint := 0;
+  start_of_curr_month timestamptz;
+  start_of_prev_month timestamptz;
   prev_rp integer;
   prev_rank text;
   new_rank text;
@@ -306,8 +309,7 @@ begin
   if user_profile.current_season_id is null then
     update public.profiles
     set current_season_id = current_month,
-        rp = coalesce(rp, season_rp, 0),
-        season_rp = coalesce(season_rp, rp, 0),
+        season_rp = coalesce(season_rp, 0),
         season_base_rp = coalesce(season_base_rp, 0),
         rank_title = coalesce(rank_title, 'Bronze I')
     where id = current_user_id;
@@ -319,8 +321,20 @@ begin
     return jsonb_build_object('needs_reset', false);
   end if;
 
-  -- Season rollover detected! Determine Model 2 soft reset thresholds:
-  prev_rp := coalesce(user_profile.season_rp, user_profile.rp, 0);
+  -- Calculate actual previous month focus seconds from study_sessions
+  start_of_curr_month := date_trunc('month', now());
+  start_of_prev_month := date_trunc('month', now() - interval '1 month');
+
+  select coalesce(sum(duration_seconds), 0) into prev_month_seconds
+  from public.study_sessions
+  where user_id = current_user_id
+    and started_at >= start_of_prev_month
+    and started_at < start_of_curr_month;
+
+  prev_rp := coalesce(user_profile.season_base_rp, 0) + floor(prev_month_seconds / 36);
+  if prev_rp = 0 then
+    prev_rp := coalesce(user_profile.season_rp, 0);
+  end if;
 
   -- Verified exception: user 'wren' was Silver IV before the rollover
   if user_profile.username = 'wren' and prev_rp < 2000 then
@@ -420,9 +434,11 @@ begin
   update public.profiles
   set current_season_id = current_month,
       season_rp = starting_rp,
-      rp = starting_rp,
       season_base_rp = starting_rp,
-      rank_title = new_rank
+      rank_title = new_rank,
+      current_rank = new_rank,
+      last_season_rank = prev_rank,
+      last_reset_month = current_month
   where id = current_user_id;
 
   -- Return payload

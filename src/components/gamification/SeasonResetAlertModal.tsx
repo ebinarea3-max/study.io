@@ -34,13 +34,9 @@ export function SeasonResetAlertModal({
   }, [data?.month_name]);
 
   // Resolve previous and new rank badges & titles directly from data (customized per user)
-  const isWrenWithStaleBronze =
-    (user?.username === 'wren' || user?.name === 'wren' || user?.displayName?.toLowerCase() === 'wren') &&
-    (data?.previous_rank === 'Bronze I' || data?.previous_rank === 'BRONZE I');
-
-  const prevRankTitle = isWrenWithStaleBronze ? 'SILVER IV' : (data?.previous_rank || 'Bronze I');
-  const newRankTitle = isWrenWithStaleBronze ? 'SILVER III' : (data?.new_rank || 'Bronze I');
-  const startingRP = isWrenWithStaleBronze ? 1500 : (data?.starting_rp ?? 0);
+  const prevRankTitle = data?.previous_rank || 'Bronze I';
+  const newRankTitle = data?.new_rank || 'Bronze I';
+  const startingRP = data?.starting_rp ?? 0;
 
   const prevBadgePath = useMemo(() => getRankBadgePath(prevRankTitle), [prevRankTitle]);
   const newBadgePath = useMemo(() => getRankBadgePath(newRankTitle), [newRankTitle]);
@@ -63,6 +59,13 @@ export function SeasonResetAlertModal({
       });
     } catch {}
 
+    const currentMonth = new Date().toISOString().substring(0, 7);
+    const safeKey = currentMonth.replace('-', '_');
+    try {
+      localStorage.setItem(`season_reset_alert_acknowledged_${safeKey}`, 'true');
+      localStorage.removeItem(`studypulse_pending_season_reset_${safeKey}`);
+    } catch {}
+
     updateProfile({
       rp: startingRP,
       seasonRp: startingRP,
@@ -76,13 +79,12 @@ export function SeasonResetAlertModal({
     if (supabase && user?.id && !user.id.startsWith('user-scholar') && !user.id.startsWith('guest')) {
       supabase.from('profiles').update({
         season_rp: startingRP,
-        rp: startingRP,
         season_base_rp: startingRP,
         rank_title: newRankTitle,
         current_rank: newRankTitle,
         rank_badge: getRankBadgePath(newRankTitle).replace('/images/ranks/', ''),
         last_season_rank: prevRankTitle,
-        last_reset_month: new Date().toISOString().substring(0, 7),
+        last_reset_month: currentMonth,
       }).eq('id', user.id).then(() => {});
     }
 

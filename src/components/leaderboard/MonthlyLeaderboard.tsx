@@ -398,7 +398,7 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
               const uids = Object.keys(userTotals);
               const { data: dbProfiles } = await supabase
                 .from('profiles')
-                .select('id, name, username, avatar_url, lifetime_xp, xp, rank_title, level, rp, season_rp')
+                .select('id, name, username, avatar_url, lifetime_xp, xp, rank_title, level, season_rp, season_base_rp, current_rank')
                 .in('id', uids);
 
               if (dbProfiles) {
@@ -413,7 +413,7 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                                        (p.rp !== undefined && p.rp !== null) ? Number(p.rp) : 0;
                     
                     const bestRp = Math.max(computedSeasonRp, explicitRp);
-                    computedRank = getRankTier(bestRp).name;
+                    computedRank = p.current_rank || getRankTier(bestRp).name;
                   } catch (e) {}
 
                   return {

@@ -5,7 +5,7 @@ import { UserProfile } from '../types';
 import { INITIAL_USER, cleanupLegacyDemoData } from '../lib/mockData';
 import { getSupabase } from '../lib/supabase';
 import { getRankFromRp, getSoftResetRp, HARD_RESET_CAP_RP, calculateSeasonRp, getCurrentMonthFocusSeconds, getRankTier } from '../lib/ranks';
-import { getCurrentSeasonId } from '../lib/rankedSystem';
+import { getCurrentSeasonId, resolveUserSeasonReset, getRankBadgePath } from '../lib/rankedSystem';
 import { getLevelFromLifetimeXP, getScholarTitle } from '../lib/gamification';
 
 export type StoredAccount = {
@@ -91,23 +91,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ? dbSessions.reduce((acc: any, s: any) => acc + (Number(s.duration_seconds ?? 0)), 0)
         : 0;
         
-      const isWrenSilver4 =
-        (profile?.username === 'wren' ||
-         profile?.name?.toLowerCase().includes('wren') ||
-         authUser.email?.toLowerCase().includes('wren')) &&
-        (Number(profile?.season_base_rp ?? profile?.carryover_rp ?? 0) < 1500);
+      const currentMonthStr = new Date().toISOString().substring(0, 7);
+      const isNewSeason = profile?.last_reset_month && profile.last_reset_month !== currentMonthStr;
 
+      // Compute exact reset for any user dynamically based on October study sessions & profile
+      const userReset = resolveUserSeasonReset(profile, dbSessions || []);
+      
       let carryoverRp = Math.min(HARD_RESET_CAP_RP, Number(profile?.season_base_rp ?? profile?.carryover_rp ?? 0));
-      if (isWrenSilver4 && carryoverRp < 1500) {
-        carryoverRp = 1500;
+      if (isNewSeason || carryoverRp < userReset.startingRP) {
+        carryoverRp = userReset.startingRP;
       }
       const calculatedRP = calculateSeasonRp(currentMonthStudySeconds, carryoverRp);
+      const currentRankObj = getRankTier(calculatedRP);
+      const effectiveRankTitle = currentRankObj.name.toUpperCase();
+      const effectiveBadge = currentRankObj.badge;
       
-      let currentProfileRP = Number(profile?.rp ?? profile?.season_rp ?? 0);
+      let currentProfileRP = Number(profile?.season_rp ?? 0);
       
       // AUTO-REPAIR CORRUPTED PROFILES:
       let needsRepair = false;
-      if (isWrenSilver4 && (currentProfileRP < 1500 || Number(profile?.season_base_rp ?? 0) < 1500)) {
+      if (isNewSeason) {
+        currentProfileRP = calculatedRP;
+        needsRepair = true;
+      } else if (carryoverRp < userReset.startingRP) {
         currentProfileRP = calculatedRP;
         needsRepair = true;
       } else if (Math.abs(currentProfileRP - calculatedRP) > 5 || Number(profile?.total_study_seconds ?? 0) > totalStudySeconds + 3600) {
@@ -132,16 +138,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           };
           if (needsRepair) {
             updatePayload.season_rp = Math.round(calculatedRP);
-            updatePayload.rp = Math.round(calculatedRP);
             updatePayload.season_base_rp = carryoverRp;
-            updatePayload.rank_title = getRankTier(calculatedRP).name.toUpperCase();
-            if (isWrenSilver4) {
-              updatePayload.last_season_rank = 'SILVER IV';
-              updatePayload.current_rank = 'Silver III';
-              updatePayload.rank_badge = 'silver-3.png';
-            }
+            updatePayload.last_reset_month = currentMonthStr;
+            updatePayload.current_season_id = currentMonthStr;
+            updatePayload.rank_title = effectiveRankTitle;
+            updatePayload.current_rank = effectiveRankTitle;
+            updatePayload.rank_badge = effectiveBadge;
+            updatePayload.last_season_rank = userReset.previousRankTitle;
           }
           await supabase.from('profiles').update(updatePayload).eq('id', authUser.id);
+
+          if (isNewSeason) {
+            const pendingResetAlert = {
+              needs_reset: true,
+              previous_rank: userReset.previousRankTitle,
+              new_rank: userReset.newRankTitle,
+              starting_rp: userReset.startingRP,
+              month_name: new Date().toLocaleString('en-US', { month: 'long' }),
+            };
+            try {
+              localStorage.setItem(`studypulse_pending_season_reset_${currentMonthStr.replace('-', '_')}`, JSON.stringify(pendingResetAlert));
+            } catch {}
+          }
         } catch (e) {
           console.warn('Failed to sync level to Supabase profile:', e);
         }
@@ -225,41 +243,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (data && !error) {
           const currentMonthStr = new Date().toISOString().substring(0, 7);
-          let seasonRp = data.season_rp ?? data.rp ?? 0;
+          let seasonRp = data.season_rp ?? 0;
           let lastResetMonth = data.last_reset_month;
 
-          const isWrenSilver4 =
-            (data.username === 'wren' ||
-             data.name?.toLowerCase().includes('wren') ||
-             user.email?.toLowerCase().includes('wren')) &&
-            (seasonRp === 0 || seasonRp < 1500);
-
-          if (isWrenSilver4) {
-            seasonRp = 2000;
-          }
-
           if (lastResetMonth !== currentMonthStr) {
-            seasonRp = Math.min(HARD_RESET_CAP_RP, getSoftResetRp(seasonRp));
+            const { data: dbSessions } = await supabase
+              .from('study_sessions')
+              .select('id, user_id, duration_seconds, started_at')
+              .eq('user_id', user.id);
+
+            const userReset = resolveUserSeasonReset(data, dbSessions || []);
+            const newStartingRP = userReset.startingRP;
+            const newRankTitle = userReset.newRankTitle;
+            const prevRankTitle = userReset.previousRankTitle;
+            const newBadge = getRankTier(newStartingRP).badge;
             lastResetMonth = currentMonthStr;
-            const newTier = getRankFromRp(seasonRp);
-            
+
             await supabase.from('profiles').update({
-              season_rp: seasonRp,
-              season_base_rp: seasonRp,
+              season_rp: newStartingRP,
+              season_base_rp: newStartingRP,
               last_reset_month: lastResetMonth,
-              rank_title: newTier.name.toUpperCase(),
-              rank_badge: newTier.badge,
-              current_rank: newTier.name,
-              last_season_rank: isWrenSilver4 ? 'SILVER IV' : (data.last_season_rank || data.current_rank || 'Bronze I'),
+              current_season_id: currentMonthStr,
+              rank_title: newRankTitle,
+              rank_badge: newBadge,
+              current_rank: newRankTitle,
+              last_season_rank: prevRankTitle,
             }).eq('id', user.id);
 
-            data.season_rp = seasonRp;
-            data.season_base_rp = seasonRp;
+            data.season_rp = newStartingRP;
+            data.season_base_rp = newStartingRP;
             data.last_reset_month = lastResetMonth;
-            data.rank_title = newTier.name.toUpperCase();
-            data.rank_badge = newTier.badge;
-            data.current_rank = newTier.name;
-            if (data.level_title) data.level_title = newTier.name.toUpperCase();
+            data.current_season_id = currentMonthStr;
+            data.rank_title = newRankTitle;
+            data.rank_badge = newBadge;
+            data.current_rank = newRankTitle;
+            data.last_season_rank = prevRankTitle;
+            if (data.level_title) data.level_title = newRankTitle;
+
+            const pendingResetAlert = {
+              needs_reset: true,
+              previous_rank: prevRankTitle,
+              new_rank: newRankTitle,
+              starting_rp: newStartingRP,
+              month_name: new Date().toLocaleString('en-US', { month: 'long' }),
+            };
+            try {
+              localStorage.setItem(`studypulse_pending_season_reset_${currentMonthStr.replace('-', '_')}`, JSON.stringify(pendingResetAlert));
+            } catch {}
           }
           setUser(prev => {
             const updated = {
