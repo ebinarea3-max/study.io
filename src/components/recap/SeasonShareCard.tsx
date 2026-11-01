@@ -20,6 +20,7 @@ import {
 import { usePremium } from '../../context/PremiumContext';
 import { RankTierName, getRankBadgePath } from '../../lib/rankedSystem';
 import { formatHoursAndMins } from '../../lib/utils';
+import { Logo } from '../Logo';
 
 export type SeasonCardStyle = 'dark' | 'gold' | 'theme';
 
@@ -165,18 +166,12 @@ function SeasonCardCanvas({
       {/* ══════════════════════════════════════════════════════════ */}
       <div className="relative z-10 flex items-center justify-between pb-8 border-b" style={{ borderColor }}>
         <div className="flex items-center gap-4">
-          <div
-            className="w-12 h-12 rounded-2xl flex items-center justify-center font-black text-2xl shadow-lg"
-            style={{
-              backgroundColor: isGold ? '#E6C15A' : isTheme ? tierAccent : '#FFFFFF',
-              color: '#000000',
-            }}
-          >
-            S
+          <div className="flex items-center justify-center">
+            <Logo className="w-14 h-14" />
           </div>
           <div>
-            <div className="text-3xl font-black tracking-widest text-white flex items-center gap-2">
-              <span>study.io</span>
+            <div className="text-3xl font-hud font-extrabold tracking-wider text-white flex items-center gap-2">
+              <span>STUDY.IO</span>
               <span className="w-2.5 h-2.5 rounded-full animate-pulse" style={{ backgroundColor: primaryAccent }} />
             </div>
             <div className="text-xs font-mono tracking-widest uppercase text-white/50">
@@ -227,7 +222,6 @@ function SeasonCardCanvas({
         style={{
           borderColor,
           backgroundColor: boxBg,
-          backdropFilter: 'blur(20px)',
         }}
       >
         <div
@@ -253,7 +247,6 @@ function SeasonCardCanvas({
                     src={prevBadgePath}
                     alt={previousRank || 'Previous Rank'}
                     className="max-w-full max-h-full object-contain filter drop-shadow-[0_4px_16px_rgba(0,0,0,0.8)]"
-                    crossOrigin="anonymous"
                   />
                 </div>
                 <div className="text-sm font-mono uppercase text-white/50 tracking-wider">
@@ -288,7 +281,6 @@ function SeasonCardCanvas({
                 src={currBadgePath}
                 alt={currentRank}
                 className="max-w-full max-h-full object-contain relative z-10 filter drop-shadow-[0_8px_32px_rgba(0,0,0,0.9)]"
-                crossOrigin="anonymous"
               />
             </div>
             <div className="text-sm font-mono uppercase tracking-wider font-bold" style={{ color: primaryAccent }}>
@@ -436,23 +428,97 @@ export function SeasonShareCard({
     return () => window.removeEventListener('resize', updateScale);
   }, []);
 
-  // Pre-load all images inside the node to prevent blank crests in canvas export
-  const ensureImagesLoaded = async (container: HTMLElement) => {
+  // Pre-load all images inside the node and inline to base64 Data URLs to prevent blank export
+  const ensureImagesLoadedAndInlined = async (container: HTMLElement) => {
     const images = Array.from(container.querySelectorAll('img'));
     await Promise.all(
-      images.map(
-        (img) =>
-          new Promise<void>((resolve) => {
-            if (img.complete) {
-              resolve();
+      images.map(async (img) => {
+        await new Promise<void>((resolve) => {
+          if (img.complete && img.naturalWidth > 0) {
+            resolve();
+          } else {
+            img.onload = () => resolve();
+            img.onerror = () => resolve(); // don't fail completely
+          }
+        });
+
+        // Inline to base64 data URL so html-to-image never makes network/CORS calls
+        if (img.src && !img.src.startsWith('data:')) {
+          try {
+            if (img.complete && img.naturalWidth > 0) {
+              const canvas = document.createElement('canvas');
+              canvas.width = img.naturalWidth;
+              canvas.height = img.naturalHeight;
+              const ctx = canvas.getContext('2d');
+              if (ctx) {
+                ctx.drawImage(img, 0, 0);
+                const dataUrl = canvas.toDataURL('image/png');
+                if (dataUrl && dataUrl.length > 100) {
+                  img.src = dataUrl;
+                }
+              }
             } else {
-              img.onload = () => resolve();
-              img.onerror = () => resolve(); // don't fail completely
+              const res = await fetch(img.src);
+              const blob = await res.blob();
+              const reader = new FileReader();
+              await new Promise<void>((r) => {
+                reader.onloadend = () => {
+                  if (typeof reader.result === 'string') {
+                    img.src = reader.result;
+                  }
+                  r();
+                };
+                reader.readAsDataURL(blob);
+              });
             }
-          })
-      )
+          } catch (e) {
+            console.warn('[SeasonShareCard] Could not inline image:', img.src, e);
+          }
+        }
+      })
     );
   };
+
+  const generateCardDataUrl = useCallback(async (): Promise<string> => {
+    if (!exportTargetRef.current) return '';
+    await ensureImagesLoadedAndInlined(exportTargetRef.current);
+
+    let dataUrl = '';
+    try {
+      dataUrl = await toPng(exportTargetRef.current, {
+        cacheBust: false,
+        pixelRatio: 1, // exact 1080x1920 resolution
+        width: 1080,
+        height: 1920,
+        style: {
+          position: 'relative',
+          left: '0px',
+          top: '0px',
+          margin: '0px',
+          transform: 'none',
+          opacity: '1',
+          visibility: 'visible',
+        },
+        skipFonts: true,
+      });
+    } catch (err) {
+      console.warn('[SeasonShareCard] Offscreen export attempt error:', err);
+    }
+
+    // High quality fallback: if offscreen returned empty (<5000 chars), capture preview container
+    if ((!dataUrl || dataUrl.length < 5000) && previewContainerRef.current) {
+      try {
+        dataUrl = await toPng(previewContainerRef.current, {
+          pixelRatio: 3,
+          skipFonts: true,
+        });
+      } catch (fallbackErr) {
+        console.warn('[SeasonShareCard] Preview fallback error:', fallbackErr);
+      }
+    }
+
+    return dataUrl;
+  }, []);
 
   // 1. Download image handler
   const handleDownload = useCallback(async () => {
@@ -466,14 +532,11 @@ export function SeasonShareCard({
     setIsExporting(true);
 
     try {
-      await ensureImagesLoaded(exportTargetRef.current);
+      const dataUrl = await generateCardDataUrl();
 
-      const dataUrl = await toPng(exportTargetRef.current, {
-        cacheBust: true,
-        pixelRatio: 1, // exact 1080x1920 resolution
-        width: 1080,
-        height: 1920,
-      });
+      if (!dataUrl || dataUrl.length < 1000) {
+        throw new Error('Canvas generated empty image');
+      }
 
       const fileName = `study-io-${seasonKey || 'season'}-card.png`;
       const link = document.createElement('a');
@@ -497,7 +560,7 @@ export function SeasonShareCard({
     } finally {
       setIsExporting(false);
     }
-  }, [isPremium, onUnlockClick, openPremiumModal, seasonKey]);
+  }, [isPremium, onUnlockClick, openPremiumModal, seasonKey, generateCardDataUrl]);
 
   // 2. Web Share API handler
   const handleShare = useCallback(async () => {
@@ -511,14 +574,11 @@ export function SeasonShareCard({
     setIsExporting(true);
 
     try {
-      await ensureImagesLoaded(exportTargetRef.current);
+      const dataUrl = await generateCardDataUrl();
 
-      const dataUrl = await toPng(exportTargetRef.current, {
-        cacheBust: true,
-        pixelRatio: 1,
-        width: 1080,
-        height: 1920,
-      });
+      if (!dataUrl || dataUrl.length < 1000) {
+        throw new Error('Canvas generated empty image');
+      }
 
       const response = await fetch(dataUrl);
       const blob = await response.blob();
@@ -546,7 +606,7 @@ export function SeasonShareCard({
     } finally {
       setIsExporting(false);
     }
-  }, [isPremium, onUnlockClick, openPremiumModal, seasonKey, seasonDisplayName, totalSeconds, handleDownload]);
+  }, [isPremium, onUnlockClick, openPremiumModal, seasonKey, seasonDisplayName, totalSeconds, handleDownload, generateCardDataUrl]);
 
   const canWebShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
 
@@ -554,33 +614,48 @@ export function SeasonShareCard({
     <div className="w-full flex flex-col items-center" onClick={(e) => e.stopPropagation()}>
       {/* ══════════════════════════════════════════════════════════ */}
       {/* OFF-SCREEN 1080x1920 EXPORT TARGET CONTAINER              */}
-      {/* Rendered at full 1080x1920 for crystal clear export       */}
+      {/* Container is translated off-screen so user does not see it, */}
+      {/* while export target has clean relative (0,0) layout.      */}
       {/* ══════════════════════════════════════════════════════════ */}
       <div
-        ref={exportTargetRef}
         aria-hidden="true"
         style={{
           position: 'fixed',
-          left: '-9999px',
+          left: 0,
           top: 0,
-          width: 1080,
-          height: 1920,
-          zIndex: -999,
+          width: 0,
+          height: 0,
+          overflow: 'visible',
+          transform: 'translate(-99999px, 0)',
           pointerEvents: 'none',
+          zIndex: -9999,
         }}
       >
-        <SeasonCardCanvas
-          cardStyle={cardStyle}
-          seasonDisplayName={seasonDisplayName}
-          seasonKey={seasonKey}
-          totalSeconds={totalSeconds}
-          activeDays={activeDays}
-          topSubject={topSubject}
-          previousRank={previousRank}
-          currentRank={currentRank}
-          username={username}
-          isFirstSeason={isFirstSeason}
-        />
+        <div
+          ref={exportTargetRef}
+          style={{
+            position: 'relative',
+            left: 0,
+            top: 0,
+            width: 1080,
+            height: 1920,
+            margin: 0,
+            padding: 0,
+          }}
+        >
+          <SeasonCardCanvas
+            cardStyle={cardStyle}
+            seasonDisplayName={seasonDisplayName}
+            seasonKey={seasonKey}
+            totalSeconds={totalSeconds}
+            activeDays={activeDays}
+            topSubject={topSubject}
+            previousRank={previousRank}
+            currentRank={currentRank}
+            username={username}
+            isFirstSeason={isFirstSeason}
+          />
+        </div>
       </div>
 
       {/* ══════════════════════════════════════════════════════════ */}

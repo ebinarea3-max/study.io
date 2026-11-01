@@ -87,10 +87,10 @@ export default function EmptyRecapFallback({
             </button>
           ) : (
             <Link
-              href="/"
+              href="/leaderboard"
               className="inline-block text-xs font-mono text-zinc-400 hover:text-white transition-colors"
             >
-              ← Return to Dashboard
+              ← Return to Leaderboard
             </Link>
           )}
         </div>

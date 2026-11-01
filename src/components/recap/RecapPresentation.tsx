@@ -1293,17 +1293,7 @@ export default function RecapPresentation({
               />
 
               {/* Action Buttons */}
-              <div className="w-full flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-                <Link
-                  href="/leaderboard"
-                  onClick={(e) => e.stopPropagation()}
-                  className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-amber-500 to-amber-400 hover:brightness-110 rounded-xl text-black font-hud font-bold tracking-widest transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 text-xs"
-                >
-                  <Sparkles className="w-4 h-4" />
-                  <span>START THE GRIND</span>
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-
+              <div className="w-full flex items-center justify-center pt-2">
                 {onClose ? (
                   <button
                     type="button"
@@ -1311,17 +1301,17 @@ export default function RecapPresentation({
                       e.stopPropagation();
                       onClose();
                     }}
-                    className="w-full sm:w-auto px-5 py-3 bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 rounded-xl text-amber-300 hover:text-amber-200 font-mono text-xs font-semibold tracking-wider transition-all active:scale-95 text-center cursor-pointer"
+                    className="w-full sm:w-auto px-6 py-3 bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 rounded-xl text-amber-300 hover:text-amber-200 font-mono text-xs font-semibold tracking-wider transition-all active:scale-95 text-center cursor-pointer"
                   >
                     RETURN TO DEV PREVIEW
                   </button>
                 ) : (
                   <Link
-                    href="/"
+                    href="/leaderboard"
                     onClick={(e) => e.stopPropagation()}
-                    className="w-full sm:w-auto px-5 py-3 bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 rounded-xl text-zinc-300 hover:text-white font-mono text-xs font-semibold tracking-wider transition-all active:scale-95 text-center"
+                    className="w-full sm:w-auto px-6 py-3 bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 rounded-xl text-zinc-300 hover:text-white font-mono text-xs font-semibold tracking-wider transition-all active:scale-95 text-center"
                   >
-                    RETURN TO DASHBOARD
+                    RETURN TO LEADERBOARD
                   </Link>
                 )}
               </div>
