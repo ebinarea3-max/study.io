@@ -396,7 +396,14 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                 if (isMe && currentUser) {
                   const live = resolveLiveSeasonStats(currentUser, currentSessions);
                   computedRank = live.rankTier.name;
-                } else if (row.username?.toLowerCase() === 'wren' || row.display_name?.toLowerCase() === 'wren' || row.name?.toLowerCase() === 'wren') {
+                } else if (
+                  row.username?.toLowerCase() === 'wren' ||
+                  row.display_name?.toLowerCase() === 'wren' ||
+                  row.name?.toLowerCase() === 'wren' ||
+                  row.username?.toLowerCase() === 'trial' ||
+                  row.display_name?.toLowerCase() === 'trial' ||
+                  row.name?.toLowerCase() === 'trial'
+                ) {
                   computedRank = 'Silver III';
                 } else if (row.rank_title && row.rank_title.toUpperCase() !== 'BRONZE I') {
                   computedRank = row.rank_title;
@@ -471,7 +478,14 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                     if (isMe && currentUser) {
                       const live = resolveLiveSeasonStats(currentUser, currentSessions);
                       computedRank = live.rankTier.name;
-                    } else if (p.username?.toLowerCase() === 'wren' || p.name?.toLowerCase() === 'wren') {
+                    } else if (
+                      p.username?.toLowerCase() === 'wren' ||
+                      p.display_name?.toLowerCase() === 'wren' ||
+                      p.name?.toLowerCase() === 'wren' ||
+                      p.username?.toLowerCase() === 'trial' ||
+                      p.display_name?.toLowerCase() === 'trial' ||
+                      p.name?.toLowerCase() === 'trial'
+                    ) {
                       computedRank = 'Silver III';
                     } else if (p.current_rank || p.rank_title) {
                       computedRank = p.current_rank || p.rank_title;

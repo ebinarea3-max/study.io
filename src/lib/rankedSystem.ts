@@ -632,6 +632,12 @@ export function resolveUserSeasonReset(
     user?.displayName?.toLowerCase() === 'wren' ||
     user?.email?.toLowerCase().includes('wren');
 
+  const isTrial =
+    user?.username?.toLowerCase() === 'trial' ||
+    user?.name?.toLowerCase() === 'trial' ||
+    user?.displayName?.toLowerCase() === 'trial' ||
+    user?.email?.toLowerCase().includes('trial');
+
   // Calculate previous month focus seconds if sessions are available
   const now = new Date();
   const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
@@ -654,9 +660,12 @@ export function resolveUserSeasonReset(
   let previousRP = 0;
   let matchedTier: RankTierConfig | undefined;
 
-  // 1. Account override for wren (user verified as Silver IV prior to rollover)
+  // 1. Account override for wren and trial (verified as Silver IV prior to rollover)
   if (isWren) {
     previousRP = 2000;
+    matchedTier = RANK_TIERS.find((t) => t.fullTitle === 'SILVER IV');
+  } else if (isTrial) {
+    previousRP = 2468;
     matchedTier = RANK_TIERS.find((t) => t.fullTitle === 'SILVER IV');
   }
   // 2. Exact calculation from actual previous month study sessions

@@ -57,10 +57,20 @@ export default async function RecapPage(props: {
       }
       const isWren =
         user.email?.toLowerCase().includes('wren') ||
-        payload.username?.toLowerCase() === 'wren';
+        payload.username?.toLowerCase() === 'wren' ||
+        payload.displayName?.toLowerCase() === 'wren';
+      const isTrial =
+        user.email?.toLowerCase().includes('trial') ||
+        payload.username?.toLowerCase() === 'trial' ||
+        payload.displayName?.toLowerCase() === 'trial';
       if (isWren) {
         payload.previousRank = 'SILVER IV';
         payload.previousRP = 2000;
+        payload.currentRank = 'SILVER III';
+        payload.startingRP = 1500;
+      } else if (isTrial) {
+        payload.previousRank = 'SILVER IV';
+        payload.previousRP = 2468;
         payload.currentRank = 'SILVER III';
         payload.startingRP = 1500;
       }
@@ -265,17 +275,24 @@ export default async function RecapPage(props: {
   // 6. Rank calculations
   const isFirstSeason = !history;
 
-  // Account override for wren verified as Silver IV prior to rollover
+  // Account override for wren and trial verified as Silver IV prior to rollover
   const isWren =
     user.email?.toLowerCase().includes('wren') ||
     profile?.username?.toLowerCase() === 'wren' ||
     profile?.name?.toLowerCase() === 'wren';
+
+  const isTrial =
+    user.email?.toLowerCase().includes('trial') ||
+    profile?.username?.toLowerCase() === 'trial' ||
+    profile?.name?.toLowerCase() === 'trial';
 
   const userReset = resolveUserSeasonReset(profile || { username: user.email?.split('@')[0], email: user.email }, []);
 
   let previousRP = 0;
   if (isWren) {
     previousRP = 2000;
+  } else if (isTrial) {
+    previousRP = 2468;
   } else if (history?.previous_rp) {
     previousRP = history.previous_rp;
   } else if (totalSeconds > 0) {
@@ -288,9 +305,9 @@ export default async function RecapPage(props: {
 
   // Starting rank after soft-reset vs current live rank if RP was earned this month
   const softReset = calculateSeasonReset(previousRP);
-  const previousRank = isWren ? 'SILVER IV' : (history?.previous_rank || userReset.previousRankTitle || softReset.previousTier.fullTitle);
-  const startingRP = isWren ? 1500 : (history?.new_rp ?? userReset.startingRP ?? softReset.newRP);
-  const currentRank = isWren ? 'SILVER III' : (userReset.newRankTitle || profile?.current_rank || profile?.rank_title || history?.new_rank || softReset.newTier.fullTitle);
+  const previousRank = (isWren || isTrial) ? 'SILVER IV' : (history?.previous_rank || userReset.previousRankTitle || softReset.previousTier.fullTitle);
+  const startingRP = (isWren || isTrial) ? 1500 : (history?.new_rp ?? userReset.startingRP ?? softReset.newRP);
+  const currentRank = (isWren || isTrial) ? 'SILVER III' : (userReset.newRankTitle || profile?.current_rank || profile?.rank_title || history?.new_rank || softReset.newTier.fullTitle);
   const currentLiveRP = startingRP;
 
   const resolvedStreak = Math.max(computedStreak, profile?.streak_days || 0, Math.min(activeDays, 1));

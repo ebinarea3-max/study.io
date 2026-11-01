@@ -1263,8 +1263,10 @@ html.light ::selection,
 }
 
 /* Paused state (shared IntersectionObserver or document hidden) */
-.badge-paused,
-.badge-paused * {
+.badge-paused .silhouette-glow-layer,
+.badge-paused .sheen-bar,
+.badge-paused .glint-flare,
+.badge-paused .badge-particle {
   animation-play-state: paused !important;
 }
 

@@ -355,42 +355,36 @@ export function RankBadge({
                   willChange: isPaused ? 'auto' : 'transform, opacity',
                 } as React.CSSProperties}
               >
-                <picture className="w-full h-full object-contain pointer-events-none select-none">
-                  <source type="image/webp" srcSet={webpImagePath} />
-                  <img
-                    src={plainImagePath}
-                    alt=""
-                    aria-hidden="true"
-                    loading="eager"
-                    decoding="sync"
-                    draggable={false}
-                    className="w-full h-full object-contain pointer-events-none select-none"
-                    style={{
-                      filter: `blur(14px) brightness(1.3) drop-shadow(0 0 8px ${fx.glowColor}) drop-shadow(0 0 16px ${fx.glowColor})`,
-                    }}
-                  />
-                </picture>
+                <img
+                  src={plainImagePath}
+                  alt=""
+                  aria-hidden="true"
+                  loading="eager"
+                  decoding="sync"
+                  draggable={false}
+                  className="w-full h-full object-contain pointer-events-none select-none block"
+                  style={{
+                    filter: `blur(14px) brightness(1.3) drop-shadow(0 0 8px ${fx.glowColor}) drop-shadow(0 0 16px ${fx.glowColor})`,
+                  }}
+                />
               </div>
             )}
 
             {/* c. THE MAIN BADGE IMAGE */}
-            <picture className="w-full h-full object-contain pointer-events-none select-none relative z-10">
-              <source type="image/webp" srcSet={webpImagePath} />
-              <img
-                src={plainImagePath}
-                alt={alt || rankTitle || 'Rank Badge'}
-                loading="eager"
-                decoding="sync"
-                draggable={false}
-                className="w-full h-full object-contain pointer-events-none select-none"
-                onError={(e) => {
-                  const target = e.currentTarget;
-                  if (!target.src.endsWith('/images/ranks/bronze-1.png')) {
-                    target.src = '/images/ranks/bronze-1.png';
-                  }
-                }}
-              />
-            </picture>
+            <img
+              src={plainImagePath}
+              alt={alt || rankTitle || 'Rank Badge'}
+              loading="eager"
+              decoding="sync"
+              draggable={false}
+              className="w-full h-full object-contain pointer-events-none select-none relative z-10 block"
+              onError={(e) => {
+                const target = e.currentTarget;
+                if (!target.src.endsWith('/images/ranks/bronze-1.png')) {
+                  target.src = '/images/ranks/bronze-1.png';
+                }
+              }}
+            />
 
             {/* d. SHEEN: Masked diagonal band moving across metal */}
             {activeEffects !== 'none' && (
