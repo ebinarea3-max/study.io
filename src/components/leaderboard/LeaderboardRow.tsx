@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, ArrowUp, ArrowDown } from 'lucide-react';
+import { ArrowUp, ArrowDown } from 'lucide-react';
 import { LeaderboardEntry } from '../../types';
 import { RankCrestBadge } from '../common/RankCrestBadge';
 import { RankTierName, RankDivision, getRankTier, RANKS, RankTier } from '../../lib/ranks';
@@ -293,11 +293,6 @@ export const LeaderboardRow = React.memo(function LeaderboardRow({
                 {displayName}
               </span>
               {flairFrame && <FlairCrown frame={flairFrame} />}
-              {rank === 1 && (
-                <span title="Season Leader (#1)" className="inline-flex items-center">
-                  <Trophy className="w-3.5 h-3.5 text-amber-400 shrink-0 fill-amber-400/30 inline" />
-                </span>
-              )}
               {isCurrentUser && (
                 <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-amber-400/15 text-amber-300 border border-amber-400/30 shrink-0">
                   You
