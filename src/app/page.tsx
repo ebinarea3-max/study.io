@@ -48,8 +48,35 @@ export default function Home() {
     isFocusModeOpen,
   } = useStudy();
 
-  // Navigation tabs: Timer, Tasks, Analytics, and Settings
-  const [activeTab, setActiveTab] = useState<NavTabType>('timer');
+  // Navigation tabs: Timer, Tasks, Analytics, Leaderboard, Rooms, Settings
+  const [activeTab, setActiveTab] = useState<NavTabType>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const t = params.get('tab');
+        if (t && ['timer', 'tasks', 'analytics', 'leaderboard', 'settings', 'rooms'].includes(t)) {
+          return t as NavTabType;
+        }
+      } catch {}
+    }
+    return 'timer';
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const checkTab = () => {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const t = params.get('tab');
+        if (t && ['timer', 'tasks', 'analytics', 'leaderboard', 'settings', 'rooms'].includes(t)) {
+          setActiveTab(t as NavTabType);
+        }
+      } catch {}
+    };
+    checkTab();
+    window.addEventListener('popstate', checkTab);
+    return () => window.removeEventListener('popstate', checkTab);
+  }, []);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);

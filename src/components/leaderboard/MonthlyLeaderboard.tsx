@@ -257,10 +257,56 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
   const [animationKey, setAnimationKey] = useState<number>(0);
   const [hasSeenRecap, setHasSeenRecap] = useState<boolean | null>(null);
 
+  const checkIsUnlocked = useCallback(() => {
+    if (typeof window === 'undefined') return true;
+    try {
+      const now = new Date();
+      const currentSeason = now.toISOString().substring(0, 7);
+      const prevSeasonDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const prevSeason = prevSeasonDate.toISOString().substring(0, 7);
+      const safeKey = currentSeason.replace('-', '_');
+
+      const seenCurrent = localStorage.getItem(`has_seen_recap_${currentSeason}`) === 'true';
+      const seenPrev = localStorage.getItem(`has_seen_recap_${prevSeason}`) === 'true';
+      const seenGlobal = localStorage.getItem('has_seen_recap_current') === 'true' || localStorage.getItem('studypulse_recap_viewed') === 'true';
+      const resetAck = localStorage.getItem(`season_reset_alert_acknowledged_${safeKey}`) === 'true' || localStorage.getItem(`season_reset_alert_acknowledged_${currentSeason}`) === 'true';
+      const profileAck = (user as any)?.has_seen_recap === true || (user as any)?.current_season_id === currentSeason;
+
+      if (seenCurrent || seenPrev || seenGlobal || resetAck || profileAck) {
+        return true;
+      }
+
+      // If no season recap is pending in localStorage, unlock automatically
+      const pendingRecap = localStorage.getItem('studypulse_season_recap');
+      if (!pendingRecap) {
+        return true;
+      }
+
+      return false;
+    } catch {
+      return true;
+    }
+  }, [user]);
+
   useEffect(() => {
-    const currentSeason = new Date().toISOString().substring(0, 7);
-    const seen = localStorage.getItem(`has_seen_recap_${currentSeason}`) === 'true';
-    setHasSeenRecap(seen);
+    setHasSeenRecap(checkIsUnlocked());
+  }, [checkIsUnlocked]);
+
+  const handleUnlockLeaderboard = useCallback(() => {
+    try {
+      const now = new Date();
+      const currentSeason = now.toISOString().substring(0, 7);
+      const prevSeasonDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const prevSeason = prevSeasonDate.toISOString().substring(0, 7);
+      const safeKey = currentSeason.replace('-', '_');
+
+      localStorage.setItem(`has_seen_recap_${currentSeason}`, 'true');
+      localStorage.setItem(`has_seen_recap_${prevSeason}`, 'true');
+      localStorage.setItem('has_seen_recap_current', 'true');
+      localStorage.setItem('studypulse_recap_viewed', 'true');
+      localStorage.setItem(`season_reset_alert_acknowledged_${safeKey}`, 'true');
+    } catch {}
+    setHasSeenRecap(true);
   }, []);
 
   const [currentUserRowVisible, setCurrentUserRowVisible] = useState(true);
@@ -613,18 +659,28 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
           <p className="text-[var(--text-dim)] font-hud tracking-wider text-sm mb-4">
             Discover your personalized performance recap and unlock the new season's leaderboard.
           </p>
-          <Link
-            href="/recap"
-            onClick={() => {
-              try {
-                soundFx.resumeContext();
-              } catch {}
-            }}
-            className="inline-block w-full py-4 rounded-xl font-hud font-bold tracking-widest transition-all shadow-lg active:scale-95 hover:brightness-110"
-            style={{ backgroundColor: 'var(--accent)', color: 'var(--accent-contrast)', boxShadow: '0 4px 20px var(--glow)' }}
-          >
-            WATCH SEASON RECAP TO UNLOCK
-          </Link>
+          <div className="w-full flex flex-col gap-3">
+            <Link
+              href="/recap"
+              onClick={() => {
+                try {
+                  soundFx.resumeContext();
+                } catch {}
+              }}
+              className="inline-block w-full py-4 rounded-xl font-hud font-bold tracking-widest transition-all shadow-lg active:scale-95 hover:brightness-110 text-center"
+              style={{ backgroundColor: 'var(--accent)', color: 'var(--accent-contrast)', boxShadow: '0 4px 20px var(--glow)' }}
+            >
+              WATCH SEASON RECAP TO UNLOCK
+            </Link>
+
+            <button
+              type="button"
+              onClick={handleUnlockLeaderboard}
+              className="w-full py-2.5 rounded-xl text-xs font-mono font-medium text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-white/[0.04] transition-all cursor-pointer"
+            >
+              Skip & View Leaderboard →
+            </button>
+          </div>
         </div>
       </div>
     );

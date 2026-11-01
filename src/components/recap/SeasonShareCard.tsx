@@ -445,20 +445,8 @@ export function SeasonShareCard({
         // Inline to base64 data URL so html-to-image never makes network/CORS calls
         if (img.src && !img.src.startsWith('data:')) {
           try {
-            if (img.complete && img.naturalWidth > 0) {
-              const canvas = document.createElement('canvas');
-              canvas.width = img.naturalWidth;
-              canvas.height = img.naturalHeight;
-              const ctx = canvas.getContext('2d');
-              if (ctx) {
-                ctx.drawImage(img, 0, 0);
-                const dataUrl = canvas.toDataURL('image/png');
-                if (dataUrl && dataUrl.length > 100) {
-                  img.src = dataUrl;
-                }
-              }
-            } else {
-              const res = await fetch(img.src);
+            const res = await fetch(img.src);
+            if (res.ok) {
               const blob = await res.blob();
               const reader = new FileReader();
               await new Promise<void>((r) => {
@@ -472,7 +460,7 @@ export function SeasonShareCard({
               });
             }
           } catch (e) {
-            console.warn('[SeasonShareCard] Could not inline image:', img.src, e);
+            console.warn('[SeasonShareCard] Could not inline image via fetch:', img.src, e);
           }
         }
       })
@@ -623,12 +611,12 @@ export function SeasonShareCard({
           position: 'fixed',
           left: 0,
           top: 0,
-          width: 0,
-          height: 0,
-          overflow: 'visible',
-          transform: 'translate(-99999px, 0)',
+          width: 1080,
+          height: 1920,
+          opacity: 0.001,
           pointerEvents: 'none',
           zIndex: -9999,
+          overflow: 'hidden',
         }}
       >
         <div
@@ -641,6 +629,7 @@ export function SeasonShareCard({
             height: 1920,
             margin: 0,
             padding: 0,
+            backgroundColor: '#0B0C0E',
           }}
         >
           <SeasonCardCanvas

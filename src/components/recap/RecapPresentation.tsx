@@ -233,9 +233,17 @@ export default function RecapPresentation({
   useEffect(() => {
     if (isDevPreview) return; // Do NOT write to localStorage in dev preview!
     try {
-      localStorage.setItem(`has_seen_recap_${seasonKey}`, 'true');
+      const now = new Date();
+      const currentMonth = now.toISOString().substring(0, 7);
       const safeKey = seasonKey.replace('-', '_');
+      const safeCurrentKey = currentMonth.replace('-', '_');
+
+      localStorage.setItem(`has_seen_recap_${seasonKey}`, 'true');
+      localStorage.setItem(`has_seen_recap_${currentMonth}`, 'true');
+      localStorage.setItem('has_seen_recap_current', 'true');
+      localStorage.setItem('studypulse_recap_viewed', 'true');
       localStorage.setItem(`season_settlement_acknowledged_${safeKey}`, 'true');
+      localStorage.setItem(`season_reset_alert_acknowledged_${safeCurrentKey}`, 'true');
     } catch {}
   }, [seasonKey, isDevPreview]);
 
@@ -757,8 +765,18 @@ export default function RecapPresentation({
               </button>
             ) : (
               <Link
-                href="/"
-                onClick={(e) => e.stopPropagation()}
+                href="/?tab=leaderboard"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  try {
+                    const now = new Date();
+                    const currentMonth = now.toISOString().substring(0, 7);
+                    localStorage.setItem(`has_seen_recap_${seasonKey}`, 'true');
+                    localStorage.setItem(`has_seen_recap_${currentMonth}`, 'true');
+                    localStorage.setItem('has_seen_recap_current', 'true');
+                    localStorage.setItem('studypulse_recap_viewed', 'true');
+                  } catch {}
+                }}
                 className="p-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-zinc-300 hover:text-white transition-all cursor-pointer"
                 title="Close Recap"
               >
@@ -1307,9 +1325,19 @@ export default function RecapPresentation({
                   </button>
                 ) : (
                   <Link
-                    href="/leaderboard"
-                    onClick={(e) => e.stopPropagation()}
-                    className="w-full sm:w-auto px-6 py-3 bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 rounded-xl text-zinc-300 hover:text-white font-mono text-xs font-semibold tracking-wider transition-all active:scale-95 text-center"
+                    href="/?tab=leaderboard"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      try {
+                        const now = new Date();
+                        const currentMonth = now.toISOString().substring(0, 7);
+                        localStorage.setItem(`has_seen_recap_${seasonKey}`, 'true');
+                        localStorage.setItem(`has_seen_recap_${currentMonth}`, 'true');
+                        localStorage.setItem('has_seen_recap_current', 'true');
+                        localStorage.setItem('studypulse_recap_viewed', 'true');
+                      } catch {}
+                    }}
+                    className="w-full sm:w-auto px-6 py-3 bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 rounded-xl text-zinc-300 hover:text-white font-mono text-xs font-semibold tracking-wider transition-all active:scale-95 text-center cursor-pointer"
                   >
                     RETURN TO LEADERBOARD
                   </Link>

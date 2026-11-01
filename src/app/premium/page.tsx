@@ -950,7 +950,7 @@ export default function PremiumPage() {
               caption="Shown beside your name everywhere."
               className="lg:col-span-4 min-h-[240px] sm:min-h-[260px]"
               isPremium={isPremium}
-              href="/leaderboard"
+              href="/?tab=leaderboard"
               delayIndex={4}
             >
               <ScholarCrownDemo />

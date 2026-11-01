@@ -666,6 +666,10 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       const currentMonth = getCurrentSeasonId();
       const safeKey = currentMonth.replace('-', '_');
       localStorage.setItem(`season_reset_alert_acknowledged_${safeKey}`, 'true');
+      localStorage.setItem(`season_reset_alert_acknowledged_${currentMonth}`, 'true');
+      localStorage.setItem(`has_seen_recap_${currentMonth}`, 'true');
+      localStorage.setItem('has_seen_recap_current', 'true');
+      localStorage.setItem('studypulse_recap_viewed', 'true');
     } catch {}
   }, []);
 

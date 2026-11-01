@@ -24,10 +24,18 @@ export default function EmptyRecapFallback({
   useEffect(() => {
     if (isDevPreview) return; // Do NOT write to Supabase or localStorage in dev preview
     try {
-      const targetSeason = seasonKey || new Date().toISOString().substring(0, 7);
-      localStorage.setItem(`has_seen_recap_${targetSeason}`, 'true');
+      const now = new Date();
+      const currentMonth = now.toISOString().substring(0, 7);
+      const targetSeason = seasonKey || currentMonth;
       const safeKey = targetSeason.replace('-', '_');
+      const safeCurrentKey = currentMonth.replace('-', '_');
+
+      localStorage.setItem(`has_seen_recap_${targetSeason}`, 'true');
+      localStorage.setItem(`has_seen_recap_${currentMonth}`, 'true');
+      localStorage.setItem('has_seen_recap_current', 'true');
+      localStorage.setItem('studypulse_recap_viewed', 'true');
       localStorage.setItem(`season_settlement_acknowledged_${safeKey}`, 'true');
+      localStorage.setItem(`season_reset_alert_acknowledged_${safeCurrentKey}`, 'true');
 
       // Update last_acknowledged_season in profiles
       if (user?.id && !user.id.startsWith('user-scholar')) {
@@ -69,8 +77,18 @@ export default function EmptyRecapFallback({
 
         <div className="w-full space-y-3 pt-2">
           <Link
-            href="/leaderboard"
-            className="w-full py-4 bg-gradient-to-r from-amber-500 to-amber-400 hover:brightness-110 rounded-xl text-black font-hud font-bold tracking-widest transition-all shadow-lg shadow-amber-500/20 active:scale-95 flex items-center justify-center gap-2"
+            href="/?tab=leaderboard"
+            onClick={() => {
+              try {
+                const now = new Date();
+                const currentMonth = now.toISOString().substring(0, 7);
+                localStorage.setItem(`has_seen_recap_${seasonKey || currentMonth}`, 'true');
+                localStorage.setItem(`has_seen_recap_${currentMonth}`, 'true');
+                localStorage.setItem('has_seen_recap_current', 'true');
+                localStorage.setItem('studypulse_recap_viewed', 'true');
+              } catch {}
+            }}
+            className="w-full py-4 bg-gradient-to-r from-amber-500 to-amber-400 hover:brightness-110 rounded-xl text-black font-hud font-bold tracking-widest transition-all shadow-lg shadow-amber-500/20 active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
           >
             <Sparkles className="w-4 h-4" />
             <span>UNLOCK LEADERBOARD</span>
@@ -87,8 +105,18 @@ export default function EmptyRecapFallback({
             </button>
           ) : (
             <Link
-              href="/leaderboard"
-              className="inline-block text-xs font-mono text-zinc-400 hover:text-white transition-colors"
+              href="/?tab=leaderboard"
+              onClick={() => {
+                try {
+                  const now = new Date();
+                  const currentMonth = now.toISOString().substring(0, 7);
+                  localStorage.setItem(`has_seen_recap_${seasonKey || currentMonth}`, 'true');
+                  localStorage.setItem(`has_seen_recap_${currentMonth}`, 'true');
+                  localStorage.setItem('has_seen_recap_current', 'true');
+                  localStorage.setItem('studypulse_recap_viewed', 'true');
+                } catch {}
+              }}
+              className="inline-block text-xs font-mono text-zinc-400 hover:text-white transition-colors cursor-pointer"
             >
               ← Return to Leaderboard
             </Link>
