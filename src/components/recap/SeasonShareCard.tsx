@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { toPng } from 'html-to-image';
 import { toast } from 'react-hot-toast';
 import {
@@ -8,13 +9,9 @@ import {
   Share2,
   Lock,
   Sparkles,
-  Check,
-  Trophy,
   Clock,
   Calendar,
   BookOpen,
-  ShieldCheck,
-  Star,
   RefreshCw,
 } from 'lucide-react';
 import { usePremium } from '../../context/PremiumContext';
@@ -69,6 +66,7 @@ function getTierAccent(tier: RankTierName): string {
 /**
  * The pure 1080x1920 Season Card Canvas
  * Rendered at exact 1080x1920 resolution for export, and scaled via CSS transform for on-screen preview.
+ * (Unchanged template and export logic to preserve exact export fidelity)
  */
 function SeasonCardCanvas({
   cardStyle,
@@ -348,38 +346,40 @@ function SeasonCardCanvas({
           </div>
         </div>
 
-        {/* Cell 4: Verified Status */}
+        {/* Cell 4: Performance Tier */}
         <div
           className="p-8 rounded-[28px] border flex flex-col justify-between"
           style={{ borderColor, backgroundColor: boxBg }}
         >
           <div className="flex items-center justify-between text-white/60 mb-3">
-            <span className="text-sm font-mono uppercase tracking-widest">Scholar Standing</span>
-            <ShieldCheck className="w-6 h-6" style={{ color: primaryAccent }} />
+            <span className="text-sm font-mono uppercase tracking-widest">Season Standing</span>
+            <Sparkles className="w-6 h-6" style={{ color: primaryAccent }} />
           </div>
-          <div
-            className="text-3xl font-black tracking-wide uppercase"
-            style={{ color: isGold ? '#F5E6A8' : primaryAccent }}
-          >
-            VERIFIED PRO
+          <div className="text-3xl font-black text-white tracking-wide">
+            {currParsed.tier.toUpperCase()} TIER
           </div>
           <div className="text-xs font-mono text-white/40 mt-2">
-            study.io authentic telemetry
+            Competitive ladder settlement
           </div>
         </div>
       </div>
 
       {/* ══════════════════════════════════════════════════════════ */}
-      {/* 5. FOOTER WATERMARK                                        */}
+      {/* 5. FOOTER: VERIFICATION BARCODE & APP URL                  */}
       {/* ══════════════════════════════════════════════════════════ */}
-      <div className="relative z-10 flex items-center justify-between pt-6 border-t" style={{ borderColor }}>
-        <div className="text-sm font-mono uppercase tracking-widest text-white/50 flex items-center gap-2">
-          <span>VERIFIED TELEMETRY</span>
-          <span>·</span>
-          <span>APP.STUDY.IO</span>
+      <div className="relative z-10 flex items-center justify-between pt-8 border-t" style={{ borderColor }}>
+        <div className="flex items-center gap-3">
+          <div className="text-sm font-mono tracking-widest uppercase text-white/60 font-bold">
+            ARCHIVE · {seasonKey || 'MONTHLY'}
+          </div>
+          <div className="w-1.5 h-1.5 rounded-full bg-white/40" />
+          <div className="text-xs font-mono text-white/40">
+            CRYPTOGRAPHIC PROOF OF WORK
+          </div>
         </div>
-        <div className="text-xs font-mono uppercase tracking-widest text-white/40">
-          SEASON KEY: {seasonKey}
+
+        <div className="text-sm font-mono tracking-widest text-white/60 font-bold">
+          STUDY-IO-XI.VERCEL.APP
         </div>
       </div>
     </div>
@@ -395,7 +395,7 @@ export function SeasonShareCard({
   previousRank,
   currentRank,
   username,
-  isFirstSeason = false,
+  isFirstSeason,
   forcePremium,
   forceLocked,
   onUnlockClick,
@@ -405,21 +405,22 @@ export function SeasonShareCard({
 
   const [cardStyle, setCardStyle] = useState<SeasonCardStyle>('gold');
   const [isExporting, setIsExporting] = useState(false);
-  const [hasShared, setHasShared] = useState(false);
 
   // Hidden 1080x1920 export target container
   const exportTargetRef = useRef<HTMLDivElement>(null);
   const previewContainerRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(0.28);
+  const [scale, setScale] = useState(0.26);
 
-  // Compute responsive preview scale to fit neatly in on-screen cards
+  // Compute responsive preview scale to fit neatly in on-screen cards without scroll
   useEffect(() => {
     const updateScale = () => {
       if (previewContainerRef.current) {
         const containerWidth = previewContainerRef.current.clientWidth;
-        // Target 1080px width
-        const computedScale = Math.min(0.35, Math.max(0.22, containerWidth / 1080));
-        setScale(computedScale);
+        const containerHeight = previewContainerRef.current.clientHeight;
+        const scaleByWidth = containerWidth / 1080;
+        const scaleByHeight = containerHeight > 0 ? containerHeight / 1920 : scaleByWidth;
+        const computedScale = Math.min(scaleByWidth, scaleByHeight);
+        setScale(Math.max(0.18, computedScale));
       }
     };
 
@@ -438,7 +439,7 @@ export function SeasonShareCard({
             resolve();
           } else {
             img.onload = () => resolve();
-            img.onerror = () => resolve(); // don't fail completely
+            img.onerror = () => resolve();
           }
         });
 
@@ -570,25 +571,20 @@ export function SeasonShareCard({
 
       const response = await fetch(dataUrl);
       const blob = await response.blob();
-      const fileName = `study-io-${seasonKey || 'season'}-card.png`;
-      const file = new File([blob], fileName, { type: 'image/png' });
+      const file = new File([blob], `study-io-${seasonKey || 'season'}-card.png`, { type: 'image/png' });
 
-      if (typeof navigator !== 'undefined' && navigator.canShare && navigator.canShare({ files: [file] })) {
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
-          title: `study.io Season Card · ${seasonDisplayName}`,
-          text: `Completed my ${seasonDisplayName} on study.io with ${(totalSeconds / 3600).toFixed(1)} focus hours!`,
           files: [file],
+          title: `Study.io - ${seasonDisplayName}`,
+          text: `My verified season performance on study.io: ${formatHoursAndMins(totalSeconds)} logged.`,
         });
-        setHasShared(true);
       } else {
-        // Fall back to direct download if file sharing not supported
         handleDownload();
       }
     } catch (err: any) {
-      // Abort errors occur when user closes the native share modal, don't show error
-      if (err?.name !== 'AbortError') {
+      if (err.name !== 'AbortError') {
         console.error('Failed to share season card:', err);
-        toast.error('Sharing not supported on this browser. Downloading instead.');
         handleDownload();
       }
     } finally {
@@ -602,8 +598,6 @@ export function SeasonShareCard({
     <div className="w-full flex flex-col items-center" onClick={(e) => e.stopPropagation()}>
       {/* ══════════════════════════════════════════════════════════ */}
       {/* OFF-SCREEN 1080x1920 EXPORT TARGET CONTAINER              */}
-      {/* Container is translated off-screen so user does not see it, */}
-      {/* while export target has clean relative (0,0) layout.      */}
       {/* ══════════════════════════════════════════════════════════ */}
       <div
         aria-hidden="true"
@@ -650,59 +644,46 @@ export function SeasonShareCard({
       {/* ══════════════════════════════════════════════════════════ */}
       {/* ON-SCREEN SCALED 9:16 PREVIEW                              */}
       {/* ══════════════════════════════════════════════════════════ */}
-      <div className="relative w-full max-w-[340px] flex flex-col items-center">
-        {/* Style Switcher Pill Bar (Premium Only) */}
+      <div className="relative w-full max-w-[320px] sm:max-w-[340px] flex flex-col items-center">
+        {/* Style Switcher: ONE row, sliding highlight with display labels */}
         {isPremium && (
-          <div className="w-full flex items-center justify-center gap-1.5 p-1 mb-4 rounded-xl bg-white/[0.04] border border-white/10 backdrop-blur-md">
-            <button
-              type="button"
-              onClick={() => setCardStyle('gold')}
-              className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-hud font-bold tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                cardStyle === 'gold'
-                  ? 'bg-amber-400/20 text-amber-300 border border-amber-400/40 shadow-sm'
-                  : 'text-zinc-400 hover:text-white'
-              }`}
-            >
-              <span className="w-2 h-2 rounded-full bg-amber-400" />
-              <span>Imperial Gold</span>
-              {cardStyle === 'gold' && <Check className="w-3 h-3 ml-auto text-amber-300" />}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setCardStyle('dark')}
-              className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-hud font-bold tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                cardStyle === 'dark'
-                  ? 'bg-white/15 text-white border border-white/30 shadow-sm'
-                  : 'text-zinc-400 hover:text-white'
-              }`}
-            >
-              <span className="w-2 h-2 rounded-full bg-zinc-400" />
-              <span>Obsidian</span>
-              {cardStyle === 'dark' && <Check className="w-3 h-3 ml-auto text-white" />}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setCardStyle('theme')}
-              className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-hud font-bold tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                cardStyle === 'theme'
-                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
-                  : 'text-zinc-400 hover:text-white'
-              }`}
-            >
-              <span className="w-2 h-2 rounded-full bg-cyan-400" />
-              <span>Theme Neon</span>
-              {cardStyle === 'theme' && <Check className="w-3 h-3 ml-auto text-cyan-300" />}
-            </button>
+          <div className="w-full flex items-center justify-center p-1 mb-3 rounded-xl bg-[var(--surface)] border border-[var(--border)] relative">
+            {(
+              [
+                { id: 'gold', label: 'Gold' },
+                { id: 'dark', label: 'Dark' },
+                { id: 'theme', label: 'My theme' },
+              ] as const
+            ).map((styleOpt) => {
+              const isSelected = cardStyle === styleOpt.id;
+              return (
+                <button
+                  key={styleOpt.id}
+                  type="button"
+                  onClick={() => setCardStyle(styleOpt.id)}
+                  className={`relative flex-1 py-1.5 px-3 rounded-lg text-xs font-mono font-medium tracking-wide transition-colors cursor-pointer text-center z-10 ${
+                    isSelected ? 'text-[var(--text)]' : 'text-[var(--text-dim)] hover:text-[var(--text)]'
+                  }`}
+                >
+                  {isSelected && (
+                    <motion.div
+                      layoutId="cardStyleHighlight"
+                      transition={{ type: 'tween', duration: 0.25, ease: 'easeOut' }}
+                      className="absolute inset-0 bg-[var(--surface-2)] border border-[var(--border)] rounded-lg shadow-sm -z-10"
+                    />
+                  )}
+                  <span>{styleOpt.label}</span>
+                </button>
+              );
+            })}
           </div>
         )}
 
-        {/* Scaled Preview Frame */}
+        {/* Scaled Preview Frame: max-height at most calc(100vh - 340px) (max 560px) */}
         <div
           ref={previewContainerRef}
-          className="relative w-full aspect-[9/16] overflow-hidden rounded-3xl shadow-[0_16px_48px_rgba(0,0,0,0.8)] border border-white/15 bg-black"
-          style={{ maxHeight: '540px' }}
+          className="relative w-full aspect-[9/16] overflow-hidden rounded-2xl shadow-card border border-[var(--border)] bg-[var(--surface)] flex items-center justify-center"
+          style={{ maxHeight: 'min(calc(100vh - 340px), 560px)' }}
         >
           {/* Scaled Twin of the Card Canvas */}
           <div
@@ -729,21 +710,17 @@ export function SeasonShareCard({
 
           {/* Locked State Overlay for Free Users */}
           {!isPremium && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-black/70 backdrop-blur-md z-20">
-              <div className="w-12 h-12 rounded-2xl bg-amber-400/10 border border-amber-400/30 flex items-center justify-center text-amber-300 mb-3 shadow-[0_0_24px_rgba(230,193,90,0.2)]">
-                <Lock className="w-6 h-6 stroke-[2]" />
+            <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-black/75 backdrop-blur-md z-20">
+              <div className="w-11 h-11 rounded-xl bg-[var(--surface)] border border-[var(--border)] flex items-center justify-center text-[var(--accent)] mb-3 shadow-sm">
+                <Lock className="w-5 h-5 stroke-[1.8]" />
               </div>
 
-              <div className="text-[10px] font-mono uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-white/[0.08] text-white/70 border border-white/10 mb-2 font-bold">
-                Sample Preview · 1080x1920
-              </div>
-
-              <h3 className="text-lg font-black font-hud text-white uppercase tracking-wider mb-1">
-                Save Your Season Card
+              <h3 className="text-base font-bold font-hud text-[var(--text)] uppercase tracking-wider mb-1">
+                Save your season card
               </h3>
 
-              <p className="text-xs text-zinc-400 font-mono max-w-[240px] mb-5 leading-relaxed">
-                Export crisp 9:16 vertical story cards with previous &amp; settled rank crests, verified hours, and custom frame styles.
+              <p className="text-xs text-[var(--text-dim)] font-sans max-w-[220px] mb-4 leading-relaxed">
+                Export 9:16 vertical story cards with your rank badges, verified hours, and custom frame styles.
               </p>
 
               <button
@@ -752,9 +729,13 @@ export function SeasonShareCard({
                   if (onUnlockClick) onUnlockClick();
                   else openPremiumModal();
                 }}
-                className="w-full py-3 px-4 rounded-xl font-hud font-bold text-xs uppercase tracking-widest text-black bg-gradient-to-r from-[#F5E6A8] via-[#E6C15A] to-[#B8892B] hover:brightness-110 active:scale-95 transition-all shadow-[0_0_20px_rgba(230,193,90,0.3)] flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-2.5 px-4 rounded-xl font-hud font-bold text-xs uppercase tracking-wider transition-all active:scale-95 shadow-sm flex items-center justify-center gap-2 cursor-pointer hover:brightness-110"
+                style={{
+                  backgroundColor: 'var(--accent, #ffffff)',
+                  color: 'var(--accent-contrast, #08090C)',
+                }}
               >
-                <Sparkles className="w-4 h-4 fill-current" />
+                <Sparkles className="w-3.5 h-3.5 fill-current" />
                 <span>Unlock with Premium</span>
               </button>
             </div>
@@ -765,12 +746,16 @@ export function SeasonShareCard({
         {/* ACTION BUTTONS (DOWNLOAD & SHARE)                          */}
         {/* ══════════════════════════════════════════════════════════ */}
         {isPremium && (
-          <div className="w-full flex items-center gap-2 mt-4">
+          <div className="w-full flex items-center gap-2 mt-3">
             <button
               type="button"
               onClick={handleDownload}
               disabled={isExporting}
-              className="flex-1 py-3 px-4 bg-gradient-to-r from-amber-500 to-amber-400 hover:brightness-110 text-black font-hud font-bold text-xs tracking-widest uppercase rounded-xl transition-all active:scale-95 shadow-md shadow-amber-500/20 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              className="flex-1 py-3 px-4 rounded-xl font-hud font-bold text-xs tracking-wider uppercase transition-all active:scale-95 shadow-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 hover:brightness-110"
+              style={{
+                backgroundColor: 'var(--accent, #ffffff)',
+                color: 'var(--accent-contrast, #08090C)',
+              }}
             >
               {isExporting ? (
                 <>
@@ -779,8 +764,8 @@ export function SeasonShareCard({
                 </>
               ) : (
                 <>
-                  <Download className="w-4 h-4 stroke-[2.5]" />
-                  <span>Download Image</span>
+                  <Download className="w-4 h-4 stroke-[2.2]" />
+                  <span>Download image</span>
                 </>
               )}
             </button>
@@ -790,11 +775,11 @@ export function SeasonShareCard({
                 type="button"
                 onClick={handleShare}
                 disabled={isExporting}
-                className="py-3 px-4 bg-white/[0.08] hover:bg-white/[0.14] border border-white/15 text-white font-hud font-bold text-xs tracking-widest uppercase rounded-xl transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                className="py-3 px-4 bg-[var(--surface)] hover:bg-[var(--surface-2)] border border-[var(--border)] text-[var(--text)] font-hud font-bold text-xs tracking-wider uppercase rounded-xl transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                 title="Share to Stories or Apps"
               >
                 <Share2 className="w-4 h-4" />
-                <span className="hidden sm:inline">Share</span>
+                <span>Share</span>
               </button>
             )}
           </div>

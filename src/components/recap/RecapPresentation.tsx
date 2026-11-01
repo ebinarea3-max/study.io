@@ -3,10 +3,10 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RankCrestBadge } from '../common/RankCrestBadge';
-import { RankTierName, getRankTier, getNextTierGapInfo, getRankBadgePath } from '../../lib/rankedSystem';
+import { RankTierName, getRankBadgePath } from '../../lib/rankedSystem';
 import { soundFx } from '../../lib/audio';
 import Link from 'next/link';
-import { Volume2, VolumeX, X, Trophy, Flame, CheckCircle2, Calendar, Share2, Sparkles, ArrowRight } from 'lucide-react';
+import { Volume2, VolumeX, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { SeasonShareCard } from './SeasonShareCard';
 
 export interface RecapSubjectItem {
@@ -58,20 +58,6 @@ function parseRank(title?: string | null): { tier: RankTierName; division: strin
   return { tier, division };
 }
 
-function getTierGlowColor(tier: RankTierName): string {
-  switch (tier) {
-    case 'Bronze': return 'rgba(217, 119, 6, 0.4)';
-    case 'Silver': return 'rgba(148, 163, 184, 0.4)';
-    case 'Gold': return 'rgba(234, 179, 8, 0.45)';
-    case 'Platinum': return 'rgba(6, 182, 212, 0.45)';
-    case 'Diamond': return 'rgba(168, 85, 247, 0.5)';
-    case 'Champion': return 'rgba(236, 72, 153, 0.5)';
-    case 'Master': return 'rgba(99, 102, 241, 0.55)';
-    case 'Grandmaster': return 'rgba(239, 68, 68, 0.6)';
-    default: return 'rgba(217, 119, 6, 0.4)';
-  }
-}
-
 function getTierAccent(tier: RankTierName): string {
   switch (tier) {
     case 'Bronze': return '#f59e0b';
@@ -121,31 +107,6 @@ function useCountUp(target: number, durationMs: number = 1200, enabled: boolean 
   return value;
 }
 
-/**
- * Custom SVG Flame mark for streak climax
- */
-function CustomFlameMark({ className = '' }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      className={className}
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
-    >
-      <path
-        d="M12 2C10.5 4.5 9 7.5 9 10.5C9 10.8 9.02 11.1 9.06 11.4C8.2 10.3 7.8 8.9 7.9 7.5C5.5 9.5 4 12.5 4 15.5C4 19.64 7.58 23 12 23C16.42 23 20 19.64 20 15.5C20 10.8 15.5 6 12 2Z"
-        className="fill-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.9)]"
-      />
-      <path
-        d="M12 20.5C9.79 20.5 8 18.71 8 16.5C8 14.8 9 13 10.5 12C10.8 13.5 11.8 14.8 13.2 15.2C13.8 13.8 14.5 12.5 15.8 11.8C15.9 12.5 16 13.2 16 14C16 17.59 14.21 20.5 12 20.5Z"
-        className="fill-amber-100"
-        opacity="0.9"
-      />
-    </svg>
-  );
-}
-
 export default function RecapPresentation({
   seasonKey,
   seasonDisplayName,
@@ -182,6 +143,27 @@ export default function RecapPresentation({
   const [rankPhase, setRankPhase] = useState<'initial' | 'ended' | 'resetting' | 'impact' | 'settled'>('initial');
   const [screenShake, setScreenShake] = useState(false);
   const [showRadialFlash, setShowRadialFlash] = useState(false);
+  const [showFirstSlideHint, setShowFirstSlideHint] = useState(true);
+
+  // Responsive & Light Theme Scoping
+  const [isMobile, setIsMobile] = useState(false);
+  const [isLightTheme, setIsLightTheme] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const checkViewportAndTheme = () => {
+      setIsMobile(window.innerWidth < 640);
+      const theme = document.documentElement.dataset.theme;
+      setIsLightTheme(
+        theme === 'paper' ||
+        theme === 'matcha' ||
+        document.documentElement.classList.contains('light')
+      );
+    };
+    checkViewportAndTheme();
+    window.addEventListener('resize', checkViewportAndTheme);
+    return () => window.removeEventListener('resize', checkViewportAndTheme);
+  }, []);
 
   // Sync soundEnabled if controlled
   useEffect(() => {
@@ -218,6 +200,14 @@ export default function RecapPresentation({
     } catch {}
   }, [soundEnabled]);
 
+  // Hide first slide hint after 4 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowFirstSlideHint(false);
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, []);
+
   const toggleMute = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsMuted((prev) => {
@@ -250,12 +240,6 @@ export default function RecapPresentation({
   // Derived rank objects
   const prevParsed = useMemo(() => parseRank(previousRank), [previousRank]);
   const currParsed = useMemo(() => parseRank(currentRank), [currentRank]);
-
-  // Gap to next rank
-  const gapInfo = useMemo(() => {
-    const activeRP = Math.max(startingRP, currentLiveRP);
-    return getNextTierGapInfo(activeRP);
-  }, [startingRP, currentLiveRP]);
 
   // Is user promoted or demoted
   const isPromoted = useMemo(() => {
@@ -355,7 +339,7 @@ export default function RecapPresentation({
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [handleNext, handlePrev]);
 
-  // Rank Slide Choreographed Sequence
+  // Rank Slide Choreographed Sequence (Tween, about 2.4s)
   useEffect(() => {
     if (!isRankSlide) {
       setRankPhase('initial');
@@ -367,10 +351,10 @@ export default function RecapPresentation({
     const speed = Math.max(0.1, speedMultiplier);
     setRankPhase('ended');
 
-    // 1. Line draws and RP count down begins
+    // 1. Line draws and RP count down begins (400ms - 500ms)
     const timerReset = setTimeout(() => {
       setRankPhase('resetting');
-    }, 1400 / speed);
+    }, 450 / speed);
 
     // 2. Impact Hit: Current rank crest slams in with tween punch
     const timerImpact = setTimeout(() => {
@@ -380,14 +364,14 @@ export default function RecapPresentation({
       if (!isMuted) {
         soundFx.playImpactThud();
       }
-      setTimeout(() => setShowRadialFlash(false), 500 / speed);
-      setTimeout(() => setScreenShake(false), 450 / speed);
-    }, 2800 / speed);
+      setTimeout(() => setShowRadialFlash(false), 300 / speed);
+      setTimeout(() => setScreenShake(false), 350 / speed);
+    }, 1200 / speed);
 
-    // 3. Settle: Show motivational gap text
+    // 3. Settle: Show settled state
     const timerSettled = setTimeout(() => {
       setRankPhase('settled');
-    }, 3600 / speed);
+    }, 1800 / speed);
 
     return () => {
       clearTimeout(timerReset);
@@ -405,7 +389,7 @@ export default function RecapPresentation({
       setRpDisplay(previousRP);
     } else if (rankPhase === 'resetting' || rankPhase === 'impact' || rankPhase === 'settled') {
       let startTimestamp: number | null = null;
-      const duration = 1200 / Math.max(0.1, speedMultiplier);
+      const duration = 750 / Math.max(0.1, speedMultiplier);
       let frameId: number;
 
       const step = (timestamp: number) => {
@@ -432,22 +416,8 @@ export default function RecapPresentation({
   const animatedHours = useCountUp(Math.floor(totalHoursNum), 1200, activeSlideId === 'hook', speedMultiplier);
   const animatedHoursDec = Math.round((totalHoursNum - Math.floor(totalHoursNum)) * 10);
 
-  // Background radial color computation
-  const radialColor = useMemo(() => {
-    if (isRankSlide) {
-      if (rankPhase === 'impact' || rankPhase === 'settled') {
-        return getTierGlowColor(currParsed.tier);
-      }
-      return getTierGlowColor(prevParsed.tier);
-    }
-    if (activeSlideId === 'hook' || activeSlideId === 'subject') {
-      return getTierGlowColor(currParsed.tier);
-    }
-    return 'rgba(217, 119, 6, 0.2)';
-  }, [isRankSlide, rankPhase, currParsed.tier, prevParsed.tier, activeSlideId]);
-
   // ══════════════════════════════════════════════════════════
-  // SLIDE 3: CONSISTENCY CALENDAR & CHOREOGRAPHY STATE
+  // CONSISTENCY CALENDAR & CHOREOGRAPHY STATE
   // ══════════════════════════════════════════════════════════
   const [consistencyElapsedMs, setConsistencyElapsedMs] = useState(0);
   const lastConsistencyFrameRef = useRef<number | null>(null);
@@ -502,7 +472,7 @@ export default function RecapPresentation({
     let resolvedStreakStart = streakStartDate || null;
     let resolvedStreakEnd = streakEndDate || null;
 
-    // Graceful synthetic fallback if activeDates was not provided
+    // Synthetic fallback if activeDates was not provided
     if (activeSet.size === 0 && activeDays > 0) {
       const sLen = Math.min(longestStreak || Math.min(activeDays, 7), activeDays, daysInMonth);
       const sStartDay = Math.max(1, Math.min(5, daysInMonth - sLen + 1));
@@ -532,7 +502,6 @@ export default function RecapPresentation({
       rowIndex: number;
       isActive: boolean;
       isStreak: boolean;
-      isStreakEnd: boolean;
       activeOrderIndex: number;
       streakOrderIndex: number;
     }
@@ -551,7 +520,6 @@ export default function RecapPresentation({
         dateStr <= resolvedStreakEnd &&
         isActive
       );
-      const isStreakEnd = Boolean(resolvedStreakEnd && dateStr === resolvedStreakEnd);
       const gridIndex = firstDayWeekday + (day - 1);
       const colIndex = gridIndex % 7;
       const rowIndex = Math.floor(gridIndex / 7);
@@ -563,7 +531,6 @@ export default function RecapPresentation({
         rowIndex,
         isActive,
         isStreak,
-        isStreakEnd,
         activeOrderIndex: isActive ? currentActiveOrder++ : -1,
         streakOrderIndex: isStreak ? currentStreakOrder++ : -1,
       });
@@ -580,63 +547,44 @@ export default function RecapPresentation({
     };
   }, [seasonKey, activeDates, streakStartDate, streakEndDate, activeDays, longestStreak]);
 
-  // Derived choreography timeline values
   const cElapsed = prefersReducedMotion ? 5000 : consistencyElapsedMs;
 
-  // 0.0s to 0.5s: Eyebrow and headline slide up 12px, blur 6px to 0, staggered 100ms
-  const eyebrowP = Math.min(1, Math.max(0, cElapsed / 400));
-  const headlineP = Math.min(1, Math.max(0, (cElapsed - 100) / 400));
-
-  // 0.5s to 0.8s: Weekdays and dim cells fade in
-  const gridAppearP = Math.min(1, Math.max(0, (cElapsed - 500) / 300));
-
-  // 0.8s to ~2.0s: Active cells light up in date order (~30ms apart)
-  const activeInterval = calendarData.totalActive > 0 ? Math.min(40, Math.max(22, 1100 / calendarData.totalActive)) : 30;
+  // Active cells light up in date order ~25ms apart
+  const activeInterval = 25;
   let litActiveCount = 0;
   for (const cell of calendarData.cells) {
     if (cell.isActive) {
-      const startTime = 800 + cell.activeOrderIndex * activeInterval;
+      const startTime = 300 + cell.activeOrderIndex * activeInterval;
       if (cElapsed >= startTime) {
         litActiveCount++;
       }
     }
   }
 
-  // 2.0s to 2.8s: Streak highlight sweep along cells (~20ms apart)
-  const streakInterval = calendarData.totalStreak > 0 ? Math.min(28, Math.max(15, 750 / calendarData.totalStreak)) : 20;
+  // Streak highlight interval
+  const streakInterval = 22;
   let litStreakCount = 0;
   for (const cell of calendarData.cells) {
     if (cell.isStreak) {
-      const startTime = 2000 + cell.streakOrderIndex * streakInterval;
+      const startTime = 1200 + cell.streakOrderIndex * streakInterval;
       if (cElapsed >= startTime) {
         litStreakCount++;
       }
     }
   }
 
-  // Flame mark pop-in on the last streak day
-  const flameStartTime = 2000 + Math.max(0, calendarData.totalStreak - 1) * streakInterval + 60;
-  const flamePopP = calendarData.totalStreak > 0 ? Math.min(1, Math.max(0, (cElapsed - flameStartTime) / 220)) : 0;
-
-  // 2.8s to 3.7s: Tasks number count-up with ease-out
+  // Tasks count up
   let tasksCountDisplay = 0;
-  if (cElapsed >= 3700) {
-    tasksCountDisplay = completedTasks;
-  } else if (cElapsed > 2800) {
-    const p = (cElapsed - 2800) / 900;
-    const easeOut = 1 - Math.pow(1 - p, 3);
-    tasksCountDisplay = Math.round(easeOut * completedTasks);
+  if (completedTasks > 0) {
+    if (cElapsed >= 2600) {
+      tasksCountDisplay = completedTasks;
+    } else if (cElapsed > 1800) {
+      const p = (cElapsed - 1800) / 800;
+      const easeOut = 1 - Math.pow(1 - p, 3);
+      tasksCountDisplay = Math.round(easeOut * completedTasks);
+    }
   }
 
-  // 3.7s: Bottom line observation fades in
-  const bottomLineOpacity = Math.min(1, Math.max(0, (cElapsed - 3700) / 350));
-
-  // 4s ambient breathing glow behind calendar after settled (3.8s onwards)
-  const ambientGlowPulse = cElapsed >= 3800
-    ? 0.22 + Math.sin(((cElapsed - 3800) / 4000) * Math.PI * 2) * 0.08
-    : 0.15;
-
-  // Copy calculations based on real numbers
   const consistencyHeadline = useMemo(() => {
     const ratio = calendarData.daysInMonth > 0 ? activeDays / calendarData.daysInMonth : 0;
     if (ratio >= 0.8) return 'You barely missed a day.';
@@ -644,26 +592,35 @@ export default function RecapPresentation({
     return 'Every day you showed up counted.';
   }, [activeDays, calendarData.daysInMonth]);
 
-  const consistencyObservation = useMemo(() => {
-    if (completedTasks > 0 && activeDays > 0) {
-      const perDay = (completedTasks / activeDays).toFixed(1).replace(/\.0$/, '');
-      return `That's about ${perDay} ${perDay === '1' ? 'task' : 'tasks'} on every day you studied.`;
-    }
-    if (activeDays > 0) {
-      const hrsPerDay = ((totalSeconds / 3600) / activeDays).toFixed(1).replace(/\.0$/, '');
-      return `You dedicated an average of ${hrsPerDay} hours each time you showed up.`;
-    }
-    return 'Every study session added up to your season total.';
-  }, [completedTasks, activeDays, totalSeconds]);
-
   const displayedActiveDays = prefersReducedMotion ? activeDays : litActiveCount;
   const displayedStreak = prefersReducedMotion ? (longestStreak || calendarData.totalStreak) : litStreakCount;
   const displayedTasks = prefersReducedMotion ? completedTasks : tasksCountDisplay;
 
   return (
     <div
-      className={`min-h-screen w-full flex flex-col justify-between bg-[#07090e] text-slate-100 relative overflow-hidden select-none cursor-pointer transition-transform duration-100 ${
-        screenShake ? 'scale-[0.99] translate-y-1' : ''
+      style={{
+        colorScheme: 'dark',
+        ...(isLightTheme
+          ? {
+              '--bg': '#07090e',
+              '--surface': '#0F1117',
+              '--surface-2': '#141721',
+              '--border': 'rgba(255, 255, 255, 0.1)',
+              '--border-strong': 'rgba(255, 255, 255, 0.18)',
+              '--text': '#FFFFFF',
+              '--text-dim': '#94A3B8',
+              '--text-faint': '#64748B',
+              '--accent': '#F59E0B',
+              '--accent-contrast': '#08090C',
+              '--grid-dot': 'rgba(255, 255, 255, 0.06)',
+              '--fg': '255 255 255',
+            }
+          : {}),
+        backgroundColor: 'var(--bg, #07090e)',
+        color: 'var(--text, #ffffff)',
+      }}
+      className={`min-h-screen w-full flex flex-col justify-between relative overflow-hidden select-none cursor-pointer transition-transform duration-100 ${
+        screenShake ? 'translate-y-[6px]' : ''
       }`}
       onMouseDown={() => setIsHolding(true)}
       onMouseUp={() => setIsHolding(false)}
@@ -680,33 +637,56 @@ export default function RecapPresentation({
         }
       }}
     >
-      {/* Background Grid & Atmospheric Textures */}
-      <div className="fixed inset-0 pointer-events-none bg-dot-grid z-0" />
-      <div className="fixed inset-0 pointer-events-none bg-hud-grid opacity-[0.03] z-0" />
+      {/* ══════════════════════════════════════════════════════════ */}
+      {/* 1. PERSISTENT BACKGROUND LAYER                             */}
+      {/* ══════════════════════════════════════════════════════════ */}
+      <div className="fixed inset-0 pointer-events-none bg-dot-grid opacity-60 z-0" />
 
-      {/* Dynamic Radial Ambient Glow */}
-      <div
-        className="fixed inset-0 pointer-events-none transition-all duration-1000 z-0"
+      {/* One large soft glow in --accent at ~10% opacity that drifts slowly over 40s */}
+      <motion.div
+        animate={
+          prefersReducedMotion
+            ? { x: 0, y: 0 }
+            : {
+                x: [-35, 35, -25, 25, -35],
+                y: [-25, 25, -35, 30, -25],
+              }
+        }
+        transition={{
+          duration: 40,
+          repeat: Infinity,
+          ease: 'easeInOut',
+        }}
+        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] sm:w-[800px] h-[650px] sm:h-[800px] rounded-full pointer-events-none z-0 blur-[140px]"
         style={{
-          background: `radial-gradient(circle at 50% 50%, ${radialColor} 0%, rgba(7, 9, 14, 0.95) 75%)`,
+          backgroundColor: 'var(--accent, #ffffff)',
+          opacity: 0.1,
+        }}
+      />
+
+      {/* Gentle vignette */}
+      <div
+        className="fixed inset-0 pointer-events-none z-0"
+        style={{
+          background: 'radial-gradient(ellipse at center, transparent 45%, rgba(0, 0, 0, 0.65) 100%)',
         }}
       />
 
       {/* Radial Impact Flash on Rank Reveal */}
       {showRadialFlash && (
         <div
-          className="fixed inset-0 pointer-events-none z-40 transition-opacity duration-500 animate-in fade-in"
+          className="fixed inset-0 pointer-events-none z-40 transition-opacity duration-300 animate-in fade-in"
           style={{
-            backgroundColor: `${getTierAccent(currParsed.tier)}28`,
+            backgroundColor: `${getTierAccent(currParsed.tier)}22`,
           }}
         />
       )}
 
       {/* ══════════════════════════════════════════════════════════ */}
-      {/* TOP HEADER: PROGRESS BARS & CONTROLS                       */}
+      {/* 2. TOP CHROME: PROGRESS BARS & CONTROLS                    */}
       {/* ══════════════════════════════════════════════════════════ */}
-      <header className="relative z-30 w-full max-w-4xl mx-auto pt-6 px-4 sm:px-8 flex flex-col gap-3">
-        {/* Story Progress Indicators */}
+      <header className="relative z-30 w-full max-w-[820px] mx-auto pt-6 px-5 sm:px-8 flex flex-col gap-3">
+        {/* Progress Segments: 4px tall, rounded, --fg at 14% upcoming, --accent done & current */}
         <div className="w-full flex items-center gap-1.5 sm:gap-2">
           {slides.map((_, idx) => {
             const isCompleted = idx < currentSlide;
@@ -715,14 +695,23 @@ export default function RecapPresentation({
             return (
               <div
                 key={idx}
-                className="flex-1 h-1 sm:h-1.5 rounded-full bg-white/10 overflow-hidden relative"
+                className="flex-1 h-1 rounded-full overflow-hidden relative"
+                style={{
+                  backgroundColor: 'rgba(var(--fg, 255 255 255), 0.14)',
+                }}
               >
-                {isCompleted && <div className="h-full w-full bg-white rounded-full" />}
+                {isCompleted && (
+                  <div
+                    className="h-full w-full rounded-full"
+                    style={{ backgroundColor: 'var(--accent, #ffffff)' }}
+                  />
+                )}
                 {isCurrent && (
                   <div
-                    className="h-full bg-gradient-to-r from-amber-400 to-amber-300 rounded-full transition-all duration-75"
+                    className="h-full rounded-full transition-all duration-75"
                     style={{
                       width: isRankSlide || isCtaSlide ? '100%' : `${slideProgress}%`,
+                      backgroundColor: 'var(--accent, #ffffff)',
                     }}
                   />
                 )}
@@ -731,26 +720,25 @@ export default function RecapPresentation({
           })}
         </div>
 
-        {/* Top Control Bar */}
-        <div className="flex items-center justify-between text-xs font-mono text-zinc-400 pt-1">
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] tracking-widest uppercase font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded">
-              {seasonDisplayName.toUpperCase()}
-            </span>
+        {/* Top Bar: Neutral month chip & Quiet Icon Buttons */}
+        <div className="flex items-center justify-between pt-1">
+          {/* Neutral month chip (clean, sentence case, no yellow) */}
+          <div className="inline-flex items-center px-3 py-1 rounded-full bg-[var(--surface)] border border-[var(--border)] text-xs font-mono font-medium text-[var(--text-dim)] shadow-sm">
+            <span>{seasonDisplayName}</span>
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Audio Toggle */}
+            {/* Audio Toggle (Quiet 36px icon button) */}
             <button
               type="button"
               onClick={toggleMute}
-              className="p-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-zinc-300 hover:text-white transition-all cursor-pointer"
+              className="w-9 h-9 rounded-xl bg-[var(--surface)] hover:bg-[var(--surface-2)] border border-[var(--border)] text-[var(--text-dim)] hover:text-[var(--text)] transition-all cursor-pointer flex items-center justify-center shadow-sm"
               title={isMuted ? 'Unmute Sound' : 'Mute Sound'}
             >
-              {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+              {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
             </button>
 
-            {/* Close / Return to Dashboard */}
+            {/* Close Button (Quiet 36px icon button) */}
             {onClose ? (
               <button
                 type="button"
@@ -758,10 +746,10 @@ export default function RecapPresentation({
                   e.stopPropagation();
                   onClose();
                 }}
-                className="p-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-zinc-300 hover:text-white transition-all cursor-pointer"
+                className="w-9 h-9 rounded-xl bg-[var(--surface)] hover:bg-[var(--surface-2)] border border-[var(--border)] text-[var(--text-dim)] hover:text-[var(--text)] transition-all cursor-pointer flex items-center justify-center shadow-sm"
                 title="Exit Preview"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-4 h-4" />
               </button>
             ) : (
               <Link
@@ -777,10 +765,10 @@ export default function RecapPresentation({
                     localStorage.setItem('studypulse_recap_viewed', 'true');
                   } catch {}
                 }}
-                className="p-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-zinc-300 hover:text-white transition-all cursor-pointer"
+                className="w-9 h-9 rounded-xl bg-[var(--surface)] hover:bg-[var(--surface-2)] border border-[var(--border)] text-[var(--text-dim)] hover:text-[var(--text)] transition-all cursor-pointer flex items-center justify-center shadow-sm"
                 title="Close Recap"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-4 h-4" />
               </Link>
             )}
           </div>
@@ -788,295 +776,334 @@ export default function RecapPresentation({
       </header>
 
       {/* ══════════════════════════════════════════════════════════ */}
-      {/* MAIN SLIDE STAGE                                           */}
+      {/* 3. MAIN SLIDE STAGE (CONTENT COLUMN UP TO 820px)           */}
       {/* ══════════════════════════════════════════════════════════ */}
-      <main className="relative z-10 w-full max-w-4xl mx-auto px-4 sm:px-8 py-6 flex-1 flex flex-col items-center justify-center">
+      <main className="relative z-10 w-full max-w-[820px] mx-auto px-5 sm:px-8 py-6 flex-1 flex flex-col items-center justify-center">
         <AnimatePresence mode="wait">
-          {/* SLIDE 0: HOOK (Total Focus Hours) */}
+          {/* ────────────────────────────────────────────────────────── */}
+          {/* SLIDE 1: HOOK (Total Study Hours)                          */}
+          {/* ────────────────────────────────────────────────────────── */}
           {activeSlideId === 'hook' && (
             <motion.div
               key="hook"
-              initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, x: 20 }}
+              initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, x: 16 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, x: -20 }}
+              exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, x: -16 }}
               transition={{ duration: 0.35, ease: 'easeOut' }}
-              className="w-full flex flex-col items-center justify-center text-center space-y-6"
+              className="w-full flex flex-col items-center justify-center text-center space-y-5"
             >
-              <motion.div
-                initial={{ opacity: 0, y: 15 }}
+              {/* Headline (sentence case, 36 to 52px) */}
+              <motion.h2
+                initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4 }}
-                className="text-xs sm:text-sm font-mono tracking-widest uppercase text-zinc-400 font-bold"
+                transition={{ duration: 0.35, delay: 0.09, ease: 'easeOut' }}
+                className="text-3xl sm:text-4xl md:text-5xl font-hud font-bold text-[var(--text)] tracking-tight"
               >
-                // TOTAL TIME IN FOCUS
+                Last season you studied
+              </motion.h2>
+
+              {/* Hero Number (96 to 150px) with Soft Accent Glow */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.96 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.35, delay: 0.18, ease: 'easeOut' }}
+                className="relative py-4 flex items-baseline justify-center"
+              >
+                <div
+                  className="absolute inset-0 rounded-full blur-[80px] pointer-events-none"
+                  style={{
+                    backgroundColor: 'var(--accent, #ffffff)',
+                    opacity: 0.12,
+                  }}
+                />
+                <span className="text-7xl sm:text-8xl md:text-9xl font-black font-hud text-[var(--text)] tracking-tight tabular-nums relative z-10">
+                  {prefersReducedMotion ? totalHoursNum : `${animatedHours}.${animatedHoursDec}`}
+                </span>
+                <span className="text-2xl sm:text-4xl font-sans font-medium text-[var(--text-dim)] ml-3 sm:ml-4 relative z-10">
+                  hours
+                </span>
               </motion.div>
 
-              <h2 className="text-xl sm:text-3xl font-hud font-bold text-slate-300 tracking-wider">
-                {totalHoursNum >= 50
-                  ? 'You put in serious time this season.'
-                  : totalHoursNum >= 15
-                  ? 'You showed real dedication this season.'
-                  : 'Every focused minute counted.'}
-              </h2>
-
-              <div className="relative py-4">
-                <div
-                  className="text-7xl sm:text-9xl font-black font-hud text-transparent bg-clip-text bg-gradient-to-br from-amber-200 via-amber-400 to-amber-600 drop-shadow-[0_0_45px_rgba(245,158,11,0.45)] tracking-tight"
-                >
-                  {prefersReducedMotion ? totalHoursNum : `${animatedHours}.${animatedHoursDec}`}
-                  <span className="text-3xl sm:text-5xl ml-2 font-mono font-bold text-amber-300">
-                    HRS
-                  </span>
-                </div>
-              </div>
-
-              <p className="text-xs sm:text-sm text-zinc-400 font-sans max-w-md">
-                In {seasonDisplayName}, you dedicated {totalHoursNum} hours to sharpening your knowledge.
-              </p>
+              {/* Supporting Line (12 words or fewer) */}
+              <motion.p
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35, delay: 0.27, ease: 'easeOut' }}
+                className="text-base sm:text-lg text-[var(--text-dim)] font-sans max-w-md mx-auto leading-relaxed"
+              >
+                Every dedicated minute added up across {seasonDisplayName}.
+              </motion.p>
             </motion.div>
           )}
 
-          {/* SLIDE 1: TOP SUBJECT */}
+          {/* ────────────────────────────────────────────────────────── */}
+          {/* SLIDE 2: TOP SUBJECT                                       */}
+          {/* ────────────────────────────────────────────────────────── */}
           {activeSlideId === 'subject' && (
             <motion.div
               key="subject"
-              initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, x: 20 }}
+              initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, x: 16 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, x: -20 }}
+              exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, x: -16 }}
               transition={{ duration: 0.35, ease: 'easeOut' }}
-              className="w-full max-w-xl flex flex-col items-center justify-center text-center space-y-6"
+              className="w-full max-w-xl flex flex-col items-center justify-center text-center space-y-5"
             >
-              <div className="text-xs font-mono tracking-widest uppercase text-zinc-400 font-bold">
-                // DOMINANT SUBJECT
-              </div>
+              {/* Eyebrow: sentence case */}
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35, delay: 0.09, ease: 'easeOut' }}
+                className="text-xs sm:text-sm font-mono tracking-wider text-[var(--text-dim)] uppercase font-medium"
+              >
+                Your top subject
+              </motion.div>
 
-              <h2 className="text-xl sm:text-2xl font-hud font-bold text-slate-300 tracking-wide">
-                {topSubject || 'General Study'} took the lion's share of your focus.
-              </h2>
-
-              <div className="text-4xl sm:text-6xl font-black font-hud text-white tracking-wide drop-shadow-md">
+              {/* Subject Name Huge (36 to 52px) */}
+              <motion.h2
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35, delay: 0.18, ease: 'easeOut' }}
+                className="text-3xl sm:text-5xl md:text-6xl font-black font-hud text-[var(--text)] tracking-tight truncate max-w-full px-2"
+              >
                 {topSubject || 'General Study'}
-              </div>
+              </motion.h2>
 
-              <div className="text-sm font-sans font-medium text-amber-400">
-                You spent {(topSubjectSeconds / 3600).toFixed(1)} hours on {topSubject || 'your top subject'}
-                {totalSeconds > 0 ? ` — that's ${Math.round((topSubjectSeconds / totalSeconds) * 100)}% of your study time.` : '.'}
-              </div>
+              {/* One line sentence */}
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35, delay: 0.27, ease: 'easeOut' }}
+                className="text-base sm:text-lg font-sans text-[var(--text-dim)]"
+              >
+                {(topSubjectSeconds / 3600).toFixed(1)} hours
+                {totalSeconds > 0
+                  ? `, ${Math.round((topSubjectSeconds / totalSeconds) * 100)}% of your study time`
+                  : ' recorded this season'}
+              </motion.div>
 
-              {/* Subject Breakdown Mini Bar Chart */}
+              {/* Clean Panel: surface, hairline border, 16px radius, listing up to 4 subjects */}
               {subjectBreakdown.length > 0 && (
-                <div className="w-full bg-white/[0.03] backdrop-blur-md border border-white/10 rounded-2xl p-5 space-y-3 mt-4 text-left">
-                  <div className="text-[11px] font-sans uppercase tracking-wider text-zinc-500 font-semibold mb-2">
-                    Subject breakdown
-                  </div>
+                <motion.div
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.35, delay: 0.36, ease: 'easeOut' }}
+                  className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-6 space-y-3.5 mt-2 text-left shadow-card"
+                >
                   {subjectBreakdown.slice(0, 4).map((sub, i) => {
                     const ratio = topSubjectSeconds > 0 ? (sub.seconds / topSubjectSeconds) * 100 : 0;
                     const hours = (sub.seconds / 3600).toFixed(1);
 
                     return (
-                      <div key={sub.name} className="space-y-1">
-                        <div className="flex items-center justify-between text-xs font-sans text-zinc-300">
-                          <span className="truncate max-w-[200px] font-semibold">{sub.name}</span>
-                          <span className="text-zinc-400 font-mono">{hours}h</span>
+                      <div key={sub.name} className="space-y-1.5">
+                        <div className="flex items-center justify-between text-xs sm:text-sm font-sans">
+                          <span className="truncate max-w-[240px] text-[var(--text)] font-medium">
+                            {sub.name}
+                          </span>
+                          <span className="text-[var(--text-dim)] font-mono text-xs">
+                            {hours}h
+                          </span>
                         </div>
-                        <div className="w-full bg-white/[0.05] h-2 rounded-full overflow-hidden">
+                        <div
+                          className="w-full h-1 rounded-full overflow-hidden"
+                          style={{ backgroundColor: 'rgba(var(--fg, 255 255 255), 0.08)' }}
+                        >
                           <motion.div
                             initial={{ width: 0 }}
-                            animate={{ width: `${Math.max(5, Math.min(100, ratio))}%` }}
-                            transition={{ duration: 0.6, delay: 0.15 + i * 0.1, ease: 'easeOut' }}
-                            className={`h-full rounded-full ${
-                              i === 0
-                                ? 'bg-gradient-to-r from-amber-500 to-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.5)]'
-                                : 'bg-white/30'
-                            }`}
+                            animate={{ width: `${Math.max(6, Math.min(100, ratio))}%` }}
+                            transition={{ duration: 0.5, delay: 0.2 + i * 0.07, ease: 'easeOut' }}
+                            className="h-full rounded-full"
+                            style={{
+                              backgroundColor:
+                                i === 0
+                                  ? 'var(--accent, #ffffff)'
+                                  : 'rgba(var(--fg, 255 255 255), 0.28)',
+                              boxShadow:
+                                i === 0 ? '0 0 10px var(--glow, rgba(255,255,255,0.3))' : 'none',
+                            }}
                           />
                         </div>
                       </div>
                     );
                   })}
-                </div>
+                </motion.div>
               )}
             </motion.div>
           )}
 
-          {/* SLIDE 2: POWER DAY */}
+          {/* ────────────────────────────────────────────────────────── */}
+          {/* SLIDE 3: BEST DAY                                          */}
+          {/* ────────────────────────────────────────────────────────── */}
           {activeSlideId === 'powerday' && (
             <motion.div
               key="powerday"
-              initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, x: 20 }}
+              initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, x: 16 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, x: -20 }}
+              exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, x: -16 }}
               transition={{ duration: 0.35, ease: 'easeOut' }}
               className="w-full max-w-xl flex flex-col items-center justify-center text-center space-y-6"
             >
-              <div className="text-xs font-mono tracking-widest uppercase text-zinc-400 font-bold">
-                // PEAK RHYTHM
-              </div>
+              {/* Eyebrow */}
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35, delay: 0.09, ease: 'easeOut' }}
+                className="text-xs sm:text-sm font-mono tracking-wider text-[var(--text-dim)] uppercase font-medium"
+              >
+                Your best day
+              </motion.div>
 
-              <h2 className="text-2xl sm:text-3xl font-hud font-black text-amber-400 tracking-wide">
-                {bestWeekday} was when you were most in the zone.
-              </h2>
+              {/* Headline: Built from existing weekday text */}
+              <motion.h2
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35, delay: 0.18, ease: 'easeOut' }}
+                className="text-3xl sm:text-4xl md:text-5xl font-hud font-bold text-[var(--text)] tracking-tight"
+              >
+                {bestWeekday ? `${bestWeekday}s were your strongest` : 'Consistent momentum every week'}
+              </motion.h2>
 
-              <p className="text-xs sm:text-sm text-zinc-400 font-sans">
-                Most of your deep work happened on {bestWeekday}s, hitting peak momentum around{' '}
-                <strong className="text-white font-mono">{peakHour !== null && peakHour !== undefined ? `${peakHour}:00` : '14:00'} UTC</strong>.
-              </p>
-
-              {/* Weekday Visual Bars */}
-              <div className="w-full bg-white/[0.03] backdrop-blur-md border border-white/10 rounded-2xl p-6 flex items-end justify-between gap-2 h-44 mt-4">
+              {/* 7-Bar Chart (bars 40 to 56px wide on desktop) */}
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35, delay: 0.27, ease: 'easeOut' }}
+                className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-6 sm:p-8 flex items-end justify-between gap-2.5 sm:gap-4 h-56 shadow-card"
+              >
                 {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => {
                   const isPowerDay = bestWeekday?.toLowerCase().startsWith(day.toLowerCase().slice(0, 3));
-                  const barHeight = isPowerDay ? 95 : 35 + ((day.charCodeAt(0) * 7) % 35);
+                  const barHeight = isPowerDay ? 92 : 32 + ((day.charCodeAt(0) * 9) % 36);
 
                   return (
-                    <div key={day} className="flex-1 flex flex-col items-center gap-2 h-full justify-end">
+                    <div key={day} className="flex-1 max-w-[56px] flex flex-col items-center gap-2 h-full justify-end">
+                      {/* Value above best bar */}
+                      {isPowerDay && (
+                        <span className="text-xs font-mono font-bold text-[var(--accent)] tracking-wider">
+                          Peak
+                        </span>
+                      )}
+
                       <motion.div
                         initial={{ height: 0 }}
                         animate={{ height: `${barHeight}%` }}
-                        transition={{ duration: 0.7, ease: 'easeOut' }}
-                        className={`w-full rounded-t-lg transition-colors ${
-                          isPowerDay
-                            ? 'bg-gradient-to-t from-amber-500 to-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.6)]'
-                            : 'bg-white/15 hover:bg-white/25'
-                        }`}
+                        transition={{ duration: 0.6, ease: 'easeOut' }}
+                        className="w-full rounded-t-lg transition-all"
+                        style={{
+                          backgroundColor: isPowerDay
+                            ? 'var(--accent, #ffffff)'
+                            : 'rgba(var(--fg, 255 255 255), 0.14)',
+                          boxShadow: isPowerDay ? '0 0 16px var(--glow, rgba(255,255,255,0.35))' : 'none',
+                        }}
                       />
                       <span
-                        className={`text-[10px] font-mono uppercase font-bold ${
-                          isPowerDay ? 'text-amber-300' : 'text-zinc-500'
+                        className={`text-xs font-mono uppercase tracking-wider font-semibold ${
+                          isPowerDay ? 'text-[var(--text)]' : 'text-[var(--text-faint)]'
                         }`}
                       >
-                        {day}
+                        {day.charAt(0)}
                       </span>
                     </div>
                   );
                 })}
-              </div>
+              </motion.div>
+
+              {/* Peak time as one small line */}
+              <motion.p
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35, delay: 0.36, ease: 'easeOut' }}
+                className="text-base text-[var(--text-dim)] font-sans"
+              >
+                Peak momentum around {peakHour !== null && peakHour !== undefined ? `${peakHour}:00` : '14:00'} UTC.
+              </motion.p>
             </motion.div>
           )}
 
-          {/* SLIDE 3: REDESIGNED CONSISTENCY CALENDAR & CHOREOGRAPHY */}
+          {/* ────────────────────────────────────────────────────────── */}
+          {/* SLIDE 4: CONSISTENCY                                       */}
+          {/* ────────────────────────────────────────────────────────── */}
           {activeSlideId === 'consistency' && (
             <motion.div
               key="consistency"
-              initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, x: 20 }}
+              initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, x: 16 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, x: -20 }}
+              exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, x: -16 }}
               transition={{ duration: 0.35, ease: 'easeOut' }}
               className="w-full max-w-3xl flex flex-col items-center justify-center text-center space-y-6 sm:space-y-8"
             >
-              {/* Header: Human Headline & Eyebrow with staggered slide/blur */}
-              <div className="space-y-2 max-w-xl mx-auto">
-                <div
-                  className="text-xs font-mono tracking-widest uppercase text-amber-400 font-bold transition-all duration-300"
-                  style={{
-                    opacity: eyebrowP,
-                    transform: `translateY(${(1 - eyebrowP) * 12}px)`,
-                    filter: `blur(${(1 - eyebrowP) * 6}px)`,
-                  }}
-                >
+              {/* Header */}
+              <div className="space-y-1.5 max-w-xl mx-auto">
+                <div className="text-xs sm:text-sm font-mono tracking-wider text-[var(--text-dim)] uppercase font-medium">
                   How you showed up
                 </div>
-
-                <h2
-                  className="text-2xl sm:text-4xl font-hud font-black text-slate-100 tracking-wide transition-all duration-300"
-                  style={{
-                    opacity: headlineP,
-                    transform: `translateY(${(1 - headlineP) * 12}px)`,
-                    filter: `blur(${(1 - headlineP) * 6}px)`,
-                  }}
-                >
+                <h2 className="text-3xl sm:text-4xl md:text-5xl font-hud font-bold text-[var(--text)] tracking-tight">
                   {consistencyHeadline}
                 </h2>
               </div>
 
-              {/* Main Content: Desktop Left/Right, Mobile Top/Bottom */}
+              {/* Calendar on left (desktop) & Stats on right */}
               <div className="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-14 w-full">
-                {/* 1. LEFT (DESKTOP) / TOP (MOBILE): 7-Column Season Calendar Grid */}
+                {/* Calendar Grid */}
                 <div className="relative flex flex-col items-center shrink-0">
-                  {/* Ambient breathing glow behind calendar */}
-                  <div
-                    className="absolute -inset-6 rounded-3xl pointer-events-none transition-opacity duration-500 blur-2xl"
-                    style={{
-                      backgroundColor: `rgba(245, 158, 11, ${ambientGlowPulse})`,
-                    }}
-                  />
-
-                  {/* Weekday Letters Row */}
-                  <div
-                    className="grid grid-cols-7 gap-1.5 sm:gap-2 mb-2 text-center w-full transition-opacity duration-300"
-                    style={{ opacity: gridAppearP }}
-                  >
+                  {/* Weekday letters row */}
+                  <div className="grid grid-cols-7 gap-1.5 sm:gap-2 mb-2 text-center w-full">
                     {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((letter, i) => (
                       <div
                         key={i}
-                        className="w-8 sm:w-9 text-[10px] sm:text-[11px] font-mono font-bold tracking-wider text-zinc-500 uppercase"
+                        className="w-[30px] sm:w-10 md:w-12 text-xs font-mono font-bold text-[var(--text-faint)] uppercase"
                       >
                         {letter}
                       </div>
                     ))}
                   </div>
 
-                  {/* Calendar Days Matrix */}
-                  <div
-                    className="grid grid-cols-7 gap-1.5 sm:gap-2 w-full transition-opacity duration-300"
-                    style={{ opacity: gridAppearP }}
-                  >
-                    {/* Leading blanks for month offset */}
+                  {/* Calendar Days Matrix (cells 40-48px desktop, 30px mobile) */}
+                  <div className="grid grid-cols-7 gap-1.5 sm:gap-2 w-full">
                     {Array.from({ length: calendarData.firstDayWeekday }).map((_, i) => (
-                      <div key={`blank-${i}`} className="w-8 h-8 sm:w-9 sm:h-9" />
+                      <div key={`blank-${i}`} className="w-[30px] h-[30px] sm:w-10 sm:h-10 md:w-12 md:h-12" />
                     ))}
 
-                    {/* Day Cells */}
                     {calendarData.cells.map((cell) => {
-                      const cellStartTime = 800 + cell.activeOrderIndex * activeInterval;
+                      const cellStartTime = 300 + cell.activeOrderIndex * activeInterval;
                       const isLit = cell.isActive && cElapsed >= cellStartTime;
-                      const flashAge = cell.isActive ? cElapsed - cellStartTime : -1;
-                      const isFlashing = isLit && flashAge >= 0 && flashAge < 160;
 
-                      const streakStartTime = 2000 + cell.streakOrderIndex * streakInterval;
+                      const streakStartTime = 1200 + cell.streakOrderIndex * streakInterval;
                       const isStreakLit = cell.isStreak && cElapsed >= streakStartTime;
 
-                      // Check if next day in row is also streak-lit (for horizontal ribbon connector)
-                      const nextCell = calendarData.cells[cell.dayNum]; // next day is at index dayNum
+                      const nextCell = calendarData.cells[cell.dayNum];
                       const isNextStreakLit =
                         nextCell &&
                         nextCell.isStreak &&
-                        cElapsed >= (2000 + nextCell.streakOrderIndex * streakInterval) &&
+                        cElapsed >= (1200 + nextCell.streakOrderIndex * streakInterval) &&
                         cell.colIndex < 6;
 
                       return (
                         <div
                           key={cell.dateStr}
-                          className={`relative w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center text-[10px] sm:text-[11px] font-mono select-none transition-transform duration-150 ${
-                            !cell.isActive
-                              ? 'bg-white/[0.03] border border-white/[0.06] text-zinc-600'
-                              : isFlashing
-                              ? 'bg-amber-300 text-black font-black border-white shadow-[0_0_20px_rgba(251,191,36,0.9)] scale-110 z-10'
-                              : isStreakLit
-                              ? 'bg-gradient-to-br from-amber-400 to-amber-500 text-black font-black border border-amber-300 shadow-[0_0_14px_rgba(245,158,11,0.65)]'
-                              : isLit
-                              ? 'bg-amber-500/25 border border-amber-400/50 text-amber-200 shadow-[0_0_10px_rgba(245,158,11,0.35)]'
-                              : 'bg-white/[0.03] border border-white/[0.06] text-zinc-600'
+                          className={`relative w-[30px] h-[30px] sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-lg flex items-center justify-center text-xs font-mono select-none transition-transform duration-150 ${
+                            isStreakLit || isLit
+                              ? 'scale-105 font-bold shadow-sm'
+                              : 'font-normal'
                           }`}
+                          style={{
+                            backgroundColor: isStreakLit || isLit
+                              ? 'var(--accent, #ffffff)'
+                              : 'rgba(var(--fg, 255 255 255), 0.06)',
+                            color: isStreakLit || isLit
+                              ? 'var(--accent-contrast, #08090C)'
+                              : 'var(--text-faint, #64748B)',
+                            border: isStreakLit || isLit
+                              ? '1px solid var(--accent, #ffffff)'
+                              : '1px solid rgba(var(--fg, 255 255 255), 0.06)',
+                          }}
                         >
                           <span>{cell.dayNum}</span>
 
-                          {/* Connected run: horizontal connector to next day in same week */}
+                          {/* Thin accent line connecting consecutive streak days */}
                           {isStreakLit && isNextStreakLit && (
-                            <div className="absolute top-1/2 -translate-y-1/2 right-[-6px] sm:right-[-8px] w-[6px] sm:w-[8px] h-1.5 sm:h-2 bg-gradient-to-r from-amber-400 to-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)] z-10 pointer-events-none" />
-                          )}
-
-                          {/* Flame mark on the last day of the run */}
-                          {cell.isStreakEnd && flamePopP > 0 && (
                             <div
-                              className="absolute -top-2.5 -right-2.5 sm:-top-3 sm:-right-3 z-20 pointer-events-none"
-                              style={{
-                                transform: `scale(${flamePopP})`,
-                                transition: prefersReducedMotion ? 'none' : 'transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                              }}
-                            >
-                              <CustomFlameMark className="w-5 h-5 sm:w-6 sm:h-6" />
-                            </div>
+                              className="absolute top-1/2 -translate-y-1/2 right-[-6px] sm:right-[-8px] w-[6px] sm:w-[8px] h-1.5 pointer-events-none z-10"
+                              style={{ backgroundColor: 'var(--accent, #ffffff)' }}
+                            />
                           )}
                         </div>
                       );
@@ -1084,136 +1111,140 @@ export default function RecapPresentation({
                   </div>
                 </div>
 
-                {/* 2. RIGHT (DESKTOP) / BOTTOM (MOBILE): Three Plain Stat Lines (No Boxes, No Icons) */}
-                <div className="flex flex-col justify-center space-y-5 sm:space-y-7 text-left shrink-0">
+                {/* Stats to the right on desktop, below on mobile (HIDE any stat that is 0) */}
+                <div className="flex flex-col justify-center space-y-6 text-left shrink-0">
                   {/* Stat 1: Days you showed up */}
-                  <div className="flex flex-col sm:space-y-0.5">
-                    <div className="text-4xl sm:text-5xl md:text-6xl font-black font-hud text-white tracking-tight leading-none">
-                      {displayedActiveDays}
+                  {activeDays > 0 && (
+                    <div className="flex flex-col">
+                      <div className="text-4xl sm:text-5xl font-black font-hud text-[var(--text)] tracking-tight leading-none">
+                        {displayedActiveDays}
+                      </div>
+                      <div className="text-sm sm:text-base text-[var(--text-dim)] font-sans mt-1">
+                        days you showed up
+                      </div>
                     </div>
-                    <div className="text-sm sm:text-base text-zinc-300 font-sans normal-case">
-                      days you showed up
-                    </div>
-                  </div>
+                  )}
 
                   {/* Stat 2: Days in a row at your best */}
-                  <div className="flex flex-col sm:space-y-0.5">
-                    <div className="text-4xl sm:text-5xl md:text-6xl font-black font-hud text-amber-400 tracking-tight leading-none">
-                      {displayedStreak}
+                  {(longestStreak > 0 || calendarData.totalStreak > 0) && (
+                    <div className="flex flex-col">
+                      <div className="text-4xl sm:text-5xl font-black font-hud text-[var(--text)] tracking-tight leading-none">
+                        {displayedStreak}
+                      </div>
+                      <div className="text-sm sm:text-base text-[var(--text-dim)] font-sans mt-1">
+                        days in a row at your best
+                      </div>
                     </div>
-                    <div className="text-sm sm:text-base text-zinc-300 font-sans normal-case">
-                      days in a row at your best
-                    </div>
-                  </div>
+                  )}
 
-                  {/* Stat 3: Tasks checked off */}
-                  <div className="flex flex-col sm:space-y-0.5">
-                    <div className="text-4xl sm:text-5xl md:text-6xl font-black font-hud text-emerald-400 tracking-tight leading-none">
-                      {displayedTasks}
+                  {/* Stat 3: Tasks checked off (HIDDEN if zero) */}
+                  {completedTasks > 0 && (
+                    <div className="flex flex-col">
+                      <div className="text-4xl sm:text-5xl font-black font-hud text-[var(--text)] tracking-tight leading-none">
+                        {displayedTasks}
+                      </div>
+                      <div className="text-sm sm:text-base text-[var(--text-dim)] font-sans mt-1">
+                        tasks checked off
+                      </div>
                     </div>
-                    <div className="text-sm sm:text-base text-zinc-300 font-sans normal-case">
-                      tasks checked off
-                    </div>
-                  </div>
+                  )}
                 </div>
               </div>
 
-              {/* Data-driven honest bottom line observation */}
-              <div
-                className="text-xs sm:text-sm text-zinc-400 font-sans max-w-md mx-auto text-center pt-2 transition-opacity duration-300"
-                style={{ opacity: bottomLineOpacity }}
-              >
-                {consistencyObservation}
-              </div>
+              {/* Supporting observation */}
+              <p className="text-sm text-[var(--text-dim)] font-sans max-w-md mx-auto text-center pt-2">
+                Consistency builds rank over time.
+              </p>
             </motion.div>
           )}
 
-          {/* SLIDE 4: THE RANK CLIMAX SLIDE */}
+          {/* ────────────────────────────────────────────────────────── */}
+          {/* SLIDE 5: RANK SLIDE (THE CLIMAX)                           */}
+          {/* ────────────────────────────────────────────────────────── */}
           {activeSlideId === 'rank' && (
             <motion.div
               key="rank"
-              initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.96 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, scale: 1.04 }}
-              transition={{ duration: 0.4 }}
+              initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, x: 16 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, x: -16 }}
+              transition={{ duration: 0.35, ease: 'easeOut' }}
               className="w-full max-w-3xl flex flex-col items-center justify-center text-center space-y-6"
             >
-              <div className="text-xs font-mono tracking-widest uppercase text-amber-400 font-bold">
-                // SEASON SETTLEMENT & PLACEMENT
+              {/* Header */}
+              <div className="text-xs sm:text-sm font-mono tracking-wider text-[var(--text-dim)] uppercase font-medium">
+                Season reset
               </div>
 
-              {/* Side-by-Side Rank Crest Stage */}
-              <div className="w-full flex flex-col md:flex-row items-center justify-center gap-6 md:gap-12 py-4">
-                {/* 1. LEFT: PREVIOUS SEASON END RANK */}
-                <div className="flex flex-col items-center w-60">
-                  <div className="text-xs font-mono font-bold tracking-widest uppercase text-zinc-400 mb-2">
-                    SEASON ENDED AT
+              {/* Two columns on desktop, stacked on mobile with connector */}
+              <div className="w-full flex flex-col md:flex-row items-center justify-center gap-6 md:gap-10 py-3">
+                {/* 1. LEFT CREST: "Where you ended" */}
+                <div className="flex flex-col items-center w-56 sm:w-64">
+                  <div className="text-xs font-mono font-medium tracking-wider text-[var(--text-dim)] uppercase mb-3">
+                    Where you ended
                   </div>
 
-                  {/* Fixed-size Crest Container */}
-                  <div
-                    className="relative w-44 h-44 flex items-center justify-center transition-all duration-700"
-                    style={{
-                      opacity: rankPhase === 'impact' || rankPhase === 'settled' ? 0.5 : 1,
-                    }}
-                  >
-                    <div className="absolute inset-0 bg-amber-500/10 blur-[50px] rounded-full pointer-events-none" />
+                  {/* Left crest: 60% opacity with NO glow */}
+                  <div className="relative w-40 h-40 sm:w-48 sm:h-48 flex items-center justify-center opacity-60">
                     <RankCrestBadge
                       tier={prevParsed.tier}
                       division={prevParsed.division}
-                      size={150}
+                      size={isMobile ? 130 : 190}
                       className="relative z-10"
                     />
                   </div>
 
-                  <div className="text-xl sm:text-2xl font-black font-hud text-white uppercase tracking-wider mt-2">
-                    {previousRank || 'BRONZE I'}
+                  <div className="text-2xl sm:text-3xl font-black font-hud text-[var(--text)] uppercase tracking-wider mt-2">
+                    {previousRank || 'Bronze I'}
                   </div>
-                  <div className="text-xs font-mono text-amber-400 font-semibold">
+                  <div className="text-sm font-mono text-[var(--text-dim)] mt-0.5">
                     {previousRP} RP
                   </div>
                 </div>
 
-                {/* 2. MIDDLE: CONNECTING RESET ARROW & RP COUNTER */}
-                <div className="flex flex-col items-center justify-center w-40 py-2">
-                  <div className="text-[10px] font-mono tracking-widest uppercase text-zinc-500 font-bold mb-1">
-                    SEASON RESET
+                {/* 2. CONNECTOR: Thin line with small "Season reset" pill on it */}
+                <div className="flex flex-col items-center justify-center w-36 sm:w-44 py-2">
+                  <div className="px-2.5 py-0.5 rounded-full bg-[var(--surface)] border border-[var(--border)] text-[11px] font-mono uppercase tracking-wider text-[var(--text-dim)] font-medium mb-2 shadow-sm">
+                    Season reset
                   </div>
 
-                  {/* Connecting Line */}
-                  <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden my-2">
+                  {/* Thin line drawing left to right */}
+                  <div
+                    className="w-full h-1 rounded-full overflow-hidden my-2"
+                    style={{ backgroundColor: 'rgba(var(--fg, 255 255 255), 0.12)' }}
+                  >
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{
                         width: rankPhase === 'initial' || rankPhase === 'ended' ? '0%' : '100%',
                       }}
-                      transition={{ duration: 1.0, ease: 'easeInOut' }}
-                      className="h-full bg-gradient-to-r from-amber-500 to-emerald-400"
+                      transition={{ duration: 0.5, ease: 'easeOut' }}
+                      className="h-full rounded-full"
+                      style={{ backgroundColor: 'var(--accent, #ffffff)' }}
                     />
                   </div>
 
-                  {/* RP Tick Down Counter */}
-                  <div className="text-sm font-mono font-bold text-zinc-300">
+                  {/* RP number tick down */}
+                  <div className="text-sm font-mono font-bold text-[var(--text-dim)] tabular-nums">
                     {rpDisplay} RP
                   </div>
                 </div>
 
-                {/* 3. RIGHT: CURRENT STARTING RANK (IMPACT HIT) */}
-                <div className="flex flex-col items-center w-60">
-                  <div className="text-xs font-mono font-bold tracking-widest uppercase text-emerald-400 mb-2">
-                    YOU START THIS SEASON AT
+                {/* 3. RIGHT CREST: "Where you start" */}
+                <div className="flex flex-col items-center w-56 sm:w-64">
+                  <div className="text-xs font-mono font-medium tracking-wider text-[var(--text-dim)] uppercase mb-3">
+                    Where you start
                   </div>
 
-                  {/* Fixed-size Crest Container with Tween Punch on Reveal */}
-                  <div className="relative w-44 h-44 flex items-center justify-center">
+                  {/* Right crest: full brightness with soft glow in --tier-accent */}
+                  <div className="relative w-40 h-40 sm:w-48 sm:h-48 flex items-center justify-center">
                     <motion.div
-                      initial={{ opacity: 0, scale: 0.6 }}
+                      initial={{ opacity: 0, scale: 0.9 }}
                       animate={
                         rankPhase === 'impact' || rankPhase === 'settled'
                           ? prefersReducedMotion
                             ? { opacity: 1, scale: 1 }
-                            : { opacity: 1, scale: [1, 0.85, 1.08, 1] }
-                          : { opacity: 0, scale: 0.6 }
+                            : { opacity: 1, scale: [1, 0.9, 1.06, 1] }
+                          : { opacity: 0, scale: 0.9 }
                       }
                       transition={{
                         duration: 0.5,
@@ -1222,50 +1253,55 @@ export default function RecapPresentation({
                       }}
                       className="relative z-10 flex items-center justify-center"
                     >
+                      {/* Soft glow in --tier-accent */}
                       <div
-                        className="absolute inset-0 blur-[60px] rounded-full pointer-events-none"
-                        style={{ backgroundColor: getTierGlowColor(currParsed.tier) }}
+                        className="absolute inset-0 blur-[50px] rounded-full pointer-events-none"
+                        style={{
+                          backgroundColor: getTierAccent(currParsed.tier),
+                          opacity: 0.35,
+                        }}
                       />
                       <RankCrestBadge
                         tier={currParsed.tier}
                         division={currParsed.division}
-                        size={150}
+                        size={isMobile ? 130 : 190}
                         className="relative z-10"
                       />
                     </motion.div>
                   </div>
 
-                  <div className="text-xl sm:text-2xl font-black font-hud text-white uppercase tracking-wider mt-2">
-                    {currentRank || 'BRONZE I'}
+                  <div className="text-2xl sm:text-3xl font-black font-hud text-[var(--text)] uppercase tracking-wider mt-2">
+                    {currentRank || 'Bronze I'}
                   </div>
-                  <div className="text-xs font-mono text-emerald-400 font-semibold">
+                  <div className="text-sm font-mono text-[var(--text-dim)] mt-0.5">
                     {startingRP} RP
                   </div>
                 </div>
               </div>
 
-              {/* Motivational Tier Gap Banner */}
-              <div className="min-h-[50px] flex items-center justify-center">
+              {/* Status pill: "Promoted" or "New season, new climb." */}
+              <div className="min-h-[44px] flex items-center justify-center">
                 {(rankPhase === 'impact' || rankPhase === 'settled') && (
                   <motion.div
-                    initial={{ opacity: 0, y: 10 }}
+                    initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4 }}
-                    className="flex flex-col items-center gap-1.5"
+                    transition={{ duration: 0.35, ease: 'easeOut' }}
+                    className="flex flex-col items-center gap-1"
                   >
                     {isPromoted ? (
-                      <span className="text-xs font-mono uppercase px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold shadow-[0_0_12px_rgba(16,185,129,0.3)]">
-                        PROMOTED TO NEW DIVISION!
+                      <span
+                        className="text-xs font-mono uppercase px-3.5 py-1 rounded-full font-bold shadow-sm"
+                        style={{
+                          backgroundColor: 'rgba(var(--fg, 255 255 255), 0.12)',
+                          color: 'var(--accent, #ffffff)',
+                          border: '1px solid var(--border)',
+                        }}
+                      >
+                        Promoted
                       </span>
                     ) : (
-                      <span className="text-xs font-mono text-zinc-400">
-                        New season. Climb back higher.
-                      </span>
-                    )}
-
-                    {gapInfo && (
-                      <span className="text-xs font-mono font-bold text-amber-300">
-                        ⚔️ {gapInfo.rpNeeded} RP to {gapInfo.nextTierTitle}
+                      <span className="text-sm font-sans text-[var(--text-dim)]">
+                        New season, new climb.
                       </span>
                     )}
                   </motion.div>
@@ -1274,26 +1310,25 @@ export default function RecapPresentation({
             </motion.div>
           )}
 
-          {/* SLIDE 5: FINAL CTA SLIDE WITH SEASON SHARE CARD */}
+          {/* ────────────────────────────────────────────────────────── */}
+          {/* SLIDE 6: SHARE SLIDE                                       */}
+          {/* ────────────────────────────────────────────────────────── */}
           {activeSlideId === 'cta' && (
             <motion.div
               key="cta"
-              initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, scale: 1.02 }}
-              transition={{ duration: 0.4 }}
-              className="w-full max-w-xl flex flex-col items-center justify-center text-center space-y-4 my-auto py-2"
+              initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, x: 16 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, x: -16 }}
+              transition={{ duration: 0.35, ease: 'easeOut' }}
+              className="w-full max-w-xl flex flex-col items-center justify-center text-center space-y-3.5 my-auto py-2"
             >
+              {/* Heading & Supporting Line */}
               <div className="space-y-1">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400/10 border border-amber-400/30 text-amber-300 text-xs font-mono font-bold tracking-widest uppercase">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>Save Your Season Card</span>
-                </div>
-                <h2 className="text-xl sm:text-2xl font-black font-hud text-white tracking-widest uppercase">
-                  READY FOR THE NEW CLIMB?
+                <h2 className="text-3xl sm:text-4xl font-hud font-bold text-[var(--text)] tracking-tight">
+                  Share your season
                 </h2>
-                <p className="text-xs text-zinc-400 font-mono max-w-md mx-auto">
-                  Your season reset is complete. Save your official high-res story card and climb back higher.
+                <p className="text-sm text-[var(--text-dim)] font-sans">
+                  Save a card to post or send.
                 </p>
               </div>
 
@@ -1310,7 +1345,7 @@ export default function RecapPresentation({
                 isFirstSeason={isFirstSeason}
               />
 
-              {/* Action Buttons */}
+              {/* Return link */}
               <div className="w-full flex items-center justify-center pt-2">
                 {onClose ? (
                   <button
@@ -1319,9 +1354,9 @@ export default function RecapPresentation({
                       e.stopPropagation();
                       onClose();
                     }}
-                    className="w-full sm:w-auto px-6 py-3 bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 rounded-xl text-amber-300 hover:text-amber-200 font-mono text-xs font-semibold tracking-wider transition-all active:scale-95 text-center cursor-pointer"
+                    className="text-xs font-mono text-[var(--text-dim)] hover:text-[var(--text)] transition-colors cursor-pointer"
                   >
-                    RETURN TO DEV PREVIEW
+                    ← Return to dev preview
                   </button>
                 ) : (
                   <Link
@@ -1337,9 +1372,9 @@ export default function RecapPresentation({
                         localStorage.setItem('studypulse_recap_viewed', 'true');
                       } catch {}
                     }}
-                    className="w-full sm:w-auto px-6 py-3 bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 rounded-xl text-zinc-300 hover:text-white font-mono text-xs font-semibold tracking-wider transition-all active:scale-95 text-center cursor-pointer"
+                    className="text-xs font-mono text-[var(--text-dim)] hover:text-[var(--text)] transition-colors cursor-pointer"
                   >
-                    RETURN TO LEADERBOARD
+                    ← Back to leaderboard
                   </Link>
                 )}
               </div>
@@ -1349,11 +1384,14 @@ export default function RecapPresentation({
       </main>
 
       {/* ══════════════════════════════════════════════════════════ */}
-      {/* BOTTOM FOOTER: TAP HINT & NAVIGATION CHEVRONS             */}
+      {/* 4. BOTTOM CONTROLS & FIRST-SLIDE HINT                      */}
       {/* ══════════════════════════════════════════════════════════ */}
-      <footer className={`relative z-30 w-full max-w-4xl mx-auto px-4 flex items-center justify-between text-xs font-mono text-zinc-500 transition-all ${
-        isDevPreview ? 'pb-24 sm:pb-28' : 'pb-8'
-      }`}>
+      <footer
+        className={`relative z-30 w-full max-w-[820px] mx-auto px-5 sm:px-8 flex items-center justify-between transition-all ${
+          isDevPreview ? 'pb-24 sm:pb-28' : 'pb-8'
+        }`}
+      >
+        {/* Previous Button (44px circular icon button, hidden on first slide) */}
         <button
           type="button"
           onClick={(e) => {
@@ -1361,17 +1399,32 @@ export default function RecapPresentation({
             handlePrev();
           }}
           disabled={currentSlide === 0}
-          className={`px-3 py-1.5 rounded-lg border border-white/10 transition-colors ${
-            currentSlide === 0 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-white/10 text-zinc-300'
+          className={`w-11 h-11 rounded-full bg-[var(--surface)] hover:bg-[var(--surface-2)] border border-[var(--border)] text-[var(--text)] flex items-center justify-center transition-all active:scale-95 cursor-pointer ${
+            currentSlide === 0 ? 'opacity-0 pointer-events-none' : 'opacity-100'
           }`}
+          title="Previous slide"
         >
-          ← PREV
+          <ChevronLeft className="w-5 h-5" />
         </button>
 
-        <div className="text-[11px] uppercase tracking-widest text-zinc-500 font-bold animate-pulse">
-          {currentSlide === totalSlides - 1 ? 'SEASON COMPLETE' : 'TAP RIGHT TO ADVANCE · HOLD TO PAUSE'}
+        {/* Temporary hint shown only on first slide for 4 seconds */}
+        <div className="flex-1 text-center px-4">
+          <AnimatePresence>
+            {currentSlide === 0 && showFirstSlideHint && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="text-xs font-mono text-[var(--text-dim)]"
+              >
+                Tap or press → to continue. Hold to pause.
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
+        {/* Next Button (44px circular icon button, hidden on last slide) */}
         <button
           type="button"
           onClick={(e) => {
@@ -1379,11 +1432,12 @@ export default function RecapPresentation({
             handleNext();
           }}
           disabled={currentSlide === totalSlides - 1}
-          className={`px-3 py-1.5 rounded-lg border border-white/10 transition-colors ${
-            currentSlide === totalSlides - 1 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-white/10 text-zinc-300'
+          className={`w-11 h-11 rounded-full bg-[var(--surface)] hover:bg-[var(--surface-2)] border border-[var(--border)] text-[var(--text)] flex items-center justify-center transition-all active:scale-95 cursor-pointer ${
+            currentSlide === totalSlides - 1 ? 'opacity-0 pointer-events-none' : 'opacity-100'
           }`}
+          title="Next slide"
         >
-          NEXT →
+          <ChevronRight className="w-5 h-5" />
         </button>
       </footer>
     </div>

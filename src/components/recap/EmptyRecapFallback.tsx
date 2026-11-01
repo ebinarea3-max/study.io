@@ -2,19 +2,19 @@
 
 import React, { useEffect } from 'react';
 import Link from 'next/link';
-import { Ghost, ArrowRight, Sparkles } from 'lucide-react';
-import { getSupabase } from '../../lib/supabase';
+import { ArrowRight, Trophy } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { getSupabase } from '../../lib/supabase';
 
-interface EmptyRecapFallbackProps {
-  seasonDisplayName?: string;
+export interface EmptyRecapFallbackProps {
+  seasonDisplayName: string;
   seasonKey?: string;
   isDevPreview?: boolean;
   onClose?: () => void;
 }
 
 export default function EmptyRecapFallback({
-  seasonDisplayName = 'Previous Season',
+  seasonDisplayName,
   seasonKey,
   isDevPreview = false,
   onClose,
@@ -52,26 +52,44 @@ export default function EmptyRecapFallback({
   }, [seasonKey, user?.id, isDevPreview]);
 
   return (
-    <div className="w-full text-slate-100 font-sans bg-[#07090e] min-h-screen p-8 flex flex-col justify-center items-center relative overflow-hidden select-none">
-      {/* Background Ambience matches the app */}
-      <div className="fixed inset-0 pointer-events-none bg-dot-grid z-0" />
-      <div className="fixed inset-0 pointer-events-none bg-hud-grid opacity-[0.03] z-0" />
-      <div className="absolute inset-0 bg-gradient-to-t from-amber-950/20 via-transparent to-transparent pointer-events-none" />
+    <div
+      style={{
+        colorScheme: 'dark',
+        backgroundColor: 'var(--bg, #07090e)',
+        color: 'var(--text, #ffffff)',
+      }}
+      className="w-full font-sans min-h-screen p-6 sm:p-8 flex flex-col justify-center items-center relative overflow-hidden select-none"
+    >
+      {/* Background Ambience: base + dot grid + accent glow + vignette */}
+      <div className="fixed inset-0 pointer-events-none bg-dot-grid opacity-60 z-0" />
+      <div
+        className="fixed inset-0 pointer-events-none z-0"
+        style={{
+          background: 'radial-gradient(circle at 50% 50%, var(--glow, rgba(255,255,255,0.08)) 0%, transparent 65%)',
+        }}
+      />
+      <div
+        className="fixed inset-0 pointer-events-none z-0"
+        style={{
+          background: 'radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.6) 100%)',
+        }}
+      />
 
-      <div className="relative z-10 bg-white/[0.03] backdrop-blur-2xl border border-white/[0.1] rounded-3xl p-10 sm:p-12 text-center flex flex-col items-center justify-center gap-6 shadow-[0_8px_32px_rgba(0,0,0,0.5)] max-w-lg w-full">
-        <div className="w-20 h-20 rounded-full bg-slate-500/10 border border-slate-500/20 flex items-center justify-center text-slate-400 mb-2 relative animate-pulse">
-          <Ghost className="w-10 h-10 stroke-[1.5]" />
+      <div className="relative z-10 bg-[var(--surface)] border border-[var(--border)] rounded-3xl p-8 sm:p-12 text-center flex flex-col items-center justify-center gap-6 shadow-card max-w-lg w-full">
+        {/* Soft Trophy Icon Container */}
+        <div className="w-16 h-16 rounded-2xl bg-[var(--surface-2)] border border-[var(--border)] flex items-center justify-center text-[var(--accent)] mb-1">
+          <Trophy className="w-8 h-8 stroke-[1.5]" />
         </div>
 
         <div className="space-y-2">
-          <div className="text-[11px] font-mono uppercase tracking-widest text-amber-400 font-bold">
-            // {seasonDisplayName.toUpperCase()}
+          <div className="text-xs font-mono tracking-wider text-[var(--text-dim)] uppercase">
+            {seasonDisplayName}
           </div>
-          <h2 className="text-2xl md:text-3xl font-black font-hud tracking-widest uppercase text-white">
-            NO SESSIONS LOGGED
+          <h2 className="text-2xl sm:text-3xl font-black font-hud tracking-wide text-[var(--text)]">
+            No study sessions logged
           </h2>
-          <p className="text-slate-400 font-mono text-xs leading-relaxed max-w-sm mx-auto">
-            You did not record focus sessions during this season. Start the timer now to establish your standings for the current season!
+          <p className="text-[var(--text-dim)] font-sans text-sm leading-relaxed max-w-sm mx-auto">
+            You did not record focus sessions during this season. Start the timer now to climb the leaderboard this month.
           </p>
         </div>
 
@@ -88,10 +106,13 @@ export default function EmptyRecapFallback({
                 localStorage.setItem('studypulse_recap_viewed', 'true');
               } catch {}
             }}
-            className="w-full py-4 bg-gradient-to-r from-amber-500 to-amber-400 hover:brightness-110 rounded-xl text-black font-hud font-bold tracking-widest transition-all shadow-lg shadow-amber-500/20 active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full py-3.5 rounded-xl font-hud font-bold text-sm tracking-wider transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer shadow-sm hover:brightness-110"
+            style={{
+              backgroundColor: 'var(--accent, #ffffff)',
+              color: 'var(--accent-contrast, #08090C)',
+            }}
           >
-            <Sparkles className="w-4 h-4" />
-            <span>UNLOCK LEADERBOARD</span>
+            <span>Unlock leaderboard</span>
             <ArrowRight className="w-4 h-4" />
           </Link>
 
@@ -99,9 +120,9 @@ export default function EmptyRecapFallback({
             <button
               type="button"
               onClick={onClose}
-              className="inline-block text-xs font-mono text-amber-400 hover:text-amber-300 transition-colors cursor-pointer"
+              className="inline-block text-xs font-mono text-[var(--text-dim)] hover:text-[var(--text)] transition-colors cursor-pointer pt-1"
             >
-              ← Return to Dev Preview Controls
+              ← Return to dev preview
             </button>
           ) : (
             <Link
@@ -116,9 +137,9 @@ export default function EmptyRecapFallback({
                   localStorage.setItem('studypulse_recap_viewed', 'true');
                 } catch {}
               }}
-              className="inline-block text-xs font-mono text-zinc-400 hover:text-white transition-colors cursor-pointer"
+              className="inline-block text-xs font-mono text-[var(--text-dim)] hover:text-[var(--text)] transition-colors cursor-pointer pt-1"
             >
-              ← Return to Leaderboard
+              ← Back to leaderboard
             </Link>
           )}
         </div>
