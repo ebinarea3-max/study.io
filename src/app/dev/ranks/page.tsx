@@ -3,12 +3,24 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Sparkles, LayoutDashboard, Zap, CheckCircle2, RotateCcw } from 'lucide-react';
+import {
+  ArrowLeft,
+  Sparkles,
+  LayoutDashboard,
+  Zap,
+  CheckCircle2,
+  RotateCcw,
+  Play,
+  Pause,
+  Crosshair,
+  SlidersHorizontal,
+} from 'lucide-react';
 import { RANK_TIERS, RankTierConfig, HARD_RESET_CAP_RP } from '../../../lib/rankedSystem';
 import { RankBadge, getRankBadgeTier } from '../../../components/common/RankBadge';
 import { getRankBadgeSources, preloadAllRankBadgesImmediately } from '../../../lib/preloadRankBadges';
 import { RankSettlementModal } from '../../../components/RankSettlementModal';
 import { RankSettlementData } from '../../../types';
+import { BadgeEffectsMode } from '../../../lib/badgeFx';
 import {
   useDevRankPreview,
   setDevPreviewRp,
@@ -21,6 +33,13 @@ export default function RankPreviewPage() {
   const [isClient, setIsClient] = useState(false);
   const [previewData, setPreviewData] = useState<RankSettlementData | null>(null);
   const [preloaded, setPreloaded] = useState(false);
+
+  // Top control bar state
+  const [badgeSize, setBadgeSize] = useState<number>(160);
+  const [effectsMode, setEffectsMode] = useState<BadgeEffectsMode>('full');
+  const [isPausedAll, setIsPausedAll] = useState<boolean>(false);
+  const [showGlintPoints, setShowGlintPoints] = useState<boolean>(false);
+  const [replayTrigger, setReplayTrigger] = useState<boolean>(false);
 
   const { previewRp, isPreviewActive, currentTierIndex } = useDevRankPreview();
 
@@ -75,10 +94,21 @@ export default function RankPreviewPage() {
     router.push('/');
   };
 
+  const handleReplayEntrance = () => {
+    setReplayTrigger((prev) => !prev);
+  };
+
+  const SIZES = [32, 48, 96, 160, 240];
+  const MODES: { label: string; value: BadgeEffectsMode }[] = [
+    { label: 'Full', value: 'full' },
+    { label: 'Lite', value: 'lite' },
+    { label: 'None', value: 'none' },
+  ];
+
   return (
     <div className="min-h-screen bg-[var(--bg)] text-white p-4 sm:p-8 overflow-y-auto pb-36 font-sans">
       {/* Top Header & Navigation Bar */}
-      <div className="max-w-7xl mx-auto mb-8">
+      <div className="max-w-7xl mx-auto mb-6">
         <div className="flex flex-wrap items-center justify-between gap-4 pb-6 border-b border-white/10">
           <div className="flex items-center gap-4">
             <Link
@@ -117,6 +147,107 @@ export default function RankPreviewPage() {
                 <span>Exit Preview ({previewRp?.toLocaleString()} RP)</span>
               </button>
             )}
+          </div>
+        </div>
+
+        {/* ══════════════════════════════════════════════════════════ */}
+        {/* NEW TOP CONTROL BAR (Size, Effects Mode, Pause, Glints)    */}
+        {/* ══════════════════════════════════════════════════════════ */}
+        <div className="mt-6 p-4 rounded-2xl bg-[var(--surface)] border border-[var(--border)] shadow-xl flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-4">
+            {/* Size Selector */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono font-semibold uppercase text-slate-400 flex items-center gap-1">
+                <SlidersHorizontal className="w-3.5 h-3.5 text-amber-400" />
+                Size:
+              </span>
+              <div className="flex items-center rounded-xl bg-black/40 border border-white/10 p-1">
+                {SIZES.map((sz) => (
+                  <button
+                    key={sz}
+                    onClick={() => setBadgeSize(sz)}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
+                      badgeSize === sz
+                        ? 'bg-amber-500 text-black shadow-sm'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    {sz}px
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Effects Mode Selector */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono font-semibold uppercase text-slate-400">
+                Mode:
+              </span>
+              <div className="flex items-center rounded-xl bg-black/40 border border-white/10 p-1">
+                {MODES.map((m) => (
+                  <button
+                    key={m.value}
+                    onClick={() => setEffectsMode(m.value)}
+                    className={`px-3 py-1 rounded-lg text-xs font-hud font-bold uppercase tracking-wider transition-all ${
+                      effectsMode === m.value
+                        ? 'bg-amber-500 text-black shadow-sm'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Show Glint Points Crosshairs Toggle */}
+            <button
+              onClick={() => setShowGlintPoints((prev) => !prev)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-mono font-semibold flex items-center gap-1.5 transition-all border ${
+                showGlintPoints
+                  ? 'bg-rose-500/20 text-rose-300 border-rose-500/60 shadow-sm'
+                  : 'bg-white/[0.04] text-slate-400 border-white/10 hover:text-white hover:bg-white/[0.08]'
+              }`}
+              title="Toggle coordinates crosshairs on badges to tune glint positions"
+            >
+              <Crosshair className="w-3.5 h-3.5" />
+              <span>Glint Crosshairs</span>
+            </button>
+
+            {/* Pause All Toggle */}
+            <button
+              onClick={() => setIsPausedAll((prev) => !prev)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-mono font-semibold flex items-center gap-1.5 transition-all border ${
+                isPausedAll
+                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
+                  : 'bg-white/[0.04] text-slate-400 border-white/10 hover:text-white hover:bg-white/[0.08]'
+              }`}
+              title="Pause all animations simultaneously"
+            >
+              {isPausedAll ? (
+                <>
+                  <Play className="w-3.5 h-3.5" />
+                  <span>Resume All</span>
+                </>
+              ) : (
+                <>
+                  <Pause className="w-3.5 h-3.5" />
+                  <span>Pause All</span>
+                </>
+              )}
+            </button>
+
+            {/* Replay Entrance */}
+            <button
+              onClick={handleReplayEntrance}
+              className="px-3.5 py-1.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/15 text-slate-200 hover:text-white text-xs font-mono font-semibold flex items-center gap-1.5 transition-all active:scale-95"
+              title="Re-run the entrance scale and sheen sweep on all badges"
+            >
+              <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
+              <span>Replay Entrance</span>
+            </button>
           </div>
         </div>
 
@@ -186,14 +317,27 @@ export default function RankPreviewPage() {
               {/* Top Details & Badge Container */}
               <div className="flex flex-col items-center">
                 {/* Badge Container with Ambient Effects */}
-                <div className="w-[150px] h-[150px] flex items-center justify-center shrink-0 overflow-visible relative my-2">
+                <div
+                  className="flex items-center justify-center shrink-0 overflow-visible relative my-2 mx-auto"
+                  style={{
+                    width: `${badgeSize}px`,
+                    height: `${badgeSize}px`,
+                    minHeight: `${Math.max(badgeSize, 60)}px`,
+                  }}
+                >
                   <RankBadge
                     src={sources.png}
                     tier={badgeTier}
+                    division={config.division}
                     delay={idx * 0.08}
-                    size={150}
+                    size={badgeSize}
                     alt={config.fullTitle}
                     rankTitle={config.fullTitle}
+                    effects={effectsMode}
+                    interactive={true}
+                    forcePaused={isPausedAll}
+                    showGlintPoints={showGlintPoints}
+                    replayEntrance={replayTrigger}
                   />
                 </div>
 
@@ -245,7 +389,7 @@ export default function RankPreviewPage() {
               <div className="flex flex-col gap-2 pt-2 border-t border-white/10">
                 <button
                   onClick={() => handlePreviewRankUp(idx)}
-                  className="w-full py-2.5 px-3 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 rounded-xl text-xs font-semibold tracking-wider text-emerald-300 flex items-center justify-center gap-1.5 transition-all active:scale-95"
+                  className="w-full py-2.5 px-3 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 rounded-xl text-xs font-semibold tracking-wider text-emerald-300 flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
                   title="Trigger Full-Screen Rank Advancement Modal with +60 RP Pill"
                 >
                   <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
@@ -254,7 +398,7 @@ export default function RankPreviewPage() {
 
                 <button
                   onClick={() => handlePreviewOnDashboard(idx)}
-                  className="w-full py-2.5 px-3 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 rounded-xl text-xs font-semibold tracking-wider text-amber-300 flex items-center justify-center gap-1.5 transition-all active:scale-95"
+                  className="w-full py-2.5 px-3 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 rounded-xl text-xs font-semibold tracking-wider text-amber-300 flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
                   title="Preview this rank on the actual Study.io Dashboard"
                 >
                   <LayoutDashboard className="w-3.5 h-3.5 text-amber-400" />

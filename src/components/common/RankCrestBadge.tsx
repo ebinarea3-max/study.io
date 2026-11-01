@@ -4,6 +4,7 @@ import React from 'react';
 import { RankTierName } from '../../lib/rankedSystem';
 import { getRankBadgeSources } from '../../lib/preloadRankBadges';
 import { RankBadge, getRankBadgeTier } from './RankBadge';
+import { BadgeEffectsMode } from '../../lib/badgeFx';
 
 export interface RankCrestBadgeProps {
   tier: RankTierName | string;
@@ -17,12 +18,17 @@ export interface RankCrestBadgeProps {
   priority?: boolean;
   interactive?: boolean;
   delay?: number;
+  effects?: BadgeEffectsMode;
+  showGlintPoints?: boolean;
+  forcePaused?: boolean;
+  replayEntrance?: boolean;
+  onFlex?: () => void;
 }
 
 /**
  * RankCrestBadge delegates to the unified RankBadge component
  * ensuring all ranks across dashboard, navbar, and leaderboard
- * display the authentic, normalized badges and prestige animations.
+ * display the authentic crests and hardware-accelerated VFX.
  */
 export function RankCrestBadge({
   tier,
@@ -36,6 +42,11 @@ export function RankCrestBadge({
   priority = false,
   interactive = true,
   delay = 0,
+  effects,
+  showGlintPoints = false,
+  forcePaused = false,
+  replayEntrance,
+  onFlex,
 }: RankCrestBadgeProps) {
   const fullTitle = `${tier || 'Bronze'} ${division || ''}`.trim();
   const sources = getRankBadgeSources(tier as any, division as any);
@@ -45,12 +56,19 @@ export function RankCrestBadge({
     <RankBadge
       src={sources.png}
       tier={badgeTier}
+      division={division}
       size={size}
       compact={compact}
       delay={delay}
       alt={`${fullTitle} Rank Badge`}
       rankTitle={fullTitle}
       priority={priority}
+      effects={effects}
+      interactive={interactive}
+      showGlintPoints={showGlintPoints}
+      forcePaused={forcePaused}
+      replayEntrance={replayEntrance}
+      onFlex={onFlex}
       className={`${className} ${isGhost ? 'opacity-40 grayscale' : ''}`}
     />
   );

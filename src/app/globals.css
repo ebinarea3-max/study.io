@@ -1144,192 +1144,152 @@ html.light ::selection,
 }
 
 /* =========================================================================
-   CRAZY HIGH-OCTANE RANK CREST ANIMATIONS
-   AAA Esports Tier VFX: God-rays, energy rings, vortex particles,
-   laser sweeps, shockwaves, and starburst flares.
+   STUDY.IO UNIFIED RANK BADGE VFX SYSTEM
+   Hardware-accelerated (transform & opacity only) animations:
+   - Entrance scale/fade
+   - Silhouette glow breathing (pure silhouette, no circular halo)
+   - CSS-masked diagonal sheen sweep (clipped strictly to badge metal)
+   - 4-point star glints
+   - Procedural particles (embers, sparkles)
+   - Click/tap flex burst
    ========================================================================= */
 
-/* Calm weighted levitation */
-@keyframes classicCrestFloat {
+/* Entrance: First time badge enters view (400ms tween, scale 0.94 -> 1, fade in) */
+@keyframes badgeEntrance {
+  0% {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Silhouette Glow: Opacity and subtle 1 -> 1.04 breathing (strictly follows crest silhouette) */
+@keyframes badgeSilhouetteGlow {
   0%, 100% {
-    transform: translateY(0px);
+    opacity: var(--glow-min-op, 0.25);
+    transform: scale(1);
   }
   50% {
-    transform: translateY(-5px);
+    opacity: var(--glow-max-op, 0.45);
+    transform: scale(1.04);
   }
 }
 
-/* Rotating Sunburst / God-Ray Aura */
-@keyframes rankGodRays {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes rankGodRaysReverse {
-  from {
-    transform: rotate(360deg);
-  }
-  to {
-    transform: rotate(0deg);
-  }
-}
-
-/* Rotating Cybernetic & Runic Energy Rings */
-@keyframes rankEnergyRingClockwise {
+/* Diagonal Sheen Sweep: moves across metal using ONLY transform: translateX */
+@keyframes badgeSheenSweep {
   0% {
-    transform: rotate(0deg);
-    stroke-dashoffset: 0;
-  }
-  100% {
-    transform: rotate(360deg);
-    stroke-dashoffset: 120;
-  }
-}
-
-@keyframes rankEnergyRingCounter {
-  0% {
-    transform: rotate(360deg);
-    stroke-dashoffset: 0;
-  }
-  100% {
-    transform: rotate(0deg);
-    stroke-dashoffset: -120;
-  }
-}
-
-/* High-Speed Laser Sheen across the crest */
-@keyframes rankLaserSweep {
-  0%, 50% {
-    transform: translateX(-190%) rotate(30deg);
+    transform: translateX(0);
     opacity: 0;
   }
-  55% {
+  6% {
+    opacity: 1;
+  }
+  38% {
+    transform: translateX(420%);
+    opacity: 1;
+  }
+  44%, 100% {
+    transform: translateX(420%);
+    opacity: 0;
+  }
+}
+
+/* 4-Point Star Glint Flares: scale 0 -> 1 -> 0 with opacity */
+@keyframes badgeGlintAnim {
+  0%, 65%, 100% {
+    transform: translate(-50%, -50%) scale(0) rotate(0deg);
+    opacity: 0;
+  }
+  72% {
+    transform: translate(-50%, -50%) scale(0.5) rotate(15deg);
+    opacity: 0.8;
+  }
+  78% {
+    transform: translate(-50%, -50%) scale(1.15) rotate(45deg);
+    opacity: 1;
+  }
+  84% {
+    transform: translate(-50%, -50%) scale(0.4) rotate(75deg);
+    opacity: 0.5;
+  }
+  90% {
+    transform: translate(-50%, -50%) scale(0) rotate(90deg);
+    opacity: 0;
+  }
+}
+
+/* Floating Particles (Embers & Sparkles): driven by CSS variables (--drift-x, --drift-y) */
+@keyframes badgeParticleDrift {
+  0% {
+    transform: translate3d(0, 0, 0) scale(0.3);
+    opacity: 0;
+  }
+  18% {
     opacity: 0.95;
   }
   70% {
-    transform: translateX(190%) rotate(30deg);
-    opacity: 0;
+    opacity: 0.65;
   }
   100% {
-    transform: translateX(190%) rotate(30deg);
+    transform: translate3d(var(--drift-x, 0px), var(--drift-y, -40px), 0) scale(0);
     opacity: 0;
   }
 }
 
-/* Erupting Shockwave Corona */
-@keyframes rankShockwavePulse {
+/* Flex Interactive Sheen: bright sweep on click */
+@keyframes badgeFlexSweep {
   0% {
-    transform: scale(0.65);
-    opacity: 0.95;
-    border-width: 2.5px;
-  }
-  55% {
-    opacity: 0.45;
-  }
-  100% {
-    transform: scale(1.6);
-    opacity: 0;
-    border-width: 0.5px;
-  }
-}
-
-/* Blinding Starburst Detonations at Facet Points */
-@keyframes rankStarburstFlash {
-  0%, 75%, 100% {
-    transform: scale(0) rotate(0deg);
+    transform: translateX(0);
     opacity: 0;
   }
-  78% {
-    transform: scale(0.4) rotate(45deg);
-    opacity: 0.5;
-  }
-  82% {
-    transform: scale(1.4) rotate(90deg);
-    opacity: 1;
-    filter: drop-shadow(0 0 10px #fff) drop-shadow(0 0 18px currentColor);
-  }
-  86% {
-    transform: scale(0.3) rotate(135deg);
-    opacity: 0.3;
-  }
-}
-
-/* Swirling Left-Arced Vortex Particles */
-@keyframes rankVortexLeft {
-  0% {
-    transform: translate3d(0, 12px, 0) scale(0.4);
-    opacity: 0;
-  }
-  20% {
+  15% {
     opacity: 1;
   }
-  55% {
-    transform: translate3d(-20px, -24px, 0) scale(1.25);
-    opacity: 0.9;
-  }
-  100% {
-    transform: translate3d(-34px, -64px, 0) scale(0.3);
-    opacity: 0;
-  }
-}
-
-/* Swirling Right-Arced Vortex Particles */
-@keyframes rankVortexRight {
-  0% {
-    transform: translate3d(0, 12px, 0) scale(0.4);
-    opacity: 0;
-  }
-  20% {
-    opacity: 1;
-  }
-  55% {
-    transform: translate3d(20px, -24px, 0) scale(1.25);
-    opacity: 0.9;
-  }
-  100% {
-    transform: translate3d(34px, -64px, 0) scale(0.3);
-    opacity: 0;
-  }
-}
-
-/* Orbiting Swarm Particles */
-@keyframes rankVortexOrbit {
-  0% {
-    transform: rotate(0deg) translateX(var(--orbit-r, 48px)) rotate(0deg) scale(0.6);
-    opacity: 0.3;
-  }
-  50% {
-    transform: rotate(180deg) translateX(var(--orbit-r, 48px)) rotate(-180deg) scale(1.3);
+  85% {
+    transform: translateX(450%);
     opacity: 1;
   }
   100% {
-    transform: rotate(360deg) translateX(var(--orbit-r, 48px)) rotate(-360deg) scale(0.6);
-    opacity: 0.3;
+    transform: translateX(450%);
+    opacity: 0;
   }
 }
 
-/* Hyper-speed Celestial Comets (Grandmaster) */
-@keyframes rankCometClockwise {
-  from {
-    transform: rotate(0deg) translateX(56px) rotate(0deg);
+/* Flex Interactive Burst Particles */
+/* Flex Interactive Scale Tween */
+@keyframes badgeFlexScale {
+  0% {
+    transform: scale(1);
   }
-  to {
-    transform: rotate(360deg) translateX(56px) rotate(-360deg);
+  35% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
   }
 }
 
-@keyframes rankCometCounter {
-  from {
-    transform: rotate(360deg) translateX(48px) rotate(-360deg);
+@keyframes badgeFlexBurst {
+  0% {
+    transform: translate3d(0, 0, 0) scale(0.8);
+    opacity: 1;
   }
-  to {
-    transform: rotate(0deg) translateX(48px) rotate(0deg);
+  100% {
+    transform: translate3d(var(--burst-x, 0px), var(--burst-y, 0px), 0) scale(0);
+    opacity: 0;
   }
 }
+
+/* Paused state (shared IntersectionObserver or document hidden) */
+.badge-paused,
+.badge-paused * {
+  animation-play-state: paused !important;
+}
+
+
 
 
 
@@ -1404,8 +1364,18 @@ html.light ::selection,
   .button-sheen-sweep,
   .animate-crest-shimmer,
   .animate-crest-pulse,
+  .badge-entrance-wrapper,
+  .badge-tilt-wrapper,
+  .badge-idle-wrapper,
+  .silhouette-glow-layer,
+  .sheen-bar,
+  .glint-flare,
+  .badge-particle,
+  .badge-flex-burst,
   .focus-anim {
     animation: none !important;
+    transform: none !important;
+    transition: none !important;
   }
 }
 
