@@ -2,140 +2,13 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { usePremium } from './PremiumContext';
+import { THEMES, ThemeOption, DEFAULT_THEME_ID, DEFAULT_THEME } from '../lib/themes';
+import { setActiveAppTheme } from '../lib/themeColorManager';
+export { THEMES, DEFAULT_THEME_ID, DEFAULT_THEME };
+export type { ThemeOption };
+export { useThemeColorOverride } from '../hooks/useThemeColorOverride';
 
 // NOTE: Themes are a cosmetic, client-side feature and therefore only softly gated.
-
-export interface ThemeOption {
-  id: string;
-  name: string;
-  description: string;
-  previewColors: [string, string, string]; // [bg, surface, accent]
-  isLight?: boolean;
-  isPremium?: boolean;
-}
-
-export const THEMES: ThemeOption[] = [
-  // ─── FREE THEMES ──────────────────────────────────────────
-  {
-    id: 'rank',
-    name: 'Rank colors',
-    description: 'Follows your rank',
-    previewColors: ['#07090E', '#0F1117', '#D4A017'],
-  },
-  {
-    id: 'midnight',
-    name: 'Midnight',
-    description: 'Cool blue on deep navy',
-    previewColors: ['#090B10', '#12151D', '#5B8CFF'],
-  },
-  {
-    id: 'ember',
-    name: 'Ember',
-    description: 'Warm amber on charcoal',
-    previewColors: ['#0F0B09', '#1A1410', '#F0924A'],
-  },
-  {
-    id: 'ocean',
-    name: 'Ocean',
-    description: 'Clear cyan on deep sea',
-    previewColors: ['#060B12', '#0E1824', '#4DB6E8'],
-  },
-  {
-    id: 'rose',
-    name: 'Rose',
-    description: 'Soft pink on dark plum',
-    previewColors: ['#0E0A0C', '#1A1216', '#F0709A'],
-  },
-  {
-    id: 'nebula',
-    name: 'Nebula',
-    description: 'Violet on cosmic dark',
-    previewColors: ['#0A0812', '#15111F', '#9B8CFF'],
-  },
-  {
-    id: 'graphite',
-    name: 'Graphite',
-    description: 'Pure monochrome',
-    previewColors: ['#0B0B0C', '#151516', '#E8E8E8'],
-  },
-  {
-    id: 'paper',
-    name: 'Paper',
-    description: 'Bright and warm, light mode',
-    previewColors: ['#F5F2EC', '#FFFFFF', '#B45309'],
-    isLight: true,
-  },
-  {
-    id: 'cyberpunk',
-    name: 'Cyberpunk',
-    description: 'Electric neon cyan & fuchsia on hyperdark void',
-    previewColors: ['#080811', '#121124', '#00F0FF'],
-  },
-  {
-    id: 'amethyst',
-    name: 'Amethyst',
-    description: 'Luminous royal violet on dark velvet',
-    previewColors: ['#090612', '#160E25', '#A855F7'],
-  },
-  {
-    id: 'emerald',
-    name: 'Emerald',
-    description: 'Imperial luminous jade on obsidian',
-    previewColors: ['#05100B', '#0B1E15', '#10B981'],
-  },
-
-  // ─── PREMIUM THEMES (7 EXCLUSIVE THEMES) ─────────────────
-  {
-    id: 'goldleaf',
-    name: 'Gold Leaf',
-    description: 'Warm gold on dark leather',
-    previewColors: ['#0C0A06', '#17130A', '#E6C15A'],
-    isPremium: true,
-  },
-  {
-    id: 'crimson',
-    name: 'Crimson',
-    description: 'Deep red on near black',
-    previewColors: ['#0E0809', '#1A0F11', '#E5484D'],
-    isPremium: true,
-  },
-  {
-    id: 'sakura',
-    name: 'Sakura',
-    description: 'Delicate cherry blossom on twilight ink',
-    previewColors: ['#0E0A12', '#1A1220', '#F472B6'],
-    isPremium: true,
-  },
-  {
-    id: 'espresso',
-    name: 'Espresso',
-    description: 'Warm roasted caramel on dark cocoa',
-    previewColors: ['#0E0B08', '#1A1410', '#D4A373'],
-    isPremium: true,
-  },
-  {
-    id: 'forest',
-    name: 'Forest',
-    description: 'Calm green on dark moss',
-    previewColors: ['#070D0B', '#0F1A16', '#3DBE8B'],
-    isPremium: true,
-  },
-  {
-    id: 'abyss',
-    name: 'OLED Abyss',
-    description: 'True pitch black for maximum focus',
-    previewColors: ['#000000', '#0E0E0E', '#FFFFFF'],
-    isPremium: true,
-  },
-  {
-    id: 'matcha',
-    name: 'Matcha',
-    description: 'Creamy green tea, warm pastel light mode',
-    previewColors: ['#F4F6F0', '#FFFFFF', '#4D7C0F'],
-    isLight: true,
-    isPremium: true,
-  },
-];
 
 interface ThemeContextType {
   theme: string;
@@ -145,14 +18,14 @@ interface ThemeContextType {
 }
 
 const ThemeContext = createContext<ThemeContextType>({
-  theme: 'rank',
+  theme: DEFAULT_THEME_ID,
   setTheme: () => {},
   themes: THEMES,
   isMounted: false,
 });
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [themeId, setThemeId] = useState<string>('rank');
+  const [themeId, setThemeId] = useState<string>(DEFAULT_THEME_ID);
   const [isMounted, setIsMounted] = useState<boolean>(false);
   const { isPremium, loading: entitlementsLoading } = usePremium();
 
@@ -161,24 +34,27 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setIsMounted(true);
     try {
       const saved = localStorage.getItem('studyio-theme');
-      if (saved && THEMES.some(t => t.id === saved)) {
+      const targetTheme = THEMES.find(t => t.id === saved);
+      if (saved && targetTheme) {
         setThemeId(saved);
         document.documentElement.dataset.theme = saved;
-        const isLight = THEMES.some(t => t.id === saved && t.isLight);
-        if (isLight) {
+        if (targetTheme.scheme === 'light') {
           document.documentElement.classList.remove('dark');
           document.documentElement.classList.add('light');
         } else {
           document.documentElement.classList.remove('light');
           document.documentElement.classList.add('dark');
         }
+        setActiveAppTheme(targetTheme.themeColor, targetTheme.scheme);
       } else {
-        setThemeId('rank');
-        document.documentElement.dataset.theme = 'rank';
+        setThemeId(DEFAULT_THEME_ID);
+        document.documentElement.dataset.theme = DEFAULT_THEME_ID;
+        setActiveAppTheme(DEFAULT_THEME.themeColor, DEFAULT_THEME.scheme);
       }
     } catch {
-      setThemeId('rank');
-      document.documentElement.dataset.theme = 'rank';
+      setThemeId(DEFAULT_THEME_ID);
+      document.documentElement.dataset.theme = DEFAULT_THEME_ID;
+      setActiveAppTheme(DEFAULT_THEME.themeColor, DEFAULT_THEME.scheme);
     }
   }, []);
 
@@ -199,23 +75,56 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
           document.documentElement.dataset.theme = 'rank';
           document.documentElement.classList.remove('light');
           document.documentElement.classList.add('dark');
+          setActiveAppTheme(DEFAULT_THEME.themeColor, DEFAULT_THEME.scheme);
         } else {
           // Premium user -> restore saved premium theme
           setThemeId(savedPremiumTheme.id);
           document.documentElement.dataset.theme = savedPremiumTheme.id;
-          if (savedPremiumTheme.isLight) {
+          if (savedPremiumTheme.scheme === 'light') {
             document.documentElement.classList.remove('dark');
             document.documentElement.classList.add('light');
           } else {
             document.documentElement.classList.remove('light');
             document.documentElement.classList.add('dark');
           }
+          setActiveAppTheme(savedPremiumTheme.themeColor, savedPremiumTheme.scheme);
         }
       }
     } catch {
       // ignore
     }
   }, [entitlementsLoading, isPremium, isMounted]);
+
+  // Dev-only check that logs a warning if a theme's themeColor differs from its computed --bg
+  useEffect(() => {
+    if (process.env.NODE_ENV !== 'production' && typeof window !== 'undefined') {
+      const activeObj = THEMES.find(t => t.id === themeId);
+      if (activeObj) {
+        const computedBg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
+        const normalize = (c: string) => {
+          c = c.trim().toLowerCase();
+          if (c.startsWith('#') && c.length === 4) {
+            return `#${c[1]}${c[1]}${c[2]}${c[2]}${c[3]}${c[3]}`;
+          }
+          const rgb = c.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+          if (rgb) {
+            const r = parseInt(rgb[1], 10).toString(16).padStart(2, '0');
+            const g = parseInt(rgb[2], 10).toString(16).padStart(2, '0');
+            const b = parseInt(rgb[3], 10).toString(16).padStart(2, '0');
+            return `#${r}${g}${b}`;
+          }
+          return c;
+        };
+        const normComputed = normalize(computedBg);
+        const normTheme = normalize(activeObj.themeColor);
+        if (normComputed && normTheme && normComputed !== normTheme) {
+          console.warn(
+            `[ThemeDriftWarning] Theme "${activeObj.id}" themeColor (${activeObj.themeColor}) differs from computed --bg (${computedBg})`
+          );
+        }
+      }
+    }
+  }, [themeId]);
 
   const setTheme = useCallback((id: string) => {
     const targetTheme = THEMES.find(t => t.id === id);
@@ -239,13 +148,16 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       }
 
       document.documentElement.dataset.theme = targetId;
-      if (targetTheme.isLight) {
+      if (targetTheme.scheme === 'light') {
         document.documentElement.classList.remove('dark');
         document.documentElement.classList.add('light');
       } else {
         document.documentElement.classList.remove('light');
         document.documentElement.classList.add('dark');
       }
+
+      // Update browser chrome instantly (no animation)
+      setActiveAppTheme(targetTheme.themeColor, targetTheme.scheme);
 
       try {
         localStorage.setItem('studyio-theme', targetId);

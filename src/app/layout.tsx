@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Rajdhani, Chakra_Petch } from "next/font/google";
 import "./globals.css";
 import { Providers } from "../components/common/Providers";
+import { THEME_META_MAP, DEFAULT_THEME } from "../lib/themes";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,7 +27,6 @@ const chakraPetch = Chakra_Petch({
 });
 
 export const viewport: Viewport = {
-  themeColor: "#080b12",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -55,7 +55,7 @@ export const metadata: Metadata = {
   },
 };
 
-
+const inlineThemeScript = `(function(){try{var m=${JSON.stringify(THEME_META_MAP)};var t=localStorage.getItem('studyio-theme')||'rank';if(!m[t])t='rank';var e=m[t];document.documentElement.dataset.theme=t;if(e.scheme==='light'){document.documentElement.classList.remove('dark');document.documentElement.classList.add('light');}else{document.documentElement.classList.remove('light');document.documentElement.classList.add('dark');}document.documentElement.style.backgroundColor=e.themeColor;var tc=document.getElementById('theme-color-meta');if(tc)tc.setAttribute('content',e.themeColor);var cs=document.getElementById('color-scheme-meta');if(cs)cs.setAttribute('content',e.scheme);var as=document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');if(as)as.setAttribute('content',e.scheme==='light'?'default':'black-translucent');}catch(e){document.documentElement.dataset.theme='rank';}})();`;
 
 export default function RootLayout({
   children,
@@ -69,6 +69,8 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${rajdhani.variable} ${chakraPetch.variable} dark antialiased`}
     >
       <head>
+        <meta name="theme-color" id="theme-color-meta" content={DEFAULT_THEME.themeColor} />
+        <meta name="color-scheme" id="color-scheme-meta" content={DEFAULT_THEME.scheme} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
@@ -77,7 +79,7 @@ export default function RootLayout({
         />
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('studyio-theme')||'rank';var valid=['rank','midnight','ember','forest','ocean','rose','nebula','graphite','paper','cyberpunk','amethyst','emerald','goldleaf','crimson','sakura','espresso','abyss','matcha'];if(!valid.includes(t))t='rank';document.documentElement.dataset.theme=t;if(t==='paper'||t==='matcha'){document.documentElement.classList.remove('dark');document.documentElement.classList.add('light');}else{document.documentElement.classList.remove('light');document.documentElement.classList.add('dark');}}catch(e){document.documentElement.dataset.theme='rank';}})();`,
+            __html: inlineThemeScript,
           }}
         />
       </head>

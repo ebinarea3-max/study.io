@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ArrowRight, Trophy } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { getSupabase } from '../../lib/supabase';
+import { useThemeColorOverride } from '../../hooks/useThemeColorOverride';
 
 export interface EmptyRecapFallbackProps {
   seasonDisplayName: string;
@@ -19,6 +20,7 @@ export default function EmptyRecapFallback({
   isDevPreview = false,
   onClose,
 }: EmptyRecapFallbackProps) {
+  useThemeColorOverride('#07090e');
   const { user } = useAuth();
 
   useEffect(() => {

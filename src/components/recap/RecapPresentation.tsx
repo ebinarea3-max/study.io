@@ -9,6 +9,7 @@ import { soundFx } from '../../lib/audio';
 import Link from 'next/link';
 import { Volume2, VolumeX, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { SeasonShareCard } from './SeasonShareCard';
+import { useThemeColorOverride } from '../../hooks/useThemeColorOverride';
 
 export interface RecapSubjectItem {
   name: string;
@@ -137,6 +138,7 @@ export default function RecapPresentation({
   speedMultiplier = 1,
   soundEnabled,
 }: RecapPresentationProps) {
+  useThemeColorOverride('#07090e');
   const [currentSlide, setCurrentSlide] = useState(forcedSlide !== undefined ? forcedSlide : 0);
   const [isHolding, setIsHolding] = useState(false);
   const [isMuted, setIsMuted] = useState(soundEnabled !== undefined ? !soundEnabled : false);

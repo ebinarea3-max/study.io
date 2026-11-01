@@ -73,6 +73,7 @@ export default function Home() {
     }
   }, []);
 
+  const lastTabRefetchRef = useRef<number>(Date.now());
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const checkTab = () => {
@@ -122,7 +123,6 @@ export default function Home() {
   }, []);
 
   // Re-fetch sessions automatically whenever the user navigates back to Dashboard or switches tabs (throttled)
-  const lastTabRefetchRef = useRef<number>(Date.now());
   useEffect(() => {
     if (isAuthenticated) {
       const now = Date.now();

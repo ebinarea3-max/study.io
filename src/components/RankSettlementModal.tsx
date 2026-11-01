@@ -12,6 +12,7 @@ import { RankCrestBadge } from './common/RankCrestBadge';
 import { preloadRankAdvancement } from '../lib/preloadRankBadges';
 import Image from 'next/image';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useThemeColorOverride } from '../hooks/useThemeColorOverride';
 
 interface RankSettlementModalProps {
   isOpen: boolean;
@@ -54,6 +55,7 @@ export function RankSettlementModal({
   data,
   onContinue,
 }: RankSettlementModalProps) {
+  useThemeColorOverride(isOpen ? '#07090e' : null);
   // Accessibility: Prefers-reduced-motion check
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(() => {
     if (typeof window === 'undefined') return false;
