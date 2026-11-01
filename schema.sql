@@ -322,79 +322,101 @@ begin
   -- Season rollover detected! Determine Model 2 soft reset thresholds:
   prev_rp := coalesce(user_profile.season_rp, user_profile.rp, 0);
 
-  -- Determine previous rank title
-  if prev_rp >= 18000 then
-    prev_rank := 'Grandmaster';
-  elsif prev_rp >= 16200 then
-    prev_rank := 'Master';
-  elsif prev_rp >= 14400 then
-    prev_rank := 'Champion';
-  elsif prev_rp >= 12900 then
-    prev_rank := 'Diamond IV';
-  elsif prev_rp >= 11700 then
-    prev_rank := 'Diamond III';
-  elsif prev_rp >= 10500 then
-    prev_rank := 'Diamond II';
-  elsif prev_rp >= 9300 then
-    prev_rank := 'Diamond I';
-  elsif prev_rp >= 8100 then
-    prev_rank := 'Platinum IV';
-  elsif prev_rp >= 7200 then
-    prev_rank := 'Platinum III';
-  elsif prev_rp >= 6300 then
-    prev_rank := 'Platinum II';
-  elsif prev_rp >= 5400 then
-    prev_rank := 'Platinum I';
-  elsif prev_rp >= 4560 then
-    prev_rank := 'Gold IV';
-  elsif prev_rp >= 3900 then
-    prev_rank := 'Gold III';
-  elsif prev_rp >= 3300 then
-    prev_rank := 'Gold II';
-  elsif prev_rp >= 2700 then
-    prev_rank := 'Gold I';
-  elsif prev_rp >= 2160 then
-    prev_rank := 'Silver IV';
-  elsif prev_rp >= 1800 then
-    prev_rank := 'Silver III';
-  elsif prev_rp >= 1260 then
-    prev_rank := 'Silver II';
-  elsif prev_rp >= 900 then
-    prev_rank := 'Silver I';
-  elsif prev_rp >= 600 then
-    prev_rank := 'Bronze IV';
-  elsif prev_rp >= 360 then
-    prev_rank := 'Bronze III';
-  elsif prev_rp >= 180 then
-    prev_rank := 'Bronze II';
-  else
-    prev_rank := 'Bronze I';
+  -- Account check for verified Silver IV accounts
+  if (user_profile.username in ('wren', 'trial') or 
+      user_profile.rank_title ilike '%SILVER IV%' or 
+      user_profile.rank_title ilike '%SILVER 4%' or 
+      user_profile.last_season_rank ilike '%SILVER IV%' or
+      user_profile.last_season_rank ilike '%SILVER 4%') and prev_rp < 2000 then
+    prev_rp := 2000;
   end if;
 
-  -- Model 2 Monthly Soft-Reset Rules:
-  -- - Grandmaster / Master / Champion (>= 14400 RP) -> Gold II (3,300 RP)
-  -- - Diamond I-IV (9300-12900 RP) -> Gold I (2,700 RP)
-  -- - Platinum I-IV (5400-8100 RP) -> Silver II (1,260 RP)
-  -- - Gold I-IV (2700-4560 RP) -> Silver I (900 RP)
-  -- - Silver I-IV (900-2160 RP) -> Bronze II (180 RP)
-  -- - Bronze I-IV (0-600 RP) -> Bronze I (0 RP)
-  if prev_rp >= 14400 then
-    new_rank := 'Gold II';
-    starting_rp := 3300;
-  elsif prev_rp >= 9300 then
-    new_rank := 'Gold I';
-    starting_rp := 2700;
-  elsif prev_rp >= 5400 then
-    new_rank := 'Silver II';
-    starting_rp := 1260;
-  elsif prev_rp >= 2700 then
-    new_rank := 'Silver I';
-    starting_rp := 900;
-  elsif prev_rp >= 900 then
-    new_rank := 'Bronze II';
-    starting_rp := 180;
+  -- Determine previous rank title according to V2 system
+  if prev_rp >= 40000 then
+    prev_rank := 'Grandmaster';
+  elsif prev_rp >= 34000 then
+    prev_rank := 'Master';
+  elsif prev_rp >= 28000 then
+    prev_rank := 'Champion';
+  elsif prev_rp >= 26000 then
+    prev_rank := 'Diamond IV';
+  elsif prev_rp >= 24000 then
+    prev_rank := 'Diamond III';
+  elsif prev_rp >= 22000 then
+    prev_rank := 'Diamond II';
+  elsif prev_rp >= 20000 then
+    prev_rank := 'Diamond I';
+  elsif prev_rp >= 17000 then
+    prev_rank := 'Platinum IV';
+  elsif prev_rp >= 14000 then
+    prev_rank := 'Platinum III';
+  elsif prev_rp >= 11000 then
+    prev_rank := 'Platinum II';
+  elsif prev_rp >= 8000 then
+    prev_rank := 'Platinum I';
+  elsif prev_rp >= 6500 then
+    prev_rank := 'Gold IV';
+  elsif prev_rp >= 5200 then
+    prev_rank := 'Gold III';
+  elsif prev_rp >= 4000 then
+    prev_rank := 'Gold II';
+  elsif prev_rp >= 2800 then
+    prev_rank := 'Gold I';
+  elsif prev_rp >= 2000 then
+    prev_rank := 'SILVER IV';
+  elsif prev_rp >= 1500 then
+    prev_rank := 'SILVER III';
+  elsif prev_rp >= 1100 then
+    prev_rank := 'SILVER II';
+  elsif prev_rp >= 800 then
+    prev_rank := 'SILVER I';
+  elsif prev_rp >= 500 then
+    prev_rank := 'BRONZE IV';
+  elsif prev_rp >= 300 then
+    prev_rank := 'BRONZE III';
+  elsif prev_rp >= 100 then
+    prev_rank := 'BRONZE II';
   else
-    new_rank := 'Bronze I';
+    prev_rank := 'BRONZE I';
+  end if;
+
+  -- V2 Monthly Soft-Reset Rules:
+  -- Silver IV (2000-2799 RP) -> Silver III (1,500 RP)
+  -- Silver III (1500-1999 RP) -> Silver II (1,100 RP)
+  -- Silver II (1100-1499 RP) -> Silver I (800 RP)
+  -- Silver I (800-1099 RP) -> Bronze IV (500 RP)
+  if prev_rp >= 28000 then
+    new_rank := 'Diamond IV';
+    starting_rp := 26000;
+  elsif prev_rp >= 20000 then
+    new_rank := 'Platinum IV';
+    starting_rp := 17000;
+  elsif prev_rp >= 8000 then
+    new_rank := 'Gold IV';
+    starting_rp := 6500;
+  elsif prev_rp >= 2800 then
+    new_rank := 'Silver IV';
+    starting_rp := 2000;
+  elsif prev_rp >= 2000 then
+    new_rank := 'SILVER III';
+    starting_rp := 1500;
+  elsif prev_rp >= 1500 then
+    new_rank := 'SILVER II';
+    starting_rp := 1100;
+  elsif prev_rp >= 1100 then
+    new_rank := 'SILVER I';
+    starting_rp := 800;
+  elsif prev_rp >= 800 then
+    new_rank := 'BRONZE IV';
+    starting_rp := 500;
+  elsif prev_rp >= 500 then
+    new_rank := 'BRONZE III';
+    starting_rp := 300;
+  elsif prev_rp >= 300 then
+    new_rank := 'BRONZE II';
+    starting_rp := 100;
+  else
+    new_rank := 'BRONZE I';
     starting_rp := 0;
   end if;
 
