@@ -156,7 +156,7 @@ export function resolveLiveSeasonStats(
 
   const finalSeasonRp = startingRp + earnedThisMonthRp;
   const rankTier = getRankTier(finalSeasonRp);
-  const rankTitle = userReset.newRankTitle || rankTier.name;
+  const rankTitle = rankTier.name;
 
   return {
     seasonRp: finalSeasonRp,

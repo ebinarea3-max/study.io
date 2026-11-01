@@ -709,30 +709,6 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
       if (isLoading || !isAuthenticated || !user?.id || user.id.startsWith('user-scholar') || user.id.startsWith('guest')) return;
 
-      // 1. Check for pending reset payload stashed during AuthContext login/profile fetch
-      try {
-        const pendingRaw = localStorage.getItem(`studypulse_pending_season_reset_${safeKey}`);
-        if (pendingRaw) {
-          const pending = JSON.parse(pendingRaw);
-          if (pending && pending.needs_reset) {
-            const startRp = Number(pending.starting_rp ?? 0);
-            const rankTitle = pending.new_rank || getRankTier(startRp).fullTitle;
-            if (isMounted) {
-              updateProfile({
-                rp: startRp,
-                seasonRp: startRp,
-                season_base_rp: startRp,
-                carryover_rp: startRp,
-                rank_title: rankTitle,
-                currentSeasonId: currentMonth,
-              });
-              setSeasonResetAlert(pending);
-            }
-            return;
-          }
-        }
-      } catch {}
-
       const supabase = getSupabase();
 
       // Ensure we have user's study sessions loaded before evaluating ranks
@@ -751,10 +727,40 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
       // Resolve exact rank and soft reset dynamically per user
       const userReset = resolveUserSeasonReset(user, activeSessions);
+      const live = resolveLiveSeasonStats(user, activeSessions);
+
+      // 1. Check for pending reset payload stashed during AuthContext login/profile fetch
+      try {
+        const pendingRaw = localStorage.getItem(`studypulse_pending_season_reset_${safeKey}`);
+        if (pendingRaw) {
+          const pending = JSON.parse(pendingRaw);
+          if (pending && pending.needs_reset) {
+            if (Number(pending.starting_rp) === userReset.startingRP) {
+              const startRp = Number(pending.starting_rp ?? 0);
+              const rankTitle = live.rankTier.name || pending.new_rank || getRankTier(startRp).fullTitle;
+              if (isMounted) {
+                updateProfile({
+                  rp: live.seasonRp,
+                  seasonRp: live.seasonRp,
+                  season_base_rp: startRp,
+                  carryover_rp: startRp,
+                  rank_title: rankTitle,
+                  currentSeasonId: currentMonth,
+                });
+                setSeasonResetAlert(pending);
+              }
+              return;
+            } else {
+              // Stale pending reset from prior calculation, remove it
+              localStorage.removeItem(`studypulse_pending_season_reset_${safeKey}`);
+            }
+          }
+        }
+      } catch {}
+
       const currentMonthName = new Date().toLocaleString('en-US', { month: 'long' });
 
       // Guarantee state profile does not lag behind dynamic soft-reset baseline
-      const live = resolveLiveSeasonStats(user, activeSessions);
       if (
         user.currentSeasonId !== currentMonth ||
         Number((user as any)?.season_base_rp ?? 0) !== userReset.startingRP ||
@@ -766,7 +772,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
             seasonRp: live.seasonRp,
             season_base_rp: userReset.startingRP,
             carryover_rp: userReset.startingRP,
-            rank_title: userReset.newRankTitle,
+            rank_title: live.rankTier.name,
             currentSeasonId: currentMonth,
           });
         }

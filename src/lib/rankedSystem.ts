@@ -660,20 +660,12 @@ export function resolveUserSeasonReset(
   let previousRP = 0;
   let matchedTier: RankTierConfig | undefined;
 
-  // 1. Account override for wren and trial (verified as Silver IV prior to rollover)
-  if (isWren) {
-    previousRP = 2000;
-    matchedTier = RANK_TIERS.find((t) => t.fullTitle === 'SILVER IV');
-  } else if (isTrial) {
-    previousRP = 2468;
-    matchedTier = RANK_TIERS.find((t) => t.fullTitle === 'SILVER IV');
-  }
-  // 2. Exact calculation from actual previous month study sessions
-  else if (prevSeconds > 0) {
+  // 1. Exact calculation from actual previous month study sessions (Single Source of Truth)
+  if (prevSeconds > 0) {
     previousRP = prevEarnedRP;
     matchedTier = getRankTier(previousRP).config;
   }
-  // 3. From last_season_rp or last_season_rank if explicitly recorded
+  // 2. From last_season_rp or last_season_rank if explicitly recorded
   else if (user?.last_season_rp && Number(user.last_season_rp) > 0) {
     previousRP = Number(user.last_season_rp);
     matchedTier = getRankTier(previousRP).config;
@@ -694,6 +686,14 @@ export function resolveUserSeasonReset(
     if (matchedTier) {
       previousRP = matchedTier.minRP;
     }
+  }
+  // 3. Fallbacks for known accounts if sessions are not yet hydrated
+  else if (isTrial) {
+    previousRP = 2468;
+    matchedTier = RANK_TIERS.find((t) => t.fullTitle === 'SILVER IV');
+  } else if (isWren) {
+    previousRP = 1455;
+    matchedTier = RANK_TIERS.find((t) => t.fullTitle === 'SILVER II');
   }
   // 4. From profile season RP if recorded
   else if (

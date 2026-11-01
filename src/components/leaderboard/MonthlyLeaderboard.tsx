@@ -391,26 +391,35 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                 (currentUser?.name && (row.display_name || row.name) && currentUser.name.toLowerCase().trim() === String(row.display_name || row.name).toLowerCase().trim())
               );
               
-              let computedRank = row.rank_title || 'Bronze I';
+              let computedRank = 'Bronze I';
               try {
                 if (isMe && currentUser) {
                   const live = resolveLiveSeasonStats(currentUser, currentSessions);
                   computedRank = live.rankTier.name;
-                } else if (
-                  row.username?.toLowerCase() === 'wren' ||
-                  row.display_name?.toLowerCase() === 'wren' ||
-                  row.name?.toLowerCase() === 'wren' ||
-                  row.username?.toLowerCase() === 'trial' ||
-                  row.display_name?.toLowerCase() === 'trial' ||
-                  row.name?.toLowerCase() === 'trial'
-                ) {
-                  computedRank = 'Silver III';
-                } else if (row.rank_title && row.rank_title.toUpperCase() !== 'BRONZE I') {
-                  computedRank = row.rank_title;
                 } else {
+                  const isWrenContender =
+                    row.username?.toLowerCase() === 'wren' ||
+                    row.display_name?.toLowerCase() === 'wren' ||
+                    row.name?.toLowerCase() === 'wren';
+                  const isTrialContender =
+                    row.username?.toLowerCase() === 'trial' ||
+                    row.display_name?.toLowerCase() === 'trial' ||
+                    row.name?.toLowerCase() === 'trial';
                   const priorRp = Number(row.season_rp ?? row.rp ?? 0);
-                  const prevTier = getRankTier(priorRp);
-                  computedRank = prevTier.softResetRank || prevTier.name;
+
+                  if (isWrenContender) {
+                    computedRank = (priorRp > 0 && priorRp <= 1100) ? getRankTier(priorRp).name : 'Silver I';
+                  } else if (isTrialContender) {
+                    computedRank = priorRp > 0 ? getRankTier(priorRp).name : 'Silver III';
+                  } else if (priorRp > 0) {
+                    computedRank = getRankTier(priorRp).name;
+                  } else if (row.current_rank && !row.current_rank.toUpperCase().includes('SCHOLAR')) {
+                    computedRank = row.current_rank;
+                  } else if (row.rank_title && !row.rank_title.toUpperCase().includes('SCHOLAR')) {
+                    computedRank = row.rank_title;
+                  } else {
+                    computedRank = 'Bronze I';
+                  }
                 }
               } catch (e) {}
               
@@ -473,26 +482,35 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                     (currentUser?.displayName && (p.display_name || p.name) && currentUser.displayName.toLowerCase().trim() === String(p.display_name || p.name).toLowerCase().trim()) ||
                     (currentUser?.name && (p.display_name || p.name) && currentUser.name.toLowerCase().trim() === String(p.display_name || p.name).toLowerCase().trim())
                   );
-                  let computedRank = p.current_rank || p.rank_title || 'Bronze I';
+                  let computedRank = 'Bronze I';
                   try {
                     if (isMe && currentUser) {
                       const live = resolveLiveSeasonStats(currentUser, currentSessions);
                       computedRank = live.rankTier.name;
-                    } else if (
-                      p.username?.toLowerCase() === 'wren' ||
-                      p.display_name?.toLowerCase() === 'wren' ||
-                      p.name?.toLowerCase() === 'wren' ||
-                      p.username?.toLowerCase() === 'trial' ||
-                      p.display_name?.toLowerCase() === 'trial' ||
-                      p.name?.toLowerCase() === 'trial'
-                    ) {
-                      computedRank = 'Silver III';
-                    } else if (p.current_rank || p.rank_title) {
-                      computedRank = p.current_rank || p.rank_title;
                     } else {
+                      const isWrenContender =
+                        p.username?.toLowerCase() === 'wren' ||
+                        p.display_name?.toLowerCase() === 'wren' ||
+                        p.name?.toLowerCase() === 'wren';
+                      const isTrialContender =
+                        p.username?.toLowerCase() === 'trial' ||
+                        p.display_name?.toLowerCase() === 'trial' ||
+                        p.name?.toLowerCase() === 'trial';
                       const priorRp = Number(p.season_rp ?? p.rp ?? 0);
-                      const prevTier = getRankTier(priorRp);
-                      computedRank = prevTier.softResetRank || prevTier.name;
+
+                      if (isWrenContender) {
+                        computedRank = (priorRp > 0 && priorRp <= 1100) ? getRankTier(priorRp).name : 'Silver I';
+                      } else if (isTrialContender) {
+                        computedRank = priorRp > 0 ? getRankTier(priorRp).name : 'Silver III';
+                      } else if (priorRp > 0) {
+                        computedRank = getRankTier(priorRp).name;
+                      } else if (p.current_rank && !p.current_rank.toUpperCase().includes('SCHOLAR')) {
+                        computedRank = p.current_rank;
+                      } else if (p.rank_title && !p.rank_title.toUpperCase().includes('SCHOLAR')) {
+                        computedRank = p.rank_title;
+                      } else {
+                        computedRank = 'Bronze I';
+                      }
                     }
                   } catch (e) {}
 
@@ -640,7 +658,7 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
     const idx = contenders.findIndex(row => checkIsCurrentUser(row));
     
     const live = resolveLiveSeasonStats(user, sessions);
-    const activeRankName = userRank?.name || live.rankTitle || 'Silver III';
+    const activeRankName = userRank?.name || live.rankTitle || 'Silver I';
     const resolvedTierConfig = RANKS.find(r => r.name.toUpperCase() === activeRankName.toUpperCase()) || getRankTier(0);
 
     if (idx === -1) {

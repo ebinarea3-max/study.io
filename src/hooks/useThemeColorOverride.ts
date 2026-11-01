@@ -29,3 +29,4 @@ export function useThemeColorOverride(color: string | null, scheme: 'dark' | 'li
     };
   }, [color, scheme]);
 }
+

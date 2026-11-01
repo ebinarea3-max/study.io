@@ -54,15 +54,7 @@ export default async function RecapPage(props: {
       if (payload.totalSeconds === 0) {
         return <EmptyRecapFallback seasonDisplayName={seasonDisplayName} seasonKey={previousSeasonKey} />;
       }
-      const isWren =
-        user.email?.toLowerCase().includes('wren') ||
-        payload.username?.toLowerCase() === 'wren' ||
-        payload.displayName?.toLowerCase() === 'wren';
-
       let prevRp = Number(payload.previousRP ?? Math.floor((payload.totalSeconds || 0) / 36));
-      if (isWren && prevRp < 2000) {
-        prevRp = 2000;
-      }
 
       const reset = calculateSeasonReset(prevRp);
       payload.previousRP = prevRp;
@@ -272,16 +264,8 @@ export default async function RecapPage(props: {
   // 6. Rank calculations
   const isFirstSeason = !history;
 
-  // Account override for wren verified as Silver IV prior to rollover
-  const isWren =
-    user.email?.toLowerCase().includes('wren') ||
-    profile?.username?.toLowerCase() === 'wren' ||
-    profile?.name?.toLowerCase() === 'wren';
-
   let previousRP = 0;
-  if (isWren && totalSeconds < 72000) {
-    previousRP = 2000;
-  } else if (totalSeconds > 0) {
+  if (totalSeconds > 0) {
     previousRP = Math.floor(totalSeconds / 36);
   } else if (history?.previous_rp) {
     previousRP = Number(history.previous_rp);

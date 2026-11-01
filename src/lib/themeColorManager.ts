@@ -111,3 +111,4 @@ export function popThemeColorOverride(id: string) {
     updateBrowserChrome(currentAppTheme.themeColor, currentAppTheme.scheme);
   }
 }
+

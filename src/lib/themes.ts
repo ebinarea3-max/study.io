@@ -177,3 +177,4 @@ export const THEME_META_MAP: Record<string, { themeColor: string; scheme: 'dark'
     acc[t.id] = { themeColor: t.themeColor, scheme: t.scheme };
     return acc;
   }, {} as Record<string, { themeColor: string; scheme: 'dark' | 'light' }>);
+

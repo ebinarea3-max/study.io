@@ -100,7 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const carryoverRp = userReset.startingRP;
       const calculatedRP = calculateSeasonRp(currentMonthStudySeconds, carryoverRp);
       const currentRankObj = getRankTier(calculatedRP);
-      const effectiveRankTitle = (userReset.newRankTitle || currentRankObj.name).toUpperCase();
+      const effectiveRankTitle = currentRankObj.name.toUpperCase();
       const effectiveBadge = currentRankObj.badge;
       
       let currentProfileRP = Number(profile?.season_rp ?? 0);
