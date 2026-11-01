@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { TimetableItem, DayOfWeek, TIMETABLE_COLOR_PRESETS, DAYS_OF_WEEK } from '../../types/timetable';
 import { useTimetable } from '../../context/TimetableContext';
 import { useStudy } from '../../context/StudyContext';
+import { Subject } from '../../types';
 import { X, Clock, Palette, BookOpen, Check } from 'lucide-react';
 
 interface EditSubjectScheduleModalProps {
@@ -31,7 +32,19 @@ export function EditSubjectScheduleModal({
   const [dayOfWeek, setDayOfWeek] = useState<DayOfWeek>(defaultDay);
   const [matchedSubjectId, setMatchedSubjectId] = useState<string | undefined>(undefined);
 
-  const nameInputRef = useRef<HTMLInputElement>(null);
+  const activeSubjects = useMemo(() => {
+    return (Array.isArray(subjects) ? subjects : []).filter(s => s && !s.is_archived);
+  }, [subjects]);
+
+  const displayColors = useMemo(() => {
+    if (
+      selectedColor &&
+      !TIMETABLE_COLOR_PRESETS.some(c => c.toLowerCase() === selectedColor.toLowerCase())
+    ) {
+      return [selectedColor, ...TIMETABLE_COLOR_PRESETS];
+    }
+    return TIMETABLE_COLOR_PRESETS;
+  }, [selectedColor]);
 
   useEffect(() => {
     setMounted(true);
@@ -45,7 +58,13 @@ export function EditSubjectScheduleModal({
       setTargetMinutes(totalMins % 60);
       setSelectedColor(editingItem.color || TIMETABLE_COLOR_PRESETS[0]);
       setDayOfWeek(editingItem.dayOfWeek);
-      setMatchedSubjectId(editingItem.subjectId);
+
+      const matched = activeSubjects.find(
+        s =>
+          s.id === editingItem.subjectId ||
+          s.name.trim().toLowerCase() === editingItem.subjectName.trim().toLowerCase()
+      );
+      setMatchedSubjectId(matched?.id || editingItem.subjectId);
     } else {
       setSubjectName('');
       setTargetHours(1);
@@ -56,24 +75,17 @@ export function EditSubjectScheduleModal({
       setDayOfWeek(defaultDay);
       setMatchedSubjectId(undefined);
     }
-  }, [editingItem, defaultDay, isOpen]);
-
-  useEffect(() => {
-    if (isOpen) {
-      setTimeout(() => {
-        nameInputRef.current?.focus({ preventScroll: true });
-      }, 50);
-    }
-  }, [isOpen]);
+  }, [editingItem, defaultDay, isOpen, activeSubjects]);
 
   // Handle selecting an existing subject from study context
-  const handleSelectExistingSubject = (subId: string) => {
-    const found = subjects.find(s => s.id === subId);
-    if (found) {
-      setSubjectName(found.name);
-      setMatchedSubjectId(found.id);
-      if (found.color) setSelectedColor(found.color);
-      const subMins = found.daily_goal_minutes || found.targetMinutesPerDay || 90;
+  const handleSelectExistingSubject = (sub: Subject) => {
+    setSubjectName(sub.name);
+    setMatchedSubjectId(sub.id);
+    if (sub.color) {
+      setSelectedColor(sub.color);
+    }
+    const subMins = sub.daily_goal_minutes || sub.targetMinutesPerDay;
+    if (subMins && subMins > 0) {
       setTargetHours(Math.floor(subMins / 60));
       setTargetMinutes(subMins % 60);
     }
@@ -150,52 +162,79 @@ export function EditSubjectScheduleModal({
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Quick Select from existing subjects */}
-          {subjects.length > 0 && !editingItem && (
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-mono uppercase tracking-wider text-[var(--text-dim)]">
-                Quick-Pick from Your Subjects:
+          {/* 1. Required Subject Selector (Chips) */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-[11px] font-mono uppercase tracking-wider text-[var(--text-dim)] flex items-center gap-1.5">
+                <span>Select a Subject *</span>
               </label>
-              <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto scrollbar-none py-1">
-                {subjects.map(s => (
-                  <button
-                    key={s.id}
-                    type="button"
-                    onClick={() => handleSelectExistingSubject(s.id)}
-                    className="px-2.5 py-1 rounded-lg bg-[var(--surface-2)] hover:bg-white/[0.08] border border-[var(--border)] text-xs font-mono text-[var(--text)] flex items-center gap-1.5 transition-all cursor-pointer hover:scale-105 active:scale-95"
-                  >
-                    <span
-                      className="w-2 h-2 rounded-full shrink-0"
-                      style={{ backgroundColor: s.color || '#10B981' }}
-                    />
-                    <span>{s.name}</span>
-                  </button>
-                ))}
-              </div>
+              {subjectName ? (
+                <span className="text-[11px] font-mono font-semibold text-emerald-400 flex items-center gap-1">
+                  <Check className="w-3 h-3 stroke-[3]" />
+                  <span>{subjectName}</span>
+                </span>
+              ) : (
+                <span className="text-[10px] font-mono text-amber-400/90 font-medium">
+                  Required
+                </span>
+              )}
             </div>
-          )}
 
-          {/* Subject Name Input */}
-          <div className="space-y-1.5">
-            <label className="text-[11px] font-mono uppercase tracking-wider text-[var(--text-dim)]">
-              Subject Name *
-            </label>
-            <input
-              ref={nameInputRef}
-              type="text"
-              required
-              value={subjectName}
-              onChange={e => {
-                setSubjectName(e.target.value);
-                // Check if matches an existing subject
-                const match = subjects.find(
-                  s => s.name.trim().toLowerCase() === e.target.value.trim().toLowerCase()
-                );
-                setMatchedSubjectId(match?.id);
-              }}
-              placeholder="e.g. Mathematics, Physics, Chemistry"
-              className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] text-sm sm:text-base text-[var(--text)] placeholder:text-[var(--text-faint)] focus:outline-none focus:border-[var(--accent)] font-sans transition-all"
-            />
+            {activeSubjects.length > 0 ? (
+              <div className="flex flex-wrap gap-2 max-h-36 overflow-y-auto scrollbar-none py-1">
+                {activeSubjects.map(s => {
+                  const isSelected =
+                    matchedSubjectId === s.id ||
+                    (Boolean(subjectName) &&
+                      s.name.trim().toLowerCase() === subjectName.trim().toLowerCase());
+
+                  return (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => handleSelectExistingSubject(s)}
+                      className={`px-3 py-1.5 rounded-xl border text-xs font-mono flex items-center gap-2 transition-all cursor-pointer ${
+                        isSelected
+                          ? 'bg-amber-500/20 border-amber-400 text-white shadow-[0_0_12px_rgba(245,158,11,0.25)] ring-1 ring-amber-400/50 scale-[1.02]'
+                          : 'bg-[var(--surface-2)] hover:bg-white/[0.08] border-[var(--border)] text-[var(--text-dim)] hover:text-[var(--text)]'
+                      }`}
+                    >
+                      <span
+                        className={`w-2.5 h-2.5 rounded-full shrink-0 transition-transform ${
+                          isSelected ? 'scale-110 ring-2 ring-white/60' : ''
+                        }`}
+                        style={{
+                          backgroundColor: s.color || '#10B981',
+                          boxShadow: isSelected ? `0 0 8px ${s.color || '#10B981'}` : undefined,
+                        }}
+                      />
+                      <span className="font-semibold">{s.name}</span>
+                      {isSelected && <Check className="w-3 h-3 text-amber-400 stroke-[3]" />}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="p-4 rounded-xl bg-[var(--surface-2)] border border-dashed border-[var(--border)] text-center space-y-2">
+                <div className="w-8 h-8 rounded-full bg-amber-500/10 text-amber-400 flex items-center justify-center mx-auto">
+                  <BookOpen className="w-4 h-4" />
+                </div>
+                <div className="text-xs text-[var(--text)] font-semibold">No Subjects Created Yet</div>
+                <p className="text-[11px] text-[var(--text-dim)] max-w-xs mx-auto leading-relaxed">
+                  Create subjects in the Timer tab first to schedule them on your weekly timetable.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    window.dispatchEvent(new CustomEvent('switch_tab', { detail: 'timer' }));
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--accent)] text-[var(--accent-contrast)] text-xs font-mono font-bold hover:opacity-90 transition-all cursor-pointer mt-1 shadow-sm"
+                >
+                  <span>Go to Timer</span>
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Day of Week Selector */}
@@ -267,19 +306,22 @@ export function EditSubjectScheduleModal({
               <span>Accent Color Tag:</span>
             </label>
             <div className="flex items-center gap-2 flex-wrap">
-              {TIMETABLE_COLOR_PRESETS.map(color => (
-                <button
-                  key={color}
-                  type="button"
-                  onClick={() => setSelectedColor(color)}
-                  className={`w-7 h-7 rounded-full flex items-center justify-center transition-all cursor-pointer hover:scale-110 active:scale-95 ${
-                    selectedColor === color ? 'ring-2 ring-white ring-offset-2 ring-offset-black scale-110' : ''
-                  }`}
-                  style={{ backgroundColor: color }}
-                >
-                  {selectedColor === color && <Check className="w-3.5 h-3.5 text-black stroke-[3]" />}
-                </button>
-              ))}
+              {displayColors.map(color => {
+                const isSelected = selectedColor.toLowerCase() === color.toLowerCase();
+                return (
+                  <button
+                    key={color}
+                    type="button"
+                    onClick={() => setSelectedColor(color)}
+                    className={`w-7 h-7 rounded-full flex items-center justify-center transition-all cursor-pointer hover:scale-110 active:scale-95 ${
+                      isSelected ? 'ring-2 ring-white ring-offset-2 ring-offset-black scale-110' : ''
+                    }`}
+                    style={{ backgroundColor: color }}
+                  >
+                    {isSelected && <Check className="w-3.5 h-3.5 text-black stroke-[3]" />}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -295,7 +337,7 @@ export function EditSubjectScheduleModal({
             <button
               type="submit"
               disabled={!subjectName.trim()}
-              className="px-5 py-2 rounded-xl bg-[var(--accent)] hover:opacity-90 disabled:opacity-40 text-[var(--accent-contrast)] font-hud-mono text-xs font-bold tracking-wider uppercase transition-all flex items-center gap-1.5 cursor-pointer shadow-[0_0_15px_var(--glow)]"
+              className="px-5 py-2 rounded-xl bg-[var(--accent)] hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed text-[var(--accent-contrast)] font-hud-mono text-xs font-bold tracking-wider uppercase transition-all flex items-center gap-1.5 cursor-pointer shadow-[0_0_15px_var(--glow)]"
             >
               <span>{editingItem ? 'Save Changes' : 'Add to Schedule'}</span>
             </button>
