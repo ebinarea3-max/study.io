@@ -73,7 +73,7 @@ export function FlairCrown({
         color: '#FFFFFF',
       }}
       strokeWidth={3}
-      className={`shrink-0 inline text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] ${className}`}
+      className={`shrink-0 inline text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] -ml-0.5 ${className}`}
       aria-label={`${flairConfig.name} Verified Scholar`}
     />
   );

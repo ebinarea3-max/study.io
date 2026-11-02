@@ -1700,15 +1700,17 @@ CREATE POLICY "Hosts can update their own study rooms"
                   {/* Member Name, Total Time Studied Today (Adds up live when focusing) */}
                   <div className="text-center mt-1 flex flex-col items-center max-w-[130px]">
                     <div className="flex items-center gap-1.5 justify-center">
-                      <p
-                        className="text-sm font-bold text-slate-200 truncate max-w-[100px]"
-                        title={u.username}
-                      >
-                        {u.username}
-                      </p>
-                      {flairMap[u.user_id] && (
-                        <FlairCrown frame={flairMap[u.user_id]} size={13} />
-                      )}
+                      <div className="inline-flex items-center gap-1 justify-center min-w-0">
+                        <p
+                          className="text-sm font-bold text-slate-200 truncate max-w-[100px]"
+                          title={u.username}
+                        >
+                          {u.username}
+                        </p>
+                        {flairMap[u.user_id] && (
+                          <FlairCrown frame={flairMap[u.user_id]} size={13} className="-ml-0.5" />
+                        )}
+                      </div>
                       {u.is_host && (
                         <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 border border-amber-500/30 text-amber-400 font-semibold uppercase tracking-wider flex-shrink-0">
                           Host
@@ -1824,12 +1826,14 @@ CREATE POLICY "Hosts can update their own study rooms"
                         >
                           {/* Meta header: name, host badge, focusing status, timestamp, ban action */}
                           <div className={`flex items-center gap-2 mb-1.5 ${isMe ? 'mr-1 flex-row-reverse' : 'ml-1'}`}>
-                            <span className={`text-xs font-hud font-bold tracking-tight ${isMe ? 'text-amber-400' : 'text-slate-200'}`}>
-                              {isMe ? 'YOU' : username}
-                            </span>
-                            {flairMap[firstMsg.user_id] && (
-                              <FlairCrown frame={flairMap[firstMsg.user_id]} size={11} />
-                            )}
+                            <div className="inline-flex items-center gap-1 min-w-0">
+                              <span className={`text-xs font-hud font-bold tracking-tight ${isMe ? 'text-amber-400' : 'text-slate-200'}`}>
+                                {isMe ? 'YOU' : username}
+                              </span>
+                              {flairMap[firstMsg.user_id] && (
+                                <FlairCrown frame={flairMap[firstMsg.user_id]} size={11} className="-ml-0.5" />
+                              )}
+                            </div>
                             {isHostUser && (
                               <span className="text-[9px] font-hud font-bold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 uppercase">
                                 HOST
@@ -2377,12 +2381,14 @@ CREATE POLICY "Hosts can update their own study rooms"
                           </AvatarFlairRing>
                           <div className="min-w-0">
                             <div className="flex items-center gap-1.5">
-                              <span className="text-sm font-bold text-white truncate max-w-[140px]">
-                                {member.username}
-                              </span>
-                              {flairMap[member.user_id] && (
-                                <FlairCrown frame={flairMap[member.user_id]} size={12} />
-                              )}
+                              <div className="inline-flex items-center gap-1 min-w-0">
+                                <span className="text-sm font-bold text-white truncate max-w-[140px]">
+                                  {member.username}
+                                </span>
+                                {flairMap[member.user_id] && (
+                                  <FlairCrown frame={flairMap[member.user_id]} size={12} className="-ml-0.5" />
+                                )}
+                              </div>
                               {member.is_host && (
                                 <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 border border-amber-500/30 text-amber-400 font-bold uppercase">
                                   HOST

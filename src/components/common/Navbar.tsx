@@ -516,14 +516,16 @@ export function Navbar({
               {/* User Identity & Level Display */}
               <div className="text-left hidden lg:flex lg:flex-col lg:justify-center">
                 <div className="flex items-baseline gap-1.5">
-                  <div className="text-[13px] font-bold text-[var(--text)] leading-tight truncate block max-w-[130px]">
-                    {displayName}
-                  </div>
-                  {isPremium && (
-                    <span title="Verified Scholar" className="inline-flex items-center">
-                      <Check className="w-3 h-3 text-white stroke-[3] shrink-0 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]" aria-label="Verified Scholar" />
+                  <div className="inline-flex items-center gap-1 min-w-0">
+                    <span className="text-[13px] font-bold text-[var(--text)] leading-tight truncate block max-w-[130px]">
+                      {displayName}
                     </span>
-                  )}
+                    {isPremium && (
+                      <span title="Verified Scholar" className="inline-flex items-center -ml-0.5">
+                        <Check className="w-3 h-3 text-white stroke-[3] shrink-0 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]" aria-label="Verified Scholar" />
+                      </span>
+                    )}
+                  </div>
                   {user?.username && (
                     <div className="text-[10px] text-[var(--text-dim)] font-mono truncate max-w-[80px]">
                       @{user.username}
@@ -554,7 +556,7 @@ export function Navbar({
                 <div className="pb-3 border-b border-fg/[0.08] relative z-10">
                   <div className="flex items-center justify-between">
                     <div className="min-w-0 pr-2">
-                      <div className="font-bold text-sm text-[var(--text)] truncate flex items-center gap-1.5">
+                      <div className="font-bold text-sm text-[var(--text)] truncate flex items-center gap-1">
                         <span className="truncate">{displayName}</span>
                         {isPremium && (
                           <span title="Verified Scholar" className="flex items-center flex-shrink-0">

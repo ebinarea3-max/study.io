@@ -291,12 +291,14 @@ export const LeaderboardRow = React.memo(function LeaderboardRow({
           {/* Scholar Details */}
           <div className="flex flex-col min-w-0 justify-center">
             <div className="flex items-center gap-1.5 min-w-0">
-              <span className="font-semibold text-[var(--text)] text-sm sm:text-base truncate" title={displayName}>
-                {displayName}
-              </span>
-              {flairFrame && (
-                <FlairCrown frame={flairFrame} size={13} />
-              )}
+              <div className="inline-flex items-center gap-1 min-w-0">
+                <span className="font-semibold text-[var(--text)] text-sm sm:text-base truncate" title={displayName}>
+                  {displayName}
+                </span>
+                {flairFrame && (
+                  <FlairCrown frame={flairFrame} size={13} className="-ml-0.5" />
+                )}
+              </div>
               {isCurrentUser && (
                 <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-amber-400/15 text-amber-300 border border-amber-400/30 shrink-0">
                   You
