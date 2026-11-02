@@ -2,8 +2,7 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, Clock, Zap, Crown, Flame, Award, Shield, Sparkles } from 'lucide-react';
+import { X, Clock, Zap, Crown, Flame, Shield, User, Trophy, Sparkles } from 'lucide-react';
 import { getSupabase } from '../../lib/supabase';
 import { FlairCrown } from './FlairBadge';
 import { RankCrestBadge } from './RankCrestBadge';
@@ -68,6 +67,7 @@ export function ScholarProfileModal({
     seasonRp?: number;
     rankTitle?: string;
     xp?: number;
+    createdAt?: string;
   }>({});
 
   useEffect(() => {
@@ -138,7 +138,7 @@ export function ScholarProfileModal({
         const [profRes, sessRes] = await Promise.all([
           supabase
             .from('profiles')
-            .select('id, name, username, level, xp, season_rp, streak_days, rank_title, total_study_seconds')
+            .select('id, name, username, level, xp, season_rp, streak_days, rank_title, total_study_seconds, created_at')
             .eq('id', uid)
             .maybeSingle(),
           supabase
@@ -157,6 +157,7 @@ export function ScholarProfileModal({
             seasonRp: p.season_rp !== undefined ? Number(p.season_rp) : undefined,
             rankTitle: p.rank_title || undefined,
             xp: p.xp !== undefined ? Number(p.xp) : undefined,
+            createdAt: p.created_at || undefined,
           });
         }
 
@@ -200,6 +201,8 @@ export function ScholarProfileModal({
   const level = profileDetails.level ?? scholar?.level ?? 1;
   const streak = profileDetails.streakDays ?? scholar?.streakDays ?? 0;
   const rankTitle = profileDetails.rankTitle ?? scholar?.rankTitle ?? 'Silver I';
+  const seasonRp = profileDetails.seasonRp ?? scholar?.seasonRp ?? 0;
+  const lifetimeXp = profileDetails.xp ?? scholar?.lifetimeXp ?? 0;
 
   // Tier configuration
   const tierConfig: RankTier = useMemo(() => {
@@ -220,64 +223,71 @@ export function ScholarProfileModal({
 
   const initialLetter = displayName.charAt(0).toUpperCase();
 
-  if (!mounted || !isOpen || !scholar) return null;
+  if (!mounted || !isOpen || !scholar || typeof document === 'undefined') return null;
 
   return createPortal(
-    <AnimatePresence>
-      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
-        {/* Backdrop Blur */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
-          onClick={onClose}
-          className="fixed inset-0 bg-black/80 backdrop-blur-md"
-        />
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150"
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-lg rounded-2xl bg-[var(--surface)] border border-[var(--border)] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150 flex flex-col max-h-[92vh]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Top Header Bar */}
+        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-[var(--border)] bg-[var(--surface-2)]/40 shrink-0">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div
+              className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border"
+              style={{
+                backgroundColor: verifiedPro ? 'rgba(230, 193, 90, 0.15)' : 'var(--surface)',
+                borderColor: verifiedPro ? 'rgba(230, 193, 90, 0.35)' : 'var(--border)',
+                color: verifiedPro ? '#E6C15A' : 'var(--text-dim)',
+              }}
+            >
+              {verifiedPro ? <Crown className="w-4 h-4" /> : <User className="w-4 h-4" />}
+            </div>
+            <div className="min-w-0">
+              <h3 className="text-base sm:text-lg font-hud font-bold tracking-wider uppercase text-[var(--text)] truncate">
+                Scholar Profile
+              </h3>
+              <p className="text-xs text-[var(--text-dim)] font-mono truncate">
+                @{handle}
+              </p>
+            </div>
+          </div>
 
-        {/* Modal Window */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.94, y: 16 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.94, y: 16 }}
-          transition={{ type: 'spring', damping: 25, stiffness: 320 }}
-          onClick={(e) => e.stopPropagation()}
-          className="relative w-full max-w-md bg-[#0c1017] border border-white/10 rounded-3xl shadow-[0_24px_64px_rgba(0,0,0,0.85)] p-5 sm:p-6 z-10 overflow-hidden"
-          style={{
-            boxShadow: verifiedPro
-              ? '0 20px 60px rgba(0,0,0,0.9), 0 0 35px rgba(230, 193, 90, 0.12)'
-              : '0 20px 60px rgba(0,0,0,0.9)',
-          }}
-        >
-          {/* Ambient Glow matching Pro status or Tier Color */}
-          <div
-            className="absolute -top-20 -left-20 w-56 h-56 rounded-full blur-3xl pointer-events-none opacity-20"
-            style={{
-              backgroundColor: verifiedPro ? '#E6C15A' : tierColor,
-            }}
-          />
-
-          {/* Close Button */}
           <button
             type="button"
             onClick={onClose}
-            className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center bg-white/5 hover:bg-white/15 text-white/60 hover:text-white transition-colors cursor-pointer z-20"
-            aria-label="Close modal"
+            className="p-1.5 rounded-lg text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-white/[0.08] transition-colors cursor-pointer shrink-0"
+            aria-label="Close profile"
           >
-            <X className="w-4 h-4" />
+            <X className="w-5 h-5" />
           </button>
+        </div>
 
-          {/* Scholar Identity Section */}
-          <div className="flex flex-col items-center text-center mt-2 relative z-10">
+        {/* Modal Body */}
+        <div className="p-4 sm:p-5 space-y-4 overflow-y-auto scrollbar-thin">
+          {/* 1. Scholar Identity Banner */}
+          <div className="p-4 rounded-xl bg-[var(--surface-2)]/60 border border-[var(--border)] relative overflow-hidden flex items-center gap-3.5 sm:gap-4">
+            {/* Subtle Tier Color Wash */}
+            <div
+              className="absolute -top-12 -right-12 w-36 h-36 rounded-full blur-2xl pointer-events-none opacity-15"
+              style={{ backgroundColor: verifiedPro ? '#E6C15A' : tierColor }}
+            />
+
             {/* Avatar with Tier Ring */}
-            <div className="relative mb-3">
+            <div className="relative shrink-0">
               <div
-                className="w-20 h-20 rounded-full p-1 border-2 shadow-xl flex items-center justify-center"
+                className="w-16 h-16 rounded-full p-0.5 border-2 shadow-md flex items-center justify-center"
                 style={{
                   borderColor: verifiedPro ? '#E6C15A' : tierColor,
                   boxShadow: verifiedPro
-                    ? '0 0 20px rgba(230, 193, 90, 0.35)'
-                    : `0 0 16px ${tierColor}40`,
+                    ? '0 0 16px rgba(230, 193, 90, 0.3)'
+                    : `0 0 12px ${tierColor}30`,
                 }}
               >
                 {scholar.avatarUrl && !avatarError ? (
@@ -290,7 +300,7 @@ export function ScholarProfileModal({
                   />
                 ) : (
                   <div
-                    className="w-full h-full rounded-full flex items-center justify-center font-mono font-bold text-2xl text-white"
+                    className="w-full h-full rounded-full flex items-center justify-center font-mono font-bold text-xl text-white"
                     style={{
                       background: `linear-gradient(135deg, ${tierColor} 0%, #111827 100%)`,
                     }}
@@ -300,189 +310,225 @@ export function ScholarProfileModal({
                 )}
               </div>
 
-              {/* Small Rank Crest Overlay at avatar bottom right */}
-              <div className="absolute -bottom-1 -right-1 bg-[#0c1017] rounded-full p-0.5 border border-white/15 shadow-md">
+              {/* Mini Rank Badge */}
+              <div className="absolute -bottom-1 -right-1 bg-[var(--surface)] rounded-full p-0.5 border border-[var(--border)] shadow">
                 <RankCrestBadge
                   tier={tierConfig.tier as RankTierName}
                   division={tierConfig.division as RankDivision}
-                  size={26}
+                  size={22}
                 />
               </div>
             </div>
 
-            {/* Scholar Name + Verified Tick */}
-            <div className="flex items-center justify-center gap-1.5 min-w-0 px-4">
-              <h3 className="text-lg sm:text-xl font-bold text-white truncate max-w-[280px]">
-                {displayName}
-              </h3>
-              {verifiedPro && (
-                <FlairCrown frame="gold" size={16} strokeWidth={3.85} className="-ml-0.5" />
-              )}
-            </div>
+            {/* Identity Info */}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <h4 className="text-base sm:text-lg font-bold text-[var(--text)] truncate" title={displayName}>
+                  {displayName}
+                </h4>
+                {verifiedPro && (
+                  <FlairCrown frame="gold" size={15} strokeWidth={3.85} className="-ml-0.5 shrink-0" />
+                )}
+              </div>
 
-            {/* Handle & Badges */}
-            <p className="text-xs font-mono text-slate-400 mt-0.5">@{handle}</p>
+              <p className="text-xs font-mono text-[var(--text-dim)] truncate">
+                @{handle}
+              </p>
 
-            <div className="flex items-center gap-2 mt-2 flex-wrap justify-center">
-              {/* Level Pill */}
-              <span className="px-2 py-0.5 rounded-full text-[11px] font-mono font-bold bg-white/5 border border-white/10 text-slate-300">
-                Lv. {level}
-              </span>
-
-              {/* Tier Title Pill */}
-              <span
-                className="px-2 py-0.5 rounded-full text-[11px] font-medium border"
-                style={{
-                  backgroundColor: `${tierColor}15`,
-                  borderColor: `${tierColor}40`,
-                  color: tierColor,
-                }}
-              >
-                {formattedTier}
-              </span>
-
-              {/* Streak Pill */}
-              {streak > 0 && (
-                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-mono font-semibold bg-amber-500/10 border border-amber-500/25 text-amber-400">
-                  <Flame className="w-3 h-3 fill-current" />
-                  {streak}d Streak
+              {/* Status Badges Row */}
+              <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-[var(--surface)] border border-[var(--border)] text-[var(--text)]">
+                  Lv. {level}
                 </span>
-              )}
+
+                <span
+                  className="px-2 py-0.5 rounded-md text-[10px] font-medium border"
+                  style={{
+                    backgroundColor: `${tierColor}15`,
+                    borderColor: `${tierColor}40`,
+                    color: tierColor,
+                  }}
+                >
+                  {formattedTier}
+                </span>
+
+                {streak > 0 && (
+                  <span className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-mono font-semibold bg-amber-500/10 border border-amber-500/25 text-amber-400">
+                    <Flame className="w-2.5 h-2.5 fill-current" />
+                    {streak}d Streak
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* Membership Status Badge Card (Pro vs Free) */}
-          <div className="mt-5 relative z-10">
-            {verifiedPro ? (
-              <div
-                className="w-full rounded-2xl p-3 sm:p-3.5 border transition-all flex items-center justify-between gap-3"
-                style={{
-                  background: 'linear-gradient(135deg, rgba(230, 193, 90, 0.14) 0%, rgba(184, 137, 43, 0.06) 100%)',
-                  borderColor: 'rgba(230, 193, 90, 0.45)',
-                  boxShadow: '0 0 20px rgba(230, 193, 90, 0.12)',
-                }}
-              >
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center shrink-0">
-                    <Crown className="w-5 h-5 text-amber-300 fill-amber-300" />
-                  </div>
-                  <div className="min-w-0 text-left">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-hud font-bold text-xs tracking-wider uppercase text-amber-300">
-                        PRO SCHOLAR
-                      </span>
-                      <FlairCrown frame="gold" size={13} strokeWidth={3.85} />
-                    </div>
-                    <p className="text-[11px] text-amber-200/70 truncate">
-                      Active Verified Membership
-                    </p>
-                  </div>
+          {/* 2. Membership Status Card (Pro vs Free) */}
+          {verifiedPro ? (
+            <div
+              className="p-3.5 rounded-xl border flex items-center justify-between gap-3 relative overflow-hidden"
+              style={{
+                background: 'linear-gradient(135deg, rgba(230, 193, 90, 0.12) 0%, rgba(184, 137, 43, 0.04) 100%)',
+                borderColor: 'rgba(230, 193, 90, 0.35)',
+                boxShadow: '0 0 20px rgba(230, 193, 90, 0.08)',
+              }}
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-400/40 flex items-center justify-center shrink-0">
+                  <Crown className="w-4 h-4 text-amber-300 fill-amber-300" />
                 </div>
-
-                <span className="px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider bg-amber-400/20 text-amber-300 border border-amber-400/35 shrink-0">
-                  PRO
-                </span>
-              </div>
-            ) : (
-              <div className="w-full rounded-2xl p-3 sm:p-3.5 border border-white/10 bg-white/[0.03] flex items-center justify-between gap-3 text-left">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
-                    <Shield className="w-4 h-4 text-slate-400" />
-                  </div>
-                  <div className="min-w-0">
-                    <span className="font-hud font-bold text-xs tracking-wider uppercase text-slate-300">
-                      STANDARD SCHOLAR
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-hud font-bold text-xs tracking-wider uppercase text-amber-300">
+                      PRO SCHOLAR
                     </span>
-                    <p className="text-[11px] text-slate-400 truncate">
-                      Free Account
-                    </p>
+                    <FlairCrown frame="gold" size={12} strokeWidth={3.85} />
                   </div>
+                  <p className="text-[11px] font-mono text-amber-200/70 truncate">
+                    Verified Pro Membership · Active
+                  </p>
                 </div>
-
-                <span className="px-2 py-1 rounded-lg text-[10px] font-mono font-medium uppercase tracking-wider bg-white/5 text-slate-400 border border-white/10 shrink-0">
-                  FREE
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* Focus Metrics Grid: Total Hours & Daily Average Hours */}
-          <div className="grid grid-cols-2 gap-3 mt-4 relative z-10">
-            {/* Total Focus Hours Card */}
-            <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-3.5 flex flex-col justify-between text-left relative overflow-hidden group hover:border-amber-400/30 transition-colors">
-              <div className="flex items-center justify-between text-amber-400/90 mb-2">
-                <span className="text-[10px] font-hud font-bold tracking-wider uppercase text-slate-400">
-                  TOTAL FOCUS
-                </span>
-                <Clock className="w-4 h-4 text-amber-400" />
               </div>
 
-              {isLoadingStats ? (
-                <div className="animate-pulse space-y-1.5 my-1">
-                  <div className="h-6 bg-white/10 rounded w-20"></div>
-                  <div className="h-3 bg-white/5 rounded w-14"></div>
-                </div>
-              ) : (
-                <div>
-                  <div className="text-xl sm:text-2xl font-bold font-mono text-white tracking-tight">
-                    {totalStats.formatted}
-                  </div>
-                  <div className="text-[11px] font-mono text-amber-300/80 mt-0.5">
-                    {totalStats.decimalHours} total
-                  </div>
-                </div>
-              )}
-
-              <p className="text-[10px] text-slate-500 mt-2">
-                All-time study sessions logged
-              </p>
-            </div>
-
-            {/* Daily Average Focus Hours Card */}
-            <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-3.5 flex flex-col justify-between text-left relative overflow-hidden group hover:border-teal-400/30 transition-colors">
-              <div className="flex items-center justify-between text-teal-400/90 mb-2">
-                <span className="text-[10px] font-hud font-bold tracking-wider uppercase text-slate-400">
-                  DAILY AVERAGE
-                </span>
-                <Zap className="w-4 h-4 text-teal-400" />
-              </div>
-
-              {isLoadingStats ? (
-                <div className="animate-pulse space-y-1.5 my-1">
-                  <div className="h-6 bg-white/10 rounded w-20"></div>
-                  <div className="h-3 bg-white/5 rounded w-14"></div>
-                </div>
-              ) : (
-                <div>
-                  <div className="text-xl sm:text-2xl font-bold font-mono text-white tracking-tight">
-                    {avgStats.formatted}
-                  </div>
-                  <div className="text-[11px] font-mono text-teal-300/80 mt-0.5">
-                    {avgStats.decimalHours} / active day
-                  </div>
-                </div>
-              )}
-
-              <p className="text-[10px] text-slate-500 mt-2">
-                {activeStudyDays > 0 ? `Across ${activeStudyDays} study days` : 'Based on recorded focus'}
-              </p>
-            </div>
-          </div>
-
-          {/* Current Period / Season Snapshot Footer */}
-          {scholar.currentPeriodSeconds !== undefined && scholar.currentPeriodSeconds > 0 && (
-            <div className="mt-3.5 px-3.5 py-2.5 rounded-xl bg-white/[0.02] border border-white/5 flex items-center justify-between text-xs text-slate-300 relative z-10">
-              <span className="text-[11px] text-slate-400 font-mono">
-                {scholar.currentPeriodLabel || 'This Month'}:
+              <span className="px-2.5 py-1 rounded-md text-[10px] font-mono font-bold tracking-wider uppercase bg-amber-400/20 text-amber-300 border border-amber-400/40 shrink-0">
+                PRO ACTIVE
               </span>
-              <span className="font-mono font-bold text-amber-300">
-                {formatHoursMinutes(scholar.currentPeriodSeconds).formatted}
+            </div>
+          ) : (
+            <div className="p-3.5 rounded-xl border border-[var(--border)] bg-[var(--surface-2)]/40 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center shrink-0 text-[var(--text-dim)]">
+                  <Shield className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <span className="font-hud font-bold text-xs tracking-wider uppercase text-[var(--text)]">
+                    STANDARD SCHOLAR
+                  </span>
+                  <p className="text-[11px] font-mono text-[var(--text-dim)] truncate">
+                    Free Scholar Tier
+                  </p>
+                </div>
+              </div>
+
+              <span className="px-2.5 py-1 rounded-md text-[10px] font-mono font-medium tracking-wider uppercase bg-white/5 text-[var(--text-dim)] border border-[var(--border)] shrink-0">
+                STANDARD
               </span>
             </div>
           )}
-        </motion.div>
+
+          {/* 3. Focus Analytics Section */}
+          <div className="space-y-2.5">
+            <label className="text-[11px] font-mono uppercase tracking-wider text-[var(--text-dim)] flex items-center gap-1.5">
+              <span>Focus Analytics</span>
+            </label>
+
+            <div className="grid grid-cols-2 gap-3">
+              {/* Card 1: TOTAL FOCUS HOURS */}
+              <div className="p-4 rounded-xl bg-[var(--surface-2)]/70 border border-[var(--border)] flex flex-col justify-between hover:border-[var(--border-strong)] transition-all relative overflow-hidden group">
+                <div className="flex items-center justify-between text-amber-400 mb-2">
+                  <span className="text-[10px] font-hud font-bold tracking-wider uppercase text-[var(--text-dim)]">
+                    Total Focus Time
+                  </span>
+                  <Clock className="w-3.5 h-3.5" />
+                </div>
+
+                {isLoadingStats ? (
+                  <div className="animate-pulse space-y-1.5 my-1">
+                    <div className="h-7 bg-white/10 rounded w-24"></div>
+                    <div className="h-3.5 bg-white/5 rounded w-16"></div>
+                  </div>
+                ) : (
+                  <div>
+                    <div className="text-2xl sm:text-3xl font-mono font-bold text-[var(--text)] tracking-tight">
+                      {totalStats.formatted}
+                    </div>
+                    <div className="text-[11px] font-mono font-medium text-amber-400/90 mt-0.5">
+                      {totalStats.decimalHours} total
+                    </div>
+                  </div>
+                )}
+
+                <p className="text-[10px] text-[var(--text-faint)] font-mono mt-2">
+                  All-time focus logged
+                </p>
+              </div>
+
+              {/* Card 2: DAILY AVERAGE FOCUS */}
+              <div className="p-4 rounded-xl bg-[var(--surface-2)]/70 border border-[var(--border)] flex flex-col justify-between hover:border-[var(--border-strong)] transition-all relative overflow-hidden group">
+                <div className="flex items-center justify-between text-emerald-400 mb-2">
+                  <span className="text-[10px] font-hud font-bold tracking-wider uppercase text-[var(--text-dim)]">
+                    Daily Average
+                  </span>
+                  <Zap className="w-3.5 h-3.5" />
+                </div>
+
+                {isLoadingStats ? (
+                  <div className="animate-pulse space-y-1.5 my-1">
+                    <div className="h-7 bg-white/10 rounded w-24"></div>
+                    <div className="h-3.5 bg-white/5 rounded w-16"></div>
+                  </div>
+                ) : (
+                  <div>
+                    <div className="text-2xl sm:text-3xl font-mono font-bold text-[var(--text)] tracking-tight">
+                      {avgStats.formatted}
+                    </div>
+                    <div className="text-[11px] font-mono font-medium text-emerald-400/90 mt-0.5">
+                      {avgStats.decimalHours} / day
+                    </div>
+                  </div>
+                )}
+
+                <p className="text-[10px] text-[var(--text-faint)] font-mono mt-2">
+                  {activeStudyDays > 0 ? `Across ${activeStudyDays} study days` : 'Recorded focus history'}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* 4. Season & Activity Metric Bar */}
+          <div className="grid grid-cols-3 gap-2 p-3 rounded-xl bg-[var(--surface-2)]/40 border border-[var(--border)] text-center">
+            <div>
+              <p className="text-[9px] font-hud font-bold uppercase tracking-wider text-[var(--text-dim)]">
+                Season RP
+              </p>
+              <p className="text-xs font-mono font-bold text-[var(--text)] mt-0.5">
+                {seasonRp > 0 ? `${seasonRp.toLocaleString()} RP` : '0 RP'}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-[9px] font-hud font-bold uppercase tracking-wider text-[var(--text-dim)]">
+                Lifetime XP
+              </p>
+              <p className="text-xs font-mono font-bold text-[var(--text)] mt-0.5">
+                {lifetimeXp > 0 ? `${lifetimeXp.toLocaleString()} XP` : '0 XP'}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-[9px] font-hud font-bold uppercase tracking-wider text-[var(--text-dim)]">
+                {scholar.currentPeriodLabel || 'This Month'}
+              </p>
+              <p className="text-xs font-mono font-bold text-amber-400 mt-0.5">
+                {scholar.currentPeriodSeconds !== undefined && scholar.currentPeriodSeconds > 0
+                  ? formatHoursMinutes(scholar.currentPeriodSeconds).formatted
+                  : '0h 00m'}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Modal Footer */}
+        <div className="flex items-center justify-end p-4 sm:p-5 border-t border-[var(--border)] bg-[var(--surface-2)]/40 shrink-0">
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full sm:w-auto px-5 py-2 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] hover:bg-white/[0.08] text-xs font-hud font-bold tracking-wider uppercase text-[var(--text)] transition-colors cursor-pointer"
+          >
+            Close
+          </button>
+        </div>
       </div>
-    </AnimatePresence>,
+    </div>,
     document.body
   );
 }
