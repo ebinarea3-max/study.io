@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Clock, Zap, Crown, Flame, Shield, User, Trophy, Sparkles } from 'lucide-react';
+import { X, Clock, Zap, Flame, Shield } from 'lucide-react';
 import { getSupabase } from '../../lib/supabase';
 import { FlairCrown } from './FlairBadge';
 import { RankCrestBadge } from './RankCrestBadge';
@@ -201,8 +201,6 @@ export function ScholarProfileModal({
   const level = profileDetails.level ?? scholar?.level ?? 1;
   const streak = profileDetails.streakDays ?? scholar?.streakDays ?? 0;
   const rankTitle = profileDetails.rankTitle ?? scholar?.rankTitle ?? 'Silver I';
-  const seasonRp = profileDetails.seasonRp ?? scholar?.seasonRp ?? 0;
-  const lifetimeXp = profileDetails.xp ?? scholar?.lifetimeXp ?? 0;
 
   // Tier configuration
   const tierConfig: RankTier = useMemo(() => {
@@ -236,27 +234,15 @@ export function ScholarProfileModal({
         className="relative w-full max-w-lg rounded-2xl bg-[var(--surface)] border border-[var(--border)] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150 flex flex-col max-h-[92vh]"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Top Header Bar */}
+        {/* Top Header Bar - Clean title and handle without crown icon */}
         <div className="flex items-center justify-between p-4 sm:p-5 border-b border-[var(--border)] bg-[var(--surface-2)]/40 shrink-0">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border"
-              style={{
-                backgroundColor: verifiedPro ? 'rgba(230, 193, 90, 0.15)' : 'var(--surface)',
-                borderColor: verifiedPro ? 'rgba(230, 193, 90, 0.35)' : 'var(--border)',
-                color: verifiedPro ? '#E6C15A' : 'var(--text-dim)',
-              }}
-            >
-              {verifiedPro ? <Crown className="w-4 h-4" /> : <User className="w-4 h-4" />}
-            </div>
-            <div className="min-w-0">
-              <h3 className="text-base sm:text-lg font-hud font-bold tracking-wider uppercase text-[var(--text)] truncate">
-                Scholar Profile
-              </h3>
-              <p className="text-xs text-[var(--text-dim)] font-mono truncate">
-                @{handle}
-              </p>
-            </div>
+          <div className="min-w-0">
+            <h3 className="text-base sm:text-lg font-hud font-bold tracking-wider uppercase text-[var(--text)] truncate">
+              Scholar Profile
+            </h3>
+            <p className="text-xs text-[var(--text-dim)] font-mono truncate">
+              @{handle}
+            </p>
           </div>
 
           <button
@@ -276,7 +262,7 @@ export function ScholarProfileModal({
             {/* Subtle Tier Color Wash */}
             <div
               className="absolute -top-12 -right-12 w-36 h-36 rounded-full blur-2xl pointer-events-none opacity-15"
-              style={{ backgroundColor: verifiedPro ? '#E6C15A' : tierColor }}
+              style={{ backgroundColor: tierColor }}
             />
 
             {/* Avatar with Tier Ring */}
@@ -284,10 +270,8 @@ export function ScholarProfileModal({
               <div
                 className="w-16 h-16 rounded-full p-0.5 border-2 shadow-md flex items-center justify-center"
                 style={{
-                  borderColor: verifiedPro ? '#E6C15A' : tierColor,
-                  boxShadow: verifiedPro
-                    ? '0 0 16px rgba(230, 193, 90, 0.3)'
-                    : `0 0 12px ${tierColor}30`,
+                  borderColor: tierColor,
+                  boxShadow: `0 0 12px ${tierColor}30`,
                 }}
               >
                 {scholar.avatarUrl && !avatarError ? (
@@ -353,8 +337,8 @@ export function ScholarProfileModal({
                 </span>
 
                 {streak > 0 && (
-                  <span className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-mono font-semibold bg-amber-500/10 border border-amber-500/25 text-amber-400">
-                    <Flame className="w-2.5 h-2.5 fill-current" />
+                  <span className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-mono font-semibold bg-white/5 border border-white/10 text-white">
+                    <Flame className="w-2.5 h-2.5 fill-current text-white/80" />
                     {streak}d Streak
                   </span>
                 )}
@@ -362,43 +346,29 @@ export function ScholarProfileModal({
             </div>
           </div>
 
-          {/* 2. Membership Status Card (Pro vs Free) */}
+          {/* 2. Membership Status Card (Pro vs Free) - Clean Obsidian, No Yellow Colors & No Crown Icon */}
           {verifiedPro ? (
-            <div
-              className="p-3.5 rounded-xl border flex items-center justify-between gap-3 relative overflow-hidden"
-              style={{
-                background: 'linear-gradient(135deg, rgba(230, 193, 90, 0.12) 0%, rgba(184, 137, 43, 0.04) 100%)',
-                borderColor: 'rgba(230, 193, 90, 0.35)',
-                boxShadow: '0 0 20px rgba(230, 193, 90, 0.08)',
-              }}
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-400/40 flex items-center justify-center shrink-0">
-                  <Crown className="w-4 h-4 text-amber-300 fill-amber-300" />
+            <div className="p-3.5 rounded-xl border border-[var(--border)] bg-[var(--surface-2)]/70 flex items-center justify-between gap-3 shadow-sm">
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-hud font-bold text-xs tracking-wider uppercase text-[var(--text)]">
+                    PRO SCHOLAR
+                  </span>
+                  <FlairCrown frame="gold" size={13} strokeWidth={3.85} />
                 </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-hud font-bold text-xs tracking-wider uppercase text-amber-300">
-                      PRO SCHOLAR
-                    </span>
-                    <FlairCrown frame="gold" size={12} strokeWidth={3.85} />
-                  </div>
-                  <p className="text-[11px] font-mono text-amber-200/70 truncate">
-                    Verified Pro Membership · Active
-                  </p>
-                </div>
+                <p className="text-[11px] font-mono text-[var(--text-dim)] truncate mt-0.5">
+                  Verified Pro Membership · Active
+                </p>
               </div>
 
-              <span className="px-2.5 py-1 rounded-md text-[10px] font-mono font-bold tracking-wider uppercase bg-amber-400/20 text-amber-300 border border-amber-400/40 shrink-0">
+              <span className="px-2.5 py-1 rounded-md text-[10px] font-mono font-bold tracking-wider uppercase bg-white/10 text-[var(--text)] border border-white/20 shrink-0">
                 PRO ACTIVE
               </span>
             </div>
           ) : (
             <div className="p-3.5 rounded-xl border border-[var(--border)] bg-[var(--surface-2)]/40 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center shrink-0 text-[var(--text-dim)]">
-                  <Shield className="w-4 h-4" />
-                </div>
+              <div className="flex items-center gap-2.5 min-w-0">
+                <Shield className="w-4 h-4 text-[var(--text-dim)] shrink-0" />
                 <div className="min-w-0">
                   <span className="font-hud font-bold text-xs tracking-wider uppercase text-[var(--text)]">
                     STANDARD SCHOLAR
@@ -424,11 +394,11 @@ export function ScholarProfileModal({
             <div className="grid grid-cols-2 gap-3">
               {/* Card 1: TOTAL FOCUS HOURS */}
               <div className="p-4 rounded-xl bg-[var(--surface-2)]/70 border border-[var(--border)] flex flex-col justify-between hover:border-[var(--border-strong)] transition-all relative overflow-hidden group">
-                <div className="flex items-center justify-between text-amber-400 mb-2">
+                <div className="flex items-center justify-between text-[var(--text-dim)] mb-2">
                   <span className="text-[10px] font-hud font-bold tracking-wider uppercase text-[var(--text-dim)]">
                     Total Focus Time
                   </span>
-                  <Clock className="w-3.5 h-3.5" />
+                  <Clock className="w-3.5 h-3.5 text-white/70" />
                 </div>
 
                 {isLoadingStats ? (
@@ -441,7 +411,7 @@ export function ScholarProfileModal({
                     <div className="text-2xl sm:text-3xl font-mono font-bold text-[var(--text)] tracking-tight">
                       {totalStats.formatted}
                     </div>
-                    <div className="text-[11px] font-mono font-medium text-amber-400/90 mt-0.5">
+                    <div className="text-[11px] font-mono font-medium text-[var(--text-dim)] mt-0.5">
                       {totalStats.decimalHours} total
                     </div>
                   </div>
@@ -454,11 +424,11 @@ export function ScholarProfileModal({
 
               {/* Card 2: DAILY AVERAGE FOCUS */}
               <div className="p-4 rounded-xl bg-[var(--surface-2)]/70 border border-[var(--border)] flex flex-col justify-between hover:border-[var(--border-strong)] transition-all relative overflow-hidden group">
-                <div className="flex items-center justify-between text-emerald-400 mb-2">
+                <div className="flex items-center justify-between text-[var(--text-dim)] mb-2">
                   <span className="text-[10px] font-hud font-bold tracking-wider uppercase text-[var(--text-dim)]">
                     Daily Average
                   </span>
-                  <Zap className="w-3.5 h-3.5" />
+                  <Zap className="w-3.5 h-3.5 text-white/70" />
                 </div>
 
                 {isLoadingStats ? (
@@ -471,7 +441,7 @@ export function ScholarProfileModal({
                     <div className="text-2xl sm:text-3xl font-mono font-bold text-[var(--text)] tracking-tight">
                       {avgStats.formatted}
                     </div>
-                    <div className="text-[11px] font-mono font-medium text-emerald-400/90 mt-0.5">
+                    <div className="text-[11px] font-mono font-medium text-[var(--text-dim)] mt-0.5">
                       {avgStats.decimalHours} / day
                     </div>
                   </div>
@@ -481,38 +451,6 @@ export function ScholarProfileModal({
                   {activeStudyDays > 0 ? `Across ${activeStudyDays} study days` : 'Recorded focus history'}
                 </p>
               </div>
-            </div>
-          </div>
-
-          {/* 4. Season & Activity Metric Bar */}
-          <div className="grid grid-cols-3 gap-2 p-3 rounded-xl bg-[var(--surface-2)]/40 border border-[var(--border)] text-center">
-            <div>
-              <p className="text-[9px] font-hud font-bold uppercase tracking-wider text-[var(--text-dim)]">
-                Season RP
-              </p>
-              <p className="text-xs font-mono font-bold text-[var(--text)] mt-0.5">
-                {seasonRp > 0 ? `${seasonRp.toLocaleString()} RP` : '0 RP'}
-              </p>
-            </div>
-
-            <div>
-              <p className="text-[9px] font-hud font-bold uppercase tracking-wider text-[var(--text-dim)]">
-                Lifetime XP
-              </p>
-              <p className="text-xs font-mono font-bold text-[var(--text)] mt-0.5">
-                {lifetimeXp > 0 ? `${lifetimeXp.toLocaleString()} XP` : '0 XP'}
-              </p>
-            </div>
-
-            <div>
-              <p className="text-[9px] font-hud font-bold uppercase tracking-wider text-[var(--text-dim)]">
-                {scholar.currentPeriodLabel || 'This Month'}
-              </p>
-              <p className="text-xs font-mono font-bold text-amber-400 mt-0.5">
-                {scholar.currentPeriodSeconds !== undefined && scholar.currentPeriodSeconds > 0
-                  ? formatHoursMinutes(scholar.currentPeriodSeconds).formatted
-                  : '0h 00m'}
-              </p>
             </div>
           </div>
         </div>
