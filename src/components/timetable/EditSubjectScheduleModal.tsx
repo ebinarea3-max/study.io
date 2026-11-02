@@ -6,7 +6,7 @@ import { TimetableItem, DayOfWeek, TIMETABLE_COLOR_PRESETS, DAYS_OF_WEEK } from 
 import { useTimetable } from '../../context/TimetableContext';
 import { useStudy } from '../../context/StudyContext';
 import { Subject } from '../../types';
-import { X, Clock, Palette, BookOpen, Check } from 'lucide-react';
+import { X, Clock, BookOpen, Check } from 'lucide-react';
 
 interface EditSubjectScheduleModalProps {
   isOpen: boolean;
@@ -35,16 +35,6 @@ export function EditSubjectScheduleModal({
   const activeSubjects = useMemo(() => {
     return (Array.isArray(subjects) ? subjects : []).filter(s => s && !s.is_archived);
   }, [subjects]);
-
-  const displayColors = useMemo(() => {
-    if (
-      selectedColor &&
-      !TIMETABLE_COLOR_PRESETS.some(c => c.toLowerCase() === selectedColor.toLowerCase())
-    ) {
-      return [selectedColor, ...TIMETABLE_COLOR_PRESETS];
-    }
-    return TIMETABLE_COLOR_PRESETS;
-  }, [selectedColor]);
 
   useEffect(() => {
     setMounted(true);
@@ -146,7 +136,7 @@ export function EditSubjectScheduleModal({
                 {editingItem ? 'Edit Scheduled Subject' : 'Add Subject to Schedule'}
               </h3>
               <p className="text-xs text-[var(--text-dim)] font-mono">
-                Set study target and color for {DAYS_OF_WEEK.find(d => d.key === dayOfWeek)?.label}
+                Set study target for {DAYS_OF_WEEK.find(d => d.key === dayOfWeek)?.label}
               </p>
             </div>
           </div>
@@ -296,32 +286,6 @@ export function EditSubjectScheduleModal({
               <strong className="text-[var(--accent)]">
                 {targetHours}h {targetMinutes}m
               </strong>
-            </div>
-          </div>
-
-          {/* Color Tag Picker */}
-          <div className="space-y-1.5">
-            <label className="text-[11px] font-mono uppercase tracking-wider text-[var(--text-dim)] flex items-center gap-1.5">
-              <Palette className="w-3.5 h-3.5 text-[var(--accent)]" />
-              <span>Accent Color Tag:</span>
-            </label>
-            <div className="flex items-center gap-2 flex-wrap">
-              {displayColors.map(color => {
-                const isSelected = selectedColor.toLowerCase() === color.toLowerCase();
-                return (
-                  <button
-                    key={color}
-                    type="button"
-                    onClick={() => setSelectedColor(color)}
-                    className={`w-7 h-7 rounded-full flex items-center justify-center transition-all cursor-pointer hover:scale-110 active:scale-95 ${
-                      isSelected ? 'ring-2 ring-white ring-offset-2 ring-offset-black scale-110' : ''
-                    }`}
-                    style={{ backgroundColor: color }}
-                  >
-                    {isSelected && <Check className="w-3.5 h-3.5 text-black stroke-[3]" />}
-                  </button>
-                );
-              })}
             </div>
           </div>
 
