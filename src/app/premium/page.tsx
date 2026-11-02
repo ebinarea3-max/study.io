@@ -514,7 +514,7 @@ function ScholarCrownDemo() {
                       : 'none',
                   }}
                 >
-                  <Crown className="h-3.5 w-3.5 fill-current" />
+                  <Check className="h-3.5 w-3.5 stroke-[3]" />
                 </span>
               </div>
               <span className="text-[9px] font-mono text-white/40">
@@ -595,7 +595,7 @@ function HeroProductMockup({
             <div className="relative">
               <RankCrestBadge tier={tier} division={division} size={34} />
               <div className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#E6C15A] text-black">
-                <Crown className="h-2.5 w-2.5 fill-current" />
+                <Check className="h-2.5 w-2.5 stroke-[3]" />
               </div>
             </div>
             <div>
@@ -946,7 +946,7 @@ export default function PremiumPage() {
 
             {/* ROW 2: Scholar Crown (cols 9-12) */}
             <BentoCard
-              title="Scholar crown"
+              title="Verified scholar badge"
               caption="Shown beside your name everywhere."
               className="lg:col-span-4 min-h-[240px] sm:min-h-[260px]"
               isPremium={isPremium}

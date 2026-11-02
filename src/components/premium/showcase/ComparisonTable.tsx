@@ -51,8 +51,8 @@ const COMPARISON_DATA: ComparisonRow[] = [
     premium: '11 Themes (All Unlocked)',
   },
   {
-    feature: 'Verified Scholar Crown Badge',
-    description: 'Distinctive gold crown mark on navbar, study rooms, and leaderboards',
+    feature: 'Verified Scholar Badge',
+    description: 'Distinctive gold verified tick badge on navbar, study rooms, and leaderboards',
     free: false,
     premium: true,
   },

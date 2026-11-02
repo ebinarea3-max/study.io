@@ -18,6 +18,7 @@ import {
   CheckSquare,
   Users,
   Crown,
+  Check,
 } from 'lucide-react';
 import { usePremium } from '../../context/PremiumContext';
 import {
@@ -504,13 +505,13 @@ export function Navbar({
                   )}
                 </div>
 
-                {/* Online/Studying status or Premium Crown in DP's down right corner */}
+                {/* Online/Studying status or Premium Verified Tick in DP's down right corner */}
                 {isPremium ? (
                   <div
                     className="absolute -bottom-0.5 -right-0.5 z-20 flex items-center justify-center w-4 h-4 rounded-full bg-[#12131a] border border-[#E6C15A]/60 shadow-sm pointer-events-none"
-                    title="Premium Scholar"
+                    title="Verified Scholar"
                   >
-                    <Crown className="w-2.5 h-2.5 text-[#E6C15A] fill-[#E6C15A]" aria-hidden="true" />
+                    <Check className="w-2.5 h-2.5 text-[#E6C15A] stroke-[3.5]" aria-hidden="true" />
                   </div>
                 ) : (
                   <span
@@ -527,6 +528,11 @@ export function Navbar({
                   <div className="text-[13px] font-bold text-[var(--text)] leading-tight truncate block max-w-[130px]">
                     {displayName}
                   </div>
+                  {isPremium && (
+                    <span title="Verified Scholar" className="inline-flex items-center">
+                      <Check className="w-3 h-3 text-[#E6C15A] stroke-[3] shrink-0" aria-label="Verified Scholar" />
+                    </span>
+                  )}
                   {user?.username && (
                     <div className="text-[10px] text-[var(--text-dim)] font-mono truncate max-w-[80px]">
                       @{user.username}
@@ -560,9 +566,9 @@ export function Navbar({
                       <div className="font-bold text-sm text-[var(--text)] truncate flex items-center gap-1.5">
                         <span className="truncate">{displayName}</span>
                         {isPremium && (
-                          <span title="Premium Scholar" className="flex items-center flex-shrink-0">
-                            <Crown
-                              className="w-3.5 h-3.5 text-[#E6C15A] fill-[#E6C15A]"
+                          <span title="Verified Scholar" className="flex items-center flex-shrink-0">
+                            <Check
+                              className="w-3.5 h-3.5 text-[#E6C15A] stroke-[3]"
                               aria-hidden="true"
                             />
                           </span>

@@ -5,7 +5,7 @@ import {
   Flame,
   Home,
   MessageCircle,
-  Moon,
+  Pause,
   User as UserIcon,
   Send,
   Settings,
@@ -1629,7 +1629,13 @@ CREATE POLICY "Hosts can update their own study rooms"
                   className="flex flex-col items-center gap-2 group relative transition-all duration-300"
                 >
                   <div className="relative">
-                    <AvatarFlairRing frame={flairMap[u.user_id]} size={64}>
+                    <AvatarFlairRing
+                      frame={flairMap[u.user_id]}
+                      size={64}
+                      className={`transition-all duration-300 ${
+                        isStudying ? 'scale-105' : u.is_online ? 'opacity-95' : 'opacity-60 grayscale-[30%]'
+                      }`}
+                    >
                       <UserAvatar
                         src={u.avatar_url}
                         name={u.username}
@@ -1640,20 +1646,19 @@ CREATE POLICY "Hosts can update their own study rooms"
                             : isStudying
                             ? 'border-amber-500 shadow-[0_0_18px_rgba(245,158,11,0.55)] scale-105'
                             : u.is_online
-                            ? 'border-slate-500 opacity-90'
+                            ? 'border-amber-500/40 border-dashed opacity-95'
                             : 'border-slate-700/80 opacity-60'
                         }`}
                       />
                     </AvatarFlairRing>
 
-                    {/* Status Badge (only when resting/offline; fire icon removed when studying) */}
-                    {!isStudying && (
+                    {/* Premium Verified Tick on DP corner (no collision with status) */}
+                    {flairMap[u.user_id] && (
                       <div
-                        className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center border-2 border-[#07090e] shadow-md transition-colors ${
-                          u.is_online ? 'bg-slate-700' : 'bg-slate-800'
-                        }`}
+                        className="absolute -bottom-1 -right-1 z-20 flex items-center justify-center w-5 h-5 rounded-full bg-[#0a0d14] border border-amber-400/80 shadow-md pointer-events-none"
+                        title="Verified Scholar"
                       >
-                        <Moon className="w-3.5 h-3.5 text-slate-300" />
+                        <Check className="w-3 h-3 text-amber-400 stroke-[3]" />
                       </div>
                     )}
 
@@ -1730,22 +1735,28 @@ CREATE POLICY "Hosts can update their own study rooms"
                       {formatSeconds(totalFocusSec)}
                     </p>
 
-                    {/* Subtitle explaining state and session progress */}
-                    <span
-                      className={`text-[10px] font-medium tracking-tight mt-0.5 ${
-                        isStudying
-                          ? 'text-amber-400/90 font-semibold'
-                          : u.is_online
-                          ? 'text-slate-400'
-                          : 'text-slate-500'
-                      }`}
-                    >
+                    {/* Status badge explaining state and session progress */}
+                    <div className="mt-1 flex items-center justify-center">
                       {isStudying ? (
-                        <span>Studying ({formatSeconds(sessionSec)})</span>
+                        <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-amber-400">
+                          <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
+                          </span>
+                          <span>Focusing ({formatSeconds(sessionSec)})</span>
+                        </span>
+                      ) : u.is_online ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-300/90 px-2 py-0.5 rounded-full bg-amber-400/10 border border-amber-400/25 shadow-sm">
+                          <Pause className="w-2.5 h-2.5 fill-current" />
+                          <span>Paused</span>
+                        </span>
                       ) : (
-                        <span>Today • {u.is_online ? 'Paused' : 'Offline'}</span>
+                        <span className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-400 px-2 py-0.5 rounded-full bg-white/[0.04] border border-white/5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />
+                          <span>Offline</span>
+                        </span>
                       )}
-                    </span>
+                    </div>
                   </div>
                 </div>
               );

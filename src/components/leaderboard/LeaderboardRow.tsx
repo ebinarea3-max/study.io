@@ -287,11 +287,11 @@ export const LeaderboardRow = React.memo(function LeaderboardRow({
               </div>
             </AvatarFlairRing>
 
-            {/* Premium Crown Badge in DP's down right corner */}
+            {/* Premium Verified Tick Badge in DP's down right corner */}
             {flairFrame && (
               <div
                 className="absolute -bottom-1 -right-1 z-20 flex items-center justify-center w-4 h-4 rounded-full bg-[#12131a] border border-amber-400/60 shadow-md pointer-events-none"
-                title="Premium Scholar"
+                title="Verified Scholar"
               >
                 <FlairCrown frame={flairFrame} size={10} />
               </div>
@@ -304,6 +304,9 @@ export const LeaderboardRow = React.memo(function LeaderboardRow({
               <span className="font-semibold text-[var(--text)] text-sm sm:text-base truncate" title={displayName}>
                 {displayName}
               </span>
+              {flairFrame && (
+                <FlairCrown frame={flairFrame} size={13} />
+              )}
               {isCurrentUser && (
                 <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-amber-400/15 text-amber-300 border border-amber-400/30 shrink-0">
                   You

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Sparkles, Crown, User } from 'lucide-react';
+import { Sparkles, Crown, User, Check } from 'lucide-react';
 
 type FrameStyle = 'gold' | 'aurora' | 'ember';
 
@@ -120,7 +120,7 @@ export function DemoFlairTile() {
                     className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-[#E6C15A]/15 text-[#E6C15A] border border-[#E6C15A]/30 text-[9px] font-bold tracking-wider uppercase shrink-0"
                     title="Premium Scholar"
                   >
-                    <Crown className="w-2.5 h-2.5 fill-current" />
+                    <Check className="w-2.5 h-2.5 stroke-[3]" />
                     <span>PRO</span>
                   </span>
                 )}

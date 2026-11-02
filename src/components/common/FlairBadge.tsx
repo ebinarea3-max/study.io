@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { Crown } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { FlairFrame, FLAIR_FRAMES } from '../../lib/flair';
 
 export function AvatarFlairRing({
@@ -64,20 +64,23 @@ export function FlairCrown({
 }) {
   if (!frame) return null;
   const flairConfig = FLAIR_FRAMES[frame] || FLAIR_FRAMES.gold;
+  const tickColor = flairConfig.crownColor || flairConfig.starColor || '#E6C15A';
 
   return (
-    <Crown
+    <Check
       style={{
         width: size,
         height: size,
-        color: flairConfig.crownColor || flairConfig.starColor,
+        color: tickColor,
       }}
-      className={`fill-current shrink-0 inline drop-shadow-sm ${className}`}
-      aria-label={`${flairConfig.name} Pro Scholar`}
+      strokeWidth={3}
+      className={`shrink-0 inline drop-shadow-sm ${className}`}
+      aria-label={`${flairConfig.name} Verified Scholar`}
     />
   );
 }
 
-// Backwards compatibility alias for components importing FlairStar
+// Backwards compatibility aliases for components importing FlairStar or FlairVerifiedBadge
 export const FlairStar = FlairCrown;
-
+export const FlairVerifiedBadge = FlairCrown;
+export const FlairVerifiedTick = FlairCrown;
