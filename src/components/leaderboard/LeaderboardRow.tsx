@@ -257,35 +257,33 @@ export const LeaderboardRow = React.memo(function LeaderboardRow({
             )}
           </div>
 
-          {/* Avatar (40px ringed in tier colour or flair gradient) */}
+          {/* Avatar (40px ringed in tier colour) */}
           <div className="relative shrink-0 flex items-center justify-center">
-            <AvatarFlairRing frame={flairFrame} size={40}>
-              <div
-                className="w-10 h-10 rounded-full flex-shrink-0 relative overflow-hidden bg-[#0c0e14] flex items-center justify-center shadow-sm"
-                style={{
-                  border: flairFrame ? 'none' : `1.5px solid ${tierColor}`,
-                }}
-              >
-                {row.avatar_url && !avatarError ? (
-                  <img
-                    src={row.avatar_url}
-                    alt={displayName}
-                    className="w-full h-full object-cover rounded-full"
-                    referrerPolicy="no-referrer"
-                    onError={() => setAvatarError(true)}
-                  />
-                ) : (
-                  <div
-                    className="w-full h-full flex items-center justify-center font-mono font-bold text-xs text-white"
-                    style={{
-                      background: `linear-gradient(135deg, ${hexToRgba(tierColor, 0.7)} 0%, #18181b 100%)`,
-                    }}
-                  >
-                    {initialLetter}
-                  </div>
-                )}
-              </div>
-            </AvatarFlairRing>
+            <div
+              className="w-10 h-10 rounded-full flex-shrink-0 relative overflow-hidden bg-[#0c0e14] flex items-center justify-center shadow-sm"
+              style={{
+                border: `1.5px solid ${tierColor}`,
+              }}
+            >
+              {row.avatar_url && !avatarError ? (
+                <img
+                  src={row.avatar_url}
+                  alt={displayName}
+                  className="w-full h-full object-cover rounded-full"
+                  referrerPolicy="no-referrer"
+                  onError={() => setAvatarError(true)}
+                />
+              ) : (
+                <div
+                  className="w-full h-full flex items-center justify-center font-mono font-bold text-xs text-white"
+                  style={{
+                    background: `linear-gradient(135deg, ${hexToRgba(tierColor, 0.7)} 0%, #18181b 100%)`,
+                  }}
+                >
+                  {initialLetter}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Scholar Details */}

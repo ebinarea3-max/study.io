@@ -1629,28 +1629,18 @@ CREATE POLICY "Hosts can update their own study rooms"
                   className="flex flex-col items-center gap-2 group relative transition-all duration-300"
                 >
                   <div className="relative">
-                    <AvatarFlairRing
-                      frame={flairMap[u.user_id]}
+                    <UserAvatar
+                      src={u.avatar_url}
+                      name={u.username}
                       size={64}
-                      className={`transition-all duration-300 ${
-                        isStudying ? 'scale-105' : u.is_online ? 'opacity-95' : 'opacity-60 grayscale-[30%]'
+                      className={`border-2 transition-all duration-300 ${
+                        isStudying
+                          ? 'border-amber-500 shadow-[0_0_18px_rgba(245,158,11,0.55)] scale-105'
+                          : u.is_online
+                          ? 'border-amber-500/40 border-dashed opacity-95'
+                          : 'border-slate-700/80 opacity-60'
                       }`}
-                    >
-                      <UserAvatar
-                        src={u.avatar_url}
-                        name={u.username}
-                        size={64}
-                        className={`border-2 transition-all duration-300 ${
-                          flairMap[u.user_id]
-                            ? 'border-transparent'
-                            : isStudying
-                            ? 'border-amber-500 shadow-[0_0_18px_rgba(245,158,11,0.55)] scale-105'
-                            : u.is_online
-                            ? 'border-amber-500/40 border-dashed opacity-95'
-                            : 'border-slate-700/80 opacity-60'
-                        }`}
-                      />
-                    </AvatarFlairRing>
+                    />
 
 
 
@@ -1863,20 +1853,16 @@ CREATE POLICY "Hosts can update their own study rooms"
                           <div className={`flex gap-3 ${isMe ? 'flex-row-reverse' : ''} items-end max-w-[88%] sm:max-w-[75%]`}>
                             {/* Avatar */}
                             <div className="relative shrink-0">
-                              <AvatarFlairRing frame={flairMap[firstMsg.user_id]} size={36}>
-                                <UserAvatar
-                                  src={avatarUrl}
-                                  name={username}
-                                  size={36}
-                                  className={`rounded-full border transition-all ${
-                                    flairMap[firstMsg.user_id]
-                                      ? 'border-transparent'
-                                      : isStudying
-                                      ? 'border-amber-500 ring-2 ring-amber-500/30 shadow-[0_0_8px_rgba(245,158,11,0.4)]'
-                                      : 'border-white/10'
-                                  }`}
-                                />
-                              </AvatarFlairRing>
+                              <UserAvatar
+                                src={avatarUrl}
+                                name={username}
+                                size={36}
+                                className={`rounded-full border transition-all ${
+                                  isStudying
+                                    ? 'border-amber-500 ring-2 ring-amber-500/30 shadow-[0_0_8px_rgba(245,158,11,0.4)]'
+                                    : 'border-white/10'
+                                }`}
+                              />
                             </div>
 
                             {/* Bubble Stack */}
@@ -2369,16 +2355,12 @@ CREATE POLICY "Hosts can update their own study rooms"
                         className="flex items-center justify-between p-2.5 rounded-xl bg-black/40 border border-white/5 hover:border-white/10 transition-colors"
                       >
                         <div className="flex items-center gap-3 min-w-0">
-                          <AvatarFlairRing frame={flairMap[member.user_id]} size={32}>
-                            <UserAvatar
-                              src={member.avatar_url}
-                              name={member.username}
-                              size={32}
-                              className={`rounded-full border shrink-0 ${
-                                flairMap[member.user_id] ? 'border-transparent' : 'border-white/10'
-                              }`}
-                            />
-                          </AvatarFlairRing>
+                          <UserAvatar
+                            src={member.avatar_url}
+                            name={member.username}
+                            size={32}
+                            className="rounded-full border shrink-0 border-white/10"
+                          />
                           <div className="min-w-0">
                             <div className="flex items-center gap-1.5">
                               <div className="inline-flex items-center gap-1 min-w-0">
