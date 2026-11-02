@@ -2145,6 +2145,9 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
             // Update real streak, total study seconds, and evaluate official monthly Season RP
             const realStreak = calculateStreak(merged);
+            if (typeof window !== 'undefined' && realStreak > 0) {
+              try { localStorage.setItem('studypulse_cached_streak', String(realStreak)); } catch {}
+            }
             const realTotalSeconds = merged.reduce((sum, s) => sum + s.durationSeconds, 0);
             const liveStats = resolveLiveSeasonStats(userRef.current, merged);
             const currentSeasonRp = liveStats.seasonRp;
@@ -2364,6 +2367,9 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
         const sessionsToUse = finalMergedSessions.length > 0 ? finalMergedSessions : mappedSessions;
         const realStreak = calculateStreak(sessionsToUse);
+        if (typeof window !== 'undefined' && realStreak > 0) {
+          try { localStorage.setItem('studypulse_cached_streak', String(realStreak)); } catch {}
+        }
         const realTotalSeconds = sessionsToUse.reduce((sum, s) => sum + (s.durationSeconds || (s as any).duration_seconds || 0), 0);
         const liveStats = resolveLiveSeasonStats(currentUser, sessionsToUse);
         const currentSeasonRp = liveStats.seasonRp;
@@ -2398,6 +2404,9 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         if (localData.length > 0) {
           setSessions(prev => (prev.length === 0 ? localData : prev));
           const realStreak = calculateStreak(localData);
+          if (typeof window !== 'undefined' && realStreak > 0) {
+            try { localStorage.setItem('studypulse_cached_streak', String(realStreak)); } catch {}
+          }
           const realTotalSeconds = localData.reduce((sum, s) => sum + s.durationSeconds, 0);
           updateProfile({
             streakDays: realStreak,
@@ -2795,6 +2804,9 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       persistSessionsToLocalStorage(updated, uid);
 
       const realStreak = calculateStreak(updated);
+      if (typeof window !== 'undefined' && realStreak > 0) {
+        try { localStorage.setItem('studypulse_cached_streak', String(realStreak)); } catch {}
+      }
       const realTotalSeconds = updated.reduce((sum, s) => sum + s.durationSeconds, 0);
       updateProfile({
         streakDays: realStreak,

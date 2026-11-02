@@ -79,18 +79,34 @@ export function Navbar({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
+  const cachedStreak = useMemo(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return parseInt(localStorage.getItem('studypulse_cached_streak') || '0', 10) || 0;
+      } catch {}
+    }
+    return 0;
+  }, []);
+
   const sessionStreak = useMemo(() => {
     if (Array.isArray(sessions) && sessions.length > 0) {
-      return calculateStreak(sessions);
+      const s = calculateStreak(sessions);
+      if (typeof window !== 'undefined' && s > 0) {
+        try { localStorage.setItem('studypulse_cached_streak', String(s)); } catch {}
+      }
+      return s;
     }
     return 0;
   }, [sessions]);
 
-  const streakRef = useRef(Math.max(user?.streakDays ?? 0, sessionStreak));
+  const streakRef = useRef(Math.max(user?.streakDays ?? 0, sessionStreak, cachedStreak));
   if (user?.streakDays !== undefined && user.streakDays !== null && user.streakDays > 0) {
-    streakRef.current = Math.max(streakRef.current, user.streakDays, sessionStreak);
+    streakRef.current = Math.max(streakRef.current, user.streakDays, sessionStreak, cachedStreak);
   }
-  const displayStreak = Math.max(streakRef.current, user?.streakDays ?? 0, sessionStreak);
+  if (sessionStreak > 0) {
+    streakRef.current = Math.max(streakRef.current, sessionStreak);
+  }
+  const displayStreak = Math.max(streakRef.current, user?.streakDays ?? 0, sessionStreak, cachedStreak);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent | TouchEvent) {
@@ -566,7 +582,7 @@ export function Navbar({
                     </span>
                     <span className="text-amber-400 font-mono font-bold text-xs flex items-center gap-1">
                       <Flame className="w-3.5 h-3.5 fill-amber-400" />
-                      {user.streakDays}d
+                      {displayStreak}d
                     </span>
                   </div>
                 </div>

@@ -132,7 +132,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         durationSeconds: Number(s.duration_seconds || 0),
       })) as any;
       const computedStreak = calculateStreak(mappedDbSessions);
-      const resolvedStreak = Math.max(computedStreak, Number(profile?.streak_days ?? 0));
+      let localCachedStreak = 0;
+      if (typeof window !== 'undefined') {
+        try {
+          localCachedStreak = parseInt(localStorage.getItem('studypulse_cached_streak') || '0', 10) || 0;
+        } catch {}
+      }
+      const resolvedStreak = Math.max(computedStreak, Number(profile?.streak_days ?? 0), localCachedStreak);
 
       if (resolvedStreak > Number(profile?.streak_days ?? 0)) {
         needsRepair = true;
@@ -150,7 +156,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             updatePayload.season_rp = Math.round(calculatedRP);
             updatePayload.season_base_rp = carryoverRp;
             updatePayload.last_reset_month = currentMonthStr;
-            updatePayload.current_season_id = currentMonthStr;
             updatePayload.rank_title = effectiveRankTitle;
             updatePayload.current_rank = effectiveRankTitle;
             updatePayload.rank_badge = effectiveBadge;
@@ -185,6 +190,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (profile) {
         setUser(prev => {
+          const finalStreak = Math.max(resolvedStreak, Number(prev?.streakDays ?? 0), localCachedStreak);
+          if (typeof window !== 'undefined' && finalStreak > 0) {
+            try { localStorage.setItem('studypulse_cached_streak', String(finalStreak)); } catch {}
+          }
           const synced: UserProfile = {
             id: profile.id,
             email: authUser.email || prev.email || '',
@@ -193,13 +202,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             displayName: profile.username || profile.display_name || profile.name || prev.username || prev.displayName || (authUser.user_metadata?.custom_username as string) || cleanMetaName || 'Focus Scholar',
             avatarUrl: profile.avatar_url || prev.avatarUrl,
             dailyGoalHours: Number(profile.daily_goal_hours ?? prev.dailyGoalHours ?? 4.0),
-            streakDays: resolvedStreak,
+            streakDays: finalStreak,
             level: Number(profile.level ?? calculatedLevel),
             levelTitle: profile.level_title || calculatedTitle || prev.levelTitle,
             xp: currentLifetimeXP,
             lifetime_xp: currentLifetimeXP,
             lifetimeXp: currentLifetimeXP,
-            currentSeasonId: profile.current_season_id || prev.currentSeasonId || getCurrentSeasonId(),
+            currentSeasonId: prev.currentSeasonId || getCurrentSeasonId(),
             seasonRp: syncedRP,
             rp: syncedRP,
             rank_title: getRankTier(syncedRP).name.toUpperCase(),
@@ -274,7 +283,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             durationSeconds: Number(s.duration_seconds || 0),
           })) as any;
           const computedStreak = calculateStreak(mappedSess);
-          const resolvedStreak = Math.max(computedStreak, Number(data.streak_days ?? 0), Number(user.streakDays ?? 0));
+          let localCachedStreak = 0;
+          if (typeof window !== 'undefined') {
+            try {
+              localCachedStreak = parseInt(localStorage.getItem('studypulse_cached_streak') || '0', 10) || 0;
+            } catch {}
+          }
+          const resolvedStreak = Math.max(computedStreak, Number(data.streak_days ?? 0), Number(user?.streakDays ?? 0), localCachedStreak);
           if (resolvedStreak > Number(data.streak_days ?? 0)) {
             data.streak_days = resolvedStreak;
             try {
@@ -284,7 +299,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
           if (
             lastResetMonth !== currentMonthStr ||
-            data.current_season_id !== currentMonthStr ||
             Number(data.season_base_rp ?? 0) !== newStartingRP ||
             Number(data.season_rp ?? 0) !== resolvedSeasonRp
           ) {
@@ -295,7 +309,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 season_rp: resolvedSeasonRp,
                 season_base_rp: newStartingRP,
                 last_reset_month: lastResetMonth,
-                current_season_id: currentMonthStr,
                 rank_title: resolvedRankTitle,
                 rank_badge: newBadge,
                 current_rank: resolvedRankTitle,
@@ -308,7 +321,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             data.season_rp = resolvedSeasonRp;
             data.season_base_rp = newStartingRP;
             data.last_reset_month = lastResetMonth;
-            data.current_season_id = currentMonthStr;
             data.rank_title = resolvedRankTitle;
             data.rank_badge = newBadge;
             data.current_rank = resolvedRankTitle;
@@ -327,12 +339,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             } catch {}
           }
           setUser(prev => {
+            const finalStreak = Math.max(resolvedStreak, Number(prev?.streakDays ?? 0), localCachedStreak);
+            if (typeof window !== 'undefined' && finalStreak > 0) {
+              try { localStorage.setItem('studypulse_cached_streak', String(finalStreak)); } catch {}
+            }
             const updated = {
               ...prev,
               displayName: data.username || data.display_name || data.name || prev.username || prev.displayName,
               avatarUrl: data.avatar_url || prev.avatarUrl,
               dailyGoalHours: data.daily_goal_hours ?? prev.dailyGoalHours,
-              streakDays: resolvedStreak,
+              streakDays: finalStreak,
               level: data.level ?? prev.level,
               rp: resolvedSeasonRp,
               seasonRp: resolvedSeasonRp,
@@ -373,10 +389,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (savedAuth === 'true') {
         setIsAuthenticated(true);
       }
+      let cachedStreak = 0;
+      try {
+        cachedStreak = parseInt(localStorage.getItem('studypulse_cached_streak') || '0', 10) || 0;
+      } catch {}
       const saved = localStorage.getItem('studypulse_active_user');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed && typeof parsed === 'object') {
+          if (cachedStreak > 0) {
+            parsed.streakDays = Math.max(Number(parsed.streakDays || 0), cachedStreak);
+          }
           const live = resolveLiveSeasonStats(parsed, []);
           if (live.startingRp > 0) {
             parsed.season_base_rp = Math.max(Number(parsed.season_base_rp || 0), live.startingRp);
@@ -795,9 +818,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         if ((updates as any).last_season_rank !== undefined) {
           payload.last_season_rank = (updates as any).last_season_rank;
-        }
-        if ((updates as any).currentSeasonId !== undefined || (updates as any).current_season_id !== undefined) {
-          payload.current_season_id = (updates as any).currentSeasonId || (updates as any).current_season_id;
         }
         if ((updates as any).last_reset_month !== undefined) {
           payload.last_reset_month = (updates as any).last_reset_month;
