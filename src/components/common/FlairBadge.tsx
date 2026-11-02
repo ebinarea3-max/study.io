@@ -64,17 +64,16 @@ export function FlairCrown({
 }) {
   if (!frame) return null;
   const flairConfig = FLAIR_FRAMES[frame] || FLAIR_FRAMES.gold;
-  const tickColor = flairConfig.crownColor || flairConfig.starColor || '#E6C15A';
 
   return (
     <Check
       style={{
         width: size,
         height: size,
-        color: tickColor,
+        color: '#FFFFFF',
       }}
       strokeWidth={3}
-      className={`shrink-0 inline drop-shadow-sm ${className}`}
+      className={`shrink-0 inline text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] ${className}`}
       aria-label={`${flairConfig.name} Verified Scholar`}
     />
   );

@@ -120,7 +120,7 @@ export function DemoFlairTile() {
                     className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-[#E6C15A]/15 text-[#E6C15A] border border-[#E6C15A]/30 text-[9px] font-bold tracking-wider uppercase shrink-0"
                     title="Premium Scholar"
                   >
-                    <Check className="w-2.5 h-2.5 stroke-[3]" />
+                    <Check className="w-2.5 h-2.5 stroke-[3] text-white" />
                     <span>PRO</span>
                   </span>
                 )}

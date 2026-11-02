@@ -286,16 +286,6 @@ export const LeaderboardRow = React.memo(function LeaderboardRow({
                 )}
               </div>
             </AvatarFlairRing>
-
-            {/* Premium Verified Tick Badge in DP's down right corner */}
-            {flairFrame && (
-              <div
-                className="absolute -bottom-1 -right-1 z-20 flex items-center justify-center w-4 h-4 rounded-full bg-[#12131a] border border-amber-400/60 shadow-md pointer-events-none"
-                title="Verified Scholar"
-              >
-                <FlairCrown frame={flairFrame} size={10} />
-              </div>
-            )}
           </div>
 
           {/* Scholar Details */}

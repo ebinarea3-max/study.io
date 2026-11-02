@@ -1652,15 +1652,7 @@ CREATE POLICY "Hosts can update their own study rooms"
                       />
                     </AvatarFlairRing>
 
-                    {/* Premium Verified Tick on DP corner (no collision with status) */}
-                    {flairMap[u.user_id] && (
-                      <div
-                        className="absolute -bottom-1 -right-1 z-20 flex items-center justify-center w-5 h-5 rounded-full bg-[#0a0d14] border border-amber-400/80 shadow-md pointer-events-none"
-                        title="Verified Scholar"
-                      >
-                        <Check className="w-3 h-3 text-amber-400 stroke-[3]" />
-                      </div>
-                    )}
+
 
                     {/* Host 3-Dots Action Button on Hover */}
                     {isHost && !u.is_host && !u.is_current_user && (

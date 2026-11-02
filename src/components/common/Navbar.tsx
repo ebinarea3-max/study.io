@@ -505,21 +505,12 @@ export function Navbar({
                   )}
                 </div>
 
-                {/* Online/Studying status or Premium Verified Tick in DP's down right corner */}
-                {isPremium ? (
-                  <div
-                    className="absolute -bottom-0.5 -right-0.5 z-20 flex items-center justify-center w-4 h-4 rounded-full bg-[#12131a] border border-[#E6C15A]/60 shadow-sm pointer-events-none"
-                    title="Verified Scholar"
-                  >
-                    <Check className="w-2.5 h-2.5 text-[#E6C15A] stroke-[3.5]" aria-hidden="true" />
-                  </div>
-                ) : (
-                  <span
-                    className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[var(--surface)] ${
-                      isStudying ? 'bg-primary animate-pulse' : 'bg-slate-400 dark:bg-slate-500'
-                    }`}
-                  />
-                )}
+                {/* Online/Studying status in DP's down right corner */}
+                <span
+                  className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[var(--surface)] ${
+                    isStudying ? 'bg-primary animate-pulse' : 'bg-slate-400 dark:bg-slate-500'
+                  }`}
+                />
               </div>
 
               {/* User Identity & Level Display */}
@@ -530,7 +521,7 @@ export function Navbar({
                   </div>
                   {isPremium && (
                     <span title="Verified Scholar" className="inline-flex items-center">
-                      <Check className="w-3 h-3 text-[#E6C15A] stroke-[3] shrink-0" aria-label="Verified Scholar" />
+                      <Check className="w-3 h-3 text-white stroke-[3] shrink-0 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]" aria-label="Verified Scholar" />
                     </span>
                   )}
                   {user?.username && (
@@ -568,7 +559,7 @@ export function Navbar({
                         {isPremium && (
                           <span title="Verified Scholar" className="flex items-center flex-shrink-0">
                             <Check
-                              className="w-3.5 h-3.5 text-[#E6C15A] stroke-[3]"
+                              className="w-3.5 h-3.5 text-white stroke-[3] drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]"
                               aria-hidden="true"
                             />
                           </span>

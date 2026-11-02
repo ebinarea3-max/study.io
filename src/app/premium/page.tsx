@@ -505,12 +505,12 @@ function ScholarCrownDemo() {
                 </span>
                 {/* Gold Crown SVG drops in */}
                 <span
-                  className="inline-flex text-[#E6C15A] transition-all duration-500 ease-out"
+                  className="inline-flex text-white transition-all duration-500 ease-out"
                   style={{
                     transform: hasDropped ? 'translateY(0)' : 'translateY(-8px)',
                     opacity: hasDropped ? 1 : 0,
                     filter: hasDropped
-                      ? 'drop-shadow(0 0 6px rgba(230,193,90,0.8))'
+                      ? 'drop-shadow(0 0 6px rgba(255,255,255,0.8))'
                       : 'none',
                   }}
                 >
@@ -594,15 +594,13 @@ function HeroProductMockup({
           <div className="flex items-center gap-2.5">
             <div className="relative">
               <RankCrestBadge tier={tier} division={division} size={34} />
-              <div className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#E6C15A] text-black">
-                <Check className="h-2.5 w-2.5 stroke-[3]" />
-              </div>
             </div>
             <div>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1.5">
                 <span className="font-hud text-xs font-bold text-white">
                   Scholar Pro
                 </span>
+                <Check className="h-3.5 w-3.5 text-white stroke-[3] drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]" />
               </div>
               <span className="text-[9px] font-mono text-[#E6C15A]">
                 Gold Leaf Active
