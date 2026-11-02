@@ -294,7 +294,7 @@ export const LeaderboardRow = React.memo(function LeaderboardRow({
                   {displayName}
                 </span>
                 {flairFrame && (
-                  <FlairCrown frame={flairFrame} size={13} className="-ml-0.5" />
+                  <FlairCrown frame={flairFrame} size={14} className="-ml-0.5" />
                 )}
               </div>
               {isCurrentUser && (

@@ -1720,7 +1720,7 @@ CREATE POLICY "Hosts can update their own study rooms"
                           {u.username}
                         </p>
                         {flairMap[u.user_id] && (
-                          <FlairCrown frame={flairMap[u.user_id]} size={13} className="-ml-0.5" />
+                          <FlairCrown frame={flairMap[u.user_id]} size={13.5} className="-ml-0.5" />
                         )}
                       </div>
                       {u.is_host && (
@@ -1843,7 +1843,7 @@ CREATE POLICY "Hosts can update their own study rooms"
                                 {isMe ? 'YOU' : username}
                               </span>
                               {flairMap[firstMsg.user_id] && (
-                                <FlairCrown frame={flairMap[firstMsg.user_id]} size={11} className="-ml-0.5" />
+                                <FlairCrown frame={flairMap[firstMsg.user_id]} size={12} className="-ml-0.5" />
                               )}
                             </div>
                             {isHostUser && (
@@ -2390,7 +2390,7 @@ CREATE POLICY "Hosts can update their own study rooms"
                                   {member.username}
                                 </span>
                                 {flairMap[member.user_id] && (
-                                  <FlairCrown frame={flairMap[member.user_id]} size={12} className="-ml-0.5" />
+                                  <FlairCrown frame={flairMap[member.user_id]} size={13} className="-ml-0.5" />
                                 )}
                               </div>
                               {member.is_host && (

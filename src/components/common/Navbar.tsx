@@ -522,7 +522,7 @@ export function Navbar({
                     </span>
                     {isPremium && (
                       <span title="Verified Scholar" className="inline-flex items-center -ml-0.5">
-                        <Check className="w-3 h-3 text-white stroke-[3] shrink-0 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]" aria-label="Verified Scholar" />
+                        <Check className="w-3.5 h-3.5 text-white shrink-0 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]" strokeWidth={3.85} aria-label="Verified Scholar" />
                       </span>
                     )}
                   </div>
@@ -561,7 +561,8 @@ export function Navbar({
                         {isPremium && (
                           <span title="Verified Scholar" className="flex items-center flex-shrink-0">
                             <Check
-                              className="w-3.5 h-3.5 text-white stroke-[3] drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]"
+                              className="w-3.5 h-3.5 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]"
+                              strokeWidth={3.85}
                               aria-hidden="true"
                             />
                           </span>

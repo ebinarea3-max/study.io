@@ -19,10 +19,12 @@ export function FlairCrown({
   frame,
   className = '',
   size = 14,
+  strokeWidth = 3.85,
 }: {
   frame?: FlairFrame | null;
   className?: string;
   size?: number;
+  strokeWidth?: number;
 }) {
   if (!frame) return null;
   const flairConfig = FLAIR_FRAMES[frame] || FLAIR_FRAMES.gold;
@@ -34,7 +36,7 @@ export function FlairCrown({
         height: size,
         color: '#FFFFFF',
       }}
-      strokeWidth={3}
+      strokeWidth={strokeWidth}
       className={`shrink-0 inline text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] -ml-0.5 ${className}`}
       aria-label={`${flairConfig.name} Verified Scholar`}
     />
