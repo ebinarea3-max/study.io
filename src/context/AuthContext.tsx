@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode, useCallback } from 'react';
 import { UserProfile } from '../types';
-import { INITIAL_USER, cleanupLegacyDemoData } from '../lib/mockData';
+import { INITIAL_USER, cleanupLegacyDemoData, calculateStreak } from '../lib/mockData';
 import { getSupabase } from '../lib/supabase';
 import { getRankFromRp, getSoftResetRp, HARD_RESET_CAP_RP, calculateSeasonRp, getCurrentMonthFocusSeconds, getRankTier, resolveLiveSeasonStats } from '../lib/ranks';
 import { getCurrentSeasonId, resolveUserSeasonReset, getRankBadgePath } from '../lib/rankedSystem';
@@ -126,12 +126,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const calculatedLevel = getLevelFromLifetimeXP(currentLifetimeXP);
       const calculatedTitle = getScholarTitle(calculatedLevel);
 
+      const mappedDbSessions = (dbSessions || []).map((s: any) => ({
+        id: s.id,
+        startTime: s.started_at,
+        durationSeconds: Number(s.duration_seconds || 0),
+      })) as any;
+      const computedStreak = calculateStreak(mappedDbSessions);
+      const resolvedStreak = Math.max(computedStreak, Number(profile?.streak_days ?? 0));
+
+      if (resolvedStreak > Number(profile?.streak_days ?? 0)) {
+        needsRepair = true;
+      }
+
       if ((needsRepair || calculatedLevel > (profile?.level || 1)) && authUser.id && !authUser.id.startsWith('user-scholar')) {
         try {
           const updatePayload: any = { 
             level: Math.round(calculatedLevel), 
             lifetime_xp: Math.round(currentLifetimeXP),
-            xp: Math.round(currentLifetimeXP)
+            xp: Math.round(currentLifetimeXP),
+            streak_days: resolvedStreak,
           };
           if (needsRepair) {
             updatePayload.season_rp = Math.round(calculatedRP);
@@ -142,6 +155,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             updatePayload.current_rank = effectiveRankTitle;
             updatePayload.rank_badge = effectiveBadge;
             updatePayload.last_season_rank = userReset.previousRankTitle;
+            updatePayload.streak_days = resolvedStreak;
           }
           await supabase.from('profiles').update(updatePayload).eq('id', authUser.id);
 
@@ -179,7 +193,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             displayName: profile.username || profile.display_name || profile.name || prev.username || prev.displayName || (authUser.user_metadata?.custom_username as string) || cleanMetaName || 'Focus Scholar',
             avatarUrl: profile.avatar_url || prev.avatarUrl,
             dailyGoalHours: Number(profile.daily_goal_hours ?? prev.dailyGoalHours ?? 4.0),
-            streakDays: Number(profile.streak_days ?? prev.streakDays ?? 0),
+            streakDays: resolvedStreak,
             level: Number(profile.level ?? calculatedLevel),
             levelTitle: profile.level_title || calculatedTitle || prev.levelTitle,
             xp: currentLifetimeXP,
@@ -254,6 +268,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const newBadge = liveStats.rankTier.badge;
           let lastResetMonth = data.last_reset_month;
 
+          const mappedSess = (dbSessions || []).map((s: any) => ({
+            id: s.id,
+            startTime: s.started_at,
+            durationSeconds: Number(s.duration_seconds || 0),
+          })) as any;
+          const computedStreak = calculateStreak(mappedSess);
+          const resolvedStreak = Math.max(computedStreak, Number(data.streak_days ?? 0), Number(user.streakDays ?? 0));
+          if (resolvedStreak > Number(data.streak_days ?? 0)) {
+            data.streak_days = resolvedStreak;
+            try {
+              await supabase.from('profiles').update({ streak_days: resolvedStreak }).eq('id', user.id);
+            } catch {}
+          }
+
           if (
             lastResetMonth !== currentMonthStr ||
             data.current_season_id !== currentMonthStr ||
@@ -304,7 +332,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               displayName: data.username || data.display_name || data.name || prev.username || prev.displayName,
               avatarUrl: data.avatar_url || prev.avatarUrl,
               dailyGoalHours: data.daily_goal_hours ?? prev.dailyGoalHours,
-              streakDays: data.streak_days ?? prev.streakDays,
+              streakDays: resolvedStreak,
               level: data.level ?? prev.level,
               rp: resolvedSeasonRp,
               seasonRp: resolvedSeasonRp,
@@ -746,6 +774,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         if (updates.dailyGoalHours !== undefined) {
           payload.daily_goal_minutes = Math.round(Number(updates.dailyGoalHours) * 60);
+        }
+        if (updates.streakDays !== undefined || (updates as any).streak_days !== undefined) {
+          payload.streak_days = Math.max(0, Math.round(Number(updates.streakDays ?? (updates as any).streak_days)));
         }
         if (updates.seasonRp !== undefined || updates.rp !== undefined) {
           payload.season_rp = Math.round(Number(updates.seasonRp ?? updates.rp));

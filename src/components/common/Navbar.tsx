@@ -27,6 +27,7 @@ import {
 } from '../../lib/premium';
 
 import { Logo } from '../Logo';
+import { calculateStreak } from '../../lib/mockData';
 import { getRankTier, calculateSeasonRp, getCurrentMonthFocusSeconds, resolveLiveSeasonStats } from '../../lib/ranks';
 import { getTierBadge, getLevelTitle } from '../../lib/gamification';
 import { useRankTheme } from '../../hooks/useRankTheme';
@@ -78,11 +79,18 @@ export function Navbar({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const streakRef = useRef(user?.streakDays ?? 0);
-  if (user?.streakDays !== undefined && user.streakDays !== null) {
-    streakRef.current = user.streakDays;
+  const sessionStreak = useMemo(() => {
+    if (Array.isArray(sessions) && sessions.length > 0) {
+      return calculateStreak(sessions);
+    }
+    return 0;
+  }, [sessions]);
+
+  const streakRef = useRef(Math.max(user?.streakDays ?? 0, sessionStreak));
+  if (user?.streakDays !== undefined && user.streakDays !== null && user.streakDays > 0) {
+    streakRef.current = Math.max(streakRef.current, user.streakDays, sessionStreak);
   }
-  const displayStreak = user?.streakDays ?? streakRef.current ?? 0;
+  const displayStreak = Math.max(streakRef.current, user?.streakDays ?? 0, sessionStreak);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent | TouchEvent) {
