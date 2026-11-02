@@ -48,3 +48,35 @@ grant execute on function public.get_flair(uuid[]) to authenticated, anon;
 
 revoke all on function public.get_flair(text[]) from public;
 grant execute on function public.get_flair(text[]) to authenticated, anon;
+
+-- 5. Ensure 'wren' (and any premium scholar) has an active verified subscription
+-- This activates / refreshes wren's active subscription in public.subscriptions
+insert into public.subscriptions (user_id, status, plan, premium_until, updated_at)
+select id, 'active', 'yearly', now() + interval '10 years', now()
+from public.profiles
+where username = 'wren' or lower(name) = 'wren'
+on conflict (user_id) do update set
+  status = 'active',
+  premium_until = greatest(coalesce(public.subscriptions.premium_until, now()), now() + interval '10 years'),
+  updated_at = now();
+
+-- 6. Ensure profile_flair badge is enabled for wren
+insert into public.profile_flair (user_id, frame, show_badge, updated_at)
+select id, 'gold', true, now()
+from public.profiles
+where username = 'wren' or lower(name) = 'wren'
+on conflict (user_id) do update set
+  show_badge = true,
+  updated_at = now();
+
+-- 7. Verification: Run this query to verify both accounts show active verified premium
+select
+  p.id,
+  p.username,
+  p.name,
+  s.status as subscription_status,
+  s.premium_until,
+  (s.status in ('active', 'trialing') or (s.premium_until is not null and s.premium_until > now())) as is_verified_premium
+from public.profiles p
+left join public.subscriptions s on s.user_id = p.id
+where p.username in ('wren', 'trial') or lower(p.name) in ('wren', 'trial');

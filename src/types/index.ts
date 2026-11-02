@@ -213,6 +213,8 @@ export type LeaderboardEntry = {
   rank_title: string;
   total_seconds: number;
   is_current_user?: boolean;
+  is_premium?: boolean;
+  flair_frame?: string | null;
 };
 
 export * from './timetable';

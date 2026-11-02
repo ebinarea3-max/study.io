@@ -98,13 +98,14 @@ export async function fetchFlairMap(userIds: string[]): Promise<Record<string, F
       console.warn('[Flair] get_flair exception:', rpcErr);
     }
 
-    // 3. Direct fallback to public.subscriptions if RPC failed or returned 0 entries
-    if (!rpcWorked || Object.keys(map).length === 0) {
+    // 3. Resilient fallback to public.subscriptions for any user IDs not resolved via get_flair
+    const missingUids = validUids.filter((uid) => !map[uid]);
+    if (missingUids.length > 0) {
       try {
         const { data: subRows, error: subError } = await supabase
           .from('subscriptions')
           .select('user_id, status, premium_until')
-          .in('user_id', validUids);
+          .in('user_id', missingUids);
 
         if (!subError && subRows && Array.isArray(subRows)) {
           const now = Date.now();

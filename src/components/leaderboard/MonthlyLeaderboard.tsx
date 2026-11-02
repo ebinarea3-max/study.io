@@ -434,6 +434,8 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                 rank_title: String(computedRank).toUpperCase(),
                 total_seconds: Number(row.total_seconds || 0),
                 is_current_user: isMe,
+                is_premium: Boolean(row.is_premium),
+                flair_frame: row.flair_frame || (row.is_premium ? 'gold' : null),
               };
             });
           } else if (res.error) {
@@ -948,7 +950,7 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                         myRowRef={isCurrentUser ? myRowRef : undefined}
                         index={idx}
                         shouldReduceMotion={shouldReduceMotion}
-                        flairFrame={flairMap[row.user_id]}
+                        flairFrame={flairMap[row.user_id] || (row.is_premium ? 'gold' : null)}
                       />
                     );
                   })}

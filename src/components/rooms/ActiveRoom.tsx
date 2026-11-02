@@ -395,6 +395,8 @@ CREATE POLICY "Hosts can update their own study rooms"
             base_session_seconds: effectiveBaseSession,
             base_today_seconds: baseToday,
             today_seconds: todayTotal,
+              is_premium: isPremium,
+              flair_frame: isPremium ? 'gold' : null,
             last_seen: now,
           },
         };
@@ -417,6 +419,8 @@ CREATE POLICY "Hosts can update their own study rooms"
       session_seconds: elapsed,
       base_today_seconds: baseToday,
       today_seconds: todayTotal,
+              is_premium: isPremium,
+              flair_frame: isPremium ? 'gold' : null,
       timestamp: Date.now(),
     };
 
@@ -786,6 +790,13 @@ CREATE POLICY "Hosts can update their own study rooms"
       const flat = Object.values(state).flat();
       setPresentUsers(flat);
 
+      // Merge real-time presence flair for room members
+      for (const p of flat as any[]) {
+        if (p?.user_id && (p.is_premium || p.flair_frame)) {
+          setFlairMap((prev) => (prev[p.user_id] ? prev : { ...prev, [p.user_id]: p.flair_frame || 'gold' }));
+        }
+      }
+
       const now = Date.now();
       setLiveFocusMap((prev) => {
         let updated = { ...prev };
@@ -854,6 +865,8 @@ CREATE POLICY "Hosts can update their own study rooms"
               elapsed_seconds: elapsed,
               base_today_seconds: baseToday,
               today_seconds: todayTotal,
+              is_premium: isPremium,
+              flair_frame: isPremium ? 'gold' : null,
             });
           } catch (err) {
             console.error('Initial presence track error:', err);
@@ -930,6 +943,8 @@ CREATE POLICY "Hosts can update their own study rooms"
           elapsed_seconds: elapsed,
           base_today_seconds: baseToday,
           today_seconds: todayTotal,
+              is_premium: isPremium,
+              flair_frame: isPremium ? 'gold' : null,
         });
       } catch (err) {
         console.error('Tracking error:', err);
@@ -1373,6 +1388,11 @@ CREATE POLICY "Hosts can update their own study rooms"
         if (active) {
           if (isPremium && user?.id) {
             map[user.id] = map[user.id] || 'gold';
+          }
+          for (const pu of presentUsers as any[]) {
+            if (pu?.user_id && (pu.is_premium || pu.flair_frame)) {
+              map[pu.user_id] = map[pu.user_id] || pu.flair_frame || 'gold';
+            }
           }
           setFlairMap(map);
         }
