@@ -76,6 +76,7 @@ interface LeaderboardRowProps {
   index: number;
   shouldReduceMotion?: boolean;
   flairFrame?: FlairFrame | null;
+  onSelectScholar?: (row: LeaderboardEntry) => void;
 }
 
 export const LeaderboardRow = React.memo(function LeaderboardRow({
@@ -90,6 +91,7 @@ export const LeaderboardRow = React.memo(function LeaderboardRow({
   index,
   shouldReduceMotion = false,
   flairFrame,
+  onSelectScholar,
 }: LeaderboardRowProps) {
   const [avatarError, setAvatarError] = useState(false);
 
@@ -154,7 +156,10 @@ export const LeaderboardRow = React.memo(function LeaderboardRow({
       initial={shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ type: 'tween', duration: 0.25, ease: 'easeOut', delay: staggerDelay }}
-      className={`relative w-full overflow-hidden transition-colors duration-150 flex items-center justify-between px-4 sm:px-6 cursor-default border-l-2 ${
+      onClick={() => onSelectScholar?.(row)}
+      role="button"
+      tabIndex={0}
+      className={`relative w-full overflow-hidden transition-all duration-150 flex items-center justify-between px-4 sm:px-6 cursor-pointer select-none active:scale-[0.998] border-l-2 ${
         isTop3 ? 'min-h-[72px] py-3.5' : 'min-h-[60px] py-2.5'
       } ${
         isCurrentUser

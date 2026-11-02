@@ -18,6 +18,7 @@ import Link from 'next/link';
 import { motion, useReducedMotion } from 'framer-motion';
 import { LeaderboardRow } from './LeaderboardRow';
 import { FlairFrame, fetchFlairMap } from '../../lib/flair';
+import { ScholarProfileModal, ScholarModalData } from '../common/ScholarProfileModal';
 export function formatStudyTime(totalSeconds: number): string {
   const safeSeconds = Math.max(0, Math.round(totalSeconds || 0));
   const hours = Math.floor(safeSeconds / 3600);
@@ -257,6 +258,7 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
   const [animationKey, setAnimationKey] = useState<number>(0);
   const [hasSeenRecap, setHasSeenRecap] = useState<boolean | null>(null);
   const [isOpeningRecap, setIsOpeningRecap] = useState<boolean>(false);
+  const [selectedScholar, setSelectedScholar] = useState<ScholarModalData | null>(null);
 
   const checkIsUnlocked = useCallback(() => {
     if (typeof window === 'undefined') return true;
@@ -951,6 +953,24 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
                         index={idx}
                         shouldReduceMotion={shouldReduceMotion}
                         flairFrame={flairMap[row.user_id] || (row.is_premium ? 'gold' : null)}
+                        onSelectScholar={(selectedRow) => {
+                          const isMe = checkIsCurrentUser(selectedRow);
+                          const isPro = Boolean(flairMap[selectedRow.user_id] || selectedRow.is_premium || (isMe && isPremium));
+                          setSelectedScholar({
+                            userId: String(selectedRow.user_id),
+                            name: selectedRow.name,
+                            displayName: selectedRow.display_name,
+                            username: selectedRow.username,
+                            avatarUrl: selectedRow.avatar_url,
+                            level: selectedRow.level,
+                            lifetimeXp: selectedRow.lifetime_xp,
+                            rankTitle: selectedRow.rank_title,
+                            isPro,
+                            flairFrame: isPro ? (flairMap[selectedRow.user_id] || 'gold') : null,
+                            currentPeriodSeconds: selectedRow.total_seconds,
+                            currentPeriodLabel: timeframe === 'month' ? 'This Month' : timeframe === 'week' ? 'This Week' : timeframe === 'today' ? 'Today' : 'All Time',
+                          });
+                        }}
                       />
                     );
                   })}
@@ -960,6 +980,13 @@ export function MonthlyLeaderboard({ isEmbedded = false, isActiveTab = true }: M
           </div>
         )}
       </div>
+      {/* Scholar Profile & Stats Inspection Modal */}
+      <ScholarProfileModal
+        scholar={selectedScholar}
+        isOpen={Boolean(selectedScholar)}
+        onClose={() => setSelectedScholar(null)}
+        currentUserSessions={sessions}
+      />
     </div>
   );
 }

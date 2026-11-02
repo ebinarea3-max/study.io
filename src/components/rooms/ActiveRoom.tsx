@@ -37,6 +37,7 @@ import toast from 'react-hot-toast';
 import { UserAvatar } from '../common/UserAvatar';
 import { FlairFrame, fetchFlairMap } from '../../lib/flair';
 import { AvatarFlairRing, FlairCrown } from '../common/FlairBadge';
+import { ScholarProfileModal, ScholarModalData } from '../common/ScholarProfileModal';
 import { getSupabase, broadcast } from '../../lib/supabase';
 import {
   updateRoomSettingsAction,
@@ -186,6 +187,27 @@ export default function ActiveRoom({ roomId, onBack, initialTab }: ActiveRoomPro
 
   // Premium flair for room members
   const [flairMap, setFlairMap] = useState<Record<string, FlairFrame>>({});
+
+  // Scholar profile modal state
+  const [selectedScholar, setSelectedScholar] = useState<ScholarModalData | null>(null);
+
+  const handleOpenScholarModal = (u: any) => {
+    if (!u || !u.user_id) return;
+    const isMe = u.user_id === user?.id;
+    const isPro = Boolean(flairMap[u.user_id] || (isMe && isPremium));
+    setSelectedScholar({
+      userId: String(u.user_id),
+      name: u.username || u.name,
+      displayName: u.username || u.name,
+      username: u.username,
+      avatarUrl: u.avatar_url,
+      level: u.level,
+      isPro,
+      flairFrame: isPro ? (flairMap[u.user_id] || 'gold') : null,
+      currentPeriodSeconds: u.total_focus_seconds || u.today_seconds,
+      currentPeriodLabel: 'Today in Room',
+    });
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -1648,7 +1670,10 @@ CREATE POLICY "Hosts can update their own study rooms"
               return (
                 <div
                   key={u.user_id}
-                  className="flex flex-col items-center gap-2 group relative transition-all duration-300"
+                  onClick={() => handleOpenScholarModal(u)}
+                  role="button"
+                  tabIndex={0}
+                  className="flex flex-col items-center gap-2 group relative transition-all duration-300 cursor-pointer hover:scale-105 active:scale-95 select-none"
                 >
                   <div className="relative">
                     <UserAvatar
@@ -2374,7 +2399,10 @@ CREATE POLICY "Hosts can update their own study rooms"
                     {displayUsers.map((member) => (
                       <div
                         key={member.user_id}
-                        className="flex items-center justify-between p-2.5 rounded-xl bg-black/40 border border-white/5 hover:border-white/10 transition-colors"
+                        onClick={() => handleOpenScholarModal(member)}
+                        role="button"
+                        tabIndex={0}
+                        className="flex items-center justify-between p-2.5 rounded-xl bg-black/40 border border-white/5 hover:border-amber-400/40 hover:bg-black/70 transition-all cursor-pointer"
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           <UserAvatar
@@ -2408,7 +2436,7 @@ CREATE POLICY "Hosts can update their own study rooms"
                         {!member.is_host && (
                           <button
                             type="button"
-                            onClick={() => setMemberToBan({ userId: member.user_id, username: member.username })}
+                            onClick={(e) => { e.stopPropagation(); setMemberToBan({ userId: member.user_id, username: member.username }); }}
                             className="px-3 py-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 hover:border-rose-500/60 text-rose-400 text-xs font-hud font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 shrink-0 active:scale-95"
                           >
                             <Ban className="w-3.5 h-3.5" />
@@ -2595,6 +2623,13 @@ CREATE POLICY "Hosts can update their own study rooms"
         </div>,
         document.body
       )}
+
+      {/* Scholar Profile & Stats Inspection Modal */}
+      <ScholarProfileModal
+        scholar={selectedScholar}
+        isOpen={Boolean(selectedScholar)}
+        onClose={() => setSelectedScholar(null)}
+      />
     </div>
   );
 }
