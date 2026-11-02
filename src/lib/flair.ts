@@ -46,8 +46,12 @@ export const FLAIR_FRAMES: Record<FlairFrame, FlairConfig> = {
   },
 };
 
+// In-memory cache for resolved flair map entries to avoid redundant queries across tab switches
+const flairMemoryCache: Record<string, FlairFrame> = {};
+
 /**
- * Fetch flair frames for an array of user IDs via security definer RPC get_flair.
+ * Fetch flair frames for an array of user IDs via security definer RPC get_flair,
+ * with a resilient direct query fallback on public.subscriptions.
  * Never throws — returns empty map on any error or offline state.
  */
 export async function fetchFlairMap(userIds: string[]): Promise<Record<string, FlairFrame>> {
@@ -59,24 +63,65 @@ export async function fetchFlairMap(userIds: string[]): Promise<Record<string, F
 
     const isUuid = (id: string) =>
       typeof id === 'string' &&
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id.trim());
 
-    const validUids = Array.from(new Set(userIds.filter(isUuid))).slice(0, 100);
+    const validUids = Array.from(new Set(userIds.map((u) => String(u).trim()).filter(isUuid))).slice(0, 100);
     if (validUids.length === 0) return {};
 
-    const { data, error } = await supabase.rpc('get_flair', { p_user_ids: validUids });
-
-    if (error || !Array.isArray(data)) {
-      if (error) console.warn('[Flair] get_flair notice:', error.message);
-      return {};
-    }
-
     const map: Record<string, FlairFrame> = {};
-    for (const row of data) {
-      if (row?.user_id) {
-        map[row.user_id] = (row.frame as FlairFrame) || 'gold';
+
+    // 1. Populate from memory cache first if available
+    for (const uid of validUids) {
+      if (flairMemoryCache[uid]) {
+        map[uid] = flairMemoryCache[uid];
       }
     }
+
+    // 2. Try get_flair RPC (Primary path)
+    let rpcWorked = false;
+    try {
+      const { data, error } = await supabase.rpc('get_flair', { p_user_ids: validUids });
+
+      if (!error && Array.isArray(data)) {
+        rpcWorked = true;
+        for (const row of data) {
+          if (row?.user_id) {
+            const frame = (row.frame as FlairFrame) || 'gold';
+            map[row.user_id] = frame;
+            flairMemoryCache[row.user_id] = frame;
+          }
+        }
+      } else if (error) {
+        console.warn('[Flair] get_flair notice:', error.message);
+      }
+    } catch (rpcErr) {
+      console.warn('[Flair] get_flair exception:', rpcErr);
+    }
+
+    // 3. Direct fallback to public.subscriptions if RPC failed or returned 0 entries
+    if (!rpcWorked || Object.keys(map).length === 0) {
+      try {
+        const { data: subRows, error: subError } = await supabase
+          .from('subscriptions')
+          .select('user_id, status, premium_until')
+          .in('user_id', validUids);
+
+        if (!subError && subRows && Array.isArray(subRows)) {
+          const now = Date.now();
+          for (const s of subRows) {
+            const isUntilValid = s.premium_until && new Date(s.premium_until).getTime() > now;
+            const isStatusActive = s.status === 'active' || s.status === 'trialing';
+            if ((isUntilValid || isStatusActive) && s.user_id) {
+              map[s.user_id] = 'gold';
+              flairMemoryCache[s.user_id] = 'gold';
+            }
+          }
+        }
+      } catch (subErr) {
+        // Silently ignore fallback failure
+      }
+    }
+
     return map;
   } catch (err) {
     console.warn('[Flair] fetchFlairMap error:', err);

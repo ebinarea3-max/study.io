@@ -1358,9 +1358,11 @@ CREATE POLICY "Hosts can update their own study rooms"
     roomInfo?.host_id,
   ]);
 
-  // Batch-fetch flair for visible room members
+  // Batch-fetch flair for visible room members and chat participants
   useEffect(() => {
-    const uids = displayUsers.map((u) => u.user_id).filter(Boolean);
+    const memberUids = displayUsers.map((u) => u.user_id);
+    const chatUids = messages.map((m) => m.user_id);
+    const uids = Array.from(new Set([...memberUids, ...chatUids])).filter(Boolean);
     if (uids.length === 0) {
       setFlairMap({});
       return;
