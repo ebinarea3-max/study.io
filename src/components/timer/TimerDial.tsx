@@ -185,7 +185,9 @@ export const TimerDial = React.memo(function TimerDial({
         <div className="flex items-center justify-center gap-1.5 mt-2">
           <span
             className={`w-1.5 h-1.5 rounded-full ${
-              isRunning && !shouldReduceMotion
+              statusText === 'Completed'
+                ? 'bg-emerald-400 shadow-[0_0_8px_#34d399]'
+                : isRunning && !shouldReduceMotion
                 ? 'timer-status-pulse bg-emerald-400'
                 : isPaused
                 ? 'bg-amber-400'

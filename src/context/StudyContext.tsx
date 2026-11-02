@@ -1409,6 +1409,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem('studyio_timer_mode');
       localStorage.removeItem('studyio_timer_countdown_target');
       localStorage.removeItem('studyio_timer_pomodoro_phase');
+      localStorage.removeItem('studyio_timer_countdown_completed');
       
       // KILL THE ZOMBIE: Aggressively clear any fallback/legacy keys that might resurrect the timer
       localStorage.removeItem('timer-start-time');

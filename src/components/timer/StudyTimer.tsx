@@ -166,6 +166,14 @@ export function StudyTimer() {
   const [isSaving, setIsSaving] = useState(false);
   const [showRecoveryBanner, setShowRecoveryBanner] = useState(false);
   const [subjectWarning, setSubjectWarning] = useState(false);
+  const [isCountdownCompleted, setIsCountdownCompleted] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return localStorage.getItem('studyio_timer_countdown_completed') === 'true';
+      } catch {}
+    }
+    return false;
+  });
 
   // Safe handler to open Subject Manager / Add Subject
   const handleOpenSubjectManager = useCallback((e?: React.MouseEvent) => {
@@ -203,6 +211,10 @@ export function StudyTimer() {
 
   // Streamlined control handlers cleanly controlling synchronized StudyContext timer engine
   const handleStartSession = useCallback(() => {
+    setIsCountdownCompleted(false);
+    try {
+      localStorage.removeItem('studyio_timer_countdown_completed');
+    } catch {}
     const activeSub =
       activeSubjectRef.current ||
       selectedSubject ||
@@ -234,18 +246,26 @@ export function StudyTimer() {
   }, [resumeTimer]);
 
   const handleReset = useCallback(() => {
+    setIsCountdownCompleted(false);
+    try {
+      localStorage.removeItem('studyio_timer_countdown_completed');
+    } catch {}
     resetTimer();
     clearPersistedTimer();
     setShowRecoveryBanner(false);
   }, [resetTimer, clearPersistedTimer]);
 
-  const handleStopAndSave = useCallback(async () => {
+  const handleStopAndSave = useCallback(async (durationOverride?: number | React.MouseEvent) => {
     if (isSaving) return;
 
     // 1. Prevent race conditions: Capture exact real-time duration BEFORE mutating any state or resetting timer display
-    const seconds = isRunning && startTimeRef?.current
+    const rawSeconds = isRunning && startTimeRef?.current
       ? Math.max(elapsedSeconds, Math.floor((Date.now() - startTimeRef.current) / 1000))
       : elapsedSeconds;
+
+    const seconds = typeof durationOverride === 'number'
+      ? durationOverride
+      : (isCountdownCompleted && countdownTarget > 0 ? countdownTarget : rawSeconds);
 
     // Direct, fresh capture of active subject via ref and state/storage
     let activeSubject =
@@ -505,6 +525,10 @@ export function StudyTimer() {
       // Reset and stop active timer engine (syncs stopped to all devices)
       resetTimer();
       clearPersistedTimer();
+      setIsCountdownCompleted(false);
+      try {
+        localStorage.removeItem('studyio_timer_countdown_completed');
+      } catch {}
       setShowRecoveryBanner(false);
 
       // Explicitly ensure active_sessions is cleared from Supabase
@@ -552,6 +576,8 @@ export function StudyTimer() {
     isPremium,
     checkGoalReached,
     refreshGoals,
+    isCountdownCompleted,
+    countdownTarget,
   ]);
 
   // Check if daily focus goal is reached while timer is running
@@ -616,7 +642,9 @@ export function StudyTimer() {
           }
 
           restoreTimerSession(savedSeconds, validatedMode, savedSubject);
-          setShowRecoveryBanner(true);
+          if (localStorage.getItem('studyio_timer_countdown_completed') !== 'true') {
+            setShowRecoveryBanner(true);
+          }
         }
       }
     } catch (e) {
@@ -653,19 +681,23 @@ export function StudyTimer() {
 
   // Handle Countdown Completion
   useEffect(() => {
-    if (timerMode === 'countdown' && isStudying && elapsedSeconds >= countdownTarget) {
+    if (timerMode === 'countdown' && isStudying && elapsedSeconds >= countdownTarget && !isCountdownCompleted) {
+      setIsCountdownCompleted(true);
+      try {
+        localStorage.setItem('studyio_timer_countdown_completed', 'true');
+      } catch {}
+      pauseTimer();
       soundFx.playMilestoneBell();
-      toast.success('Countdown completed! Great focus! 🚀', { duration: 5000 });
+      toast.success('Countdown completed! Click Save session to record your progress 🎉', { duration: 6000 });
       if (typeof document !== 'undefined' && document.hidden && 'Notification' in window && Notification.permission === 'granted') {
         const iconUrl = typeof window !== 'undefined' ? `${window.location.origin}/icon-192.png` : '/icon-192.png';
-        new Notification('Countdown completed! 🚀', { body: 'Your timer is up!', icon: iconUrl });
+        new Notification('Countdown completed! 🚀', { body: 'Your timer is up! Click Save session to record your progress.', icon: iconUrl });
       }
       confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 } });
       setIsFocusModeOpen(false);
       exitFullscreenSafely();
-      handleStopAndSave();
     }
-  }, [timerMode, isStudying, elapsedSeconds, countdownTarget, handleStopAndSave, setIsFocusModeOpen]);
+  }, [timerMode, isStudying, elapsedSeconds, countdownTarget, isCountdownCompleted, pauseTimer, setIsFocusModeOpen]);
 
   // Filtered sessions for Today (browser-local timezone)
   const todaySessions = useMemo(() => {
@@ -724,11 +756,11 @@ export function StudyTimer() {
     ringPercent = isStudying ? fraction * 100 : 0;
   } else if (timerMode === 'countdown') {
     const target = countdownTarget;
-    const remaining = Math.max(0, target - elapsedSeconds);
+    const remaining = isCountdownCompleted ? 0 : Math.max(0, target - elapsedSeconds);
     displayTime = formatSeconds(remaining);
     const fraction = target > 0 ? Math.max(0, Math.min(1, remaining / target)) : 0;
-    litCount = isStudying ? Math.round(fraction * 60) : 0;
-    ringPercent = isStudying ? fraction * 100 : 0;
+    litCount = isCountdownCompleted ? 60 : (isStudying ? Math.round(fraction * 60) : 0);
+    ringPercent = isCountdownCompleted ? 100 : (isStudying ? fraction * 100 : 0);
   } else {
     displayTime = formatSeconds(elapsedSeconds);
     const secInMinute = elapsedSeconds % 60;
@@ -738,7 +770,9 @@ export function StudyTimer() {
 
   // Derive status text in sentence case
   let statusText = 'Ready';
-  if (timerMode === 'pomodoro') {
+  if (isCountdownCompleted) {
+    statusText = 'Completed';
+  } else if (timerMode === 'pomodoro') {
     if (isPaused) {
       statusText = 'Paused';
     } else if (isStudying) {
@@ -932,11 +966,11 @@ export function StudyTimer() {
               <button
                 key={mode}
                 type="button"
-                disabled={isStudying}
-                onClick={() => { if (!isStudying) setTimerMode(mode); }}
+                disabled={isStudying || isCountdownCompleted}
+                onClick={() => { if (!isStudying && !isCountdownCompleted) setTimerMode(mode); }}
                 className={`relative px-4 py-1.5 text-xs font-medium rounded-full transition-colors z-10 ${
                   isActive ? 'text-[var(--text)]' : 'text-[var(--text-dim)] hover:text-[var(--text)]'
-                } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+                } ${isStudying || isCountdownCompleted ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
               >
                 {isActive && (
                   <motion.div
@@ -1090,7 +1124,54 @@ export function StudyTimer() {
 
       {/* 4. Primary Button Stack */}
       <div className="w-full flex items-center justify-center mt-2 mb-4">
-        {pomodoroCompletedPhase === 'work' ? (
+        {isCountdownCompleted ? (
+          <div className="flex flex-col items-center gap-2.5 w-full max-w-[360px] animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-2.5 w-full justify-center">
+              <button
+                type="button"
+                onClick={async () => {
+                  setIsCountdownCompleted(false);
+                  try {
+                    localStorage.removeItem('studyio_timer_countdown_completed');
+                  } catch {}
+                  await handleStopAndSave(countdownTarget);
+                }}
+                disabled={isSaving || isRemoteTransitioning}
+                className="flex-1 h-[52px] rounded-full font-bold text-sm text-[var(--accent-contrast)] bg-[var(--accent)] hover:brightness-105 active:scale-[0.98] transition-all duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shadow-lg shadow-[0_0_20px_var(--glow)]"
+              >
+                {isSaving ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    <span>Saving...</span>
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-4 h-4 stroke-[2.5]" />
+                    <span>Save session</span>
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsCountdownCompleted(false);
+                  try {
+                    localStorage.removeItem('studyio_timer_countdown_completed');
+                  } catch {}
+                  handleReset();
+                }}
+                disabled={isSaving || isRemoteTransitioning}
+                className="w-12 h-[52px] rounded-full border border-fg/20 bg-fg/[0.04] hover:bg-fg/[0.08] text-[var(--text-dim)] hover:text-[var(--text)] active:scale-[0.98] transition-transform duration-120 flex items-center justify-center cursor-pointer shrink-0 disabled:opacity-50"
+                title="Reset without saving"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-xs text-[var(--text-dim)] font-mono select-none">
+              Countdown complete ({formatSeconds(countdownTarget)}). Save to claim your RP &amp; XP!
+            </p>
+          </div>
+        ) : pomodoroCompletedPhase === 'work' ? (
           <div className="flex items-center gap-2.5 w-full max-w-[360px] justify-center">
             <button
               onClick={async () => {
@@ -1225,7 +1306,7 @@ export function StudyTimer() {
             </button>
             <button
               type="button"
-              onClick={handleStopAndSave}
+              onClick={() => handleStopAndSave()}
               disabled={isSaving || isRemoteTransitioning}
               className="flex-1 h-[52px] rounded-full border border-rose-500/40 bg-rose-500/[0.06] hover:bg-rose-500/15 text-rose-300 font-medium text-sm active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
@@ -1255,7 +1336,7 @@ export function StudyTimer() {
             </button>
             <button
               type="button"
-              onClick={handleStopAndSave}
+              onClick={() => handleStopAndSave()}
               disabled={isSaving || isRemoteTransitioning}
               className="flex-1 h-[52px] rounded-full border border-rose-500/40 bg-rose-500/[0.06] hover:bg-rose-500/15 text-rose-300 font-medium text-sm active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
