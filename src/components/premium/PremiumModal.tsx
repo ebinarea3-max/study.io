@@ -67,8 +67,8 @@ export function PremiumModal({ isOpen, onClose }: PremiumModalProps) {
       })
     : null;
 
-  const monthlyPrice = plans?.monthly?.formattedAmount || '₹499';
-  const yearlyPrice = plans?.yearly?.formattedAmount || '₹4,999';
+  const monthlyPrice = plans?.monthly?.formattedAmount || '₹99';
+  const yearlyPrice = plans?.yearly?.formattedAmount || '₹999';
 
   const handlePayment = () => {
     startCheckout(selectedPlan, () => {

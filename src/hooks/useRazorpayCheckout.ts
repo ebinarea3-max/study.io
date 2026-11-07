@@ -22,15 +22,41 @@ export interface BillingPlansData {
   message?: string;
 }
 
+const DEFAULT_PLANS: BillingPlansData = {
+  configured: true,
+  monthly: {
+    id: 'plan_monthly',
+    name: 'Pro Monthly',
+    amount: 9900,
+    currency: 'INR',
+    formattedAmount: '₹99',
+    period: 'monthly',
+    interval: 1,
+  },
+  yearly: {
+    id: 'plan_yearly',
+    name: 'Pro Yearly',
+    amount: 99900,
+    currency: 'INR',
+    formattedAmount: '₹999',
+    period: 'yearly',
+    interval: 1,
+  },
+};
+
 interface RazorpayResponse {
   razorpay_payment_id: string;
-  razorpay_subscription_id: string;
+  razorpay_order_id?: string;
+  razorpay_subscription_id?: string;
   razorpay_signature: string;
 }
 
 interface RazorpayOptions {
   key?: string;
-  subscription_id: string;
+  order_id?: string;
+  subscription_id?: string;
+  amount?: number;
+  currency?: string;
   name: string;
   description: string;
   image?: string;
@@ -40,6 +66,7 @@ interface RazorpayOptions {
   };
   theme?: {
     color?: string;
+    backdrop_color?: string;
   };
   handler: (response: RazorpayResponse) => Promise<void>;
   modal?: {
@@ -63,13 +90,13 @@ declare global {
 
 export function useRazorpayCheckout() {
   const { user } = useAuth();
-  const { refresh } = usePremium();
-  const [plans, setPlans] = useState<BillingPlansData | null>(null);
-  const [loadingPlans, setLoadingPlans] = useState<boolean>(true);
+  const { refresh, setImmediatePremium } = usePremium();
+  const [plans, setPlans] = useState<BillingPlansData>(DEFAULT_PLANS);
+  const [loadingPlans, setLoadingPlans] = useState<boolean>(false);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [checkoutSuccess, setCheckoutSuccess] = useState<boolean>(false);
 
-  // Fetch plan pricing from /api/billing/plans
+  // Optional: load custom plans if available from server
   useEffect(() => {
     let isMounted = true;
     async function loadPlans() {
@@ -77,12 +104,12 @@ export function useRazorpayCheckout() {
         const res = await fetch('/api/billing/plans');
         if (res.ok) {
           const data = (await res.json()) as BillingPlansData;
-          if (isMounted) setPlans(data);
+          if (isMounted && data.configured && data.monthly && data.yearly) {
+            setPlans(data);
+          }
         }
       } catch (err) {
-        console.error('Failed to load plans:', err);
-      } finally {
-        if (isMounted) setLoadingPlans(false);
+        // Fallback to DEFAULT_PLANS
       }
     }
     loadPlans();
@@ -115,11 +142,11 @@ export function useRazorpayCheckout() {
     });
   }, []);
 
-  // Trigger checkout modal
+  // Trigger checkout modal using Standard Web Checkout (Orders API)
   const startCheckout = useCallback(
     async (plan: 'monthly' | 'yearly', onSuccessCallback?: () => void) => {
       if (!user || user.id.startsWith('guest')) {
-        toast.error('Please sign in to subscribe to study.io Premium');
+        toast.error('Please sign in to subscribe to study.io Pro');
         return;
       }
 
@@ -127,7 +154,7 @@ export function useRazorpayCheckout() {
       setCheckoutSuccess(false);
 
       try {
-        // 1. Load checkout script
+        // 1. Load Razorpay script
         const isLoaded = await loadRazorpayScript();
         if (!isLoaded || !window.Razorpay) {
           toast.error('Unable to load payment gateway. Please check your network connection.');
@@ -135,59 +162,86 @@ export function useRazorpayCheckout() {
           return;
         }
 
-        // 2. Call /api/billing/create-subscription
-        const createRes = await fetch('/api/billing/create-subscription', {
+        // 2. Call /api/razorpay/create-order
+        const createRes = await fetch('/api/razorpay/create-order', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ plan }),
+          body: JSON.stringify({ plan, userId: user.id }),
         });
 
-        const createData = (await createRes.json()) as { subscriptionId?: string; error?: string };
-        if (!createRes.ok || !createData.subscriptionId) {
-          throw new Error(createData.error || 'Failed to initialize subscription');
+        const createData = (await createRes.json()) as {
+          orderId?: string;
+          amount?: number;
+          currency?: string;
+          keyId?: string;
+          plan?: string;
+          error?: string;
+        };
+
+        if (!createRes.ok || !createData.orderId) {
+          throw new Error(createData.error || 'Failed to initialize payment order');
         }
 
-        const subscriptionId = createData.subscriptionId;
-        const keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+        const keyId =
+          createData.keyId ||
+          process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ||
+          'rzp_test_TxMMb1eZs7gIB7';
 
-        // 3. Configure Razorpay checkout options
+        // 3. Configure Razorpay Standard Checkout options with dark/gold theme
         const options: RazorpayOptions = {
           key: keyId,
-          subscription_id: subscriptionId,
-          name: 'study.io Premium',
-          description: plan === 'yearly' ? 'Yearly Membership' : 'Monthly Membership',
+          order_id: createData.orderId,
+          amount: createData.amount,
+          currency: createData.currency || 'INR',
+          name: 'study.io Pro',
+          description: plan === 'yearly' ? 'study.io Pro Yearly (₹999/yr)' : 'study.io Pro Monthly (₹99/mo)',
           image: '/icon.png',
           prefill: {
             email: user.email || '',
-            name: user.user_metadata?.name || user.email?.split('@')[0] || '',
+            name: user.displayName || user.name || user.email?.split('@')[0] || '',
           },
           theme: {
             color: '#E6C15A', // Gold accent
+            backdrop_color: 'rgba(0, 0, 0, 0.85)',
           },
           handler: async function (response: RazorpayResponse) {
             toast.loading('Verifying payment...', { id: 'billing-verify' });
 
             try {
               // 4. Verify HMAC SHA256 signature on server
-              const verifyRes = await fetch('/api/billing/verify', {
+              const verifyRes = await fetch('/api/razorpay/verify', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(response),
+                body: JSON.stringify({
+                  razorpay_order_id: response.razorpay_order_id || createData.orderId,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+                  plan,
+                  userId: user.id,
+                }),
               });
 
-              const verifyData = (await verifyRes.json()) as { success?: boolean; error?: string };
+              const verifyData = (await verifyRes.json()) as {
+                success?: boolean;
+                isPremium?: boolean;
+                plan?: string;
+                premiumUntil?: string;
+                error?: string;
+              };
+
               if (!verifyRes.ok || !verifyData.success) {
                 throw new Error(verifyData.error || 'Payment signature verification failed');
               }
 
-              // 5. Poll get_my_entitlements via refresh()
-              toast.loading('Activating Premium status...', { id: 'billing-verify' });
-              for (let i = 0; i < 4; i++) {
-                await refresh();
-                await new Promise((r) => setTimeout(r, 1200));
+              // 5. Instantly unlock Premium in UI without hard refresh
+              if (verifyData.premiumUntil) {
+                setImmediatePremium(plan, verifyData.premiumUntil);
               }
 
-              toast.success('Welcome to study.io Premium! 🎉', { id: 'billing-verify' });
+              // Trigger background database sync
+              refresh().catch(() => {});
+
+              toast.success('Welcome to study.io Pro! 🎉', { id: 'billing-verify' });
               setCheckoutSuccess(true);
               setIsProcessing(false);
               if (onSuccessCallback) onSuccessCallback();
@@ -216,7 +270,7 @@ export function useRazorpayCheckout() {
         setIsProcessing(false);
       }
     },
-    [user, loadRazorpayScript, refresh]
+    [user, loadRazorpayScript, refresh, setImmediatePremium]
   );
 
   return {

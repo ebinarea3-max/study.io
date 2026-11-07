@@ -24,6 +24,7 @@ export interface PremiumContextType {
   openPremiumModal: () => void;
   closePremiumModal: () => void;
   isModalOpen: boolean;
+  setImmediatePremium: (plan: string, premiumUntilDate: string) => void;
 }
 
 const PremiumContext = createContext<PremiumContextType | undefined>(undefined);
@@ -236,6 +237,15 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
     await fetchEntitlements(false);
   }, [fetchEntitlements]);
 
+  const setImmediatePremium = useCallback((newPlan: string, untilDateIso: string) => {
+    setRawIsPremium(true);
+    setPremiumUntilDate(new Date(untilDateIso));
+    setPlan(newPlan);
+    setStatus('active');
+    setCancelAtCycleEnd(false);
+    setLoading(false);
+  }, []);
+
   const openPremiumModal = useCallback(() => setIsModalOpen(true), []);
   const closePremiumModal = useCallback(() => setIsModalOpen(false), []);
 
@@ -250,6 +260,7 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
     openPremiumModal,
     closePremiumModal,
     isModalOpen,
+    setImmediatePremium,
   };
 
   return (
@@ -274,6 +285,7 @@ export function usePremium(): PremiumContextType {
       openPremiumModal: () => {},
       closePremiumModal: () => {},
       isModalOpen: false,
+      setImmediatePremium: () => {},
     };
   }
   return context;

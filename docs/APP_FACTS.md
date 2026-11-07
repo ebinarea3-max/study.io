@@ -368,3 +368,4 @@
    - `AuthContext.tsx:515-630` maintains complete implementations of `signInWithEmail` and `signUpWithEmail`, but `AuthCard.tsx` only exposes a Google OAuth button. Email/password authentication is unreachable by end users.
 8. **Razorpay Environment Gating**:
    - `/api/billing/plans` falls back to returning `{ configured: false }` if `RAZORPAY_PLAN_ID_MONTHLY` and `RAZORPAY_PLAN_ID_YEARLY` are missing in production environment variables.
+
