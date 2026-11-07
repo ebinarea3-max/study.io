@@ -5,6 +5,7 @@ import { DailyTodoList } from './DailyTodoList';
 import { StudyTimetable } from '../timetable/StudyTimetable';
 import { useTimetable } from '../../context/TimetableContext';
 import { useStudy } from '../../context/StudyContext';
+import { useStudyMode } from '../../context/StudyModeContext';
 import { Calendar, CheckSquare, Layers, Flame } from 'lucide-react';
 
 export function TasksOverview() {
@@ -30,7 +31,16 @@ export function TasksOverview() {
     } catch {}
   };
 
+  const { isFocus } = useStudyMode();
   const completedTodosCount = todos.filter(t => t.completed).length;
+
+  if (isFocus) {
+    return (
+      <div className="w-full h-full max-w-4xl mx-auto px-2 sm:px-6 py-3 sm:py-4 pb-20 md:pb-24 animate-in fade-in duration-200">
+        <DailyTodoList />
+      </div>
+    );
+  }
 
   return (
     <div className="w-full h-full max-w-4xl mx-auto px-2 sm:px-6 py-3 sm:py-4 pb-20 md:pb-24 animate-in fade-in duration-200 space-y-3">

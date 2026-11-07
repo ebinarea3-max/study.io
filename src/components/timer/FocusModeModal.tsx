@@ -10,6 +10,7 @@ import { ScenePicker, ScenePreviewPill } from '../focus/ScenePicker';
 import { AtmospherePicker } from '../focus/AtmospherePicker';
 import { useAtmosphere } from '../focus/useAtmosphere';
 import { AVAILABLE_SCENES, getSceneById } from '../focus/scenes/registry';
+import { useStudyMode } from '../../context/StudyModeContext';
 
 export function exitFullscreenSafely() {
   if (typeof document === 'undefined') return;
@@ -53,6 +54,7 @@ export function FocusModeModal() {
     resumeTimer,
     startTimer,
   } = useStudy();
+  const { isFocus } = useStudyMode();
 
   const [isIdle, setIsIdle] = useState(false);
   const isIdleRef = useRef(false);
@@ -235,6 +237,8 @@ export function FocusModeModal() {
 
   const subjectSubtitle = isBreak
     ? 'Rest Phase'
+    : isFocus
+    ? 'Focus'
     : `Studying ${selectedSubject?.name || 'Deep Work'}`;
 
   return (

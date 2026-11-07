@@ -28,9 +28,12 @@ import { MonthlyLeaderboard } from '../components/leaderboard/MonthlyLeaderboard
 import StudyRoomsTab from '../components/rooms/StudyRoomsTab';
 import { useRankTheme } from '../hooks/useRankTheme';
 import { DevRankSwitcher } from '../components/common/DevRankSwitcher';
+import { useStudyMode } from '../context/StudyModeContext';
+import { StudyModeOnboarding } from '../components/onboarding/StudyModeOnboarding';
 
 export default function Home() {
   const { isAuthenticated, isLoading, user } = useAuth();
+  const { needsOnboarding } = useStudyMode();
   useRankTheme(); // Hydrate CSS custom properties globally for current session
 
   const {
@@ -306,6 +309,11 @@ export default function Home() {
       <ErrorBoundary fallbackTitle="Focus Mode">
         <FocusModeModal />
       </ErrorBoundary>
+
+      {/* Study Mode Onboarding (shown when needsOnboarding is true for new users) */}
+      {needsOnboarding && !isProfileOpen && (
+        <StudyModeOnboarding />
+      )}
 
       {/* Free Fire Post-Match Rank Settlement Fullscreen Screen */}
       <RankSettlementModal

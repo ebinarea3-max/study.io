@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useRankTheme } from '../../hooks/useRankTheme';
 import { useStudy } from '../../context/StudyContext';
+import { useStudyMode } from '../../context/StudyModeContext';
 import toast from 'react-hot-toast';
 import { parseSmartTasks, isMultiTaskPaste } from '../../lib/smartTaskParser';
 
@@ -49,6 +50,7 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
   const [isCompletedOpen, setIsCompletedOpen] = useState(true);
   const { theme } = useRankTheme();
   const { subjects, setSelectedSubjectId } = useStudy();
+  const { isFocus } = useStudyMode();
 
   const [filter, setFilter] = useState<'all' | 'active' | 'completed' | 'high'>('all');
   const [taskPriority, setTaskPriority] = useState<'low' | 'medium' | 'high'>('medium');
@@ -56,7 +58,7 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
   const [bulkAddFeedback, setBulkAddFeedback] = useState<{ count: number; visible: boolean }>({ count: 0, visible: false });
 
   const handleFocusTask = (subjectId?: string) => {
-    if (subjectId && subjectId !== 'none') {
+    if (!isFocus && subjectId && subjectId !== 'none') {
       setSelectedSubjectId(subjectId);
     }
     window.dispatchEvent(new CustomEvent('switch_tab', { detail: 'timer' }));
@@ -671,19 +673,21 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
             {taskPriority}
           </button>
 
-          {/* Subject Selector */}
-          <select
-            value={taskSubjectId}
-            onChange={e => setTaskSubjectId(e.target.value)}
-            className="px-2 py-1.5 rounded-lg bg-fg/[0.05] border border-fg/10 text-[var(--text)] text-[10px] font-hud-mono uppercase tracking-wider focus:outline-none focus:border-[var(--accent)]/50 focus:ring-1 focus:ring-[var(--accent)]/20 cursor-pointer"
-          >
-            <option value="none" className="bg-[var(--surface)] text-[var(--text)]">General</option>
-            {subjects.map(s => (
-              <option key={s.id} value={s.id} className="bg-[var(--surface)] text-[var(--text)]">
-                {s.name}
-              </option>
-            ))}
-          </select>
+          {/* Subject Selector (hidden in Focus mode) */}
+          {!isFocus && (
+            <select
+              value={taskSubjectId}
+              onChange={e => setTaskSubjectId(e.target.value)}
+              className="px-2 py-1.5 rounded-lg bg-fg/[0.05] border border-fg/10 text-[var(--text)] text-[10px] font-hud-mono uppercase tracking-wider focus:outline-none focus:border-[var(--accent)]/50 focus:ring-1 focus:ring-[var(--accent)]/20 cursor-pointer"
+            >
+              <option value="none" className="bg-[var(--surface)] text-[var(--text)]">General</option>
+              {subjects.map(s => (
+                <option key={s.id} value={s.id} className="bg-[var(--surface)] text-[var(--text)]">
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          )}
 
           {/* Submit Button */}
           <button
@@ -865,7 +869,7 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
                     className="w-full bg-transparent text-[13px] sm:text-[15px] text-fg/95 font-medium focus:text-[var(--text)] focus:outline-none py-0.5 tracking-wide leading-relaxed font-sans placeholder:text-fg/30"
                   />
                   <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                    {item.subject_id && subjects.find(s => s.id === item.subject_id) && (
+                    {!isFocus && item.subject_id && subjects.find(s => s.id === item.subject_id) && (
                       <span className="px-1.5 py-0.5 rounded bg-fg/10 text-fg/70 text-[9px] font-hud-mono tracking-wider uppercase border border-fg/5 truncate max-w-[120px]">
                         {subjects.find(s => s.id === item.subject_id)?.name}
                       </span>

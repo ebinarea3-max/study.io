@@ -158,12 +158,14 @@ export const TimerDial = React.memo(function TimerDial({
       {/* Centre Stack */}
       <div className="relative z-10 flex flex-col items-center justify-center text-center px-4 max-w-[75%]">
         {/* Small subject name above (text-dim at 13px) */}
-        <span
-          className="text-[13px] font-mono text-[var(--text-dim)] truncate max-w-[200px] mb-1 min-h-[16px] tracking-tight"
-          title={subjectName || ''}
-        >
-          {subjectName || ''}
-        </span>
+        {subjectName ? (
+          <span
+            className="text-[13px] font-mono text-[var(--text-dim)] truncate max-w-[200px] mb-1 min-h-[16px] tracking-tight"
+            title={subjectName}
+          >
+            {subjectName}
+          </span>
+        ) : null}
 
         {/* Digits in display font with tabular numerals at about 22% of dial width */}
         <div className="font-mono tabular-nums font-bold text-[var(--text)] text-5xl sm:text-6xl tracking-tight leading-none text-center select-none py-1">

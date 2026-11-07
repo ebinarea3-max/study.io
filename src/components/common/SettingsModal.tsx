@@ -29,6 +29,7 @@ import { getSupabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { ThemePicker } from '../settings/ThemePicker';
 import { SettingsPlanSection } from '../settings/SettingsPlanSection';
+import { SettingsStudyModeSection } from '../settings/SettingsStudyModeSection';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -229,6 +230,9 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
           {/* Appearance Section */}
           <ThemePicker />
+
+          {/* Study Mode Section */}
+          <SettingsStudyModeSection />
 
           {/* Section 1: Account & Avatar */}
           <div className="p-4 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] shadow-sm flex flex-col gap-4">

@@ -114,3 +114,4 @@ $$;
 -- Secure RPC permissions
 revoke all on function public.get_or_create_default_subject() from public;
 grant execute on function public.get_or_create_default_subject() to authenticated;
+

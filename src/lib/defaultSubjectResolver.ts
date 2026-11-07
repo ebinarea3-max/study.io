@@ -78,3 +78,4 @@ export function getCachedDefaultSubjectId(userId?: string): string | null {
 export function clearDefaultSubjectCache(): void {
   defaultSubjectCache.clear();
 }
+

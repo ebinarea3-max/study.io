@@ -1128,7 +1128,7 @@ export function StudyTimer() {
           ringPercent={ringPercent}
           litCount={litCount}
           statusText={statusText}
-          subjectName={selectedSubject?.name}
+          subjectName={isFocus ? undefined : selectedSubject?.name}
           isRunning={isRunning}
           isPaused={isPaused}
           isStudying={isStudying}
@@ -1277,7 +1277,17 @@ export function StudyTimer() {
           </div>
         ) : !isStudying ? (
           <div className="flex flex-col items-center">
-            {!selectedSubject?.id ? (
+            {isFocus ? (
+              <button
+                type="button"
+                onClick={handleStartSession}
+                disabled={isSaving || isRemoteTransitioning}
+                className="w-full max-w-[360px] sm:w-[240px] h-[52px] rounded-full font-semibold text-sm text-[var(--accent-contrast)] bg-[var(--accent)] shadow-sm hover:brightness-105 active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                <Play className="w-4 h-4 fill-current" />
+                <span>Start focus</span>
+              </button>
+            ) : !selectedSubject?.id ? (
               <button
                 type="button"
                 onClick={(e) => {
