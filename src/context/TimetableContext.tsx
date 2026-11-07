@@ -27,6 +27,9 @@ import toast from 'react-hot-toast';
 import { soundFx } from '../lib/audio';
 import confetti from 'canvas-confetti';
 
+const isUuid = (val?: string | null): boolean =>
+  Boolean(val && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val));
+
 interface ItemProgress {
   loggedSeconds: number;
   targetSeconds: number;
@@ -258,11 +261,11 @@ export function TimetableProvider({ children }: { children: ReactNode }) {
             await supabase.from('timetable_schedules').delete().eq('user_id', user.id);
             if (newItems.length > 0) {
               const rows = newItems.map(it => ({
-                id: it.id.includes('-') && it.id.length > 30 ? it.id : undefined,
+                id: isUuid(it.id) ? it.id : undefined,
                 user_id: user.id,
                 day_of_week: it.dayOfWeek,
                 subject_name: it.subjectName,
-                subject_id: it.subjectId || null,
+                subject_id: isUuid(it.subjectId) ? it.subjectId : null,
                 target_seconds: it.targetSeconds,
                 color: it.color,
               }));
@@ -589,8 +592,12 @@ export function TimetableProvider({ children }: { children: ReactNode }) {
       };
 
       const updated = [...items, newItem];
-      await saveItems(updated);
-      toast.success(`Added ${item.subjectName} to ${item.dayOfWeek.toUpperCase()}`);
+      try {
+        await saveItems(updated);
+        toast.success(`Added ${item.subjectName} to ${item.dayOfWeek.toUpperCase()}`);
+      } catch (err) {
+        console.warn('TimetableContext: Error adding item:', err);
+      }
     },
     [items, saveItems]
   );
@@ -598,8 +605,12 @@ export function TimetableProvider({ children }: { children: ReactNode }) {
   const updateItem = useCallback(
     async (id: string, updates: Partial<TimetableItem>) => {
       const updated = items.map(it => (it.id === id ? { ...it, ...updates } : it));
-      await saveItems(updated);
-      toast.success('Schedule item updated');
+      try {
+        await saveItems(updated);
+        toast.success('Schedule item updated');
+      } catch (err) {
+        console.warn('TimetableContext: Error updating item:', err);
+      }
     },
     [items, saveItems]
   );
@@ -608,8 +619,12 @@ export function TimetableProvider({ children }: { children: ReactNode }) {
     async (id: string) => {
       const itemToDelete = items.find(it => it.id === id);
       const updated = items.filter(it => it.id !== id);
-      await saveItems(updated);
-      toast.success(`Removed ${itemToDelete?.subjectName || 'subject'} from schedule`);
+      try {
+        await saveItems(updated);
+        toast.success(`Removed ${itemToDelete?.subjectName || 'subject'} from schedule`);
+      } catch (err) {
+        console.warn('TimetableContext: Error deleting item:', err);
+      }
     },
     [items, saveItems]
   );

@@ -114,7 +114,10 @@ export function StudyTimetable() {
       {/* Modals */}
       <EditSubjectScheduleModal
         isOpen={isAddEditModalOpen}
-        onClose={() => setIsAddEditModalOpen(false)}
+        onClose={() => {
+          setIsAddEditModalOpen(false);
+          setEditingItem(null);
+        }}
         editingItem={editingItem}
         defaultDay={selectedDay}
       />

@@ -88,25 +88,30 @@ export function EditSubjectScheduleModal({
 
     const targetSeconds = Math.max(300, targetHours * 3600 + targetMinutes * 60);
 
-    if (editingItem) {
-      await updateItem(editingItem.id, {
-        subjectName: trimmed,
-        subjectId: matchedSubjectId,
-        targetSeconds,
-        color: selectedColor,
-        dayOfWeek,
-      });
-    } else {
-      await addItem({
-        dayOfWeek,
-        subjectName: trimmed,
-        subjectId: matchedSubjectId,
-        targetSeconds,
-        color: selectedColor,
-      });
-    }
-
+    // Close modal immediately so the popup never hangs or gets stuck
     onClose();
+
+    try {
+      if (editingItem) {
+        await updateItem(editingItem.id, {
+          subjectName: trimmed,
+          subjectId: matchedSubjectId,
+          targetSeconds,
+          color: selectedColor,
+          dayOfWeek,
+        });
+      } else {
+        await addItem({
+          dayOfWeek,
+          subjectName: trimmed,
+          subjectId: matchedSubjectId,
+          targetSeconds,
+          color: selectedColor,
+        });
+      }
+    } catch (err) {
+      console.error('Failed to save schedule item:', err);
+    }
   };
 
   if (!isOpen || !mounted || typeof document === 'undefined') return null;
@@ -300,6 +305,7 @@ export function EditSubjectScheduleModal({
             </button>
             <button
               type="submit"
+              onClick={handleSubmit}
               disabled={!subjectName.trim()}
               className="px-5 py-2 rounded-xl bg-[var(--accent)] hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed text-[var(--accent-contrast)] font-hud-mono text-xs font-bold tracking-wider uppercase transition-all flex items-center gap-1.5 cursor-pointer shadow-[0_0_15px_var(--glow)]"
             >

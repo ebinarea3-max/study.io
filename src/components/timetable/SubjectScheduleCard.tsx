@@ -12,7 +12,6 @@ import {
   Edit2,
   Trash2,
   Check,
-  RotateCcw,
 } from 'lucide-react';
 
 interface SubjectScheduleCardProps {
@@ -24,7 +23,6 @@ export function SubjectScheduleCard({ item, onEdit }: SubjectScheduleCardProps) 
   const {
     getItemProgress,
     focusOnSubject,
-    setSubjectCompleted,
     deleteItem,
   } = useTimetable();
 
@@ -136,26 +134,6 @@ export function SubjectScheduleCard({ item, onEdit }: SubjectScheduleCardProps) 
                   >
                     <Edit2 className="w-3.5 h-3.5 text-blue-400" />
                     <span>Edit Schedule</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowMenu(false);
-                      setSubjectCompleted(item.id, !isComplete);
-                    }}
-                    className="w-full px-3 py-2 text-left text-xs font-mono text-[var(--text)] hover:bg-white/[0.08] flex items-center gap-2 cursor-pointer"
-                  >
-                    {isComplete ? (
-                      <>
-                        <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
-                        <span>Reset Today Progress</span>
-                      </>
-                    ) : (
-                      <>
-                        <Check className="w-3.5 h-3.5 text-emerald-400" />
-                        <span>Mark 100% Completed</span>
-                      </>
-                    )}
                   </button>
                   <div className="my-1 border-t border-[var(--border)]" />
                   <button
