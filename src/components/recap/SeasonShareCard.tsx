@@ -414,14 +414,13 @@ export function SeasonShareCard({
   // Compute responsive preview scale to fit neatly in on-screen cards without scroll
   useEffect(() => {
     const updateScale = () => {
-      if (previewContainerRef.current) {
-        const containerWidth = previewContainerRef.current.clientWidth;
-        const containerHeight = previewContainerRef.current.clientHeight;
-        const scaleByWidth = containerWidth / 1080;
-        const scaleByHeight = containerHeight > 0 ? containerHeight / 1920 : scaleByWidth;
-        const computedScale = Math.min(scaleByWidth, scaleByHeight);
-        setScale(Math.max(0.18, computedScale));
-      }
+      if (typeof window === 'undefined') return;
+      const maxWidth = Math.min(window.innerWidth - 32, 340);
+      const maxHeight = Math.min(window.innerHeight - 340, 560);
+      const scaleByWidth = maxWidth / 1080;
+      const scaleByHeight = maxHeight > 0 ? maxHeight / 1920 : scaleByWidth;
+      const computedScale = Math.min(scaleByWidth, scaleByHeight);
+      setScale(Math.max(0.18, Math.min(0.32, computedScale)));
     };
 
     updateScale();
@@ -679,15 +678,18 @@ export function SeasonShareCard({
           </div>
         )}
 
-        {/* Scaled Preview Frame: max-height at most calc(100vh - 340px) (max 560px) */}
+        {/* Scaled Preview Frame */}
         <div
           ref={previewContainerRef}
-          className="relative w-full aspect-[9/16] overflow-hidden rounded-2xl shadow-card border border-[var(--border)] bg-[var(--surface)] flex items-center justify-center"
-          style={{ maxHeight: 'min(calc(100vh - 340px), 560px)' }}
+          className="relative overflow-hidden rounded-2xl shadow-card border border-[var(--border)] bg-[var(--surface)]"
+          style={{
+            width: `${Math.round(1080 * scale)}px`,
+            height: `${Math.round(1920 * scale)}px`,
+          }}
         >
           {/* Scaled Twin of the Card Canvas */}
           <div
-            className={`w-[1080px] h-[1920px] origin-top-left pointer-events-none transition-filter duration-300 ${
+            className={`absolute top-0 left-0 w-[1080px] h-[1920px] origin-top-left pointer-events-none transition-filter duration-300 ${
               !isPremium ? 'blur-md opacity-40' : ''
             }`}
             style={{
