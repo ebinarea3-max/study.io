@@ -6,6 +6,8 @@ import { INITIAL_TODOS, getTodayDateString, calculateStreak, cleanupLegacyDemoDa
 import { getLocalStartOfDay, getLocalEndOfDay, getLocalDateString } from '../lib/dateUtils';
 import { splitSessionAtMidnights } from '../lib/sessionSplitting';
 import { useAuth } from './AuthContext';
+import { useStudyMode } from './StudyModeContext';
+import { resolveDefaultSubjectId, DEFAULT_SUBJECT_NAME, DEFAULT_SUBJECT_COLOR } from '../lib/defaultSubjectResolver';
 import { getSupabase } from '../lib/supabase';
 import { getDeviceId } from '../lib/deviceId';
 import { soundFx } from '../lib/audio';
@@ -395,6 +397,47 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       } catch {}
     }
   }, [subjects]);
+
+  const { isFocus } = useStudyMode();
+
+  // In Focus mode: automatically set timer's existing selected-subject state to default subject ("General Focus")
+  useEffect(() => {
+    if (!isFocus) return;
+
+    let isSubscribed = true;
+    const currentUid = user?.id || 'guest';
+
+    resolveDefaultSubjectId(currentUid, subjects).then(defaultSubId => {
+      if (!isSubscribed || !defaultSubId) return;
+
+      // Ensure the default subject exists in subjects list so selectedSubject resolves properly
+      setSubjectsState(prev => {
+        const list = Array.isArray(prev) ? prev : [];
+        const exists = list.some(
+          s => s && (s.id === defaultSubId || s.name.trim().toLowerCase() === DEFAULT_SUBJECT_NAME.toLowerCase())
+        );
+        if (!exists) {
+          const defaultSub: Subject = {
+            id: defaultSubId,
+            name: DEFAULT_SUBJECT_NAME,
+            color: DEFAULT_SUBJECT_COLOR,
+            userId: currentUid,
+            createdAt: new Date().toISOString(),
+          };
+          return [...list, defaultSub];
+        }
+        return prev;
+      });
+
+      if (selectedSubjectId !== defaultSubId) {
+        setSelectedSubjectId(defaultSubId);
+      }
+    });
+
+    return () => {
+      isSubscribed = false;
+    };
+  }, [isFocus, user?.id, selectedSubjectId, subjects, setSelectedSubjectId]);
 
   const [timerMode, setTimerMode] = useState<TimerMode>(() => {
     if (typeof window !== 'undefined') {

@@ -48,6 +48,8 @@ export type TodoItem = {
   createdAt: string;
 };
 
+export type StudyMode = 'focus' | 'subject';
+
 export type UserProfile = {
   username?: string;
   name?: string;
@@ -64,6 +66,8 @@ export type UserProfile = {
   levelTitle?: string;
   totalStudySeconds: number;
   status: 'studying' | 'resting' | 'offline';
+  study_mode?: StudyMode | null;
+  studyMode?: StudyMode | null;
   currentSubjectId?: string;
   currentSubjectName?: string;
   currentSubjectColor?: string;

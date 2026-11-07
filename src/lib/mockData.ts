@@ -11,6 +11,8 @@ export const INITIAL_USER: UserProfile = {
   level: 1,
   totalStudySeconds: 0,
   status: 'resting',
+  study_mode: 'subject',
+  studyMode: 'subject',
   currentSeasonId: '2026-09',
   seasonRp: 0,
   last_streak_bonus_date: undefined,

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode, useCallback } from 'react';
-import { UserProfile } from '../types';
+import { UserProfile, StudyMode } from '../types';
 import { INITIAL_USER, cleanupLegacyDemoData, calculateStreak, getCachedStreak, setCachedStreak } from '../lib/mockData';
 import { getSupabase } from '../lib/supabase';
 import { getRankFromRp, getSoftResetRp, HARD_RESET_CAP_RP, calculateSeasonRp, getCurrentMonthFocusSeconds, getRankTier, resolveLiveSeasonStats } from '../lib/ranks';
@@ -212,6 +212,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             last_seen_level: Number((profile as Record<string, unknown>).last_seen_level ?? prev.last_seen_level ?? prev.level ?? 1),
             totalStudySeconds: totalStudySeconds,
             status: prev.status || 'resting',
+            study_mode: (profile.study_mode as StudyMode) ?? prev.study_mode ?? null,
+            studyMode: (profile.study_mode as StudyMode) ?? prev.studyMode ?? null,
             createdAt: profile.created_at || prev.createdAt || new Date().toISOString(),
             is_onboarded: profile.is_onboarded ?? prev.is_onboarded,
             user_metadata: {
@@ -345,6 +347,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               lifetimeXp: data.lifetime_xp ?? data.xp ?? prev.lifetimeXp,
               totalStudySeconds: data.total_study_seconds ?? prev.totalStudySeconds,
               levelTitle: resolvedRankTitle || data.level_title || prev.levelTitle,
+              study_mode: (data.study_mode as StudyMode) ?? prev.study_mode ?? null,
+              studyMode: (data.study_mode as StudyMode) ?? prev.studyMode ?? null,
               is_onboarded: data.is_onboarded ?? prev.is_onboarded,
               user_metadata: {
                 ...(prev.user_metadata || {}),
@@ -803,6 +807,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         if ((updates as any).last_reset_month !== undefined) {
           payload.last_reset_month = (updates as any).last_reset_month;
+        }
+        if (updates.study_mode !== undefined || (updates as any).studyMode !== undefined) {
+          payload.study_mode = updates.study_mode ?? (updates as any).studyMode;
         }
 
         if (Object.keys(payload).length > 0) {

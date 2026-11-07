@@ -4,6 +4,7 @@ import React, { ReactNode } from 'react';
 import { ThemeProvider } from '../../context/ThemeContext';
 import { AuthProvider } from '../../context/AuthContext';
 import { PremiumProvider } from '../../context/PremiumContext';
+import { StudyModeProvider } from '../../context/StudyModeContext';
 import { StudyProvider } from '../../context/StudyContext';
 import { FocusGoalProvider } from '../../context/FocusGoalContext';
 import { TimetableProvider } from '../../context/TimetableContext';
@@ -16,45 +17,47 @@ export function Providers({ children }: { children: ReactNode }) {
     <AuthProvider>
       <PremiumProvider>
         <ThemeProvider>
-          <StudyProvider>
-            <FocusGoalProvider>
-              <TimetableProvider>
-                {/* Bridge timer state → Service Worker for background tracking & notifications */}
-                <TimerSWBridge />
-                {/* Asset preloading for instant rank badge rendering */}
-                <RankBadgePreloader />
-                {children}
-              </TimetableProvider>
-            </FocusGoalProvider>
-            <Toaster 
-              position="top-center" 
-              toastOptions={{
-                style: {
-                  background: 'var(--surface)',
-                  color: 'var(--text)',
-                  border: '1px solid var(--border)',
-                  borderRadius: '12px',
-                  boxShadow: '0 10px 25px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3)',
-                  fontSize: '13px',
-                  fontFamily: 'Inter, sans-serif',
-                  fontWeight: '500',
-                  letterSpacing: '0.02em',
-                },
-                success: {
-                  iconTheme: {
-                    primary: '#10B981',
-                    secondary: 'var(--surface)',
+          <StudyModeProvider>
+            <StudyProvider>
+              <FocusGoalProvider>
+                <TimetableProvider>
+                  {/* Bridge timer state → Service Worker for background tracking & notifications */}
+                  <TimerSWBridge />
+                  {/* Asset preloading for instant rank badge rendering */}
+                  <RankBadgePreloader />
+                  {children}
+                </TimetableProvider>
+              </FocusGoalProvider>
+              <Toaster 
+                position="top-center" 
+                toastOptions={{
+                  style: {
+                    background: 'var(--surface)',
+                    color: 'var(--text)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '12px',
+                    boxShadow: '0 10px 25px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3)',
+                    fontSize: '13px',
+                    fontFamily: 'Inter, sans-serif',
+                    fontWeight: '500',
+                    letterSpacing: '0.02em',
                   },
-                },
-                error: {
-                  iconTheme: {
-                    primary: '#EF4444',
-                    secondary: 'var(--surface)',
+                  success: {
+                    iconTheme: {
+                      primary: '#10B981',
+                      secondary: 'var(--surface)',
+                    },
                   },
-                },
-              }}
-            />
-          </StudyProvider>
+                  error: {
+                    iconTheme: {
+                      primary: '#EF4444',
+                      secondary: 'var(--surface)',
+                    },
+                  },
+                }}
+              />
+            </StudyProvider>
+          </StudyModeProvider>
         </ThemeProvider>
       </PremiumProvider>
     </AuthProvider>

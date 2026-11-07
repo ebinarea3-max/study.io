@@ -57,6 +57,7 @@ import { getCurrentMonthFocusSeconds, calculateSeasonRp, getRankTier, resolveLiv
 import { getLocalDateString, isSessionToday, isSessionYesterday } from '../../lib/dateUtils';
 import { Skeleton } from '../common/Skeleton';
 import { useRankTheme } from '../../hooks/useRankTheme';
+import { useStudyMode } from '../../context/StudyModeContext';
 
 const EMPTY_STATE_QUOTES = [
   'Every long streak starts with one session.',
@@ -67,6 +68,7 @@ const EMPTY_STATE_QUOTES = [
 export function StudyTimer() {
   const dailyQuote = getDailyQuote();
   const { user, isLoading, updateProfile } = useAuth();
+  const { isFocus, loading: studyModeLoading } = useStudyMode();
   const { theme, userRank } = useRankTheme();
   const { isPremium } = usePremium();
   const { goals, refreshGoals, checkGoalReached } = useFocusGoals();
@@ -1006,98 +1008,112 @@ export function StudyTimer() {
           </div>
         )}
 
-        {/* 2. Subject chip - Bigger, prominent bar */}
-        <div className="relative mt-3.5 mb-1 z-30">
-          <button
-            type="button"
-            onClick={(e) => {
-              if (activeSubjects.length === 0) {
-                handleOpenSubjectManager(e);
-              } else {
-                setShowDropdown(!showDropdown);
-              }
-            }}
-            disabled={isStudying || isRemoteTransitioning}
-            className={`inline-flex items-center justify-between gap-3 min-w-[220px] sm:min-w-[260px] max-w-[340px] px-5 py-2.5 sm:py-3 rounded-full border bg-[var(--surface)] hover:bg-[var(--surface-2)] active:scale-[0.98] transition-all text-sm font-semibold cursor-pointer shadow-card ${
-              subjectWarning
-                ? 'border-amber-500/60 ring-1 ring-amber-500/30'
-                : 'border-[var(--border)] hover:border-[var(--border-strong)]'
-            } ${isStudying ? 'opacity-90 cursor-not-allowed' : ''}`}
-          >
-            <div className="flex items-center gap-2.5 min-w-0 truncate">
-              <span
-                className="w-2.5 h-2.5 rounded-full flex-shrink-0 shadow-[0_0_8px_rgba(255,255,255,0.2)]"
-                style={{
-                  backgroundColor: selectedSubject
-                    ? (selectedSubject.color || '#10B981')
-                    : activeSubjects.length === 0
-                    ? 'var(--accent)'
-                    : '#71717A',
-                }}
-              />
-              <span className={`truncate text-sm sm:text-[15px] ${selectedSubject ? 'text-[var(--text)] font-semibold' : 'text-[var(--text-dim)] font-medium'}`}>
-                {selectedSubject?.name || 'Choose a subject'}
-              </span>
-              {isStudying && (
-                <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-fg/[0.08] text-[var(--text-dim)] flex-shrink-0">
-                  Locked
-                </span>
-              )}
-            </div>
-            <ChevronDown className={`w-4 h-4 text-[var(--text-dim)] flex-shrink-0 transition-transform duration-200 ${showDropdown ? 'rotate-180' : ''}`} />
-          </button>
-
-          {/* Subject Dropdown Popover */}
-          {showDropdown && !isStudying && (
-            <>
-              <div className="fixed inset-0 z-40" onClick={() => setShowDropdown(false)} />
-              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-72 bg-[var(--surface)] backdrop-blur-xl border border-[var(--border-strong)] rounded-2xl p-2.5 shadow-card z-50 text-[var(--text)]">
-                <div className="px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider text-[var(--text-dim)] border-b border-fg/[0.06] mb-1">
-                  Select subject
-                </div>
-                <div className="max-h-56 overflow-y-auto space-y-0.5">
-                  {activeSubjects.map((sub) => (
-                    <button
-                      key={sub.id}
-                      type="button"
-                      onClick={() => {
-                        setSelectedSubjectId(sub.id);
-                        setShowDropdown(false);
-                        setSubjectWarning(false);
-                      }}
-                      className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs sm:text-sm transition-colors cursor-pointer ${
-                        sub.id === selectedSubjectId
-                          ? 'bg-fg/[0.1] text-[var(--text)] font-medium'
-                          : 'text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-fg/[0.05]'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2.5 truncate">
-                        <span
-                          className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                          style={{ backgroundColor: sub.color || '#10B981' }}
-                        />
-                        <span className="truncate">{sub.name}</span>
-                      </div>
-                      <span className="text-[10px] font-mono text-[var(--text-dim)] ml-2 shrink-0">
-                        {Math.floor((sub.targetMinutesPerDay || 60) / 60)}h goal
-                      </span>
-                    </button>
-                  ))}
-                </div>
-                <div className="pt-2 mt-2 border-t border-fg/[0.06]">
-                  <button
-                    type="button"
-                    onClick={handleOpenSubjectManager}
-                    className="w-full flex items-center justify-center gap-2 py-1.5 rounded-lg text-xs font-medium text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-fg/[0.05] transition-colors cursor-pointer"
-                  >
-                    <FolderPlus className="w-3.5 h-3.5 text-[var(--text-dim)]" />
-                    <span>Manage subjects</span>
-                  </button>
-                </div>
+        {/* 2. Subject chip - quiet skeleton while study mode is loading; hidden in Focus mode; normal in Subject mode */}
+        {studyModeLoading ? (
+          <div className="relative mt-3.5 mb-1 z-30">
+            <div
+              className="inline-flex items-center justify-between min-w-[220px] sm:min-w-[260px] max-w-[340px] h-[44px] sm:h-[48px] px-5 rounded-full border border-[var(--border)] bg-[var(--surface)] opacity-50 animate-pulse"
+              aria-hidden="true"
+            >
+              <div className="flex items-center gap-2.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-[var(--border-strong)]" />
+                <span className="w-28 h-3.5 rounded bg-[var(--border-strong)]" />
               </div>
-            </>
-          )}
-        </div>
+            </div>
+          </div>
+        ) : isFocus ? null : (
+          <div className="relative mt-3.5 mb-1 z-30">
+            <button
+              type="button"
+              onClick={(e) => {
+                if (activeSubjects.length === 0) {
+                  handleOpenSubjectManager(e);
+                } else {
+                  setShowDropdown(!showDropdown);
+                }
+              }}
+              disabled={isStudying || isRemoteTransitioning}
+              className={`inline-flex items-center justify-between gap-3 min-w-[220px] sm:min-w-[260px] max-w-[340px] px-5 py-2.5 sm:py-3 rounded-full border bg-[var(--surface)] hover:bg-[var(--surface-2)] active:scale-[0.98] transition-all text-sm font-semibold cursor-pointer shadow-card ${
+                subjectWarning
+                  ? 'border-amber-500/60 ring-1 ring-amber-500/30'
+                  : 'border-[var(--border)] hover:border-[var(--border-strong)]'
+              } ${isStudying ? 'opacity-90 cursor-not-allowed' : ''}`}
+            >
+              <div className="flex items-center gap-2.5 min-w-0 truncate">
+                <span
+                  className="w-2.5 h-2.5 rounded-full flex-shrink-0 shadow-[0_0_8px_rgba(255,255,255,0.2)]"
+                  style={{
+                    backgroundColor: selectedSubject
+                      ? (selectedSubject.color || '#10B981')
+                      : activeSubjects.length === 0
+                      ? 'var(--accent)'
+                      : '#71717A',
+                  }}
+                />
+                <span className={`truncate text-sm sm:text-[15px] ${selectedSubject ? 'text-[var(--text)] font-semibold' : 'text-[var(--text-dim)] font-medium'}`}>
+                  {selectedSubject?.name || 'Choose a subject'}
+                </span>
+                {isStudying && (
+                  <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-fg/[0.08] text-[var(--text-dim)] flex-shrink-0">
+                    Locked
+                  </span>
+                )}
+              </div>
+              <ChevronDown className={`w-4 h-4 text-[var(--text-dim)] flex-shrink-0 transition-transform duration-200 ${showDropdown ? 'rotate-180' : ''}`} />
+            </button>
+
+            {/* Subject Dropdown Popover */}
+            {showDropdown && !isStudying && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowDropdown(false)} />
+                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-72 bg-[var(--surface)] backdrop-blur-xl border border-[var(--border-strong)] rounded-2xl p-2.5 shadow-card z-50 text-[var(--text)]">
+                  <div className="px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider text-[var(--text-dim)] border-b border-fg/[0.06] mb-1">
+                    Select subject
+                  </div>
+                  <div className="max-h-56 overflow-y-auto space-y-0.5">
+                    {activeSubjects.map((sub) => (
+                      <button
+                        key={sub.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedSubjectId(sub.id);
+                          setShowDropdown(false);
+                          setSubjectWarning(false);
+                        }}
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs sm:text-sm transition-colors cursor-pointer ${
+                          sub.id === selectedSubjectId
+                            ? 'bg-fg/[0.1] text-[var(--text)] font-medium'
+                            : 'text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-fg/[0.05]'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 truncate">
+                          <span
+                            className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                            style={{ backgroundColor: sub.color || '#10B981' }}
+                          />
+                          <span className="truncate">{sub.name}</span>
+                        </div>
+                        <span className="text-[10px] font-mono text-[var(--text-dim)] ml-2 shrink-0">
+                          {Math.floor((sub.targetMinutesPerDay || 60) / 60)}h goal
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="pt-2 mt-2 border-t border-fg/[0.06]">
+                    <button
+                      type="button"
+                      onClick={handleOpenSubjectManager}
+                      className="w-full flex items-center justify-center gap-2 py-1.5 rounded-lg text-xs font-medium text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-fg/[0.05] transition-colors cursor-pointer"
+                    >
+                      <FolderPlus className="w-3.5 h-3.5 text-[var(--text-dim)]" />
+                      <span>Manage subjects</span>
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </motion.div>
 
       {/* 3. The Dial (fades in 80ms after controls) */}
