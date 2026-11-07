@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode, useCallback } from 'react';
 import { UserProfile } from '../types';
-import { INITIAL_USER, cleanupLegacyDemoData, calculateStreak } from '../lib/mockData';
+import { INITIAL_USER, cleanupLegacyDemoData, calculateStreak, getCachedStreak, setCachedStreak } from '../lib/mockData';
 import { getSupabase } from '../lib/supabase';
 import { getRankFromRp, getSoftResetRp, HARD_RESET_CAP_RP, calculateSeasonRp, getCurrentMonthFocusSeconds, getRankTier, resolveLiveSeasonStats } from '../lib/ranks';
 import { getCurrentSeasonId, resolveUserSeasonReset, getRankBadgePath } from '../lib/rankedSystem';
@@ -132,15 +132,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         durationSeconds: Number(s.duration_seconds || 0),
       })) as any;
       const computedStreak = calculateStreak(mappedDbSessions);
-      let localCachedStreak = 0;
-      if (typeof window !== 'undefined') {
-        try {
-          localCachedStreak = parseInt(localStorage.getItem('studypulse_cached_streak') || '0', 10) || 0;
-        } catch {}
-      }
-      const resolvedStreak = Math.max(computedStreak, Number(profile?.streak_days ?? 0), localCachedStreak);
+      setCachedStreak(computedStreak);
 
-      if (resolvedStreak > Number(profile?.streak_days ?? 0)) {
+      const dbStreak = Number(profile?.streak_days ?? 0);
+      if (computedStreak !== dbStreak) {
         needsRepair = true;
       }
 
@@ -150,7 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             level: Math.round(calculatedLevel), 
             lifetime_xp: Math.round(currentLifetimeXP),
             xp: Math.round(currentLifetimeXP),
-            streak_days: resolvedStreak,
+            streak_days: computedStreak,
           };
           if (needsRepair) {
             updatePayload.season_rp = Math.round(calculatedRP);
@@ -160,7 +155,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             updatePayload.current_rank = effectiveRankTitle;
             updatePayload.rank_badge = effectiveBadge;
             updatePayload.last_season_rank = userReset.previousRankTitle;
-            updatePayload.streak_days = resolvedStreak;
+            updatePayload.streak_days = computedStreak;
           }
           await supabase.from('profiles').update(updatePayload).eq('id', authUser.id);
 
@@ -190,10 +185,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (profile) {
         setUser(prev => {
-          const finalStreak = Math.max(resolvedStreak, Number(prev?.streakDays ?? 0), localCachedStreak);
-          if (typeof window !== 'undefined' && finalStreak > 0) {
-            try { localStorage.setItem('studypulse_cached_streak', String(finalStreak)); } catch {}
-          }
+          const finalStreak = computedStreak;
+          setCachedStreak(finalStreak);
           const synced: UserProfile = {
             id: profile.id,
             email: authUser.email || prev.email || '',
@@ -283,17 +276,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             durationSeconds: Number(s.duration_seconds || 0),
           })) as any;
           const computedStreak = calculateStreak(mappedSess);
-          let localCachedStreak = 0;
-          if (typeof window !== 'undefined') {
+          setCachedStreak(computedStreak);
+          if (Number(data.streak_days ?? 0) !== computedStreak) {
+            data.streak_days = computedStreak;
             try {
-              localCachedStreak = parseInt(localStorage.getItem('studypulse_cached_streak') || '0', 10) || 0;
-            } catch {}
-          }
-          const resolvedStreak = Math.max(computedStreak, Number(data.streak_days ?? 0), Number(user?.streakDays ?? 0), localCachedStreak);
-          if (resolvedStreak > Number(data.streak_days ?? 0)) {
-            data.streak_days = resolvedStreak;
-            try {
-              await supabase.from('profiles').update({ streak_days: resolvedStreak }).eq('id', user.id);
+              await supabase.from('profiles').update({ streak_days: computedStreak }).eq('id', user.id);
             } catch {}
           }
 
@@ -339,10 +326,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             } catch {}
           }
           setUser(prev => {
-            const finalStreak = Math.max(resolvedStreak, Number(prev?.streakDays ?? 0), localCachedStreak);
-            if (typeof window !== 'undefined' && finalStreak > 0) {
-              try { localStorage.setItem('studypulse_cached_streak', String(finalStreak)); } catch {}
-            }
+            const finalStreak = computedStreak;
+            setCachedStreak(finalStreak);
             const updated = {
               ...prev,
               displayName: data.username || data.display_name || data.name || prev.username || prev.displayName,
@@ -389,17 +374,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (savedAuth === 'true') {
         setIsAuthenticated(true);
       }
-      let cachedStreak = 0;
-      try {
-        cachedStreak = parseInt(localStorage.getItem('studypulse_cached_streak') || '0', 10) || 0;
-      } catch {}
+      const cachedStreak = getCachedStreak();
       const saved = localStorage.getItem('studypulse_active_user');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed && typeof parsed === 'object') {
-          if (cachedStreak > 0) {
-            parsed.streakDays = Math.max(Number(parsed.streakDays || 0), cachedStreak);
-          }
+          parsed.streakDays = cachedStreak;
           const live = resolveLiveSeasonStats(parsed, []);
           if (live.startingRp > 0) {
             parsed.season_base_rp = Math.max(Number(parsed.season_base_rp || 0), live.startingRp);
@@ -799,7 +779,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           payload.daily_goal_minutes = Math.round(Number(updates.dailyGoalHours) * 60);
         }
         if (updates.streakDays !== undefined || (updates as any).streak_days !== undefined) {
-          payload.streak_days = Math.max(0, Math.round(Number(updates.streakDays ?? (updates as any).streak_days)));
+          const s = Math.max(0, Math.round(Number(updates.streakDays ?? (updates as any).streak_days)));
+          payload.streak_days = s;
+          setCachedStreak(s);
         }
         if (updates.seasonRp !== undefined || updates.rp !== undefined) {
           payload.season_rp = Math.round(Number(updates.seasonRp ?? updates.rp));

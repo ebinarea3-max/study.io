@@ -9,6 +9,7 @@ import { RankCrestBadge } from './RankCrestBadge';
 import { getRankTier, RANKS, RankTier, RankTierName, RankDivision } from '../../lib/ranks';
 import { getTierColor, formatTierTitle } from '../leaderboard/LeaderboardRow';
 import { FlairFrame, fetchFlairMap } from '../../lib/flair';
+import { calculateStreak } from '../../lib/mockData';
 
 export interface ScholarModalData {
   userId: string;
@@ -119,6 +120,7 @@ export function ScholarProfileModal({
           // Fallback calculation from local sessions if current user
           if (currentUserSessions && currentUserSessions.length > 0) {
             const sumSecs = currentUserSessions.reduce((acc, s) => acc + (s.durationSeconds || 0), 0);
+            const liveStreak = calculateStreak(currentUserSessions);
             const dateSet = new Set(
               currentUserSessions
                 .map((s) => (s.startTime ? new Date(s.startTime).toISOString().slice(0, 10) : ''))
@@ -129,6 +131,7 @@ export function ScholarProfileModal({
               setTotalStudySeconds(sumSecs);
               setActiveStudyDays(dateSet.size);
               setAvgDailySeconds(Math.round(sumSecs / days));
+              setProfileDetails(prev => ({ ...prev, streakDays: liveStreak }));
             }
           }
           if (active) setIsLoadingStats(false);
@@ -149,19 +152,25 @@ export function ScholarProfileModal({
 
         if (!active) return;
 
+        const sessions = sessRes.data || [];
+        const liveStreak = calculateStreak(
+          sessions.map((s: any) => ({
+            startTime: s.started_at,
+            durationSeconds: Number(s.duration_seconds || 0),
+          }))
+        );
+
         if (profRes.data) {
           const p = profRes.data;
           setProfileDetails({
             level: p.level ? Number(p.level) : undefined,
-            streakDays: p.streak_days !== undefined ? Number(p.streak_days) : undefined,
+            streakDays: liveStreak,
             seasonRp: p.season_rp !== undefined ? Number(p.season_rp) : undefined,
             rankTitle: p.rank_title || undefined,
             xp: p.xp !== undefined ? Number(p.xp) : undefined,
             createdAt: p.created_at || undefined,
           });
         }
-
-        const sessions = sessRes.data || [];
         const sumSecs = sessions.reduce((acc, s) => acc + (Number(s.duration_seconds) || 0), 0);
 
         const dateSet = new Set(

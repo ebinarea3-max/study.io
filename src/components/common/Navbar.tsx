@@ -28,7 +28,7 @@ import {
 } from '../../lib/premium';
 
 import { Logo } from '../Logo';
-import { calculateStreak } from '../../lib/mockData';
+import { calculateStreak, getCachedStreak, setCachedStreak } from '../../lib/mockData';
 import { getRankTier, calculateSeasonRp, getCurrentMonthFocusSeconds, resolveLiveSeasonStats } from '../../lib/ranks';
 import { getTierBadge, getLevelTitle } from '../../lib/gamification';
 import { useRankTheme } from '../../hooks/useRankTheme';
@@ -80,34 +80,20 @@ export function Navbar({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const cachedStreak = useMemo(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        return parseInt(localStorage.getItem('studypulse_cached_streak') || '0', 10) || 0;
-      } catch {}
-    }
-    return 0;
-  }, []);
-
-  const sessionStreak = useMemo(() => {
+  const displayStreak = useMemo(() => {
+    // 1. If sessions are available, calculate the live streak
     if (Array.isArray(sessions) && sessions.length > 0) {
       const s = calculateStreak(sessions);
-      if (typeof window !== 'undefined' && s > 0) {
-        try { localStorage.setItem('studypulse_cached_streak', String(s)); } catch {}
-      }
+      setCachedStreak(s);
       return s;
     }
-    return 0;
-  }, [sessions]);
-
-  const streakRef = useRef(Math.max(user?.streakDays ?? 0, sessionStreak, cachedStreak));
-  if (user?.streakDays !== undefined && user.streakDays !== null && user.streakDays > 0) {
-    streakRef.current = Math.max(streakRef.current, user.streakDays, sessionStreak, cachedStreak);
-  }
-  if (sessionStreak > 0) {
-    streakRef.current = Math.max(streakRef.current, sessionStreak);
-  }
-  const displayStreak = Math.max(streakRef.current, user?.streakDays ?? 0, sessionStreak, cachedStreak);
+    // 2. Fall back to user profile streak if available
+    if (user?.streakDays !== undefined && user.streakDays !== null) {
+      return Math.max(0, user.streakDays);
+    }
+    // 3. Fall back to validated non-expired cached streak
+    return getCachedStreak();
+  }, [sessions, user?.streakDays]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent | TouchEvent) {

@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useRef, useCallback, useMemo } from 'react';
 import { Subject, StudySession, TodoItem, TimerMode, PomodoroPhase, PomodoroPreset, PomodoroCompletedPhase, RankSettlementData, SeasonRecapData, SeasonResetData, UserProfile, ActiveSession } from '../types';
-import { INITIAL_TODOS, getTodayDateString, calculateStreak, cleanupLegacyDemoData } from '../lib/mockData';
+import { INITIAL_TODOS, getTodayDateString, calculateStreak, cleanupLegacyDemoData, setCachedStreak } from '../lib/mockData';
 import { getLocalStartOfDay, getLocalEndOfDay, getLocalDateString } from '../lib/dateUtils';
 import { splitSessionAtMidnights } from '../lib/sessionSplitting';
 import { useAuth } from './AuthContext';
@@ -2145,9 +2145,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
             // Update real streak, total study seconds, and evaluate official monthly Season RP
             const realStreak = calculateStreak(merged);
-            if (typeof window !== 'undefined' && realStreak > 0) {
-              try { localStorage.setItem('studypulse_cached_streak', String(realStreak)); } catch {}
-            }
+            setCachedStreak(realStreak);
             const realTotalSeconds = merged.reduce((sum, s) => sum + s.durationSeconds, 0);
             const liveStats = resolveLiveSeasonStats(userRef.current, merged);
             const currentSeasonRp = liveStats.seasonRp;
@@ -2367,9 +2365,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
         const sessionsToUse = finalMergedSessions.length > 0 ? finalMergedSessions : mappedSessions;
         const realStreak = calculateStreak(sessionsToUse);
-        if (typeof window !== 'undefined' && realStreak > 0) {
-          try { localStorage.setItem('studypulse_cached_streak', String(realStreak)); } catch {}
-        }
+        setCachedStreak(realStreak);
         const realTotalSeconds = sessionsToUse.reduce((sum, s) => sum + (s.durationSeconds || (s as any).duration_seconds || 0), 0);
         const liveStats = resolveLiveSeasonStats(currentUser, sessionsToUse);
         const currentSeasonRp = liveStats.seasonRp;
@@ -2404,9 +2400,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         if (localData.length > 0) {
           setSessions(prev => (prev.length === 0 ? localData : prev));
           const realStreak = calculateStreak(localData);
-          if (typeof window !== 'undefined' && realStreak > 0) {
-            try { localStorage.setItem('studypulse_cached_streak', String(realStreak)); } catch {}
-          }
+          setCachedStreak(realStreak);
           const realTotalSeconds = localData.reduce((sum, s) => sum + s.durationSeconds, 0);
           updateProfile({
             streakDays: realStreak,
@@ -2804,9 +2798,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       persistSessionsToLocalStorage(updated, uid);
 
       const realStreak = calculateStreak(updated);
-      if (typeof window !== 'undefined' && realStreak > 0) {
-        try { localStorage.setItem('studypulse_cached_streak', String(realStreak)); } catch {}
-      }
+      setCachedStreak(realStreak);
       const realTotalSeconds = updated.reduce((sum, s) => sum + s.durationSeconds, 0);
       updateProfile({
         streakDays: realStreak,
