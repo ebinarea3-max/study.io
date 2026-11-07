@@ -47,14 +47,12 @@ const DEFAULT_PLANS: BillingPlansData = {
 interface RazorpayResponse {
   razorpay_payment_id: string;
   razorpay_order_id?: string;
-  razorpay_subscription_id?: string;
   razorpay_signature: string;
 }
 
 interface RazorpayOptions {
   key?: string;
   order_id?: string;
-  subscription_id?: string;
   amount?: number;
   currency?: string;
   name: string;
@@ -63,6 +61,7 @@ interface RazorpayOptions {
   prefill?: {
     email?: string;
     name?: string;
+    contact?: string;
   };
   theme?: {
     color?: string;
@@ -76,6 +75,7 @@ interface RazorpayOptions {
 
 interface RazorpayInstance {
   open: () => void;
+  on?: (event: string, callback: (response: any) => void) => void;
 }
 
 interface RazorpayConstructor {
@@ -162,27 +162,36 @@ export function useRazorpayCheckout() {
           return;
         }
 
-        // 2. Call /api/razorpay/create-order
-        const createRes = await fetch('/api/razorpay/create-order', {
+        // 2. Call /api/create-order
+        const createRes = await fetch('/api/create-order', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ plan, userId: user.id }),
+          body: JSON.stringify({
+            plan,
+            userId: user.id,
+            amount: plan === 'yearly' ? 99900 : 9900,
+            currency: 'INR',
+          }),
         });
 
         const createData = (await createRes.json()) as {
+          order_id?: string;
           orderId?: string;
           amount?: number;
           currency?: string;
           keyId?: string;
+          key_id?: string;
           plan?: string;
           error?: string;
         };
 
-        if (!createRes.ok || !createData.orderId) {
+        const resolvedOrderId = createData.order_id || createData.orderId;
+        if (!createRes.ok || !resolvedOrderId) {
           throw new Error(createData.error || 'Failed to initialize payment order');
         }
 
         const keyId =
+          createData.key_id ||
           createData.keyId ||
           process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ||
           'rzp_test_TxMMb1eZs7gIB7';
@@ -190,11 +199,14 @@ export function useRazorpayCheckout() {
         // 3. Configure Razorpay Standard Checkout options with dark/gold theme
         const options: RazorpayOptions = {
           key: keyId,
-          order_id: createData.orderId,
+          order_id: resolvedOrderId,
           amount: createData.amount,
           currency: createData.currency || 'INR',
           name: 'study.io Pro',
-          description: plan === 'yearly' ? 'study.io Pro Yearly (₹999/yr)' : 'study.io Pro Monthly (₹99/mo)',
+          description:
+            plan === 'yearly'
+              ? 'study.io Pro Yearly (₹999/yr)'
+              : 'study.io Pro Monthly (₹99/mo)',
           image: '/icon.png',
           prefill: {
             email: user.email || '',
@@ -209,11 +221,11 @@ export function useRazorpayCheckout() {
 
             try {
               // 4. Verify HMAC SHA256 signature on server
-              const verifyRes = await fetch('/api/razorpay/verify', {
+              const verifyRes = await fetch('/api/verify-payment', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                  razorpay_order_id: response.razorpay_order_id || createData.orderId,
+                  razorpay_order_id: response.razorpay_order_id || resolvedOrderId,
                   razorpay_payment_id: response.razorpay_payment_id,
                   razorpay_signature: response.razorpay_signature,
                   plan,
@@ -246,7 +258,8 @@ export function useRazorpayCheckout() {
               setIsProcessing(false);
               if (onSuccessCallback) onSuccessCallback();
             } catch (err: unknown) {
-              const message = err instanceof Error ? err.message : 'Payment verification encountered an issue';
+              const message =
+                err instanceof Error ? err.message : 'Payment verification encountered an issue';
               console.error('Verification error:', err);
               toast.error(message, {
                 id: 'billing-verify',
@@ -262,9 +275,21 @@ export function useRazorpayCheckout() {
         };
 
         const razorpayInstance = new window.Razorpay(options);
+
+        // Handle payment failure event if available
+        if (typeof razorpayInstance.on === 'function') {
+          razorpayInstance.on('payment.failed', function (failResponse: any) {
+            console.error('Razorpay payment failed:', failResponse?.error);
+            const desc = failResponse?.error?.description || 'Payment failed or was declined.';
+            toast.error(desc, { id: 'billing-verify' });
+            setIsProcessing(false);
+          });
+        }
+
         razorpayInstance.open();
       } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : 'Error starting checkout. Please try again.';
+        const message =
+          err instanceof Error ? err.message : 'Error starting checkout. Please try again.';
         console.error('Checkout error:', err);
         toast.error(message);
         setIsProcessing(false);
