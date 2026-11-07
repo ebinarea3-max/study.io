@@ -11,7 +11,6 @@ import {
   MoreVertical,
   Edit2,
   Trash2,
-  Plus,
   Check,
   RotateCcw,
 } from 'lucide-react';
@@ -25,20 +24,18 @@ export function SubjectScheduleCard({ item, onEdit }: SubjectScheduleCardProps) 
   const {
     getItemProgress,
     focusOnSubject,
-    adjustOfflineTime,
     setSubjectCompleted,
     deleteItem,
   } = useTimetable();
 
   const [showMenu, setShowMenu] = useState(false);
-  const [showAdjust, setShowAdjust] = useState(false);
 
   const progress = getItemProgress(item);
   const isComplete = progress.isCompleted;
 
   return (
     <div
-      className={`relative overflow-hidden rounded-xl border p-4 sm:p-5 transition-all shadow-card ${
+      className={`relative overflow-hidden rounded-xl border p-3.5 sm:p-4 transition-all shadow-card ${
         isComplete
           ? 'bg-[var(--surface)] border-emerald-500/40 shadow-[0_0_20px_rgba(16,185,129,0.15)]'
           : 'bg-[var(--surface)] border-[var(--border)] hover:border-white/20'
@@ -55,7 +52,7 @@ export function SubjectScheduleCard({ item, onEdit }: SubjectScheduleCardProps) 
         }}
       />
 
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-3">
         {/* Row 1: Header (Title, Target Badge, Logged Time, Menu) */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -195,56 +192,30 @@ export function SubjectScheduleCard({ item, onEdit }: SubjectScheduleCardProps) 
         </div>
 
         {/* Row 3: Action Controls */}
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-white/[0.06]">
+        <div className="flex items-center justify-between gap-2 pt-2 border-t border-white/[0.06]">
           {/* Focus on This Button */}
           <button
             type="button"
             onClick={() => focusOnSubject(item)}
-            className="px-3.5 py-1.5 rounded-lg bg-[var(--accent)] hover:opacity-95 text-[var(--accent-contrast)] font-hud-mono text-xs font-bold tracking-wider uppercase transition-all flex items-center gap-2 cursor-pointer shadow-[0_0_15px_var(--glow)] hover:scale-[1.02] active:scale-95"
+            className="px-3.5 py-1.5 rounded-lg bg-[var(--accent)] hover:opacity-95 text-[var(--accent-contrast)] font-hud-mono text-xs font-bold tracking-wider uppercase transition-all flex items-center gap-2 cursor-pointer shadow-[0_0_12px_var(--glow)] hover:scale-[1.02] active:scale-95"
             title="Switch to Timer with this subject selected"
           >
             <Play className="w-3.5 h-3.5 fill-current" />
             <span>Focus on This</span>
           </button>
 
-          {/* Quick Offline Adjust Buttons */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-[10px] font-mono uppercase text-[var(--text-dim)] hidden sm:inline mr-1">
-              Offline:
-            </span>
-
-            <button
-              type="button"
-              onClick={() => adjustOfflineTime(item.id, 900)} // +15m
-              className="px-2 py-1 rounded-md bg-[var(--surface-2)] hover:bg-white/[0.08] text-[var(--text-dim)] hover:text-[var(--text)] border border-[var(--border)] font-mono text-[11px] font-medium transition-all cursor-pointer hover:scale-105 active:scale-95"
-              title="Add 15 minutes of offline study time"
-            >
-              +15m
-            </button>
-
-            <button
-              type="button"
-              onClick={() => adjustOfflineTime(item.id, 1800)} // +30m
-              className="px-2 py-1 rounded-md bg-[var(--surface-2)] hover:bg-white/[0.08] text-[var(--text-dim)] hover:text-[var(--text)] border border-[var(--border)] font-mono text-[11px] font-medium transition-all cursor-pointer hover:scale-105 active:scale-95"
-              title="Add 30 minutes of offline study time"
-            >
-              +30m
-            </button>
-
-            {/* Quick Toggle Complete */}
-            <button
-              type="button"
-              onClick={() => setSubjectCompleted(item.id, !isComplete)}
-              className={`px-2.5 py-1 rounded-md font-mono text-[11px] font-semibold border transition-all flex items-center gap-1 cursor-pointer hover:scale-105 active:scale-95 ${
-                isComplete
-                  ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400'
-                  : 'bg-[var(--surface-2)] border-[var(--border)] text-[var(--text-dim)] hover:text-[var(--text)]'
-              }`}
-              title={isComplete ? 'Click to reset progress' : 'Mark subject 100% completed'}
-            >
-              <Check className="w-3 h-3" />
-              <span>{isComplete ? 'Done' : 'Complete'}</span>
-            </button>
+          {/* Clean Right Status */}
+          <div className="flex items-center gap-1.5 font-mono text-xs">
+            {isComplete ? (
+              <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                <Check className="w-3.5 h-3.5" />
+                <span>Completed</span>
+              </span>
+            ) : (
+              <span className="text-[var(--text-dim)]">
+                {progress.percent}% logged
+              </span>
+            )}
           </div>
         </div>
       </div>

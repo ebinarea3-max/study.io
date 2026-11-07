@@ -33,25 +33,25 @@ export function TasksOverview() {
   const completedTodosCount = todos.filter(t => t.completed).length;
 
   return (
-    <div className="w-full h-full max-w-4xl mx-auto px-2 sm:px-6 py-6 pb-28 md:pb-28 animate-in fade-in duration-200 space-y-6">
-      {/* Top Sub-Navigation Switcher */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-1.5 rounded-2xl bg-[var(--surface)] border border-[var(--border)] shadow-card">
+    <div className="w-full h-full max-w-4xl mx-auto px-2 sm:px-6 py-3 sm:py-4 pb-20 md:pb-24 animate-in fade-in duration-200 space-y-3">
+      {/* Top Sub-Navigation Switcher (Compact) */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-1 rounded-xl bg-[var(--surface)] border border-[var(--border)] shadow-sm">
         <div className="flex items-center gap-1 overflow-x-auto scrollbar-none w-full sm:w-auto">
           {/* Timetable Tab */}
           <button
             type="button"
             onClick={() => handleSelectView('timetable')}
-            className={`flex-1 sm:flex-none px-3.5 py-2 rounded-xl font-hud-mono text-xs font-bold tracking-wider uppercase transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg font-hud-mono text-xs font-bold tracking-wider uppercase transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
               viewMode === 'timetable'
-                ? 'bg-[var(--accent)] text-[var(--accent-contrast)] shadow-[0_0_15px_var(--glow)]'
+                ? 'bg-[var(--accent)] text-[var(--accent-contrast)] shadow-[0_0_12px_var(--glow)]'
                 : 'text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-white/[0.04]'
             }`}
           >
-            <Calendar className="w-4 h-4 shrink-0" />
+            <Calendar className="w-3.5 h-3.5 shrink-0" />
             <span>Weekly Timetable</span>
             {streak.currentStreak > 0 && (
               <span
-                className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-black flex items-center gap-0.5 ${
+                className={`px-1.5 py-0.2 rounded-full text-[9px] font-mono font-black flex items-center gap-0.5 ${
                   viewMode === 'timetable'
                     ? 'bg-black/30 text-white'
                     : 'bg-amber-500/20 text-amber-400'
@@ -67,17 +67,17 @@ export function TasksOverview() {
           <button
             type="button"
             onClick={() => handleSelectView('todos')}
-            className={`flex-1 sm:flex-none px-3.5 py-2 rounded-xl font-hud-mono text-xs font-bold tracking-wider uppercase transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg font-hud-mono text-xs font-bold tracking-wider uppercase transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
               viewMode === 'todos'
-                ? 'bg-[var(--accent)] text-[var(--accent-contrast)] shadow-[0_0_15px_var(--glow)]'
+                ? 'bg-[var(--accent)] text-[var(--accent-contrast)] shadow-[0_0_12px_var(--glow)]'
                 : 'text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-white/[0.04]'
             }`}
           >
-            <CheckSquare className="w-4 h-4 shrink-0" />
+            <CheckSquare className="w-3.5 h-3.5 shrink-0" />
             <span>Mission Tasks</span>
             {todos.length > 0 && (
               <span
-                className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold ${
+                className={`px-1.5 py-0.2 rounded-full text-[9px] font-mono font-bold ${
                   viewMode === 'todos'
                     ? 'bg-black/30 text-white'
                     : 'bg-white/10 text-[var(--text-dim)]'
@@ -92,9 +92,9 @@ export function TasksOverview() {
           <button
             type="button"
             onClick={() => handleSelectView('both')}
-            className={`hidden sm:flex px-3 py-2 rounded-xl font-hud-mono text-xs font-bold tracking-wider uppercase transition-all items-center gap-1.5 cursor-pointer ${
+            className={`hidden sm:flex px-2.5 py-1.5 rounded-lg font-hud-mono text-xs font-bold tracking-wider uppercase transition-all items-center gap-1 cursor-pointer ${
               viewMode === 'both'
-                ? 'bg-[var(--accent)] text-[var(--accent-contrast)] shadow-[0_0_15px_var(--glow)]'
+                ? 'bg-[var(--accent)] text-[var(--accent-contrast)] shadow-[0_0_12px_var(--glow)]'
                 : 'text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-white/[0.04]'
             }`}
             title="View both Timetable and To-Do List stacked"
@@ -105,7 +105,7 @@ export function TasksOverview() {
         </div>
 
         {/* Quick Streak Tip on Desktop */}
-        <div className="hidden sm:flex items-center gap-1.5 px-3 text-[11px] font-mono text-[var(--text-dim)]">
+        <div className="hidden sm:flex items-center gap-1.5 px-3 text-[10px] font-mono text-[var(--text-dim)]">
           <span>
             {isTodayGoalCompleted
               ? 'Goal secured today 🔥'

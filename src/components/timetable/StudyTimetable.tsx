@@ -35,18 +35,15 @@ export function StudyTimetable() {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-200">
-      {/* 1. Daily Goal Streak Engine Banner */}
-      <GoalStreakBanner />
-
-      {/* 2. Day-of-Week Selector Bar */}
+    <div className="space-y-3.5 animate-in fade-in duration-200">
+      {/* 1. Day-of-Week Selector Bar & Compact Schedule Header */}
       <DaySelectorBar
         onAddSubject={handleOpenAdd}
         onOpenCopyModal={() => setIsCopyModalOpen(true)}
       />
 
-      {/* 3. Subject Schedule Cards List */}
-      <div className="space-y-3">
+      {/* 2. Subject Schedule Cards List (Prominently at the TOP) */}
+      <div className="space-y-2.5">
         {itemsForSelectedDay.length > 0 ? (
           itemsForSelectedDay.map(item => (
             <SubjectScheduleCard
@@ -56,34 +53,37 @@ export function StudyTimetable() {
             />
           ))
         ) : (
-          /* Empty / Rest Day State */
-          <div className="p-8 sm:p-12 rounded-2xl bg-[var(--surface)] border border-dashed border-[var(--border)] text-center space-y-4">
-            <div className="w-14 h-14 mx-auto rounded-2xl bg-[var(--surface-2)] border border-[var(--border)] flex items-center justify-center text-neutral-400">
-              <Moon className="w-7 h-7 text-neutral-400" />
+          /* Empty / Rest Day State (Compact) */
+          <div className="p-5 sm:p-7 rounded-xl bg-[var(--surface)] border border-dashed border-[var(--border)] text-center space-y-3">
+            <div className="w-10 h-10 mx-auto rounded-xl bg-[var(--surface-2)] border border-[var(--border)] flex items-center justify-center text-neutral-400">
+              <Moon className="w-5 h-5 text-neutral-400" />
             </div>
 
             <div>
-              <h4 className="text-base sm:text-lg font-hud font-bold tracking-wider uppercase text-[var(--text)]">
+              <h4 className="text-sm sm:text-base font-hud font-bold tracking-wider uppercase text-[var(--text)]">
                 {selectedDayLabel} is a Rest Day
               </h4>
-              <p className="text-xs sm:text-sm text-[var(--text-dim)] max-w-md mx-auto mt-1 font-sans">
+              <p className="text-xs text-[var(--text-dim)] max-w-md mx-auto mt-0.5 font-sans">
                 No subjects are scheduled for {selectedDayLabel}. Rest days protect your Daily Goal Streak from breaking!
               </p>
             </div>
 
-            <div className="flex items-center justify-center pt-2">
+            <div className="flex items-center justify-center pt-1">
               <button
                 type="button"
                 onClick={handleOpenAdd}
-                className="px-4 py-2 rounded-xl bg-[var(--accent)] hover:opacity-90 text-[var(--accent-contrast)] font-hud-mono text-xs font-bold tracking-wider uppercase transition-all flex items-center gap-1.5 cursor-pointer shadow-[0_0_15px_var(--glow)] hover:scale-105 active:scale-95"
+                className="px-3.5 py-1.5 rounded-lg bg-[var(--accent)] hover:opacity-90 text-[var(--accent-contrast)] font-hud-mono text-xs font-bold tracking-wider uppercase transition-all flex items-center gap-1.5 cursor-pointer shadow-[0_0_12px_var(--glow)] hover:scale-105 active:scale-95"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-3.5 h-3.5" />
                 <span>Schedule a Subject for {selectedDay.toUpperCase()}</span>
               </button>
             </div>
           </div>
         )}
       </div>
+
+      {/* 3. Daily Goal Streak Engine Banner (Reduced in size, sleek progress footer) */}
+      <GoalStreakBanner />
 
       {/* Sync Status Badge */}
       <div className="flex items-center justify-between text-[11px] font-mono text-[var(--text-faint)] px-1">
