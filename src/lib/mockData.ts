@@ -188,6 +188,63 @@ export function calculateStreak(sessions: StudySession[] | any[]): number {
 }
 
 /**
+ * Calculates continuous daily goal streak based on whether logged sessions on each
+ * calendar day reached or exceeded the user's daily goal target (in seconds).
+ * A streak is active if today's goal was met, or if yesterday's goal was met
+ * (pending today's ongoing progress).
+ */
+export function calculateGoalStreak(sessions: StudySession[] | any[], dailyGoalSeconds: number = 3600): number {
+  if (!sessions || sessions.length === 0 || dailyGoalSeconds <= 0) return 0;
+
+  const secondsByDate: Record<string, number> = {};
+  sessions.forEach(s => {
+    if (!s) return;
+    const start = s.startTime || s.started_at;
+    const duration = Number(s.durationSeconds ?? s.duration_seconds ?? 0);
+    if (start && duration > 0) {
+      const localDate = new Date(start);
+      if (isNaN(localDate.getTime())) return;
+      const year = localDate.getFullYear();
+      const month = String(localDate.getMonth() + 1).padStart(2, '0');
+      const day = String(localDate.getDate()).padStart(2, '0');
+      const dKey = `${year}-${month}-${day}`;
+      secondsByDate[dKey] = (secondsByDate[dKey] || 0) + duration;
+    }
+  });
+
+  const todayStr = getTodayDateString(0);
+  const yesterdayStr = getTodayDateString(-1);
+
+  const todaySecs = secondsByDate[todayStr] || 0;
+  const yesterdaySecs = secondsByDate[yesterdayStr] || 0;
+
+  let streak = 0;
+  let offset = -1;
+
+  if (todaySecs >= dailyGoalSeconds) {
+    streak = 1;
+    offset = -1;
+  } else if (yesterdaySecs >= dailyGoalSeconds) {
+    streak = 0;
+    offset = -1;
+  } else {
+    return 0;
+  }
+
+  while (offset >= -3650) {
+    const dStr = getTodayDateString(offset);
+    if ((secondsByDate[dStr] || 0) >= dailyGoalSeconds) {
+      streak += 1;
+      offset -= 1;
+    } else {
+      break;
+    }
+  }
+
+  return streak;
+}
+
+/**
  * Retrieves the cached streak from localStorage, validating that the last study
  * date was either today or yesterday. If the cache is stale (older than yesterday),
  * it purges the cache and returns 0.
