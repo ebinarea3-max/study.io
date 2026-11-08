@@ -6,6 +6,7 @@ export type AmbientSoundType =
   | 'whitenoise'
   | 'rain'
   | 'campfire'
+  | 'calmnoise'
   | 'waves'
   | 'lofi';
 
@@ -186,23 +187,86 @@ class AudioEngine {
     }
   }
 
-  // Ambient sound synthesizer: Rain, Lofi, WhiteNoise, BrownNoise, Campfire, Waves
+  // Ambient sound synthesizer: Rain, Fireplace, WhiteNoise, PinkNoise, BrownNoise, CalmNoise
   private audioBuffers = new Map<string, AudioBuffer>();
 
-  private async getAmbientBuffer(ctx: AudioContext, url: string): Promise<AudioBuffer> {
+  private createCalmNoiseBuffer(ctx: AudioContext): AudioBuffer {
+    const sampleRate = ctx.sampleRate || 44100;
+    const durationSeconds = 12;
+    const totalSamples = sampleRate * durationSeconds;
+    const buffer = ctx.createBuffer(2, totalSamples, sampleRate);
+
+    for (let channel = 0; channel < 2; channel++) {
+      const output = buffer.getChannelData(channel);
+      let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+      let lastOut = 0;
+
+      for (let i = 0; i < totalSamples; i++) {
+        const white = Math.random() * 2 - 1;
+        b0 = 0.99886 * b0 + white * 0.0555179;
+        b1 = 0.99332 * b1 + white * 0.0750759;
+        b2 = 0.96900 * b2 + white * 0.1538520;
+        b3 = 0.86650 * b3 + white * 0.3104856;
+        b4 = 0.55000 * b4 + white * 0.5329522;
+        b5 = -0.7616 * b5 - white * 0.0168980;
+        const pink = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.11;
+        b6 = white * 0.115926;
+
+        const alpha = 0.065;
+        lastOut = lastOut + alpha * (pink - lastOut);
+
+        const modRate = channel === 0 ? 0.08 : 0.07;
+        const modulation = 1 + 0.08 * Math.sin(2 * Math.PI * modRate * (i / sampleRate));
+
+        output[i] = lastOut * modulation;
+      }
+
+      // Smooth cosine crossfade on boundary
+      const fadeSamples = Math.floor(sampleRate * 0.6);
+      for (let i = 0; i < fadeSamples; i++) {
+        const progress = i / fadeSamples;
+        const fadeOut = 0.5 * (1 + Math.cos(Math.PI * progress));
+        const fadeIn = 1 - fadeOut;
+        const endIdx = totalSamples - fadeSamples + i;
+        const blended = output[i] * fadeIn + output[endIdx] * fadeOut;
+        output[i] = blended;
+        output[endIdx] = blended;
+      }
+
+      let max = 0;
+      for (let i = 0; i < totalSamples; i++) {
+        if (Math.abs(output[i]) > max) max = Math.abs(output[i]);
+      }
+      const scale = 0.65 / (max || 1);
+      for (let i = 0; i < totalSamples; i++) {
+        output[i] *= scale;
+      }
+    }
+
+    return buffer;
+  }
+
+  private async getAmbientBuffer(ctx: AudioContext, url: string, type?: AmbientSoundType): Promise<AudioBuffer> {
     if (this.audioBuffers.has(url)) {
       return this.audioBuffers.get(url)!;
     }
-    const response = await fetch(url);
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    const arrayBuffer = await response.arrayBuffer();
-    const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
-    console.log(`Successfully decoded audio for ${url}`);
-    this.audioBuffers.set(url, audioBuffer);
-    return audioBuffer;
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      const arrayBuffer = await response.arrayBuffer();
+      const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+      console.log(`Successfully decoded audio for ${url}`);
+      this.audioBuffers.set(url, audioBuffer);
+      return audioBuffer;
+    } catch (err) {
+      if (type === 'calmnoise' || url.includes('calm-noise')) {
+        const buffer = this.createCalmNoiseBuffer(ctx);
+        this.audioBuffers.set(url, buffer);
+        return buffer;
+      }
+      throw err;
+    }
   }
-
-
 
   // Volume compensation factors to ensure consistent perceived loudness across all files
   private volumeCompensation: Record<AmbientSoundType, number> = {
@@ -211,6 +275,7 @@ class AudioEngine {
     'whitenoise': 2.0,
     'rain': 4.0,
     'campfire': 4.0,
+    'calmnoise': 3.5,
     'waves': 3.5,
     'lofi': 3.0,
   };
@@ -221,14 +286,20 @@ class AudioEngine {
       
       const ctx = this.getContext();
 
+      // Map legacy types
+      let effectiveType: AmbientSoundType = type;
+      if (type === 'waves' || type === 'lofi') {
+        effectiveType = 'calmnoise';
+      }
+
       // Guard: if already playing this exact type, do not restart to prevent stuttering
-      if (this.currentAmbientType === type && this.ambientGain && this.ambientSource && !this.isAmbientPaused) {
+      if (this.currentAmbientType === effectiveType && this.ambientGain && this.ambientSource && !this.isAmbientPaused) {
          this.setAmbientVolume(volume);
          return;
       }
       
       this.stopAmbient();
-      this.currentAmbientType = type;
+      this.currentAmbientType = effectiveType;
       this.isAmbientPaused = false;
       this.pausedAmbientType = null;
       this.currentAmbientVolume = volume;
@@ -236,7 +307,7 @@ class AudioEngine {
       const masterGain = ctx.createGain();
       masterGain.gain.setValueAtTime(0.001, ctx.currentTime);
       
-      const compFactor = this.volumeCompensation[type] || 1.0;
+      const compFactor = this.volumeCompensation[effectiveType] || 1.0;
       masterGain.gain.linearRampToValueAtTime(volume * compFactor, ctx.currentTime + 1.2);
       
       masterGain.connect(ctx.destination);
@@ -248,13 +319,14 @@ class AudioEngine {
         'whitenoise': '/audio/ambience/white-noise.mp3',
         'pinknoise': '/audio/ambience/pink-noise.mp3',
         'brownnoise': '/audio/ambience/brown-noise.mp3',
-        'waves': '/audio/ambience/waves.mp3',
-        'lofi': '/audio/ambience/lofi.mp3',
+        'calmnoise': '/audio/ambience/calm-noise.wav',
+        'waves': '/audio/ambience/calm-noise.wav',
+        'lofi': '/audio/ambience/calm-noise.wav',
       };
       
-      const url = urls[type];
+      const url = urls[effectiveType];
       if (url) {
-        const buffer = await this.getAmbientBuffer(ctx, url);
+        const buffer = await this.getAmbientBuffer(ctx, url, effectiveType);
         
         // Primary track
         const source1 = ctx.createBufferSource();

@@ -8,8 +8,7 @@ import {
   VolumeX,
   CloudRain,
   Flame,
-  Waves,
-  Coffee,
+  Wind,
   Headphones,
   Radio,
   Music,
@@ -107,10 +106,8 @@ export function AtmospherePicker({
         return <CloudRain className={iconClass} />;
       case 'campfire':
         return <Flame className={iconClass} />;
-      case 'waves':
-        return <Waves className={iconClass} />;
-      case 'lofi':
-        return <Coffee className={iconClass} />;
+      case 'calmnoise':
+        return <Wind className={iconClass} />;
       case 'brownnoise':
         return <Headphones className={iconClass} />;
       case 'pinknoise':

@@ -38,7 +38,7 @@ import {
   CloudRain,
   Radio,
   Headphones,
-  Waves,
+  Wind,
   ChevronUp,
 Settings } from 'lucide-react';
 import { soundFx, AmbientSoundType } from '../../lib/audio';
@@ -1413,8 +1413,7 @@ export function StudyTimer() {
                     { id: 'none', label: 'Silent', icon: <span className="w-3.5 h-3.5 rounded-full bg-zinc-500 mx-0.5" /> },
                     { id: 'rain', label: 'Gentle Rain', icon: <CloudRain className="w-4 h-4" /> },
                     { id: 'campfire', label: 'Fireplace', icon: <Flame className="w-4 h-4" /> },
-                    { id: 'waves', label: 'Ocean Waves', icon: <Waves className="w-4 h-4" /> },
-                    { id: 'lofi', label: 'Lo-Fi Chill', icon: <Coffee className="w-4 h-4" /> },
+                    { id: 'calmnoise', label: 'Calm Noise', icon: <Wind className="w-4 h-4" /> },
                     { id: 'brownnoise', label: 'Brown Noise', icon: <Headphones className="w-4 h-4" /> },
                     { id: 'pinknoise', label: 'Pink Noise', icon: <Radio className="w-4 h-4" /> },
                     { id: 'whitenoise', label: 'White Noise', icon: <Radio className="w-4 h-4" /> },

@@ -10,8 +10,7 @@ import {
   Music,
   CloudRain,
   Flame,
-  Waves,
-  Coffee,
+  Wind,
   Headphones,
   Radio,
   Volume2,
@@ -134,10 +133,8 @@ export function ScenePicker({
         return <CloudRain className={iconClass} />;
       case 'campfire':
         return <Flame className={iconClass} />;
-      case 'waves':
-        return <Waves className={iconClass} />;
-      case 'lofi':
-        return <Coffee className={iconClass} />;
+      case 'calmnoise':
+        return <Wind className={iconClass} />;
       case 'brownnoise':
         return <Headphones className={iconClass} />;
       case 'pinknoise':

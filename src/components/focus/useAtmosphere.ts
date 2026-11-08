@@ -15,15 +15,17 @@ export interface AtmosphereOption {
 export const ATMOSPHERE_OPTIONS: AtmosphereOption[] = [
   { id: 'none', label: 'Silent', description: 'Pure quiet focus', category: 'silent' },
   { id: 'rain', label: 'Gentle Rain', description: 'Calming rainfall on rooftop', category: 'nature' },
-  { id: 'campfire', label: 'Campfire', description: 'Warm crackling hearth flame', category: 'nature' },
-  { id: 'waves', label: 'Ocean Waves', description: 'Rhythmic coastal tide', category: 'nature' },
-  { id: 'lofi', label: 'Lo-Fi Chill', description: 'Mellow beats for deep focus', category: 'music' },
+  { id: 'campfire', label: 'Fireplace', description: 'Warm crackling hearth flame', category: 'nature' },
+  { id: 'calmnoise', label: 'Calm Noise', description: 'Gentle soothing ambient focus sound', category: 'noise' },
   { id: 'brownnoise', label: 'Brown Noise', description: 'Deep low-frequency rumble', category: 'noise' },
   { id: 'pinknoise', label: 'Pink Noise', description: 'Balanced soothing static', category: 'noise' },
   { id: 'whitenoise', label: 'White Noise', description: 'Crisp masking frequency', category: 'noise' },
 ];
 
 export function getAtmosphereOption(id: AtmosphereSoundId): AtmosphereOption {
+  if (id === 'waves' || id === 'lofi') {
+    return ATMOSPHERE_OPTIONS.find((opt) => opt.id === 'calmnoise') || ATMOSPHERE_OPTIONS[0];
+  }
   return ATMOSPHERE_OPTIONS.find((opt) => opt.id === id) || ATMOSPHERE_OPTIONS[0];
 }
 
@@ -51,7 +53,11 @@ function notifyStorageChange() {
 function getSavedSoundSnapshot(): AtmosphereSoundId {
   if (typeof window === 'undefined') return 'none';
   try {
-    const saved = localStorage.getItem(STORAGE_SOUND_KEY) as AtmosphereSoundId | null;
+    let saved = localStorage.getItem(STORAGE_SOUND_KEY) as AtmosphereSoundId | null;
+    if (saved === 'waves' || saved === 'lofi') {
+      saved = 'calmnoise';
+      try { localStorage.setItem(STORAGE_SOUND_KEY, 'calmnoise'); } catch {}
+    }
     if (saved && (saved === 'none' || ATMOSPHERE_OPTIONS.some((o) => o.id === saved))) {
       return saved;
     }

@@ -229,16 +229,15 @@
 ---
 
 ## 11. Atmosphere Sounds, Fullscreen Focus Mode, and Focus Scenes
-- **Atmosphere Sounds (8 Options)** (`src/components/focus/useAtmosphere.ts:16-25`):
+- **Atmosphere Sounds (7 Options)** (`src/components/focus/useAtmosphere.ts:16-24`):
   1. `none`: **Silent** ("Pure quiet focus") — Category: `silent`
   2. `rain`: **Gentle Rain** ("Calming rainfall on rooftop") — Category: `nature`
-  3. `campfire`: **Campfire** ("Warm crackling hearth flame") — Category: `nature`
-  4. `waves`: **Ocean Waves** ("Rhythmic coastal tide") — Category: `nature`
-  5. `lofi`: **Lo-Fi Chill** ("Mellow beats for deep focus") — Category: `music`
-  6. `brownnoise`: **Brown Noise** ("Deep low-frequency rumble") — Category: `noise`
-  7. `pinknoise`: **Pink Noise** ("Balanced soothing static") — Category: `noise`
-  8. `whitenoise`: **White Noise** ("Crisp masking frequency") — Category: `noise`
-  - Default volume: 0.5 (50%) (`useAtmosphere.ts:34`). All 8 sounds are free.
+  3. `campfire`: **Fireplace** ("Warm crackling hearth flame") — Category: `nature`
+  4. `calmnoise`: **Calm Noise** ("Gentle soothing ambient focus sound") — Category: `noise`
+  5. `brownnoise`: **Brown Noise** ("Deep low-frequency rumble") — Category: `noise`
+  6. `pinknoise`: **Pink Noise** ("Balanced soothing static") — Category: `noise`
+  7. `whitenoise`: **White Noise** ("Crisp masking frequency") — Category: `noise`
+  - Default volume: 0.5 (50%) (`useAtmosphere.ts:34`). All 7 sounds are free.
 - **Fullscreen Focus Mode** (`src/components/focus/FocusModeModal.tsx`):
   - Full-screen immersion modal featuring canvas background animations, clock dial, atmosphere controls, scene selector, and keyboard shortcuts (`F` for fullscreen, `ESC` to close).
 - **Focus Scenes** (`src/components/focus/scenes/registry.ts:13-72`):

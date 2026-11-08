@@ -338,3 +338,4 @@ export function HelpFeedbackModal({ isOpen, onClose }: HelpFeedbackModalProps) {
     </div>
   );
 }
+
