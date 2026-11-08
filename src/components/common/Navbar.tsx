@@ -340,7 +340,7 @@ export function Navbar({
         {/* Right Action Bar */}
         <div className="flex items-center gap-1.5 sm:gap-3">
 
-          {/* Premium Header Star Link (Free users) or Star Badge (Premium users) */}
+          {/* Upgrade Header Link (Free users) or Pro Badge (Premium users) */}
           {!isPremium ? (
             <Link
               href="/premium"
@@ -349,10 +349,11 @@ export function Navbar({
                 background: PREMIUM_GOLD_GRADIENT,
                 boxShadow: `0 0 10px ${PREMIUM_GOLD_GLOW}`,
               }}
-              title="See everything in Premium"
+              title="Upgrade to Premium"
+              aria-label="Upgrade to Premium"
             >
               <Crown className="w-3.5 h-3.5 fill-current" />
-              <span className="hidden sm:inline">PREMIUM</span>
+              <span className="hidden sm:inline">UPGRADE</span>
             </Link>
           ) : (
             <Link
@@ -638,7 +639,7 @@ export function Navbar({
                     className="w-full text-left px-3 py-2 rounded-xl text-xs font-hud font-semibold tracking-wider text-[#E6C15A] hover:bg-[#E6C15A]/10 border border-transparent hover:border-[#E6C15A]/20 transition-all flex items-center gap-2.5 cursor-pointer active:scale-[0.99]"
                   >
                     <Crown className="w-3.5 h-3.5 fill-current" />
-                    <span>{isPremium ? 'PREMIUM MEMBERSHIP' : 'EXPLORE PREMIUM'}</span>
+                    <span>{isPremium ? 'PREMIUM MEMBERSHIP' : 'UPGRADE TO PREMIUM'}</span>
                   </Link>
 
                   {!isAuthenticated ? (
