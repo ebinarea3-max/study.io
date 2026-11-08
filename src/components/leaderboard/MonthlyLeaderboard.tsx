@@ -19,6 +19,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { LeaderboardRow } from './LeaderboardRow';
 import { FlairFrame, fetchFlairMap } from '../../lib/flair';
 import { ScholarProfileModal, ScholarModalData } from '../common/ScholarProfileModal';
+import { isAppAvatar } from '@/lib/avatars';
 export function formatStudyTime(totalSeconds: number): string {
   const safeSeconds = Math.max(0, Math.round(totalSeconds || 0));
   const hours = Math.floor(safeSeconds / 3600);
@@ -171,7 +172,7 @@ function ScholarAvatar({
     <div
       className={`${sizeClass} rounded-full overflow-hidden bg-[#0c0e14] flex-shrink-0 flex items-center justify-center relative shadow-md`}
     >
-      {avatarUrl ? (
+      {avatarUrl && isAppAvatar(avatarUrl) ? (
         <img
           src={avatarUrl}
           alt={name}

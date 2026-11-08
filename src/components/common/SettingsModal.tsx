@@ -23,6 +23,7 @@ import { submitReport } from '../../app/actions/report';
 import { soundFx } from '../../lib/audio';
 import { useAuth } from '../../context/AuthContext';
 import { usePremium } from '../../context/PremiumContext';
+import { resolveAppAvatar, isAppAvatar } from '@/lib/avatars';
 import { usePwaInstall } from '../../hooks/usePwaInstall';
 import { InstallInstructionModal } from './InstallInstructionModal';
 import { useRankTheme } from '../../hooks/useRankTheme';
@@ -246,8 +247,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     className="w-12 h-12 rounded-xl border border-[var(--border)] flex items-center justify-center font-bold text-[var(--accent-contrast)] text-lg flex-shrink-0 shadow-md overflow-hidden relative"
                     style={{ background: theme.accent }}
                   >
-                    {user.avatarUrl ? (
-                      <img src={user.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                    {user.avatarUrl && isAppAvatar(user.avatarUrl) ? (
+                      <img src={resolveAppAvatar(user.avatarUrl, user.displayName || user.id)} alt="Avatar" className="w-full h-full object-cover" />
                     ) : user.displayName ? (
                       user.displayName.slice(0, 2).toUpperCase()
                     ) : (

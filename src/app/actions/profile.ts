@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabaseServer';
 import { revalidatePath } from 'next/cache';
+import { resolveAppAvatar } from '@/lib/avatars';
 
 export async function updateScholarProfile(formData: {
   name: string;
@@ -30,7 +31,7 @@ export async function updateScholarProfile(formData: {
     const updatePayload: any = {
       name: formData.name.trim(),
       username: cleanHandle,
-      avatar_url: formData.avatar_url,
+      avatar_url: resolveAppAvatar(formData.avatar_url, cleanHandle || user.id),
       daily_goal_minutes: formData.daily_goal_minutes,
       is_onboarded: true,
     };

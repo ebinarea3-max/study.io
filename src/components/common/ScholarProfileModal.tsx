@@ -10,6 +10,7 @@ import { getRankTier, RANKS, RankTier, RankTierName, RankDivision } from '../../
 import { getTierColor, formatTierTitle } from '../leaderboard/LeaderboardRow';
 import { FlairFrame, fetchFlairMap } from '../../lib/flair';
 import { calculateStreak, calculateGoalStreak } from '../../lib/mockData';
+import { resolveAppAvatar, isAppAvatar } from '@/lib/avatars';
 
 export interface ScholarModalData {
   userId: string;
@@ -295,7 +296,7 @@ export function ScholarProfileModal({
                   boxShadow: `0 0 12px ${tierColor}30`,
                 }}
               >
-                {scholar.avatarUrl && !avatarError ? (
+                {scholar.avatarUrl && isAppAvatar(scholar.avatarUrl) && !avatarError ? (
                   <img
                     src={scholar.avatarUrl}
                     alt={displayName}

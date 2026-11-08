@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { UserAvatar } from '../common/UserAvatar';
+import { resolveAppAvatar, isAppAvatar } from '@/lib/avatars';
 import { FlairFrame, fetchFlairMap } from '../../lib/flair';
 import { AvatarFlairRing, FlairCrown } from '../common/FlairBadge';
 import { ScholarProfileModal, ScholarModalData } from '../common/ScholarProfileModal';
@@ -130,7 +131,9 @@ export function cacheMemberProfiles(
     profiles.forEach((p) => {
       if (!p || !p.id) return;
       const cleanAvatar =
-        typeof p.avatar_url === 'string' && p.avatar_url.trim().length > 0 ? p.avatar_url.trim() : null;
+        typeof p.avatar_url === 'string' && p.avatar_url.trim().length > 0
+          ? resolveAppAvatar(p.avatar_url, p.username || p.name || p.id)
+          : null;
       const item = {
         username: p.username || p.name || 'Scholar',
         avatar_url: cleanAvatar,
@@ -319,12 +322,10 @@ CREATE POLICY "Hosts can update their own study rooms"
     if (!user) return null;
     return {
       username: (user as any).username || user.displayName || 'Scholar',
-      avatar_url:
-        user.avatarUrl ||
-        (user as any).avatar_url ||
-        (user as any).user_metadata?.avatar_url ||
-        (user as any).user_metadata?.picture ||
-        null,
+      avatar_url: resolveAppAvatar(
+        user.avatarUrl || (user as any).avatar_url,
+        (user as any).username || user.displayName || user.id
+      ),
     };
   }, [
     user?.id,
@@ -332,8 +333,6 @@ CREATE POLICY "Hosts can update their own study rooms"
     user?.displayName,
     user?.avatarUrl,
     (user as any)?.avatar_url,
-    (user as any)?.user_metadata?.avatar_url,
-    (user as any)?.user_metadata?.picture,
   ]);
 
   const profileRef = useRef(profile);
@@ -360,13 +359,10 @@ CREATE POLICY "Hosts can update their own study rooms"
   // Keep local profile cache seeded with current user profile
   useEffect(() => {
     if (user?.id) {
-      const myAvatar =
-        profile?.avatar_url ||
-        user?.avatarUrl ||
-        (user as any)?.avatar_url ||
-        (user as any)?.user_metadata?.avatar_url ||
-        (user as any)?.user_metadata?.picture ||
-        null;
+      const myAvatar = resolveAppAvatar(
+        profile?.avatar_url || user?.avatarUrl || (user as any)?.avatar_url,
+        profile?.username || user?.displayName || user?.id
+      );
       const myName = profile?.username || user?.displayName || user?.email?.split('@')[0] || 'Scholar';
       cacheMemberProfiles([{ id: user.id, username: myName, avatar_url: myAvatar }]);
     }
@@ -862,20 +858,19 @@ CREATE POLICY "Hosts can update their own study rooms"
             const todayTotal = getTodayTotalSeconds ? getTodayTotalSeconds() : 0;
             const baseToday = Math.max(0, todayTotal - (isRunning ? elapsed : 0));
 
-            const myAvatar =
-              profileRef.current?.avatar_url ||
-              user?.avatarUrl ||
-              (user as any)?.avatar_url ||
-              (user as any)?.user_metadata?.avatar_url ||
-              (user as any)?.user_metadata?.picture ||
-              getCachedMemberProfile(user.id)?.avatar_url ||
-              null;
             const myUsername =
               profileRef.current?.username ||
               user?.displayName ||
               user?.email?.split('@')[0] ||
               getCachedMemberProfile(user.id)?.username ||
               'Scholar';
+            const myAvatar = resolveAppAvatar(
+              profileRef.current?.avatar_url ||
+              user?.avatarUrl ||
+              (user as any)?.avatar_url ||
+              getCachedMemberProfile(user.id)?.avatar_url,
+              myUsername || user.id
+            );
 
             await presenceChannel.track({
               user_id: user.id,
@@ -940,20 +935,19 @@ CREATE POLICY "Hosts can update their own study rooms"
         const todayTotal = getTodayTotalSeconds ? getTodayTotalSeconds() : 0;
         const baseToday = Math.max(0, todayTotal - (isRunning ? elapsed : 0));
 
-        const myAvatar =
-          profile?.avatar_url ||
-          user?.avatarUrl ||
-          (user as any)?.avatar_url ||
-          (user as any)?.user_metadata?.avatar_url ||
-          (user as any)?.user_metadata?.picture ||
-          getCachedMemberProfile(user.id)?.avatar_url ||
-          null;
         const myUsername =
           profile?.username ||
           user?.displayName ||
           user?.email?.split('@')[0] ||
           getCachedMemberProfile(user.id)?.username ||
           'Scholar';
+        const myAvatar = resolveAppAvatar(
+          profile?.avatar_url ||
+          user?.avatarUrl ||
+          (user as any)?.avatar_url ||
+          getCachedMemberProfile(user.id)?.avatar_url,
+          myUsername || user.id
+        );
 
         channelRef.current.track({
           user_id: user.id,

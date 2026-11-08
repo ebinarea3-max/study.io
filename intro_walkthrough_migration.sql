@@ -46,3 +46,4 @@ $$;
 -- Secure RPC permissions
 revoke all on function public.complete_my_intro() from public;
 grant execute on function public.complete_my_intro() to authenticated;
+

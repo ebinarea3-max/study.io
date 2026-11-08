@@ -13,6 +13,7 @@ import { getSupabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { isAppropriateHandle, isValidHandleFormat, sanitizeHandleInput } from '../../lib/validation';
 import { updateScholarProfile } from '../../app/actions/profile';
+import { PRESET_AVATARS, VAULT_CATEGORIES, resolveAppAvatar, isAppAvatar } from '@/lib/avatars';
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -42,100 +43,6 @@ const getInitials = (name: string) => {
   }
   return name.substring(0, 2).toUpperCase();
 };
-
-const PRESET_AVATARS = [
-  'https://api.dicebear.com/9.x/micah/svg?seed=ScholarA&backgroundColor=0d1117',
-  'https://api.dicebear.com/9.x/adventurer/svg?seed=Archivist&backgroundColor=0d1117',
-  'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=Nexus&backgroundColor=0d1117',
-  'https://api.dicebear.com/9.x/shapes/svg?seed=FocusSigil&backgroundColor=0d1117',
-  'https://api.dicebear.com/9.x/micah/svg?seed=Nocturne&backgroundColor=0d1117',
-  'https://api.dicebear.com/9.x/lorelei/svg?seed=Lyra&backgroundColor=0d1117',
-];
-
-const VAULT_CATEGORIES: {
-  name: string;
-  isPremium?: boolean;
-  badge?: string;
-  avatars: string[];
-}[] = [
-  {
-    name: 'PREMIUM // ELITE SCHOLARS',
-    isPremium: true,
-    badge: 'PRO EXCLUSIVE',
-    avatars: [
-      'https://api.dicebear.com/9.x/lorelei/svg?seed=Archmage&backgroundColor=241d0b',
-      'https://api.dicebear.com/9.x/lorelei/svg?seed=Solaris&backgroundColor=1f142b',
-      'https://api.dicebear.com/9.x/adventurer/svg?seed=Grandmaster&backgroundColor=28190e',
-      'https://api.dicebear.com/9.x/adventurer/svg?seed=Celestial&backgroundColor=0e2329',
-      'https://api.dicebear.com/9.x/lorelei/svg?seed=Empress&backgroundColor=1a1625',
-      'https://api.dicebear.com/9.x/adventurer/svg?seed=ValkyriePrime&backgroundColor=1c1526',
-      'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=ApexCore&backgroundColor=1a1a2e',
-      'https://api.dicebear.com/9.x/shapes/svg?seed=GoldenSigil&backgroundColor=2b1e09',
-      'https://api.dicebear.com/9.x/micah/svg?seed=ChronoLord&backgroundColor=1c1328',
-      'https://api.dicebear.com/9.x/lorelei/svg?seed=Sovereign&backgroundColor=141f2d',
-      'https://api.dicebear.com/9.x/adventurer/svg?seed=PhantomBlade&backgroundColor=151824',
-      'https://api.dicebear.com/9.x/shapes/svg?seed=StarlightCrown&backgroundColor=251b0d',
-    ],
-  },
-  {
-    name: 'SCHOLARS & ARCHIVISTS',
-    avatars: [
-      'https://api.dicebear.com/9.x/micah/svg?seed=Sage1',
-      'https://api.dicebear.com/9.x/micah/svg?seed=Cipher',
-      'https://api.dicebear.com/9.x/micah/svg?seed=Aura',
-      'https://api.dicebear.com/9.x/micah/svg?seed=Raven',
-      'https://api.dicebear.com/9.x/micah/svg?seed=Atlas',
-      'https://api.dicebear.com/9.x/micah/svg?seed=Zenith',
-      'https://api.dicebear.com/9.x/micah/svg?seed=Orion',
-      'https://api.dicebear.com/9.x/micah/svg?seed=Lyra',
-      'https://api.dicebear.com/9.x/micah/svg?seed=Kaelen',
-      'https://api.dicebear.com/9.x/micah/svg?seed=Nova',
-      'https://api.dicebear.com/9.x/micah/svg?seed=Vesper',
-      'https://api.dicebear.com/9.x/micah/svg?seed=Rowan',
-    ],
-  },
-  {
-    name: 'ADVENTURERS & STRATEGISTS',
-    avatars: [
-      'https://api.dicebear.com/9.x/adventurer/svg?seed=Alchemist',
-      'https://api.dicebear.com/9.x/adventurer/svg?seed=Novelist',
-      'https://api.dicebear.com/9.x/adventurer/svg?seed=Tactician',
-      'https://api.dicebear.com/9.x/adventurer/svg?seed=Oracle',
-      'https://api.dicebear.com/9.x/adventurer/svg?seed=Vanguard',
-      'https://api.dicebear.com/9.x/adventurer/svg?seed=Chronos',
-      'https://api.dicebear.com/9.x/adventurer/svg?seed=Shinobi',
-      'https://api.dicebear.com/9.x/adventurer/svg?seed=Sorcerer',
-      'https://api.dicebear.com/9.x/adventurer/svg?seed=Paladin',
-      'https://api.dicebear.com/9.x/adventurer/svg?seed=Ranger',
-      'https://api.dicebear.com/9.x/adventurer/svg?seed=Glitch',
-      'https://api.dicebear.com/9.x/adventurer/svg?seed=Explorer',
-    ],
-  },
-  {
-    name: 'CYBERNETIC COGNITION',
-    avatars: [
-      'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=QuantumCore',
-      'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=CyberZen',
-      'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=NeuroByte',
-      'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=EchoProtocol',
-      'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=MatrixSoul',
-      'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=Axiom',
-    ],
-  },
-  {
-    name: 'MINIMALIST SIGILS',
-    avatars: [
-      'https://api.dicebear.com/9.x/shapes/svg?seed=Focus',
-      'https://api.dicebear.com/9.x/shapes/svg?seed=Catalyst',
-      'https://api.dicebear.com/9.x/shapes/svg?seed=Vector',
-      'https://api.dicebear.com/9.x/shapes/svg?seed=Prism',
-      'https://api.dicebear.com/9.x/shapes/svg?seed=Eclipse',
-      'https://api.dicebear.com/9.x/shapes/svg?seed=NexusOrbit',
-      'https://api.dicebear.com/9.x/shapes/svg?seed=Hypercube',
-      'https://api.dicebear.com/9.x/shapes/svg?seed=Monolith',
-    ],
-  },
-];
 
 export function ProfileModal({ isOpen, onClose, user: parentUser, profile }: ProfileModalProps) {
   const { user: contextUser, updateProfile } = useAuth();
@@ -202,11 +109,7 @@ export function ProfileModal({ isOpen, onClose, user: parentUser, profile }: Pro
       setUsername(user.username || '');
       setDailyGoalHours(user.dailyGoalHours);
       
-      const effectiveAvatarUrl =
-        user.avatarUrl ||
-        (user.user_metadata?.avatar_url as string) ||
-        (user.user_metadata?.picture as string) ||
-        '';
+      const effectiveAvatarUrl = resolveAppAvatar(user.avatarUrl, user.username || user.displayName || user.id);
       setAvatarUrl(effectiveAvatarUrl);
       
       setErrorMsg('');
@@ -358,7 +261,7 @@ export function ProfileModal({ isOpen, onClose, user: parentUser, profile }: Pro
                 title="Change Avatar"
                 aria-label="Change Avatar"
               >
-                {avatarUrl ? (
+                {avatarUrl && isAppAvatar(avatarUrl) ? (
                   <img
                     src={avatarUrl}
                     alt="Selected Avatar"

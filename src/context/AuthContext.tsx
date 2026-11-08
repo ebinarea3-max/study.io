@@ -7,6 +7,7 @@ import { getSupabase } from '../lib/supabase';
 import { getRankFromRp, getSoftResetRp, HARD_RESET_CAP_RP, calculateSeasonRp, getCurrentMonthFocusSeconds, getRankTier, resolveLiveSeasonStats } from '../lib/ranks';
 import { getCurrentSeasonId, resolveUserSeasonReset, getRankBadgePath } from '../lib/rankedSystem';
 import { getLevelFromLifetimeXP, getScholarTitle } from '../lib/gamification';
+import { resolveAppAvatar, isAppAvatar, getDeterministicDefaultAvatar } from '../lib/avatars';
 
 export type StoredAccount = {
   id: string;
@@ -53,21 +54,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!supabase || !authUser?.id) return;
 
     // Immediately extract user_metadata for stable, zero-flicker UI
-    const metaAvatar = (authUser.user_metadata?.avatar_url as string) || (authUser.user_metadata?.picture as string) || '';
     const rawMetaName = (authUser.user_metadata?.full_name as string) || (authUser.user_metadata?.name as string) || (authUser.user_metadata?.display_name as string) || (authUser.email ? authUser.email.split('@')[0] : '');
     const cleanMetaName = rawMetaName.includes('(') ? rawMetaName.split(' (')[0].trim() : rawMetaName;
 
     setUser(prev => {
       // Prioritize existing local state to prevent flickering back to raw oauth names during background refetches
       const resolvedDisplayName = prev.username || prev.displayName || (authUser.user_metadata?.custom_username as string) || cleanMetaName || 'Focus Scholar';
+      const cleanAvatar = resolveAppAvatar(prev.avatarUrl, prev.username || prev.displayName || cleanMetaName || authUser.id);
       
       const merged: UserProfile = {
         ...prev,
         id: authUser.id,
         email: authUser.email || prev.email || '',
         displayName: resolvedDisplayName,
-        avatarUrl: prev.avatarUrl,
-        user_metadata: authUser.user_metadata,
+        avatarUrl: cleanAvatar,
+        user_metadata: {
+          ...(authUser.user_metadata || {}),
+          avatar_url: undefined,
+          picture: undefined,
+        },
       };
       try { localStorage.setItem('studypulse_active_user', JSON.stringify(merged)); } catch {}
       return merged;
@@ -184,6 +189,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const streakBonusDate = profile?.last_streak_bonus_date || storedStreakBonusDate;
 
       if (profile) {
+        const cleanAvatar = resolveAppAvatar(profile.avatar_url, profile.username || cleanMetaName || authUser.id);
+        if (!isAppAvatar(profile.avatar_url)) {
+          supabase.from('profiles').update({ avatar_url: cleanAvatar }).eq('id', authUser.id).then();
+        }
+
         setUser(prev => {
           const finalStreak = computedStreak;
           setCachedStreak(finalStreak);
@@ -193,7 +203,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             username: profile.username || prev.username,
             name: profile.name || prev.name,
             displayName: profile.username || profile.display_name || profile.name || prev.username || prev.displayName || (authUser.user_metadata?.custom_username as string) || cleanMetaName || 'Focus Scholar',
-            avatarUrl: profile.avatar_url || prev.avatarUrl,
+            avatarUrl: cleanAvatar,
             dailyGoalHours: Number(profile.daily_goal_hours ?? prev.dailyGoalHours ?? 4.0),
             streakDays: finalStreak,
             level: Number(profile.level ?? calculatedLevel),
@@ -220,6 +230,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             is_onboarded: profile.is_onboarded ?? prev.is_onboarded,
             user_metadata: {
               ...(authUser.user_metadata || {}),
+              avatar_url: undefined,
+              picture: undefined,
               level: Number(profile.level ?? calculatedLevel),
               levelTitle: profile.level_title || calculatedTitle || prev.levelTitle,
             },
@@ -228,10 +240,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return synced;
         });
       } else {
+        const defaultAvatar = getDeterministicDefaultAvatar(cleanMetaName || authUser.id);
         await supabase.from('profiles').upsert({
           id: authUser.id,
           username: cleanMetaName || 'Scholar',
-          avatar_url: metaAvatar || null,
+          avatar_url: defaultAvatar,
           xp: 0,
           lifetime_xp: 0,
           level: 1,
@@ -329,13 +342,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               localStorage.setItem(`studypulse_pending_season_reset_${currentMonthStr.replace('-', '_')}`, JSON.stringify(pendingResetAlert));
             } catch {}
           }
+          const resolvedAvatar = resolveAppAvatar(data.avatar_url, data.username || user.username || user.displayName || user.id);
+          if (!isAppAvatar(data.avatar_url)) {
+            supabase.from('profiles').update({ avatar_url: resolvedAvatar }).eq('id', user.id).then();
+          }
+
           setUser(prev => {
             const finalStreak = computedStreak;
             setCachedStreak(finalStreak);
             const updated = {
               ...prev,
               displayName: data.username || data.display_name || data.name || prev.username || prev.displayName,
-              avatarUrl: data.avatar_url || prev.avatarUrl,
+              avatarUrl: resolvedAvatar,
               dailyGoalHours: data.daily_goal_hours ?? prev.dailyGoalHours,
               streakDays: finalStreak,
               level: data.level ?? prev.level,
@@ -387,6 +405,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed && typeof parsed === 'object') {
+          parsed.avatarUrl = resolveAppAvatar(parsed.avatarUrl, parsed.username || parsed.displayName || parsed.id);
           parsed.streakDays = cachedStreak;
           const live = resolveLiveSeasonStats(parsed, []);
           if (live.startingRp > 0) {
@@ -550,7 +569,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             await supabase.from('profiles').upsert({
               id: data.user.id,
               name: name?.trim() || normalizedEmail.split('@')[0],
-              avatar_url: null,
+              avatar_url: getDeterministicDefaultAvatar(name?.trim() || normalizedEmail.split('@')[0] || data.user.id),
             });
           } catch {
             // ignore
@@ -739,6 +758,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ...updates,
       };
 
+      if (updates.avatarUrl !== undefined) {
+        updated.avatarUrl = resolveAppAvatar(updates.avatarUrl, prev.username || prev.displayName || prev.id);
+      }
+
       if (updates.level !== undefined) {
         updated.level = updates.level;
       } else if (updates.lifetime_xp !== undefined || updates.xp !== undefined) {
@@ -768,7 +791,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           payload.username = updates.username.trim().toLowerCase();
         }
         if (updates.avatarUrl !== undefined && updates.avatarUrl !== prev.avatarUrl) {
-          payload.avatar_url = updates.avatarUrl || null;
+          payload.avatar_url = resolveAppAvatar(updates.avatarUrl, prev.username || prev.displayName || prev.id);
         }
         if (updates.level !== undefined && Number(updates.level) !== Number(prev.level)) {
           payload.level = Math.round(Number(updates.level));

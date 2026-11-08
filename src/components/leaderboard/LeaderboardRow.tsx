@@ -9,6 +9,7 @@ import { RankTierName, RankDivision, getRankTier, RANKS, RankTier } from '../../
 import { getLevelFromLifetimeXP } from '../../lib/gamification';
 import { FlairFrame } from '../../lib/flair';
 import { AvatarFlairRing, FlairCrown } from '../common/FlairBadge';
+import { isAppAvatar } from '@/lib/avatars';
 
 export const TIER_COLORS: Record<string, string> = {
   Bronze: '#C98A4B',
@@ -270,7 +271,7 @@ export const LeaderboardRow = React.memo(function LeaderboardRow({
                 border: `1.5px solid ${tierColor}`,
               }}
             >
-              {row.avatar_url && !avatarError ? (
+              {row.avatar_url && isAppAvatar(row.avatar_url) && !avatarError ? (
                 <img
                   src={row.avatar_url}
                   alt={displayName}

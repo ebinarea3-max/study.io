@@ -26,6 +26,7 @@ import {
   PREMIUM_GOLD_BORDER,
   PREMIUM_GOLD_GLOW,
 } from '../../lib/premium';
+import { resolveAppAvatar, isAppAvatar } from '@/lib/avatars';
 
 import { Logo } from '../Logo';
 import { calculateStreak, getCachedStreak, setCachedStreak } from '../../lib/mockData';
@@ -196,13 +197,8 @@ export function Navbar({
   }, []);
 
   const effectiveAvatar = useMemo(() => {
-    return (
-      user?.avatarUrl ||
-      user?.user_metadata?.avatar_url ||
-      (user as any)?.user_metadata?.picture ||
-      ''
-    );
-  }, [user?.avatarUrl, user?.user_metadata?.avatar_url, (user as any)?.user_metadata?.picture]);
+    return resolveAppAvatar(user?.avatarUrl, user?.username || user?.displayName || user?.id);
+  }, [user?.avatarUrl, user?.username, user?.displayName, user?.id]);
 
   const [imageError, setImageError] = useState(false);
   useEffect(() => {
@@ -476,7 +472,7 @@ export function Navbar({
 
                 {/* Avatar */}
                 <div className="w-[30px] h-[30px] rounded-full overflow-hidden flex items-center justify-center relative shadow-inner bg-[var(--surface-2)] z-10">
-                  {effectiveAvatar && !imageError ? (
+                  {effectiveAvatar && isAppAvatar(effectiveAvatar) && !imageError ? (
                     <img
                       src={effectiveAvatar}
                       alt={displayName || 'User Avatar'}
