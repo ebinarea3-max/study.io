@@ -1315,23 +1315,7 @@ CREATE POLICY "Hosts can update their own study rooms"
 
                             {/* Action */}
                             <div className="w-24 sm:w-32 flex items-center justify-end gap-1.5">
-                              {isHost ? (
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setEditingRoom(room);
-                                    setEditRoomName(room.name);
-                                    setEditIsPrivate(room.is_private);
-                                    setEditPassword(room.password || '');
-                                    setEditMaxCapacity(room.max_capacity || 4);
-                                  }}
-                                  className="p-1.5 rounded-lg text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-fg/[0.08] transition-colors cursor-pointer"
-                                  title="Room Settings"
-                                >
-                                  <Settings className="w-4 h-4" />
-                                </button>
-                              ) : (
+                              {!isHost && (
                                 <button
                                   type="button"
                                   onClick={(e) => {
