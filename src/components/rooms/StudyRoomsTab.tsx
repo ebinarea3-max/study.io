@@ -380,7 +380,7 @@ CREATE POLICY "Hosts can update their own study rooms"
             host_id: user.id,
             password: is_private ? createRoomData.password.trim() : null,
             is_private,
-            max_capacity: createRoomData.max_capacity,
+            max_capacity: Math.min(32, Math.max(2, Number(createRoomData.max_capacity) || 4)),
             short_code: generatedCode,
           },
         ])
@@ -437,6 +437,10 @@ CREATE POLICY "Hosts can update their own study rooms"
     const currentMemberCount = editingRoom.room_members?.[0]?.count || 1;
     if (editMaxCapacity < Math.max(2, currentMemberCount)) {
       setEditRoomError(`Max capacity cannot be lower than current members (${currentMemberCount}).`);
+      return;
+    }
+    if (editMaxCapacity > 32) {
+      setEditRoomError('Max capacity cannot exceed 32 scholars.');
       return;
     }
 
@@ -1554,7 +1558,7 @@ CREATE POLICY "Hosts can update their own study rooms"
                   <option value={2} className="bg-[var(--surface)] text-[var(--text)]">2 Scholars // Duo Focus</option>
                   <option value={4} className="bg-[var(--surface)] text-[var(--text)]">4 Scholars // Strike Team</option>
                   <option value={10} className="bg-[var(--surface)] text-[var(--text)]">10 Scholars // Study Squad</option>
-                  <option value={50} className="bg-[var(--surface)] text-[var(--text)]">50 Scholars // Open Hall</option>
+                  <option value={32} className="bg-[var(--surface)] text-[var(--text)]">32 Scholars // Max Chamber</option>
                 </select>
               </div>
 
@@ -1962,8 +1966,8 @@ CREATE POLICY "Hosts can update their own study rooms"
 
                     <button
                       type="button"
-                      disabled={editMaxCapacity >= 100}
-                      onClick={() => setEditMaxCapacity((prev) => Math.min(100, prev + 1))}
+                      disabled={editMaxCapacity >= 32}
+                      onClick={() => setEditMaxCapacity((prev) => Math.min(32, prev + 1))}
                       className="w-8 h-8 rounded-lg hover:brightness-110 disabled:opacity-30 border border-[var(--border)] flex items-center justify-center cursor-pointer font-bold shadow-sm"
                       style={{ backgroundColor: 'var(--accent)', color: 'var(--accent-contrast)' }}
                     >
@@ -1974,7 +1978,7 @@ CREATE POLICY "Hosts can update their own study rooms"
 
                 {/* Presets */}
                 <div className="flex flex-wrap gap-1.5 pt-1">
-                  {[4, 8, 12, 25, 50].map((num) => {
+                  {[4, 8, 12, 20, 32].map((num) => {
                     const currentCount = editingRoom.room_members?.[0]?.count || 1;
                     const isDisabled = num < currentCount;
                     const isSelected = editMaxCapacity === num;

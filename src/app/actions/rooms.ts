@@ -26,7 +26,7 @@ export async function updateRoomSettingsAction(params: UpdateRoomParams) {
 
     const trimmedPass = params.password?.trim() || '';
     const willBePrivate = Boolean(params.is_private && trimmedPass.length > 0);
-    const capacity = Math.max(2, Math.min(100, Number(params.max_capacity) || 4));
+    const capacity = Math.max(2, Math.min(32, Number(params.max_capacity) || 4));
 
     // 1. Try with admin service client if available
     const admin = createAdminClient();

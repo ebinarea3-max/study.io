@@ -1547,6 +1547,11 @@ CREATE POLICY "Hosts can update their own study rooms"
       return;
     }
 
+    if (editMaxCapacity > 32) {
+      toast.error('Max capacity cannot exceed 32 members');
+      return;
+    }
+
     if (isPrivate && !editPassword.trim()) {
       toast.error('Please enter a password for private room, or switch to Public');
       return;
@@ -2350,7 +2355,7 @@ CREATE POLICY "Hosts can update their own study rooms"
                 <div className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10">
                   <div className="flex flex-col">
                     <span className="text-xs font-bold text-slate-200">Max Member Limit</span>
-                    <span className="text-[11px] text-slate-500">Min {Math.max(2, dbMembers.length)} • Max 100</span>
+                    <span className="text-[11px] text-slate-500">Min {Math.max(2, dbMembers.length)} • Max 32</span>
                   </div>
 
                   <div className="flex items-center gap-3">
@@ -2378,10 +2383,10 @@ CREATE POLICY "Hosts can update their own study rooms"
 
                     <button
                       type="button"
-                      disabled={editMaxCapacity >= 100}
+                      disabled={editMaxCapacity >= 32}
                       onClick={() => {
                         isFormDirtyRef.current = true;
-                        setEditMaxCapacity((prev) => Math.min(100, prev + 1));
+                        setEditMaxCapacity((prev) => Math.min(32, prev + 1));
                       }}
                       className="w-10 h-10 rounded-xl hover:brightness-110 disabled:opacity-30 border border-[var(--border)] flex items-center justify-center transition-all cursor-pointer font-bold text-lg shadow-md"
                       style={{ backgroundColor: 'var(--accent)', color: 'var(--accent-contrast)' }}
@@ -2402,8 +2407,8 @@ CREATE POLICY "Hosts can update their own study rooms"
                       { count: 4, label: '4 (Squad)' },
                       { count: 8, label: '8 (Group)' },
                       { count: 12, label: '12 (Circle)' },
-                      { count: 25, label: '25 (Hall)' },
-                      { count: 50, label: '50 (Lecture)' },
+                      { count: 20, label: '20 (Hall)' },
+                      { count: 32, label: '32 (Max Chamber)' },
                     ].map((preset) => {
                       const isSelected = editMaxCapacity === preset.count;
                       const isDisabled = preset.count < dbMembers.length;
