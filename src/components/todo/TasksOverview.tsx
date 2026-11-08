@@ -1,165 +1,37 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { DailyTodoList } from './DailyTodoList';
-import { StudyTimetable } from '../timetable/StudyTimetable';
-import { useTimetable } from '../../context/TimetableContext';
-import { useStudy } from '../../context/StudyContext';
-import { useStudyMode } from '../../context/StudyModeContext';
-import { Calendar, CheckSquare, Layers, Flame } from 'lucide-react';
+import { useIntro } from '../../context/IntroContext';
+import { INTRO_CONTENT } from '../../lib/introContent';
+import { Sparkles, X } from 'lucide-react';
 
 export function TasksOverview() {
-  const { streak, isTodayGoalCompleted } = useTimetable();
-  const { todos } = useStudy();
-
-  const [viewMode, setViewMode] = useState<'timetable' | 'todos' | 'both'>('timetable');
-
-  // Remember user's preferred sub-view
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem('studypulse_tasks_view_mode') as 'timetable' | 'todos' | 'both' | null;
-      if (saved && ['timetable', 'todos', 'both'].includes(saved)) {
-        setViewMode(saved);
-      }
-    } catch {}
-  }, []);
-
-  const handleSelectView = (mode: 'timetable' | 'todos' | 'both') => {
-    setViewMode(mode);
-    try {
-      localStorage.setItem('studypulse_tasks_view_mode', mode);
-    } catch {}
-  };
-
-  const { isFocus } = useStudyMode();
-  const completedTodosCount = todos.filter(t => t.completed).length;
-
-  if (isFocus) {
-    return (
-      <div className="w-full h-full max-w-4xl mx-auto px-2 sm:px-6 py-3 sm:py-4 pb-20 md:pb-24 animate-in fade-in duration-200">
-        <DailyTodoList />
-      </div>
-    );
-  }
+  const { isHintVisible, dismissHint } = useIntro();
+  const showHint = isHintVisible('tasks');
 
   return (
     <div className="w-full h-full max-w-4xl mx-auto px-2 sm:px-6 py-3 sm:py-4 pb-20 md:pb-24 animate-in fade-in duration-200 space-y-3">
-      {/* Top Sub-Navigation Switcher (Compact) */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-1 rounded-xl bg-[var(--surface)] border border-[var(--border)] shadow-sm">
-        <div className="flex items-center gap-1 overflow-x-auto scrollbar-none w-full sm:w-auto">
-          {/* Timetable Tab */}
+      {/* One-time dismissible intro hint (if active) */}
+      {showHint && (
+        <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs font-mono text-amber-300 flex items-center justify-between gap-3 shadow-sm">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+            <span>{INTRO_CONTENT.hints.tasks.text}</span>
+          </div>
           <button
             type="button"
-            onClick={() => handleSelectView('timetable')}
-            className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg font-hud-mono text-xs font-bold tracking-wider uppercase transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-              viewMode === 'timetable'
-                ? 'bg-[var(--accent)] text-[var(--accent-contrast)] shadow-[0_0_12px_var(--glow)]'
-                : 'text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-white/[0.04]'
-            }`}
+            onClick={() => dismissHint('tasks')}
+            className="p-1 rounded-lg hover:bg-amber-500/20 text-amber-400/70 hover:text-amber-300 transition-colors cursor-pointer"
+            aria-label="Dismiss tip"
           >
-            <Calendar className="w-3.5 h-3.5 shrink-0" />
-            <span>Weekly Timetable</span>
-            {streak.currentStreak > 0 && (
-              <span
-                className={`px-1.5 py-0.2 rounded-full text-[9px] font-mono font-black flex items-center gap-0.5 ${
-                  viewMode === 'timetable'
-                    ? 'bg-black/30 text-white'
-                    : 'bg-amber-500/20 text-amber-400'
-                }`}
-              >
-                <Flame className="w-2.5 h-2.5 fill-current" />
-                {streak.currentStreak}d
-              </span>
-            )}
+            <X className="w-3.5 h-3.5" />
           </button>
-
-          {/* Mission To-Do List Tab */}
-          <button
-            type="button"
-            onClick={() => handleSelectView('todos')}
-            className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg font-hud-mono text-xs font-bold tracking-wider uppercase transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-              viewMode === 'todos'
-                ? 'bg-[var(--accent)] text-[var(--accent-contrast)] shadow-[0_0_12px_var(--glow)]'
-                : 'text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-white/[0.04]'
-            }`}
-          >
-            <CheckSquare className="w-3.5 h-3.5 shrink-0" />
-            <span>Mission Tasks</span>
-            {todos.length > 0 && (
-              <span
-                className={`px-1.5 py-0.2 rounded-full text-[9px] font-mono font-bold ${
-                  viewMode === 'todos'
-                    ? 'bg-black/30 text-white'
-                    : 'bg-white/10 text-[var(--text-dim)]'
-                }`}
-              >
-                {completedTodosCount}/{todos.length}
-              </span>
-            )}
-          </button>
-
-          {/* Both / Stacked View Tab */}
-          <button
-            type="button"
-            onClick={() => handleSelectView('both')}
-            className={`hidden sm:flex px-2.5 py-1.5 rounded-lg font-hud-mono text-xs font-bold tracking-wider uppercase transition-all items-center gap-1 cursor-pointer ${
-              viewMode === 'both'
-                ? 'bg-[var(--accent)] text-[var(--accent-contrast)] shadow-[0_0_12px_var(--glow)]'
-                : 'text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-white/[0.04]'
-            }`}
-            title="View both Timetable and To-Do List stacked"
-          >
-            <Layers className="w-3.5 h-3.5 shrink-0" />
-            <span>All-In-One</span>
-          </button>
-        </div>
-
-        {/* Quick Streak Tip on Desktop */}
-        <div className="hidden sm:flex items-center gap-1.5 px-3 text-[10px] font-mono text-[var(--text-dim)]">
-          <span>
-            {isTodayGoalCompleted
-              ? 'Goal secured today 🔥'
-              : 'Complete today targets to maintain streak'}
-          </span>
-        </div>
-      </div>
-
-      {/* Main Content Area */}
-      {viewMode === 'timetable' && (
-        <div className="animate-in fade-in duration-150">
-          <StudyTimetable />
         </div>
       )}
 
-      {viewMode === 'todos' && (
-        <div className="animate-in fade-in duration-150">
-          <DailyTodoList />
-        </div>
-      )}
-
-      {viewMode === 'both' && (
-        <div className="space-y-10 animate-in fade-in duration-150">
-          <section className="space-y-4">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-amber-400" />
-              <h3 className="text-xs font-mono uppercase font-bold tracking-widest text-[var(--text-dim)]">
-                SCHEDULED STUDY TIMETABLE
-              </h3>
-            </div>
-            <StudyTimetable />
-          </section>
-
-          <section className="space-y-4 pt-6 border-t border-[var(--border)]">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-blue-400" />
-              <h3 className="text-xs font-mono uppercase font-bold tracking-widest text-[var(--text-dim)]">
-                DAILY MISSION OBJECTIVES
-              </h3>
-            </div>
-            <DailyTodoList />
-          </section>
-        </div>
-      )}
+      {/* Pure To-Do List */}
+      <DailyTodoList />
     </div>
   );
 }
