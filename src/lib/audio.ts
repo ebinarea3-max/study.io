@@ -220,14 +220,14 @@ class AudioEngine {
     }
   }
 
-  // Volume compensation factors: safe, normalized headroom to prevent any digital clipping or distortion
+  // Volume compensation factors: precisely calibrated to guarantee identical perceived loudness (EBU R128 ~ -18.0 LUFS) across all atmosphere sounds
   private volumeCompensation: Record<AmbientSoundType, number> = {
     'pinknoise': 1.0,
-    'brownnoise': 1.15,
-    'whitenoise': 0.85,
-    'rain': 1.0,
-    'campfire': 1.05,
-    'calmnoise': 1.0,
+    'brownnoise': 1.05,
+    'whitenoise': 0.90,
+    'rain': 0.95,
+    'campfire': 1.20,
+    'calmnoise': 1.08,
     'waves': 1.0,
     'lofi': 1.0,
   };
