@@ -7,8 +7,6 @@ import {
   Crown,
   CreditCard,
   RotateCw,
-  AlertTriangle,
-  Loader2,
   Calendar,
   CheckCircle2,
   XCircle,
@@ -28,8 +26,6 @@ export function SettingsPlanSection() {
   } = usePremium();
 
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [showCancelModal, setShowCancelModal] = useState(false);
-  const [isCancelling, setIsCancelling] = useState(false);
 
   const formattedDate = premiumUntil
     ? new Date(premiumUntil).toLocaleDateString(undefined, {
@@ -57,31 +53,6 @@ export function SettingsPlanSection() {
       toast.error(err.message || 'Error refreshing status');
     } finally {
       setIsRefreshing(false);
-    }
-  };
-
-  // Handle "Cancel subscription" action
-  const handleConfirmCancel = async () => {
-    setIsCancelling(true);
-    try {
-      const res = await fetch('/api/billing/cancel', {
-        method: 'POST',
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to cancel subscription');
-      }
-      await refresh();
-      setShowCancelModal(false);
-      toast.success(
-        data.message ||
-          'Subscription will cancel at the end of your billing cycle. You retain access until then.'
-      );
-    } catch (err: any) {
-      console.error('Cancel subscription error:', err);
-      toast.error(err.message || 'Error scheduling cancellation');
-    } finally {
-      setIsCancelling(false);
     }
   };
 
@@ -172,7 +143,7 @@ export function SettingsPlanSection() {
 
         {/* Subscription Management Controls (When Premium) */}
         {isPremium && (
-          <div className="pt-3 border-t border-[var(--border)] flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="pt-3 border-t border-[var(--border)] flex items-center justify-start gap-3 text-xs">
             {/* Refresh Status Button */}
             <button
               type="button"
@@ -184,88 +155,9 @@ export function SettingsPlanSection() {
               <RotateCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
               <span>{isRefreshing ? 'Syncing...' : 'Refresh status'}</span>
             </button>
-
-            {/* Cancel Button if not already cancelled */}
-            {!cancelAtCycleEnd ? (
-              <button
-                type="button"
-                id="cancel-subscription-btn"
-                onClick={() => setShowCancelModal(true)}
-                className="inline-flex items-center gap-1.5 text-xs text-rose-400/80 hover:text-rose-400 transition-colors cursor-pointer hover:underline"
-              >
-                Cancel subscription
-              </button>
-            ) : (
-              <span className="text-[11px] text-amber-400/90 italic">
-                Scheduled for cancellation
-              </span>
-            )}
           </div>
         )}
       </div>
-
-      {/* Confirmation Modal for Subscription Cancellation */}
-      {showCancelModal && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm"
-          onClick={() => !isCancelling && setShowCancelModal(false)}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-md bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-6 shadow-2xl relative"
-          >
-            <div className="flex items-center gap-3 text-amber-400 mb-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center">
-                <AlertTriangle className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-[var(--text)]">
-                  Cancel Subscription?
-                </h3>
-                <p className="text-xs text-[var(--text-dim)]">
-                  Confirm subscription change
-                </p>
-              </div>
-            </div>
-
-            <p className="text-xs text-[var(--text-dim)] leading-relaxed my-4">
-              Are you sure you want to cancel your study.io Premium subscription?
-              You will continue to have full access to all Premium benefits until{' '}
-              <strong className="text-[var(--text)]">{formattedDate || 'the end of your billing cycle'}</strong>,
-              and your payment method will not be charged again.
-            </p>
-
-            <div className="flex items-center justify-end gap-3 mt-6">
-              <button
-                type="button"
-                disabled={isCancelling}
-                onClick={() => setShowCancelModal(false)}
-                className="px-4 py-2 rounded-xl text-xs font-medium text-[var(--text)] bg-[var(--surface-2)] hover:bg-[var(--surface-3)] border border-[var(--border)] transition-colors cursor-pointer"
-              >
-                Keep Subscription
-              </button>
-              <button
-                type="button"
-                id="confirm-cancel-subscription-btn"
-                disabled={isCancelling}
-                onClick={handleConfirmCancel}
-                className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 transition-colors shadow-sm cursor-pointer flex items-center gap-1.5"
-              >
-                {isCancelling ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    <span>Cancelling...</span>
-                  </>
-                ) : (
-                  <span>Confirm Cancellation</span>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
