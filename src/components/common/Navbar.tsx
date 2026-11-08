@@ -19,6 +19,7 @@ import {
   Users,
   Crown,
   Check,
+  HelpCircle,
 } from 'lucide-react';
 import { usePremium } from '../../context/PremiumContext';
 import {
@@ -27,6 +28,7 @@ import {
   PREMIUM_GOLD_GLOW,
 } from '../../lib/premium';
 import { resolveAppAvatar, isAppAvatar } from '@/lib/avatars';
+import { HelpFeedbackModal } from './HelpFeedbackModal';
 
 import { Logo } from '../Logo';
 import { calculateStreak, getCachedStreak, setCachedStreak } from '../../lib/mockData';
@@ -79,6 +81,7 @@ export function Navbar({
 
   const [showPersonaMenu, setShowPersonaMenu] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const displayStreak = useMemo(() => {
@@ -424,6 +427,16 @@ export function Navbar({
 
 
 
+          {/* Help & Feedback Button */}
+          <button
+            onClick={() => setIsHelpOpen(true)}
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[var(--surface)] border border-[var(--border)] hover:border-[var(--border-strong)] text-[var(--text-dim)] hover:text-[var(--text)] shadow-card transition-colors flex items-center justify-center cursor-pointer"
+            title="Help & Feedback — Report a bug or submit feedback"
+            aria-label="Help & Feedback"
+          >
+            <HelpCircle className="w-4 h-4" />
+          </button>
+
           {/* Native Fullscreen Toggle Button */}
           <button
             onClick={toggleFullscreen}
@@ -622,7 +635,7 @@ export function Navbar({
                     className="w-full text-left px-3 py-2 rounded-xl text-xs font-hud font-semibold tracking-wider text-[var(--text)] hover:bg-fg/[0.06] border border-transparent hover:border-fg/10 transition-all flex items-center gap-2.5 cursor-pointer active:scale-[0.99]"
                   >
                     <User className="w-3.5 h-3.5 text-[var(--text-dim)]" />
-                    <span>EDIT PROFILE &amp; GOALS</span>
+                    <span>EDIT PROFILE</span>
                   </button>
 
                   <button
@@ -641,6 +654,17 @@ export function Navbar({
                     <Crown className="w-3.5 h-3.5 fill-current" />
                     <span>{isPremium ? 'PREMIUM MEMBERSHIP' : 'UPGRADE TO PREMIUM'}</span>
                   </Link>
+
+                  <button
+                    onClick={() => {
+                      setIsHelpOpen(true);
+                      setShowPersonaMenu(false);
+                    }}
+                    className="w-full text-left px-3 py-2 rounded-xl text-xs font-hud font-semibold tracking-wider text-[var(--text)] hover:bg-fg/[0.06] border border-transparent hover:border-fg/10 transition-all flex items-center gap-2.5 cursor-pointer active:scale-[0.99]"
+                  >
+                    <HelpCircle className="w-3.5 h-3.5 text-[var(--text-dim)]" />
+                    <span>HELP &amp; FEEDBACK</span>
+                  </button>
 
                   {!isAuthenticated ? (
                     <button
@@ -755,6 +779,9 @@ export function Navbar({
       </div>
       </nav>
     </div>
+
+    {/* Help & Feedback Modal */}
+    <HelpFeedbackModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
     </>
   );
 }

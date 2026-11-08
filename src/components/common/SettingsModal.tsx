@@ -18,6 +18,7 @@ import {
   Paperclip,
   Crown,
   Compass,
+  HelpCircle,
 } from 'lucide-react';
 import { submitReport } from '../../app/actions/report';
 import { soundFx } from '../../lib/audio';
@@ -386,17 +387,17 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             </button>
           </div>
 
-          {/* Section: Report a Problem */}
+          {/* Section: Help & Feedback / Report a Problem */}
           <div className="p-4 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] shadow-sm flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div
                 className="w-9 h-9 rounded-xl bg-fg/[0.04] border border-[var(--border)] flex items-center justify-center flex-shrink-0"
                 style={{ color: theme.accent }}
               >
-                <Bug className="w-4 h-4" />
+                <HelpCircle className="w-4 h-4" />
               </div>
               <div>
-                <div className="text-xs font-hud font-bold tracking-wider text-[var(--text)] uppercase">Report a Problem</div>
+                <div className="text-xs font-hud font-bold tracking-wider text-[var(--text)] uppercase">Help &amp; Feedback</div>
                 <div className="text-[11px] text-[var(--text-dim)] font-mono">Found a bug or have feedback? Let us know.</div>
               </div>
             </div>
@@ -406,7 +407,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               onClick={() => setShowReportForm(!showReportForm)}
               className="px-3.5 py-1.5 rounded-xl bg-fg/[0.06] hover:bg-fg/[0.12] border border-[var(--border)] text-xs font-hud font-bold tracking-wider text-[var(--text)] transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer shadow-sm flex-shrink-0"
             >
-              <span>{showReportForm ? 'CANCEL' : 'REPORT'}</span>
+              <span>{showReportForm ? 'CANCEL' : 'HELP / REPORT'}</span>
             </button>
           </div>
 
