@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import {
   ChevronLeft,
+  ChevronUp,
   Flame,
   Home,
   MessageCircle,
@@ -32,6 +33,7 @@ import {
   UserX,
   UserCheck,
   MoreVertical,
+  Loader2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { UserAvatar } from '../common/UserAvatar';
@@ -302,6 +304,8 @@ CREATE POLICY "Hosts can update their own study rooms"
   >({});
 
   const [messages, setMessages] = useState<any[]>([]);
+  const [hasMoreMessages, setHasMoreMessages] = useState<boolean>(true);
+  const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [activeMenuUserId, setActiveMenuUserId] = useState<string | null>(null);
@@ -343,6 +347,8 @@ CREATE POLICY "Hosts can update their own study rooms"
   const globalHubRef = useRef<any>(null);
   const isSubscribedRef = useRef<boolean>(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollAdjustRef = useRef<{ prevScrollHeight: number; prevScrollTop: number } | null>(null);
+  const isPrependingRef = useRef<boolean>(false);
   const clientIdRef = useRef(Math.random().toString(36).substring(2, 7));
 
   // Refs for frequently changing values to prevent effect re-runs
@@ -977,7 +983,7 @@ CREATE POLICY "Hosts can update their own study rooms"
     sendFocusBroadcast,
   ]);
 
-  // Fetch chat messages
+  // Fetch chat messages (initial 50 latest)
   const fetchMessages = useCallback(async () => {
     if (!user || !roomId) return;
     const supabase = getSupabase();
@@ -990,11 +996,79 @@ CREATE POLICY "Hosts can update their own study rooms"
         profiles ( username, avatar_url )
       `)
       .eq('room_id', roomId)
-      .order('created_at', { ascending: true })
-      .limit(100);
+      .order('created_at', { ascending: false })
+      .limit(50);
 
-    if (!error && data) setMessages(data);
+    if (!error && data) {
+      const chronological = [...data].reverse();
+      setMessages(chronological);
+      if (data.length < 50) {
+        setHasMoreMessages(false);
+      } else {
+        setHasMoreMessages(true);
+      }
+    }
   }, [roomId, user]);
+
+  // Load previous messages pagination
+  const loadMoreMessages = useCallback(async () => {
+    if (!user || !roomId || isLoadingMore || !hasMoreMessages) return;
+    const supabase = getSupabase();
+    if (!supabase) return;
+
+    setIsLoadingMore(true);
+
+    try {
+      if (messagesEndRef.current) {
+        scrollAdjustRef.current = {
+          prevScrollHeight: messagesEndRef.current.scrollHeight,
+          prevScrollTop: messagesEndRef.current.scrollTop,
+        };
+        isPrependingRef.current = true;
+      }
+
+      const startIndex = messages.length;
+      const endIndex = messages.length + 49;
+
+      const { data, error } = await supabase
+        .from('room_messages')
+        .select(`
+          id, content, created_at, user_id,
+          profiles ( username, avatar_url )
+        `)
+        .eq('room_id', roomId)
+        .order('created_at', { ascending: false })
+        .range(startIndex, endIndex);
+
+      if (error) {
+        console.error('Failed to load older messages:', error);
+        toast.error('Failed to load older messages');
+        scrollAdjustRef.current = null;
+        isPrependingRef.current = false;
+        return;
+      }
+
+      if (data) {
+        if (data.length < 50) {
+          setHasMoreMessages(false);
+        }
+        if (data.length > 0) {
+          const olderBatch = [...data].reverse();
+          setMessages((prev) => {
+            const existingIds = new Set(prev.map((m) => m.id));
+            const uniqueOlder = olderBatch.filter((m) => !existingIds.has(m.id));
+            return [...uniqueOlder, ...prev];
+          });
+        }
+      }
+    } catch (err) {
+      console.error('Error loading older messages:', err);
+      scrollAdjustRef.current = null;
+      isPrependingRef.current = false;
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [user, roomId, isLoadingMore, hasMoreMessages, messages.length]);
 
   useEffect(() => {
     fetchMessages();
@@ -1139,8 +1213,24 @@ CREATE POLICY "Hosts can update their own study rooms"
     }
   };
 
+  useLayoutEffect(() => {
+    if (roomTab !== 'chat' || !messagesEndRef.current) return;
+    const el = messagesEndRef.current;
+
+    if (scrollAdjustRef.current) {
+      const { prevScrollHeight, prevScrollTop } = scrollAdjustRef.current;
+      const heightDiff = el.scrollHeight - prevScrollHeight;
+      el.scrollTop = prevScrollTop + heightDiff;
+      scrollAdjustRef.current = null;
+    }
+  }, [messages, roomTab]);
+
   useEffect(() => {
     if (roomTab === 'chat' && messagesEndRef.current) {
+      if (isPrependingRef.current) {
+        isPrependingRef.current = false;
+        return;
+      }
       const el = messagesEndRef.current;
       el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
     }
@@ -1800,6 +1890,29 @@ CREATE POLICY "Hosts can update their own study rooms"
             {/* Messages Scroll Area */}
             <div ref={messagesEndRef} className="flex-1 overflow-y-auto min-h-0 px-3 sm:px-6 py-4 scrollbar-thin">
               <div className="max-w-3xl w-full mx-auto space-y-4">
+                {/* Load Previous Messages Pagination Button */}
+                {hasMoreMessages && (
+                  <div className="flex justify-center pb-2">
+                    <button
+                      type="button"
+                      onClick={loadMoreMessages}
+                      disabled={isLoadingMore}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono text-neutral-400 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-sm select-none"
+                    >
+                      {isLoadingMore ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-400" />
+                          <span>Loading...</span>
+                        </>
+                      ) : (
+                        <>
+                          <ChevronUp className="w-3.5 h-3.5 text-neutral-400" />
+                          <span>Load previous messages</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
                 {(() => {
                   const chatMessages = messages.filter(
                     (msg) => !msg.content?.startsWith('[SYSTEM_')
