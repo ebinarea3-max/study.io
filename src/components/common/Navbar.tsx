@@ -427,15 +427,6 @@ export function Navbar({
 
 
 
-          {/* Help & Feedback Button */}
-          <button
-            onClick={() => setIsHelpOpen(true)}
-            className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[var(--surface)] border border-[var(--border)] hover:border-[var(--border-strong)] text-[var(--text-dim)] hover:text-[var(--text)] shadow-card transition-colors flex items-center justify-center cursor-pointer"
-            title="Help & Feedback — Report a bug or submit feedback"
-            aria-label="Help & Feedback"
-          >
-            <HelpCircle className="w-4 h-4" />
-          </button>
 
           {/* Native Fullscreen Toggle Button */}
           <button
