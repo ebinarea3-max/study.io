@@ -5,6 +5,7 @@ import { ThemeProvider } from '../../context/ThemeContext';
 import { AuthProvider } from '../../context/AuthContext';
 import { PremiumProvider } from '../../context/PremiumContext';
 import { StudyModeProvider } from '../../context/StudyModeContext';
+import { IntroProvider } from '../../context/IntroContext';
 import { StudyProvider } from '../../context/StudyContext';
 import { FocusGoalProvider } from '../../context/FocusGoalContext';
 import { TimetableProvider } from '../../context/TimetableContext';
@@ -18,17 +19,18 @@ export function Providers({ children }: { children: ReactNode }) {
       <PremiumProvider>
         <ThemeProvider>
           <StudyModeProvider>
-            <StudyProvider>
-              <FocusGoalProvider>
-                <TimetableProvider>
-                  {/* Bridge timer state → Service Worker for background tracking & notifications */}
-                  <TimerSWBridge />
-                  {/* Asset preloading for instant rank badge rendering */}
-                  <RankBadgePreloader />
-                  {children}
-                </TimetableProvider>
-              </FocusGoalProvider>
-              <Toaster 
+            <IntroProvider>
+              <StudyProvider>
+                <FocusGoalProvider>
+                  <TimetableProvider>
+                    {/* Bridge timer state → Service Worker for background tracking & notifications */}
+                    <TimerSWBridge />
+                    {/* Asset preloading for instant rank badge rendering */}
+                    <RankBadgePreloader />
+                    {children}
+                  </TimetableProvider>
+                </FocusGoalProvider>
+                <Toaster 
                 position="top-center" 
                 toastOptions={{
                   style: {
@@ -57,7 +59,8 @@ export function Providers({ children }: { children: ReactNode }) {
                 }}
               />
             </StudyProvider>
-          </StudyModeProvider>
+          </IntroProvider>
+        </StudyModeProvider>
         </ThemeProvider>
       </PremiumProvider>
     </AuthProvider>

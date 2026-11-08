@@ -68,6 +68,8 @@ export type UserProfile = {
   status: 'studying' | 'resting' | 'offline';
   study_mode?: StudyMode | null;
   studyMode?: StudyMode | null;
+  intro_completed_at?: string | null;
+  introCompletedAt?: string | null;
   currentSubjectId?: string;
   currentSubjectName?: string;
   currentSubjectColor?: string;

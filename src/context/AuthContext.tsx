@@ -214,6 +214,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             status: prev.status || 'resting',
             study_mode: (profile.study_mode as StudyMode) ?? prev.study_mode ?? null,
             studyMode: (profile.study_mode as StudyMode) ?? prev.studyMode ?? null,
+            intro_completed_at: profile.intro_completed_at ?? prev.intro_completed_at ?? null,
+            introCompletedAt: profile.intro_completed_at ?? prev.introCompletedAt ?? null,
             createdAt: profile.created_at || prev.createdAt || new Date().toISOString(),
             is_onboarded: profile.is_onboarded ?? prev.is_onboarded,
             user_metadata: {
@@ -349,6 +351,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               levelTitle: resolvedRankTitle || data.level_title || prev.levelTitle,
               study_mode: (data.study_mode as StudyMode) ?? prev.study_mode ?? null,
               studyMode: (data.study_mode as StudyMode) ?? prev.studyMode ?? null,
+              intro_completed_at: data.intro_completed_at ?? prev.intro_completed_at ?? null,
+              introCompletedAt: data.intro_completed_at ?? prev.introCompletedAt ?? null,
               is_onboarded: data.is_onboarded ?? prev.is_onboarded,
               user_metadata: {
                 ...(prev.user_metadata || {}),

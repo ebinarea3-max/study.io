@@ -17,6 +17,7 @@ import {
   Send,
   Paperclip,
   Crown,
+  Compass,
 } from 'lucide-react';
 import { submitReport } from '../../app/actions/report';
 import { soundFx } from '../../lib/audio';
@@ -30,6 +31,7 @@ import { toast } from 'react-hot-toast';
 import { ThemePicker } from '../settings/ThemePicker';
 import { SettingsPlanSection } from '../settings/SettingsPlanSection';
 import { SettingsStudyModeSection } from '../settings/SettingsStudyModeSection';
+import { useIntro } from '../../context/IntroContext';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -41,6 +43,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const { isPremium, refresh } = usePremium();
   const { canInstall, isInstalled, isPrompting, deferredPrompt, triggerInstall } = usePwaInstall();
   const { theme } = useRankTheme();
+  const { openReplay } = useIntro();
 
   // Refresh entitlements whenever the Settings modal opens
   useEffect(() => {
@@ -349,6 +352,37 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 <span>ADD TO HOME</span>
               </button>
             )}
+          </div>
+
+          {/* Section: Replay Welcome Intro */}
+          <div className="p-4 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] shadow-sm flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div
+                className="w-9 h-9 rounded-xl bg-fg/[0.04] border border-[var(--border)] flex items-center justify-center flex-shrink-0"
+                style={{ color: theme.accent }}
+              >
+                <Compass className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="text-xs font-hud font-bold tracking-wider text-[var(--text)] uppercase">
+                  Welcome Walkthrough
+                </div>
+                <div className="text-[11px] text-[var(--text-dim)] font-mono">
+                  Replay the 7-step intro to study.io
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                openReplay();
+              }}
+              className="px-3.5 py-1.5 rounded-xl bg-fg/[0.06] hover:bg-fg/[0.12] border border-[var(--border)] text-xs font-hud font-bold tracking-wider text-[var(--text)] transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer shadow-sm flex-shrink-0"
+            >
+              <Compass className="w-3.5 h-3.5" style={{ color: theme.accent }} />
+              <span>REPLAY INTRO</span>
+            </button>
           </div>
 
           {/* Section: Report a Problem */}

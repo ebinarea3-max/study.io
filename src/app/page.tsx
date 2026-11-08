@@ -29,7 +29,7 @@ import StudyRoomsTab from '../components/rooms/StudyRoomsTab';
 import { useRankTheme } from '../hooks/useRankTheme';
 import { DevRankSwitcher } from '../components/common/DevRankSwitcher';
 import { useStudyMode } from '../context/StudyModeContext';
-import { StudyModeOnboarding } from '../components/onboarding/StudyModeOnboarding';
+import { OnboardingFlow } from '../components/onboarding/OnboardingFlow';
 
 export default function Home() {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -310,9 +310,9 @@ export default function Home() {
         <FocusModeModal />
       </ErrorBoundary>
 
-      {/* Study Mode Onboarding (shown when needsOnboarding is true for new users) */}
-      {needsOnboarding && !isProfileOpen && (
-        <StudyModeOnboarding />
+      {/* Onboarding Flow (Study Mode Selection -> Welcome Intro Walkthrough) */}
+      {!isProfileOpen && (
+        <OnboardingFlow />
       )}
 
       {/* Free Fire Post-Match Rank Settlement Fullscreen Screen */}
