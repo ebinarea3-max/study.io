@@ -107,7 +107,7 @@ export function AtmospherePicker({
       case 'campfire':
         return <Flame className={iconClass} />;
       case 'calmnoise':
-        return <Wind className={iconClass} />;
+        return <Music className={iconClass} />;
       case 'brownnoise':
         return <Headphones className={iconClass} />;
       case 'pinknoise':

@@ -233,7 +233,7 @@
   1. `none`: **Silent** ("Pure quiet focus") — Category: `silent`
   2. `rain`: **Gentle Rain** ("Calming rainfall on rooftop") — Category: `nature`
   3. `campfire`: **Fireplace** ("Warm crackling hearth flame") — Category: `nature`
-  4. `calmnoise`: **Calm Noise** ("Gentle soothing ambient focus sound") — Category: `noise`
+  4. `calmnoise`: **Calm Piano** ("Peaceful acoustic piano chords") — Category: `music`
   5. `brownnoise`: **Brown Noise** ("Deep low-frequency rumble") — Category: `noise`
   6. `pinknoise`: **Pink Noise** ("Balanced soothing static") — Category: `noise`
   7. `whitenoise`: **White Noise** ("Crisp masking frequency") — Category: `noise`
