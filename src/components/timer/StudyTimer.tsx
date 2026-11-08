@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { useStudy } from '../../context/StudyContext';
+import { useStudy, showPushNotification } from '../../context/StudyContext';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
 import { usePremium } from '../../context/PremiumContext';
@@ -176,6 +176,21 @@ export function StudyTimer() {
     }
     return false;
   });
+  const [isCountdownHalfwayNotified, setIsCountdownHalfwayNotified] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        if (localStorage.getItem('studyio_timer_countdown_halfway_notified') === 'true') {
+          return true;
+        }
+        const savedSeconds = parseInt(localStorage.getItem('studyio_timer_seconds') || '0', 10);
+        const savedTarget = parseInt(localStorage.getItem('studyio_timer_countdown_target') || '0', 10);
+        if (savedTarget > 0 && savedSeconds >= Math.floor(savedTarget / 2)) {
+          return true;
+        }
+      } catch {}
+    }
+    return false;
+  });
 
   // Safe handler to open Subject Manager / Add Subject
   const handleOpenSubjectManager = useCallback((e?: React.MouseEvent) => {
@@ -214,8 +229,10 @@ export function StudyTimer() {
   // Streamlined control handlers cleanly controlling synchronized StudyContext timer engine
   const handleStartSession = useCallback(() => {
     setIsCountdownCompleted(false);
+    setIsCountdownHalfwayNotified(false);
     try {
       localStorage.removeItem('studyio_timer_countdown_completed');
+      localStorage.removeItem('studyio_timer_countdown_halfway_notified');
     } catch {}
     const activeSub =
       activeSubjectRef.current ||
@@ -249,8 +266,10 @@ export function StudyTimer() {
 
   const handleReset = useCallback(() => {
     setIsCountdownCompleted(false);
+    setIsCountdownHalfwayNotified(false);
     try {
       localStorage.removeItem('studyio_timer_countdown_completed');
+      localStorage.removeItem('studyio_timer_countdown_halfway_notified');
     } catch {}
     resetTimer();
     clearPersistedTimer();
@@ -528,8 +547,10 @@ export function StudyTimer() {
       resetTimer();
       clearPersistedTimer();
       setIsCountdownCompleted(false);
+      setIsCountdownHalfwayNotified(false);
       try {
         localStorage.removeItem('studyio_timer_countdown_completed');
+        localStorage.removeItem('studyio_timer_countdown_halfway_notified');
       } catch {}
       setShowRecoveryBanner(false);
 
@@ -681,6 +702,51 @@ export function StudyTimer() {
     };
   }, [isRunning, isStudying, elapsedSeconds]);
 
+  // Auto-reset halfway notification flag when timer is clean/idle at 0 seconds
+  useEffect(() => {
+    if (!isStudying && elapsedSeconds === 0 && isCountdownHalfwayNotified) {
+      setIsCountdownHalfwayNotified(false);
+      try {
+        localStorage.removeItem('studyio_timer_countdown_halfway_notified');
+      } catch {}
+    }
+  }, [isStudying, elapsedSeconds, isCountdownHalfwayNotified]);
+
+  // Handle Countdown Halfway Notification
+  useEffect(() => {
+    if (timerMode !== 'countdown' || !isStudying || isCountdownCompleted || isCountdownHalfwayNotified) {
+      return;
+    }
+
+    const halfwayTarget = Math.floor(countdownTarget / 2);
+    if (halfwayTarget > 0 && elapsedSeconds >= halfwayTarget && elapsedSeconds < countdownTarget) {
+      setIsCountdownHalfwayNotified(true);
+      try {
+        localStorage.setItem('studyio_timer_countdown_halfway_notified', 'true');
+      } catch {}
+
+      soundFx.playMilestoneBell();
+
+      const remainingSeconds = Math.max(0, countdownTarget - elapsedSeconds);
+      const remainingText = formatSeconds(remainingSeconds);
+
+      toast(`Halfway there! ⏳ 50% of your countdown complete (${remainingText} remaining)`, {
+        id: 'countdown-halfway-toast',
+        icon: '⏱️',
+        duration: 5000,
+      });
+
+      if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+        const iconUrl = typeof window !== 'undefined' ? `${window.location.origin}/icon-192.png` : '/icon-192.png';
+        showPushNotification('Halfway there! ⏳', {
+          body: `50% of your countdown completed (${remainingText} remaining). Keep up the great focus!`,
+          icon: iconUrl,
+          tag: 'studyio-countdown-halfway',
+        });
+      }
+    }
+  }, [timerMode, isStudying, elapsedSeconds, countdownTarget, isCountdownCompleted, isCountdownHalfwayNotified]);
+
   // Handle Countdown Completion
   useEffect(() => {
     if (timerMode === 'countdown' && isStudying && elapsedSeconds >= countdownTarget && !isCountdownCompleted) {
@@ -691,9 +757,13 @@ export function StudyTimer() {
       pauseTimer();
       soundFx.playMilestoneBell();
       toast.success('Countdown completed! Click Save session to record your progress 🎉', { duration: 6000 });
-      if (typeof document !== 'undefined' && document.hidden && 'Notification' in window && Notification.permission === 'granted') {
+      if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
         const iconUrl = typeof window !== 'undefined' ? `${window.location.origin}/icon-192.png` : '/icon-192.png';
-        new Notification('Countdown completed! 🚀', { body: 'Your timer is up! Click Save session to record your progress.', icon: iconUrl });
+        showPushNotification('Countdown completed! 🚀', {
+          body: 'Your timer is up! Click Save session to record your progress.',
+          icon: iconUrl,
+          tag: 'studyio-countdown-completed',
+        });
       }
       confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 } });
       setIsFocusModeOpen(false);
@@ -969,7 +1039,17 @@ export function StudyTimer() {
                 key={mode}
                 type="button"
                 disabled={isStudying || isCountdownCompleted}
-                onClick={() => { if (!isStudying && !isCountdownCompleted) setTimerMode(mode); }}
+                onClick={() => {
+                  if (!isStudying && !isCountdownCompleted) {
+                    setTimerMode(mode);
+                    if (mode === 'countdown') {
+                      setIsCountdownHalfwayNotified(false);
+                      try {
+                        localStorage.removeItem('studyio_timer_countdown_halfway_notified');
+                      } catch {}
+                    }
+                  }
+                }}
                 className={`relative px-4 py-1.5 text-xs font-medium rounded-full transition-colors z-10 ${
                   isActive ? 'text-[var(--text)]' : 'text-[var(--text-dim)] hover:text-[var(--text)]'
                 } ${isStudying || isCountdownCompleted ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
@@ -1147,8 +1227,10 @@ export function StudyTimer() {
                 type="button"
                 onClick={async () => {
                   setIsCountdownCompleted(false);
+                  setIsCountdownHalfwayNotified(false);
                   try {
                     localStorage.removeItem('studyio_timer_countdown_completed');
+                    localStorage.removeItem('studyio_timer_countdown_halfway_notified');
                   } catch {}
                   await handleStopAndSave(countdownTarget);
                 }}
@@ -1171,8 +1253,10 @@ export function StudyTimer() {
                 type="button"
                 onClick={() => {
                   setIsCountdownCompleted(false);
+                  setIsCountdownHalfwayNotified(false);
                   try {
                     localStorage.removeItem('studyio_timer_countdown_completed');
+                    localStorage.removeItem('studyio_timer_countdown_halfway_notified');
                   } catch {}
                   handleReset();
                 }}
@@ -1500,6 +1584,10 @@ export function StudyTimer() {
           initialSeconds={countdownTarget}
           onSave={(seconds) => {
             setCountdownTarget(seconds);
+            setIsCountdownHalfwayNotified(false);
+            try {
+              localStorage.removeItem('studyio_timer_countdown_halfway_notified');
+            } catch {}
             setIsEditingCountdown(false);
           }}
           onCancel={() => setIsEditingCountdown(false)}
