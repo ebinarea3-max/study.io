@@ -82,9 +82,6 @@ export function StudyTimetable() {
         )}
       </div>
 
-      {/* 3. Daily Goal Streak Engine Banner (Reduced in size, sleek progress footer) */}
-      <GoalStreakBanner />
-
       {/* Sync Status Badge */}
       <div className="flex items-center justify-between text-[11px] font-mono text-[var(--text-faint)] px-1">
         <span className="flex items-center gap-1.5">

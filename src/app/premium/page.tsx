@@ -404,69 +404,127 @@ function WeeklyReportDemo() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   LIVE DEMO 4: DAILY GOALS (Gold Ring Filling to 72% + Streak)
+   LIVE DEMO 4: ANIMATED FOCUS SCENES (Atmospheric Flow Environments)
    ═══════════════════════════════════════════════════════════════════════════ */
-function DailyGoalsDemo() {
+const DEMO_FOCUS_SCENES = [
+  {
+    id: 'dusk',
+    name: 'Dusk Peaks',
+    tag: 'Sunset Glow',
+    bg: 'linear-gradient(135deg, #171040 0%, #4a2372 40%, #b9487c 75%, #f58a69 100%)',
+    glow: 'rgba(245, 138, 105, 0.45)',
+    accent: '#f58a69',
+  },
+  {
+    id: 'forest',
+    name: 'Moonlit Forest',
+    tag: 'Emerald Mist',
+    bg: 'linear-gradient(135deg, #030d14 0%, #0a2630 50%, #15494c 100%)',
+    glow: 'rgba(16, 185, 129, 0.45)',
+    accent: '#10B981',
+  },
+  {
+    id: 'neon',
+    name: 'Neon Skyline',
+    tag: 'Cyber Rain',
+    bg: 'linear-gradient(135deg, #06021a 0%, #1a0945 40%, #5a1a78 75%, #d1307f 100%)',
+    glow: 'rgba(217, 70, 239, 0.45)',
+    accent: '#d1307f',
+  },
+  {
+    id: 'sakura',
+    name: 'Sakura Night',
+    tag: 'Cherry Blossom',
+    bg: 'linear-gradient(135deg, #0d0a1a 0%, #2a1438 45%, #662249 75%, #cc5577 100%)',
+    glow: 'rgba(244, 114, 182, 0.45)',
+    accent: '#f472b6',
+  },
+];
+
+function FocusScenesDemo() {
   const { ref, isVisible } = useTileVisibility(0.2);
   const shouldReduceMotion = useReducedMotion();
-  const [progress, setProgress] = useState(72);
+  const [activeSceneId, setActiveSceneId] = useState<string>('dusk');
 
   useEffect(() => {
     if (!isVisible || shouldReduceMotion) return;
     const interval = setInterval(() => {
-      setProgress((prev) => (prev === 72 ? 15 : 72));
+      setActiveSceneId((prev) => {
+        const idx = DEMO_FOCUS_SCENES.findIndex((s) => s.id === prev);
+        const nextIdx = (idx + 1) % DEMO_FOCUS_SCENES.length;
+        return DEMO_FOCUS_SCENES[nextIdx].id;
+      });
     }, 3200);
     return () => clearInterval(interval);
   }, [isVisible, shouldReduceMotion]);
 
-  const targetProgress = shouldReduceMotion ? 72 : progress;
-  const radius = 32;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (targetProgress / 100) * circumference;
+  const current = DEMO_FOCUS_SCENES.find((s) => s.id === activeSceneId) || DEMO_FOCUS_SCENES[0];
 
   return (
-    <div ref={ref} className="relative flex flex-col items-center justify-center">
-      <div className="relative flex h-24 w-24 items-center justify-center">
-        <svg className="h-full w-full -rotate-90 transform" viewBox="0 0 80 80">
-          <circle
-            cx="40"
-            cy="40"
-            r={radius}
-            stroke="rgba(255,255,255,0.08)"
-            strokeWidth="5"
-            fill="transparent"
-          />
-          <circle
-            cx="40"
-            cy="40"
-            r={radius}
-            stroke="#E6C15A"
-            strokeWidth="5"
-            strokeDasharray={circumference}
-            strokeDashoffset={strokeDashoffset}
-            strokeLinecap="round"
-            fill="transparent"
-            style={{
-              transition: shouldReduceMotion ? 'none' : 'stroke-dashoffset 1s ease-out',
-            }}
-          />
-        </svg>
-
-        {/* Center label */}
-        <div className="absolute flex flex-col items-center">
-          <span className="font-hud text-sm font-bold text-white">
-            {targetProgress}%
+    <div ref={ref} className="w-full max-w-sm flex flex-col items-center">
+      {/* Mini Immersive Focus Viewport */}
+      <div
+        className="w-full relative overflow-hidden rounded-2xl border p-3.5 transition-all duration-700 shadow-lg"
+        style={{
+          background: current.bg,
+          borderColor: 'rgba(255, 255, 255, 0.12)',
+          boxShadow: `0 0 20px ${current.glow}`,
+        }}
+      >
+        <div className="flex items-center justify-between pb-2 border-b border-white/10">
+          <div className="flex items-center gap-1.5">
+            <Sparkles className="w-3 h-3 text-white/80" />
+            <span className="text-[10px] font-hud font-bold tracking-wider uppercase text-white drop-shadow-sm">
+              {current.name}
+            </span>
+          </div>
+          <span className="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded bg-black/30 text-white/70">
+            {current.tag}
           </span>
-          <span className="text-[8px] font-mono uppercase text-[#E6C15A]">
-            Goal
+        </div>
+
+        {/* Mini focus clock */}
+        <div className="py-3 flex flex-col items-center justify-center">
+          <span
+            className="font-hud text-2xl font-black text-white tracking-wider"
+            style={{ textShadow: `0 0 14px ${current.glow}` }}
+          >
+            25:00
+          </span>
+          <span className="text-[9px] font-mono uppercase tracking-widest text-white/60 mt-0.5">
+            Deep Focus
           </span>
         </div>
       </div>
 
-      {/* Streak badge */}
-      <div className="mt-1.5 flex items-center gap-1 rounded-full border border-orange-400/30 bg-orange-400/10 px-2.5 py-0.5 text-[10px] font-mono text-orange-400">
-        <Flame className="h-3 w-3 fill-current" />
-        <span>12d streak</span>
+      {/* Scene Pill Selector */}
+      <div className="mt-3 flex items-center justify-center gap-1.5 flex-wrap">
+        {DEMO_FOCUS_SCENES.map((scene) => {
+          const isActive = scene.id === activeSceneId;
+          return (
+            <button
+              type="button"
+              key={scene.id}
+              onClick={() => setActiveSceneId(scene.id)}
+              className={`px-2 py-0.5 rounded-full text-[10px] font-hud uppercase tracking-wider transition-all cursor-pointer ${
+                isActive
+                  ? 'border shadow-xs scale-105'
+                  : 'text-white/40 border border-transparent hover:text-white/70'
+              }`}
+              style={
+                isActive
+                  ? {
+                      backgroundColor: 'rgba(255, 255, 255, 0.12)',
+                      borderColor: scene.accent,
+                      color: scene.accent,
+                    }
+                  : undefined
+              }
+            >
+              {scene.name.split(' ')[0]}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -831,7 +889,7 @@ export default function PremiumPage() {
 
             {/* Subline strictly 10 words or fewer */}
             <p className="mt-3.5 text-base sm:text-lg text-white/70 max-w-lg leading-snug">
-              Themes, goals, reports and flair for serious studiers.
+              Themes, scenes, reports and flair for serious studiers.
             </p>
 
             {/* Action Buttons: Skeleton while loading to prevent upsell flash */}
@@ -906,16 +964,16 @@ export default function PremiumPage() {
               <ThemesDemo />
             </BentoCard>
 
-            {/* ROW 1: Daily Goals (cols 8-12) */}
+            {/* ROW 1: Focus Scenes (cols 8-12) */}
             <BentoCard
-              title="Daily goals"
-              caption="A gold ring that fills as you study."
+              title="Animated focus scenes"
+              caption="Atmospheric environments for deep flow."
               className="lg:col-span-5 min-h-[240px] sm:min-h-[260px]"
               isPremium={isPremium}
               href="/dashboard"
               delayIndex={1}
             >
-              <DailyGoalsDemo />
+              <FocusScenesDemo />
             </BentoCard>
 
             {/* ROW 2: Weekly Report (cols 1-4) */}

@@ -166,3 +166,4 @@ export function resolveAppAvatar(url?: string | null, seed?: string): string {
   }
   return getDeterministicDefaultAvatar(seed);
 }
+

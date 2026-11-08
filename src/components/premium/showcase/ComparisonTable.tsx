@@ -70,10 +70,10 @@ const COMPARISON_DATA: ComparisonRow[] = [
     premium: 'Full live telemetry',
   },
   {
-    feature: 'Daily Focus Goals & Streaks',
-    description: 'Configurable daily minute quotas and dynamic timer progress ring',
-    free: false,
-    premium: 'Custom quotas & streaks',
+    feature: 'Animated Focus Environments',
+    description: 'Immersive atmospheric focus scenes (Dusk Peaks, Moonlit Forest, Neon Skyline, Sakura Night)',
+    free: '1 Default Scene',
+    premium: 'All 6 Animated Scenes',
   },
 ];
 

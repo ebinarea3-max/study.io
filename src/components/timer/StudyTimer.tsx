@@ -1269,11 +1269,6 @@ export function StudyTimer() {
               <Flame className="w-4 h-4 fill-current" />
               <span>Start focus session</span>
             </button>
-            {isPremium && goals.dailyMinutes && goals.dailyMinutes > 0 ? (
-              <span className="mt-2 text-xs font-mono text-[var(--text-dim)] select-none">
-                Today {Math.floor(goals.todaySeconds / 60)} of {goals.dailyMinutes} min
-              </span>
-            ) : null}
           </div>
         ) : !isStudying ? (
           <div className="flex flex-col items-center">
@@ -1313,11 +1308,6 @@ export function StudyTimer() {
                 <span>Start session</span>
               </button>
             )}
-            {isPremium && goals.dailyMinutes && goals.dailyMinutes > 0 ? (
-              <span className="mt-2 text-xs font-mono text-[var(--text-dim)] select-none">
-                Today {Math.floor(goals.todaySeconds / 60)} of {goals.dailyMinutes} min
-              </span>
-            ) : null}
           </div>
         ) : !isPaused ? (
           <div className="flex items-center gap-3 w-full max-w-[360px] justify-center">

@@ -389,32 +389,6 @@ export function ProfileModal({ isOpen, onClose, user: parentUser, profile }: Pro
               </div>
             </div>
 
-            {/* Daily Goal Target (Hours) */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-[11px] font-mono uppercase tracking-widest text-neutral-400 font-semibold flex items-center gap-1.5">
-                  <Target className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>Daily Study Goal</span>
-                </label>
-                <span className="text-xs text-cyan-400 font-bold bg-cyan-500/10 px-2 py-0.5 rounded">{Math.round(dailyGoalHours * 60)} mins</span>
-              </div>
-              <input
-                type="range"
-                min="1"
-                max="14"
-                step="0.5"
-                value={dailyGoalHours}
-                onChange={e => setDailyGoalHours(parseFloat(e.target.value))}
-                className="w-full accent-cyan-500 bg-white/[0.08] border border-white/10 cursor-pointer h-2 rounded-lg appearance-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.3)]"
-              />
-              <div className="flex justify-between text-[10px] text-neutral-500 mt-2 font-mono">
-                <span>1h Light</span>
-                <span>4h Mod</span>
-                <span>6h Pro</span>
-                <span>10h+ Hard</span>
-              </div>
-            </div>
-
             {errorMsg && (
               <div className="text-[11px] text-amber-500 font-mono mt-2 bg-amber-500/10 border border-amber-500/20 p-2 rounded">
                 {errorMsg}
