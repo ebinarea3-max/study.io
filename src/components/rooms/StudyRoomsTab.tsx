@@ -84,6 +84,7 @@ export default function StudyRoomsTab({ onBackToDashboard, isActiveTab }: StudyR
   // Room Settings Modal State (Host only)
   const [editingRoom, setEditingRoom] = useState<any | null>(null);
   const [editRoomName, setEditRoomName] = useState('');
+  const [editDescription, setEditDescription] = useState('');
   const [editIsPrivate, setEditIsPrivate] = useState(false);
   const [editPassword, setEditPassword] = useState('');
   const [showEditPassword, setShowEditPassword] = useState(false);
@@ -115,7 +116,7 @@ CREATE POLICY "Hosts can update their own study rooms"
   const [isDeleting, setIsDeleting] = useState(false);
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [createRoomData, setCreateRoomData] = useState({ name: '', password: '', max_capacity: 4 });
+  const [createRoomData, setCreateRoomData] = useState({ name: '', description: '', password: '', max_capacity: 4 });
   const [isPrivateCreate, setIsPrivateCreate] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
 
@@ -372,20 +373,33 @@ CREATE POLICY "Hosts can update their own study rooms"
     const generatedCode = Math.random().toString(36).substring(2, 8).toUpperCase();
 
     try {
-      const { data: newRoom, error } = await supabase
+      const roomPayload: any = {
+        name: createRoomData.name.trim(),
+        description: createRoomData.description?.trim() || null,
+        host_id: user.id,
+        password: is_private ? createRoomData.password.trim() : null,
+        is_private,
+        max_capacity: Math.min(32, Math.max(2, Number(createRoomData.max_capacity) || 4)),
+        short_code: generatedCode,
+      };
+
+      let { data: newRoom, error } = await supabase
         .from('study_rooms')
-        .insert([
-          {
-            name: createRoomData.name.trim(),
-            host_id: user.id,
-            password: is_private ? createRoomData.password.trim() : null,
-            is_private,
-            max_capacity: Math.min(32, Math.max(2, Number(createRoomData.max_capacity) || 4)),
-            short_code: generatedCode,
-          },
-        ])
+        .insert([roomPayload])
         .select()
         .single();
+
+      // Graceful fallback if database column has not been added yet
+      if (error && error.message?.includes('description')) {
+        delete roomPayload.description;
+        const fallback = await supabase
+          .from('study_rooms')
+          .insert([roomPayload])
+          .select()
+          .single();
+        newRoom = fallback.data;
+        error = fallback.error;
+      }
 
       if (error) {
         alert('Failed to create room: ' + error.message);
@@ -406,7 +420,7 @@ CREATE POLICY "Hosts can update their own study rooms"
         await fetchExplorerRooms();
         setIsCreateModalOpen(false);
         setIsPrivateCreate(false);
-        setCreateRoomData({ name: '', password: '', max_capacity: 4 });
+        setCreateRoomData({ name: '', description: '', password: '', max_capacity: 4 });
         // Automatically enter the newly created room for instant gratification
         setActiveRoomId(newRoom.id);
       }
@@ -466,6 +480,7 @@ CREATE POLICY "Hosts can update their own study rooms"
         const actionRes = await updateRoomSettingsAction({
           roomId: editingRoom.id,
           name: trimmedName,
+          description: editDescription.trim() || null,
           password: willBePrivate ? trimmedPass : null,
           is_private: willBePrivate,
           max_capacity: capacity,
@@ -485,16 +500,30 @@ CREATE POLICY "Hosts can update their own study rooms"
           throw new Error('Supabase client is not available');
         }
 
-        const { data, error } = await supabase
+        const updatePayload: any = {
+          name: trimmedName,
+          description: editDescription.trim() || null,
+          password: willBePrivate ? trimmedPass : null,
+          is_private: willBePrivate,
+          max_capacity: capacity,
+        };
+
+        let { data, error } = await supabase
           .from('study_rooms')
-          .update({
-            name: trimmedName,
-            password: willBePrivate ? trimmedPass : null,
-            is_private: willBePrivate,
-            max_capacity: capacity,
-          })
+          .update(updatePayload)
           .eq('id', editingRoom.id)
           .select();
+
+        if (error && error.message?.includes('description')) {
+          delete updatePayload.description;
+          const fallback = await supabase
+            .from('study_rooms')
+            .update(updatePayload)
+            .eq('id', editingRoom.id)
+            .select();
+          data = fallback.data;
+          error = fallback.error;
+        }
 
         if (error) {
           setEditRoomError('Failed to update room: ' + error.message);
@@ -809,7 +838,7 @@ CREATE POLICY "Hosts can update their own study rooms"
                   type="button"
                   onClick={() => {
                     setIsPrivateCreate(false);
-                    setCreateRoomData({ name: '', password: '', max_capacity: 4 });
+                    setCreateRoomData({ name: '', description: '', password: '', max_capacity: 4 });
                     setIsCreateModalOpen(true);
                   }}
                   className="px-3.5 py-2 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer hover:brightness-110 active:scale-95 shadow-sm font-hud-mono text-xs font-bold uppercase tracking-wider"
@@ -911,7 +940,7 @@ CREATE POLICY "Hosts can update their own study rooms"
                         type="button"
                         onClick={() => {
                           setIsPrivateCreate(false);
-                          setCreateRoomData({ name: '', password: '', max_capacity: 4 });
+                          setCreateRoomData({ name: '', description: '', password: '', max_capacity: 4 });
                           setIsCreateModalOpen(true);
                         }}
                         className="px-3.5 py-1.5 rounded-lg hover:brightness-110 font-hud-mono text-xs font-bold tracking-wider uppercase transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 shadow-sm"
@@ -1017,6 +1046,11 @@ CREATE POLICY "Hosts can update their own study rooms"
                                   )}
                                 </button>
                               </div>
+                              {room.description && (
+                                <p className="text-[11px] text-[var(--text-dim)] line-clamp-1 mt-1 max-w-[200px] sm:max-w-xs md:max-w-md font-sans">
+                                  {room.description}
+                                </p>
+                              )}
                             </div>
                           </div>
 
@@ -1280,6 +1314,11 @@ CREATE POLICY "Hosts can update their own study rooms"
                                   )}
                                 </button>
                               </div>
+                              {room.description && (
+                                <p className="text-[11px] text-[var(--text-dim)] line-clamp-1 mt-1 max-w-[200px] sm:max-w-xs md:max-w-md font-sans">
+                                  {room.description}
+                                </p>
+                              )}
                             </div>
                           </div>
 
@@ -1488,6 +1527,26 @@ CREATE POLICY "Hosts can update their own study rooms"
                 />
               </div>
 
+              {/* Room Description */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="font-hud-mono text-[10px] font-bold text-[var(--text-dim)] uppercase tracking-widest block">
+                    ROOM PURPOSE // DESCRIPTION
+                  </label>
+                  <span className="text-[10px] text-[var(--text-dim)] font-mono">
+                    {createRoomData.description.length}/160
+                  </span>
+                </div>
+                <textarea
+                  rows={2}
+                  maxLength={160}
+                  value={createRoomData.description}
+                  onChange={(e) => setCreateRoomData({ ...createRoomData, description: e.target.value })}
+                  className="w-full bg-[var(--surface-2)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-[var(--text)] placeholder:text-[var(--text-dim)] focus:outline-none focus:border-[var(--accent)]/50 focus:ring-1 focus:ring-[var(--accent)]/20 transition-colors text-xs font-sans resize-none"
+                  placeholder="Tell scholars what this room is for (e.g. Silent deep work, coding, exam prep...)"
+                />
+              </div>
+
               {/* Access Protocol Toggle */}
               <div className="space-y-1.5">
                 <label className="font-hud-mono text-[10px] font-bold text-[var(--text-dim)] uppercase tracking-widest block">
@@ -1618,6 +1677,12 @@ CREATE POLICY "Hosts can update their own study rooms"
               <p className="text-xs text-[var(--text-dim)] font-mono mt-1">
                 "{selectedRoomToJoin.name}" requires an access key to enter.
               </p>
+              {selectedRoomToJoin.description && (
+                <div className="mt-2.5 p-2.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] text-xs text-[var(--text)]">
+                  <span className="font-hud-mono text-[9px] font-bold text-[var(--accent)] uppercase tracking-wider block mb-0.5">ROOM PURPOSE</span>
+                  <p className="font-sans leading-relaxed text-[var(--text-dim)]">{selectedRoomToJoin.description}</p>
+                </div>
+              )}
             </div>
 
             <div className="h-px w-full bg-[var(--border)] my-4" />
@@ -1851,6 +1916,26 @@ CREATE POLICY "Hosts can update their own study rooms"
                   className="w-full bg-[var(--surface-2)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-[var(--text)] placeholder:text-[var(--text-dim)] focus:outline-none focus:border-[var(--accent)]/50 focus:ring-1 focus:ring-[var(--accent)]/20 transition-colors text-sm font-sans"
                   placeholder="e.g. Deep Work Chamber"
                   required
+                />
+              </div>
+
+              {/* Room Description */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="font-hud-mono text-[10px] font-bold text-[var(--text-dim)] uppercase tracking-widest block">
+                    ROOM PURPOSE // DESCRIPTION
+                  </label>
+                  <span className="text-[10px] text-[var(--text-dim)] font-mono">
+                    {editDescription.length}/160
+                  </span>
+                </div>
+                <textarea
+                  rows={2}
+                  maxLength={160}
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  className="w-full bg-[var(--surface-2)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-[var(--text)] placeholder:text-[var(--text-dim)] focus:outline-none focus:border-[var(--accent)]/50 focus:ring-1 focus:ring-[var(--accent)]/20 transition-colors text-xs font-sans resize-none"
+                  placeholder="Describe your focus topic, rules, or room goals..."
                 />
               </div>
 

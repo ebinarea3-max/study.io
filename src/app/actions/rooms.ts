@@ -5,6 +5,7 @@ import { createClient, createAdminClient } from '@/lib/supabaseServer';
 export interface UpdateRoomParams {
   roomId: string;
   name: string;
+  description?: string | null;
   password: string | null;
   is_private: boolean;
   max_capacity: number;
@@ -27,6 +28,20 @@ export async function updateRoomSettingsAction(params: UpdateRoomParams) {
     const trimmedPass = params.password?.trim() || '';
     const willBePrivate = Boolean(params.is_private && trimmedPass.length > 0);
     const capacity = Math.max(2, Math.min(32, Number(params.max_capacity) || 4));
+    const trimmedDesc = params.description !== undefined ? (params.description?.trim() || null) : undefined;
+
+    const buildPayload = (includeDesc: boolean) => {
+      const p: Record<string, any> = {
+        name: trimmedName,
+        password: willBePrivate ? trimmedPass : null,
+        is_private: willBePrivate,
+        max_capacity: capacity,
+      };
+      if (includeDesc && trimmedDesc !== undefined) {
+        p.description = trimmedDesc;
+      }
+      return p;
+    };
 
     // 1. Try with admin service client if available
     const admin = createAdminClient();
@@ -45,17 +60,24 @@ export async function updateRoomSettingsAction(params: UpdateRoomParams) {
         return { success: false, error: 'Only the room host can update settings.' };
       }
 
-      const { data: updated, error: updateErr } = await admin
+      let { data: updated, error: updateErr } = await admin
         .from('study_rooms')
-        .update({
-          name: trimmedName,
-          password: willBePrivate ? trimmedPass : null,
-          is_private: willBePrivate,
-          max_capacity: capacity,
-        })
+        .update(buildPayload(true))
         .eq('id', params.roomId)
         .select()
         .single();
+
+      // Gracefully retry without description if column does not exist yet in DB
+      if (updateErr && updateErr.message?.includes('description')) {
+        const fallback = await admin
+          .from('study_rooms')
+          .update(buildPayload(false))
+          .eq('id', params.roomId)
+          .select()
+          .single();
+        updated = fallback.data;
+        updateErr = fallback.error;
+      }
 
       if (updateErr) {
         return { success: false, error: updateErr.message };
@@ -65,17 +87,23 @@ export async function updateRoomSettingsAction(params: UpdateRoomParams) {
     }
 
     // 2. Otherwise run using authenticated user context
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('study_rooms')
-      .update({
-        name: trimmedName,
-        password: willBePrivate ? trimmedPass : null,
-        is_private: willBePrivate,
-        max_capacity: capacity,
-      })
+      .update(buildPayload(true))
       .eq('id', params.roomId)
       .eq('host_id', user.id)
       .select();
+
+    if (error && error.message?.includes('description')) {
+      const fallback = await supabase
+        .from('study_rooms')
+        .update(buildPayload(false))
+        .eq('id', params.roomId)
+        .eq('host_id', user.id)
+        .select();
+      data = fallback.data;
+      error = fallback.error;
+    }
 
     if (error) {
       return { success: false, error: error.message };

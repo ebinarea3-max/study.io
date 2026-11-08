@@ -59,6 +59,7 @@ interface ActiveRoomProps {
 interface RoomDetails {
   id: string;
   name: string;
+  description?: string | null;
   host_id: string;
   password?: string | null;
   is_private?: boolean;
@@ -168,6 +169,7 @@ export default function ActiveRoom({ roomId, onBack, initialTab }: ActiveRoomPro
 
   // Host Settings Form State
   const [editName, setEditName] = useState('');
+  const [editDescription, setEditDescription] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
   const [editPassword, setEditPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -549,7 +551,7 @@ CREATE POLICY "Hosts can update their own study rooms"
       // 1. Fetch room details
       const { data: roomData } = await supabase
         .from('study_rooms')
-        .select('id, name, host_id, password, is_private, max_capacity, short_code')
+        .select('*')
         .eq('id', roomId)
         .maybeSingle();
 
@@ -560,6 +562,7 @@ CREATE POLICY "Hosts can update their own study rooms"
         }
         if (!isFormDirtyRef.current) {
           setEditName(roomData.name || '');
+          setEditDescription(roomData.description || '');
           setIsPrivate(Boolean(roomData.is_private));
           setEditPassword(roomData.password || '');
           setEditMaxCapacity(roomData.max_capacity || 4);
@@ -1574,6 +1577,7 @@ CREATE POLICY "Hosts can update their own study rooms"
         const actionRes = await updateRoomSettingsAction({
           roomId,
           name: trimmedName,
+          description: editDescription.trim() || null,
           password: willBePrivate ? trimmedPass : null,
           is_private: willBePrivate,
           max_capacity: capacity,
@@ -1593,16 +1597,30 @@ CREATE POLICY "Hosts can update their own study rooms"
           throw new Error('Supabase client is not available');
         }
 
-        const { data, error } = await supabase
+        const updatePayload: any = {
+          name: trimmedName,
+          description: editDescription.trim() || null,
+          password: willBePrivate ? trimmedPass : null,
+          is_private: willBePrivate,
+          max_capacity: capacity,
+        };
+
+        let { data, error } = await supabase
           .from('study_rooms')
-          .update({
-            name: trimmedName,
-            password: willBePrivate ? trimmedPass : null,
-            is_private: willBePrivate,
-            max_capacity: capacity,
-          })
+          .update(updatePayload)
           .eq('id', roomId)
           .select();
+
+        if (error && error.message?.includes('description')) {
+          delete updatePayload.description;
+          const fallback = await supabase
+            .from('study_rooms')
+            .update(updatePayload)
+            .eq('id', roomId)
+            .select();
+          data = fallback.data;
+          error = fallback.error;
+        }
 
         if (error) {
           console.error('Error updating room settings:', error);
@@ -1628,6 +1646,7 @@ CREATE POLICY "Hosts can update their own study rooms"
       setRoomInfo(savedRoom);
       setRoomName(savedRoom.name);
       setEditName(savedRoom.name);
+      setEditDescription(savedRoom.description || '');
       setIsPrivate(Boolean(savedRoom.is_private));
       setEditPassword(savedRoom.password || '');
       setEditMaxCapacity(savedRoom.max_capacity || capacity);
@@ -1684,14 +1703,21 @@ CREATE POLICY "Hosts can update their own study rooms"
             <ChevronLeft className="w-4 h-4 text-slate-400" />
             <span className="hidden sm:inline">LEAVE</span>
           </button>
-          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-            <h1 className="text-xs sm:text-base font-hud font-bold text-white tracking-wide uppercase truncate max-w-[90px] xs:max-w-[130px] sm:max-w-[260px]">
-              {roomName}
-            </h1>
-            <span className="text-[10px] font-hud-mono text-neutral-400 bg-white/[0.04] border border-white/10 px-2 py-0.5 rounded-full hidden sm:inline-flex items-center gap-1.5 shrink-0">
-              <Users className="w-3.5 h-3.5 text-neutral-400" />
-              {displayUsers.length} {displayUsers.length === 1 ? 'MEMBER' : 'MEMBERS'}
-            </span>
+          <div className="flex flex-col min-w-0">
+            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+              <h1 className="text-xs sm:text-base font-hud font-bold text-white tracking-wide uppercase truncate max-w-[90px] xs:max-w-[130px] sm:max-w-[260px]">
+                {roomName}
+              </h1>
+              <span className="text-[10px] font-hud-mono text-neutral-400 bg-white/[0.04] border border-white/10 px-2 py-0.5 rounded-full hidden sm:inline-flex items-center gap-1.5 shrink-0">
+                <Users className="w-3.5 h-3.5 text-neutral-400" />
+                {displayUsers.length} {displayUsers.length === 1 ? 'MEMBER' : 'MEMBERS'}
+              </span>
+            </div>
+            {roomInfo?.description && (
+              <p className="text-[11px] text-neutral-400 font-sans truncate max-w-[140px] sm:max-w-[280px] hidden xs:block" title={roomInfo.description}>
+                {roomInfo.description}
+              </p>
+            )}
           </div>
         </div>
 
@@ -2180,6 +2206,29 @@ CREATE POLICY "Hosts can update their own study rooms"
                 />
               </div>
 
+              {/* Room Purpose / Description */}
+              <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
+                    Room Purpose & Description
+                  </label>
+                  <span className="text-[10px] text-slate-500 font-mono">
+                    {editDescription.length}/160
+                  </span>
+                </div>
+                <textarea
+                  rows={2}
+                  maxLength={160}
+                  value={editDescription}
+                  onChange={(e) => {
+                    isFormDirtyRef.current = true;
+                    setEditDescription(e.target.value);
+                  }}
+                  placeholder="Describe your focus topic, rules, or room goals..."
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-slate-600 focus:outline-none focus:border-[var(--accent)]/50 focus:ring-1 focus:ring-[var(--accent)]/20 transition-colors text-sm font-medium resize-none"
+                />
+              </div>
+
               {/* Security & Password */}
               <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-5 space-y-4">
                 <div className="flex items-center justify-between">
@@ -2471,6 +2520,7 @@ CREATE POLICY "Hosts can update their own study rooms"
                     if (roomInfo) {
                       isFormDirtyRef.current = false;
                       setEditName(roomInfo.name || '');
+                      setEditDescription(roomInfo.description || '');
                       setIsPrivate(Boolean(roomInfo.is_private));
                       setEditPassword(roomInfo.password || '');
                       setEditMaxCapacity(roomInfo.max_capacity || 4);

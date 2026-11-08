@@ -270,6 +270,7 @@ create unique index if not exists unique_user_subject_name on public.subjects (u
 create table if not exists public.study_rooms (
   id uuid default gen_random_uuid() primary key,
   name text not null,
+  description text,
   host_id uuid references auth.users(id) on delete cascade not null,
   is_private boolean default false,
   password text,
@@ -277,6 +278,9 @@ create table if not exists public.study_rooms (
   short_code text,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+
+-- Migration for study rooms description:
+alter table public.study_rooms add column if not exists description text;
 
 alter table public.study_rooms enable row level security;
 
