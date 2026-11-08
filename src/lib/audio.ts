@@ -187,64 +187,8 @@ class AudioEngine {
     }
   }
 
-  // Ambient sound synthesizer: Rain, Fireplace, WhiteNoise, PinkNoise, BrownNoise, CalmNoise
+  // Ambient sound synthesizer: Rain, Fireplace, WhiteNoise, PinkNoise, BrownNoise, CalmMusic
   private audioBuffers = new Map<string, AudioBuffer>();
-
-  private createCalmNoiseBuffer(ctx: AudioContext): AudioBuffer {
-    const sampleRate = ctx.sampleRate || 44100;
-    const durationSeconds = 12;
-    const totalSamples = sampleRate * durationSeconds;
-    const buffer = ctx.createBuffer(2, totalSamples, sampleRate);
-
-    for (let channel = 0; channel < 2; channel++) {
-      const output = buffer.getChannelData(channel);
-      let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
-      let lastOut = 0;
-
-      for (let i = 0; i < totalSamples; i++) {
-        const white = Math.random() * 2 - 1;
-        b0 = 0.99886 * b0 + white * 0.0555179;
-        b1 = 0.99332 * b1 + white * 0.0750759;
-        b2 = 0.96900 * b2 + white * 0.1538520;
-        b3 = 0.86650 * b3 + white * 0.3104856;
-        b4 = 0.55000 * b4 + white * 0.5329522;
-        b5 = -0.7616 * b5 - white * 0.0168980;
-        const pink = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.11;
-        b6 = white * 0.115926;
-
-        const alpha = 0.065;
-        lastOut = lastOut + alpha * (pink - lastOut);
-
-        const modRate = channel === 0 ? 0.08 : 0.07;
-        const modulation = 1 + 0.08 * Math.sin(2 * Math.PI * modRate * (i / sampleRate));
-
-        output[i] = lastOut * modulation;
-      }
-
-      // Smooth cosine crossfade on boundary
-      const fadeSamples = Math.floor(sampleRate * 0.6);
-      for (let i = 0; i < fadeSamples; i++) {
-        const progress = i / fadeSamples;
-        const fadeOut = 0.5 * (1 + Math.cos(Math.PI * progress));
-        const fadeIn = 1 - fadeOut;
-        const endIdx = totalSamples - fadeSamples + i;
-        const blended = output[i] * fadeIn + output[endIdx] * fadeOut;
-        output[i] = blended;
-        output[endIdx] = blended;
-      }
-
-      let max = 0;
-      for (let i = 0; i < totalSamples; i++) {
-        if (Math.abs(output[i]) > max) max = Math.abs(output[i]);
-      }
-      const scale = 0.65 / (max || 1);
-      for (let i = 0; i < totalSamples; i++) {
-        output[i] *= scale;
-      }
-    }
-
-    return buffer;
-  }
 
   private async getAmbientBuffer(ctx: AudioContext, url: string, type?: AmbientSoundType): Promise<AudioBuffer> {
     if (this.audioBuffers.has(url)) {
@@ -255,29 +199,37 @@ class AudioEngine {
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       const arrayBuffer = await response.arrayBuffer();
       const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
-      console.log(`Successfully decoded audio for ${url}`);
       this.audioBuffers.set(url, audioBuffer);
       return audioBuffer;
     } catch (err) {
-      if (type === 'calmnoise' || url.includes('calm-noise')) {
-        const buffer = this.createCalmNoiseBuffer(ctx);
-        this.audioBuffers.set(url, buffer);
-        return buffer;
+      if (url.endsWith('.wav')) {
+        const mp3Url = url.replace('.wav', '.mp3');
+        try {
+          const mp3Resp = await fetch(mp3Url);
+          if (mp3Resp.ok) {
+            const buf = await mp3Resp.arrayBuffer();
+            const audioBuffer = await ctx.decodeAudioData(buf);
+            this.audioBuffers.set(url, audioBuffer);
+            return audioBuffer;
+          }
+        } catch {
+          // ignore
+        }
       }
       throw err;
     }
   }
 
-  // Volume compensation factors to ensure consistent perceived loudness across all files
+  // Volume compensation factors: safe, normalized headroom to prevent any digital clipping or distortion
   private volumeCompensation: Record<AmbientSoundType, number> = {
-    'pinknoise': 3.0,
-    'brownnoise': 5.0,
-    'whitenoise': 2.0,
-    'rain': 4.0,
-    'campfire': 4.0,
-    'calmnoise': 2.2,
-    'waves': 3.5,
-    'lofi': 3.0,
+    'pinknoise': 1.0,
+    'brownnoise': 1.15,
+    'whitenoise': 0.85,
+    'rain': 1.0,
+    'campfire': 1.05,
+    'calmnoise': 1.0,
+    'waves': 1.0,
+    'lofi': 1.0,
   };
 
   public async startAmbient(type: AmbientSoundType, volume = 0.4) {
@@ -313,12 +265,13 @@ class AudioEngine {
       masterGain.connect(ctx.destination);
       this.ambientGain = masterGain;
 
+      // Studio-mastered seamless 16-bit 44.1kHz audio files (with automatic fallback to 320k MP3)
       const urls: Record<string, string> = {
-        'rain': '/audio/ambience/rain.mp3',
-        'campfire': '/audio/ambience/fireplace.mp3',
-        'whitenoise': '/audio/ambience/white-noise.mp3',
-        'pinknoise': '/audio/ambience/pink-noise.mp3',
-        'brownnoise': '/audio/ambience/brown-noise.mp3',
+        'rain': '/audio/ambience/rain.wav',
+        'campfire': '/audio/ambience/fireplace.wav',
+        'whitenoise': '/audio/ambience/white-noise.wav',
+        'pinknoise': '/audio/ambience/pink-noise.wav',
+        'brownnoise': '/audio/ambience/brown-noise.wav',
         'calmnoise': '/audio/ambience/calm-noise.wav',
         'waves': '/audio/ambience/calm-noise.wav',
         'lofi': '/audio/ambience/calm-noise.wav',
@@ -328,35 +281,16 @@ class AudioEngine {
       if (url) {
         const buffer = await this.getAmbientBuffer(ctx, url, effectiveType);
         
-        // Primary track
+        // Single pristine looping source node with mathematically seamless crossfaded loop points
+        // Eliminates phase flanging, comb-filtering whooshes, and periodic pulsation
         const source1 = ctx.createBufferSource();
         source1.buffer = buffer;
         source1.loop = true;
-        // Trim 100ms from ends to skip MP3 encoder silence padding, creating a flawless loop (skip for calm piano WAV)
-        source1.loopStart = effectiveType === 'calmnoise' ? 0.0 : 0.1;
-        source1.loopEnd = effectiveType === 'calmnoise' ? buffer.duration : Math.max(0.2, buffer.duration - 0.1);
+        source1.loopStart = 0.0;
+        source1.loopEnd = buffer.duration;
         source1.connect(masterGain);
         source1.start(0);
         this.activeNodes.push(source1);
-        
-        // Secondary generative track (only for random noises like rain/noise/fire, NOT for musical piano)
-        if (effectiveType !== 'calmnoise') {
-          const source2 = ctx.createBufferSource();
-          source2.buffer = buffer;
-          source2.loop = true;
-          source2.loopStart = 0.1;
-          source2.loopEnd = Math.max(0.2, buffer.duration - 0.1);
-          source2.playbackRate.value = 0.92; // Slightly pitched down and slower
-          
-          const subGain = ctx.createGain();
-          subGain.gain.value = 0.7; // Blend slightly underneath
-          source2.connect(subGain);
-          subGain.connect(masterGain);
-          
-          // Start halfway through to ensure it's immediately out of phase
-          source2.start(0, buffer.duration * 0.5);
-          this.activeNodes.push(source2);
-        }
 
         this.ambientSource = source1; // Reference for stopping
       }

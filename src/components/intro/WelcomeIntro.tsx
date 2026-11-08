@@ -429,7 +429,7 @@ export function WelcomeIntro({
                       <Volume2 className="w-3 h-3 text-[#E6C15A]" /> Rain
                     </span>
                     <span className="px-2 py-1 rounded-lg bg-white/5 text-white/60">Campfire</span>
-                    <span className="px-2 py-1 rounded-lg bg-white/5 text-white/60">Calm piano</span>
+                    <span className="px-2 py-1 rounded-lg bg-white/5 text-white/60">Calm music</span>
                     <span className="px-2 py-1 rounded-lg bg-white/5 text-white/60">Brown noise</span>
                   </div>
                 </div>

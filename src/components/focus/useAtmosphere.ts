@@ -16,7 +16,7 @@ export const ATMOSPHERE_OPTIONS: AtmosphereOption[] = [
   { id: 'none', label: 'Silent', description: 'Pure quiet focus', category: 'silent' },
   { id: 'rain', label: 'Gentle Rain', description: 'Calming rainfall on rooftop', category: 'nature' },
   { id: 'campfire', label: 'Fireplace', description: 'Warm crackling hearth flame', category: 'nature' },
-  { id: 'calmnoise', label: 'Calm Piano', description: 'Peaceful acoustic piano chords', category: 'music' },
+  { id: 'calmnoise', label: 'Calm Music', description: 'Peaceful ambient meditation music', category: 'music' },
   { id: 'brownnoise', label: 'Brown Noise', description: 'Deep low-frequency rumble', category: 'noise' },
   { id: 'pinknoise', label: 'Pink Noise', description: 'Balanced soothing static', category: 'noise' },
   { id: 'whitenoise', label: 'White Noise', description: 'Crisp masking frequency', category: 'noise' },
