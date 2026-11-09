@@ -2131,7 +2131,7 @@ CREATE POLICY "Hosts can update their own study rooms"
                                 return (
                                   <div
                                     key={msg.id}
-                                    className={`px-4 py-2.5 text-sm leading-relaxed transition-all break-words ${
+                                    className={`px-4 py-2.5 text-sm leading-relaxed transition-all break-words chat-message chat-bubble selectable-text ${
                                       isMe
                                         ? 'bg-gradient-to-br from-amber-500/25 via-amber-500/15 to-amber-600/10 border border-amber-500/35 text-amber-50 shadow-[0_2px_12px_rgba(245,158,11,0.1)]'
                                         : 'bg-white/[0.05] border border-white/[0.1] text-slate-100 shadow-md hover:border-white/20'
