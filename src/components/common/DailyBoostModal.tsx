@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Target, X, Quote as QuoteIcon } from 'lucide-react';
-import { getDailyQuote } from '../../lib/quotes';
+import { getDailyQuote, getLocalDateKey } from '../../lib/quotes';
 
 interface DailyBoostModalProps {
   isOpen: boolean;
@@ -24,7 +24,7 @@ export function DailyBoostModal({
 
   useEffect(() => {
     setQuoteData(getDailyQuote());
-    const key = 'directive_dismissed_' + new Date().toISOString().slice(0, 10);
+    const key = 'directive_dismissed_' + getLocalDateKey();
     if (!localStorage.getItem(key)) {
       setHasDismissed(false);
     }
@@ -33,14 +33,14 @@ export function DailyBoostModal({
   if (!isOpen || hasDismissed) return null;
 
   const handleAcknowledge = () => {
-    const key = 'directive_dismissed_' + new Date().toISOString().slice(0, 10);
+    const key = 'directive_dismissed_' + getLocalDateKey();
     localStorage.setItem(key, 'true');
     setHasDismissed(true);
     onClose();
   };
 
   const handleStart = () => {
-    const key = 'directive_dismissed_' + new Date().toISOString().slice(0, 10);
+    const key = 'directive_dismissed_' + getLocalDateKey();
     localStorage.setItem(key, 'true');
     setHasDismissed(true);
     if (onStartFocusing) onStartFocusing();
