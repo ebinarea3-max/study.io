@@ -906,15 +906,26 @@ CREATE POLICY "Hosts can update their own study rooms"
 
     chatChannel
       .on('broadcast', { event: 'new_message' }, (payload) => {
-        setMessages((prev) => {
-          if (prev.find((m) => m.id === payload.payload.id)) return prev;
-          
-          if (roomTabRef.current !== 'chat' && payload.payload.user_id !== user?.id) {
-            setUnreadCount((c) => c + 1);
+        if (payload?.payload) {
+          const rawMsg = payload.payload;
+          const p = Array.isArray(rawMsg.profiles) ? rawMsg.profiles[0] : rawMsg.profiles;
+          if (p && rawMsg.user_id) {
+            cacheMemberProfiles([{
+              id: rawMsg.user_id,
+              username: p.username || p.name,
+              avatar_url: p.avatar_url,
+            }]);
           }
+          setMessages((prev) => {
+            if (prev.find((m) => m.id === rawMsg.id)) return prev;
+            
+            if (roomTabRef.current !== 'chat' && rawMsg.user_id !== user?.id) {
+              setUnreadCount((c) => c + 1);
+            }
 
-          return [...prev, payload.payload];
-        });
+            return [...prev, rawMsg];
+          });
+        }
       })
       .on('broadcast', { event: 'focus_status_update' }, (payload) => {
         handleFocusUpdate(payload.payload);
@@ -996,13 +1007,29 @@ CREATE POLICY "Hosts can update their own study rooms"
       .from('room_messages')
       .select(`
         id, content, created_at, user_id,
-        profiles ( username, avatar_url )
+        profiles ( id, username, name, avatar_url )
       `)
       .eq('room_id', roomId)
       .order('created_at', { ascending: false })
       .limit(50);
 
     if (!error && data) {
+      const profsToCache: any[] = [];
+      data.forEach((m: any) => {
+        const p = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
+        if (p && m.user_id) {
+          profsToCache.push({
+            id: m.user_id,
+            username: p.username || p.name,
+            name: p.name,
+            avatar_url: p.avatar_url,
+          });
+        }
+      });
+      if (profsToCache.length > 0) {
+        cacheMemberProfiles(profsToCache);
+      }
+
       const chronological = [...data].reverse();
       setMessages(chronological);
       if (data.length < 50) {
@@ -1037,7 +1064,7 @@ CREATE POLICY "Hosts can update their own study rooms"
         .from('room_messages')
         .select(`
           id, content, created_at, user_id,
-          profiles ( username, avatar_url )
+          profiles ( id, username, name, avatar_url )
         `)
         .eq('room_id', roomId)
         .order('created_at', { ascending: false })
@@ -1052,6 +1079,22 @@ CREATE POLICY "Hosts can update their own study rooms"
       }
 
       if (data) {
+        const profsToCache: any[] = [];
+        data.forEach((m: any) => {
+          const p = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
+          if (p && m.user_id) {
+            profsToCache.push({
+              id: m.user_id,
+              username: p.username || p.name,
+              name: p.name,
+              avatar_url: p.avatar_url,
+            });
+          }
+        });
+        if (profsToCache.length > 0) {
+          cacheMemberProfiles(profsToCache);
+        }
+
         if (data.length < 50) {
           setHasMoreMessages(false);
         }
@@ -1247,6 +1290,9 @@ CREATE POLICY "Hosts can update their own study rooms"
     const supabase = getSupabase();
     if (!supabase) return;
 
+    const myUsername = profile?.username || user.username || user.displayName || 'Scholar';
+    const myAvatar = profile?.avatar_url || user.avatarUrl;
+
     const { data, error } = await supabase
       .from('room_messages')
       .insert({
@@ -1256,7 +1302,7 @@ CREATE POLICY "Hosts can update their own study rooms"
       })
       .select(`
         id, content, created_at, user_id,
-        profiles ( username, avatar_url )
+        profiles ( id, username, name, avatar_url )
       `)
       .single();
 
@@ -1264,8 +1310,25 @@ CREATE POLICY "Hosts can update their own study rooms"
       console.error(error);
       alert('Failed to send message.');
     } else if (data) {
+      const p = Array.isArray(data.profiles) ? data.profiles[0] : data.profiles;
+      const normalizedMsg = {
+        ...data,
+        profiles: {
+          id: user.id,
+          username: p?.username || myUsername,
+          name: p?.name || user.displayName || myUsername,
+          avatar_url: p?.avatar_url || myAvatar,
+        },
+      };
+
+      cacheMemberProfiles([{
+        id: user.id,
+        username: normalizedMsg.profiles.username,
+        avatar_url: normalizedMsg.profiles.avatar_url,
+      }]);
+
       setNewMessage('');
-      setMessages((prev) => [...prev, data]);
+      setMessages((prev) => [...prev, normalizedMsg]);
 
       if (chatChannelRef.current) {
         try {
@@ -1273,7 +1336,7 @@ CREATE POLICY "Hosts can update their own study rooms"
             .send({
               type: 'broadcast',
               event: 'new_message',
-              payload: data,
+              payload: normalizedMsg,
             })
             .catch(console.error);
         } catch (err) {
@@ -1991,8 +2054,18 @@ CREATE POLICY "Hosts can update their own study rooms"
                       const isStudying = senderMember?.is_studying;
                       const isHostUser = senderMember?.is_host;
                       const timeString = new Date(lastMsg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                      const username = firstMsg.profiles?.username || senderMember?.username || cachedUser?.username || 'Scholar';
-                      const avatarUrl = firstMsg.profiles?.avatar_url || senderMember?.avatar_url || cachedUser?.avatar_url || null;
+
+                      const rawProfile = Array.isArray(firstMsg.profiles) ? firstMsg.profiles[0] : firstMsg.profiles;
+                      const rawUsername = rawProfile?.username || rawProfile?.name;
+                      const rawAvatar = rawProfile?.avatar_url;
+
+                      const username = isMe
+                        ? (profile?.username || user?.displayName || user?.username || 'Scholar')
+                        : (rawUsername || senderMember?.username || cachedUser?.username || 'Scholar');
+
+                      const avatarUrl = isMe
+                        ? (profile?.avatar_url || user?.avatarUrl || senderMember?.avatar_url || cachedUser?.avatar_url || null)
+                        : (rawAvatar || senderMember?.avatar_url || cachedUser?.avatar_url || null);
 
                       return (
                         <div

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { isAppAvatar } from '@/lib/avatars';
+import { isAppAvatar, resolveAppAvatar } from '@/lib/avatars';
 
 interface UserAvatarProps {
   src?: string | null;
@@ -43,7 +43,11 @@ export function getAvatarGradient(name?: string): string {
 export function UserAvatar({ src, name, size = 36, className = '' }: UserAvatarProps) {
   const [hasError, setHasError] = useState(false);
 
-  const cleanSrc = typeof src === 'string' && src.trim().length > 0 && isAppAvatar(src) ? src.trim() : null;
+  const resolved = typeof src === 'string' && src.trim().length > 0
+    ? resolveAppAvatar(src.trim(), name)
+    : (name ? resolveAppAvatar(null, name) : null);
+
+  const cleanSrc = resolved && isAppAvatar(resolved) ? resolved : null;
 
   // Reset error state if the src changes
   useEffect(() => {
