@@ -2,153 +2,153 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Smartphone, Download, Monitor, ShieldAlert, CheckCircle2, ArrowRight, Sparkles } from 'lucide-react';
+import { Timer, Zap, Brain, Download, Monitor, ArrowUpRight, CheckCircle2, Sparkles } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 
 export default function MobileRestrictedPage() {
-  const [downloadStarted, setDownloadStarted] = useState(false);
+  const [isDownloaded, setIsDownloaded] = useState(false);
 
   const handleDownload = () => {
-    setDownloadStarted(true);
-    // Placeholder action for native app APK / Store link
+    setIsDownloaded(true);
+    // Placeholder trigger for APK download or app store navigation
+    const apkUrl = '/downloads/study-io.apk';
+    const link = document.createElement('a');
+    link.href = apkUrl;
+    link.download = 'study-io.apk';
+    // Link execution fallback
     setTimeout(() => {
-      // In production, this can point to the hosted APK or store listing
-      // e.g. window.location.href = '/downloads/study-io.apk';
-    }, 600);
+      setIsDownloaded(false);
+    }, 4000);
   };
 
   return (
-    <main className="min-h-screen w-full bg-[var(--bg)] text-[var(--text)] flex flex-col justify-between p-6 sm:p-10 relative overflow-hidden select-none">
-      {/* Background Ambience & Grid */}
-      <div className="absolute inset-0 bg-dot-grid opacity-30 pointer-events-none" />
+    <main className="min-h-screen w-full bg-gray-950 text-white flex flex-col justify-between p-6 sm:p-8 relative overflow-hidden select-none">
+      {/* Background Radial Glow & Ambient Lighting */}
       <div 
-        className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full blur-[140px] opacity-20 pointer-events-none"
-        style={{ backgroundColor: 'var(--accent)' }}
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] sm:w-[460px] h-[340px] sm:h-[460px] bg-emerald-500/20 blur-[130px] rounded-full pointer-events-none"
+      />
+      <div 
+        className="absolute -top-32 right-0 w-72 h-72 bg-emerald-600/10 blur-[100px] rounded-full pointer-events-none"
+      />
+      <div 
+        className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none opacity-60"
       />
 
-      {/* Top Bar with Brand */}
-      <header className="relative z-10 w-full max-w-lg mx-auto flex items-center justify-between">
+      {/* Top Header / Branding */}
+      <header className="relative z-10 w-full max-w-sm mx-auto flex items-center justify-between animate-in fade-in duration-500">
         <div className="flex items-center gap-2.5">
           <Logo className="w-8 h-8 drop-shadow-md" />
-          <span className="font-hud font-extrabold text-lg tracking-wider uppercase text-white">
-            STUDY<span className="text-[var(--accent)] font-mono">.IO</span>
+          <span className="font-hud font-extrabold text-base tracking-wider uppercase text-white">
+            STUDY<span className="text-emerald-400 font-mono">.IO</span>
           </span>
         </div>
-        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-hud-mono font-bold uppercase tracking-wider text-neutral-400">
-          <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
-          <span>Mobile Notice</span>
+        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.04] border border-white/10 text-[10px] font-mono text-emerald-400">
+          <Sparkles className="w-3 h-3 text-emerald-400" />
+          <span>Native Only</span>
         </div>
       </header>
 
-      {/* Main Notice Card */}
-      <section className="relative z-10 w-full max-w-lg mx-auto my-auto py-8">
-        <div className="bg-[var(--surface)]/90 border border-white/10 rounded-3xl p-6 sm:p-8 backdrop-blur-2xl shadow-2xl relative overflow-hidden space-y-6">
-          {/* Subtle Top Accent Line */}
-          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-80" />
+      {/* Main Glassmorphic Card */}
+      <div className="relative z-10 w-full max-w-sm mx-auto my-auto py-4 animate-in fade-in zoom-in-95 duration-500">
+        <div className="bg-white/[0.03] border border-white/10 rounded-3xl p-6 sm:p-8 backdrop-blur-2xl shadow-2xl relative overflow-hidden space-y-6">
+          {/* Subtle Top Glowing Rim */}
+          <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-emerald-500/60 to-transparent" />
 
-          {/* Icon Badge */}
-          <div className="flex justify-center">
-            <div className="relative">
-              <div 
-                className="w-16 h-16 rounded-2xl bg-[var(--accent-soft)] border border-[var(--border)] flex items-center justify-center shadow-lg"
-                style={{ color: 'var(--accent)' }}
-              >
-                <Smartphone className="w-8 h-8" />
-              </div>
-              <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shadow-sm">
-                <Download className="w-3.5 h-3.5" />
-              </div>
-            </div>
-          </div>
-
-          {/* Heading & Exact Required Message */}
-          <div className="text-center space-y-3">
-            <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-[var(--accent-soft)] border border-[var(--border)] text-[11px] font-hud-mono font-semibold text-[var(--accent)] tracking-wider uppercase">
-              <Sparkles className="w-3 h-3" />
-              <span>Native Experience Protocol</span>
-            </div>
-            <h1 className="text-xl sm:text-2xl font-hud font-bold tracking-tight text-white leading-snug">
-              Study.io is only available on desktop web or our native mobile app
+          {/* Typography */}
+          <div className="space-y-2 text-center">
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white leading-tight font-hud">
+              Experience Study.io Natively.
             </h1>
-            <p className="text-xs sm:text-sm text-neutral-400 font-sans leading-relaxed max-w-md mx-auto">
-              To deliver background stopwatch timers, precise focus tracking, low-latency ambient audio, and room communications without mobile browser suspension, mobile web access is restricted.
+            <p className="text-xs sm:text-sm text-neutral-400 font-sans leading-relaxed">
+              To keep your focus sharp and timers running in the background, Study.io is available exclusively on our native app or desktop web.
             </p>
           </div>
 
-          {/* Download Action Section */}
-          <div className="space-y-3 pt-2">
+          {/* 3 Key Feature Rows */}
+          <div className="space-y-2.5 pt-1">
+            {/* Feature 1 */}
+            <div className="flex items-center gap-3.5 p-3 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0 shadow-inner">
+                <Timer className="w-5 h-5 stroke-[2.2]" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-xs sm:text-sm font-bold text-white tracking-wide truncate">
+                  Native Focus Timers
+                </h3>
+                <p className="text-[11px] text-neutral-400 font-sans truncate">
+                  No background freezing or tab suspensions
+                </p>
+              </div>
+            </div>
+
+            {/* Feature 2 */}
+            <div className="flex items-center gap-3.5 p-3 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0 shadow-inner">
+                <Zap className="w-5 h-5 stroke-[2.2]" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-xs sm:text-sm font-bold text-white tracking-wide truncate">
+                  Real-Time Study Rooms
+                </h3>
+                <p className="text-[11px] text-neutral-400 font-sans truncate">
+                  Live presence, shared rooms & synchronized chats
+                </p>
+              </div>
+            </div>
+
+            {/* Feature 3 */}
+            <div className="flex items-center gap-3.5 p-3 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0 shadow-inner">
+                <Brain className="w-5 h-5 stroke-[2.2]" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-xs sm:text-sm font-bold text-white tracking-wide truncate">
+                  AI Active Recall
+                </h3>
+                <p className="text-[11px] text-neutral-400 font-sans truncate">
+                  Instant concept testing & study session analytics
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Call to Action */}
+          <div className="space-y-3 pt-2 text-center">
             <button
               type="button"
               onClick={handleDownload}
-              className="w-full py-3.5 px-6 rounded-2xl font-hud-mono font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2.5 transition-all shadow-lg active:scale-[0.98] hover:brightness-110 cursor-pointer"
-              style={{
-                backgroundColor: 'var(--accent)',
-                color: 'var(--accent-contrast)',
-                boxShadow: '0 4px 20px var(--glow)',
-              }}
+              className="w-full py-4 px-6 rounded-2xl bg-emerald-500 hover:bg-emerald-400 active:scale-[0.98] text-gray-950 font-bold text-sm tracking-wide flex items-center justify-center gap-2.5 shadow-[0_0_28px_rgba(16,185,129,0.38)] transition-all cursor-pointer hover:shadow-[0_0_35px_rgba(16,185,129,0.5)]"
             >
-              {downloadStarted ? (
+              {isDownloaded ? (
                 <>
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>Download Initialized</span>
+                  <CheckCircle2 className="w-4 h-4 stroke-[2.5]" />
+                  <span>Download Initiated</span>
                 </>
               ) : (
                 <>
-                  <Download className="w-4 h-4" />
-                  <span>Download Native App</span>
+                  <Download className="w-4 h-4 stroke-[2.5]" />
+                  <span>Download for Android</span>
                 </>
               )}
             </button>
 
-            {downloadStarted && (
-              <p className="text-[11px] font-mono text-center text-emerald-400 animate-in fade-in duration-200">
-                Opening download package. If your download doesn't start, please check back shortly.
-              </p>
-            )}
-          </div>
-
-          {/* Feature Checklist */}
-          <div className="pt-2 border-t border-white/5 grid grid-cols-1 gap-2.5 text-xs text-neutral-300">
-            <div className="flex items-center gap-2.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>Uninterrupted background study timers & alarms</span>
+            {/* Muted Desktop Link */}
+            <div className="pt-1">
+              <Link
+                href="/"
+                className="text-xs text-neutral-400 hover:text-white transition-colors font-mono inline-flex items-center gap-1.5 group"
+              >
+                <Monitor className="w-3.5 h-3.5 opacity-60 group-hover:opacity-100 transition-opacity" />
+                <span>Available on Desktop</span>
+                <ArrowUpRight className="w-3.5 h-3.5 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
+              </Link>
             </div>
-            <div className="flex items-center gap-2.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>Live peer study rooms and synchronized chats</span>
-            </div>
-            <div className="flex items-center gap-2.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>Local offline session logging and rank progression</span>
-            </div>
-          </div>
-
-          {/* Desktop Web Fallback Notice */}
-          <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/5 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <Monitor className="w-4 h-4 text-neutral-400 shrink-0" />
-              <div className="min-w-0">
-                <span className="text-[11px] font-bold text-neutral-200 block truncate">
-                  Are you on a desktop PC or Mac?
-                </span>
-                <span className="text-[10px] text-neutral-500 font-mono block truncate">
-                  Request desktop site or visit via desktop browser.
-                </span>
-              </div>
-            </div>
-            <Link
-              href="/"
-              className="inline-flex items-center gap-1 text-[11px] font-hud-mono font-bold text-[var(--accent)] hover:underline whitespace-nowrap shrink-0"
-            >
-              <span>Try Web</span>
-              <ArrowRight className="w-3 h-3" />
-            </Link>
           </div>
         </div>
-      </section>
+      </div>
 
       {/* Footer */}
-      <footer className="relative z-10 w-full max-w-lg mx-auto text-center">
+      <footer className="relative z-10 w-full max-w-sm mx-auto text-center py-2 animate-in fade-in duration-500">
         <p className="text-[11px] text-neutral-600 font-mono">
           &copy; {new Date().getFullYear()} Study.io &bull; Precision Focus Infrastructure
         </p>
