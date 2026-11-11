@@ -1,16 +1,78 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
-import { Timer, Users, Trophy, Download, ArrowUpRight } from 'lucide-react';
+import { Download, ArrowUpRight, X, ChevronRight } from 'lucide-react';
 import { Logo } from '@/components/Logo';
+import { RankCrestBadge } from '@/components/common/RankCrestBadge';
+
+const CAROUSEL_CARDS = [
+  {
+    id: 'timers',
+    title: 'Three timers',
+    caption: 'Stopwatch, countdown and Pomodoro.',
+    visual: 'timers',
+  },
+  {
+    id: 'ranks',
+    title: 'Ranks and RP',
+    caption: '23 ranks, a new season every month.',
+    visual: 'ranks',
+  },
+  {
+    id: 'rooms',
+    title: 'Live rooms',
+    caption: 'Study together with chat and live status.',
+    visual: 'rooms',
+  },
+  {
+    id: 'streaks',
+    title: 'Streaks and levels',
+    caption: 'Show up daily and level up.',
+    visual: 'streaks',
+  },
+  {
+    id: 'sounds',
+    title: 'Sounds',
+    caption: 'Eight ambient sounds for deep focus.',
+    visual: 'sounds',
+  },
+  {
+    id: 'themes',
+    title: 'Themes',
+    caption: 'Pick from 18 looks.',
+    visual: 'themes',
+  },
+  {
+    id: 'stats',
+    title: 'Stats',
+    caption: 'Your focus time, day by day.',
+    visual: 'stats',
+  },
+  {
+    id: 'install',
+    title: 'How to install',
+    caption: 'Quick 3-step setup for Android.',
+    visual: 'install',
+  },
+];
 
 export default function MobileRestrictedPage() {
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [activeCardIndex, setActiveCardIndex] = useState(0);
 
-  const handleDownload = () => {
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const triggerButtonRef = useRef<HTMLButtonElement>(null);
+  const touchStartYRef = useRef<number | null>(null);
+
+  // Keep existing APK URL & download handler
+  const apkUrl = '/downloads/study-io.apk';
+  const versionString = 'Android, v2.4';
+
+  const handleDownload = useCallback(() => {
     setIsDownloading(true);
-    const apkUrl = '/downloads/study-io.apk';
     const link = document.createElement('a');
     link.href = apkUrl;
     link.download = 'study-io.apk';
@@ -20,98 +82,588 @@ export default function MobileRestrictedPage() {
     setTimeout(() => {
       setIsDownloading(false);
     }, 4000);
+  }, [apkUrl]);
+
+  // Ensure page loads scrolled to top
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  // Bottom sheet accessibility & focus management
+  const openSheet = useCallback(() => {
+    setIsSheetOpen(true);
+  }, []);
+
+  const closeSheet = useCallback(() => {
+    setIsSheetOpen(false);
+    // Restore focus to opening button
+    setTimeout(() => {
+      triggerButtonRef.current?.focus();
+    }, 50);
+  }, []);
+
+  // Keyboard Escape listener & focus trap
+  useEffect(() => {
+    if (!isSheetOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        closeSheet();
+        return;
+      }
+
+      if (e.key === 'Tab' && sheetRef.current) {
+        const focusableElements = sheetRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusableElements.length === 0) return;
+
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === firstElement) {
+            lastElement.focus();
+            e.preventDefault();
+          }
+        } else {
+          if (document.activeElement === lastElement) {
+            firstElement.focus();
+            e.preventDefault();
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isSheetOpen, closeSheet]);
+
+  // Touch drag-down to close sheet
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartYRef.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartYRef.current === null) return;
+    const touchEndY = e.changedTouches[0].clientY;
+    const diff = touchEndY - touchStartYRef.current;
+    if (diff > 60) {
+      closeSheet();
+    }
+    touchStartYRef.current = null;
+  };
+
+  // Carousel scroll sync with pagination dots
+  const handleCarouselScroll = () => {
+    if (!carouselRef.current) return;
+    const { scrollLeft, clientWidth } = carouselRef.current;
+    const cardWidth = clientWidth * 0.85;
+    const index = Math.round(scrollLeft / cardWidth);
+    setActiveCardIndex(Math.min(Math.max(0, index), CAROUSEL_CARDS.length - 1));
+  };
+
+  const scrollToIndex = (index: number) => {
+    if (!carouselRef.current) return;
+    const cardWidth = carouselRef.current.clientWidth * 0.85;
+    carouselRef.current.scrollTo({
+      left: index * cardWidth,
+      behavior: 'smooth',
+    });
+    setActiveCardIndex(index);
   };
 
   return (
-    <main className="h-screen h-dvh max-h-screen w-full bg-[#07090e] text-white overflow-hidden relative select-none flex flex-col justify-between px-6 py-6 sm:py-8 sm:px-8">
-      {/* Background Dot-Grid & Atmospheric Glow */}
-      <div className="fixed inset-0 pointer-events-none bg-dot-grid opacity-40 z-0" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] sm:w-[460px] h-[340px] sm:h-[460px] bg-[radial-gradient(circle,rgba(0,216,117,0.12)_0%,transparent_70%)] pointer-events-none z-0" />
+    <div className="min-h-[100svh] h-[100svh] max-h-[100svh] w-full bg-[#07090C] text-slate-100 overflow-hidden relative select-none flex flex-col justify-between landscape:h-auto landscape:min-h-[100svh] landscape:overflow-y-auto">
+      {/* Background dot grid & soft emerald ambient illumination */}
+      <div className="fixed inset-0 pointer-events-none bg-dot-grid opacity-30 z-0" />
+      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] sm:w-[460px] h-[340px] sm:h-[460px] bg-[radial-gradient(circle,rgba(16,185,129,0.14)_0%,transparent_65%)] pointer-events-none z-0" />
 
-      {/* Top Header: Authentic Logo + lowercase study.io */}
-      <header className="relative z-10 w-full max-w-sm mx-auto flex items-center justify-between pt-1">
-        <div className="flex items-center gap-2.5">
-          <Logo className="w-8 h-8 drop-shadow-[0_0_12px_rgba(0,216,117,0.35)]" />
-          <span className="text-base font-extrabold tracking-tight text-white font-sans lowercase">
-            study<span className="text-[#00D875]">.io</span>
+      {/* Main Content Column with safe-area spacing scale (8, 16, 24, 32) */}
+      <div className="relative z-10 w-full max-w-sm mx-auto px-4 sm:px-6 pt-[calc(env(safe-area-inset-top,0px)+16px)] flex-1 flex flex-col min-h-0">
+        {/* Top bar: Logo, study.io, and Android app pill */}
+        <header className="flex items-center justify-between shrink-0 mb-4 animate-rise-1">
+          <div className="flex items-center gap-2.5">
+            <Logo className="w-7 h-7 drop-shadow-sm" />
+            <span className="text-base font-bold tracking-tight text-white font-sans">
+              study.io
+            </span>
+          </div>
+          <span className="text-xs font-sans px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/10 text-slate-300">
+            Android app
           </span>
-        </div>
-        <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/[0.04] border border-white/10 text-[#00D875] tracking-wide">
-          native app
-        </span>
-      </header>
+        </header>
 
-      {/* Center Body: Title & 3 Classic Minimal Feature Cards */}
-      <div className="relative z-10 w-full max-w-sm mx-auto flex flex-col items-center my-auto py-2">
-        {/* Hero Title & Subtitle */}
-        <div className="text-center space-y-2 mb-5 sm:mb-6">
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white leading-tight font-sans">
-            experience <span className="text-[#00D875]">study.io</span> natively
+        {/* Hero Visual: CSS Phone frame (approx 38svh tall, 6 deg tilt, 8px float) */}
+        <div className="flex-1 flex items-center justify-center min-h-[190px] max-h-[40svh] my-1 relative shrink-0 animate-rise-2">
+          <div className="hero-phone relative w-[168px] sm:w-[185px] h-[260px] sm:h-[285px] rounded-[36px] border border-white/20 bg-[#090C12] p-2.5 shadow-[0_20px_45px_rgba(0,0,0,0.85),0_0_30px_rgba(16,185,129,0.12)]">
+            {/* Phone Screen Glass */}
+            <div className="w-full h-full rounded-[26px] bg-[#07090E] border border-white/[0.06] p-2.5 flex flex-col justify-between items-center overflow-hidden relative">
+              {/* Top speaker notch */}
+              <div className="w-12 h-1.5 rounded-full bg-white/15 mx-auto shrink-0 mb-1" />
+
+              {/* Mode Tabs */}
+              <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-white/[0.04] border border-white/[0.06] shrink-0">
+                <span className="px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-[#34D399] font-bold text-[8px] leading-none">
+                  Pomodoro
+                </span>
+                <span className="px-1 py-0.5 text-white/40 text-[7.5px] leading-none">
+                  Stopwatch
+                </span>
+                <span className="px-1 py-0.5 text-white/40 text-[7.5px] leading-none">
+                  Countdown
+                </span>
+              </div>
+
+              {/* Dial Ring with partially filled emerald arc & 25:00 digits */}
+              <div className="relative w-28 h-28 my-auto flex items-center justify-center">
+                <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+                  {/* Track ring */}
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="38"
+                    stroke="rgba(255,255,255,0.08)"
+                    strokeWidth="5"
+                    fill="none"
+                  />
+                  {/* Active emerald arc */}
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="38"
+                    stroke="#10B981"
+                    strokeWidth="5"
+                    strokeLinecap="round"
+                    strokeDasharray="238.76"
+                    strokeDashoffset="65"
+                    fill="none"
+                  />
+                </svg>
+
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                  <span className="text-xl font-hud font-bold tracking-wider text-white leading-none">
+                    25:00
+                  </span>
+                  <span className="text-[7.5px] font-mono font-medium text-[#34D399] tracking-wider uppercase mt-1">
+                    Deep Focus
+                  </span>
+                </div>
+              </div>
+
+              {/* Mini Start Button */}
+              <div className="w-full px-3 shrink-0">
+                <div className="w-full py-1.5 rounded-xl bg-gradient-to-r from-[#34D399] via-[#10B981] to-[#059669] text-[#04140D] font-bold text-[9px] text-center tracking-wide shadow-sm">
+                  Start focus
+                </div>
+              </div>
+            </div>
+
+            {/* Overlapping Floating Chip 1: Authentic Rank Crest Badge (Static / Lite) */}
+            <div className="hero-chip-1 absolute -top-2.5 -left-5 sm:-left-7 px-2.5 py-1.5 rounded-2xl bg-[#0F131D]/95 border border-white/15 shadow-xl flex items-center gap-1.5 backdrop-blur-md z-20">
+              <RankCrestBadge tier="Silver" division="I" size={24} interactive={false} />
+              <div className="flex flex-col text-left">
+                <span className="text-[10px] font-hud font-bold text-slate-100 leading-none">
+                  Silver I
+                </span>
+                <span className="text-[7.5px] font-mono text-[#34D399] leading-tight mt-0.5">
+                  Rank tier
+                </span>
+              </div>
+            </div>
+
+            {/* Overlapping Floating Chip 2: Live Room with 3 Avatars & Pulsing Dot */}
+            <div className="hero-chip-2 absolute -bottom-2.5 -right-5 sm:-right-7 px-2.5 py-1.5 rounded-2xl bg-[#0F131D]/95 border border-white/15 shadow-xl flex items-center gap-2 backdrop-blur-md z-20">
+              <span className="relative flex h-2 w-2 shrink-0">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#10B981] opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#10B981]" />
+              </span>
+              <span className="text-[10px] font-medium text-slate-200">Live room</span>
+              <div className="flex -space-x-1.5">
+                <div className="w-4 h-4 rounded-full bg-emerald-500/40 border border-[#0F131D] flex items-center justify-center text-[7.5px] text-emerald-200 font-bold">
+                  S
+                </div>
+                <div className="w-4 h-4 rounded-full bg-cyan-500/40 border border-[#0F131D] flex items-center justify-center text-[7.5px] text-cyan-200 font-bold">
+                  K
+                </div>
+                <div className="w-4 h-4 rounded-full bg-amber-500/40 border border-[#0F131D] flex items-center justify-center text-[7.5px] text-amber-200 font-bold">
+                  M
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Headline & Subline */}
+        <div className="text-center my-2 shrink-0 animate-rise-3">
+          <h1 className="text-2xl sm:text-3xl font-hud font-bold tracking-tight text-white leading-tight">
+            Take your focus with you.
           </h1>
-          <p className="text-xs sm:text-sm text-slate-400 leading-relaxed max-w-xs mx-auto">
-            Run timers and join live rooms without background browser freezes or audio cutoffs.
+          <p className="text-xs sm:text-sm text-slate-400 font-sans mt-1.5 leading-relaxed max-w-xs mx-auto">
+            Timers, live study rooms and monthly ranks, all in one app.
           </p>
         </div>
 
-        {/* 3 Core Minimalist Feature Rows */}
-        <div className="w-full space-y-2.5">
-          {/* Feature 1: Timers */}
-          <div className="flex items-center gap-3 p-3 rounded-2xl bg-white/[0.03] border border-white/[0.07] backdrop-blur-md">
-            <div className="w-9 h-9 rounded-xl bg-[#00D875]/10 border border-[#00D875]/25 flex items-center justify-center text-[#00D875] shrink-0 shadow-[0_0_10px_rgba(0,216,117,0.2)]">
-              <Timer className="w-4 h-4 stroke-[2.2]" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="text-xs font-bold text-white tracking-wide">Background Focus Timers</div>
-              <div className="text-[11px] text-slate-400 truncate">Stopwatch, Pomodoro &amp; ambient audio</div>
-            </div>
-          </div>
+        {/* Secondary Actions on Hero */}
+        <div className="flex items-center justify-center gap-4 my-2 shrink-0 animate-rise-4">
+          <button
+            ref={triggerButtonRef}
+            type="button"
+            onClick={openSheet}
+            className="text-xs font-semibold text-slate-200 hover:text-white px-3.5 py-1.5 rounded-full bg-white/[0.04] border border-white/10 hover:border-white/20 transition-colors cursor-pointer active:scale-[0.98]"
+          >
+            See what&apos;s inside
+          </button>
 
-          {/* Feature 2: Rooms */}
-          <div className="flex items-center gap-3 p-3 rounded-2xl bg-white/[0.03] border border-white/[0.07] backdrop-blur-md">
-            <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/25 flex items-center justify-center text-cyan-400 shrink-0 shadow-[0_0_10px_rgba(6,182,212,0.2)]">
-              <Users className="w-4 h-4 stroke-[2.2]" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="text-xs font-bold text-white tracking-wide">Live Study Rooms</div>
-              <div className="text-[11px] text-slate-400 truncate">Real-time presence for up to 32 scholars</div>
-            </div>
-          </div>
-
-          {/* Feature 3: Ranked */}
-          <div className="flex items-center gap-3 p-3 rounded-2xl bg-white/[0.03] border border-white/[0.07] backdrop-blur-md">
-            <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-center text-amber-400 shrink-0 shadow-[0_0_10px_rgba(245,158,11,0.2)]">
-              <Trophy className="w-4 h-4 stroke-[2.2]" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="text-xs font-bold text-white tracking-wide">Ranked Seasons &amp; RP</div>
-              <div className="text-[11px] text-slate-400 truncate">23 tiers, season resets &amp; daily streaks</div>
-            </div>
-          </div>
+          <Link
+            href="/"
+            className="text-xs text-slate-400 hover:text-white transition-colors inline-flex items-center gap-1 py-1 font-sans"
+          >
+            <span>Use on desktop</span>
+            <ArrowUpRight className="w-3.5 h-3.5 opacity-60" />
+          </Link>
         </div>
       </div>
 
-      {/* Bottom Section: Download Button + Desktop Link */}
-      <footer className="relative z-10 w-full max-w-sm mx-auto flex flex-col items-center gap-3 pb-2 sm:pb-3">
-        <button
-          type="button"
-          onClick={handleDownload}
-          className="w-full py-3.5 sm:py-4 px-6 rounded-2xl bg-gradient-to-r from-[#00D875] to-[#10B981] hover:brightness-105 active:scale-[0.98] text-[#07090E] font-bold text-sm tracking-wide flex items-center justify-center gap-2 shadow-[0_4px_24px_rgba(0,216,117,0.3)] transition-all cursor-pointer"
-        >
-          <Download className="w-4 h-4 stroke-[2.5]" />
-          <span>{isDownloading ? 'starting download...' : 'download for android'}</span>
-        </button>
-
-        <div className="flex items-center justify-between w-full px-1 text-[11px] font-mono text-slate-400">
-          <span>android &bull; v2.4</span>
-          <Link
-            href="/"
-            className="text-slate-400 hover:text-white transition-colors inline-flex items-center gap-1 group py-0.5"
+      {/* Sticky Bottom Bar with safe-area padding and 56px Primary Button */}
+      <footer className="sticky bottom-0 left-0 right-0 z-30 bg-[#07090C]/90 backdrop-blur-xl border-t border-white/[0.08] px-4 pt-3 pb-[calc(env(safe-area-inset-bottom,0px)+16px)] shrink-0 animate-rise-5">
+        <div className="w-full max-w-sm mx-auto flex flex-col items-center gap-2">
+          {/* Primary Button (56px tall, 16px radius, emerald gradient, light sweep) */}
+          <button
+            type="button"
+            onClick={handleDownload}
+            className="relative overflow-hidden w-full h-[56px] min-h-[56px] rounded-[16px] bg-gradient-to-r from-[#34D399] via-[#10B981] to-[#059669] text-[#04140D] font-bold text-sm sm:text-base tracking-wide flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(16,185,129,0.32)] transition-transform duration-150 active:scale-[0.98] cursor-pointer"
           >
-            <span>available on desktop</span>
-            <ArrowUpRight className="w-3 h-3 opacity-60 group-hover:opacity-100 transition-opacity" />
-          </Link>
+            {/* Light sweep across button every 8s */}
+            <div className="button-sweep absolute inset-y-0 w-1/3 bg-gradient-to-r from-transparent via-white/35 to-transparent skew-x-[-25deg] pointer-events-none" />
+
+            <Download className="w-5 h-5 stroke-[2.5]" />
+            <span>{isDownloading ? 'Downloading...' : 'Download for Android'}</span>
+          </button>
+
+          {/* Under button version string */}
+          <span className="text-[11px] font-mono text-slate-400 tracking-tight">
+            {versionString}
+          </span>
         </div>
       </footer>
-    </main>
+
+      {/* Bottom Sheet ("What's inside") */}
+      {isSheetOpen && (
+        <div className="fixed inset-0 z-50 flex flex-col justify-end">
+          {/* Dimmed backdrop */}
+          <div
+            onClick={closeSheet}
+            className="absolute inset-0 bg-black/75 backdrop-blur-sm transition-opacity duration-300"
+          />
+
+          {/* Bottom Sheet Modal Container */}
+          <div
+            ref={sheetRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="sheet-title"
+            tabIndex={-1}
+            className="relative z-10 w-full max-w-lg mx-auto h-[80svh] max-h-[80svh] rounded-t-[32px] bg-[#0E1118] border-t border-white/10 flex flex-col justify-between overflow-hidden shadow-2xl animate-sheet-slide"
+          >
+            {/* Grab Handle & Touch drag-down area */}
+            <div
+              onTouchStart={handleTouchStart}
+              onTouchEnd={handleTouchEnd}
+              className="w-full pt-3 pb-2 cursor-grab active:cursor-grabbing flex flex-col items-center shrink-0"
+            >
+              <div className="w-10 h-1.5 rounded-full bg-white/20" />
+            </div>
+
+            {/* Sheet Header */}
+            <div className="px-6 py-2 flex items-center justify-between shrink-0">
+              <div>
+                <h2 id="sheet-title" className="text-base font-hud font-bold text-white tracking-wide">
+                  Inside study.io
+                </h2>
+                <p className="text-xs text-slate-400 font-sans mt-0.5">
+                  Core capabilities on Android
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={closeSheet}
+                className="p-1.5 rounded-full text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                aria-label="Close dialog"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Horizontal Scroll-Snap Carousel (85% card width with dots) */}
+            <div className="flex-1 min-h-0 flex flex-col justify-center py-2">
+              <div
+                ref={carouselRef}
+                onScroll={handleCarouselScroll}
+                className="flex overflow-x-auto snap-x snap-mandatory scrollbar-none gap-3 px-6 py-2"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              >
+                {CAROUSEL_CARDS.map((card) => (
+                  <div
+                    key={card.id}
+                    className="w-[82%] sm:w-[85%] shrink-0 snap-center rounded-2xl bg-white/[0.04] border border-white/10 p-5 flex flex-col justify-between h-[270px] select-none"
+                  >
+                    {/* Card Visual Header */}
+                    <div className="h-[120px] w-full rounded-xl bg-white/[0.02] border border-white/[0.05] flex items-center justify-center p-3 relative overflow-hidden">
+                      {card.visual === 'timers' && (
+                        <div className="flex items-center gap-1.5 p-1 rounded-xl bg-white/[0.05] border border-white/10">
+                          <span className="px-2 py-1 rounded-lg bg-emerald-500/20 text-[#34D399] font-bold text-[10px]">
+                            Stopwatch
+                          </span>
+                          <span className="px-2 py-1 text-white/50 text-[10px]">
+                            Countdown
+                          </span>
+                          <span className="px-2 py-1 text-white/50 text-[10px]">
+                            Pomodoro
+                          </span>
+                        </div>
+                      )}
+
+                      {card.visual === 'ranks' && (
+                        <div className="flex items-center gap-2">
+                          <RankCrestBadge tier="Bronze" division="IV" size={28} interactive={false} />
+                          <RankCrestBadge tier="Silver" division="IV" size={32} interactive={false} />
+                          <div className="p-1 rounded-xl ring-2 ring-emerald-400/40">
+                            <RankCrestBadge tier="Gold" division="I" size={38} interactive={false} />
+                          </div>
+                          <RankCrestBadge tier="Platinum" division="I" size={32} interactive={false} />
+                          <RankCrestBadge tier="Diamond" division="I" size={28} interactive={false} />
+                        </div>
+                      )}
+
+                      {card.visual === 'rooms' && (
+                        <div className="w-full max-w-[200px] p-2 rounded-xl bg-[#07090E] border border-white/10 flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                            <span className="text-[10px] font-bold text-white font-hud">Chamber</span>
+                          </div>
+                          <div className="flex -space-x-1.5">
+                            <div className="w-5 h-5 rounded-full bg-emerald-500/30 border border-[#07090E] flex items-center justify-center text-[8px] text-emerald-200">A</div>
+                            <div className="w-5 h-5 rounded-full bg-cyan-500/30 border border-[#07090E] flex items-center justify-center text-[8px] text-cyan-200">B</div>
+                            <div className="w-5 h-5 rounded-full bg-amber-500/30 border border-[#07090E] flex items-center justify-center text-[8px] text-amber-200">C</div>
+                          </div>
+                        </div>
+                      )}
+
+                      {card.visual === 'streaks' && (
+                        <div className="flex flex-col items-center gap-2">
+                          <div className="px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/30 text-orange-400 font-mono text-xs font-bold">
+                            Streak &bull; Level 12
+                          </div>
+                          <div className="w-32 h-1.5 rounded-full bg-white/10 overflow-hidden">
+                            <div className="w-2/3 h-full bg-gradient-to-r from-orange-400 to-amber-300 rounded-full" />
+                          </div>
+                        </div>
+                      )}
+
+                      {card.visual === 'sounds' && (
+                        <div className="flex items-center gap-1 h-8">
+                          {[16, 28, 12, 24, 32, 18, 26, 14, 22].map((h, i) => (
+                            <span
+                              key={i}
+                              className="w-1.5 rounded-full bg-emerald-400/80"
+                              style={{ height: `${h}px` }}
+                            />
+                          ))}
+                        </div>
+                      )}
+
+                      {card.visual === 'themes' && (
+                        <div className="flex items-center gap-1.5">
+                          {['#10B981', '#06B6D4', '#8B5CF6', '#F59E0B', '#F43F5E'].map((color, idx) => (
+                            <span
+                              key={idx}
+                              className="w-5 h-5 rounded-full border border-white/20 shadow-sm"
+                              style={{ backgroundColor: color }}
+                            />
+                          ))}
+                        </div>
+                      )}
+
+                      {card.visual === 'stats' && (
+                        <div className="flex items-end gap-1.5 h-12">
+                          {[30, 45, 25, 60, 40, 75, 55].map((pct, idx) => (
+                            <span
+                              key={idx}
+                              className="w-2.5 rounded-t bg-emerald-400/70"
+                              style={{ height: `${pct}%` }}
+                            />
+                          ))}
+                        </div>
+                      )}
+
+                      {card.visual === 'install' && (
+                        <div className="flex items-center gap-2 text-xs font-mono text-emerald-400">
+                          <span>1. Download</span>
+                          <ChevronRight className="w-3 h-3 text-slate-500" />
+                          <span>2. Allow</span>
+                          <ChevronRight className="w-3 h-3 text-slate-500" />
+                          <span>3. Install</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Card Content: Title <= 3 words, Caption <= 8 words */}
+                    <div className="pt-3">
+                      <h3 className="text-sm font-hud font-bold tracking-wide text-white">
+                        {card.title}
+                      </h3>
+                      <p className="text-xs text-slate-400 font-sans mt-1 leading-relaxed">
+                        {card.caption}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Carousel Pagination Dots */}
+              <div className="flex items-center justify-center gap-1.5 pt-2">
+                {CAROUSEL_CARDS.map((_, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => scrollToIndex(idx)}
+                    className={`h-1.5 rounded-full transition-all duration-200 cursor-pointer ${
+                      activeCardIndex === idx
+                        ? 'w-5 bg-[#34D399]'
+                        : 'w-1.5 bg-white/20 hover:bg-white/40'
+                    }`}
+                    aria-label={`Go to slide ${idx + 1}`}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Sheet Footer: Repeats Download Button */}
+            <div className="p-5 border-t border-white/[0.08] bg-[#0A0D14] shrink-0">
+              <button
+                type="button"
+                onClick={handleDownload}
+                className="w-full h-[52px] rounded-2xl bg-gradient-to-r from-[#34D399] via-[#10B981] to-[#059669] text-[#04140D] font-bold text-sm tracking-wide flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-transform duration-150 cursor-pointer"
+              >
+                <Download className="w-4 h-4 stroke-[2.5]" />
+                <span>{isDownloading ? 'Downloading...' : 'Download for Android'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Scoped CSS animations for phone float, chip drift, button sweep, and staggered entrance */}
+      <style jsx>{`
+        @keyframes phoneFloat {
+          0%, 100% {
+            transform: translateY(0px) rotate(6deg);
+          }
+          50% {
+            transform: translateY(-8px) rotate(6deg);
+          }
+        }
+
+        @keyframes chipDrift {
+          0%, 100% {
+            transform: translateY(0px);
+          }
+          50% {
+            transform: translateY(-4px);
+          }
+        }
+
+        @keyframes buttonSweep {
+          0% {
+            transform: translateX(-200%);
+          }
+          15% {
+            transform: translateX(450%);
+          }
+          100% {
+            transform: translateX(450%);
+          }
+        }
+
+        @keyframes riseFadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(12px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes sheetSlideUp {
+          from {
+            opacity: 0;
+            transform: translateY(24px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .hero-phone {
+          animation: phoneFloat 6s ease-in-out infinite;
+        }
+
+        .hero-chip-1 {
+          animation: chipDrift 6s ease-in-out infinite;
+          animation-delay: 40ms;
+        }
+
+        .hero-chip-2 {
+          animation: chipDrift 6s ease-in-out infinite;
+          animation-delay: 80ms;
+        }
+
+        .button-sweep {
+          animation: buttonSweep 8s ease-in-out infinite;
+        }
+
+        .animate-rise-1 {
+          animation: riseFadeIn 350ms cubic-bezier(0.16, 1, 0.3, 1) 0ms both;
+        }
+        .animate-rise-2 {
+          animation: riseFadeIn 350ms cubic-bezier(0.16, 1, 0.3, 1) 70ms both;
+        }
+        .animate-rise-3 {
+          animation: riseFadeIn 350ms cubic-bezier(0.16, 1, 0.3, 1) 140ms both;
+        }
+        .animate-rise-4 {
+          animation: riseFadeIn 350ms cubic-bezier(0.16, 1, 0.3, 1) 210ms both;
+        }
+        .animate-rise-5 {
+          animation: riseFadeIn 350ms cubic-bezier(0.16, 1, 0.3, 1) 280ms both;
+        }
+
+        .animate-sheet-slide {
+          animation: sheetSlideUp 300ms cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .hero-phone,
+          .hero-chip-1,
+          .hero-chip-2,
+          .button-sweep,
+          .animate-rise-1,
+          .animate-rise-2,
+          .animate-rise-3,
+          .animate-rise-4,
+          .animate-rise-5,
+          .animate-sheet-slide {
+            animation: none !important;
+            transform: none !important;
+            opacity: 1 !important;
+          }
+        }
+      `}</style>
+    </div>
   );
 }
