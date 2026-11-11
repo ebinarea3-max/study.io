@@ -4,11 +4,33 @@ import { NextResponse, type NextRequest } from 'next/server';
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Never intercept or redirect auth callback routes
-  if (pathname.startsWith('/auth/callback')) {
+  // 1. Never intercept or redirect auth callback or API routes
+  if (
+    pathname.startsWith('/auth/callback') ||
+    pathname.startsWith('/api')
+  ) {
     return NextResponse.next();
   }
 
+  // 2. Mobile web restriction check:
+  // Read user-agent header. If user-agent indicates a mobile device (Android, iPhone, iPad, etc.)
+  // BUT does NOT include 'StudyIoNativeApp', redirect them to /mobile-restricted.
+  const userAgent = request.headers.get('user-agent') || '';
+  const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(userAgent);
+  const isNativeApp = userAgent.includes('StudyIoNativeApp');
+
+  // Allow direct access to the restriction page itself without redirect loops
+  if (pathname === '/mobile-restricted') {
+    return NextResponse.next();
+  }
+
+  if (isMobile && !isNativeApp) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/mobile-restricted';
+    return NextResponse.redirect(url);
+  }
+
+  // 3. Normal web / native app auth session flow
   let response = NextResponse.next({
     request: {
       headers: request.headers,
