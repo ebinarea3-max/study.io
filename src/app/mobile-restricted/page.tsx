@@ -2,8 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Timer, Zap, Brain, Download, Monitor, ArrowUpRight, CheckCircle2, Sparkles } from 'lucide-react';
-import { Logo } from '@/components/Logo';
+import { BookOpen, Timer, Zap, Brain, Download, ArrowUpRight } from 'lucide-react';
 
 export default function MobileRestrictedPage() {
   const [isDownloaded, setIsDownloaded] = useState(false);
@@ -22,137 +21,99 @@ export default function MobileRestrictedPage() {
   };
 
   return (
-    <main className="min-h-screen w-full bg-gray-950 text-white flex flex-col justify-between p-6 sm:p-8 relative overflow-hidden select-none">
-      {/* Background Radial Glow & Ambient Lighting */}
-      <div 
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] sm:w-[460px] h-[340px] sm:h-[460px] bg-emerald-500/20 blur-[130px] rounded-full pointer-events-none"
-      />
-      <div 
-        className="absolute -top-32 right-0 w-72 h-72 bg-emerald-600/10 blur-[100px] rounded-full pointer-events-none"
-      />
-      <div 
-        className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none opacity-60"
+    <main className="min-h-screen w-full bg-[#0B101A] text-white relative overflow-x-hidden flex flex-col justify-between px-6 pt-12 pb-44 select-none">
+      {/* Ambient Top Center Radial Glow */}
+      <div
+        className="absolute top-0 left-1/2 -translate-x-1/2 w-[380px] sm:w-[460px] h-[280px] bg-[radial-gradient(ellipse_at_top,rgba(0,216,117,0.15)_0%,transparent_70%)] pointer-events-none"
       />
 
-      {/* Top Header / Branding */}
-      <header className="relative z-10 w-full max-w-sm mx-auto flex items-center justify-between animate-in fade-in duration-500">
-        <div className="flex items-center gap-2.5">
-          <Logo className="w-8 h-8 drop-shadow-md" />
-          <span className="font-hud font-extrabold text-base tracking-wider uppercase text-white">
-            STUDY<span className="text-emerald-400 font-mono">.IO</span>
-          </span>
-        </div>
-        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.04] border border-white/10 text-[10px] font-mono text-emerald-400">
-          <Sparkles className="w-3 h-3 text-emerald-400" />
-          <span>Native Only</span>
-        </div>
-      </header>
-
-      {/* Main Glassmorphic Card */}
-      <div className="relative z-10 w-full max-w-sm mx-auto my-auto py-4 animate-in fade-in zoom-in-95 duration-500">
-        <div className="bg-white/[0.03] border border-white/10 rounded-3xl p-6 sm:p-8 backdrop-blur-2xl shadow-2xl relative overflow-hidden space-y-6">
-          {/* Subtle Top Glowing Rim */}
-          <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-emerald-500/60 to-transparent" />
-
-          {/* Typography */}
-          <div className="space-y-2 text-center">
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white leading-tight font-hud">
-              Experience Study.io Natively.
-            </h1>
-            <p className="text-xs sm:text-sm text-neutral-400 font-sans leading-relaxed">
-              To keep your focus sharp and timers running in the background, Study.io is available exclusively on our native app or desktop web.
-            </p>
-          </div>
-
-          {/* 3 Key Feature Rows */}
-          <div className="space-y-2.5 pt-1">
-            {/* Feature 1 */}
-            <div className="flex items-center gap-3.5 p-3 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0 shadow-inner">
-                <Timer className="w-5 h-5 stroke-[2.2]" />
-              </div>
-              <div className="min-w-0">
-                <h3 className="text-xs sm:text-sm font-bold text-white tracking-wide truncate">
-                  Native Focus Timers
-                </h3>
-                <p className="text-[11px] text-neutral-400 font-sans truncate">
-                  No background freezing or tab suspensions
-                </p>
-              </div>
-            </div>
-
-            {/* Feature 2 */}
-            <div className="flex items-center gap-3.5 p-3 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0 shadow-inner">
-                <Zap className="w-5 h-5 stroke-[2.2]" />
-              </div>
-              <div className="min-w-0">
-                <h3 className="text-xs sm:text-sm font-bold text-white tracking-wide truncate">
-                  Real-Time Study Rooms
-                </h3>
-                <p className="text-[11px] text-neutral-400 font-sans truncate">
-                  Live presence, shared rooms & synchronized chats
-                </p>
-              </div>
-            </div>
-
-            {/* Feature 3 */}
-            <div className="flex items-center gap-3.5 p-3 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0 shadow-inner">
-                <Brain className="w-5 h-5 stroke-[2.2]" />
-              </div>
-              <div className="min-w-0">
-                <h3 className="text-xs sm:text-sm font-bold text-white tracking-wide truncate">
-                  AI Active Recall
-                </h3>
-                <p className="text-[11px] text-neutral-400 font-sans truncate">
-                  Instant concept testing & study session analytics
-                </p>
-              </div>
+      <div className="relative z-10 w-full max-w-sm mx-auto flex flex-col items-center animate-in fade-in duration-500">
+        {/* Hero Section */}
+        <div className="text-center flex flex-col items-center mt-2">
+          {/* Study.io Logo Placeholder: Minimalist white open-book with #00D875 green accent */}
+          <div className="relative inline-flex items-center justify-center">
+            <div className="w-14 h-14 rounded-2xl bg-white/[0.04] border border-white/10 flex items-center justify-center shadow-inner relative">
+              <BookOpen className="w-7 h-7 text-white stroke-[2]" />
+              <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-[#00D875] shadow-[0_0_10px_#00D875]" />
             </div>
           </div>
 
-          {/* Call to Action */}
-          <div className="space-y-3 pt-2 text-center">
-            <button
-              type="button"
-              onClick={handleDownload}
-              className="w-full py-4 px-6 rounded-2xl bg-emerald-500 hover:bg-emerald-400 active:scale-[0.98] text-gray-950 font-bold text-sm tracking-wide flex items-center justify-center gap-2.5 shadow-[0_0_28px_rgba(16,185,129,0.38)] transition-all cursor-pointer hover:shadow-[0_0_35px_rgba(16,185,129,0.5)]"
-            >
-              {isDownloaded ? (
-                <>
-                  <CheckCircle2 className="w-4 h-4 stroke-[2.5]" />
-                  <span>Download Initiated</span>
-                </>
-              ) : (
-                <>
-                  <Download className="w-4 h-4 stroke-[2.5]" />
-                  <span>Download for Android</span>
-                </>
-              )}
-            </button>
+          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white font-hud mt-6 leading-tight">
+            Experience Study.io Natively.
+          </h1>
 
-            {/* Muted Desktop Link */}
-            <div className="pt-1">
-              <Link
-                href="/"
-                className="text-xs text-neutral-400 hover:text-white transition-colors font-mono inline-flex items-center gap-1.5 group"
-              >
-                <Monitor className="w-3.5 h-3.5 opacity-60 group-hover:opacity-100 transition-opacity" />
-                <span>Available on Desktop</span>
-                <ArrowUpRight className="w-3.5 h-3.5 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
-              </Link>
+          <p className="text-sm text-slate-400 font-sans mt-3 max-w-xs mx-auto leading-relaxed">
+            To keep your focus sharp and timers running in the background, Study.io is available exclusively on our native app or desktop web.
+          </p>
+        </div>
+
+        {/* Feature List: Airy, borderless vertical list with generous gap-y-8 */}
+        <div className="mt-12 space-y-8 w-full">
+          {/* Feature 1 */}
+          <div className="flex items-start gap-4">
+            <div className="shrink-0 text-[#00D875] mt-0.5 drop-shadow-[0_0_10px_rgba(0,216,117,0.5)]">
+              <Timer className="w-6 h-6 stroke-[2.2]" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="text-base font-semibold text-white tracking-tight">
+                Native Focus Timers
+              </h3>
+              <p className="text-xs text-slate-400 font-sans mt-1 leading-relaxed">
+                No background freezing or tab suspensions
+              </p>
+            </div>
+          </div>
+
+          {/* Feature 2 */}
+          <div className="flex items-start gap-4">
+            <div className="shrink-0 text-[#00D875] mt-0.5 drop-shadow-[0_0_10px_rgba(0,216,117,0.5)]">
+              <Zap className="w-6 h-6 stroke-[2.2]" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="text-base font-semibold text-white tracking-tight">
+                Real-Time Study Rooms
+              </h3>
+              <p className="text-xs text-slate-400 font-sans mt-1 leading-relaxed">
+                Live presence, shared rooms &amp; synchronized chats
+              </p>
+            </div>
+          </div>
+
+          {/* Feature 3 */}
+          <div className="flex items-start gap-4">
+            <div className="shrink-0 text-[#00D875] mt-0.5 drop-shadow-[0_0_10px_rgba(0,216,117,0.5)]">
+              <Brain className="w-6 h-6 stroke-[2.2]" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="text-base font-semibold text-white tracking-tight">
+                AI Active Recall
+              </h3>
+              <p className="text-xs text-slate-400 font-sans mt-1 leading-relaxed">
+                Instant concept testing &amp; study session analytics
+              </p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Footer */}
-      <footer className="relative z-10 w-full max-w-sm mx-auto text-center py-2 animate-in fade-in duration-500">
-        <p className="text-[11px] text-neutral-600 font-mono">
-          &copy; {new Date().getFullYear()} Study.io &bull; Precision Focus Infrastructure
-        </p>
-      </footer>
+      {/* Sticky Bottom Actions: Desktop link above sticky CTA pill button */}
+      <div className="fixed bottom-10 left-1/2 -translate-x-1/2 w-[calc(100%-3rem)] max-w-sm z-30 flex flex-col items-center gap-3">
+        <Link
+          href="/"
+          className="text-xs text-slate-400 hover:text-white transition-colors font-mono inline-flex items-center gap-1.5 py-0.5"
+        >
+          <span>Available on Desktop</span>
+          <ArrowUpRight className="w-3.5 h-3.5 opacity-60" />
+        </Link>
+
+        <button
+          onClick={handleDownload}
+          className="w-full py-4 px-6 rounded-full bg-[#00D875] text-black font-bold text-sm tracking-wide shadow-lg shadow-[#00D875]/25 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer hover:brightness-105"
+        >
+          <Download className="w-4 h-4 stroke-[2.5]" />
+          <span>{isDownloaded ? 'Downloading APK...' : 'Download for Android'}</span>
+        </button>
+      </div>
     </main>
   );
 }
