@@ -2,67 +2,87 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
-import { Download, ArrowUpRight, X, ChevronRight } from 'lucide-react';
+import {
+  Download,
+  ArrowUpRight,
+  X,
+  Timer,
+  Trophy,
+  Users,
+  Flame,
+  Volume2,
+  Palette,
+  BarChart3,
+  Smartphone,
+  CheckCircle2,
+} from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { RankCrestBadge } from '@/components/common/RankCrestBadge';
 
-const CAROUSEL_CARDS = [
+interface FeatureItem {
+  id: string;
+  title: string;
+  caption: string;
+  icon: React.ElementType;
+  accentColor: string;
+}
+
+const APP_FEATURES: FeatureItem[] = [
   {
     id: 'timers',
     title: 'Three timers',
     caption: 'Stopwatch, countdown and Pomodoro.',
-    visual: 'timers',
+    icon: Timer,
+    accentColor: '#FFFFFF',
   },
   {
     id: 'ranks',
     title: 'Ranks and RP',
     caption: '23 ranks, a new season every month.',
-    visual: 'ranks',
+    icon: Trophy,
+    accentColor: '#F59E0B',
   },
   {
     id: 'rooms',
     title: 'Live rooms',
     caption: 'Study together with chat and live status.',
-    visual: 'rooms',
+    icon: Users,
+    accentColor: '#38BDF8',
   },
   {
     id: 'streaks',
     title: 'Streaks and levels',
     caption: 'Show up daily and level up.',
-    visual: 'streaks',
+    icon: Flame,
+    accentColor: '#FB923C',
   },
   {
     id: 'sounds',
     title: 'Sounds',
     caption: 'Eight ambient sounds for deep focus.',
-    visual: 'sounds',
+    icon: Volume2,
+    accentColor: '#A78BFA',
   },
   {
     id: 'themes',
     title: 'Themes',
     caption: 'Pick from 18 looks.',
-    visual: 'themes',
+    icon: Palette,
+    accentColor: '#F472B6',
   },
   {
     id: 'stats',
     title: 'Stats',
     caption: 'Your focus time, day by day.',
-    visual: 'stats',
-  },
-  {
-    id: 'install',
-    title: 'How to install',
-    caption: 'Quick 3-step setup for Android.',
-    visual: 'install',
+    icon: BarChart3,
+    accentColor: '#34D399',
   },
 ];
 
 export default function MobileRestrictedPage() {
   const [isDownloading, setIsDownloading] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [activeCardIndex, setActiveCardIndex] = useState(0);
 
-  const carouselRef = useRef<HTMLDivElement>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
   const triggerButtonRef = useRef<HTMLButtonElement>(null);
   const touchStartYRef = useRef<number | null>(null);
@@ -96,7 +116,6 @@ export default function MobileRestrictedPage() {
 
   const closeSheet = useCallback(() => {
     setIsSheetOpen(false);
-    // Restore focus to opening button
     setTimeout(() => {
       triggerButtonRef.current?.focus();
     }, 50);
@@ -154,34 +173,15 @@ export default function MobileRestrictedPage() {
     touchStartYRef.current = null;
   };
 
-  // Carousel scroll sync with pagination dots
-  const handleCarouselScroll = () => {
-    if (!carouselRef.current) return;
-    const { scrollLeft, clientWidth } = carouselRef.current;
-    const cardWidth = clientWidth * 0.85;
-    const index = Math.round(scrollLeft / cardWidth);
-    setActiveCardIndex(Math.min(Math.max(0, index), CAROUSEL_CARDS.length - 1));
-  };
-
-  const scrollToIndex = (index: number) => {
-    if (!carouselRef.current) return;
-    const cardWidth = carouselRef.current.clientWidth * 0.85;
-    carouselRef.current.scrollTo({
-      left: index * cardWidth,
-      behavior: 'smooth',
-    });
-    setActiveCardIndex(index);
-  };
-
   return (
-    <div className="min-h-[100svh] h-[100svh] max-h-[100svh] w-full bg-[#07090C] text-slate-100 overflow-hidden relative select-none flex flex-col justify-between landscape:h-auto landscape:min-h-[100svh] landscape:overflow-y-auto">
-      {/* Background dot grid & soft emerald ambient illumination */}
+    <div className="min-h-[100svh] h-[100svh] max-h-[100svh] w-full bg-[#07090E] text-slate-100 overflow-hidden relative select-none flex flex-col justify-between landscape:h-auto landscape:min-h-[100svh] landscape:overflow-y-auto">
+      {/* Background dot grid & soft neutral ambient illumination matching app */}
       <div className="fixed inset-0 pointer-events-none bg-dot-grid opacity-30 z-0" />
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] sm:w-[460px] h-[340px] sm:h-[460px] bg-[radial-gradient(circle,rgba(16,185,129,0.14)_0%,transparent_65%)] pointer-events-none z-0" />
+      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] sm:w-[460px] h-[340px] sm:h-[460px] bg-[radial-gradient(circle,rgba(255,255,255,0.06)_0%,transparent_65%)] pointer-events-none z-0" />
 
-      {/* Main Content Column with safe-area spacing scale (8, 16, 24, 32) */}
+      {/* Main Content Column with safe-area spacing scale */}
       <div className="relative z-10 w-full max-w-sm mx-auto px-4 sm:px-6 pt-[calc(env(safe-area-inset-top,0px)+16px)] flex-1 flex flex-col min-h-0">
-        {/* Top bar: Logo, study.io, and Android app pill */}
+        {/* Top bar: Official Logo, study.io, and Android app pill */}
         <header className="flex items-center justify-between shrink-0 mb-4 animate-rise-1">
           <div className="flex items-center gap-2.5">
             <Logo className="w-7 h-7 drop-shadow-sm" />
@@ -189,14 +189,14 @@ export default function MobileRestrictedPage() {
               study.io
             </span>
           </div>
-          <span className="text-xs font-sans px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/10 text-slate-300">
+          <span className="text-xs font-sans px-2.5 py-1 rounded-full bg-white/[0.05] border border-white/10 text-slate-300">
             Android app
           </span>
         </header>
 
         {/* Hero Visual: CSS Phone frame (approx 38svh tall, 6 deg tilt, 8px float) */}
         <div className="flex-1 flex items-center justify-center min-h-[190px] max-h-[40svh] my-1 relative shrink-0 animate-rise-2">
-          <div className="hero-phone relative w-[168px] sm:w-[185px] h-[260px] sm:h-[285px] rounded-[36px] border border-white/20 bg-[#090C12] p-2.5 shadow-[0_20px_45px_rgba(0,0,0,0.85),0_0_30px_rgba(16,185,129,0.12)]">
+          <div className="hero-phone relative w-[168px] sm:w-[185px] h-[260px] sm:h-[285px] rounded-[36px] border border-white/15 bg-[#0D1017] p-2.5 shadow-[0_20px_45px_rgba(0,0,0,0.85),0_0_30px_rgba(255,255,255,0.04)]">
             {/* Phone Screen Glass */}
             <div className="w-full h-full rounded-[26px] bg-[#07090E] border border-white/[0.06] p-2.5 flex flex-col justify-between items-center overflow-hidden relative">
               {/* Top speaker notch */}
@@ -204,7 +204,7 @@ export default function MobileRestrictedPage() {
 
               {/* Mode Tabs */}
               <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-white/[0.04] border border-white/[0.06] shrink-0">
-                <span className="px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-[#34D399] font-bold text-[8px] leading-none">
+                <span className="px-1.5 py-0.5 rounded-full bg-white/15 text-white font-bold text-[8px] leading-none">
                   Pomodoro
                 </span>
                 <span className="px-1 py-0.5 text-white/40 text-[7.5px] leading-none">
@@ -215,7 +215,7 @@ export default function MobileRestrictedPage() {
                 </span>
               </div>
 
-              {/* Dial Ring with partially filled emerald arc & 25:00 digits */}
+              {/* Dial Ring with neutral white arc & 25:00 digits */}
               <div className="relative w-28 h-28 my-auto flex items-center justify-center">
                 <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
                   {/* Track ring */}
@@ -227,12 +227,12 @@ export default function MobileRestrictedPage() {
                     strokeWidth="5"
                     fill="none"
                   />
-                  {/* Active emerald arc */}
+                  {/* Active arc */}
                   <circle
                     cx="50"
                     cy="50"
                     r="38"
-                    stroke="#10B981"
+                    stroke="#FFFFFF"
                     strokeWidth="5"
                     strokeLinecap="round"
                     strokeDasharray="238.76"
@@ -245,48 +245,48 @@ export default function MobileRestrictedPage() {
                   <span className="text-xl font-hud font-bold tracking-wider text-white leading-none">
                     25:00
                   </span>
-                  <span className="text-[7.5px] font-mono font-medium text-[#34D399] tracking-wider uppercase mt-1">
+                  <span className="text-[7.5px] font-mono font-medium text-slate-400 tracking-wider uppercase mt-1">
                     Deep Focus
                   </span>
                 </div>
               </div>
 
-              {/* Mini Start Button */}
+              {/* Mini Start Button (Matching app's white primary button) */}
               <div className="w-full px-3 shrink-0">
-                <div className="w-full py-1.5 rounded-xl bg-gradient-to-r from-[#34D399] via-[#10B981] to-[#059669] text-[#04140D] font-bold text-[9px] text-center tracking-wide shadow-sm">
+                <div className="w-full py-1.5 rounded-xl bg-white text-[#07090E] font-bold text-[9px] text-center tracking-wide shadow-sm">
                   Start focus
                 </div>
               </div>
             </div>
 
-            {/* Overlapping Floating Chip 1: Authentic Rank Crest Badge (Static / Lite) */}
-            <div className="hero-chip-1 absolute -top-2.5 -left-5 sm:-left-7 px-2.5 py-1.5 rounded-2xl bg-[#0F131D]/95 border border-white/15 shadow-xl flex items-center gap-1.5 backdrop-blur-md z-20">
+            {/* Overlapping Floating Chip 1: Authentic Rank Crest Badge */}
+            <div className="hero-chip-1 absolute -top-2.5 -left-5 sm:-left-7 px-2.5 py-1.5 rounded-2xl bg-[#0F1117] border border-white/15 shadow-xl flex items-center gap-1.5 backdrop-blur-md z-20">
               <RankCrestBadge tier="Silver" division="I" size={24} interactive={false} />
               <div className="flex flex-col text-left">
                 <span className="text-[10px] font-hud font-bold text-slate-100 leading-none">
                   Silver I
                 </span>
-                <span className="text-[7.5px] font-mono text-[#34D399] leading-tight mt-0.5">
+                <span className="text-[7.5px] font-mono text-amber-400 leading-tight mt-0.5">
                   Rank tier
                 </span>
               </div>
             </div>
 
             {/* Overlapping Floating Chip 2: Live Room with 3 Avatars & Pulsing Dot */}
-            <div className="hero-chip-2 absolute -bottom-2.5 -right-5 sm:-right-7 px-2.5 py-1.5 rounded-2xl bg-[#0F131D]/95 border border-white/15 shadow-xl flex items-center gap-2 backdrop-blur-md z-20">
+            <div className="hero-chip-2 absolute -bottom-2.5 -right-5 sm:-right-7 px-2.5 py-1.5 rounded-2xl bg-[#0F1117] border border-white/15 shadow-xl flex items-center gap-2 backdrop-blur-md z-20">
               <span className="relative flex h-2 w-2 shrink-0">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#10B981] opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#10B981]" />
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-400" />
               </span>
               <span className="text-[10px] font-medium text-slate-200">Live room</span>
               <div className="flex -space-x-1.5">
-                <div className="w-4 h-4 rounded-full bg-emerald-500/40 border border-[#0F131D] flex items-center justify-center text-[7.5px] text-emerald-200 font-bold">
+                <div className="w-4 h-4 rounded-full bg-slate-700 border border-[#0F1117] flex items-center justify-center text-[7.5px] text-slate-200 font-bold">
                   S
                 </div>
-                <div className="w-4 h-4 rounded-full bg-cyan-500/40 border border-[#0F131D] flex items-center justify-center text-[7.5px] text-cyan-200 font-bold">
+                <div className="w-4 h-4 rounded-full bg-cyan-900 border border-[#0F1117] flex items-center justify-center text-[7.5px] text-cyan-200 font-bold">
                   K
                 </div>
-                <div className="w-4 h-4 rounded-full bg-amber-500/40 border border-[#0F131D] flex items-center justify-center text-[7.5px] text-amber-200 font-bold">
+                <div className="w-4 h-4 rounded-full bg-amber-900 border border-[#0F1117] flex items-center justify-center text-[7.5px] text-amber-200 font-bold">
                   M
                 </div>
               </div>
@@ -310,7 +310,7 @@ export default function MobileRestrictedPage() {
             ref={triggerButtonRef}
             type="button"
             onClick={openSheet}
-            className="text-xs font-semibold text-slate-200 hover:text-white px-3.5 py-1.5 rounded-full bg-white/[0.04] border border-white/10 hover:border-white/20 transition-colors cursor-pointer active:scale-[0.98]"
+            className="text-xs font-semibold text-slate-200 hover:text-white px-3.5 py-1.5 rounded-full bg-white/[0.05] border border-white/10 hover:border-white/20 transition-colors cursor-pointer active:scale-[0.98]"
           >
             See what&apos;s inside
           </button>
@@ -325,17 +325,17 @@ export default function MobileRestrictedPage() {
         </div>
       </div>
 
-      {/* Sticky Bottom Bar with safe-area padding and 56px Primary Button */}
+      {/* Sticky Bottom Bar with safe-area padding and Solid White Primary Button */}
       <footer className="sticky bottom-0 left-0 right-0 z-30 bg-[#07090C]/90 backdrop-blur-xl border-t border-white/[0.08] px-4 pt-3 pb-[calc(env(safe-area-inset-bottom,0px)+16px)] shrink-0 animate-rise-5">
         <div className="w-full max-w-sm mx-auto flex flex-col items-center gap-2">
-          {/* Primary Button (56px tall, 16px radius, emerald gradient, light sweep) */}
+          {/* Primary Button matching the app's clean white primary buttons */}
           <button
             type="button"
             onClick={handleDownload}
-            className="relative overflow-hidden w-full h-[56px] min-h-[56px] rounded-[16px] bg-gradient-to-r from-[#34D399] via-[#10B981] to-[#059669] text-[#04140D] font-bold text-sm sm:text-base tracking-wide flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(16,185,129,0.32)] transition-transform duration-150 active:scale-[0.98] cursor-pointer"
+            className="relative overflow-hidden w-full h-[56px] min-h-[56px] rounded-[16px] bg-white text-[#07090E] font-bold text-sm sm:text-base tracking-wide flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(255,255,255,0.12)] hover:bg-slate-100 transition-all duration-150 active:scale-[0.98] cursor-pointer"
           >
-            {/* Light sweep across button every 8s */}
-            <div className="button-sweep absolute inset-y-0 w-1/3 bg-gradient-to-r from-transparent via-white/35 to-transparent skew-x-[-25deg] pointer-events-none" />
+            {/* Subtle light sweep across button every 8s */}
+            <div className="button-sweep absolute inset-y-0 w-1/3 bg-gradient-to-r from-transparent via-black/10 to-transparent skew-x-[-25deg] pointer-events-none" />
 
             <Download className="w-5 h-5 stroke-[2.5]" />
             <span>{isDownloading ? 'Downloading...' : 'Download for Android'}</span>
@@ -348,7 +348,7 @@ export default function MobileRestrictedPage() {
         </div>
       </footer>
 
-      {/* Bottom Sheet ("What's inside") */}
+      {/* Bottom Sheet ("What's inside"): Sleek, clean vertical list matching app modals */}
       {isSheetOpen && (
         <div className="fixed inset-0 z-50 flex flex-col justify-end">
           {/* Dimmed backdrop */}
@@ -364,19 +364,19 @@ export default function MobileRestrictedPage() {
             aria-modal="true"
             aria-labelledby="sheet-title"
             tabIndex={-1}
-            className="relative z-10 w-full max-w-lg mx-auto h-[80svh] max-h-[80svh] rounded-t-[32px] bg-[#0E1118] border-t border-white/10 flex flex-col justify-between overflow-hidden shadow-2xl animate-sheet-slide"
+            className="relative z-10 w-full max-w-lg mx-auto h-[82svh] max-h-[82svh] rounded-t-[32px] bg-[#0F1117] border-t border-white/10 flex flex-col justify-between overflow-hidden shadow-2xl animate-sheet-slide"
           >
             {/* Grab Handle & Touch drag-down area */}
             <div
               onTouchStart={handleTouchStart}
               onTouchEnd={handleTouchEnd}
-              className="w-full pt-3 pb-2 cursor-grab active:cursor-grabbing flex flex-col items-center shrink-0"
+              className="w-full pt-3 pb-1 cursor-grab active:cursor-grabbing flex flex-col items-center shrink-0"
             >
               <div className="w-10 h-1.5 rounded-full bg-white/20" />
             </div>
 
             {/* Sheet Header */}
-            <div className="px-6 py-2 flex items-center justify-between shrink-0">
+            <div className="px-6 py-3 flex items-center justify-between border-b border-white/[0.06] shrink-0">
               <div>
                 <h2 id="sheet-title" className="text-base font-hud font-bold text-white tracking-wide">
                   Inside study.io
@@ -389,163 +389,70 @@ export default function MobileRestrictedPage() {
               <button
                 type="button"
                 onClick={closeSheet}
-                className="p-1.5 rounded-full text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
                 aria-label="Close dialog"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Horizontal Scroll-Snap Carousel (85% card width with dots) */}
-            <div className="flex-1 min-h-0 flex flex-col justify-center py-2">
-              <div
-                ref={carouselRef}
-                onScroll={handleCarouselScroll}
-                className="flex overflow-x-auto snap-x snap-mandatory scrollbar-none gap-3 px-6 py-2"
-                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-              >
-                {CAROUSEL_CARDS.map((card) => (
+            {/* Vertically Scrollable Content: Sleek feature list + Install steps */}
+            <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4 space-y-3 scrollbar-thin">
+              {/* Feature Cards */}
+              {APP_FEATURES.map((item) => {
+                const IconComponent = item.icon;
+                return (
                   <div
-                    key={card.id}
-                    className="w-[82%] sm:w-[85%] shrink-0 snap-center rounded-2xl bg-white/[0.04] border border-white/10 p-5 flex flex-col justify-between h-[270px] select-none"
+                    key={item.id}
+                    className="p-3.5 rounded-2xl bg-[#141721] border border-white/[0.08] flex items-start gap-3.5 transition-colors hover:border-white/20"
                   >
-                    {/* Card Visual Header */}
-                    <div className="h-[120px] w-full rounded-xl bg-white/[0.02] border border-white/[0.05] flex items-center justify-center p-3 relative overflow-hidden">
-                      {card.visual === 'timers' && (
-                        <div className="flex items-center gap-1.5 p-1 rounded-xl bg-white/[0.05] border border-white/10">
-                          <span className="px-2 py-1 rounded-lg bg-emerald-500/20 text-[#34D399] font-bold text-[10px]">
-                            Stopwatch
-                          </span>
-                          <span className="px-2 py-1 text-white/50 text-[10px]">
-                            Countdown
-                          </span>
-                          <span className="px-2 py-1 text-white/50 text-[10px]">
-                            Pomodoro
-                          </span>
-                        </div>
-                      )}
-
-                      {card.visual === 'ranks' && (
-                        <div className="flex items-center gap-2">
-                          <RankCrestBadge tier="Bronze" division="IV" size={28} interactive={false} />
-                          <RankCrestBadge tier="Silver" division="IV" size={32} interactive={false} />
-                          <div className="p-1 rounded-xl ring-2 ring-emerald-400/40">
-                            <RankCrestBadge tier="Gold" division="I" size={38} interactive={false} />
-                          </div>
-                          <RankCrestBadge tier="Platinum" division="I" size={32} interactive={false} />
-                          <RankCrestBadge tier="Diamond" division="I" size={28} interactive={false} />
-                        </div>
-                      )}
-
-                      {card.visual === 'rooms' && (
-                        <div className="w-full max-w-[200px] p-2 rounded-xl bg-[#07090E] border border-white/10 flex items-center justify-between">
-                          <div className="flex items-center gap-1.5">
-                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                            <span className="text-[10px] font-bold text-white font-hud">Chamber</span>
-                          </div>
-                          <div className="flex -space-x-1.5">
-                            <div className="w-5 h-5 rounded-full bg-emerald-500/30 border border-[#07090E] flex items-center justify-center text-[8px] text-emerald-200">A</div>
-                            <div className="w-5 h-5 rounded-full bg-cyan-500/30 border border-[#07090E] flex items-center justify-center text-[8px] text-cyan-200">B</div>
-                            <div className="w-5 h-5 rounded-full bg-amber-500/30 border border-[#07090E] flex items-center justify-center text-[8px] text-amber-200">C</div>
-                          </div>
-                        </div>
-                      )}
-
-                      {card.visual === 'streaks' && (
-                        <div className="flex flex-col items-center gap-2">
-                          <div className="px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/30 text-orange-400 font-mono text-xs font-bold">
-                            Streak &bull; Level 12
-                          </div>
-                          <div className="w-32 h-1.5 rounded-full bg-white/10 overflow-hidden">
-                            <div className="w-2/3 h-full bg-gradient-to-r from-orange-400 to-amber-300 rounded-full" />
-                          </div>
-                        </div>
-                      )}
-
-                      {card.visual === 'sounds' && (
-                        <div className="flex items-center gap-1 h-8">
-                          {[16, 28, 12, 24, 32, 18, 26, 14, 22].map((h, i) => (
-                            <span
-                              key={i}
-                              className="w-1.5 rounded-full bg-emerald-400/80"
-                              style={{ height: `${h}px` }}
-                            />
-                          ))}
-                        </div>
-                      )}
-
-                      {card.visual === 'themes' && (
-                        <div className="flex items-center gap-1.5">
-                          {['#10B981', '#06B6D4', '#8B5CF6', '#F59E0B', '#F43F5E'].map((color, idx) => (
-                            <span
-                              key={idx}
-                              className="w-5 h-5 rounded-full border border-white/20 shadow-sm"
-                              style={{ backgroundColor: color }}
-                            />
-                          ))}
-                        </div>
-                      )}
-
-                      {card.visual === 'stats' && (
-                        <div className="flex items-end gap-1.5 h-12">
-                          {[30, 45, 25, 60, 40, 75, 55].map((pct, idx) => (
-                            <span
-                              key={idx}
-                              className="w-2.5 rounded-t bg-emerald-400/70"
-                              style={{ height: `${pct}%` }}
-                            />
-                          ))}
-                        </div>
-                      )}
-
-                      {card.visual === 'install' && (
-                        <div className="flex items-center gap-2 text-xs font-mono text-emerald-400">
-                          <span>1. Download</span>
-                          <ChevronRight className="w-3 h-3 text-slate-500" />
-                          <span>2. Allow</span>
-                          <ChevronRight className="w-3 h-3 text-slate-500" />
-                          <span>3. Install</span>
-                        </div>
-                      )}
+                    <div
+                      className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/10 flex items-center justify-center shrink-0"
+                      style={{ color: item.accentColor }}
+                    >
+                      <IconComponent className="w-5 h-5" />
                     </div>
-
-                    {/* Card Content: Title <= 3 words, Caption <= 8 words */}
-                    <div className="pt-3">
-                      <h3 className="text-sm font-hud font-bold tracking-wide text-white">
-                        {card.title}
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-sm font-hud font-bold text-white tracking-wide">
+                        {item.title}
                       </h3>
-                      <p className="text-xs text-slate-400 font-sans mt-1 leading-relaxed">
-                        {card.caption}
+                      <p className="text-xs text-slate-400 font-sans mt-0.5 leading-relaxed">
+                        {item.caption}
                       </p>
                     </div>
                   </div>
-                ))}
-              </div>
+                );
+              })}
 
-              {/* Carousel Pagination Dots */}
-              <div className="flex items-center justify-center gap-1.5 pt-2">
-                {CAROUSEL_CARDS.map((_, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => scrollToIndex(idx)}
-                    className={`h-1.5 rounded-full transition-all duration-200 cursor-pointer ${
-                      activeCardIndex === idx
-                        ? 'w-5 bg-[#34D399]'
-                        : 'w-1.5 bg-white/20 hover:bg-white/40'
-                    }`}
-                    aria-label={`Go to slide ${idx + 1}`}
-                  />
-                ))}
+              {/* How to Install APK Card */}
+              <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/10 mt-4 space-y-2.5">
+                <div className="flex items-center gap-2 text-xs font-hud font-bold text-slate-200 uppercase tracking-wide">
+                  <Smartphone className="w-4 h-4 text-white" />
+                  <span>How to install APK</span>
+                </div>
+                <div className="space-y-1.5 text-xs text-slate-400 font-sans">
+                  <div className="flex items-start gap-2">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-white/60 shrink-0 mt-0.5" />
+                    <span>1. Tap &ldquo;Download for Android&rdquo; below to save the APK.</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-white/60 shrink-0 mt-0.5" />
+                    <span>2. If Android asks, allow installs from this browser.</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-white/60 shrink-0 mt-0.5" />
+                    <span>3. Open the downloaded file and tap Install.</span>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Sheet Footer: Repeats Download Button */}
-            <div className="p-5 border-t border-white/[0.08] bg-[#0A0D14] shrink-0">
+            {/* Sheet Footer: Repeats Solid White Download Button */}
+            <div className="p-4 border-t border-white/[0.08] bg-[#0B0D13] shrink-0 pb-[calc(1rem+env(safe-area-inset-bottom,0px))]">
               <button
                 type="button"
                 onClick={handleDownload}
-                className="w-full h-[52px] rounded-2xl bg-gradient-to-r from-[#34D399] via-[#10B981] to-[#059669] text-[#04140D] font-bold text-sm tracking-wide flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-transform duration-150 cursor-pointer"
+                className="w-full h-[52px] rounded-xl bg-white text-[#07090E] font-bold text-sm tracking-wide flex items-center justify-center gap-2 shadow-md hover:bg-slate-100 active:scale-[0.98] transition-all cursor-pointer"
               >
                 <Download className="w-4 h-4 stroke-[2.5]" />
                 <span>{isDownloading ? 'Downloading...' : 'Download for Android'}</span>
@@ -555,7 +462,7 @@ export default function MobileRestrictedPage() {
         </div>
       )}
 
-      {/* Scoped CSS animations for phone float, chip drift, button sweep, and staggered entrance */}
+      {/* Scoped CSS animations */}
       <style jsx>{`
         @keyframes phoneFloat {
           0%, 100% {
