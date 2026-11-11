@@ -4,25 +4,29 @@ import { NextResponse, type NextRequest } from 'next/server';
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // 1. Never intercept or redirect auth callback or API routes
+  // 1. Authentication callback bypass:
+  // If the request matches an auth route (/auth, /api/auth, or Supabase OAuth callback route)
+  // or an API route, allow it to pass through immediately before evaluating User-Agent.
   if (
+    pathname.startsWith('/auth') ||
+    pathname.startsWith('/api/auth') ||
     pathname.startsWith('/auth/callback') ||
     pathname.startsWith('/api')
   ) {
     return NextResponse.next();
   }
 
-  // 2. Mobile web restriction check:
+  // 2. Allow direct access to the restriction page itself without redirect loops
+  if (pathname === '/mobile-restricted') {
+    return NextResponse.next();
+  }
+
+  // 3. Mobile web restriction check:
   // Read user-agent header. If user-agent indicates a mobile device (Android, iPhone, iPad, etc.)
   // BUT does NOT include 'StudyIoNativeApp', redirect them to /mobile-restricted.
   const userAgent = request.headers.get('user-agent') || '';
   const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(userAgent);
   const isNativeApp = userAgent.includes('StudyIoNativeApp');
-
-  // Allow direct access to the restriction page itself without redirect loops
-  if (pathname === '/mobile-restricted') {
-    return NextResponse.next();
-  }
 
   if (isMobile && !isNativeApp) {
     const url = request.nextUrl.clone();
@@ -30,7 +34,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // 3. Normal web / native app auth session flow
+  // 4. Normal web / native app auth session flow
   let response = NextResponse.next({
     request: {
       headers: request.headers,
@@ -95,4 +99,3 @@ export const config = {
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|mp3|wav|ogg)$).*)',
   ],
 };
-
