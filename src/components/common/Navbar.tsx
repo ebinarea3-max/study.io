@@ -400,7 +400,7 @@ export function Navbar({
                 </div>
               ) : (
                 <div
-                  className="relative flex items-center h-8 sm:h-9 pl-1 pr-3 sm:pr-4 bg-[var(--surface)] border border-[var(--border)] text-[var(--text)] shadow-card cursor-default select-none rounded-xl"
+                  className="relative flex items-center h-8 sm:h-9 pl-1 pr-3 bg-[var(--surface)] border border-[var(--border)] text-[var(--text)] shadow-card cursor-default select-none rounded-xl"
                   title={`Ranked Season RP: ${liveSeasonRp.toLocaleString()} RP (${liveRank.name.toUpperCase()})`}
                 >
                   <div className="flex items-center gap-1.5 sm:gap-2">
@@ -411,13 +411,10 @@ export function Navbar({
                       className="-ml-3"
                     />
                     <span
-                      className="text-xs font-bold tracking-wider font-hud uppercase truncate max-w-[85px] sm:max-w-none"
+                      className="text-xs font-bold tracking-wider font-hud uppercase truncate"
                       style={{ color: 'var(--tier-accent-text)' }}
                     >
                       {liveRank.name.toUpperCase()}
-                    </span>
-                    <span className="hidden sm:inline text-[11px] text-[var(--text-dim)] font-mono ml-1">
-                      {liveSeasonRp.toLocaleString()} RP
                     </span>
                   </div>
                 </div>
