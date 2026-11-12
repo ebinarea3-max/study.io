@@ -90,9 +90,16 @@ export default function MobileRestrictedPage() {
   // Check user agent for Capacitor native app identifier
   useEffect(() => {
     if (typeof navigator !== 'undefined' && navigator.userAgent) {
-      setIsNativeApp(navigator.userAgent.includes('StudyIoNativeApp'));
+      const isNative =
+        navigator.userAgent.includes('StudyIoNativeApp') ||
+        /StudyIoNativeApp/i.test(navigator.userAgent);
+      setIsNativeApp(isNative);
+      if (isNative) {
+        // Native app MUST bypass the mobile block and immediately redirect to main application interface
+        router.replace('/dashboard');
+      }
     }
-  }, []);
+  }, [router]);
 
   // Supabase session check: if user has an active session, automatically redirect to /dashboard
   useEffect(() => {
@@ -195,6 +202,15 @@ export default function MobileRestrictedPage() {
     }
     touchStartYRef.current = null;
   };
+
+  if (isNativeApp) {
+    return (
+      <div className="min-h-[100svh] w-full bg-[#07090E] flex flex-col items-center justify-center text-slate-100">
+        <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mb-3" />
+        <div className="text-xs text-slate-400 font-mono tracking-wider">Opening study.io...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[100svh] h-[100svh] max-h-[100svh] w-full bg-[#07090E] text-slate-100 overflow-hidden relative select-none flex flex-col justify-between landscape:h-auto landscape:min-h-[100svh] landscape:overflow-y-auto">

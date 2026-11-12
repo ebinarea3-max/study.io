@@ -44,7 +44,10 @@ export default function Home() {
   // Detect Capacitor native app user agent
   useEffect(() => {
     if (typeof navigator !== 'undefined' && navigator.userAgent) {
-      setIsNativeApp(navigator.userAgent.includes('StudyIoNativeApp'));
+      setIsNativeApp(
+        navigator.userAgent.includes('StudyIoNativeApp') ||
+        /StudyIoNativeApp/i.test(navigator.userAgent)
+      );
     }
   }, []);
 

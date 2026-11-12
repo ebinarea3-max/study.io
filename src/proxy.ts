@@ -17,18 +17,23 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 2. Allow direct access to the restriction page itself without redirect loops
+  // 2. Mobile detection and native app bypass check:
+  // Read user-agent header. Check for 'StudyIoNativeApp' (Capacitor native app)
+  const userAgent = request.headers.get('user-agent') || '';
+  const isNativeApp = userAgent.includes('StudyIoNativeApp') || /StudyIoNativeApp/i.test(userAgent);
+  const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(userAgent);
+
+  // If user agent includes 'StudyIoNativeApp', it MUST bypass the mobile block completely.
+  // If navigating to /mobile-restricted while in the native app, immediately redirect to /dashboard
   if (pathname === '/mobile-restricted') {
+    if (isNativeApp) {
+      return NextResponse.redirect('https://studyio-web.vercel.app/dashboard');
+    }
     return NextResponse.next();
   }
 
   // 3. Mobile web restriction check:
-  // Read user-agent header. If user-agent indicates a mobile device (Android, iPhone, iPad, etc.)
-  // BUT does NOT include 'StudyIoNativeApp', redirect them to /mobile-restricted.
-  const userAgent = request.headers.get('user-agent') || '';
-  const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(userAgent);
-  const isNativeApp = userAgent.includes('StudyIoNativeApp');
-
+  // Standard mobile web browsers without 'StudyIoNativeApp' are blocked and redirected to /mobile-restricted
   if (isMobile && !isNativeApp) {
     return NextResponse.redirect('https://studyio-web.vercel.app/mobile-restricted');
   }
