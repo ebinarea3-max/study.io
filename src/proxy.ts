@@ -4,13 +4,15 @@ import { NextResponse, type NextRequest } from 'next/server';
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // 1. Authentication callback bypass:
-  // If the request matches an auth route (/auth, /api/auth, or Supabase OAuth callback route)
-  // or an API route, allow it to pass through immediately before evaluating User-Agent.
+  // 1. Explicitly allow the /auth/callback route to execute without enforcing session checks
+  if (request.nextUrl.pathname.startsWith('/auth/callback')) {
+    return NextResponse.next();
+  }
+
+  // Other authentication and API route bypasses:
   if (
     pathname.startsWith('/auth') ||
     pathname.startsWith('/api/auth') ||
-    pathname.startsWith('/auth/callback') ||
     pathname.startsWith('/api') ||
     pathname.startsWith('/.well-known')
   ) {
