@@ -835,9 +835,8 @@ export function StudyTimer() {
     ringPercent = isCountdownCompleted ? 100 : (isStudying ? fraction * 100 : 0);
   } else {
     displayTime = formatSeconds(elapsedSeconds);
-    const secInMinute = elapsedSeconds % 60;
-    litCount = isStudying ? secInMinute : 0;
-    ringPercent = isStudying ? (secInMinute / 60) * 100 : 0;
+    litCount = 0;
+    ringPercent = 0;
   }
 
   // Derive status text in sentence case

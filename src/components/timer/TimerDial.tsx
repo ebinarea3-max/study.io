@@ -136,23 +136,25 @@ export const TimerDial = React.memo(function TimerDial({
           strokeWidth="2"
         />
 
-        {/* 3px Accent Arc with 1s linear transition */}
-        <circle
-          cx="150"
-          cy="150"
-          r={RADIUS}
-          fill="none"
-          stroke="var(--accent)"
-          strokeWidth="3"
-          strokeLinecap="round"
-          strokeDasharray={CIRCUMFERENCE}
-          strokeDashoffset={strokeDashoffset}
-          transform="rotate(-90 150 150)"
-          style={{
-            transition: shouldReduceMotion ? 'none' : 'stroke-dashoffset 1s linear',
-            filter: 'drop-shadow(0 0 4px var(--accent-glow))',
-          }}
-        />
+        {/* 3px Accent Arc with 1s linear transition (rendered only when active progress > 0) */}
+        {safePercent > 0 && (
+          <circle
+            cx="150"
+            cy="150"
+            r={RADIUS}
+            fill="none"
+            stroke="var(--accent)"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeDasharray={CIRCUMFERENCE}
+            strokeDashoffset={strokeDashoffset}
+            transform="rotate(-90 150 150)"
+            style={{
+              transition: shouldReduceMotion ? 'none' : 'stroke-dashoffset 1s linear',
+              filter: 'drop-shadow(0 0 4px var(--accent-glow))',
+            }}
+          />
+        )}
       </svg>
 
       {/* Centre Stack */}
