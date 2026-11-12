@@ -576,7 +576,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { data, error } = await supabase.auth.signUp({
           email: normalizedEmail,
           password: pass,
-          options: { data: { display_name: name || normalizedEmail.split('@')[0] } },
+          options: {
+            data: { display_name: name || normalizedEmail.split('@')[0] },
+            emailRedirectTo: 'https://studyio-web.vercel.app/auth/callback',
+          },
         });
 
         if (error) {
