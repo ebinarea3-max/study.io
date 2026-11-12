@@ -68,6 +68,16 @@ function formatHours(seconds: number): string {
   return hrs >= 10 ? hrs.toFixed(1) : hrs.toFixed(1);
 }
 
+function formatBarHours(seconds: number): string {
+  if (!seconds || seconds <= 0) return '0h';
+  const hrs = seconds / 3600;
+  if (hrs < 0.1) {
+    const mins = Math.round(seconds / 60);
+    return mins > 0 ? `${mins}m` : '0h';
+  }
+  return `${hrs.toFixed(1)}h`;
+}
+
 function formatMinutes(seconds: number): string {
   const mins = Math.round(seconds / 60);
   if (mins < 60) return `${mins}m`;
@@ -366,36 +376,38 @@ export function WeeklyReportCard() {
             </div>
           </div>
 
-          {/* 7-Bar Chart: Last week faint behind this week */}
+          {/* 7-Bar Chart: Side-by-side Last Week vs This Week with visible hours */}
           <div className="p-5 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] mb-6">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
               <div>
                 <h4 className="font-hud font-bold text-xs uppercase tracking-wider text-[var(--text)]">
                   Day-by-Day Activity (Monday to Sunday)
                 </h4>
                 <p className="text-[11px] font-mono text-[var(--text-dim)] mt-0.5">
-                  Faint outline shows last week&apos;s baseline behind this week&apos;s bars.
+                  Side-by-side comparison of daily focus time (This Week vs Last Week).
                 </p>
               </div>
 
-              {/* Legend */}
-              <div className="flex items-center gap-3 text-[10px] font-mono text-[var(--text-dim)]">
+              {/* Legend with total hours */}
+              <div className="flex items-center gap-4 text-xs font-mono">
                 <div className="flex items-center gap-1.5">
                   <span
-                    className="w-3 h-3 rounded-[3px]"
+                    className="w-3 h-3 rounded-sm shadow-sm"
                     style={{ backgroundColor: theme.accent || '#E6C15A' }}
                   />
-                  <span>This Week</span>
+                  <span className="text-[var(--text)] font-semibold">This Week</span>
+                  <span className="text-[var(--text-dim)] text-[11px]">({formatHours(displayData.this_week_seconds)}h)</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <span className="w-3 h-3 rounded-[3px] bg-white/10 border border-white/20" />
-                  <span>Last Week</span>
+                  <span className="w-3 h-3 rounded-sm bg-slate-600/90 border border-slate-500/70" />
+                  <span className="text-slate-300 font-semibold">Last Week</span>
+                  <span className="text-[var(--text-dim)] text-[11px]">({formatHours(displayData.last_week_seconds)}h)</span>
                 </div>
               </div>
             </div>
 
-            {/* Hover Tooltip Readout */}
-            <div className="h-6 mb-2 text-xs font-mono text-[var(--text-dim)] flex items-center">
+            {/* Readout Banner */}
+            <div className="h-6 mb-3 text-xs font-mono text-[var(--text-dim)] flex items-center">
               {hoveredDayIdx !== null ? (
                 <div className="animate-in fade-in duration-100 flex items-center gap-2">
                   <span className="font-bold text-[var(--text)]">
@@ -405,19 +417,19 @@ export function WeeklyReportCard() {
                     {formatMinutes(displayData.this_week_by_day[hoveredDayIdx] || 0)} this week
                   </span>
                   <span>&bull;</span>
-                  <span>
+                  <span className="text-slate-300">
                     {formatMinutes(displayData.last_week_by_day[hoveredDayIdx] || 0)} last week
                   </span>
                 </div>
               ) : (
                 <span className="text-[11px] text-[var(--text-dim)] opacity-80">
-                  Hover or tap a bar to inspect daily comparison
+                  Daily focus hours are displayed above each bar • Tap or hover for minutes
                 </span>
               )}
             </div>
 
-            {/* 7 Bars Layout */}
-            <div className="grid grid-cols-7 gap-2 sm:gap-4 h-48 items-end pt-4 pb-2 border-b border-[var(--border)]">
+            {/* 7 Bars Layout with Side-by-Side Dual Bars and Visible Hours */}
+            <div className="grid grid-cols-7 gap-1 sm:gap-3 h-56 items-end pt-6 pb-3 border-b border-[var(--border)]">
               {DAY_LABELS.map((day, idx) => {
                 const thisSecs = displayData.this_week_by_day[idx] || 0;
                 const lastSecs = displayData.last_week_by_day[idx] || 0;
@@ -433,44 +445,75 @@ export function WeeklyReportCard() {
                     onMouseEnter={() => setHoveredDayIdx(idx)}
                     onMouseLeave={() => setHoveredDayIdx(null)}
                     onClick={() => setHoveredDayIdx(idx)}
-                    className="relative h-full flex flex-col justify-end items-center cursor-pointer group"
+                    className={`relative h-full flex flex-col justify-end items-center cursor-pointer transition-all rounded-xl py-1 px-0.5 sm:px-1 ${
+                      isHovered ? 'bg-white/[0.04]' : ''
+                    }`}
                   >
-                    {/* Bar Column Container */}
-                    <div className="relative w-full max-w-[42px] h-full flex items-end justify-center">
-                      {/* Last week's faint bar (behind) */}
-                      <div
-                        className="absolute bottom-0 w-full rounded-t-md transition-all duration-300"
-                        style={{
-                          height: `${Math.max(lastHeightPct, lastSecs > 0 ? 4 : 0)}%`,
-                          backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                          border: '1px dashed rgba(255, 255, 255, 0.2)',
-                        }}
-                      />
+                    {/* Paired Bars Container */}
+                    <div className="relative w-full h-full flex items-end justify-center gap-1 sm:gap-2">
+                      {/* Last Week Bar Column */}
+                      <div className="flex flex-col items-center justify-end h-full w-full max-w-[18px] sm:max-w-[28px]">
+                        {/* Always visible hours label */}
+                        <span
+                          className={`text-[8.5px] sm:text-[10px] font-mono leading-none mb-1 text-center transition-colors ${
+                            lastSecs > 0 ? 'text-slate-300 font-semibold' : 'text-slate-600'
+                          }`}
+                        >
+                          {formatBarHours(lastSecs)}
+                        </span>
+                        <div
+                          className={`w-full rounded-t-md transition-all duration-300 ${
+                            lastSecs > 0
+                              ? 'bg-slate-600/80 border border-slate-500/70 hover:bg-slate-500'
+                              : 'bg-white/[0.05] border-t border-dashed border-white/20'
+                          }`}
+                          style={{
+                            height: `${Math.max(lastHeightPct, 4)}%`,
+                            minHeight: '4px',
+                          }}
+                        />
+                      </div>
 
-                      {/* This week's solid bar (in front) */}
-                      <div
-                        className={`relative w-4/5 rounded-t-md transition-all duration-300 z-10 ${
-                          isHovered ? 'brightness-125 scale-x-105' : ''
-                        }`}
-                        style={{
-                          height: `${Math.max(thisHeightPct, thisSecs > 0 ? 5 : 0)}%`,
-                          backgroundColor: theme.accent || '#E6C15A',
-                          boxShadow:
+                      {/* This Week Bar Column */}
+                      <div className="flex flex-col items-center justify-end h-full w-full max-w-[18px] sm:max-w-[28px]">
+                        {/* Always visible hours label */}
+                        <span
+                          className={`text-[8.5px] sm:text-[10px] font-mono leading-none mb-1 text-center transition-colors ${
+                            thisSecs > 0 ? 'font-bold' : 'text-slate-600'
+                          }`}
+                          style={{ color: thisSecs > 0 ? (theme.accent || '#E6C15A') : undefined }}
+                        >
+                          {formatBarHours(thisSecs)}
+                        </span>
+                        <div
+                          className={`w-full rounded-t-md transition-all duration-300 z-10 ${
                             thisSecs > 0
-                              ? `0 0 10px ${theme.glow || 'rgba(230, 193, 90, 0.3)'}`
-                              : 'none',
-                        }}
-                      />
+                              ? 'hover:brightness-110'
+                              : 'bg-white/[0.05] border-t border-dashed border-white/20'
+                          }`}
+                          style={{
+                            height: `${Math.max(thisHeightPct, 4)}%`,
+                            minHeight: '4px',
+                            backgroundColor: thisSecs > 0 ? (theme.accent || '#E6C15A') : undefined,
+                            boxShadow:
+                              thisSecs > 0
+                                ? `0 0 10px ${theme.glow || 'rgba(230, 193, 90, 0.35)'}`
+                                : 'none',
+                          }}
+                        />
+                      </div>
                     </div>
 
                     {/* Day label */}
-                    <span
-                      className={`text-[10px] sm:text-xs font-mono font-semibold mt-2 transition-colors ${
-                        isHovered ? 'text-[var(--text)]' : 'text-[var(--text-dim)]'
-                      }`}
-                    >
-                      {day}
-                    </span>
+                    <div className="flex flex-col items-center mt-2">
+                      <span
+                        className={`text-[10px] sm:text-xs font-mono font-bold transition-colors ${
+                          isHovered ? 'text-[var(--text)]' : 'text-[var(--text-dim)]'
+                        }`}
+                      >
+                        {day}
+                      </span>
+                    </div>
                   </div>
                 );
               })}
