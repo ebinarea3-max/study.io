@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { getSupabase } from '../../lib/supabase';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { Logo } from '../Logo';
@@ -12,6 +13,7 @@ interface AuthCardProps {
 }
 
 export function AuthCard({ onSuccess, isModal = false }: AuthCardProps) {
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -22,6 +24,27 @@ export function AuthCard({ onSuccess, isModal = false }: AuthCardProps) {
     }
     return '';
   });
+
+  useEffect(() => {
+    const supabase = getSupabase();
+    if (!supabase) return;
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN') {
+        setIsLoading(false);
+        if (onSuccess) {
+          onSuccess();
+        }
+        router.push('/dashboard');
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [onSuccess, router]);
 
   const handleGoogleSignIn = async () => {
     try {

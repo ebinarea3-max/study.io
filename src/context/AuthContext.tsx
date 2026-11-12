@@ -1,6 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { App as CapacitorApp } from '@capacitor/app';
 import { UserProfile, StudyMode } from '../types';
 import { INITIAL_USER, cleanupLegacyDemoData, calculateStreak, getCachedStreak, setCachedStreak } from '../lib/mockData';
 import { getSupabase } from '../lib/supabase';
@@ -35,9 +37,28 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const router = useRouter();
   const [user, setUser] = useState<UserProfile>(INITIAL_USER);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Deep-link listener for Capacitor return trip
+  useEffect(() => {
+    let handle: { remove: () => Promise<void> } | undefined;
+
+    CapacitorApp.addListener('appUrlOpen', (event) => {
+      const slug = event.url.split('vercel.app').pop();
+      if (slug) router.push(slug);
+    }).then((h) => {
+      handle = h;
+    }).catch((err) => {
+      console.warn('Capacitor appUrlOpen listener error:', err);
+    });
+
+    return () => {
+      handle?.remove();
+    };
+  }, [router]);
 
   // Helper to persist to localStorage
   const saveUser = useCallback((newUser: UserProfile) => {
