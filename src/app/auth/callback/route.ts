@@ -3,30 +3,12 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url);
+  const { searchParams } = new URL(request.url);
   const code = searchParams.get('code');
-  let next = searchParams.get('next') ?? '/dashboard';
-
-  // Ensure 'next' is a relative path to prevent open-redirect vulnerabilities
-  if (!next.startsWith('/') || next.startsWith('//')) {
-    next = '/dashboard';
-  }
 
   if (code) {
     const cookieStore = await cookies();
-    const forwardedHost = request.headers.get('x-forwarded-host');
-    const isLocalEnv = process.env.NODE_ENV === 'development';
-
-    let destinationUrl: string;
-    if (isLocalEnv) {
-      destinationUrl = `${origin}${next}`;
-    } else if (forwardedHost) {
-      destinationUrl = `https://${forwardedHost}${next}`;
-    } else {
-      destinationUrl = `${origin}${next}`;
-    }
-
-    const response = NextResponse.redirect(destinationUrl);
+    const response = NextResponse.redirect('https://studyio-web.vercel.app/dashboard');
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseKey =
@@ -57,6 +39,6 @@ export async function GET(request: Request) {
     }
   }
 
-  // If code exchange fails or no code is present, redirect to /?error=auth-failed
-  return NextResponse.redirect(`${origin}/?error=auth-failed`);
+  // Final redirect pointing to post-login page
+  return NextResponse.redirect('https://studyio-web.vercel.app/dashboard');
 }
