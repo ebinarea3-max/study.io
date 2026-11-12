@@ -30,9 +30,7 @@ export async function proxy(request: NextRequest) {
   const isNativeApp = userAgent.includes('StudyIoNativeApp');
 
   if (isMobile && !isNativeApp) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/mobile-restricted';
-    return NextResponse.redirect(url);
+    return NextResponse.redirect('https://studyio-web.vercel.app/mobile-restricted');
   }
 
   // 4. Normal web / native app auth session flow
@@ -78,9 +76,7 @@ export async function proxy(request: NextRequest) {
   // If unauthenticated user tries to directly access /dashboard, redirect to /login
   // Never redirect while on /auth/callback, /login, or /
   if (!user && pathname.startsWith('/dashboard')) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/login';
-    return NextResponse.redirect(url);
+    return NextResponse.redirect('https://studyio-web.vercel.app/login');
   }
 
   return response;
