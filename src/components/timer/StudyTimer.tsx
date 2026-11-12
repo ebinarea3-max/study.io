@@ -1098,9 +1098,8 @@ export function StudyTimer() {
               className="relative inline-flex items-center justify-center min-w-[220px] sm:min-w-[260px] max-w-[340px] h-[44px] sm:h-[48px] px-8 sm:px-10 rounded-full border border-[var(--border)] bg-[var(--surface)] opacity-50 animate-pulse"
               aria-hidden="true"
             >
-              <div className="flex items-center justify-center gap-2.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-[var(--border-strong)]" />
-                <span className="w-24 h-3.5 rounded bg-[var(--border-strong)]" />
+              <div className="flex items-center justify-center">
+                <span className="w-28 h-3.5 rounded bg-[var(--border-strong)]" />
               </div>
             </div>
           </div>
@@ -1122,18 +1121,13 @@ export function StudyTimer() {
                   : 'border-[var(--border)] hover:border-[var(--border-strong)]'
               } ${isStudying ? 'opacity-90 cursor-not-allowed' : ''}`}
             >
-              <div className="flex items-center justify-center gap-2.5 min-w-0 max-w-full">
+              <div className="flex items-center justify-center gap-2 min-w-0 max-w-full">
                 <span
-                  className="w-2.5 h-2.5 rounded-full flex-shrink-0 shadow-[0_0_8px_rgba(255,255,255,0.2)]"
-                  style={{
-                    backgroundColor: selectedSubject
-                      ? (selectedSubject.color || '#10B981')
-                      : activeSubjects.length === 0
-                      ? 'var(--accent)'
-                      : '#71717A',
-                  }}
-                />
-                <span className={`truncate text-sm sm:text-[15px] ${selectedSubject ? 'text-[var(--text)] font-semibold' : 'text-[var(--text-dim)] font-medium'}`}>
+                  className={`truncate text-sm sm:text-[15px] font-semibold transition-colors ${
+                    !selectedSubject ? 'text-[var(--text-dim)] font-medium' : ''
+                  }`}
+                  style={selectedSubject ? { color: selectedSubject.color || '#10B981' } : undefined}
+                >
                   {selectedSubject?.name || 'Choose a subject'}
                 </span>
                 {isStudying && (
@@ -1165,16 +1159,17 @@ export function StudyTimer() {
                         }}
                         className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs sm:text-sm transition-colors cursor-pointer ${
                           sub.id === selectedSubjectId
-                            ? 'bg-fg/[0.1] text-[var(--text)] font-medium'
-                            : 'text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-fg/[0.05]'
+                            ? 'bg-fg/[0.1] font-medium'
+                            : 'hover:bg-fg/[0.05]'
                         }`}
                       >
-                        <div className="flex items-center gap-2.5 truncate">
+                        <div className="flex items-center gap-2 truncate">
                           <span
-                            className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                            style={{ backgroundColor: sub.color || '#10B981' }}
-                          />
-                          <span className="truncate">{sub.name}</span>
+                            className="truncate font-semibold transition-colors"
+                            style={{ color: sub.color || '#10B981' }}
+                          >
+                            {sub.name}
+                          </span>
                         </div>
                         <span className="text-[10px] font-mono text-[var(--text-dim)] ml-2 shrink-0">
                           {Math.floor((sub.targetMinutesPerDay || 60) / 60)}h goal
