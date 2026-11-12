@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { getSupabase } from '@/lib/supabase';
 import {
   Download,
   ArrowUpRight,
@@ -80,8 +82,29 @@ const APP_FEATURES: FeatureItem[] = [
 ];
 
 export default function MobileRestrictedPage() {
+  const router = useRouter();
   const [isDownloading, setIsDownloading] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [isNativeApp, setIsNativeApp] = useState(false);
+
+  // Check user agent for Capacitor native app identifier
+  useEffect(() => {
+    if (typeof navigator !== 'undefined' && navigator.userAgent) {
+      setIsNativeApp(navigator.userAgent.includes('StudyIoNativeApp'));
+    }
+  }, []);
+
+  // Supabase session check: if user has an active session, automatically redirect to /dashboard
+  useEffect(() => {
+    const supabase = getSupabase();
+    if (supabase) {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session) {
+          router.push('/dashboard');
+        }
+      });
+    }
+  }, [router]);
 
   const sheetRef = useRef<HTMLDivElement>(null);
   const triggerButtonRef = useRef<HTMLButtonElement>(null);
@@ -189,9 +212,11 @@ export default function MobileRestrictedPage() {
               study.io
             </span>
           </div>
-          <span className="text-xs font-sans px-2.5 py-1 rounded-full bg-white/[0.05] border border-white/10 text-slate-300">
-            Android app
-          </span>
+          {!isNativeApp && (
+            <span className="text-xs font-sans px-2.5 py-1 rounded-full bg-white/[0.05] border border-white/10 text-slate-300">
+              Android app
+            </span>
+          )}
         </header>
 
         {/* Hero Visual: CSS Phone frame (approx 38svh tall, 6 deg tilt, 8px float) */}
@@ -326,27 +351,29 @@ export default function MobileRestrictedPage() {
       </div>
 
       {/* Sticky Bottom Bar with safe-area padding and Solid White Primary Button */}
-      <footer className="sticky bottom-0 left-0 right-0 z-30 bg-[#07090C]/90 backdrop-blur-xl border-t border-white/[0.08] px-4 pt-3 pb-[calc(env(safe-area-inset-bottom,0px)+16px)] shrink-0 animate-rise-5">
-        <div className="w-full max-w-sm mx-auto flex flex-col items-center gap-2">
-          {/* Primary Button matching the app's clean white primary buttons */}
-          <button
-            type="button"
-            onClick={handleDownload}
-            className="relative overflow-hidden w-full h-[56px] min-h-[56px] rounded-[16px] bg-white text-[#07090E] font-bold text-sm sm:text-base tracking-wide flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(255,255,255,0.12)] hover:bg-slate-100 transition-all duration-150 active:scale-[0.98] cursor-pointer"
-          >
-            {/* Subtle light sweep across button every 8s */}
-            <div className="button-sweep absolute inset-y-0 w-1/3 bg-gradient-to-r from-transparent via-black/10 to-transparent skew-x-[-25deg] pointer-events-none" />
+      {!isNativeApp && (
+        <footer className="sticky bottom-0 left-0 right-0 z-30 bg-[#07090C]/90 backdrop-blur-xl border-t border-white/[0.08] px-4 pt-3 pb-[calc(env(safe-area-inset-bottom,0px)+16px)] shrink-0 animate-rise-5">
+          <div className="w-full max-w-sm mx-auto flex flex-col items-center gap-2">
+            {/* Primary Button matching the app's clean white primary buttons */}
+            <button
+              type="button"
+              onClick={handleDownload}
+              className="relative overflow-hidden w-full h-[56px] min-h-[56px] rounded-[16px] bg-white text-[#07090E] font-bold text-sm sm:text-base tracking-wide flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(255,255,255,0.12)] hover:bg-slate-100 transition-all duration-150 active:scale-[0.98] cursor-pointer"
+            >
+              {/* Subtle light sweep across button every 8s */}
+              <div className="button-sweep absolute inset-y-0 w-1/3 bg-gradient-to-r from-transparent via-black/10 to-transparent skew-x-[-25deg] pointer-events-none" />
 
-            <Download className="w-5 h-5 stroke-[2.5]" />
-            <span>{isDownloading ? 'Downloading...' : 'Download for Android'}</span>
-          </button>
+              <Download className="w-5 h-5 stroke-[2.5]" />
+              <span>{isDownloading ? 'Downloading...' : 'Download for Android'}</span>
+            </button>
 
-          {/* Under button version string */}
-          <span className="text-[11px] font-mono text-slate-400 tracking-tight">
-            {versionString}
-          </span>
-        </div>
-      </footer>
+            {/* Under button version string */}
+            <span className="text-[11px] font-mono text-slate-400 tracking-tight">
+              {versionString}
+            </span>
+          </div>
+        </footer>
+      )}
 
       {/* Bottom Sheet ("What's inside"): Sleek, clean vertical list matching app modals */}
       {isSheetOpen && (
@@ -448,16 +475,18 @@ export default function MobileRestrictedPage() {
             </div>
 
             {/* Sheet Footer: Repeats Solid White Download Button */}
-            <div className="p-4 border-t border-white/[0.08] bg-[#0B0D13] shrink-0 pb-[calc(1rem+env(safe-area-inset-bottom,0px))]">
-              <button
-                type="button"
-                onClick={handleDownload}
-                className="w-full h-[52px] rounded-xl bg-white text-[#07090E] font-bold text-sm tracking-wide flex items-center justify-center gap-2 shadow-md hover:bg-slate-100 active:scale-[0.98] transition-all cursor-pointer"
-              >
-                <Download className="w-4 h-4 stroke-[2.5]" />
-                <span>{isDownloading ? 'Downloading...' : 'Download for Android'}</span>
-              </button>
-            </div>
+            {!isNativeApp && (
+              <div className="p-4 border-t border-white/[0.08] bg-[#0B0D13] shrink-0 pb-[calc(1rem+env(safe-area-inset-bottom,0px))]">
+                <button
+                  type="button"
+                  onClick={handleDownload}
+                  className="w-full h-[52px] rounded-xl bg-white text-[#07090E] font-bold text-sm tracking-wide flex items-center justify-center gap-2 shadow-md hover:bg-slate-100 active:scale-[0.98] transition-all cursor-pointer"
+                >
+                  <Download className="w-4 h-4 stroke-[2.5]" />
+                  <span>{isDownloading ? 'Downloading...' : 'Download for Android'}</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

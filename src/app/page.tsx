@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
+import { getSupabase } from '../lib/supabase';
 import { useStudy } from '../context/StudyContext';
 import { Navbar } from '../components/common/Navbar';
 import { AuthModal } from '../components/common/AuthModal';
@@ -32,9 +34,36 @@ import { useStudyMode } from '../context/StudyModeContext';
 import { OnboardingFlow } from '../components/onboarding/OnboardingFlow';
 
 export default function Home() {
+  const router = useRouter();
+  const pathname = usePathname();
   const { isAuthenticated, isLoading, user } = useAuth();
   const { needsOnboarding } = useStudyMode();
+  const [isNativeApp, setIsNativeApp] = useState(false);
   useRankTheme(); // Hydrate CSS custom properties globally for current session
+
+  // Detect Capacitor native app user agent
+  useEffect(() => {
+    if (typeof navigator !== 'undefined' && navigator.userAgent) {
+      setIsNativeApp(navigator.userAgent.includes('StudyIoNativeApp'));
+    }
+  }, []);
+
+  // Supabase session check: if user has an active session, automatically redirect to /dashboard
+  useEffect(() => {
+    if (!isLoading && isAuthenticated && pathname !== '/dashboard') {
+      router.push('/dashboard');
+      return;
+    }
+
+    const supabase = getSupabase();
+    if (supabase) {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session && pathname !== '/dashboard') {
+          router.push('/dashboard');
+        }
+      });
+    }
+  }, [isAuthenticated, isLoading, pathname, router]);
 
   const {
     refetchSessions,
