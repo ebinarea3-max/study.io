@@ -6,7 +6,7 @@ const config: CapacitorConfig = {
   webDir: 'public',
   appendUserAgent: 'StudyIoNativeApp',
   server: {
-    url: 'https://study-io-ebinarea3-maxs-projects.vercel.app',
+    url: 'https://studyio-web.vercel.app',
     cleartext: true
   }
 };
