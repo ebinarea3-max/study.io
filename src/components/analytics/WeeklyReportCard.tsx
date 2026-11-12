@@ -290,32 +290,41 @@ export function WeeklyReportCard() {
                 </span>
               </div>
 
-              {/* Comparison badge */}
-              <div className="mt-3 flex items-center gap-1.5 text-xs font-mono font-semibold">
-                {changeComparison.type === 'positive' && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                    <TrendingUp className="w-3.5 h-3.5" />
-                    <span>{changeComparison.label}</span>
-                  </span>
-                )}
-                {changeComparison.type === 'negative' && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-400 border border-rose-500/20">
-                    <TrendingDown className="w-3.5 h-3.5" />
-                    <span>{changeComparison.label}</span>
-                  </span>
-                )}
-                {changeComparison.type === 'first_week' && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#E6C15A]/15 text-[#E6C15A] border border-[#E6C15A]/30">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>{changeComparison.label}</span>
-                  </span>
-                )}
-                {changeComparison.type === 'neutral' && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/5 text-[var(--text-dim)] border border-[var(--border)]">
-                    <Minus className="w-3.5 h-3.5" />
-                    <span>{changeComparison.label}</span>
-                  </span>
-                )}
+              {/* Comparison badge & Last week total */}
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
+                <div className="flex items-center gap-1.5 font-semibold">
+                  {changeComparison.type === 'positive' && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                      <TrendingUp className="w-3.5 h-3.5" />
+                      <span>{changeComparison.label}</span>
+                    </span>
+                  )}
+                  {changeComparison.type === 'negative' && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                      <TrendingDown className="w-3.5 h-3.5" />
+                      <span>{changeComparison.label}</span>
+                    </span>
+                  )}
+                  {changeComparison.type === 'first_week' && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#E6C15A]/15 text-[#E6C15A] border border-[#E6C15A]/30">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>{changeComparison.label}</span>
+                    </span>
+                  )}
+                  {changeComparison.type === 'neutral' && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/5 text-[var(--text-dim)] border border-[var(--border)]">
+                      <Minus className="w-3.5 h-3.5" />
+                      <span>{changeComparison.label}</span>
+                    </span>
+                  )}
+                </div>
+
+                <span
+                  className="text-xs font-mono text-[var(--text-dim)]"
+                  title={`Previous week total: ${formatHours(displayData.last_week_seconds)} hours`}
+                >
+                  Last week: {formatHours(displayData.last_week_seconds)} hrs
+                </span>
               </div>
             </div>
 
