@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.studyio.app",
+      "sha256_cert_fingerprints": [
+        "77:67:FF:D1:7F:8A:33:CF:EE:37:00:FA:E4:30:46:32:1E:F0:D8:3F:A0:B3:EC:24:72:65:F7:6A:9A:47:9B:BA"
+      ]
+    }
+  }
+]
