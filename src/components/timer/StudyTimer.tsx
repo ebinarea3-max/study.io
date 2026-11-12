@@ -938,7 +938,7 @@ export function StudyTimer() {
   }, [isLoading, user?.streakDays, overviewTodaySeconds, todaySessions.length, lockedEmptyQuote]);
 
   return (
-    <div className="max-w-[520px] w-full h-full max-h-[calc(100dvh-64px)] sm:max-h-[calc(100dvh-72px)] mx-auto flex flex-col items-center justify-center px-4 sm:px-6 py-1 sm:py-2 select-none relative">
+    <div className="max-w-[520px] w-full h-full max-h-[calc(100dvh-64px)] mx-auto flex flex-col items-center justify-between px-4 sm:px-6 py-1.5 sm:py-2 select-none relative overflow-hidden">
       {/* Subject Manager Modal */}
       {isManageSubjectsOpen && (
         <ErrorBoundary
@@ -953,391 +953,398 @@ export function StudyTimer() {
         </ErrorBoundary>
       )}
 
-      {/* Session Resumed Alert Banner */}
-      {showRecoveryBanner && (
-        <div className="w-full max-w-sm mb-2 px-3.5 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 backdrop-blur-md flex items-center justify-between shadow-lg">
-          <div className="flex items-center gap-2 text-amber-300 text-xs font-medium">
-            <Zap className="w-3.5 h-3.5 fill-current" />
-            <span>Previous session restored (paused)</span>
+      {/* Top Section: Alerts + Mode Selector + Subject Chip */}
+      <div className="w-full flex flex-col items-center shrink-0">
+        {/* Session Resumed Alert Banner */}
+        {showRecoveryBanner && (
+          <div className="w-full max-w-sm mb-2 px-3.5 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 backdrop-blur-md flex items-center justify-between shadow-lg">
+            <div className="flex items-center gap-2 text-amber-300 text-xs font-medium">
+              <Zap className="w-3.5 h-3.5 fill-current" />
+              <span>Previous session restored (paused)</span>
+            </div>
+            <button
+              onClick={() => setShowRecoveryBanner(false)}
+              className="p-1 rounded-lg hover:bg-amber-500/20 text-amber-300 transition-colors cursor-pointer"
+              title="Dismiss"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
           </div>
-          <button
-            onClick={() => setShowRecoveryBanner(false)}
-            className="p-1 rounded-lg hover:bg-amber-500/20 text-amber-300 transition-colors cursor-pointer"
-            title="Dismiss"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      )}
+        )}
 
-      {/* Subject warning banner */}
-      {subjectWarning && (
-        <div className="w-full max-w-sm mb-2 flex items-center justify-between gap-2 px-3 py-1.5 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-200 text-xs font-medium backdrop-blur-md shadow-lg shadow-amber-500/10">
-          <div className="flex items-center gap-2">
-            <span>⚠️</span>
-            <span>
-              {activeSubjects.length === 0 ? 'Please add a subject before starting.' : 'Please select a subject before starting.'}
-            </span>
+        {/* Subject warning banner */}
+        {subjectWarning && (
+          <div className="w-full max-w-sm mb-2 flex items-center justify-between gap-2 px-3 py-1.5 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-200 text-xs font-medium backdrop-blur-md shadow-lg shadow-amber-500/10">
+            <div className="flex items-center gap-2">
+              <span>⚠️</span>
+              <span>
+                {activeSubjects.length === 0 ? 'Please add a subject before starting.' : 'Please select a subject before starting.'}
+              </span>
+            </div>
+            <button
+              onClick={() => setSubjectWarning(false)}
+              className="p-1 rounded-lg hover:bg-amber-500/20 text-amber-300 transition-colors cursor-pointer"
+              title="Dismiss"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
           </div>
-          <button
-            onClick={() => setSubjectWarning(false)}
-            className="p-1 rounded-lg hover:bg-amber-500/20 text-amber-300 transition-colors cursor-pointer"
-            title="Dismiss"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      )}
+        )}
 
-      {/* Focus Block Complete Alert Banner */}
-      {pomodoroCompletedPhase === 'work' && (
-        <div className="w-full max-w-md mb-2 flex items-center justify-between gap-3 px-3.5 py-2 rounded-2xl bg-white/[0.04] border border-white/10 text-xs text-white backdrop-blur-md shadow-lg">
-          <div className="flex items-center gap-2.5">
-            <Sparkles className="w-4 h-4 text-white" />
-            <div>
-              <div className="text-sm font-semibold text-white">Focus block complete</div>
-              <div className="text-[11px] text-zinc-400">Save session to pause for break, or skip.</div>
+        {/* Focus Block Complete Alert Banner */}
+        {pomodoroCompletedPhase === 'work' && (
+          <div className="w-full max-w-md mb-2 flex items-center justify-between gap-3 px-3.5 py-2 rounded-2xl bg-white/[0.04] border border-white/10 text-xs text-white backdrop-blur-md shadow-lg">
+            <div className="flex items-center gap-2.5">
+              <Sparkles className="w-4 h-4 text-white" />
+              <div>
+                <div className="text-sm font-semibold text-white">Focus block complete</div>
+                <div className="text-[11px] text-zinc-400">Save session to pause for break, or skip.</div>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Break Over Alert Banner */}
-      {pomodoroCompletedPhase === 'break' && (
-        <div className="w-full max-w-md mb-2 flex items-center justify-between gap-3 px-3.5 py-2 rounded-2xl bg-white/[0.04] border border-white/10 text-xs text-white backdrop-blur-md shadow-lg">
-          <div className="flex items-center gap-2.5">
-            <Flame className="w-4 h-4 text-amber-400" />
-            <div>
-              <div className="text-sm font-semibold text-white">Break over, ready to study?</div>
-              <div className="text-[11px] text-zinc-400">Timer switched back to focus mode.</div>
+        {/* Break Over Alert Banner */}
+        {pomodoroCompletedPhase === 'break' && (
+          <div className="w-full max-w-md mb-2 flex items-center justify-between gap-3 px-3.5 py-2 rounded-2xl bg-white/[0.04] border border-white/10 text-xs text-white backdrop-blur-md shadow-lg">
+            <div className="flex items-center gap-2.5">
+              <Flame className="w-4 h-4 text-amber-400" />
+              <div>
+                <div className="text-sm font-semibold text-white">Break over, ready to study?</div>
+                <div className="text-[11px] text-zinc-400">Timer switched back to focus mode.</div>
+              </div>
             </div>
+            <button
+              onClick={() => setPomodoroCompletedPhase(null)}
+              className="p-1 rounded-lg hover:bg-white/10 text-zinc-400 hover:text-white transition-colors cursor-pointer"
+              title="Dismiss"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
           </div>
-          <button
-            onClick={() => setPomodoroCompletedPhase(null)}
-            className="p-1 rounded-lg hover:bg-white/10 text-zinc-400 hover:text-white transition-colors cursor-pointer"
-            title="Dismiss"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      )}
+        )}
 
-      {/* Controls motion container: fades in and rises 8px over 250ms */}
-      <motion.div
-        initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.25, ease: 'easeOut' }}
-        className="w-full flex flex-col items-center"
-      >
-        {/* 1. Mode selector */}
-        <div className="relative inline-flex items-center p-0.5 sm:p-1 bg-fg/[0.04] border border-fg/[0.08] rounded-full shadow-card">
-          {(['stopwatch', 'countdown', 'pomodoro'] as TimerMode[]).map((mode) => {
-            const isActive = timerMode === mode;
-            const label = mode === 'stopwatch' ? 'Stopwatch' : mode === 'countdown' ? 'Countdown' : 'Pomodoro';
-            return (
-              <button
-                key={mode}
-                type="button"
-                disabled={isStudying || isCountdownCompleted}
-                onClick={() => {
-                  if (!isStudying && !isCountdownCompleted) {
-                    setTimerMode(mode);
-                    if (mode === 'countdown') {
-                      setIsCountdownHalfwayNotified(false);
-                      try {
-                        localStorage.removeItem('studyio_timer_countdown_halfway_notified');
-                      } catch {}
+        {/* Controls motion container: fades in and rises 8px over 250ms */}
+        <motion.div
+          initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.25, ease: 'easeOut' }}
+          className="w-full flex flex-col items-center shrink-0"
+        >
+          {/* 1. Mode selector */}
+          <div className="relative inline-flex items-center p-1 bg-fg/[0.04] border border-fg/[0.08] rounded-full shadow-card">
+            {(['stopwatch', 'countdown', 'pomodoro'] as TimerMode[]).map((mode) => {
+              const isActive = timerMode === mode;
+              const label = mode === 'stopwatch' ? 'Stopwatch' : mode === 'countdown' ? 'Countdown' : 'Pomodoro';
+              return (
+                <button
+                  key={mode}
+                  type="button"
+                  disabled={isStudying || isCountdownCompleted}
+                  onClick={() => {
+                    if (!isStudying && !isCountdownCompleted) {
+                      setTimerMode(mode);
+                      if (mode === 'countdown') {
+                        setIsCountdownHalfwayNotified(false);
+                        try {
+                          localStorage.removeItem('studyio_timer_countdown_halfway_notified');
+                        } catch {}
+                      }
                     }
+                  }}
+                  className={`relative px-4 py-1.5 text-xs font-medium rounded-full transition-colors z-10 ${
+                    isActive ? 'text-[var(--text)]' : 'text-[var(--text-dim)] hover:text-[var(--text)]'
+                  } ${isStudying || isCountdownCompleted ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+                >
+                  {isActive && (
+                    <motion.div
+                      layoutId="activeTimerMode"
+                      className="absolute inset-0 bg-fg/[0.12] [[data-theme='paper']_&]:bg-[var(--surface)] border border-fg/[0.1] [[data-theme='paper']_&]:border-[var(--border-strong)] rounded-full shadow-card"
+                      transition={shouldReduceMotion ? { duration: 0 } : { type: 'tween', duration: 0.2 }}
+                    />
+                  )}
+                  <span className="relative z-10">{label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Pomodoro interval presets on their own row under mode selector */}
+          {timerMode === 'pomodoro' && (
+            <div className="flex items-center justify-center gap-1.5 mt-1.5">
+              {(['25/5', '50/10'] as const).map((preset) => (
+                <button
+                  key={preset}
+                  type="button"
+                  disabled={isStudying}
+                  onClick={() => { if (!isStudying) setPomodoroPreset(preset); }}
+                  className={`px-3 py-1 text-xs font-mono rounded-full border transition-colors ${
+                    pomodoroPreset === preset
+                      ? "bg-fg/[0.1] [[data-theme='paper']_&]:bg-[var(--surface)] border-fg/20 [[data-theme='paper']_&]:border-[var(--border-strong)] text-[var(--text)] font-medium shadow-card"
+                      : 'bg-transparent border-fg/[0.06] text-[var(--text-dim)] hover:text-[var(--text)]'
+                  } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+                >
+                  {preset}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* 2. Subject chip - quiet skeleton while study mode is loading; hidden in Focus mode; normal in Subject mode */}
+          {studyModeLoading ? (
+            <div className="relative mt-2 sm:mt-2.5 mb-1 z-30">
+              <div
+                className="relative inline-flex items-center justify-center min-w-[220px] sm:min-w-[260px] max-w-[340px] h-[44px] sm:h-[48px] px-8 sm:px-10 rounded-full border border-[var(--border)] bg-[var(--surface)] opacity-50 animate-pulse"
+                aria-hidden="true"
+              >
+                <div className="flex items-center justify-center gap-2.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[var(--border-strong)]" />
+                  <span className="w-24 h-3.5 rounded bg-[var(--border-strong)]" />
+                </div>
+              </div>
+            </div>
+          ) : isFocus ? null : (
+            <div className="relative mt-2 sm:mt-2.5 mb-1 z-30">
+              <button
+                type="button"
+                onClick={(e) => {
+                  if (activeSubjects.length === 0) {
+                    handleOpenSubjectManager(e);
+                  } else {
+                    setShowDropdown(!showDropdown);
                   }
                 }}
-                className={`relative px-3.5 sm:px-4 py-1 sm:py-1.5 text-xs font-medium rounded-full transition-colors z-10 ${
-                  isActive ? 'text-[var(--text)]' : 'text-[var(--text-dim)] hover:text-[var(--text)]'
-                } ${isStudying || isCountdownCompleted ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+                disabled={isStudying || isRemoteTransitioning}
+                className={`relative inline-flex items-center justify-center min-w-[220px] sm:min-w-[260px] max-w-[340px] px-8 sm:px-10 py-2.5 sm:py-3 rounded-full border bg-[var(--surface)] hover:bg-[var(--surface-2)] active:scale-[0.98] transition-all text-sm font-semibold cursor-pointer shadow-card ${
+                  subjectWarning
+                    ? 'border-amber-500/60 ring-1 ring-amber-500/30'
+                    : 'border-[var(--border)] hover:border-[var(--border-strong)]'
+                } ${isStudying ? 'opacity-90 cursor-not-allowed' : ''}`}
               >
-                {isActive && (
-                  <motion.div
-                    layoutId="activeTimerMode"
-                    className="absolute inset-0 bg-fg/[0.12] [[data-theme='paper']_&]:bg-[var(--surface)] border border-fg/[0.1] [[data-theme='paper']_&]:border-[var(--border-strong)] rounded-full shadow-card"
-                    transition={shouldReduceMotion ? { duration: 0 } : { type: 'tween', duration: 0.2 }}
+                <div className="flex items-center justify-center gap-2.5 min-w-0 max-w-full">
+                  <span
+                    className="w-2.5 h-2.5 rounded-full flex-shrink-0 shadow-[0_0_8px_rgba(255,255,255,0.2)]"
+                    style={{
+                      backgroundColor: selectedSubject
+                        ? (selectedSubject.color || '#10B981')
+                        : activeSubjects.length === 0
+                        ? 'var(--accent)'
+                        : '#71717A',
+                    }}
                   />
-                )}
-                <span className="relative z-10">{label}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Pomodoro interval presets on their own row under mode selector */}
-        {timerMode === 'pomodoro' && (
-          <div className="flex items-center justify-center gap-1.5 mt-1 sm:mt-1.5">
-            {(['25/5', '50/10'] as const).map((preset) => (
-              <button
-                key={preset}
-                type="button"
-                disabled={isStudying}
-                onClick={() => { if (!isStudying) setPomodoroPreset(preset); }}
-                className={`px-3 py-0.5 sm:py-1 text-xs font-mono rounded-full border transition-colors ${
-                  pomodoroPreset === preset
-                    ? "bg-fg/[0.1] [[data-theme='paper']_&]:bg-[var(--surface)] border-fg/20 [[data-theme='paper']_&]:border-[var(--border-strong)] text-[var(--text)] font-medium shadow-card"
-                    : 'bg-transparent border-fg/[0.06] text-[var(--text-dim)] hover:text-[var(--text)]'
-                } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
-              >
-                {preset}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* 2. Subject chip - quiet skeleton while study mode is loading; hidden in Focus mode; normal in Subject mode */}
-        {studyModeLoading ? (
-          <div className="relative mt-1.5 sm:mt-2 mb-0.5 sm:mb-1 z-30">
-            <div
-              className="relative inline-flex items-center justify-center min-w-[200px] sm:min-w-[240px] max-w-[320px] h-[40px] sm:h-[44px] px-6 sm:px-8 rounded-full border border-[var(--border)] bg-[var(--surface)] opacity-50 animate-pulse"
-              aria-hidden="true"
-            >
-              <div className="flex items-center justify-center gap-2.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-[var(--border-strong)]" />
-                <span className="w-24 h-3.5 rounded bg-[var(--border-strong)]" />
-              </div>
-            </div>
-          </div>
-        ) : isFocus ? null : (
-          <div className="relative mt-1.5 sm:mt-2 mb-0.5 sm:mb-1 z-30">
-            <button
-              type="button"
-              onClick={(e) => {
-                if (activeSubjects.length === 0) {
-                  handleOpenSubjectManager(e);
-                } else {
-                  setShowDropdown(!showDropdown);
-                }
-              }}
-              disabled={isStudying || isRemoteTransitioning}
-              className={`relative inline-flex items-center justify-center min-w-[200px] sm:min-w-[240px] max-w-[320px] px-6 sm:px-8 py-2 sm:py-2.5 rounded-full border bg-[var(--surface)] hover:bg-[var(--surface-2)] active:scale-[0.98] transition-all text-sm font-semibold cursor-pointer shadow-card ${
-                subjectWarning
-                  ? 'border-amber-500/60 ring-1 ring-amber-500/30'
-                  : 'border-[var(--border)] hover:border-[var(--border-strong)]'
-              } ${isStudying ? 'opacity-90 cursor-not-allowed' : ''}`}
-            >
-              <div className="flex items-center justify-center gap-2.5 min-w-0 max-w-full">
-                <span
-                  className="w-2.5 h-2.5 rounded-full flex-shrink-0 shadow-[0_0_8px_rgba(255,255,255,0.2)]"
-                  style={{
-                    backgroundColor: selectedSubject
-                      ? (selectedSubject.color || '#10B981')
-                      : activeSubjects.length === 0
-                      ? 'var(--accent)'
-                      : '#71717A',
-                  }}
-                />
-                <span className={`truncate text-sm sm:text-[15px] ${selectedSubject ? 'text-[var(--text)] font-semibold' : 'text-[var(--text-dim)] font-medium'}`}>
-                  {selectedSubject?.name || 'Choose a subject'}
-                </span>
-                {isStudying && (
-                  <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-fg/[0.08] text-[var(--text-dim)] flex-shrink-0">
-                    Locked
+                  <span className={`truncate text-sm sm:text-[15px] ${selectedSubject ? 'text-[var(--text)] font-semibold' : 'text-[var(--text-dim)] font-medium'}`}>
+                    {selectedSubject?.name || 'Choose a subject'}
                   </span>
-                )}
-              </div>
-              <ChevronDown className={`absolute right-4 sm:right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-dim)] flex-shrink-0 transition-transform duration-200 pointer-events-none ${showDropdown ? 'rotate-180' : ''}`} />
-            </button>
-
-            {/* Subject Dropdown Popover */}
-            {showDropdown && !isStudying && (
-              <>
-                <div className="fixed inset-0 z-40" onClick={() => setShowDropdown(false)} />
-                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-72 bg-[var(--surface)] backdrop-blur-xl border border-[var(--border-strong)] rounded-2xl p-2.5 shadow-card z-50 text-[var(--text)]">
-                  <div className="px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider text-[var(--text-dim)] border-b border-fg/[0.06] mb-1">
-                    Select subject
-                  </div>
-                  <div className="max-h-56 overflow-y-auto space-y-0.5">
-                    {activeSubjects.map((sub) => (
-                      <button
-                        key={sub.id}
-                        type="button"
-                        onClick={() => {
-                          setSelectedSubjectId(sub.id);
-                          setShowDropdown(false);
-                          setSubjectWarning(false);
-                        }}
-                        className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs sm:text-sm transition-colors cursor-pointer ${
-                          sub.id === selectedSubjectId
-                            ? 'bg-fg/[0.1] text-[var(--text)] font-medium'
-                            : 'text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-fg/[0.05]'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2.5 truncate">
-                          <span
-                            className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                            style={{ backgroundColor: sub.color || '#10B981' }}
-                          />
-                          <span className="truncate">{sub.name}</span>
-                        </div>
-                        <span className="text-[10px] font-mono text-[var(--text-dim)] ml-2 shrink-0">
-                          {Math.floor((sub.targetMinutesPerDay || 60) / 60)}h goal
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                  <div className="pt-2 mt-2 border-t border-fg/[0.06]">
-                    <button
-                      type="button"
-                      onClick={handleOpenSubjectManager}
-                      className="w-full flex items-center justify-center gap-2 py-1.5 rounded-lg text-xs font-medium text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-fg/[0.05] transition-colors cursor-pointer"
-                    >
-                      <FolderPlus className="w-3.5 h-3.5 text-[var(--text-dim)]" />
-                      <span>Manage subjects</span>
-                    </button>
-                  </div>
+                  {isStudying && (
+                    <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-fg/[0.08] text-[var(--text-dim)] flex-shrink-0">
+                      Locked
+                    </span>
+                  )}
                 </div>
-              </>
-            )}
-          </div>
-        )}
-      </motion.div>
+                <ChevronDown className={`absolute right-4 sm:right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-dim)] flex-shrink-0 transition-transform duration-200 pointer-events-none ${showDropdown ? 'rotate-180' : ''}`} />
+              </button>
 
-      {/* 3. The Dial (fades in 80ms after controls) */}
-      <motion.div
-        initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.25, delay: shouldReduceMotion ? 0 : 0.08, ease: 'easeOut' }}
-        className="w-full flex justify-center"
-      >
-        <TimerDial
-          displayTime={displayTime}
-          ringPercent={ringPercent}
-          litCount={litCount}
-          statusText={statusText}
-          subjectName={isFocus ? undefined : selectedSubject?.name}
-          isRunning={isRunning}
-          isPaused={isPaused}
-          isStudying={isStudying}
-          shouldReduceMotion={shouldReduceMotion}
-          timerMode={timerMode}
-          onStartCountdownEdit={() => setIsEditingCountdown(true)}
-        />
-      </motion.div>
+              {/* Subject Dropdown Popover */}
+              {showDropdown && !isStudying && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setShowDropdown(false)} />
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-72 bg-[var(--surface)] backdrop-blur-xl border border-[var(--border-strong)] rounded-2xl p-2.5 shadow-card z-50 text-[var(--text)]">
+                    <div className="px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider text-[var(--text-dim)] border-b border-fg/[0.06] mb-1">
+                      Select subject
+                    </div>
+                    <div className="max-h-56 overflow-y-auto space-y-0.5">
+                      {activeSubjects.map((sub) => (
+                        <button
+                          key={sub.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedSubjectId(sub.id);
+                            setShowDropdown(false);
+                            setSubjectWarning(false);
+                          }}
+                          className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs sm:text-sm transition-colors cursor-pointer ${
+                            sub.id === selectedSubjectId
+                              ? 'bg-fg/[0.1] text-[var(--text)] font-medium'
+                              : 'text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-fg/[0.05]'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5 truncate">
+                            <span
+                              className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                              style={{ backgroundColor: sub.color || '#10B981' }}
+                            />
+                            <span className="truncate">{sub.name}</span>
+                          </div>
+                          <span className="text-[10px] font-mono text-[var(--text-dim)] ml-2 shrink-0">
+                            {Math.floor((sub.targetMinutesPerDay || 60) / 60)}h goal
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                    <div className="pt-2 mt-2 border-t border-fg/[0.06]">
+                      <button
+                        type="button"
+                        onClick={handleOpenSubjectManager}
+                        className="w-full flex items-center justify-center gap-2 py-1.5 rounded-lg text-xs font-medium text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-fg/[0.05] transition-colors cursor-pointer"
+                      >
+                        <FolderPlus className="w-3.5 h-3.5 text-[var(--text-dim)]" />
+                        <span>Manage subjects</span>
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </motion.div>
+      </div>
 
-      {/* 4. Primary Button Stack */}
-      <div className="w-full flex items-center justify-center mt-1 sm:mt-1.5 mb-2 sm:mb-2.5">
-        {isCountdownCompleted ? (
-          <div className="flex flex-col items-center gap-2 w-full max-w-[360px] animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center gap-2 w-full justify-center">
+      {/* 3. The Dial (flex-1 min-h-0 centers vertically and absorbs remaining height) */}
+      <div className="w-full flex-1 min-h-0 flex items-center justify-center my-auto py-1">
+        <motion.div
+          initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.25, delay: shouldReduceMotion ? 0 : 0.08, ease: 'easeOut' }}
+          className="w-full flex items-center justify-center"
+        >
+          <TimerDial
+            displayTime={displayTime}
+            ringPercent={ringPercent}
+            litCount={litCount}
+            statusText={statusText}
+            subjectName={isFocus ? undefined : selectedSubject?.name}
+            isRunning={isRunning}
+            isPaused={isPaused}
+            isStudying={isStudying}
+            shouldReduceMotion={shouldReduceMotion}
+            timerMode={timerMode}
+            onStartCountdownEdit={() => setIsEditingCountdown(true)}
+          />
+        </motion.div>
+      </div>
+
+      {/* Bottom Section: Primary Button Stack + Atmosphere/Focus + Today (shrink-0, pinned to bottom) */}
+      <div className="w-full flex flex-col items-center shrink-0 mt-auto pb-0.5 sm:pb-1">
+        {/* 4. Primary Button Stack */}
+        <div className="w-full flex items-center justify-center mt-1.5 mb-2.5">
+          {isCountdownCompleted ? (
+            <div className="flex flex-col items-center gap-2 w-full max-w-[360px] animate-in fade-in zoom-in-95 duration-200">
+              <div className="flex items-center gap-2.5 w-full justify-center">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setIsCountdownCompleted(false);
+                    setIsCountdownHalfwayNotified(false);
+                    try {
+                      localStorage.removeItem('studyio_timer_countdown_completed');
+                      localStorage.removeItem('studyio_timer_countdown_halfway_notified');
+                    } catch {}
+                    await handleStopAndSave(countdownTarget);
+                  }}
+                  disabled={isSaving || isRemoteTransitioning}
+                  className="flex-1 h-[52px] rounded-full font-bold text-sm text-[var(--accent-contrast)] bg-[var(--accent)] hover:brightness-105 active:scale-[0.98] transition-all duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shadow-lg shadow-[0_0_20px_var(--glow)]"
+                >
+                  {isSaving ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4 stroke-[2.5]" />
+                      <span>Save session</span>
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCountdownCompleted(false);
+                    setIsCountdownHalfwayNotified(false);
+                    try {
+                      localStorage.removeItem('studyio_timer_countdown_completed');
+                      localStorage.removeItem('studyio_timer_countdown_halfway_notified');
+                    } catch {}
+                    handleReset();
+                  }}
+                  disabled={isSaving || isRemoteTransitioning}
+                  className="w-12 h-[52px] rounded-full border border-fg/20 bg-fg/[0.04] hover:bg-fg/[0.08] text-[var(--text-dim)] hover:text-[var(--text)] active:scale-[0.98] transition-transform duration-120 flex items-center justify-center cursor-pointer shrink-0 disabled:opacity-50"
+                  title="Reset without saving"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                </button>
+              </div>
+              <p className="text-xs text-[var(--text-dim)] font-mono select-none">
+                Countdown complete ({formatSeconds(countdownTarget)}). Save to claim your RP &amp; XP!
+              </p>
+            </div>
+          ) : pomodoroCompletedPhase === 'work' ? (
+            <div className="flex items-center gap-2.5 w-full max-w-[360px] justify-center">
               <button
-                type="button"
                 onClick={async () => {
-                  setIsCountdownCompleted(false);
-                  setIsCountdownHalfwayNotified(false);
+                  setIsSaving(true);
                   try {
-                    localStorage.removeItem('studyio_timer_countdown_completed');
-                    localStorage.removeItem('studyio_timer_countdown_halfway_notified');
-                  } catch {}
-                  await handleStopAndSave(countdownTarget);
+                    await saveAndStartBreak();
+                  } finally {
+                    setIsSaving(false);
+                  }
                 }}
                 disabled={isSaving || isRemoteTransitioning}
-                className="flex-1 h-[44px] sm:h-[48px] rounded-full font-bold text-sm text-[var(--accent-contrast)] bg-[var(--accent)] hover:brightness-105 active:scale-[0.98] transition-all duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shadow-lg shadow-[0_0_20px_var(--glow)]"
+                className="flex-1 h-[52px] rounded-full font-medium text-sm text-[var(--accent-contrast)] bg-[var(--accent)] hover:brightness-105 active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shadow-sm"
               >
                 {isSaving ? (
                   <>
-                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    <div className="w-4 h-4 border-2 border-[var(--accent-contrast)] border-t-transparent rounded-full animate-spin" />
                     <span>Saving...</span>
                   </>
                 ) : (
                   <>
-                    <Check className="w-4 h-4 stroke-[2.5]" />
-                    <span>Save session</span>
+                    <Coffee className="w-4 h-4 fill-current" />
+                    <span>Save &amp; start break</span>
                   </>
                 )}
               </button>
               <button
-                type="button"
-                onClick={() => {
-                  setIsCountdownCompleted(false);
-                  setIsCountdownHalfwayNotified(false);
+                onClick={async () => {
+                  setIsSaving(true);
                   try {
-                    localStorage.removeItem('studyio_timer_countdown_completed');
-                    localStorage.removeItem('studyio_timer_countdown_halfway_notified');
-                  } catch {}
-                  handleReset();
+                    await skipPomodoroBreak();
+                  } finally {
+                    setIsSaving(false);
+                  }
                 }}
                 disabled={isSaving || isRemoteTransitioning}
-                className="w-11 sm:w-12 h-[44px] sm:h-[48px] rounded-full border border-fg/20 bg-fg/[0.04] hover:bg-fg/[0.08] text-[var(--text-dim)] hover:text-[var(--text)] active:scale-[0.98] transition-transform duration-120 flex items-center justify-center cursor-pointer shrink-0 disabled:opacity-50"
-                title="Reset without saving"
-              >
-                <RotateCcw className="w-4 h-4" />
-              </button>
-            </div>
-            <p className="text-xs text-[var(--text-dim)] font-mono select-none">
-              Countdown complete ({formatSeconds(countdownTarget)}). Save to claim your RP &amp; XP!
-            </p>
-          </div>
-        ) : pomodoroCompletedPhase === 'work' ? (
-          <div className="flex items-center gap-2 w-full max-w-[360px] justify-center">
-            <button
-              onClick={async () => {
-                setIsSaving(true);
-                try {
-                  await saveAndStartBreak();
-                } finally {
-                  setIsSaving(false);
-                }
-              }}
-              disabled={isSaving || isRemoteTransitioning}
-              className="flex-1 h-[44px] sm:h-[48px] rounded-full font-medium text-sm text-[var(--accent-contrast)] bg-[var(--accent)] hover:brightness-105 active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shadow-sm"
-            >
-              {isSaving ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-[var(--accent-contrast)] border-t-transparent rounded-full animate-spin" />
-                  <span>Saving...</span>
-                </>
-              ) : (
-                <>
-                  <Coffee className="w-4 h-4 fill-current" />
-                  <span>Save &amp; start break</span>
-                </>
-              )}
-            </button>
-            <button
-              onClick={async () => {
-                setIsSaving(true);
-                try {
-                  await skipPomodoroBreak();
-                } finally {
-                  setIsSaving(false);
-                }
-              }}
-              disabled={isSaving || isRemoteTransitioning}
-              className="px-4 sm:px-5 h-[44px] sm:h-[48px] rounded-full border border-fg/20 bg-fg/[0.04] hover:bg-fg/[0.08] text-[var(--text)] font-medium text-sm active:scale-[0.98] transition-transform duration-120 cursor-pointer disabled:opacity-50"
-            >
-              <span>Skip</span>
-            </button>
-          </div>
-        ) : timerMode === 'pomodoro' && pomodoroPhase === 'shortBreak' ? (
-          isPaused ? (
-            <div className="flex items-center gap-2 w-full max-w-[360px] justify-center">
-              <button
-                onClick={startPomodoroBreak}
-                disabled={isSaving || isRemoteTransitioning}
-                className="flex-1 h-[44px] sm:h-[48px] rounded-full font-medium text-sm text-[var(--accent-contrast)] bg-[var(--accent)] hover:brightness-105 active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shadow-sm"
-              >
-                <Play className="w-4 h-4 fill-current" />
-                <span>Start break</span>
-              </button>
-              <button
-                onClick={handleReset}
-                disabled={isSaving || isRemoteTransitioning}
-                className="px-4 sm:px-5 h-[44px] sm:h-[48px] rounded-full border border-fg/20 bg-fg/[0.04] hover:bg-fg/[0.08] text-[var(--text)] font-medium text-sm active:scale-[0.98] transition-transform duration-120 cursor-pointer disabled:opacity-50"
+                className="px-5 h-[52px] rounded-full border border-fg/20 bg-fg/[0.04] hover:bg-fg/[0.08] text-[var(--text)] font-medium text-sm active:scale-[0.98] transition-transform duration-120 cursor-pointer disabled:opacity-50"
               >
                 <span>Skip</span>
               </button>
             </div>
-          ) : (
-            <button
-              onClick={handleReset}
-              disabled={isSaving || isRemoteTransitioning}
-              className="w-full max-w-[360px] sm:w-[240px] h-[44px] sm:h-[48px] rounded-full border border-fg/20 bg-fg/[0.04] hover:bg-fg/[0.08] text-[var(--text)] font-medium text-sm active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-            >
-              <span>End break</span>
+          ) : timerMode === 'pomodoro' && pomodoroPhase === 'shortBreak' ? (
+            isPaused ? (
+              <div className="flex items-center gap-2.5 w-full max-w-[360px] justify-center">
+                <button
+                  onClick={startPomodoroBreak}
+                  disabled={isSaving || isRemoteTransitioning}
+                  className="flex-1 h-[52px] rounded-full font-medium text-sm text-[var(--accent-contrast)] bg-[var(--accent)] hover:brightness-105 active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shadow-sm"
+                >
+                  <Play className="w-4 h-4 fill-current" />
+                  <span>Start break</span>
+                </button>
+                <button
+                  onClick={handleReset}
+                  disabled={isSaving || isRemoteTransitioning}
+                  className="px-5 h-[52px] rounded-full border border-fg/20 bg-fg/[0.04] hover:bg-fg/[0.08] text-[var(--text)] font-medium text-sm active:scale-[0.98] transition-transform duration-120 cursor-pointer disabled:opacity-50"
+                >
+                  <span>Skip</span>
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={handleReset}
+                disabled={isSaving || isRemoteTransitioning}
+                className="w-full max-w-[360px] sm:w-[240px] h-[52px] rounded-full border border-fg/20 bg-fg/[0.04] hover:bg-fg/[0.08] text-[var(--text)] font-medium text-sm active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                <span>End break</span>
             </button>
           )
         ) : pomodoroCompletedPhase === 'break' ? (
@@ -1348,7 +1355,7 @@ export function StudyTimer() {
                 handleStartSession();
               }}
               disabled={isSaving || isRemoteTransitioning}
-              className="w-full max-w-[360px] sm:w-[240px] h-[44px] sm:h-[48px] rounded-full font-semibold text-sm text-[var(--accent-contrast)] bg-[var(--accent)] hover:brightness-105 active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shadow-sm"
+              className="w-full max-w-[360px] sm:w-[240px] h-[52px] rounded-full font-semibold text-sm text-[var(--accent-contrast)] bg-[var(--accent)] hover:brightness-105 active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shadow-sm"
             >
               <Flame className="w-4 h-4 fill-current" />
               <span>Start focus session</span>
@@ -1361,7 +1368,7 @@ export function StudyTimer() {
                 type="button"
                 onClick={handleStartSession}
                 disabled={isSaving || isRemoteTransitioning}
-                className="w-full max-w-[360px] sm:w-[240px] h-[44px] sm:h-[48px] rounded-full font-semibold text-sm text-[var(--accent-contrast)] bg-[var(--accent)] shadow-sm hover:brightness-105 active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                className="w-full max-w-[360px] sm:w-[240px] h-[52px] rounded-full font-semibold text-sm text-[var(--accent-contrast)] bg-[var(--accent)] shadow-sm hover:brightness-105 active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 <Play className="w-4 h-4 fill-current" />
                 <span>Start focus</span>
@@ -1376,7 +1383,7 @@ export function StudyTimer() {
                     setShowDropdown(true);
                   }
                 }}
-                className="w-full max-w-[360px] sm:w-[240px] h-[44px] sm:h-[48px] rounded-full font-medium text-sm bg-fg/[0.08] text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-fg/[0.12] border border-fg/[0.06] active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full max-w-[360px] sm:w-[240px] h-[52px] rounded-full font-medium text-sm bg-fg/[0.08] text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-fg/[0.12] border border-fg/[0.06] active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer"
                 title="Choose a subject to start"
               >
                 <span>Choose a subject to start</span>
@@ -1386,7 +1393,7 @@ export function StudyTimer() {
                 type="button"
                 onClick={handleStartSession}
                 disabled={isSaving || isRemoteTransitioning}
-                className="w-full max-w-[360px] sm:w-[240px] h-[44px] sm:h-[48px] rounded-full font-semibold text-sm text-[var(--accent-contrast)] bg-[var(--accent)] shadow-sm hover:brightness-105 active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                className="w-full max-w-[360px] sm:w-[240px] h-[52px] rounded-full font-semibold text-sm text-[var(--accent-contrast)] bg-[var(--accent)] shadow-sm hover:brightness-105 active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 <Play className="w-4 h-4 fill-current" />
                 <span>Start session</span>
@@ -1399,7 +1406,7 @@ export function StudyTimer() {
               type="button"
               onClick={handlePause}
               disabled={isSaving || isRemoteTransitioning}
-              className="flex-1 h-[44px] sm:h-[48px] rounded-full border border-fg/20 bg-fg/[0.04] hover:bg-fg/[0.08] text-[var(--text)] font-medium text-sm active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              className="flex-1 h-[52px] rounded-full border border-fg/20 bg-fg/[0.04] hover:bg-fg/[0.08] text-[var(--text)] font-medium text-sm active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
               <Pause className="w-4 h-4" />
               <span>Pause</span>
@@ -1408,7 +1415,7 @@ export function StudyTimer() {
               type="button"
               onClick={() => handleStopAndSave()}
               disabled={isSaving || isRemoteTransitioning}
-              className="flex-1 h-[44px] sm:h-[48px] rounded-full border border-rose-500/40 bg-rose-500/[0.06] hover:bg-rose-500/15 text-rose-300 font-medium text-sm active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              className="flex-1 h-[52px] rounded-full border border-rose-500/40 bg-rose-500/[0.06] hover:bg-rose-500/15 text-rose-300 font-medium text-sm active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
               {isSaving ? (
                 <>
@@ -1424,12 +1431,12 @@ export function StudyTimer() {
             </button>
           </div>
         ) : (
-          <div className="flex items-center gap-2 w-full max-w-[360px] justify-center">
+          <div className="flex items-center gap-2.5 w-full max-w-[360px] justify-center">
             <button
               type="button"
               onClick={handleResume}
               disabled={isSaving || isRemoteTransitioning}
-              className="flex-1 h-[44px] sm:h-[48px] rounded-full font-semibold text-sm text-[var(--accent-contrast)] bg-[var(--accent)] hover:brightness-105 active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shadow-sm"
+              className="flex-1 h-[52px] rounded-full font-semibold text-sm text-[var(--accent-contrast)] bg-[var(--accent)] hover:brightness-105 active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shadow-sm"
             >
               <Play className="w-4 h-4 fill-current" />
               <span>Resume</span>
@@ -1438,7 +1445,7 @@ export function StudyTimer() {
               type="button"
               onClick={() => handleStopAndSave()}
               disabled={isSaving || isRemoteTransitioning}
-              className="flex-1 h-[44px] sm:h-[48px] rounded-full border border-rose-500/40 bg-rose-500/[0.06] hover:bg-rose-500/15 text-rose-300 font-medium text-sm active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              className="flex-1 h-[52px] rounded-full border border-rose-500/40 bg-rose-500/[0.06] hover:bg-rose-500/15 text-rose-300 font-medium text-sm active:scale-[0.98] transition-transform duration-120 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
               {isSaving ? (
                 <>
@@ -1456,7 +1463,7 @@ export function StudyTimer() {
               type="button"
               onClick={handleReset}
               disabled={isSaving || isRemoteTransitioning}
-              className="w-11 sm:w-12 h-[44px] sm:h-[48px] rounded-full border border-fg/20 bg-fg/[0.04] hover:bg-fg/[0.08] text-[var(--text-dim)] hover:text-[var(--text)] active:scale-[0.98] transition-transform duration-120 flex items-center justify-center cursor-pointer shrink-0 disabled:opacity-50"
+              className="w-12 h-[52px] rounded-full border border-fg/20 bg-fg/[0.04] hover:bg-fg/[0.08] text-[var(--text-dim)] hover:text-[var(--text)] active:scale-[0.98] transition-transform duration-120 flex items-center justify-center cursor-pointer shrink-0 disabled:opacity-50"
               title="Reset timer"
             >
               <RotateCcw className="w-4 h-4" />
@@ -1466,13 +1473,13 @@ export function StudyTimer() {
       </div>
 
       {/* 5. Quiet Row of Ghost Buttons */}
-      <div className="flex items-center justify-center gap-2 mt-0.5 sm:mt-1 relative z-20">
+      <div className="flex items-center justify-center gap-2.5 mt-1.5 relative z-20">
         {/* Atmosphere Button */}
         <div className="relative">
           <button
             type="button"
             onClick={() => setIsAmbientMenuOpen(!isAmbientMenuOpen)}
-            className="inline-flex items-center gap-1.5 px-3 py-1 sm:py-1.5 rounded-full border border-fg/[0.08] bg-fg/[0.03] hover:bg-fg/[0.06] text-[var(--text-dim)] hover:text-[var(--text)] text-xs transition-colors cursor-pointer select-none"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-fg/[0.08] bg-fg/[0.03] hover:bg-fg/[0.06] text-[var(--text-dim)] hover:text-[var(--text)] text-xs transition-colors cursor-pointer select-none"
           >
             {isAmbientLoading ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin text-[var(--accent)]" />
@@ -1589,7 +1596,7 @@ export function StudyTimer() {
               setTimeout(lockLandscape, 100);
             }
           }}
-          className="inline-flex items-center gap-1.5 px-3 py-1 sm:py-1.5 rounded-full border border-fg/[0.08] bg-fg/[0.03] hover:bg-fg/[0.06] text-[var(--text-dim)] hover:text-[var(--text)] text-xs transition-colors cursor-pointer select-none"
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-fg/[0.08] bg-fg/[0.03] hover:bg-fg/[0.06] text-[var(--text-dim)] hover:text-[var(--text)] text-xs transition-colors cursor-pointer select-none"
           title="Fullscreen Focus Mode"
         >
           <Maximize2 className="w-3.5 h-3.5" />
@@ -1601,6 +1608,7 @@ export function StudyTimer() {
       <div className="mt-1.5 sm:mt-2 text-xs font-mono text-[var(--text-faint)] select-none">
         Today: {formatHoursAndMins(overviewTodaySeconds)}
       </div>
+    </div>
 
       {/* Countdown Editor Modal */}
       {isEditingCountdown && (
