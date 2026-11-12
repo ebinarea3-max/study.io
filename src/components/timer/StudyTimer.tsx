@@ -1091,12 +1091,12 @@ export function StudyTimer() {
         {studyModeLoading ? (
           <div className="relative mt-3.5 mb-1 z-30">
             <div
-              className="inline-flex items-center justify-between min-w-[220px] sm:min-w-[260px] max-w-[340px] h-[44px] sm:h-[48px] px-5 rounded-full border border-[var(--border)] bg-[var(--surface)] opacity-50 animate-pulse"
+              className="relative inline-flex items-center justify-center min-w-[220px] sm:min-w-[260px] max-w-[340px] h-[44px] sm:h-[48px] px-8 sm:px-10 rounded-full border border-[var(--border)] bg-[var(--surface)] opacity-50 animate-pulse"
               aria-hidden="true"
             >
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center justify-center gap-2.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-[var(--border-strong)]" />
-                <span className="w-28 h-3.5 rounded bg-[var(--border-strong)]" />
+                <span className="w-24 h-3.5 rounded bg-[var(--border-strong)]" />
               </div>
             </div>
           </div>
@@ -1112,13 +1112,13 @@ export function StudyTimer() {
                 }
               }}
               disabled={isStudying || isRemoteTransitioning}
-              className={`inline-flex items-center justify-between gap-3 min-w-[220px] sm:min-w-[260px] max-w-[340px] px-5 py-2.5 sm:py-3 rounded-full border bg-[var(--surface)] hover:bg-[var(--surface-2)] active:scale-[0.98] transition-all text-sm font-semibold cursor-pointer shadow-card ${
+              className={`relative inline-flex items-center justify-center min-w-[220px] sm:min-w-[260px] max-w-[340px] px-8 sm:px-10 py-2.5 sm:py-3 rounded-full border bg-[var(--surface)] hover:bg-[var(--surface-2)] active:scale-[0.98] transition-all text-sm font-semibold cursor-pointer shadow-card ${
                 subjectWarning
                   ? 'border-amber-500/60 ring-1 ring-amber-500/30'
                   : 'border-[var(--border)] hover:border-[var(--border-strong)]'
               } ${isStudying ? 'opacity-90 cursor-not-allowed' : ''}`}
             >
-              <div className="flex items-center gap-2.5 min-w-0 truncate">
+              <div className="flex items-center justify-center gap-2.5 min-w-0 max-w-full">
                 <span
                   className="w-2.5 h-2.5 rounded-full flex-shrink-0 shadow-[0_0_8px_rgba(255,255,255,0.2)]"
                   style={{
@@ -1138,7 +1138,7 @@ export function StudyTimer() {
                   </span>
                 )}
               </div>
-              <ChevronDown className={`w-4 h-4 text-[var(--text-dim)] flex-shrink-0 transition-transform duration-200 ${showDropdown ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`absolute right-4 sm:right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-dim)] flex-shrink-0 transition-transform duration-200 pointer-events-none ${showDropdown ? 'rotate-180' : ''}`} />
             </button>
 
             {/* Subject Dropdown Popover */}
