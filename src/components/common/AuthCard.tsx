@@ -32,10 +32,15 @@ export function AuthCard({ onSuccess, isModal = false }: AuthCardProps) {
         throw new Error('Supabase client not initialized');
       }
 
+      const redirectUrl =
+        typeof window !== 'undefined' && window.location.hostname === 'localhost'
+          ? `${window.location.origin}/auth/callback`
+          : 'https://studyio-web.vercel.app/auth/callback';
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
+          redirectTo: redirectUrl,
         },
       });
 

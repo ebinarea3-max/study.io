@@ -708,12 +708,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const supabase = getSupabase();
     if (supabase) {
       try {
+        const redirectUrl =
+          typeof window !== 'undefined' && window.location.hostname === 'localhost'
+            ? `${window.location.origin}/auth/callback`
+            : 'https://studyio-web.vercel.app/auth/callback';
+
         const { error } = await supabase.auth.signInWithOAuth({
           provider: 'google',
           options: {
-            redirectTo: typeof window !== 'undefined'
-              ? `${window.location.origin}/auth/callback?next=/dashboard`
-              : undefined,
+            redirectTo: redirectUrl,
           },
         });
         if (error) throw error;
