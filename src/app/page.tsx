@@ -200,7 +200,7 @@ export default function Home() {
   return (
     <div className={`w-full bg-[var(--bg)] bg-dot-grid text-[var(--text)] flex flex-col relative selection:bg-[var(--accent)]/30 selection:text-[var(--accent)] ${
       activeTab === "timer"
-        ? "h-[100dvh] overflow-hidden md:min-h-screen md:h-auto pb-28 md:pb-28"
+        ? "h-[100dvh] overflow-hidden pb-0"
         : activeTab === "rooms"
         ? "h-[100dvh] md:h-screen overflow-hidden pb-0 md:pb-0"
         : "min-h-screen pb-28 md:pb-28"
@@ -226,7 +226,7 @@ export default function Home() {
           activeTab === 'rooms'
             ? 'h-full min-h-0 overflow-hidden'
             : activeTab === 'timer'
-            ? 'h-full md:h-auto min-h-0'
+            ? 'h-full min-h-0 overflow-hidden'
             : ''
         }`}
         style={{ display: isFocusModeOpen ? 'none' : undefined }}
@@ -251,7 +251,7 @@ export default function Home() {
         {/* Main Content Area with Mobile Swipe Navigation */}
         <main className={`w-full flex flex-col items-center relative z-10 px-0 md:px-8 ${
           activeTab === "timer" 
-            ? "h-full md:min-h-screen pt-3.5 px-3 sm:px-4 md:px-0" 
+            ? "flex-1 h-[calc(100dvh-64px)] max-h-[calc(100dvh-64px)] overflow-hidden flex flex-col items-center justify-center pt-1 md:pt-2 px-3 sm:px-4 md:px-0" 
             : activeTab === "rooms"
             ? "flex-1 min-h-0 w-full overflow-hidden pt-0 px-0 h-full"
             : "min-h-screen pt-3.5 px-3 sm:px-4 md:px-0"

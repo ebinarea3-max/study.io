@@ -104,7 +104,7 @@ export const TimerDial = React.memo(function TimerDial({
   const strokeDashoffset = CIRCUMFERENCE - (safePercent / 100) * CIRCUMFERENCE;
 
   return (
-    <div className="relative flex items-center justify-center w-[min(420px,80vw)] h-[min(420px,80vw)] aspect-square mx-auto select-none my-2 sm:my-4">
+    <div className="relative flex items-center justify-center w-[min(320px,68vw,44vh)] h-[min(320px,68vw,44vh)] sm:w-[min(340px,70vw,46vh)] sm:h-[min(340px,70vw,46vh)] aspect-square mx-auto select-none my-1 sm:my-2">
       <style>{`
         @keyframes timerDotPulse {
           0%, 100% { opacity: 1; }
@@ -162,7 +162,7 @@ export const TimerDial = React.memo(function TimerDial({
         {/* Small subject name above (text-dim at 13px) */}
         {subjectName ? (
           <span
-            className="text-[13px] font-mono text-[var(--text-dim)] truncate max-w-[200px] mb-1 min-h-[16px] tracking-tight"
+            className="text-[12px] sm:text-[13px] font-mono text-[var(--text-dim)] truncate max-w-[180px] mb-0.5 min-h-[14px] tracking-tight"
             title={subjectName}
           >
             {subjectName}
@@ -170,7 +170,7 @@ export const TimerDial = React.memo(function TimerDial({
         ) : null}
 
         {/* Digits in display font with tabular numerals at about 22% of dial width */}
-        <div className="font-mono tabular-nums font-bold text-[var(--text)] text-5xl sm:text-6xl tracking-tight leading-none text-center select-none py-1">
+        <div className="font-mono tabular-nums font-bold text-[var(--text)] text-4xl sm:text-5xl tracking-tight leading-none text-center select-none py-0.5">
           {timerMode === 'countdown' && !isStudying ? (
             <button
               type="button"
@@ -186,7 +186,7 @@ export const TimerDial = React.memo(function TimerDial({
         </div>
 
         {/* Status Line in sentence case with small dot */}
-        <div className="flex items-center justify-center gap-1.5 mt-2">
+        <div className="flex items-center justify-center gap-1.5 mt-1 sm:mt-1.5">
           <span
             className={`w-1.5 h-1.5 rounded-full ${
               statusText === 'Completed'
