@@ -444,7 +444,6 @@ export function StudyTimer() {
       // Immediately update local Daily Overview and Analytics stats state
       addSession(newSession);
 
-      soundFx.playStopChime();
       const todayStart = getLocalStartOfDay(new Date());
       const todayEnd = getLocalEndOfDay(new Date());
       const allSessionsWithNew = [newSession, ...sessions.filter(s => s.id !== newSession.id)];
@@ -462,7 +461,6 @@ export function StudyTimer() {
           spread: 80,
           origin: { y: 0.5 },
         });
-        soundFx.playMilestoneBell();
       }
 
       // Free Fire RP Calculation & Post-Match Rank Settlement Trigger
@@ -729,8 +727,6 @@ export function StudyTimer() {
         localStorage.setItem('studyio_timer_countdown_halfway_notified', 'true');
       } catch {}
 
-      soundFx.playMilestoneBell();
-
       const remainingSeconds = Math.max(0, countdownTarget - elapsedSeconds);
       const remainingText = formatSeconds(remainingSeconds);
 
@@ -746,6 +742,7 @@ export function StudyTimer() {
           body: `50% of your countdown completed (${remainingText} remaining). Keep up the great focus!`,
           icon: iconUrl,
           tag: 'studyio-countdown-halfway',
+          silent: true,
         });
       }
     }
@@ -759,7 +756,6 @@ export function StudyTimer() {
         localStorage.setItem('studyio_timer_countdown_completed', 'true');
       } catch {}
       pauseTimer();
-      soundFx.playMilestoneBell();
       toast.success('Countdown completed! Click Save session to record your progress 🎉', { duration: 6000 });
       if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
         const iconUrl = typeof window !== 'undefined' ? `${window.location.origin}/icon-192.png` : '/icon-192.png';
@@ -767,6 +763,7 @@ export function StudyTimer() {
           body: 'Your timer is up! Click Save session to record your progress.',
           icon: iconUrl,
           tag: 'studyio-countdown-completed',
+          silent: true,
         });
       }
       confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 } });

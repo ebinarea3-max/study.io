@@ -50,116 +50,24 @@ class AudioEngine {
     }
   }
 
-  // Play start chime
+  // Play start chime (silenced per user request)
   public playStartChime() {
-    try {
-      const ctx = this.getContext();
-      const now = ctx.currentTime;
-      const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6 (Bright uplifting major arpeggio)
-      
-      notes.forEach((freq, idx) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, now + idx * 0.08);
-
-        gain.gain.setValueAtTime(0, now + idx * 0.08);
-        gain.gain.linearRampToValueAtTime(0.2, now + idx * 0.08 + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.6);
-
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-
-        osc.start(now + idx * 0.08);
-        osc.stop(now + idx * 0.08 + 0.7);
-      });
-    } catch {
-      // Audio not permitted yet or failed
-    }
+    // Silenced
   }
 
-  // Play stop / pause chime
+  // Play stop / pause chime (silenced per user request)
   public playStopChime() {
-    try {
-      const ctx = this.getContext();
-      const now = ctx.currentTime;
-      const notes = [783.99, 659.25, 523.25]; // G5, E5, C5 (Calm descending)
-      
-      notes.forEach((freq, idx) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(freq, now + idx * 0.1);
-
-        gain.gain.setValueAtTime(0, now + idx * 0.1);
-        gain.gain.linearRampToValueAtTime(0.18, now + idx * 0.1 + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.1 + 0.5);
-
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-
-        osc.start(now + idx * 0.1);
-        osc.stop(now + idx * 0.1 + 0.6);
-      });
-    } catch {
-      // Audio error fallback
-    }
+    // Silenced
   }
 
-  // Play bell / milestone chime
+  // Play bell / milestone chime (silenced per user request)
   public playMilestoneBell() {
-    try {
-      const ctx = this.getContext();
-      const now = ctx.currentTime;
-      const fundamental = 440; // A4 meditation bell
-      const harmonics = [1, 2.76, 5.4, 8.9];
+    // Silenced
+  }
 
-      harmonics.forEach((mult, idx) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(fundamental * mult, now);
-
-        const initialGain = 0.25 / (idx + 1);
-        gain.gain.setValueAtTime(0, now);
-        gain.gain.linearRampToValueAtTime(initialGain, now + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.5);
-
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-
-        osc.start(now);
-        osc.stop(now + 2.6);
-      });
-    } catch {
-      // ignore
-    }
-  }  // Play subtle rising chime for leaderboard podium reveal (low gain)
+  // Play subtle rising chime for leaderboard podium reveal (silenced per user request)
   public playPodiumReveal() {
-    try {
-      const ctx = this.getContext();
-      const now = ctx.currentTime;
-      const notes = [587.33, 739.99, 880.00, 1174.66]; // D5, F#5, A5, D6 (Crystal rising celestial shimmer)
-
-      notes.forEach((freq, idx) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, now + idx * 0.09);
-
-        gain.gain.setValueAtTime(0, now + idx * 0.09);
-        gain.gain.linearRampToValueAtTime(0.04, now + idx * 0.09 + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.09 + 0.6);
-
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-
-        osc.start(now + idx * 0.09);
-        osc.stop(now + idx * 0.09 + 0.65);
-      });
-    } catch {
-      // Audio not permitted or user hasn't interacted
-    }
+    // Silenced
   }
 
   // Play cheer reaction pop
@@ -994,23 +902,7 @@ class AudioEngine {
   }
 
   public playAlarm() {
-    try {
-      const ctx = this.getContext();
-      const now = ctx.currentTime;
-      for (let i = 0; i < 4; i++) {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'square';
-        osc.frequency.setValueAtTime(880, now + i * 0.25);
-        gain.gain.setValueAtTime(0, now + i * 0.25);
-        gain.gain.linearRampToValueAtTime(0.15, now + i * 0.25 + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.25 + 0.2);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(now + i * 0.25);
-        osc.stop(now + i * 0.25 + 0.22);
-      }
-    } catch {}
+    // Silenced per user request
   }
 }
 

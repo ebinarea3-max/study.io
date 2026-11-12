@@ -80,13 +80,6 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     }
   };
 
-  const testAudio = () => {
-    soundFx.playStartChime();
-    setTimeout(() => {
-      soundFx.playMilestoneBell();
-    }, 450);
-  };
-
   const targetEmail = (user.email || '').trim().toLowerCase();
   const canDelete = targetEmail.length > 0 && typedEmail.trim().toLowerCase() === targetEmail;
 
@@ -282,30 +275,6 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 </span>
               </div>
             </div>
-          </div>
-
-          {/* Section 2: Audio & Focus Synthesizer */}
-          <div className="p-4 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] shadow-sm flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div
-                className="w-9 h-9 rounded-xl bg-fg/[0.04] border border-[var(--border)] flex items-center justify-center flex-shrink-0"
-                style={{ color: theme.accent }}
-              >
-                <Volume2 className="w-4 h-4" />
-              </div>
-              <div>
-                <div className="text-xs font-hud font-bold tracking-wider text-[var(--text)] uppercase">Audio &amp; Focus Synthesizer</div>
-                <div className="text-[11px] text-[var(--text-dim)] font-mono">Zero-latency Web Audio soundscapes &amp; session bells</div>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={testAudio}
-              className="px-3.5 py-1.5 rounded-xl bg-fg/[0.06] hover:bg-fg/[0.12] border border-[var(--border)] text-xs font-hud font-bold tracking-wider text-[var(--text)] transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer shadow-sm flex-shrink-0"
-            >
-              <Sparkles className="w-3.5 h-3.5" style={{ color: theme.accent }} />
-              <span>TEST CHIMES</span>
-            </button>
           </div>
 
           {/* Section: Install App / Add to Home Screen */}

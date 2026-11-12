@@ -51,13 +51,6 @@ export function SettingsTabContent() {
     }
   };
 
-  const testAudio = () => {
-    soundFx.playStartChime();
-    setTimeout(() => {
-      soundFx.playMilestoneBell();
-    }, 450);
-  };
-
   const targetEmail = (user.email || '').trim().toLowerCase();
   const hasEmail = targetEmail.length > 0;
   const targetString = hasEmail ? targetEmail : 'delete';
@@ -163,36 +156,6 @@ export function SettingsTabContent() {
             <span>CLOUD SYNCHRONIZED</span>
           </span>
         </div>
-      </div>
-
-      {/* Audio Synthesizer */}
-      <div className="p-5 rounded-2xl hud-surface border border-[var(--border)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5">
-          <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 border border-[var(--border)] bg-[var(--accent-soft)]"
-            style={{
-              color: 'var(--accent)',
-            }}
-          >
-            <Volume2 className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="text-xs font-hud font-bold text-[var(--text)] tracking-wider uppercase">
-              AUDIO &amp; CHIME SYNTHESIZER
-            </div>
-            <div className="text-[11px] text-[var(--text-dim)] mt-0.5">
-              Zero-latency Web Audio focus frequencies and milestone alerts
-            </div>
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={testAudio}
-          className="px-4 py-2 rounded-xl bg-fg/[0.04] hover:bg-fg/[0.08] border border-[var(--border)] text-xs font-hud font-bold tracking-wider text-[var(--text)] transition-all active:scale-95 flex items-center gap-2 cursor-pointer shadow-sm self-start sm:self-auto"
-        >
-          <Sparkles className="w-3.5 h-3.5" style={{ color: 'var(--accent)' }} />
-          <span>TEST CHIMES</span>
-        </button>
       </div>
 
       {/* PWA / Device Installation */}

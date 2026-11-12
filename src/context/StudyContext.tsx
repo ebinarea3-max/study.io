@@ -38,15 +38,19 @@ import {
 export const showPushNotification = async (title: string, options?: NotificationOptions) => {
   if (typeof window === 'undefined' || !('Notification' in window)) return;
   if (Notification.permission === 'granted') {
+    const silentOptions: NotificationOptions = {
+      ...options,
+      silent: true,
+    };
     try {
       const reg = await navigator.serviceWorker.getRegistration();
       if (reg && reg.showNotification) {
-        reg.showNotification(title, options);
+        reg.showNotification(title, silentOptions);
       } else {
-        new Notification(title, options);
+        new Notification(title, silentOptions);
       }
     } catch (e) {
-      new Notification(title, options);
+      new Notification(title, silentOptions);
     }
   }
 };
@@ -1156,7 +1160,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
           toast('Time to drink water! 💧', { icon: '🚰', duration: 5000 });
           if (typeof document !== 'undefined' && document.hidden && 'Notification' in window && Notification.permission === 'granted') {
             const iconUrl = typeof window !== 'undefined' ? `${window.location.origin}/icon-192.png` : '/icon-192.png';
-            new Notification('Time to drink water! 💧', { body: 'Take a quick sip to stay hydrated.', icon: iconUrl });
+            new Notification('Time to drink water! 💧', { body: 'Take a quick sip to stay hydrated.', icon: iconUrl, silent: true });
           }
         }
 
@@ -1210,16 +1214,15 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     clientSessionIdRef.current = null;
               setIsPaused(true);
               setPomodoroCompletedPhase('work');
-              soundFx.playMilestoneBell();
               toast.success('Pomodoro session completed! Great focus! 🍅', { duration: 5000 });
               if (typeof document !== 'undefined' && document.hidden && 'Notification' in window && Notification.permission === 'granted') {
                 const iconUrl = typeof window !== 'undefined' ? `${window.location.origin}/icon-192.png` : '/icon-192.png';
-                new Notification('Pomodoro session completed! 🍅', { body: 'Great focus! Take a well-deserved break.', icon: iconUrl });
+                new Notification('Pomodoro session completed! 🍅', { body: 'Great focus! Take a well-deserved break.', icon: iconUrl, silent: true });
               }
               confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 } });
               return;
             } else {
-              // 2. Break reached 00:00: chime, freeze, and switch to work in PAUSED state
+              // 2. Break reached 00:00: freeze, and switch to work in PAUSED state
               if (timerIntervalRef.current) {
                 clearInterval(timerIntervalRef.current);
                 timerIntervalRef.current = null;
@@ -1231,11 +1234,10 @@ export function StudyProvider({ children }: { children: ReactNode }) {
               setPomodoroPhase('work');
               setIsStudying(false);
               setIsPaused(false);
-              soundFx.playMilestoneBell();
               toast.success('Break time is over! Ready to focus? 🚀', { duration: 5000 });
               if (typeof document !== 'undefined' && document.hidden && 'Notification' in window && Notification.permission === 'granted') {
                 const iconUrl = typeof window !== 'undefined' ? `${window.location.origin}/icon-192.png` : '/icon-192.png';
-                new Notification('Break time is over! 🚀', { body: 'Ready to focus? Let\'s get back to work.', icon: iconUrl });
+                new Notification('Break time is over! 🚀', { body: 'Ready to focus? Let\'s get back to work.', icon: iconUrl, silent: true });
               }
               confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } });
               syncActiveSessionToDb('stopped');
