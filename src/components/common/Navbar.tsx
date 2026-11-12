@@ -269,8 +269,8 @@ export function Navbar({
           <div className="flex items-center gap-2.5 cursor-pointer select-none group" onClick={() => setActiveTab('timer')}>
             <Logo className="w-7 h-7 transition-transform group-hover:scale-105" />
             <div className="flex flex-col justify-center">
-              <div className="text-sm sm:text-base font-hud font-extrabold tracking-wider text-[var(--text)] flex items-center gap-1.5 leading-none">
-                <span>STUDY.IO</span>
+              <div className="text-sm sm:text-base font-hud font-extrabold tracking-tight text-[var(--text)] flex items-center gap-1.5 leading-none lowercase">
+                <span>study.io</span>
               </div>
             </div>
           </div>
