@@ -12,6 +12,7 @@ import {
   Headphones,
   Radio,
   Music,
+  Loader2,
 } from 'lucide-react';
 import { useAtmosphere, AtmosphereOption, AtmosphereSoundId } from './useAtmosphere';
 
@@ -29,6 +30,8 @@ export function AtmospherePicker({
   const {
     ambientSound,
     ambientVolume,
+    isLoading: isAmbientLoading,
+    loadingSound: ambientLoadingSound,
     selectAtmosphere,
     setVolume,
     options,
@@ -158,6 +161,7 @@ export function AtmospherePicker({
         <div className="grid grid-cols-2 gap-2 mb-3.5 max-h-[320px] overflow-y-auto pr-0.5 scrollbar-thin">
           {options.map((opt: AtmosphereOption, index: number) => {
             const isSelected = ambientSound === opt.id;
+            const isOptionLoading = isAmbientLoading && (ambientLoadingSound === opt.id || (isSelected && !ambientLoadingSound));
 
             return (
               <button
@@ -180,9 +184,14 @@ export function AtmospherePicker({
                     <span className="text-xs font-semibold text-white truncate drop-shadow-sm">
                       {opt.label}
                     </span>
-                    {isSelected && (
+                    {isOptionLoading ? (
+                      <div className="flex items-center gap-1 text-[10px] font-mono text-[var(--tier-accent,#f59e0b)]">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
+                        <span className="hidden sm:inline">Loading</span>
+                      </div>
+                    ) : isSelected ? (
                       <Check className="w-3.5 h-3.5 text-[var(--tier-accent,#f59e0b)] shrink-0 stroke-[2.5]" />
-                    )}
+                    ) : null}
                   </div>
                   <p className="text-[10px] text-neutral-400 truncate mt-0.5 leading-snug">
                     {opt.description}

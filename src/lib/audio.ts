@@ -189,23 +189,70 @@ class AudioEngine {
 
   // Ambient sound synthesizer: Rain, Fireplace, WhiteNoise, PinkNoise, BrownNoise, CalmMusic
   private audioBuffers = new Map<string, AudioBuffer>();
+  private isAmbientLoading: boolean = false;
+  private loadingAmbientType: AmbientSoundType | null = null;
+  private ambientLoadingListeners = new Set<(isLoading: boolean, type: AmbientSoundType | null) => void>();
+  private ambientAbortController: AbortController | null = null;
 
-  private async getAmbientBuffer(ctx: AudioContext, url: string, type?: AmbientSoundType): Promise<AudioBuffer> {
+  public onAmbientLoadingChange(fn: (isLoading: boolean, type: AmbientSoundType | null) => void): () => void {
+    this.ambientLoadingListeners.add(fn);
+    fn(this.isAmbientLoading, this.loadingAmbientType);
+    return () => {
+      this.ambientLoadingListeners.delete(fn);
+    };
+  }
+
+  public getAmbientLoadingState(): { isLoading: boolean; type: AmbientSoundType | null } {
+    return {
+      isLoading: this.isAmbientLoading,
+      type: this.loadingAmbientType,
+    };
+  }
+
+  private notifyAmbientLoading(isLoading: boolean, type: AmbientSoundType | null) {
+    this.isAmbientLoading = isLoading;
+    this.loadingAmbientType = type;
+    this.ambientLoadingListeners.forEach((fn) => {
+      try {
+        fn(isLoading, type);
+      } catch (err) {
+        console.error(err);
+      }
+    });
+  }
+
+  private async getAmbientBuffer(ctx: AudioContext, url: string, signal?: AbortSignal): Promise<AudioBuffer> {
     if (this.audioBuffers.has(url)) {
       return this.audioBuffers.get(url)!;
     }
     try {
-      const response = await fetch(url);
+      const response = await fetch(url, { signal });
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       const arrayBuffer = await response.arrayBuffer();
       const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
       this.audioBuffers.set(url, audioBuffer);
       return audioBuffer;
-    } catch (err) {
-      if (url.endsWith('.wav')) {
+    } catch (err: any) {
+      if (signal?.aborted || err?.name === 'AbortError') {
+        throw err;
+      }
+      if (url.endsWith('.mp3')) {
+        const wavUrl = url.replace('.mp3', '.wav');
+        try {
+          const wavResp = await fetch(wavUrl, { signal });
+          if (wavResp.ok) {
+            const buf = await wavResp.arrayBuffer();
+            const audioBuffer = await ctx.decodeAudioData(buf);
+            this.audioBuffers.set(url, audioBuffer);
+            return audioBuffer;
+          }
+        } catch {
+          // ignore
+        }
+      } else if (url.endsWith('.wav')) {
         const mp3Url = url.replace('.wav', '.mp3');
         try {
-          const mp3Resp = await fetch(mp3Url);
+          const mp3Resp = await fetch(mp3Url, { signal });
           if (mp3Resp.ok) {
             const buf = await mp3Resp.arrayBuffer();
             const audioBuffer = await ctx.decodeAudioData(buf);
@@ -256,33 +303,60 @@ class AudioEngine {
       this.pausedAmbientType = null;
       this.currentAmbientVolume = volume;
 
-      const masterGain = ctx.createGain();
-      masterGain.gain.setValueAtTime(0.001, ctx.currentTime);
-      
-      const compFactor = this.volumeCompensation[effectiveType] || 1.0;
-      masterGain.gain.linearRampToValueAtTime(volume * compFactor, ctx.currentTime + 1.2);
-      
-      masterGain.connect(ctx.destination);
-      this.ambientGain = masterGain;
-
-      // Studio-mastered seamless 16-bit 44.1kHz audio files (with automatic fallback to 320k MP3)
+      // Studio-mastered seamless audio files (prefer MP3 for 4x faster load, fallback to WAV)
       const urls: Record<string, string> = {
-        'rain': '/audio/ambience/rain.wav',
-        'campfire': '/audio/ambience/fireplace.wav',
-        'whitenoise': '/audio/ambience/white-noise.wav',
-        'pinknoise': '/audio/ambience/pink-noise.wav',
-        'brownnoise': '/audio/ambience/brown-noise.wav',
-        'calmnoise': '/audio/ambience/calm-noise.wav',
-        'waves': '/audio/ambience/calm-noise.wav',
-        'lofi': '/audio/ambience/calm-noise.wav',
+        'rain': '/audio/ambience/rain.mp3',
+        'campfire': '/audio/ambience/fireplace.mp3',
+        'whitenoise': '/audio/ambience/white-noise.mp3',
+        'pinknoise': '/audio/ambience/pink-noise.mp3',
+        'brownnoise': '/audio/ambience/brown-noise.mp3',
+        'calmnoise': '/audio/ambience/calm-noise.mp3',
+        'waves': '/audio/ambience/calm-noise.mp3',
+        'lofi': '/audio/ambience/calm-noise.mp3',
       };
       
       const url = urls[effectiveType];
       if (url) {
-        const buffer = await this.getAmbientBuffer(ctx, url, effectiveType);
+        if (this.ambientAbortController) {
+          this.ambientAbortController.abort();
+        }
+        const controller = new AbortController();
+        this.ambientAbortController = controller;
+
+        const isCached = this.audioBuffers.has(url);
+        if (!isCached) {
+          this.notifyAmbientLoading(true, effectiveType);
+        }
+
+        let buffer: AudioBuffer;
+        try {
+          buffer = await this.getAmbientBuffer(ctx, url, controller.signal);
+        } catch (fetchErr: any) {
+          if (controller.signal.aborted || fetchErr?.name === 'AbortError') {
+            return;
+          }
+          throw fetchErr;
+        } finally {
+          if (this.currentAmbientType === effectiveType) {
+            this.notifyAmbientLoading(false, null);
+          }
+        }
+
+        // Verify user hasn't switched to another noise or stopped while this was downloading
+        if (this.currentAmbientType !== effectiveType) {
+          return;
+        }
+
+        const masterGain = ctx.createGain();
+        masterGain.gain.setValueAtTime(0.001, ctx.currentTime);
         
+        const compFactor = this.volumeCompensation[effectiveType] || 1.0;
+        masterGain.gain.linearRampToValueAtTime(volume * compFactor, ctx.currentTime + 1.2);
+        
+        masterGain.connect(ctx.destination);
+        this.ambientGain = masterGain;
+
         // Single pristine looping source node with mathematically seamless crossfaded loop points
-        // Eliminates phase flanging, comb-filtering whooshes, and periodic pulsation
         const source1 = ctx.createBufferSource();
         source1.buffer = buffer;
         source1.loop = true;
@@ -295,6 +369,7 @@ class AudioEngine {
         this.ambientSource = source1; // Reference for stopping
       }
     } catch (e) {
+      this.notifyAmbientLoading(false, null);
       console.error("Audio Engine Error in startAmbient:", e);
     }
   }
@@ -337,6 +412,12 @@ class AudioEngine {
     this.isAmbientPaused = true;
     this.pausedAmbientType = this.currentAmbientType;
     this.pausedAmbientVolume = this.currentAmbientVolume;
+
+    if (this.ambientAbortController) {
+      this.ambientAbortController.abort();
+      this.ambientAbortController = null;
+    }
+    this.notifyAmbientLoading(false, null);
 
     if (this.ambientGain && this.ctx) {
       try {
@@ -868,6 +949,12 @@ class AudioEngine {
   public stopAmbient() {
     this.isAmbientPaused = false;
     this.pausedAmbientType = null;
+    if (this.ambientAbortController) {
+      this.ambientAbortController.abort();
+      this.ambientAbortController = null;
+    }
+    this.notifyAmbientLoading(false, null);
+
     if (this.ambientGain && this.ctx) {
       try {
         this.ambientGain.gain.cancelScheduledValues(this.ctx.currentTime);

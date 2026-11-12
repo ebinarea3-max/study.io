@@ -40,6 +40,7 @@ import {
   Headphones,
   Wind,
   ChevronUp,
+  Loader2,
 Settings } from 'lucide-react';
 import { soundFx, AmbientSoundType } from '../../lib/audio';
 import { useAtmosphere } from '../focus/useAtmosphere';
@@ -128,9 +129,12 @@ export function StudyTimer() {
   const {
     ambientSound,
     ambientVolume,
+    isLoading: isAmbientLoading,
+    loadingSound: ambientLoadingSound,
     selectAtmosphere,
     setVolume: setAmbientVolume,
     activeOption: activeAtmosphereOption,
+    options: atmosphereOptions,
   } = useAtmosphere();
   const [isAmbientMenuOpen, setIsAmbientMenuOpen] = useState(false);
   const [customCountdownInput, setCustomCountdownInput] = useState("");
@@ -1473,12 +1477,22 @@ export function StudyTimer() {
             onClick={() => setIsAmbientMenuOpen(!isAmbientMenuOpen)}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-fg/[0.08] bg-fg/[0.03] hover:bg-fg/[0.06] text-[var(--text-dim)] hover:text-[var(--text)] text-xs transition-colors cursor-pointer select-none"
           >
-            <Music className={`w-3.5 h-3.5 ${ambientSound !== 'none' ? 'text-[var(--text)]' : 'text-[var(--text-dim)]'}`} />
+            {isAmbientLoading ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-[var(--accent)]" />
+            ) : (
+              <Music className={`w-3.5 h-3.5 ${ambientSound !== 'none' ? 'text-[var(--text)]' : 'text-[var(--text-dim)]'}`} />
+            )}
             <span>
-              Atmosphere: {ambientLabel}
-              {isPaused && ambientSound !== 'none' ? ' (Paused)' : ''}
+              {isAmbientLoading ? (
+                <>Loading {ambientLoadingSound ? (atmosphereOptions?.find(o => o.id === ambientLoadingSound)?.label || ambientLoadingSound) : ambientLabel}...</>
+              ) : (
+                <>
+                  Atmosphere: {ambientLabel}
+                  {isPaused && ambientSound !== 'none' ? ' (Paused)' : ''}
+                </>
+              )}
             </span>
-            {ambientSound !== 'none' && (
+            {ambientSound !== 'none' && !isAmbientLoading && (
               <span
                 className={`w-1.5 h-1.5 rounded-full ml-0.5 ${
                   isPaused ? 'bg-amber-400' : 'bg-[var(--text)] animate-pulse'
@@ -1500,29 +1514,43 @@ export function StudyTimer() {
                     { id: 'brownnoise', label: 'Brown Noise', icon: <Headphones className="w-4 h-4" /> },
                     { id: 'pinknoise', label: 'Pink Noise', icon: <Radio className="w-4 h-4" /> },
                     { id: 'whitenoise', label: 'White Noise', icon: <Radio className="w-4 h-4" /> },
-                  ].map((option) => (
-                    <button
-                      key={option.id}
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleAmbientChange(option.id as any);
-                        setTimeout(() => setIsAmbientMenuOpen(false), 50);
-                      }}
-                      className={`flex items-center justify-between rounded-xl px-3 py-2 text-xs transition-colors cursor-pointer ${
-                        ambientSound === option.id
-                          ? 'bg-fg/[0.1] text-[var(--text)] font-medium'
-                          : 'text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-fg/[0.05]'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        {option.icon}
-                        <span>{option.label}</span>
-                      </div>
-                      {ambientSound === option.id && <Check className="w-3.5 h-3.5 text-[var(--text)]" />}
-                    </button>
-                  ))}
+                  ].map((option) => {
+                    const isSelected = ambientSound === option.id;
+                    const isOptionLoading = isAmbientLoading && (ambientLoadingSound === option.id || (isSelected && !ambientLoadingSound));
+
+                    return (
+                      <button
+                        key={option.id}
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleAmbientChange(option.id as any);
+                        }}
+                        className={`flex items-center justify-between rounded-xl px-3 py-2 text-xs transition-colors cursor-pointer ${
+                          isSelected
+                            ? 'bg-fg/[0.1] text-[var(--text)] font-medium'
+                            : 'text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-fg/[0.05]'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          {option.icon}
+                          <span>{option.label}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          {isOptionLoading && (
+                            <div className="flex items-center gap-1 text-[11px] font-mono text-[var(--accent)]">
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              <span className="text-[10px]">Loading...</span>
+                            </div>
+                          )}
+                          {isSelected && !isOptionLoading && (
+                            <Check className="w-3.5 h-3.5 text-[var(--text)]" />
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
 
                 {ambientSound !== 'none' && (

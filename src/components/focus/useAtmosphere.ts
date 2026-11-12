@@ -91,6 +91,28 @@ function getServerVolumeSnapshot(): number {
   return DEFAULT_VOLUME;
 }
 
+function subscribeLoading(callback: () => void) {
+  return soundFx.onAmbientLoadingChange(() => {
+    callback();
+  });
+}
+
+function getIsLoadingSnapshot(): boolean {
+  return soundFx.getAmbientLoadingState().isLoading;
+}
+
+function getServerIsLoadingSnapshot(): boolean {
+  return false;
+}
+
+function getLoadingTypeSnapshot(): AmbientSoundType | null {
+  return soundFx.getAmbientLoadingState().type;
+}
+
+function getServerLoadingTypeSnapshot(): null {
+  return null;
+}
+
 export function useAtmosphere() {
   const currentSound = useSyncExternalStore(
     subscribeStorage,
@@ -102,6 +124,18 @@ export function useAtmosphere() {
     subscribeStorage,
     getVolumeSnapshot,
     getServerVolumeSnapshot
+  );
+
+  const isLoading = useSyncExternalStore(
+    subscribeLoading,
+    getIsLoadingSnapshot,
+    getServerIsLoadingSnapshot
+  );
+
+  const loadingSound = useSyncExternalStore(
+    subscribeLoading,
+    getLoadingTypeSnapshot,
+    getServerLoadingTypeSnapshot
   );
 
   const selectAtmosphere = useCallback((type: AtmosphereSoundId) => {
@@ -134,6 +168,8 @@ export function useAtmosphere() {
   return {
     ambientSound: currentSound,
     ambientVolume: currentVolume,
+    isLoading,
+    loadingSound,
     selectAtmosphere,
     setVolume,
     options: ATMOSPHERE_OPTIONS,

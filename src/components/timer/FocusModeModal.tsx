@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useStudy } from '../../context/StudyContext';
 import { formatSeconds } from '../../lib/utils';
-import { Minimize2, Sliders, Crown, Music, Play, Pause } from 'lucide-react';
+import { Minimize2, Sliders, Crown, Music, Play, Pause, Loader2 } from 'lucide-react';
 import { FocusSceneLayer } from '../focus/FocusSceneLayer';
 import { useFocusScene } from '../focus/useFocusScene';
 import { ScenePicker, ScenePreviewPill } from '../focus/ScenePicker';
@@ -93,7 +93,7 @@ export function FocusModeModal() {
   } = useFocusScene();
 
   // Atmosphere ambient audio hook
-  const { ambientSound, activeOption: activeAtmosphereOption } = useAtmosphere();
+  const { ambientSound, activeOption: activeAtmosphereOption, isLoading: isAtmosphereLoading, loadingSound: atmosphereLoadingSound } = useAtmosphere();
 
   // Auto-hide UI when mouse is idle (keep visible while picker or atmosphere is open)
   // Debounced with requestAnimationFrame to eliminate all mousemove main-thread jank
@@ -415,9 +415,13 @@ export function FocusModeModal() {
             }`}
             title="Atmosphere soundscapes"
           >
-            <Music className={`w-3.5 h-3.5 ${ambientSound !== 'none' ? 'text-amber-400' : 'text-white/80'}`} />
-            <span>Atmosphere</span>
-            {ambientSound !== 'none' ? (
+            {isAtmosphereLoading ? (
+              <Loader2 className="w-3.5 h-3.5 text-amber-400 animate-spin" />
+            ) : (
+              <Music className={`w-3.5 h-3.5 ${ambientSound !== 'none' ? 'text-amber-400' : 'text-white/80'}`} />
+            )}
+            <span>{isAtmosphereLoading ? 'Loading Atmosphere...' : 'Atmosphere'}</span>
+            {ambientSound !== 'none' && !isAtmosphereLoading ? (
               <span className="flex items-center gap-1">
                 <span className="font-mono text-[11px] text-white/80 max-w-[95px] truncate hidden sm:inline">
                   {activeAtmosphereOption?.label} {isPaused ? '(Paused)' : ''}
