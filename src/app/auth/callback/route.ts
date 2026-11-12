@@ -3,6 +3,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
 const BASE_URL = 'https://studyio-web.vercel.app';
+const DASHBOARD_URL = 'https://studyio-web.vercel.app/dashboard';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -10,7 +11,7 @@ export async function GET(request: Request) {
 
   if (code) {
     const cookieStore = await cookies();
-    const response = NextResponse.redirect(new URL('/dashboard', BASE_URL));
+    const response = NextResponse.redirect(new URL(DASHBOARD_URL));
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseKey =
@@ -41,6 +42,6 @@ export async function GET(request: Request) {
     }
   }
 
-  // Final redirect explicitly pointing to the dashboard using hardcoded base URL
-  return NextResponse.redirect(new URL('/dashboard', BASE_URL));
+  // Final redirect explicitly pointing to the dashboard route (never root /)
+  return NextResponse.redirect(new URL(DASHBOARD_URL));
 }

@@ -48,21 +48,35 @@ export default function Home() {
     }
   }, []);
 
-  // Supabase session check: if user has an active session, automatically redirect to /dashboard
+  // Supabase session and auth state change listener: automatically redirect to /dashboard
   useEffect(() => {
-    if (!isLoading && isAuthenticated && pathname !== '/dashboard') {
+    if (!isLoading && isAuthenticated && !pathname.startsWith('/dashboard')) {
       router.push('/dashboard');
       return;
     }
 
     const supabase = getSupabase();
-    if (supabase) {
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        if (session && pathname !== '/dashboard') {
-          router.push('/dashboard');
-        }
-      });
-    }
+    if (!supabase) return;
+
+    // Check existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session && !pathname.startsWith('/dashboard')) {
+        router.push('/dashboard');
+      }
+    });
+
+    // Listen for auth state changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if ((event === 'SIGNED_IN' || session) && !pathname.startsWith('/dashboard')) {
+        router.push('/dashboard');
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [isAuthenticated, isLoading, pathname, router]);
 
   const {
