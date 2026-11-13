@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import { Capacitor } from '@capacitor/core';
 import { useAuth } from '../context/AuthContext';
 import { getSupabase } from '../lib/supabase';
 import { useStudy } from '../context/StudyContext';
@@ -38,15 +39,31 @@ export default function Home() {
   const pathname = usePathname();
   const { isAuthenticated, isLoading, user } = useAuth();
   const { needsOnboarding } = useStudyMode();
-  const [isNativeApp, setIsNativeApp] = useState(false);
+  const [isNativeApp, setIsNativeApp] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return (
+        Capacitor.isNativePlatform() ||
+        Boolean((window as any).Capacitor?.isNativePlatform?.()) ||
+        Boolean(navigator?.userAgent && (
+          navigator.userAgent.includes('StudyIoNativeApp') ||
+          /StudyIoNativeApp/i.test(navigator.userAgent)
+        ))
+      );
+    }
+    return false;
+  });
   useRankTheme(); // Hydrate CSS custom properties globally for current session
 
-  // Detect Capacitor native app user agent
+  // Detect Capacitor native app user agent or runtime
   useEffect(() => {
-    if (typeof navigator !== 'undefined' && navigator.userAgent) {
+    if (typeof window !== 'undefined') {
       setIsNativeApp(
-        navigator.userAgent.includes('StudyIoNativeApp') ||
-        /StudyIoNativeApp/i.test(navigator.userAgent)
+        Capacitor.isNativePlatform() ||
+        Boolean((window as any).Capacitor?.isNativePlatform?.()) ||
+        Boolean(navigator?.userAgent && (
+          navigator.userAgent.includes('StudyIoNativeApp') ||
+          /StudyIoNativeApp/i.test(navigator.userAgent)
+        ))
       );
     }
   }, []);

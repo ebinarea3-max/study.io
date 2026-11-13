@@ -40,23 +40,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Deep-link listener for Capacitor return trip
-  useEffect(() => {
-    let handle: { remove: () => Promise<void> } | undefined;
-
-    CapacitorApp.addListener('appUrlOpen', (event) => {
-      window.location.href = event.url;
-    }).then((h) => {
-      handle = h;
-    }).catch((err) => {
-      console.warn('Capacitor appUrlOpen listener error:', err);
-    });
-
-    return () => {
-      handle?.remove();
-    };
-  }, []);
-
   // Helper to persist to localStorage
   const saveUser = useCallback((newUser: UserProfile) => {
     setUser(newUser);
@@ -272,6 +255,109 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // fallback
     }
   }, []);
+
+  // Deep-link listener for Capacitor return trip: intercept com.studyio.app://auth?code=...
+  useEffect(() => {
+    let handle: { remove: () => Promise<void> } | undefined;
+
+    CapacitorApp.addListener('appUrlOpen', async (event) => {
+      try {
+        const rawUrl = event.url || '';
+        console.log('[Capacitor] appUrlOpen intercepted deep link:', rawUrl);
+        let code: string | null = null;
+
+        // 1. Extract code parameter from custom scheme or https URL
+        try {
+          const normalized = rawUrl.replace(/^[a-zA-Z0-9+.-]+:\/\//, 'https://native.app/');
+          const parsed = new URL(normalized);
+          code = parsed.searchParams.get('code');
+          if (!code && parsed.hash) {
+            const hashParams = new URLSearchParams(parsed.hash.replace(/^#/, ''));
+            code = hashParams.get('code');
+          }
+        } catch {
+          const match = rawUrl.match(/[?&#]code=([^&#]+)/);
+          if (match) {
+            code = decodeURIComponent(match[1]);
+          }
+        }
+
+        // 2. Exchange code for session on the client
+        if (code) {
+          setIsLoading(true);
+          const supabase = getSupabase();
+          if (supabase) {
+            const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+            if (error) {
+              console.error('[Capacitor] Client exchangeCodeForSession error:', error.message);
+              setIsLoading(false);
+              return;
+            }
+
+            if (data?.session?.user) {
+              setIsAuthenticated(true);
+              try {
+                localStorage.setItem('studypulse_is_authenticated', 'true');
+              } catch {}
+              await syncSupabaseProfile(supabase, data.session.user);
+              setIsLoading(false);
+              // Navigate directly to the authenticated Timer UI and bypass mobile download screen
+              window.location.replace('/dashboard');
+              return;
+            }
+          }
+          setIsLoading(false);
+          return;
+        }
+
+        // 3. Fallback: Check if access_token and refresh_token are present in hash
+        const accessMatch = rawUrl.match(/[?&#]access_token=([^&#]+)/);
+        const refreshMatch = rawUrl.match(/[?&#]refresh_token=([^&#]+)/);
+        if (accessMatch && refreshMatch) {
+          const accessToken = decodeURIComponent(accessMatch[1]);
+          const refreshToken = decodeURIComponent(refreshMatch[1]);
+          const supabase = getSupabase();
+          if (supabase) {
+            setIsLoading(true);
+            const { data, error } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken,
+            });
+            if (!error && data?.session?.user) {
+              setIsAuthenticated(true);
+              try {
+                localStorage.setItem('studypulse_is_authenticated', 'true');
+              } catch {}
+              await syncSupabaseProfile(supabase, data.session.user);
+              setIsLoading(false);
+              window.location.replace('/dashboard');
+              return;
+            }
+            setIsLoading(false);
+          }
+          return;
+        }
+
+        // Standard web navigation fallback if a http(s) URL was opened
+        if (rawUrl.startsWith('https://') || rawUrl.startsWith('http://')) {
+          window.location.href = rawUrl;
+        }
+      } catch (err) {
+        console.error('[Capacitor] appUrlOpen processing error:', err);
+        setIsLoading(false);
+      }
+    })
+      .then((h) => {
+        handle = h;
+      })
+      .catch((err) => {
+        console.warn('Capacitor appUrlOpen listener error:', err);
+      });
+
+    return () => {
+      handle?.remove();
+    };
+  }, [syncSupabaseProfile]);
 
   const hasFetchedProfileRef = useRef<string | null>(null);
 

@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { getMobileOAuthBounceHtml } from './lib/mobileOAuthBounce';
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -32,6 +33,29 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect('https://studyio-web.vercel.app/dashboard');
     }
     return NextResponse.next();
+  }
+
+  // Intercept any OAuth redirect with code/tokens arriving at mobile browser outside native app
+  // Immediately bounce user back to Capacitor native app without consuming PKCE code or hitting download block
+  const code = request.nextUrl.searchParams.get('code');
+  const hasAuthTokens = Boolean(
+    code ||
+    request.nextUrl.searchParams.has('access_token') ||
+    request.nextUrl.searchParams.has('refresh_token')
+  );
+
+  if (hasAuthTokens && isMobile && !isNativeApp) {
+    const deepLinkUrl = code
+      ? `com.studyio.app://auth?code=${encodeURIComponent(code)}`
+      : `com.studyio.app://auth${request.nextUrl.search}`;
+
+    return new NextResponse(getMobileOAuthBounceHtml(deepLinkUrl), {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+      },
+    });
   }
 
   // 3. Mobile web restriction check:

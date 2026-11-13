@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { Capacitor } from '@capacitor/core';
 import { getSupabase } from '@/lib/supabase';
 import {
   Download,
@@ -85,19 +86,34 @@ export default function MobileRestrictedPage() {
   const router = useRouter();
   const [isDownloading, setIsDownloading] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [isNativeApp, setIsNativeApp] = useState(false);
+  const [isNativeApp, setIsNativeApp] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return (
+        Capacitor.isNativePlatform() ||
+        Boolean((window as any).Capacitor?.isNativePlatform?.()) ||
+        Boolean(navigator?.userAgent && (
+          navigator.userAgent.includes('StudyIoNativeApp') ||
+          /StudyIoNativeApp/i.test(navigator.userAgent)
+        ))
+      );
+    }
+    return false;
+  });
 
-  // Check user agent for Capacitor native app identifier
+  // Check user agent and Capacitor runtime for native app identifier
   useEffect(() => {
-    if (typeof navigator !== 'undefined' && navigator.userAgent) {
-      const isNative =
+    const isNative =
+      Capacitor.isNativePlatform() ||
+      Boolean((window as any).Capacitor?.isNativePlatform?.()) ||
+      Boolean(navigator?.userAgent && (
         navigator.userAgent.includes('StudyIoNativeApp') ||
-        /StudyIoNativeApp/i.test(navigator.userAgent);
-      setIsNativeApp(isNative);
-      if (isNative) {
-        // Native app MUST bypass the mobile block and immediately redirect to main application interface
-        router.replace('/dashboard');
-      }
+        /StudyIoNativeApp/i.test(navigator.userAgent)
+      ));
+    
+    setIsNativeApp(isNative);
+    if (isNative) {
+      // Native app MUST bypass the mobile block and immediately redirect to main application interface
+      router.replace('/dashboard');
     }
   }, [router]);
 
@@ -107,7 +123,7 @@ export default function MobileRestrictedPage() {
     if (supabase) {
       supabase.auth.getSession().then(({ data: { session } }) => {
         if (session) {
-          router.push('/dashboard');
+          router.replace('/dashboard');
         }
       });
     }
