@@ -1,132 +1,112 @@
 'use client';
 
 import React from 'react';
-import {
-  Timer,
-  Trophy,
-  CheckSquare,
-  BarChart3,
-  Sparkles,
-} from 'lucide-react';
-import { AuthCard } from './AuthCard';
 import { Logo } from '../Logo';
+import { AuthCard } from './AuthCard';
 
 export function IntroductionAndLogin() {
   return (
-    <div className="min-h-screen bg-[var(--bg)] text-slate-100 flex flex-col justify-between relative overflow-hidden selection:bg-emerald-500/30 selection:text-emerald-200">
-      {/* Subtle Developer-grade Dot Grid Overlay */}
-      <div className="fixed inset-0 pointer-events-none bg-dot-grid z-0" />
+    <div className="h-[100dvh] max-h-[100dvh] w-full overflow-hidden flex flex-col justify-between select-none bg-[#08090c] text-white relative">
+      {/* Subtle Dot-Matrix Background Texture */}
+      <div className="fixed inset-0 pointer-events-none bg-dot-grid opacity-20 z-0" />
 
-      {/* Background ambient lighting */}
-      <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-emerald-500/10 rounded-full blur-[140px] pointer-events-none" />
-      <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-cyan-500/10 rounded-full blur-[140px] pointer-events-none" />
+      {/* Understated Silver / Indigo Ambient Radial Glow behind Center Hero */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] sm:w-[460px] h-[340px] sm:h-[460px] rounded-full bg-indigo-500/[0.04] blur-[110px] z-0"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[240px] sm:w-[320px] h-[240px] sm:h-[320px] rounded-full bg-slate-300/[0.03] blur-[70px] z-0"
+      />
 
-      {/* Top Header */}
-      <header className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 flex items-center justify-between relative z-10">
-        <div className="flex items-center gap-3">
-          <Logo className="w-9 h-9" />
-          <div>
-            <div className="text-lg font-black tracking-tight text-white flex items-center gap-1.5 leading-none">
-              <span>study.io</span>
-              <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 leading-none">
-                Focus
-              </span>
-            </div>
-            <div className="text-[10px] text-slate-400 mt-0.5">Gamified Focus &amp; Productivity</div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 text-xs font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-full">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>Login Required</span>
-          </div>
+      {/* 1. Top Header: Clean, Centered study.io Logo with Safe-Area Padding */}
+      <header className="w-full max-w-md mx-auto pt-8 sm:pt-10 px-6 flex items-center justify-center relative z-10 shrink-0">
+        <div className="flex items-center gap-2.5">
+          <Logo className="w-8 h-8 shrink-0 drop-shadow-sm" />
+          <span className="text-lg font-bold tracking-tight text-white font-sans">
+            study.io
+          </span>
         </div>
       </header>
 
-      {/* Main Hero & Centered Layout */}
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-12 flex flex-col items-center justify-center relative z-10">
-        <div className="text-center space-y-6 mb-10 max-w-3xl flex flex-col items-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[var(--surface)] border border-[var(--border)] text-xs font-bold text-emerald-400 shadow-sm backdrop-blur-md">
-            <Sparkles className="w-4 h-4" />
-            <span>Next-Gen Study & Focus Platform</span>
-          </div>
+      {/* 2. Center Hero: Minimalist Timer Ring Graphic & Headline */}
+      <div className="w-full max-w-lg mx-auto px-6 flex flex-col items-center justify-center text-center relative z-10 my-auto">
+        {/* Sleek Minimalist Timer Ring Graphic */}
+        <div
+          aria-hidden="true"
+          className="relative w-[136px] sm:w-[148px] h-[136px] sm:h-[148px] mx-auto flex items-center justify-center mb-5 sm:mb-6 shrink-0"
+        >
+          {/* Soft inner ambient glow */}
+          <div className="absolute inset-0 rounded-full bg-white/[0.02] blur-xl pointer-events-none" />
 
-          <h1 className="text-4xl sm:text-6xl md:text-7xl font-black text-white tracking-tight leading-[1.1]">
-            Master Your Focus. <br />
-            <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">
-              Study With Purpose.
+          {/* Minimalist Dial SVG */}
+          <svg viewBox="0 0 160 160" className="w-full h-full -rotate-90">
+            {/* Subtle background track */}
+            <circle
+              cx="80"
+              cy="80"
+              r="68"
+              fill="none"
+              stroke="rgba(255,255,255,0.06)"
+              strokeWidth="2.5"
+            />
+            {/* Partially filled clean silver arc */}
+            <circle
+              cx="80"
+              cy="80"
+              r="68"
+              fill="none"
+              stroke="rgba(255,255,255,0.85)"
+              strokeWidth="2.5"
+              strokeDasharray="427.26"
+              strokeDashoffset="115"
+              strokeLinecap="round"
+              style={{
+                filter: 'drop-shadow(0 0 6px rgba(255,255,255,0.35))',
+              }}
+            />
+            {/* Sleek leading accent indicator dot */}
+            <circle
+              cx="80"
+              cy="12"
+              r="3"
+              fill="#FFFFFF"
+              style={{
+                filter: 'drop-shadow(0 0 5px rgba(255,255,255,0.8))',
+              }}
+            />
+          </svg>
+
+          {/* Center Digital Typography */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-center select-none">
+            <span className="font-mono text-3xl sm:text-4xl font-bold text-white tracking-tight leading-none tabular-nums">
+              25:00
             </span>
-          </h1>
-
-          <p className="text-base sm:text-lg text-slate-400 leading-relaxed max-w-2xl">
-            <strong className="text-emerald-400 font-semibold">study.io</strong> turns deep work into a rewarding progression system. Track focus sessions, stay accountable, and climb competitive rank tiers from Bronze to Grandmaster.
-          </p>
-        </div>
-
-        {/* Auth Card Centered */}
-        <div className="w-full max-w-md mx-auto mb-16 relative">
-          <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 rounded-[2rem] blur-xl" />
-          <div className="relative">
-            <AuthCard />
+            <span className="text-[10px] sm:text-[11px] font-mono tracking-widest text-slate-400 font-semibold uppercase mt-1.5 leading-none">
+              DEEP FOCUS
+            </span>
           </div>
         </div>
 
-        {/* 4 Feature Pillars Grid (Centered below) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full max-w-6xl">
-          {/* Feature 1 */}
-          <div className="p-5 rounded-2xl bg-[var(--surface)] border border-[var(--border)] hover:border-emerald-500/30 transition-all backdrop-blur-xl flex flex-col items-center text-center space-y-3 group">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold group-hover:scale-110 transition-transform">
-              <Timer className="w-5 h-5" />
-            </div>
-            <h3 className="font-bold text-sm text-slate-200">Precision Timers</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Stopwatch, Pomodoro (25/5 & 50/10), and ambient background audio to keep you in the zone.
-            </p>
-          </div>
+        {/* Clean Bold Two-Line Headline */}
+        <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight leading-[1.12] text-center mb-2.5">
+          <span className="block text-white">Master your focus.</span>
+          <span className="block bg-gradient-to-r from-zinc-200 via-slate-100 to-zinc-400 bg-clip-text text-transparent">
+            Study with purpose.
+          </span>
+        </h1>
 
-          {/* Feature 2 */}
-          <div className="p-5 rounded-2xl bg-[var(--surface)] border border-[var(--border)] hover:border-amber-500/30 transition-all backdrop-blur-xl flex flex-col items-center text-center space-y-3 group">
-            <div className="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-400 flex items-center justify-center font-bold group-hover:scale-110 transition-transform">
-              <Trophy className="w-5 h-5" />
-            </div>
-            <h3 className="font-bold text-sm text-slate-200">Rank Tiers & RP</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Earn RP for every focused minute. Level up from Bronze to Grandmaster with monthly resets.
-            </p>
-          </div>
+        {/* Concise Single-Line Subtitle */}
+        <p className="text-sm sm:text-base text-slate-400 max-w-sm sm:max-w-md mx-auto text-center font-normal leading-relaxed">
+          Timers, live study rooms, and competitive ranks.
+        </p>
+      </div>
 
-          {/* Feature 3 */}
-          <div className="p-5 rounded-2xl bg-[var(--surface)] border border-[var(--border)] hover:border-teal-500/30 transition-all backdrop-blur-xl flex flex-col items-center text-center space-y-3 group">
-            <div className="w-10 h-10 rounded-2xl bg-teal-500/10 text-teal-400 flex items-center justify-center font-bold group-hover:scale-110 transition-transform">
-              <CheckSquare className="w-5 h-5" />
-            </div>
-            <h3 className="font-bold text-sm text-slate-200">Daily Checklist</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Keyboard-friendly checklist with streak tracking and session focus goals.
-            </p>
-          </div>
-
-          {/* Feature 4 */}
-          <div className="p-5 rounded-2xl bg-[var(--surface)] border border-[var(--border)] hover:border-purple-500/30 transition-all backdrop-blur-xl flex flex-col items-center text-center space-y-3 group">
-            <div className="w-10 h-10 rounded-2xl bg-purple-500/10 text-purple-400 flex items-center justify-center font-bold group-hover:scale-110 transition-transform">
-              <BarChart3 className="w-5 h-5" />
-            </div>
-            <h3 className="font-bold text-sm text-slate-200">Advanced Analytics</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Inspect hourly distributions, calendar patterns, and per-subject breakdown stats.
-            </p>
-          </div>
-        </div>
-      </main>
-
-      {/* Footer */}
-      <footer className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 border-t border-slate-800/80 text-center text-xs text-slate-500 relative z-10 flex flex-col sm:flex-row items-center justify-between gap-2">
-        <div>study.io &copy; {new Date().getFullYear()} &bull; Built for deep focus & accountability</div>
-        <div className="flex items-center gap-4 text-[11px]">
-          <span>Pomodoro &bull; Stopwatch &bull; Ranked RP &bull; Planner &bull; Analytics</span>
-        </div>
-      </footer>
+      {/* 3. Bottom Sign-In Dock: Anchored Glassmorphic Card */}
+      <div className="w-full max-w-md mx-auto px-6 pb-8 sm:pb-10 relative z-10 shrink-0">
+        <AuthCard />
+      </div>
     </div>
   );
 }
