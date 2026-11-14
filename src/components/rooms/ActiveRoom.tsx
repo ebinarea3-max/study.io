@@ -41,9 +41,17 @@ import { UserAvatar } from '../common/UserAvatar';
 import { resolveAppAvatar, isAppAvatar } from '@/lib/avatars';
 import { FlairFrame, fetchFlairMap } from '../../lib/flair';
 import { AvatarFlairRing, FlairCrown } from '../common/FlairBadge';
-import { RoomAvatarFlair } from './RoomAvatarFlair';
-import { RoomAvatarFlairModal } from './RoomAvatarFlairModal';
-import { RoomFlairId, getEquippedRoomFlair, ROOM_FLAIRS } from '../../lib/roomFlairs';
+import { StudyIcon } from './studyIcons/StudyIcon';
+import {
+  StudyIconModal,
+  getEquippedStudyIcon,
+  saveEquippedStudyIcon,
+} from './StudyIconModal';
+import {
+  type StudyIconId,
+  getDefaultIconId,
+  STUDY_ICONS,
+} from './studyIcons/registry';
 import { ScholarProfileModal, ScholarModalData } from '../common/ScholarProfileModal';
 import { getSupabase, broadcast } from '../../lib/supabase';
 import {
@@ -85,6 +93,7 @@ interface RoomMemberInfo {
   total_focus_seconds?: number;
   is_online: boolean;
   is_current_user?: boolean;
+  study_icon?: StudyIconId | null;
 }
 
 // Formats total seconds to HH:MM:SS with 2-digit zero-padding
@@ -224,25 +233,58 @@ export default function ActiveRoom({ roomId, onBack, initialTab }: ActiveRoomPro
   // Premium flair for room members
   const [flairMap, setFlairMap] = useState<Record<string, FlairFrame>>({});
 
-  // Room Avatar Flair state
-  const [userRoomFlair, setUserRoomFlair] = useState<RoomFlairId>('default');
-  const userRoomFlairRef = useRef<RoomFlairId>('default');
-  const [isFlairModalOpen, setIsFlairModalOpen] = useState(false);
+  // Study Icon state
+  const [userStudyIcon, setUserStudyIcon] = useState<StudyIconId | null>(null);
+  const userStudyIconRef = useRef<StudyIconId | null>(null);
+  const [isStudyIconModalOpen, setIsStudyIconModalOpen] = useState(false);
 
   useEffect(() => {
-    const equipped = getEquippedRoomFlair();
-    setUserRoomFlair(equipped);
-    userRoomFlairRef.current = equipped;
+    const equipped = getEquippedStudyIcon();
+    if (equipped) {
+      setUserStudyIcon(equipped);
+      userStudyIconRef.current = equipped;
+    }
 
-    const handleFlairEvent = (e: any) => {
+    const handleIconEvent = (e: any) => {
       if (e?.detail) {
-        setUserRoomFlair(e.detail);
-        userRoomFlairRef.current = e.detail;
+        setUserStudyIcon(e.detail);
+        userStudyIconRef.current = e.detail;
       }
     };
-    window.addEventListener('studyio_room_flair_changed', handleFlairEvent);
-    return () => window.removeEventListener('studyio_room_flair_changed', handleFlairEvent);
+    window.addEventListener('studyio_study_icon_changed', handleIconEvent);
+    return () => window.removeEventListener('studyio_study_icon_changed', handleIconEvent);
   }, []);
+
+  // Also load saved study_icon from profile if authenticated
+  useEffect(() => {
+    if (!user?.id) return;
+    const supabase = getSupabase();
+    if (!supabase) return;
+
+    let isMounted = true;
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select('study_icon')
+          .eq('id', user.id)
+          .single();
+
+        if (isMounted && data?.study_icon) {
+          const iconId = data.study_icon as StudyIconId;
+          setUserStudyIcon(iconId);
+          userStudyIconRef.current = iconId;
+          saveEquippedStudyIcon(iconId);
+        }
+      } catch {
+        // ignore network/schema fetch errors
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id]);
 
   // Scholar profile modal state
   const [selectedScholar, setSelectedScholar] = useState<ScholarModalData | null>(null);
@@ -351,7 +393,7 @@ CREATE POLICY "Hosts can update their own study rooms"
         base_today_seconds: number; // Base today seconds (total minus session)
         today_seconds: number;
         last_seen: number;
-        room_flair?: RoomFlairId | null;
+        study_icon?: StudyIconId | null;
         is_premium?: boolean;
         flair_frame?: string | null;
       }
@@ -480,7 +522,7 @@ CREATE POLICY "Hosts can update their own study rooms"
           existing &&
           existing.is_studying === isStudying &&
           existing.start_time === effectiveStartTime &&
-          existing.room_flair === (payload.room_flair || payload.flair || null) &&
+          existing.study_icon === (payload.study_icon || null) &&
           existing.base_today_seconds === baseToday &&
           now - existing.last_seen < 4000
         ) {
@@ -498,7 +540,7 @@ CREATE POLICY "Hosts can update their own study rooms"
             today_seconds: todayTotal,
             is_premium: Boolean(payload.is_premium),
             flair_frame: payload.flair_frame || (payload.is_premium ? 'gold' : null),
-            room_flair: payload.room_flair || payload.flair || null,
+            study_icon: payload.study_icon || null,
             last_seen: now,
           },
         };
@@ -525,7 +567,7 @@ CREATE POLICY "Hosts can update their own study rooms"
       today_seconds: todayTotal,
       is_premium: isPremium,
       flair_frame: isPremium ? 'gold' : null,
-      room_flair: userRoomFlairRef.current,
+      study_icon: userStudyIconRef.current,
       timestamp: now,
     };
 
@@ -934,7 +976,7 @@ CREATE POLICY "Hosts can update their own study rooms"
               today_seconds: today,
               is_premium: Boolean(p.is_premium),
               flair_frame: p.flair_frame || (p.is_premium ? 'gold' : null),
-              room_flair: p.room_flair || null,
+              study_icon: p.study_icon || null,
               last_seen: now,
             };
           }
@@ -982,7 +1024,7 @@ CREATE POLICY "Hosts can update their own study rooms"
               today_seconds: todayTotal,
               is_premium: isPremium,
               flair_frame: isPremium ? 'gold' : null,
-              room_flair: userRoomFlairRef.current,
+              study_icon: userStudyIconRef.current,
             });
           } catch (err) {
             console.error('Initial presence track error:', err);
@@ -1071,7 +1113,7 @@ CREATE POLICY "Hosts can update their own study rooms"
           today_seconds: todayTotal,
           is_premium: isPremium,
           flair_frame: isPremium ? 'gold' : null,
-          room_flair: userRoomFlairRef.current,
+          study_icon: userStudyIconRef.current,
         });
       } catch (err) {
         console.error('Tracking error:', err);
@@ -1083,7 +1125,7 @@ CREATE POLICY "Hosts can update their own study rooms"
     user?.id,
     profile?.username,
     profile?.avatar_url,
-    userRoomFlair,
+    userStudyIcon,
     isPremium,
     sendFocusBroadcast,
   ]);
@@ -1541,7 +1583,7 @@ CREATE POLICY "Hosts can update their own study rooms"
         total_focus_seconds: totalFocusSeconds,
         is_online: isOnline,
         is_current_user: isCurrentUser,
-        flair: isCurrentUser ? userRoomFlair : (liveFocus?.room_flair || pu?.room_flair || 'default'),
+        study_icon: isCurrentUser ? userStudyIcon : (liveFocus?.study_icon || pu?.study_icon || member.study_icon || null),
       });
     }
 
@@ -1562,7 +1604,7 @@ CREATE POLICY "Hosts can update their own study rooms"
         total_focus_seconds: totalFocus,
         is_online: true,
         is_current_user: true,
-        flair: userRoomFlair,
+        study_icon: userStudyIcon,
       });
       seenUserIds.add(user.id);
     }
@@ -1608,7 +1650,7 @@ CREATE POLICY "Hosts can update their own study rooms"
           total_focus_seconds: totalFocus,
           is_online: true,
           is_current_user: false,
-          flair: liveFocus?.room_flair || pu?.room_flair || 'default',
+          study_icon: liveFocus?.study_icon || pu?.study_icon || null,
         });
       }
     }
@@ -1958,7 +2000,7 @@ CREATE POLICY "Hosts can update their own study rooms"
                   key={u.user_id}
                   onClick={() => {
                     if (u.is_current_user) {
-                      setIsFlairModalOpen(true);
+                      setIsStudyIconModalOpen(true);
                     } else {
                       handleOpenScholarModal(u);
                     }
@@ -1966,23 +2008,37 @@ CREATE POLICY "Hosts can update their own study rooms"
                   role="button"
                   tabIndex={0}
                   className="flex flex-col items-center gap-2 group relative transition-all duration-300 cursor-pointer hover:scale-105 active:scale-95 select-none"
+                  style={{ contentVisibility: displayUsers.length > 24 ? 'auto' : undefined }}
                 >
                   <div className="relative">
-                    <RoomAvatarFlair
-                      flair={u.is_current_user ? userRoomFlair : (u.flair || 'default')}
-                      isStudying={isStudying}
-                      isOnline={u.is_online}
+                    <UserAvatar
+                      src={u.avatar_url}
+                      name={u.username}
                       size={64}
-                      showCustomBadge={u.is_current_user}
-                      onClick={u.is_current_user ? () => setIsFlairModalOpen(true) : undefined}
+                      className="transition-transform duration-300 rounded-full"
+                    />
+
+                    {/* Member's Study Icon */}
+                    <div
+                      className="absolute -bottom-2 -right-2.5 z-10 hover:scale-[1.06] transition-transform duration-[250ms] cursor-pointer"
+                      onClick={
+                        u.is_current_user
+                          ? (e) => {
+                              e.stopPropagation();
+                              setIsStudyIconModalOpen(true);
+                            }
+                          : undefined
+                      }
+                      title={u.is_current_user ? 'Customize Study Icon' : undefined}
                     >
-                      <UserAvatar
-                        src={u.avatar_url}
-                        name={u.username}
-                        size={64}
-                        className="transition-transform duration-300"
+                      <StudyIcon
+                        id={u.study_icon || null}
+                        userId={u.user_id}
+                        state={isStudying ? 'studying' : u.is_online ? 'paused' : 'idle'}
+                        size="sm"
+                        isPremium={Boolean(flairMap[u.user_id] || (u.is_current_user && isPremium))}
                       />
-                    </RoomAvatarFlair>
+                    </div>
 
 
 
@@ -2340,43 +2396,38 @@ CREATE POLICY "Hosts can update their own study rooms"
               </div>
             </div>
 
-            {/* Room Avatar Flair Customization Card */}
+            {/* Study Icon Customization Card */}
             <div className="p-5 rounded-3xl bg-white/[0.03] border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-lg">
               <div className="flex items-center gap-3.5">
                 <div className="relative shrink-0">
-                  <RoomAvatarFlair
-                    flair={userRoomFlair}
-                    isStudying={true}
-                    isOnline={true}
-                    size={52}
-                  >
-                    <UserAvatar
-                      src={user?.avatarUrl || profile?.avatar_url}
-                      name={user?.displayName || profile?.username || 'Scholar'}
-                      size={52}
-                    />
-                  </RoomAvatarFlair>
+                  <StudyIcon
+                    id={userStudyIcon}
+                    userId={user?.id}
+                    state="studying"
+                    size="md"
+                    isPremium={Boolean(isPremium)}
+                  />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
                     <h3 className="text-sm font-hud font-bold text-white uppercase tracking-wider">
-                      Room Avatar Flair
+                      Study Icon
                     </h3>
                     <span className="text-[10px] font-hud font-bold uppercase px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">
-                      Active: {ROOM_FLAIRS[userRoomFlair]?.name || 'Focus Ring'}
+                      Active: {STUDY_ICONS[userStudyIcon || getDefaultIconId(user?.id || 'default_user')]?.name || 'Desk Lamp'}
                     </span>
                   </div>
                   <p className="text-xs text-slate-400 mt-0.5">
-                    Select and preview your animated orbital aura rings when studying in rooms.
+                    Choose the animated icon shown on your card while studying in rooms.
                   </p>
                 </div>
               </div>
               <button
                 type="button"
-                onClick={() => setIsFlairModalOpen(true)}
+                onClick={() => setIsStudyIconModalOpen(true)}
                 className="px-4 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 hover:text-white text-xs font-hud font-bold uppercase tracking-wider transition-all cursor-pointer self-start sm:self-center shrink-0 shadow-sm"
               >
-                Customize Flair
+                Customize Icon
               </button>
             </div>
 
@@ -2797,12 +2848,19 @@ CREATE POLICY "Hosts can update their own study rooms"
                         tabIndex={0}
                         className="flex items-center justify-between p-2.5 rounded-xl bg-black/40 border border-white/5 hover:border-amber-400/40 hover:bg-black/70 transition-all cursor-pointer"
                       >
-                        <div className="flex items-center gap-3 min-w-0">
+                        <div className="flex items-center gap-2.5 min-w-0">
                           <UserAvatar
                             src={member.avatar_url}
                             name={member.username}
                             size={32}
                             className="rounded-full border shrink-0 border-white/10"
+                          />
+                          <StudyIcon
+                            id={member.study_icon || null}
+                            userId={member.user_id}
+                            state={member.is_studying ? 'studying' : member.is_online ? 'paused' : 'idle'}
+                            size="sm"
+                            isPremium={Boolean(flairMap[member.user_id])}
                           />
                           <div className="min-w-0">
                             <div className="flex items-center gap-1.5">
@@ -3103,19 +3161,20 @@ CREATE POLICY "Hosts can update their own study rooms"
         onClose={() => setSelectedScholar(null)}
       />
 
-      {/* Room Avatar Flair Customization Modal */}
-      <RoomAvatarFlairModal
-        isOpen={isFlairModalOpen}
-        onClose={() => setIsFlairModalOpen(false)}
-        currentFlair={userRoomFlair}
-        onEquipFlair={(newFlair) => {
-          setUserRoomFlair(newFlair);
-          userRoomFlairRef.current = newFlair;
+      {/* Study Icon Picker Modal */}
+      <StudyIconModal
+        isOpen={isStudyIconModalOpen}
+        onClose={() => setIsStudyIconModalOpen(false)}
+        currentIconId={userStudyIcon}
+        onEquipIcon={(newIcon) => {
+          setUserStudyIcon(newIcon);
+          userStudyIconRef.current = newIcon;
           sendFocusBroadcast();
         }}
         isPro={Boolean(isPremium)}
         userAvatarUrl={user?.avatarUrl || profile?.avatar_url}
         username={user?.displayName || profile?.username || 'Scholar'}
+        userId={user?.id}
         onOpenUpgradeModal={openPremiumModal}
       />
     </div>

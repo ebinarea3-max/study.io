@@ -57,6 +57,12 @@ const COMPARISON_DATA: ComparisonRow[] = [
     premium: true,
   },
   {
+    feature: 'Animated Study Icons',
+    description: 'Original animated study icons in rooms (6 exclusive premium icons)',
+    free: '4 free icons',
+    premium: 'All 10 icons unlocked',
+  },
+  {
     category: 'Deep Analytics & Reports',
     feature: 'Historical Date & Calendar Navigation',
     description: 'Browse past daily breakdowns, calendar months, and focus history',
