@@ -4,7 +4,7 @@ import { useEffect, useState, RefObject } from 'react';
 
 type Listener = (canAnimate: boolean) => void;
 
-interface RegisteredIcon {
+interface RegisteredEmblem {
   id: string;
   element: HTMLElement;
   isStudying: boolean;
@@ -13,8 +13,8 @@ interface RegisteredIcon {
   notify: Listener;
 }
 
-class IconVisibilityManager {
-  private icons = new Map<string, RegisteredIcon>();
+class EmblemVisibilityManager {
+  private emblems = new Map<string, RegisteredEmblem>();
   private observer: IntersectionObserver | null = null;
   private isTabVisible = true;
   private rafId: number | null = null;
@@ -34,12 +34,12 @@ class IconVisibilityManager {
       (entries) => {
         let changed = false;
         entries.forEach((entry) => {
-          const id = (entry.target as HTMLElement).dataset.studyIconId;
-          if (id && this.icons.has(id)) {
-            const icon = this.icons.get(id)!;
+          const id = (entry.target as HTMLElement).dataset.studyEmblemId;
+          if (id && this.emblems.has(id)) {
+            const emblem = this.emblems.get(id)!;
             const isVisible = entry.isIntersecting;
-            if (icon.isVisible !== isVisible) {
-              icon.isVisible = isVisible;
+            if (emblem.isVisible !== isVisible) {
+              emblem.isVisible = isVisible;
               changed = true;
             }
           }
@@ -69,42 +69,40 @@ class IconVisibilityManager {
     if (typeof window === 'undefined') return;
 
     if (!this.isTabVisible) {
-      // Pause all icons when tab is hidden
-      this.icons.forEach((icon) => icon.notify(false));
+      this.emblems.forEach((emblem) => emblem.notify(false));
       return;
     }
 
     const vCenterX = window.innerWidth / 2;
     const vCenterY = window.innerHeight / 2;
 
-    const candidates: RegisteredIcon[] = [];
+    const candidates: RegisteredEmblem[] = [];
 
-    this.icons.forEach((icon) => {
-      if (icon.isStudying && icon.isVisible) {
-        const rect = icon.element.getBoundingClientRect();
-        const iconCenterX = rect.left + rect.width / 2;
-        const iconCenterY = rect.top + rect.height / 2;
-        const dist = Math.hypot(iconCenterX - vCenterX, iconCenterY - vCenterY);
-        icon.distanceFromCenter = dist;
-        candidates.push(icon);
+    this.emblems.forEach((emblem) => {
+      if (emblem.isStudying && emblem.isVisible) {
+        const rect = emblem.element.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        emblem.distanceFromCenter = Math.hypot(centerX - vCenterX, centerY - vCenterY);
+        candidates.push(emblem);
       } else {
-        icon.notify(false);
+        emblem.notify(false);
       }
     });
 
-    // Sort by distance to viewport center (nearest first)
+    // Nearest to viewport center gets top priority
     candidates.sort((a, b) => a.distanceFromCenter - b.distanceFromCenter);
 
-    // Cap at 24 simultaneously animated icons
+    // Strict cap at 24 simultaneous active CSS animations
     const maxActive = 24;
-    candidates.forEach((icon, index) => {
-      icon.notify(index < maxActive);
+    candidates.forEach((emblem, index) => {
+      emblem.notify(index < maxActive);
     });
   }
 
   register(id: string, element: HTMLElement, isStudying: boolean, notify: Listener) {
     this.initObserver();
-    const entry: RegisteredIcon = {
+    const entry: RegisteredEmblem = {
       id,
       element,
       isStudying,
@@ -112,14 +110,14 @@ class IconVisibilityManager {
       distanceFromCenter: Infinity,
       notify,
     };
-    element.dataset.studyIconId = id;
-    this.icons.set(id, entry);
+    element.dataset.studyEmblemId = id;
+    this.emblems.set(id, entry);
     this.observer?.observe(element);
     this.scheduleUpdate();
   }
 
   updateStudying(id: string, isStudying: boolean) {
-    const entry = this.icons.get(id);
+    const entry = this.emblems.get(id);
     if (entry) {
       entry.isStudying = isStudying;
       this.scheduleUpdate();
@@ -127,26 +125,26 @@ class IconVisibilityManager {
   }
 
   unregister(id: string) {
-    const entry = this.icons.get(id);
+    const entry = this.emblems.get(id);
     if (entry) {
       this.observer?.unobserve(entry.element);
-      this.icons.delete(id);
+      this.emblems.delete(id);
       this.scheduleUpdate();
     }
   }
 }
 
-let managerInstance: IconVisibilityManager | null = null;
+let managerInstance: EmblemVisibilityManager | null = null;
 
-function getManager(): IconVisibilityManager | null {
+function getManager(): EmblemVisibilityManager | null {
   if (typeof window === 'undefined') return null;
   if (!managerInstance) {
-    managerInstance = new IconVisibilityManager();
+    managerInstance = new EmblemVisibilityManager();
   }
   return managerInstance;
 }
 
-export function useCanAnimateIcon(
+export function useCanAnimateEmblem(
   ref: RefObject<HTMLElement | null>,
   isStudying: boolean
 ): boolean {

@@ -136,7 +136,7 @@ export function PremiumModal({ isOpen, onClose }: PremiumModalProps) {
                   study.io Premium
                 </h2>
                 <p className="text-xs text-[var(--text-dim)]">
-                  Unlock advanced analytics, custom themes &amp; study icons
+                  Unlock advanced analytics, custom themes &amp; study emblems
                 </p>
               </div>
             </div>
@@ -177,10 +177,10 @@ export function PremiumModal({ isOpen, onClose }: PremiumModalProps) {
                     </div>
                     <div>
                       <h3 className="text-xs font-semibold text-[var(--text)]">
-                        Premium Themes &amp; Study Icons
+                        Premium Themes &amp; Study Emblems
                       </h3>
                       <p className="text-[11px] text-[var(--text-dim)] leading-relaxed">
-                        Exclusive Gold Leaf, Crimson themes, and animated room study icons.
+                        Exclusive Gold Leaf, Crimson themes, and Premium study emblems (5 growing themes).
                       </p>
                     </div>
                   </div>

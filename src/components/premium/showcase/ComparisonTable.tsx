@@ -57,10 +57,10 @@ const COMPARISON_DATA: ComparisonRow[] = [
     premium: true,
   },
   {
-    feature: 'Animated Study Icons',
-    description: 'Original animated study icons in rooms (6 exclusive premium icons)',
-    free: '4 free icons',
-    premium: 'All 10 icons unlocked',
+    feature: 'Living Study Emblems',
+    description: 'Premium study emblems (5 growing themes) that evolve across 7 focus stages daily',
+    free: 'Eternal Spark (Free)',
+    premium: 'All 6 Families Unlocked',
   },
   {
     category: 'Deep Analytics & Reports',
