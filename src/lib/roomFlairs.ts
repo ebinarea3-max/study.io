@@ -18,8 +18,8 @@ export const ROOM_FLAIRS: Record<RoomFlairId, RoomFlairConfig> = {
   default: {
     id: 'default',
     name: 'Focus Ring',
-    subtitle: 'Standard Study Aura',
-    description: 'Clean emerald & cyan focus ring pulse while studying; subtle amber dashed ring when paused.',
+    subtitle: 'Dual Pulse Matrix',
+    description: 'Dual counter-rotating emerald and cyan HUD tech rings with precision focus nodes while studying.',
     isPro: false,
     themeColor: '#10B981',
     secondaryColor: '#06B6D4',
@@ -29,8 +29,8 @@ export const ROOM_FLAIRS: Record<RoomFlairId, RoomFlairConfig> = {
   'solar-flare': {
     id: 'solar-flare',
     name: 'Solar Flare',
-    subtitle: 'Orbital Corona Plasma',
-    description: 'Fiery golden-orange orbital plasma ring with rotating corona particles while studying.',
+    subtitle: 'Coronal Sun Engine',
+    description: 'Blazing golden-amber plasma rings rotating in counter-cadence with radiant solar prominence nodes.',
     isPro: true,
     themeColor: '#F59E0B',
     secondaryColor: '#EF4444',
@@ -51,8 +51,8 @@ export const ROOM_FLAIRS: Record<RoomFlairId, RoomFlairConfig> = {
   'void-aura': {
     id: 'void-aura',
     name: 'Void Aura',
-    subtitle: 'Gravitational Singularity',
-    description: 'Deep purple and indigo breathing gravitational halo with smooth shockwave ripples while studying.',
+    subtitle: 'Cosmic Singularity',
+    description: 'Dual counter-rotating abyssal violet accretion rings with quantum pulsar nodes and event-horizon brackets.',
     isPro: true,
     themeColor: '#A855F7',
     secondaryColor: '#6366F1',
@@ -62,8 +62,8 @@ export const ROOM_FLAIRS: Record<RoomFlairId, RoomFlairConfig> = {
   'zen-lotus': {
     id: 'zen-lotus',
     name: 'Zen Lotus',
-    subtitle: 'Harmonic Bloom Cadence',
-    description: 'Smooth harmonic wave rings expanding outward in a calm rhythmic cadence while studying.',
+    subtitle: 'Harmonic Mandala',
+    description: 'Sacred geometric jade and mint dual-ring mandala with 8 orbiting spirit orbs and crystal finches.',
     isPro: true,
     themeColor: '#10B981',
     secondaryColor: '#14B8A6',

@@ -82,6 +82,12 @@ export const RoomAvatarFlair = React.memo(function RoomAvatarFlair({
             <stop offset="100%" stopColor="#EF4444" />
           </linearGradient>
 
+          <linearGradient id={`solarInner_${uniqueId}`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#EF4444" />
+            <stop offset="50%" stopColor="#F97316" />
+            <stop offset="100%" stopColor="#FDE047" />
+          </linearGradient>
+
           <linearGradient id={`cyberCyan_${uniqueId}`} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#06B6D4" />
             <stop offset="100%" stopColor="#3B82F6" />
@@ -98,10 +104,20 @@ export const RoomAvatarFlair = React.memo(function RoomAvatarFlair({
             <stop offset="100%" stopColor="#3B0764" />
           </linearGradient>
 
+          <linearGradient id={`voidInner_${uniqueId}`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#6366F1" />
+            <stop offset="100%" stopColor="#818CF8" />
+          </linearGradient>
+
           <linearGradient id={`zenGrad_${uniqueId}`} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#34D399" />
             <stop offset="50%" stopColor="#10B981" />
             <stop offset="100%" stopColor="#0D9488" />
+          </linearGradient>
+
+          <linearGradient id={`zenInner_${uniqueId}`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#14B8A6" />
+            <stop offset="100%" stopColor="#2DD4BF" />
           </linearGradient>
         </defs>
 
@@ -142,119 +158,117 @@ export const RoomAvatarFlair = React.memo(function RoomAvatarFlair({
         ) : (
           /* STATE B: ACTIVELY STUDYING (Equipped Flair 60fps Framer Motion Animations) */
           <>
-            {/* 1. DEFAULT FOCUS FLAIR */}
+            {/* 1. DEFAULT FOCUS FLAIR - DUAL PULSE MATRIX */}
             {activeFlairId === 'default' && (
               <g>
-                {/* Outer soft pulsing ring */}
-                <motion.circle
-                  cx="50"
-                  cy="50"
-                  r={ringRadius + 3.5}
-                  fill="none"
-                  stroke="#06B6D4"
-                  strokeWidth="1"
-                  strokeDasharray="4 8"
-                  animate={{
-                    scale: [1, 1.03, 1],
-                    opacity: [0.35, 0.65, 0.35],
-                  }}
-                  transition={{
-                    duration: 2.8,
-                    repeat: Infinity,
-                    ease: 'easeInOut',
-                  }}
-                  style={{ transformOrigin: '50px 50px' }}
-                />
-
-                {/* Main focus ring */}
-                <motion.circle
-                  cx="50"
-                  cy="50"
-                  r={ringRadius}
-                  fill="none"
-                  stroke={`url(#defaultGrad_${uniqueId})`}
-                  strokeWidth="2.5"
-                  animate={{
-                    scale: [1, 1.025, 1],
-                    opacity: [0.9, 1, 0.9],
-                  }}
-                  transition={{
-                    duration: 2.4,
-                    repeat: Infinity,
-                    ease: 'easeInOut',
-                  }}
-                  style={{ transformOrigin: '50px 50px' }}
-                />
-
-                {/* Orbiting focus beacon node */}
+                {/* Outer Neon Cyan Tech Ring (Rotating Counter-Clockwise) with 2 Nodes */}
                 <motion.g
-                  animate={{ rotate: [0, 360] }}
-                  transition={{ duration: 5, repeat: Infinity, ease: 'linear' }}
+                  animate={{ rotate: [360, 0] }}
+                  transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
                   style={{ transformOrigin: '50px 50px' }}
                 >
-                  <circle cx="50" cy={50 - ringRadius} r="3" fill="#10B981" />
-                  <circle cx="50" cy={50 - ringRadius} r="1.5" fill="#FFFFFF" />
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r={ringRadius + 2.5}
+                    fill="none"
+                    stroke={`url(#cyberCyan_${uniqueId})`}
+                    strokeWidth="1.6"
+                    strokeDasharray="18 6 4 6"
+                  />
+                  {/* Outer Tech Nodes at 90° and 270° */}
+                  <circle cx={50 + (ringRadius + 2.5)} cy="50" r="2.4" fill="#06B6D4" />
+                  <circle cx={50 + (ringRadius + 2.5)} cy="50" r="1.2" fill="#FFFFFF" />
+                  <circle cx={50 - (ringRadius + 2.5)} cy="50" r="2.4" fill="#06B6D4" />
+                  <circle cx={50 - (ringRadius + 2.5)} cy="50" r="1.2" fill="#FFFFFF" />
                 </motion.g>
-              </g>
-            )}
 
-            {/* 2. SOLAR FLARE (Pro Exclusive) */}
-            {activeFlairId === 'solar-flare' && (
-              <g>
-                {/* Main Fiery Plasma Ring */}
-                <motion.circle
-                  cx="50"
-                  cy="50"
-                  r={ringRadius}
-                  fill="none"
-                  stroke={`url(#solarGrad_${uniqueId})`}
-                  strokeWidth="2.75"
-                  animate={{
-                    scale: [1, 1.035, 1],
-                    opacity: [0.85, 1, 0.85],
-                  }}
-                  transition={{
-                    duration: 2,
-                    repeat: Infinity,
-                    ease: 'easeInOut',
-                  }}
-                  style={{ transformOrigin: '50px 50px' }}
-                />
-
-                {/* Counter-rotating micro plasma ring */}
-                <motion.circle
-                  cx="50"
-                  cy="50"
-                  r={ringRadius - 1.5}
-                  fill="none"
-                  stroke="#F59E0B"
-                  strokeWidth="1.25"
-                  strokeDasharray="7 5 3 5"
-                  opacity="0.7"
-                  animate={{ rotate: [360, 0] }}
-                  transition={{ duration: 9, repeat: Infinity, ease: 'linear' }}
-                  style={{ transformOrigin: '50px 50px' }}
-                />
-
-                {/* Rotating Corona Plasma Particles (6 golden ember sparks) */}
+                {/* Inner Emerald Pulse Ring (Rotating Clockwise) with 2 Nodes */}
                 <motion.g
                   animate={{ rotate: [0, 360] }}
                   transition={{ duration: 6, repeat: Infinity, ease: 'linear' }}
                   style={{ transformOrigin: '50px 50px' }}
                 >
-                  {/* 0 deg */}
-                  <circle cx="50" cy={50 - ringRadius - 1} r="2.5" fill="#FDE047" />
-                  {/* 60 deg */}
-                  <circle cx={50 + (ringRadius + 1) * 0.866} cy={50 - (ringRadius + 1) * 0.5} r="2" fill="#F97316" />
-                  {/* 120 deg */}
-                  <circle cx={50 + (ringRadius + 1) * 0.866} cy={50 + (ringRadius + 1) * 0.5} r="2.5" fill="#FDE047" />
-                  {/* 180 deg */}
-                  <circle cx="50" cy={50 + ringRadius + 1} r="2" fill="#EF4444" />
-                  {/* 240 deg */}
-                  <circle cx={50 - (ringRadius + 1) * 0.866} cy={50 + (ringRadius + 1) * 0.5} r="2.5" fill="#FDE047" />
-                  {/* 300 deg */}
-                  <circle cx={50 - (ringRadius + 1) * 0.866} cy={50 - (ringRadius + 1) * 0.5} r="2" fill="#F97316" />
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r={ringRadius - 1.5}
+                    fill="none"
+                    stroke={`url(#defaultGrad_${uniqueId})`}
+                    strokeWidth="1.6"
+                    strokeDasharray="12 4 4 4"
+                  />
+                  {/* Inner Focus Nodes at 0° and 180° */}
+                  <circle cx="50" cy={50 - (ringRadius - 1.5)} r="2.2" fill="#10B981" />
+                  <circle cx="50" cy={50 - (ringRadius - 1.5)} r="1.1" fill="#FFFFFF" />
+                  <circle cx="50" cy={50 + (ringRadius - 1.5)} r="2.2" fill="#10B981" />
+                  <circle cx="50" cy={50 + (ringRadius - 1.5)} r="1.1" fill="#FFFFFF" />
                 </motion.g>
+
+                {/* 4 Diagonal Focus Reticle Ticks */}
+                <line x1="21" y1="21" x2="18" y2="18" stroke="#10B981" strokeWidth="1.5" opacity="0.85" />
+                <line x1="79" y1="21" x2="82" y2="18" stroke="#10B981" strokeWidth="1.5" opacity="0.85" />
+                <line x1="21" y1="79" x2="18" y2="82" stroke="#06B6D4" strokeWidth="1.5" opacity="0.85" />
+                <line x1="79" y1="79" x2="82" y2="82" stroke="#06B6D4" strokeWidth="1.5" opacity="0.85" />
+              </g>
+            )}
+
+            {/* 2. SOLAR FLARE (Pro Exclusive) - CORONAL SUN ENGINE */}
+            {activeFlairId === 'solar-flare' && (
+              <g>
+                {/* Outer Plasma Coronal Ring (Rotating Clockwise) with 3 Prominence Nodes */}
+                <motion.g
+                  animate={{ rotate: [0, 360] }}
+                  transition={{ duration: 7, repeat: Infinity, ease: 'linear' }}
+                  style={{ transformOrigin: '50px 50px' }}
+                >
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r={ringRadius + 2.6}
+                    fill="none"
+                    stroke={`url(#solarGrad_${uniqueId})`}
+                    strokeWidth="1.75"
+                    strokeDasharray="20 6 4 6"
+                  />
+                  {/* 3 Prominence Flares at 0°, 120°, 240° */}
+                  <circle cx="50" cy={50 - (ringRadius + 2.6)} r="2.6" fill="#F59E0B" />
+                  <circle cx="50" cy={50 - (ringRadius + 2.6)} r="1.3" fill="#FFFBEB" />
+                  <circle cx={50 + (ringRadius + 2.6) * 0.866} cy={50 + (ringRadius + 2.6) * 0.5} r="2.6" fill="#F97316" />
+                  <circle cx={50 + (ringRadius + 2.6) * 0.866} cy={50 + (ringRadius + 2.6) * 0.5} r="1.3" fill="#FFFBEB" />
+                  <circle cx={50 - (ringRadius + 2.6) * 0.866} cy={50 + (ringRadius + 2.6) * 0.5} r="2.6" fill="#EF4444" />
+                  <circle cx={50 - (ringRadius + 2.6) * 0.866} cy={50 + (ringRadius + 2.6) * 0.5} r="1.3" fill="#FFFBEB" />
+                </motion.g>
+
+                {/* Inner Solar Core Ring (Rotating Counter-Clockwise) with 3 Flares */}
+                <motion.g
+                  animate={{ rotate: [360, 0] }}
+                  transition={{ duration: 5, repeat: Infinity, ease: 'linear' }}
+                  style={{ transformOrigin: '50px 50px' }}
+                >
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r={ringRadius - 1.6}
+                    fill="none"
+                    stroke={`url(#solarInner_${uniqueId})`}
+                    strokeWidth="1.6"
+                    strokeDasharray="14 5 3 5"
+                  />
+                  {/* 3 Inner Solar Flares at 60°, 180°, 300° */}
+                  <circle cx={50 + (ringRadius - 1.6) * 0.866} cy={50 - (ringRadius - 1.6) * 0.5} r="2.2" fill="#FDE047" />
+                  <circle cx={50 + (ringRadius - 1.6) * 0.866} cy={50 - (ringRadius - 1.6) * 0.5} r="1.1" fill="#FFFFFF" />
+                  <circle cx="50" cy={50 + (ringRadius - 1.6)} r="2.2" fill="#F97316" />
+                  <circle cx="50" cy={50 + (ringRadius - 1.6)} r="1.1" fill="#FFFFFF" />
+                  <circle cx={50 - (ringRadius - 1.6) * 0.866} cy={50 - (ringRadius - 1.6) * 0.5} r="2.2" fill="#FDE047" />
+                  <circle cx={50 - (ringRadius - 1.6) * 0.866} cy={50 - (ringRadius - 1.6) * 0.5} r="1.1" fill="#FFFFFF" />
+                </motion.g>
+
+                {/* 4 Cardinal Solar Ray Ticks */}
+                <line x1="50" y1="5" x2="50" y2="9.5" stroke="#F59E0B" strokeWidth="1.6" opacity="0.85" />
+                <line x1="50" y1="90.5" x2="50" y2="95" stroke="#F59E0B" strokeWidth="1.6" opacity="0.85" />
+                <line x1="5" y1="50" x2="9.5" y2="50" stroke="#F97316" strokeWidth="1.6" opacity="0.85" />
+                <line x1="90.5" y1="50" x2="95" y2="50" stroke="#F97316" strokeWidth="1.6" opacity="0.85" />
               </g>
             )}
 
@@ -313,184 +327,121 @@ export const RoomAvatarFlair = React.memo(function RoomAvatarFlair({
               </g>
             )}
 
-            {/* 4. VOID AURA (Pro Exclusive) */}
+            {/* 4. VOID AURA (Pro Exclusive) - COSMIC SINGULARITY */}
             {activeFlairId === 'void-aura' && (
               <g>
-                {/* Shockwave Ripple 1 */}
-                <motion.circle
-                  cx="50"
-                  cy="50"
-                  r={ringRadius}
-                  fill="none"
-                  stroke="#A855F7"
-                  strokeWidth="1.5"
-                  animate={{
-                    scale: [0.96, 1.34],
-                    opacity: [0.85, 0],
-                  }}
-                  transition={{
-                    duration: 2.8,
-                    repeat: Infinity,
-                    ease: [0.1, 0.7, 0.1, 1],
-                  }}
-                  style={{ transformOrigin: '50px 50px' }}
-                />
-
-                {/* Shockwave Ripple 2 (Staggered Delay) */}
-                <motion.circle
-                  cx="50"
-                  cy="50"
-                  r={ringRadius}
-                  fill="none"
-                  stroke="#6366F1"
-                  strokeWidth="1.5"
-                  animate={{
-                    scale: [0.96, 1.34],
-                    opacity: [0.85, 0],
-                  }}
-                  transition={{
-                    duration: 2.8,
-                    repeat: Infinity,
-                    ease: [0.1, 0.7, 0.1, 1],
-                    delay: 1.4,
-                  }}
-                  style={{ transformOrigin: '50px 50px' }}
-                />
-
-                {/* Gravitational Singularity Core Ring */}
-                <motion.circle
-                  cx="50"
-                  cy="50"
-                  r={ringRadius}
-                  fill="none"
-                  stroke={`url(#voidGrad_${uniqueId})`}
-                  strokeWidth="2.8"
-                  animate={{
-                    scale: [1, 1.03, 1],
-                    opacity: [0.85, 1, 0.85],
-                  }}
-                  transition={{
-                    duration: 2.4,
-                    repeat: Infinity,
-                    ease: 'easeInOut',
-                  }}
-                  style={{ transformOrigin: '50px 50px' }}
-                />
-
-                {/* Orbiting singularity micro sparks */}
-                <motion.circle
-                  cx="50"
-                  cy={50 - ringRadius}
-                  r="1.8"
-                  fill="#FFFFFF"
+                {/* Outer Abyssal Accretion Ring (Rotating Clockwise) with 2 Pulsar Nodes */}
+                <motion.g
                   animate={{ rotate: [0, 360] }}
-                  transition={{ duration: 4.5, repeat: Infinity, ease: 'linear' }}
+                  transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
                   style={{ transformOrigin: '50px 50px' }}
-                />
+                >
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r={ringRadius + 2.6}
+                    fill="none"
+                    stroke={`url(#voidGrad_${uniqueId})`}
+                    strokeWidth="1.7"
+                    strokeDasharray="22 6 4 6"
+                  />
+                  {/* Outer Pulsar Nodes at 45° and 225° */}
+                  <circle cx={50 + (ringRadius + 2.6) * 0.707} cy={50 - (ringRadius + 2.6) * 0.707} r="2.5" fill="#A855F7" />
+                  <circle cx={50 + (ringRadius + 2.6) * 0.707} cy={50 - (ringRadius + 2.6) * 0.707} r="1.2" fill="#FFFFFF" />
+                  <circle cx={50 - (ringRadius + 2.6) * 0.707} cy={50 + (ringRadius + 2.6) * 0.707} r="2.5" fill="#A855F7" />
+                  <circle cx={50 - (ringRadius + 2.6) * 0.707} cy={50 + (ringRadius + 2.6) * 0.707} r="1.2" fill="#FFFFFF" />
+                </motion.g>
+
+                {/* Inner Event Horizon Warp Ring (Rotating Counter-Clockwise) with 2 Dark Nodes */}
+                <motion.g
+                  animate={{ rotate: [360, 0] }}
+                  transition={{ duration: 5.5, repeat: Infinity, ease: 'linear' }}
+                  style={{ transformOrigin: '50px 50px' }}
+                >
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r={ringRadius - 1.6}
+                    fill="none"
+                    stroke={`url(#voidInner_${uniqueId})`}
+                    strokeWidth="1.6"
+                    strokeDasharray="16 5 3 5"
+                  />
+                  {/* Inner Singularity Nodes at 135° and 315° */}
+                  <circle cx={50 + (ringRadius - 1.6) * 0.707} cy={50 + (ringRadius - 1.6) * 0.707} r="2.2" fill="#6366F1" />
+                  <circle cx={50 + (ringRadius - 1.6) * 0.707} cy={50 + (ringRadius - 1.6) * 0.707} r="1.1" fill="#FFFFFF" />
+                  <circle cx={50 - (ringRadius - 1.6) * 0.707} cy={50 - (ringRadius - 1.6) * 0.707} r="2.2" fill="#6366F1" />
+                  <circle cx={50 - (ringRadius - 1.6) * 0.707} cy={50 - (ringRadius - 1.6) * 0.707} r="1.1" fill="#FFFFFF" />
+                </motion.g>
+
+                {/* 4 Gravitational Caliper Reticle Ticks */}
+                <line x1="50" y1="6" x2="50" y2="10" stroke="#C084FC" strokeWidth="1.5" opacity="0.85" />
+                <line x1="50" y1="90" x2="50" y2="94" stroke="#C084FC" strokeWidth="1.5" opacity="0.85" />
+                <line x1="6" y1="50" x2="10" y2="50" stroke="#818CF8" strokeWidth="1.5" opacity="0.85" />
+                <line x1="90" y1="50" x2="94" y2="50" stroke="#818CF8" strokeWidth="1.5" opacity="0.85" />
               </g>
             )}
 
-            {/* 5. ZEN LOTUS (Pro Exclusive) */}
+            {/* 5. ZEN LOTUS (Pro Exclusive) - HARMONIC SACRED MANDALA */}
             {activeFlairId === 'zen-lotus' && (
               <g>
-                {/* Harmonic Expanding Wave 1 */}
-                <motion.circle
-                  cx="50"
-                  cy="50"
-                  r={ringRadius}
-                  fill="none"
-                  stroke="#34D399"
-                  strokeWidth="1.5"
-                  animate={{
-                    scale: [0.97, 1.32],
-                    opacity: [0.75, 0],
-                  }}
-                  transition={{
-                    duration: 3.3,
-                    repeat: Infinity,
-                    ease: 'easeOut',
-                  }}
+                {/* Outer Sacred Jade Ring (Rotating Clockwise) with 4 Spirit Orbs */}
+                <motion.g
+                  animate={{ rotate: [0, 360] }}
+                  transition={{ duration: 8.5, repeat: Infinity, ease: 'linear' }}
                   style={{ transformOrigin: '50px 50px' }}
-                />
+                >
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r={ringRadius + 2.5}
+                    fill="none"
+                    stroke={`url(#zenGrad_${uniqueId})`}
+                    strokeWidth="1.7"
+                    strokeDasharray="16 6 3 6"
+                  />
+                  {/* 4 Jade Spirit Orbs at 0°, 90°, 180°, 270° */}
+                  <circle cx="50" cy={50 - (ringRadius + 2.5)} r="2.4" fill="#34D399" />
+                  <circle cx="50" cy={50 - (ringRadius + 2.5)} r="1.2" fill="#FFFFFF" />
+                  <circle cx={50 + (ringRadius + 2.5)} cy="50" r="2.4" fill="#34D399" />
+                  <circle cx={50 + (ringRadius + 2.5)} cy="50" r="1.2" fill="#FFFFFF" />
+                  <circle cx="50" cy={50 + (ringRadius + 2.5)} r="2.4" fill="#34D399" />
+                  <circle cx="50" cy={50 + (ringRadius + 2.5)} r="1.2" fill="#FFFFFF" />
+                  <circle cx={50 - (ringRadius + 2.5)} cy="50" r="2.4" fill="#34D399" />
+                  <circle cx={50 - (ringRadius + 2.5)} cy="50" r="1.2" fill="#FFFFFF" />
+                </motion.g>
 
-                {/* Harmonic Expanding Wave 2 */}
-                <motion.circle
-                  cx="50"
-                  cy="50"
-                  r={ringRadius}
-                  fill="none"
-                  stroke="#10B981"
-                  strokeWidth="1.5"
-                  animate={{
-                    scale: [0.97, 1.32],
-                    opacity: [0.75, 0],
-                  }}
-                  transition={{
-                    duration: 3.3,
-                    repeat: Infinity,
-                    ease: 'easeOut',
-                    delay: 1.1,
-                  }}
+                {/* Inner Celestite Teal Harmonics Ring (Rotating Counter-Clockwise) with 4 Resonance Nodes */}
+                <motion.g
+                  animate={{ rotate: [360, 0] }}
+                  transition={{ duration: 6, repeat: Infinity, ease: 'linear' }}
                   style={{ transformOrigin: '50px 50px' }}
-                />
+                >
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r={ringRadius - 1.5}
+                    fill="none"
+                    stroke={`url(#zenInner_${uniqueId})`}
+                    strokeWidth="1.6"
+                    strokeDasharray="12 4 4 4"
+                  />
+                  {/* 4 Harmonic Nodes at 45°, 135°, 225°, 315° */}
+                  <circle cx={50 + (ringRadius - 1.5) * 0.707} cy={50 - (ringRadius - 1.5) * 0.707} r="2.0" fill="#2DD4BF" />
+                  <circle cx={50 + (ringRadius - 1.5) * 0.707} cy={50 - (ringRadius - 1.5) * 0.707} r="1.0" fill="#FFFFFF" />
+                  <circle cx={50 + (ringRadius - 1.5) * 0.707} cy={50 + (ringRadius - 1.5) * 0.707} r="2.0" fill="#2DD4BF" />
+                  <circle cx={50 + (ringRadius - 1.5) * 0.707} cy={50 + (ringRadius - 1.5) * 0.707} r="1.0" fill="#FFFFFF" />
+                  <circle cx={50 - (ringRadius - 1.5) * 0.707} cy={50 + (ringRadius - 1.5) * 0.707} r="2.0" fill="#2DD4BF" />
+                  <circle cx={50 - (ringRadius - 1.5) * 0.707} cy={50 + (ringRadius - 1.5) * 0.707} r="1.0" fill="#FFFFFF" />
+                  <circle cx={50 - (ringRadius - 1.5) * 0.707} cy={50 - (ringRadius - 1.5) * 0.707} r="2.0" fill="#2DD4BF" />
+                  <circle cx={50 - (ringRadius - 1.5) * 0.707} cy={50 - (ringRadius - 1.5) * 0.707} r="1.0" fill="#FFFFFF" />
+                </motion.g>
 
-                {/* Harmonic Expanding Wave 3 */}
-                <motion.circle
-                  cx="50"
-                  cy="50"
-                  r={ringRadius}
-                  fill="none"
-                  stroke="#0D9488"
-                  strokeWidth="1.5"
-                  animate={{
-                    scale: [0.97, 1.32],
-                    opacity: [0.75, 0],
-                  }}
-                  transition={{
-                    duration: 3.3,
-                    repeat: Infinity,
-                    ease: 'easeOut',
-                    delay: 2.2,
-                  }}
-                  style={{ transformOrigin: '50px 50px' }}
-                />
-
-                {/* Harmonic Core Ring */}
-                <motion.circle
-                  cx="50"
-                  cy="50"
-                  r={ringRadius}
-                  fill="none"
-                  stroke={`url(#zenGrad_${uniqueId})`}
-                  strokeWidth="2.5"
-                  animate={{
-                    scale: [1, 1.025, 1],
-                    opacity: [0.9, 1, 0.9],
-                  }}
-                  transition={{
-                    duration: 3,
-                    repeat: Infinity,
-                    ease: 'easeInOut',
-                  }}
-                  style={{ transformOrigin: '50px 50px' }}
-                />
-
-                {/* 8 Nodal Lotus Petal Points around the ring */}
-                {[0, 45, 90, 135, 180, 225, 270, 315].map((angle) => {
-                  const rad = (angle * Math.PI) / 180;
-                  const x = 50 + ringRadius * Math.cos(rad);
-                  const y = 50 + ringRadius * Math.sin(rad);
-                  return (
-                    <circle
-                      key={angle}
-                      cx={x}
-                      cy={y}
-                      r="1.6"
-                      fill="#A7F3D0"
-                      opacity="0.9"
-                    />
-                  );
-                })}
+                {/* 4 Crystal Diamond Finch Pointers at Cardinal Directions */}
+                <polygon points="50,5.5 52,8 50,10.5 48,8" fill="#34D399" opacity="0.9" />
+                <polygon points="50,89.5 52,92 50,94.5 48,92" fill="#34D399" opacity="0.9" />
+                <polygon points="5.5,50 8,48 10.5,50 8,52" fill="#2DD4BF" opacity="0.9" />
+                <polygon points="89.5,50 92,48 94.5,50 92,52" fill="#2DD4BF" opacity="0.9" />
               </g>
             )}
           </>
