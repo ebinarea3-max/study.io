@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import {
   X,
-  Sparkles,
   Check,
   Crown,
   Pause,
@@ -108,29 +107,24 @@ export function RoomAvatarFlairModal({
         className="w-full max-w-xl bg-[#0c1017] border border-white/15 rounded-3xl shadow-[0_24px_64px_rgba(0,0,0,0.9)] overflow-hidden flex flex-col max-h-[92vh] animate-in zoom-in-95 duration-200 select-none text-slate-200"
       >
         {/* Modal Header */}
-        <div className="p-4 sm:p-5 border-b border-white/10 flex items-center justify-between bg-white/[0.02]">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
-              <Sparkles className="w-5 h-5" />
+        <div className="px-5 py-4 sm:px-6 sm:py-5 border-b border-white/10 flex items-start justify-between bg-white/[0.02]">
+          <div className="flex-1 pr-4">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h3 id="flair-modal-title" className="text-base sm:text-lg font-hud font-bold text-white tracking-wide">
+                ROOM AVATAR FLAIRS
+              </h3>
+              <span className="text-[10px] font-hud font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                Rooms Only
+              </span>
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 id="flair-modal-title" className="text-base sm:text-lg font-hud font-bold text-white tracking-wide">
-                  ROOM AVATAR FLAIRS
-                </h3>
-                <span className="text-[10px] font-hud font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">
-                  Rooms Only
-                </span>
-              </div>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Customize your animated study aura in multiplayer focus chambers.
-              </p>
-            </div>
+            <p className="text-xs text-slate-400 mt-1">
+              Customize your animated study aura in multiplayer focus chambers.
+            </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+            className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer shrink-0 -mr-1 -mt-0.5"
             aria-label="Close"
           >
             <X className="w-4 h-4" />
