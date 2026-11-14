@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useStudy } from '../../context/StudyContext';
 import { usePremium } from '../../context/PremiumContext';
-import { X, Target, User, Loader2, Save, Plus, Dices, Crown, Lock, Sparkles } from 'lucide-react';
+import { X, Target, User, Loader2, Save, Plus, Dices, Crown, Lock, Sparkles, Check, Gem } from 'lucide-react';
 
 import { getRankTier, calculateSeasonRp, getCurrentMonthFocusSeconds, resolveLiveSeasonStats } from '../../lib/ranks';
 import { useDevRankPreview } from '../../lib/devRankPreview';
@@ -13,7 +13,7 @@ import { getSupabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { isAppropriateHandle, isValidHandleFormat, sanitizeHandleInput } from '../../lib/validation';
 import { updateScholarProfile } from '../../app/actions/profile';
-import { PRESET_AVATARS, VAULT_CATEGORIES, resolveAppAvatar, isAppAvatar } from '@/lib/avatars';
+import { PRESET_AVATARS, VAULT_CATEGORIES, PREMIUM_AVATAR_MAP, resolveAppAvatar, isAppAvatar } from '@/lib/avatars';
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -455,67 +455,186 @@ export function ProfileModal({ isOpen, onClose, user: parentUser, profile }: Pro
                   const isCatPremium = !!category.isPremium;
                   return (
                     <div key={idx} className="space-y-3">
-                      <div className="flex items-center justify-between pl-1">
-                        <div className="flex items-center gap-2">
-                          {isCatPremium && <Crown className="w-3.5 h-3.5 text-amber-400" />}
-                          <h4
-                            className={`text-[11px] font-mono font-bold uppercase tracking-widest ${
-                              isCatPremium ? 'text-amber-400' : 'text-neutral-500'
-                            }`}
-                          >
-                            {category.name}
-                          </h4>
-                        </div>
-                        {isCatPremium && (
-                          <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold tracking-wider uppercase bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-1">
-                            <Sparkles className="w-2.5 h-2.5 text-amber-400" />
-                            {category.badge || 'PRO EXCLUSIVE'}
-                          </span>
-                        )}
-                      </div>
+                      {isCatPremium ? (
+                        <div className="space-y-3">
+                          <style>{`
+                            @keyframes legendary-border-shimmer {
+                              0%, 100% { border-color: rgba(245, 158, 11, 0.4); }
+                              50% { border-color: rgba(253, 230, 138, 0.85); box-shadow: 0 0 10px rgba(245, 158, 11, 0.25); }
+                            }
+                            @keyframes premium-shine-sweep {
+                              0% { transform: translateX(-160%) rotate(35deg); opacity: 0; }
+                              30% { opacity: 0.6; }
+                              100% { transform: translateX(260%) rotate(35deg); opacity: 0; }
+                            }
+                            @media (prefers-reduced-motion: no-preference) {
+                              .anim-legendary-shimmer {
+                                animation: legendary-border-shimmer 8s ease-in-out infinite;
+                              }
+                              .group:hover .anim-shine-sweep {
+                                animation: premium-shine-sweep 1.2s ease-out 1 forwards;
+                              }
+                            }
+                          `}</style>
 
-                      <div className="grid grid-cols-4 sm:grid-cols-6 gap-3">
-                        {category.avatars.map((url, i) => {
-                          const isActive = avatarUrl === url;
-                          const isLocked = isCatPremium && !isPremium;
-                          return (
-                            <button
-                              type="button"
-                              key={i}
-                              onClick={() => {
-                                if (isLocked) {
-                                  toast.error('Study.io Pro unlocks this exclusive avatar! ✨');
-                                  openPremiumModal();
-                                  return;
-                                }
-                                setAvatarUrl(url);
-                                setIsVaultOpen(false);
-                              }}
-                              className={`aspect-square rounded-xl flex items-center justify-center overflow-hidden transition-all cursor-pointer relative border ${
-                                isActive
-                                  ? 'ring-2 ring-amber-500 border-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.3)] scale-105 z-10'
-                                  : isCatPremium
-                                  ? 'border-amber-500/30 bg-amber-500/[0.04] hover:scale-105 hover:border-amber-400 hover:shadow-[0_0_15px_rgba(245,158,11,0.25)]'
-                                  : 'border-white/10 bg-white/[0.03] hover:scale-105 hover:border-amber-500/50 hover:bg-amber-500/10'
-                              }`}
-                            >
-                              <img src={url} alt={`Vault ${idx}-${i}`} className="w-full h-full object-cover" />
-                              {isCatPremium && (
-                                <div
-                                  className={`absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center shadow-md ${
-                                    isLocked
-                                      ? 'bg-black/80 text-amber-400 border border-amber-500/40'
-                                      : 'bg-amber-500 text-slate-950 font-bold'
+                          {/* Upgraded Premium Section Header */}
+                          <div className="flex items-center justify-between pl-1 pb-1">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <Crown className="w-3.5 h-3.5 text-amber-400" />
+                                <h4 className="text-[11px] font-mono font-bold uppercase tracking-widest text-amber-400">
+                                  {category.name}
+                                </h4>
+                              </div>
+                              <p className="text-[10px] text-slate-400 font-mono pl-5.5 mt-0.5">
+                                12 exclusive collectible portraits
+                              </p>
+                            </div>
+                            <span className="px-2.5 py-0.5 rounded-full text-[9px] font-mono font-bold tracking-wider uppercase bg-gradient-to-r from-amber-500/20 via-yellow-500/15 to-amber-500/20 text-amber-300 border border-amber-400/40 shadow-[0_0_12px_rgba(245,158,11,0.15)] flex items-center gap-1.5">
+                              <Sparkles className="w-2.5 h-2.5 text-amber-300" />
+                              {category.badge || 'PRO EXCLUSIVE'}
+                            </span>
+                          </div>
+
+                          {/* 12 Premium Collectibles Grid */}
+                          <div className="grid grid-cols-4 sm:grid-cols-6 gap-3">
+                            {category.avatars.map((url, i) => {
+                              const meta = PREMIUM_AVATAR_MAP[url] || {
+                                name: `Elite Scholar #${i + 1}`,
+                                rarity: i < 6 ? 'Epic' : 'Legendary',
+                                image: url,
+                                signatureColor: i < 6 ? '#A855F7' : '#F59E0B',
+                                glowColor: i < 6 ? 'rgba(168, 85, 247, 0.45)' : 'rgba(245, 158, 11, 0.45)',
+                                borderColor: i < 6 ? '#C084FC' : '#FDE68A',
+                              };
+                              const isEpic = meta.rarity === 'Epic';
+                              const isActive = avatarUrl === url || avatarUrl === meta.image;
+                              const isLocked = !isPremium;
+
+                              return (
+                                <button
+                                  type="button"
+                                  key={i}
+                                  aria-label={`${meta.name} avatar, ${meta.rarity}`}
+                                  onClick={() => {
+                                    if (isLocked) {
+                                      toast.error('Study.io Pro unlocks this exclusive avatar! ✨');
+                                      openPremiumModal();
+                                      return;
+                                    }
+                                    setAvatarUrl(url);
+                                    setIsVaultOpen(false);
+                                  }}
+                                  className={`group aspect-square rounded-xl flex items-center justify-center overflow-hidden cursor-pointer relative transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 hover:-translate-y-[2px] ${
+                                    isActive
+                                      ? isEpic
+                                        ? 'ring-2 ring-purple-400 border-[1.5px] border-purple-400 shadow-[0_0_18px_rgba(192,132,252,0.5)] scale-105 z-10'
+                                        : 'ring-2 ring-amber-400 border-[1.5px] border-amber-400 shadow-[0_0_18px_rgba(245,158,11,0.5)] scale-105 z-10'
+                                      : isEpic
+                                      ? 'border-[1.5px] border-purple-500/40 hover:border-purple-400/80 hover:shadow-[0_6px_20px_rgba(168,85,247,0.35)]'
+                                      : 'border-[1.5px] border-amber-400/40 hover:border-amber-300/80 hover:shadow-[0_6px_20px_rgba(245,158,11,0.35)] anim-legendary-shimmer'
                                   }`}
-                                  title={isLocked ? 'Study.io Pro Exclusive' : 'Pro Unlocked'}
+                                  style={{
+                                    background: `radial-gradient(circle at 50% 30%, ${meta.glowColor} 0%, rgba(13, 17, 26, 0.95) 75%)`,
+                                    boxShadow: `inset 0 0 12px ${meta.glowColor}`,
+                                  }}
                                 >
-                                  {isLocked ? <Lock className="w-2.5 h-2.5" /> : <Crown className="w-2.5 h-2.5" />}
-                                </div>
-                              )}
-                            </button>
-                          );
-                        })}
-                      </div>
+                                  {/* Avatar Image (512x512 Transparent PNG) */}
+                                  <img
+                                    src={meta.image}
+                                    alt={`${meta.name} avatar`}
+                                    loading="lazy"
+                                    className="w-full h-full object-cover p-1 transition-transform duration-300 group-hover:scale-105"
+                                  />
+
+                                  {/* Top Right Refined Gem or Crown Icon in Rarity Color */}
+                                  <div
+                                    className={`absolute top-1.5 right-1.5 z-20 pointer-events-none ${
+                                      isEpic
+                                        ? 'text-purple-300 drop-shadow-[0_0_6px_rgba(192,132,252,0.8)]'
+                                        : 'text-amber-300 drop-shadow-[0_0_6px_rgba(245,158,11,0.8)]'
+                                    }`}
+                                    title={`${meta.rarity} Collectible`}
+                                  >
+                                    {isEpic ? (
+                                      <Gem className="w-3.5 h-3.5" />
+                                    ) : (
+                                      <Crown className="w-3.5 h-3.5 fill-amber-300/40" />
+                                    )}
+                                  </div>
+
+                                  {/* Selected Check Badge */}
+                                  {isActive && (
+                                    <div className="absolute top-1.5 left-1.5 w-4 h-4 rounded-full bg-emerald-500 text-slate-950 flex items-center justify-center shadow-md z-20">
+                                      <Check className="w-2.5 h-2.5 stroke-[3]" />
+                                    </div>
+                                  )}
+
+                                  {/* Locked State: Frosted pill at bottom reading "PRO" (Art remains fully visible!) */}
+                                  {isLocked && (
+                                    <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-black/70 backdrop-blur-md border border-amber-400/30 text-amber-300 text-[9px] font-hud font-bold tracking-wider uppercase flex items-center gap-1 shadow-lg pointer-events-none z-20">
+                                      <Lock className="w-2.5 h-2.5 text-amber-400" />
+                                      <span>PRO</span>
+                                    </div>
+                                  )}
+
+                                  {/* Hover Diagonal Shine Sweep */}
+                                  <div
+                                    aria-hidden="true"
+                                    className="absolute inset-0 pointer-events-none overflow-hidden rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                                  >
+                                    <div
+                                      className="w-[45%] h-[220%] -top-1/2 absolute bg-gradient-to-r from-transparent via-white/25 to-transparent anim-shine-sweep"
+                                      style={{
+                                        transform: 'translateX(-160%) rotate(35deg)',
+                                      }}
+                                    />
+                                  </div>
+
+                                  {/* Tooltip on Hover */}
+                                  <div className="absolute -top-7 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-30 px-2 py-0.5 rounded-md bg-[#0a0d14]/95 border border-white/15 text-[10px] font-hud font-semibold text-white whitespace-nowrap shadow-xl">
+                                    <span className={isEpic ? 'text-purple-300' : 'text-amber-300'}>
+                                      {meta.name}
+                                    </span>
+                                    <span className="text-slate-400 ml-1">· {meta.rarity}</span>
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between pl-1">
+                            <h4 className="text-[11px] font-mono font-bold uppercase tracking-widest text-neutral-500">
+                              {category.name}
+                            </h4>
+                          </div>
+
+                          <div className="grid grid-cols-4 sm:grid-cols-6 gap-3">
+                            {category.avatars.map((url, i) => {
+                              const isActive = avatarUrl === url;
+                              return (
+                                <button
+                                  type="button"
+                                  key={i}
+                                  onClick={() => {
+                                    setAvatarUrl(url);
+                                    setIsVaultOpen(false);
+                                  }}
+                                  className={`aspect-square rounded-xl flex items-center justify-center overflow-hidden transition-all cursor-pointer relative border ${
+                                    isActive
+                                      ? 'ring-2 ring-amber-500 border-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.3)] scale-105 z-10'
+                                      : 'border-white/10 bg-white/[0.03] hover:scale-105 hover:border-amber-500/50 hover:bg-amber-500/10'
+                                  }`}
+                                >
+                                  <img src={url} alt={`Vault ${idx}-${i}`} className="w-full h-full object-cover" />
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
