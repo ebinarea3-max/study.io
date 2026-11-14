@@ -605,6 +605,11 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
   const currentSubjectName = taskSubjectId === 'none' || !currentSubject ? 'General' : currentSubject.name;
   const currentSubjectColor = currentSubject?.color || (taskSubjectId === 'none' ? '#71717a' : '#10B981');
 
+  const handleSelectSubject = (id: string) => {
+    setTaskSubjectId(id);
+    setIsSubjectDropdownOpen(false);
+  };
+
   return (
     <div className="space-y-4 sm:space-y-6 relative flex flex-col min-h-[70vh] w-full">
       {/* HUD Header */}
@@ -656,7 +661,9 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
       {/* Quick Add Bar */}
       <form
         onSubmit={handleAddTask}
-        className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 p-3 sm:p-4 rounded-xl bg-[var(--surface)] border border-[var(--border)] shadow-card focus-within:border-[var(--accent)] focus-within:ring-1 focus-within:ring-[var(--accent)]/30 transition-all relative z-10"
+        className={`flex flex-col sm:flex-row items-stretch sm:items-center gap-3 p-3 sm:p-4 rounded-xl bg-[var(--surface)] border border-[var(--border)] shadow-card focus-within:border-[var(--accent)] focus-within:ring-1 focus-within:ring-[var(--accent)]/30 transition-all relative ${
+          isSubjectDropdownOpen ? 'z-30' : 'z-20'
+        }`}
       >
         <div className="flex-1 flex items-center gap-3 px-1">
           <Plus className="w-5 h-5 text-[var(--text-dim)] flex-shrink-0" />
@@ -701,7 +708,12 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
 
           {/* Custom Subject Dropdown (hidden in Focus mode) */}
           {!isFocus && (
-            <div className="relative" ref={subjectDropdownRef}>
+            <div
+              className="relative"
+              ref={subjectDropdownRef}
+              onMouseDown={(e) => e.stopPropagation()}
+              onTouchStart={(e) => e.stopPropagation()}
+            >
               <button
                 type="button"
                 onClick={() => setIsSubjectDropdownOpen(prev => !prev)}
@@ -731,16 +743,24 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -4, scale: 0.98 }}
                     transition={{ duration: 0.15, ease: 'easeOut' }}
-                    className="absolute left-0 top-full mt-1.5 z-50 min-w-[180px] max-w-[260px] rounded-xl bg-[#0c0c0e]/95 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/80 p-1.5 select-none"
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onTouchStart={(e) => e.stopPropagation()}
+                    className="absolute left-0 top-full mt-1.5 z-50 min-w-[180px] max-w-[260px] rounded-xl bg-[#0c0c0e]/95 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/80 p-1.5 select-none pointer-events-auto"
                     role="listbox"
                   >
                     <div className="max-h-60 overflow-y-auto space-y-0.5 scrollbar-thin scrollbar-thumb-white/10">
                       {/* Option: General */}
                       <button
                         type="button"
-                        onClick={() => {
-                          setTaskSubjectId('none');
-                          setIsSubjectDropdownOpen(false);
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleSelectSubject('none');
+                        }}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleSelectSubject('none');
                         }}
                         className={`w-full rounded-lg px-3 py-2 text-xs uppercase tracking-wider transition-colors flex items-center justify-between text-left cursor-pointer ${
                           taskSubjectId === 'none'
@@ -766,9 +786,15 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
                           <button
                             key={s.id}
                             type="button"
-                            onClick={() => {
-                              setTaskSubjectId(s.id);
-                              setIsSubjectDropdownOpen(false);
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleSelectSubject(s.id);
+                            }}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleSelectSubject(s.id);
                             }}
                             className={`w-full rounded-lg px-3 py-2 text-xs uppercase tracking-wider transition-colors flex items-center justify-between text-left cursor-pointer ${
                               isSelected
