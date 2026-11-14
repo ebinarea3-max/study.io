@@ -17,6 +17,8 @@ export const ATMOSPHERE_OPTIONS: AtmosphereOption[] = [
   { id: 'rain', label: 'Gentle Rain', description: 'Calming rainfall on rooftop', category: 'nature' },
   { id: 'campfire', label: 'Fireplace', description: 'Warm crackling hearth flame', category: 'nature' },
   { id: 'calmnoise', label: 'Calm Music', description: 'Peaceful ambient meditation music', category: 'music' },
+  { id: 'starlitpiano', label: 'Starlit Piano', description: 'Warm reflective acoustic piano & soft pads', category: 'music' },
+  { id: 'zensanctuary', label: 'Zen Sanctuary', description: 'Singing bowl resonance & ethereal harp', category: 'music' },
   { id: 'brownnoise', label: 'Brown Noise', description: 'Deep low-frequency rumble', category: 'noise' },
   { id: 'pinknoise', label: 'Pink Noise', description: 'Balanced soothing static', category: 'noise' },
   { id: 'whitenoise', label: 'White Noise', description: 'Crisp masking frequency', category: 'noise' },

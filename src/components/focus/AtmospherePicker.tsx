@@ -13,6 +13,7 @@ import {
   Radio,
   Music,
   Loader2,
+  Sparkles,
 } from 'lucide-react';
 import { useAtmosphere, AtmosphereOption, AtmosphereSoundId } from './useAtmosphere';
 
@@ -111,6 +112,10 @@ export function AtmospherePicker({
         return <Flame className={iconClass} />;
       case 'calmnoise':
         return <Music className={iconClass} />;
+      case 'starlitpiano':
+        return <Sparkles className={iconClass} />;
+      case 'zensanctuary':
+        return <Wind className={iconClass} />;
       case 'brownnoise':
         return <Headphones className={iconClass} />;
       case 'pinknoise':

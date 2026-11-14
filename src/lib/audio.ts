@@ -7,6 +7,8 @@ export type AmbientSoundType =
   | 'rain'
   | 'campfire'
   | 'calmnoise'
+  | 'starlitpiano'
+  | 'zensanctuary'
   | 'waves'
   | 'lofi';
 
@@ -183,6 +185,8 @@ class AudioEngine {
     'rain': 0.95,
     'campfire': 1.20,
     'calmnoise': 1.08,
+    'starlitpiano': 1.08,
+    'zensanctuary': 1.08,
     'waves': 1.0,
     'lofi': 1.0,
   };
@@ -219,6 +223,8 @@ class AudioEngine {
         'pinknoise': '/audio/ambience/pink-noise.mp3',
         'brownnoise': '/audio/ambience/brown-noise.mp3',
         'calmnoise': '/audio/ambience/calm-noise.mp3',
+        'starlitpiano': '/audio/ambience/starlit-piano.mp3',
+        'zensanctuary': '/audio/ambience/zen-sanctuary.mp3',
         'waves': '/audio/ambience/calm-noise.mp3',
         'lofi': '/audio/ambience/calm-noise.mp3',
       };

@@ -229,15 +229,17 @@
 ---
 
 ## 11. Atmosphere Sounds, Fullscreen Focus Mode, and Focus Scenes
-- **Atmosphere Sounds (7 Options)** (`src/components/focus/useAtmosphere.ts:16-24`):
+- **Atmosphere Sounds (9 Options)** (`src/components/focus/useAtmosphere.ts:16-26`):
   1. `none`: **Silent** ("Pure quiet focus") — Category: `silent`
   2. `rain`: **Gentle Rain** ("Calming rainfall on rooftop") — Category: `nature`
   3. `campfire`: **Fireplace** ("Warm crackling hearth flame") — Category: `nature`
   4. `calmnoise`: **Calm Music** ("Peaceful ambient meditation music") — Category: `music`
-  5. `brownnoise`: **Brown Noise** ("Deep low-frequency rumble") — Category: `noise`
-  6. `pinknoise`: **Pink Noise** ("Balanced soothing static") — Category: `noise`
-  7. `whitenoise`: **White Noise** ("Crisp masking frequency") — Category: `noise`
-  - Default volume: 0.5 (50%) (`useAtmosphere.ts:34`). All 7 sounds are free.
+  5. `starlitpiano`: **Starlit Piano** ("Warm reflective acoustic piano & soft pads") — Category: `music`
+  6. `zensanctuary`: **Zen Sanctuary** ("Singing bowl resonance & ethereal harp") — Category: `music`
+  7. `brownnoise`: **Brown Noise** ("Deep low-frequency rumble") — Category: `noise`
+  8. `pinknoise`: **Pink Noise** ("Balanced soothing static") — Category: `noise`
+  9. `whitenoise`: **White Noise** ("Crisp masking frequency") — Category: `noise`
+  - Default volume: 0.5 (50%) (`useAtmosphere.ts:34`). All 9 sounds are free.
 - **Fullscreen Focus Mode** (`src/components/focus/FocusModeModal.tsx`):
   - Full-screen immersion modal featuring canvas background animations, clock dial, atmosphere controls, scene selector, and keyboard shortcuts (`F` for fullscreen, `ESC` to close).
 - **Focus Scenes** (`src/components/focus/scenes/registry.ts:13-72`):
@@ -302,7 +304,7 @@
   5. **Scholar Profile & Leaderboard Flair**: Verified Pro membership badge and gold crown flair frame on leaderboard rows and scholar profile modal (`src/lib/flair.ts`).
   6. **Deep Analytics Tiles**: Weekly Report Card and AI/Study Insights tiles (`src/components/analytics/WeeklyReportCard.tsx`, `StudyInsights.tsx`).
 - **What Free Users Receive**:
-  - Full access to 11 themes, default focus scene, all 8 atmosphere soundscapes, all 3 timer modes, unlimited public and private study rooms, daily tasks checklist, weekly timetable planner, ranked seasonal progression, leaderboard visibility, and current-day analytics breakdown.
+  - Full access to 11 themes, default focus scene, all 9 atmosphere soundscapes, all 3 timer modes, unlimited public and private study rooms, daily tasks checklist, weekly timetable planner, ranked seasonal progression, leaderboard visibility, and current-day analytics breakdown.
 - **Payment Status (Live vs "Coming Soon")**:
   - Integration is implemented with Razorpay (`src/hooks/useRazorpayCheckout.ts`, `src/app/api/billing/plans/route.ts`, `/api/billing/create-subscription`).
   - Configured pricing: Monthly plan is `₹499` / month; Yearly plan is `₹4,999` / year (`src/components/premium/PremiumModal.tsx:70-71`).
