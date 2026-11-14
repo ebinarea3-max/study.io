@@ -11,6 +11,10 @@ import {
 } from './emblemRegistry';
 import { SparkEmblem } from './SparkEmblem';
 import { CrystalEmblem } from './CrystalEmblem';
+import { BloomEmblem } from './BloomEmblem';
+import { StarsEmblem } from './StarsEmblem';
+import { SummitEmblem } from './SummitEmblem';
+import { SkylineEmblem } from './SkylineEmblem';
 import { useCanAnimateEmblem } from './emblemVisibilityManager';
 
 export interface GrowthEmblemProps {
@@ -132,13 +136,44 @@ export function GrowthEmblem({
           />
         );
       case 'bloom':
-      case 'stars':
-      case 'summit':
-      case 'skyline':
-      default:
-        // In Phase 1, Crystal serves as the premium implementation; Phase 2 expands the remaining 4
         return (
-          <CrystalEmblem
+          <BloomEmblem
+            stage={stage}
+            state={state}
+            canAnimate={canAnimate}
+            reducedMotion={reducedMotion}
+          />
+        );
+      case 'stars':
+        return (
+          <StarsEmblem
+            stage={stage}
+            state={state}
+            canAnimate={canAnimate}
+            reducedMotion={reducedMotion}
+          />
+        );
+      case 'summit':
+        return (
+          <SummitEmblem
+            stage={stage}
+            state={state}
+            canAnimate={canAnimate}
+            reducedMotion={reducedMotion}
+          />
+        );
+      case 'skyline':
+        return (
+          <SkylineEmblem
+            stage={stage}
+            state={state}
+            canAnimate={canAnimate}
+            reducedMotion={reducedMotion}
+          />
+        );
+      default:
+        return (
+          <SparkEmblem
             stage={stage}
             state={state}
             canAnimate={canAnimate}

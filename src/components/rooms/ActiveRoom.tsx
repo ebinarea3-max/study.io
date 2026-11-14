@@ -2009,11 +2009,10 @@ CREATE POLICY "Hosts can update their own study rooms"
                     }}
                     role="button"
                     tabIndex={0}
-                    className={`p-3.5 rounded-2xl flex flex-col items-center gap-2.5 group relative transition-all duration-300 cursor-pointer hover:scale-[1.02] active:scale-[0.98] select-none ${
-                      u.is_current_user
-                        ? 'bg-amber-500/[0.05] border border-amber-500/30 shadow-[0_0_20px_rgba(245,158,11,0.08)] ring-1 ring-amber-500/20'
-                        : 'bg-white/[0.02] border border-white/5 hover:border-white/15 hover:bg-white/[0.04]'
-                    }`}
+                    className={`p-3.5 rounded-2xl flex flex-col items-center gap-2.5 group relative transition-all duration-300 cursor-pointer hover:scale-[1.02] active:scale-[0.98] select-none ${u.is_current_user
+                      ? 'bg-amber-500/[0.05] border border-amber-500/30 shadow-[0_0_20px_rgba(245,158,11,0.08)] ring-1 ring-amber-500/20'
+                      : 'bg-white/[0.02] border border-white/5 hover:border-white/15 hover:bg-white/[0.04]'
+                      }`}
                     style={{ contentVisibility: displayUsers.length > 24 ? 'auto' : undefined }}
                     title={u.is_current_user ? 'Click to customize your Study Emblem' : 'Click to inspect scholar'}
                   >
@@ -2026,15 +2025,14 @@ CREATE POLICY "Hosts can update their own study rooms"
                             e.stopPropagation();
                             setActiveMenuUserId(activeMenuUserId === u.user_id ? null : u.user_id);
                           }}
-                          className={`w-6 h-6 rounded-full flex items-center justify-center bg-[#0d121c] border border-white/20 text-slate-300 hover:text-white hover:border-amber-400/60 hover:bg-black shadow-lg transition-all cursor-pointer ${
-                            activeMenuUserId === u.user_id
-                              ? 'opacity-100 ring-2 ring-amber-500/50 bg-black text-amber-300 scale-105'
-                              : 'opacity-0 group-hover:opacity-100'
-                              }`}
-                            title="Scholar Options"
-                          >
-                            <MoreVertical className="w-3.5 h-3.5" />
-                          </button>
+                          className={`w-6 h-6 rounded-full flex items-center justify-center bg-[#0d121c] border border-white/20 text-slate-300 hover:text-white hover:border-amber-400/60 hover:bg-black shadow-lg transition-all cursor-pointer ${activeMenuUserId === u.user_id
+                            ? 'opacity-100 ring-2 ring-amber-500/50 bg-black text-amber-300 scale-105'
+                            : 'opacity-0 group-hover:opacity-100'
+                            }`}
+                          title="Scholar Options"
+                        >
+                          <MoreVertical className="w-3.5 h-3.5" />
+                        </button>
 
                         {/* Floating Dropdown Menu */}
                         {activeMenuUserId === u.user_id && (
@@ -2099,14 +2097,13 @@ CREATE POLICY "Hosts can update their own study rooms"
 
                     {/* Displays Total Focus Time Today with live seconds ticking up from today's total */}
                     <p
-                      className={`text-sm font-mono font-bold tracking-wider transition-colors ${
-                        isStudying
-                          ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]'
-                          : 'text-slate-300'
-                          }`}
-                      >
-                        {formatSeconds(totalFocusSec)}
-                      </p>
+                      className={`text-sm font-mono font-bold tracking-wider transition-colors ${isStudying
+                        ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]'
+                        : 'text-slate-300'
+                        }`}
+                    >
+                      {formatSeconds(totalFocusSec)}
+                    </p>
 
                     {/* Status badge explaining state and session progress */}
                     <div className="flex items-center justify-center">
