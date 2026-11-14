@@ -314,7 +314,7 @@ export default function Home() {
         {/* Main Content Area with Mobile Swipe Navigation */}
         <main className={`w-full flex flex-col items-center relative z-10 px-0 md:px-8 ${
           activeTab === "timer" 
-            ? "flex-1 h-[calc(100dvh-64px)] max-h-[calc(100dvh-64px)] overflow-hidden flex flex-col items-center justify-center pt-1 md:pt-2 px-3 sm:px-4 md:px-0" 
+            ? "flex-1 h-[calc(100dvh-64px)] max-h-[calc(100dvh-64px)] overflow-hidden flex flex-col items-center justify-center pt-1 md:pt-2 px-3 sm:px-4 md:px-0 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] md:pb-2" 
             : activeTab === "rooms"
             ? "flex-1 min-h-0 w-full overflow-hidden pt-0 px-0 h-full"
             : "min-h-screen pt-3.5 px-3 sm:px-4 md:px-0"

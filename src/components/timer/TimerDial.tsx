@@ -109,7 +109,7 @@ export const TimerDial = React.memo(function TimerDial({
   const strokeDashoffset = CIRCUMFERENCE - (safePercent / 100) * CIRCUMFERENCE;
 
   return (
-    <div className="relative flex items-center justify-center w-[min(420px,80vw,calc(100dvh-320px))] h-[min(420px,80vw,calc(100dvh-320px))] aspect-square mx-auto select-none my-auto">
+    <div className="relative flex items-center justify-center w-[min(380px,72vw,calc(100dvh-390px))] h-[min(380px,72vw,calc(100dvh-390px))] aspect-square mx-auto select-none my-auto">
       <style>{`
         @keyframes timerDotPulse {
           0%, 100% { opacity: 1; }
@@ -163,11 +163,11 @@ export const TimerDial = React.memo(function TimerDial({
       </svg>
 
       {/* Centre Stack */}
-      <div className="relative z-10 flex flex-col items-center justify-center text-center px-4 max-w-[75%]">
+      <div className="relative z-10 flex flex-col items-center justify-center text-center px-2 max-w-[85%]">
         {/* Small subject name above (text-dim at 13px) */}
         {subjectName ? (
           <span
-            className="text-[13px] font-mono text-[var(--text-dim)] truncate max-w-[200px] mb-1 min-h-[16px] tracking-tight"
+            className="text-[12px] sm:text-[13px] font-mono text-[var(--text-dim)] truncate max-w-[200px] mb-0.5 sm:mb-1 min-h-[16px] tracking-tight"
             title={subjectName}
           >
             {subjectName}
@@ -175,7 +175,7 @@ export const TimerDial = React.memo(function TimerDial({
         ) : null}
 
         {/* Digits in display font with tabular numerals at about 22% of dial width */}
-        <div className="font-mono tabular-nums font-bold text-[var(--text)] text-5xl sm:text-6xl tracking-tight leading-none text-center select-none py-1">
+        <div className="font-mono tabular-nums font-bold text-[var(--text)] text-4xl sm:text-5xl md:text-6xl tracking-tight leading-none text-center select-none py-0.5 sm:py-1">
           {timerMode === 'countdown' && !isStudying ? (
             <button
               type="button"
