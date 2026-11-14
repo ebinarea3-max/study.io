@@ -34,7 +34,6 @@ import {
   UserCheck,
   MoreVertical,
   Loader2,
-  Sparkles,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { UserAvatar } from '../common/UserAvatar';
@@ -1914,15 +1913,6 @@ CREATE POLICY "Hosts can update their own study rooms"
                 <span>SETTINGS</span>
               </button>
             )}
-            {/* Customize Room Avatar Flair */}
-            <button
-              onClick={() => setIsFlairModalOpen(true)}
-              className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-hud font-bold uppercase tracking-wider text-amber-400 hover:text-amber-300 hover:bg-amber-400/10 transition-all cursor-pointer shrink-0"
-              title="Customize Room Avatar Flair"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span className="hidden xs:inline">FLAIR</span>
-            </button>
           </div>
         </div>
       </header>
