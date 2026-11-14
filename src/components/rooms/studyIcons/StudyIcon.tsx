@@ -7,7 +7,12 @@ import { LampIcon } from './LampIcon';
 import { BookIcon } from './BookIcon';
 import { PencilIcon } from './PencilIcon';
 import { CoffeeIcon } from './CoffeeIcon';
-import { PremiumPlaceholderIcon } from './PremiumPlaceholderIcon';
+import { OwlIcon } from './OwlIcon';
+import { CatIcon } from './CatIcon';
+import { RocketIcon } from './RocketIcon';
+import { SproutIcon } from './SproutIcon';
+import { LaptopIcon } from './LaptopIcon';
+import { NightIcon } from './NightIcon';
 import { useCanAnimateIcon } from './iconVisibilityManager';
 
 export interface StudyIconProps {
@@ -90,20 +95,19 @@ export function StudyIcon({
       case 'coffee':
         return <CoffeeIcon state={state} canAnimate={canAnimate} reducedMotion={reducedMotion} />;
       case 'owl':
+        return <OwlIcon state={state} canAnimate={canAnimate} reducedMotion={reducedMotion} />;
       case 'cat':
+        return <CatIcon state={state} canAnimate={canAnimate} reducedMotion={reducedMotion} />;
       case 'rocket':
+        return <RocketIcon state={state} canAnimate={canAnimate} reducedMotion={reducedMotion} />;
       case 'sprout':
+        return <SproutIcon state={state} canAnimate={canAnimate} reducedMotion={reducedMotion} />;
       case 'laptop':
+        return <LaptopIcon state={state} canAnimate={canAnimate} reducedMotion={reducedMotion} />;
       case 'night':
+        return <NightIcon state={state} canAnimate={canAnimate} reducedMotion={reducedMotion} />;
       default:
-        return (
-          <PremiumPlaceholderIcon
-            id={resolvedId}
-            state={state}
-            canAnimate={canAnimate}
-            reducedMotion={reducedMotion}
-          />
-        );
+        return <LampIcon state={state} canAnimate={canAnimate} reducedMotion={reducedMotion} />;
     }
   };
 
