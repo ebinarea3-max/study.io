@@ -41,19 +41,9 @@ import { UserAvatar } from '../common/UserAvatar';
 import { resolveAppAvatar, isAppAvatar } from '@/lib/avatars';
 import { FlairFrame, fetchFlairMap } from '../../lib/flair';
 import { AvatarFlairRing, FlairCrown } from '../common/FlairBadge';
-import { GrowthEmblem } from './emblems/GrowthEmblem';
-import {
-  StudyEmblemModal,
-  getEquippedEmblemFamily,
-  saveEquippedEmblemFamily,
-} from './emblems/StudyEmblemModal';
-import {
-  type EmblemFamilyId,
-  type EmblemState,
-  EMBLEM_FAMILIES,
-  resolveEmblemFamily,
-} from './emblems/emblemRegistry';
-import { stageFromSeconds } from './emblems/emblemStages';
+import { RoomAvatarFlair } from './RoomAvatarFlair';
+import { RoomAvatarFlairModal } from './RoomAvatarFlairModal';
+import { RoomFlairId, getEquippedRoomFlair, ROOM_FLAIRS } from '../../lib/roomFlairs';
 import { ScholarProfileModal, ScholarModalData } from '../common/ScholarProfileModal';
 import { getSupabase, broadcast } from '../../lib/supabase';
 import {
@@ -95,7 +85,6 @@ interface RoomMemberInfo {
   total_focus_seconds?: number;
   is_online: boolean;
   is_current_user?: boolean;
-  study_icon?: string | null;
 }
 
 // Formats total seconds to HH:MM:SS with 2-digit zero-padding
@@ -129,7 +118,7 @@ export function getCachedMemberProfile(userId: string): { username?: string; ava
         return parsed[userId];
       }
     }
-  } catch { }
+  } catch {}
   return undefined;
 }
 
@@ -143,7 +132,7 @@ export function cacheMemberProfiles(
       try {
         const raw = localStorage.getItem('study_io_profiles_cache');
         if (raw) localObj = JSON.parse(raw);
-      } catch { }
+      } catch {}
     }
 
     profiles.forEach((p) => {
@@ -163,7 +152,7 @@ export function cacheMemberProfiles(
     if (typeof window !== 'undefined') {
       localStorage.setItem('study_io_profiles_cache', JSON.stringify(localObj));
     }
-  } catch { }
+  } catch {}
 }
 
 import { usePremium } from '../../context/PremiumContext';
@@ -235,58 +224,25 @@ export default function ActiveRoom({ roomId, onBack, initialTab }: ActiveRoomPro
   // Premium flair for room members
   const [flairMap, setFlairMap] = useState<Record<string, FlairFrame>>({});
 
-  // Study Emblem state
-  const [userStudyEmblem, setUserStudyEmblem] = useState<EmblemFamilyId>('spark');
-  const userStudyEmblemRef = useRef<EmblemFamilyId>('spark');
-  const [isStudyEmblemModalOpen, setIsStudyEmblemModalOpen] = useState(false);
+  // Room Avatar Flair state
+  const [userRoomFlair, setUserRoomFlair] = useState<RoomFlairId>('default');
+  const userRoomFlairRef = useRef<RoomFlairId>('default');
+  const [isFlairModalOpen, setIsFlairModalOpen] = useState(false);
 
   useEffect(() => {
-    const equipped = getEquippedEmblemFamily();
-    if (equipped) {
-      setUserStudyEmblem(equipped);
-      userStudyEmblemRef.current = equipped;
-    }
+    const equipped = getEquippedRoomFlair();
+    setUserRoomFlair(equipped);
+    userRoomFlairRef.current = equipped;
 
-    const handleEmblemEvent = (e: any) => {
+    const handleFlairEvent = (e: any) => {
       if (e?.detail) {
-        setUserStudyEmblem(e.detail);
-        userStudyEmblemRef.current = e.detail;
+        setUserRoomFlair(e.detail);
+        userRoomFlairRef.current = e.detail;
       }
     };
-    window.addEventListener('studyio_study_emblem_changed', handleEmblemEvent);
-    return () => window.removeEventListener('studyio_study_emblem_changed', handleEmblemEvent);
+    window.addEventListener('studyio_room_flair_changed', handleFlairEvent);
+    return () => window.removeEventListener('studyio_room_flair_changed', handleFlairEvent);
   }, []);
-
-  // Also load saved study_icon from profile if authenticated
-  useEffect(() => {
-    if (!user?.id) return;
-    const supabase = getSupabase();
-    if (!supabase) return;
-
-    let isMounted = true;
-    (async () => {
-      try {
-        const { data } = await supabase
-          .from('profiles')
-          .select('study_icon')
-          .eq('id', user.id)
-          .single();
-
-        if (isMounted && data?.study_icon) {
-          const famId = resolveEmblemFamily(data.study_icon, isPremium);
-          setUserStudyEmblem(famId);
-          userStudyEmblemRef.current = famId;
-          saveEquippedEmblemFamily(famId);
-        }
-      } catch {
-        // ignore network/schema fetch errors
-      }
-    })();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [user?.id, isPremium]);
 
   // Scholar profile modal state
   const [selectedScholar, setSelectedScholar] = useState<ScholarModalData | null>(null);
@@ -340,7 +296,7 @@ export default function ActiveRoom({ roomId, onBack, initialTab }: ActiveRoomPro
             event: 'room_deleted',
             payload: { timestamp: Date.now() },
           });
-        } catch { }
+        } catch {}
 
         if (broadcast) {
           broadcast.postMessage({ type: 'lobby_update', timestamp: Date.now() });
@@ -395,7 +351,7 @@ CREATE POLICY "Hosts can update their own study rooms"
         base_today_seconds: number; // Base today seconds (total minus session)
         today_seconds: number;
         last_seen: number;
-        study_icon?: string | null;
+        room_flair?: RoomFlairId | null;
         is_premium?: boolean;
         flair_frame?: string | null;
       }
@@ -524,7 +480,7 @@ CREATE POLICY "Hosts can update their own study rooms"
           existing &&
           existing.is_studying === isStudying &&
           existing.start_time === effectiveStartTime &&
-          existing.study_icon === (payload.study_icon || null) &&
+          existing.room_flair === (payload.room_flair || payload.flair || null) &&
           existing.base_today_seconds === baseToday &&
           now - existing.last_seen < 4000
         ) {
@@ -542,7 +498,7 @@ CREATE POLICY "Hosts can update their own study rooms"
             today_seconds: todayTotal,
             is_premium: Boolean(payload.is_premium),
             flair_frame: payload.flair_frame || (payload.is_premium ? 'gold' : null),
-            study_icon: payload.study_icon || null,
+            room_flair: payload.room_flair || payload.flair || null,
             last_seen: now,
           },
         };
@@ -559,7 +515,7 @@ CREATE POLICY "Hosts can update their own study rooms"
     const todayTotal = getTodayTotalSecondsRef.current ? getTodayTotalSecondsRef.current() : 0;
     const baseToday = Math.max(0, todayTotal - (isRunning ? elapsed : 0));
     const now = Date.now();
-
+    
     const payload = {
       user_id: user.id,
       is_studying: isRunning,
@@ -569,7 +525,7 @@ CREATE POLICY "Hosts can update their own study rooms"
       today_seconds: todayTotal,
       is_premium: isPremium,
       flair_frame: isPremium ? 'gold' : null,
-      study_icon: userStudyEmblemRef.current,
+      room_flair: userRoomFlairRef.current,
       timestamp: now,
     };
 
@@ -581,8 +537,8 @@ CREATE POLICY "Hosts can update their own study rooms"
             event: 'focus_status_update',
             payload,
           })
-          .catch(() => { });
-      } catch (err) { }
+          .catch(() => {});
+      } catch (err) {}
     }
 
     if (globalHubRef.current) {
@@ -593,8 +549,8 @@ CREATE POLICY "Hosts can update their own study rooms"
             event: 'focus_status_update',
             payload,
           })
-          .catch(() => { });
-      } catch (err) { }
+          .catch(() => {});
+      } catch (err) {}
     }
   }, [user?.id, isPremium]);
 
@@ -646,8 +602,8 @@ CREATE POLICY "Hosts can update their own study rooms"
               event: 'ping_focus_status',
               payload: { requester_id: user?.id },
             })
-            .catch(() => { });
-        } catch (err) { }
+            .catch(() => {});
+        } catch (err) {}
       }
       if (globalHubRef.current) {
         try {
@@ -657,8 +613,8 @@ CREATE POLICY "Hosts can update their own study rooms"
               event: 'ping_focus_status',
               payload: { requester_id: user?.id },
             })
-            .catch(() => { });
-        } catch (err) { }
+            .catch(() => {});
+        } catch (err) {}
       }
     }, 400);
 
@@ -829,12 +785,12 @@ CREATE POLICY "Hosts can update their own study rooms"
             try {
               const parsed = JSON.parse(record.content.replace('[SYSTEM_BAN]:', ''));
               banMap.set(parsed.userId, { userId: parsed.userId, username: parsed.username });
-            } catch { }
+            } catch {}
           } else if (record.content?.startsWith('[SYSTEM_UNBAN]:')) {
             try {
               const parsed = JSON.parse(record.content.replace('[SYSTEM_UNBAN]:', ''));
               banMap.delete(parsed.userId);
-            } catch { }
+            } catch {}
           }
         }
       }
@@ -978,7 +934,7 @@ CREATE POLICY "Hosts can update their own study rooms"
               today_seconds: today,
               is_premium: Boolean(p.is_premium),
               flair_frame: p.flair_frame || (p.is_premium ? 'gold' : null),
-              study_icon: p.study_icon || null,
+              room_flair: p.room_flair || null,
               last_seen: now,
             };
           }
@@ -1026,7 +982,7 @@ CREATE POLICY "Hosts can update their own study rooms"
               today_seconds: todayTotal,
               is_premium: isPremium,
               flair_frame: isPremium ? 'gold' : null,
-              study_icon: userStudyEmblemRef.current,
+              room_flair: userRoomFlairRef.current,
             });
           } catch (err) {
             console.error('Initial presence track error:', err);
@@ -1052,7 +1008,7 @@ CREATE POLICY "Hosts can update their own study rooms"
           }
           setMessages((prev) => {
             if (prev.find((m) => m.id === rawMsg.id)) return prev;
-
+            
             if (roomTabRef.current !== 'chat' && rawMsg.user_id !== user?.id) {
               setUnreadCount((c) => c + 1);
             }
@@ -1115,7 +1071,7 @@ CREATE POLICY "Hosts can update their own study rooms"
           today_seconds: todayTotal,
           is_premium: isPremium,
           flair_frame: isPremium ? 'gold' : null,
-          study_icon: userStudyEmblemRef.current,
+          room_flair: userRoomFlairRef.current,
         });
       } catch (err) {
         console.error('Tracking error:', err);
@@ -1127,7 +1083,7 @@ CREATE POLICY "Hosts can update their own study rooms"
     user?.id,
     profile?.username,
     profile?.avatar_url,
-    userStudyEmblem,
+    userRoomFlair,
     isPremium,
     sendFocusBroadcast,
   ]);
@@ -1585,7 +1541,7 @@ CREATE POLICY "Hosts can update their own study rooms"
         total_focus_seconds: totalFocusSeconds,
         is_online: isOnline,
         is_current_user: isCurrentUser,
-        study_icon: isCurrentUser ? userStudyEmblem : (liveFocus?.study_icon || pu?.study_icon || member.study_icon || 'spark'),
+        flair: isCurrentUser ? userRoomFlair : (liveFocus?.room_flair || pu?.room_flair || 'default'),
       });
     }
 
@@ -1606,7 +1562,7 @@ CREATE POLICY "Hosts can update their own study rooms"
         total_focus_seconds: totalFocus,
         is_online: true,
         is_current_user: true,
-        study_icon: userStudyEmblem,
+        flair: userRoomFlair,
       });
       seenUserIds.add(user.id);
     }
@@ -1652,7 +1608,7 @@ CREATE POLICY "Hosts can update their own study rooms"
           total_focus_seconds: totalFocus,
           is_online: true,
           is_current_user: false,
-          study_icon: liveFocus?.study_icon || pu?.study_icon || null,
+          flair: liveFocus?.room_flair || pu?.room_flair || 'default',
         });
       }
     }
@@ -1939,10 +1895,11 @@ CREATE POLICY "Hosts can update their own study rooms"
           <div className="flex bg-black/40 border border-white/10 p-0.5 sm:p-1 rounded-xl shadow-inner backdrop-blur-md gap-0.5 sm:gap-1">
             <button
               onClick={() => setRoomTab('home')}
-              className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-hud font-bold uppercase tracking-wider transition-all cursor-pointer ${roomTab === 'home'
-                ? 'bg-white/[0.1] border border-white/20 text-white shadow-sm'
-                : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
-                }`}
+              className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-hud font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                roomTab === 'home'
+                  ? 'bg-white/[0.1] border border-white/20 text-white shadow-sm'
+                  : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
+              }`}
             >
               <Home className="w-3.5 h-3.5" />
               <span>HOME</span>
@@ -1952,10 +1909,11 @@ CREATE POLICY "Hosts can update their own study rooms"
                 setRoomTab('chat');
                 setUnreadCount(0);
               }}
-              className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-hud font-bold uppercase tracking-wider transition-all cursor-pointer relative ${roomTab === 'chat'
-                ? 'bg-[var(--accent-soft)] border border-[var(--border)] text-[var(--accent)] shadow-sm'
-                : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
-                }`}
+              className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-hud font-bold uppercase tracking-wider transition-all cursor-pointer relative ${
+                roomTab === 'chat'
+                  ? 'bg-[var(--accent-soft)] border border-[var(--border)] text-[var(--accent)] shadow-sm'
+                  : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
+              }`}
             >
               <MessageCircle className="w-3.5 h-3.5" />
               <span>CHAT</span>
@@ -1971,10 +1929,11 @@ CREATE POLICY "Hosts can update their own study rooms"
             {isHost && (
               <button
                 onClick={() => setRoomTab('settings')}
-                className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-hud font-bold uppercase tracking-wider transition-all cursor-pointer ${roomTab === 'settings'
-                  ? 'bg-white/[0.1] border border-white/20 text-white shadow-sm'
-                  : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
-                  }`}
+                className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-hud font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                  roomTab === 'settings'
+                    ? 'bg-white/[0.1] border border-white/20 text-white shadow-sm'
+                    : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
+                }`}
               >
                 <Settings className="w-3.5 h-3.5" />
                 <span>SETTINGS</span>
@@ -1987,48 +1946,60 @@ CREATE POLICY "Hosts can update their own study rooms"
       <div className={`flex-1 min-h-0 w-full overflow-x-hidden ${roomTab === 'chat' ? 'flex flex-col' : 'overflow-y-auto p-4 scrollbar-thin'}`} style={{ WebkitOverflowScrolling: 'touch' }}>
         {roomTab === 'home' && (
           <div className="flex flex-col items-center w-full min-h-full pb-24 md:pb-20">
-            <div className="grid grid-cols-2 sm:grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-4 justify-center items-start mt-6 pb-6 w-full max-w-6xl px-3 sm:px-6">
-              {displayUsers.map((u) => {
-                const isStudying = u.is_studying;
-                const sessionSec = u.session_seconds || 0;
-                const todaySec = u.today_seconds || 0;
-                const totalFocusSec = u.total_focus_seconds ?? (isStudying ? todaySec + sessionSec : todaySec);
-                const emblemStage = stageFromSeconds(totalFocusSec);
-                const emblemState: EmblemState = isStudying ? 'studying' : u.is_online ? 'paused' : 'offline';
-                const emblemSize = displayUsers.length > 12 ? 'sm' : 'md';
+            <div className="flex flex-wrap gap-8 justify-center items-start mt-8 pb-4 w-full">
+              {displayUsers.map((u, i) => {
+              const isStudying = u.is_studying;
+              const sessionSec = u.session_seconds || 0;
+              const todaySec = u.today_seconds || 0;
+              const totalFocusSec = u.total_focus_seconds ?? (isStudying ? todaySec + sessionSec : todaySec);
 
-                return (
-                  <div
-                    key={u.user_id}
-                    onClick={() => {
-                      if (u.is_current_user) {
-                        setIsStudyEmblemModalOpen(true);
-                      } else {
-                        handleOpenScholarModal(u);
-                      }
-                    }}
-                    role="button"
-                    tabIndex={0}
-                    className={`p-3.5 rounded-2xl flex flex-col items-center gap-2.5 group relative transition-all duration-300 cursor-pointer hover:scale-[1.02] active:scale-[0.98] select-none ${u.is_current_user
-                      ? 'bg-amber-500/[0.05] border border-amber-500/30 shadow-[0_0_20px_rgba(245,158,11,0.08)] ring-1 ring-amber-500/20'
-                      : 'bg-white/[0.02] border border-white/5 hover:border-white/15 hover:bg-white/[0.04]'
-                      }`}
-                    style={{ contentVisibility: displayUsers.length > 24 ? 'auto' : undefined }}
-                    title={u.is_current_user ? 'Click to customize your Study Emblem' : 'Click to inspect scholar'}
-                  >
+              return (
+                <div
+                  key={u.user_id}
+                  onClick={() => {
+                    if (u.is_current_user) {
+                      setIsFlairModalOpen(true);
+                    } else {
+                      handleOpenScholarModal(u);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  className="flex flex-col items-center gap-2 group relative transition-all duration-300 cursor-pointer hover:scale-105 active:scale-95 select-none"
+                >
+                  <div className="relative">
+                    <RoomAvatarFlair
+                      flair={u.is_current_user ? userRoomFlair : (u.flair || 'default')}
+                      isStudying={isStudying}
+                      isOnline={u.is_online}
+                      size={64}
+                      showCustomBadge={u.is_current_user}
+                      onClick={u.is_current_user ? () => setIsFlairModalOpen(true) : undefined}
+                    >
+                      <UserAvatar
+                        src={u.avatar_url}
+                        name={u.username}
+                        size={64}
+                        className="transition-transform duration-300"
+                      />
+                    </RoomAvatarFlair>
+
+
+
                     {/* Host 3-Dots Action Button on Hover */}
                     {isHost && !u.is_host && !u.is_current_user && (
-                      <div className="absolute top-2.5 right-2.5 z-20">
+                      <div className="absolute -top-1 -right-2 z-20">
                         <button
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
                             setActiveMenuUserId(activeMenuUserId === u.user_id ? null : u.user_id);
                           }}
-                          className={`w-6 h-6 rounded-full flex items-center justify-center bg-[#0d121c] border border-white/20 text-slate-300 hover:text-white hover:border-amber-400/60 hover:bg-black shadow-lg transition-all cursor-pointer ${activeMenuUserId === u.user_id
-                            ? 'opacity-100 ring-2 ring-amber-500/50 bg-black text-amber-300 scale-105'
-                            : 'opacity-0 group-hover:opacity-100'
-                            }`}
+                          className={`w-6 h-6 rounded-full flex items-center justify-center bg-[#0d121c] border border-white/20 text-slate-300 hover:text-white hover:border-amber-400/60 hover:bg-black shadow-lg transition-all cursor-pointer ${
+                            activeMenuUserId === u.user_id
+                              ? 'opacity-100 ring-2 ring-amber-500/50 bg-black text-amber-300 scale-105'
+                              : 'opacity-0 group-hover:opacity-100'
+                          }`}
                           title="Scholar Options"
                         >
                           <MoreVertical className="w-3.5 h-3.5" />
@@ -2038,7 +2009,7 @@ CREATE POLICY "Hosts can update their own study rooms"
                         {activeMenuUserId === u.user_id && (
                           <div
                             onClick={(e) => e.stopPropagation()}
-                            className="absolute right-0 top-full mt-1.5 w-28 bg-[#0c1017] border border-white/15 rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.9)] backdrop-blur-xl p-1 z-30 animate-in fade-in zoom-in-95 duration-150"
+                            className="absolute left-1/2 -translate-x-1/2 top-full mt-1.5 w-28 bg-[#0c1017] border border-white/15 rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.9)] backdrop-blur-xl p-1 z-30 animate-in fade-in zoom-in-95 duration-150"
                           >
                             <button
                               type="button"
@@ -2056,40 +2027,24 @@ CREATE POLICY "Hosts can update their own study rooms"
                         )}
                       </div>
                     )}
+                  </div>
 
-                    {/* Emblem Scene */}
-                    <div className="flex flex-col items-center justify-center w-full">
-                      <GrowthEmblem
-                        family={u.study_icon || 'spark'}
-                        stage={emblemStage}
-                        state={emblemState}
-                        size={emblemSize}
-                        isPremium={Boolean(flairMap[u.user_id] || (u.is_current_user && isPremium))}
-                        showPips={true}
-                      />
-                    </div>
-
-                    {/* Nameplate Row: 28px Avatar, Username, Verified / Crown, Host Tag */}
-                    <div className="w-full flex items-center justify-center gap-2 mt-0.5">
-                      <UserAvatar
-                        src={u.avatar_url}
-                        name={u.username}
-                        size={28}
-                        className="rounded-full shrink-0"
-                      />
-                      <div className="inline-flex items-center gap-1 min-w-0 max-w-[100px]">
-                        <span
-                          className="text-xs font-bold text-slate-200 truncate"
+                  {/* Member Name, Total Time Studied Today (Adds up live when focusing) */}
+                  <div className="text-center mt-1 flex flex-col items-center max-w-[130px]">
+                    <div className="flex items-center gap-1.5 justify-center">
+                      <div className="inline-flex items-center gap-1 justify-center min-w-0">
+                        <p
+                          className="text-sm font-bold text-slate-200 truncate max-w-[100px]"
                           title={u.username}
                         >
                           {u.username}
-                        </span>
+                        </p>
                         {flairMap[u.user_id] && (
-                          <FlairCrown frame={flairMap[u.user_id]} size={12} className="-ml-0.5 shrink-0" />
+                          <FlairCrown frame={flairMap[u.user_id]} size={13.5} className="-ml-0.5" />
                         )}
                       </div>
                       {u.is_host && (
-                        <span className="text-[8px] px-1 py-0.2 rounded bg-amber-500/20 border border-amber-500/30 text-amber-400 font-semibold uppercase tracking-wider shrink-0">
+                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 border border-amber-500/30 text-amber-400 font-semibold uppercase tracking-wider flex-shrink-0">
                           Host
                         </span>
                       )}
@@ -2097,16 +2052,17 @@ CREATE POLICY "Hosts can update their own study rooms"
 
                     {/* Displays Total Focus Time Today with live seconds ticking up from today's total */}
                     <p
-                      className={`text-sm font-mono font-bold tracking-wider transition-colors ${isStudying
-                        ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]'
-                        : 'text-slate-300'
-                        }`}
+                      className={`text-sm font-mono mt-1 font-bold tracking-wider transition-colors ${
+                        isStudying
+                          ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]'
+                          : 'text-slate-300'
+                      }`}
                     >
                       {formatSeconds(totalFocusSec)}
                     </p>
 
                     {/* Status badge explaining state and session progress */}
-                    <div className="flex items-center justify-center">
+                    <div className="mt-1 flex items-center justify-center">
                       {isStudying ? (
                         <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-amber-400">
                           <span className="relative flex h-2 w-2">
@@ -2128,14 +2084,15 @@ CREATE POLICY "Hosts can update their own study rooms"
                       )}
                     </div>
                   </div>
-                );
-              })}
-
-              {displayUsers.length === 0 && (
-                <div className="text-slate-500 text-center col-span-full py-12">
-                  Waiting for scholars to join...
                 </div>
-              )}
+              );
+            })}
+
+            {displayUsers.length === 0 && (
+              <div className="text-slate-500 text-center w-full mt-10">
+                Waiting for scholars to join...
+              </div>
+            )}
             </div>
           </div>
         )}
@@ -2207,108 +2164,111 @@ CREATE POLICY "Hosts can update their own study rooms"
                   }
 
                   return groups.map((group) => {
-                    const firstMsg = group[0];
-                    const lastMsg = group[group.length - 1];
-                    const isMe = firstMsg.user_id === user?.id;
-                    const senderMember = displayUsers.find(u => u.user_id === firstMsg.user_id);
-                    const cachedUser = getCachedMemberProfile(firstMsg.user_id);
-                    const isStudying = senderMember?.is_studying;
-                    const isHostUser = senderMember?.is_host;
-                    const timeString = new Date(lastMsg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                      const firstMsg = group[0];
+                      const lastMsg = group[group.length - 1];
+                      const isMe = firstMsg.user_id === user?.id;
+                      const senderMember = displayUsers.find(u => u.user_id === firstMsg.user_id);
+                      const cachedUser = getCachedMemberProfile(firstMsg.user_id);
+                      const isStudying = senderMember?.is_studying;
+                      const isHostUser = senderMember?.is_host;
+                      const timeString = new Date(lastMsg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-                    const rawProfile = Array.isArray(firstMsg.profiles) ? firstMsg.profiles[0] : firstMsg.profiles;
-                    const rawUsername = rawProfile?.username || rawProfile?.name;
-                    const rawAvatar = rawProfile?.avatar_url;
+                      const rawProfile = Array.isArray(firstMsg.profiles) ? firstMsg.profiles[0] : firstMsg.profiles;
+                      const rawUsername = rawProfile?.username || rawProfile?.name;
+                      const rawAvatar = rawProfile?.avatar_url;
 
-                    const username = isMe
-                      ? (profile?.username || user?.displayName || user?.username || 'Scholar')
-                      : (rawUsername || senderMember?.username || cachedUser?.username || 'Scholar');
+                      const username = isMe
+                        ? (profile?.username || user?.displayName || user?.username || 'Scholar')
+                        : (rawUsername || senderMember?.username || cachedUser?.username || 'Scholar');
 
-                    const avatarUrl = isMe
-                      ? (profile?.avatar_url || user?.avatarUrl || senderMember?.avatar_url || cachedUser?.avatar_url || null)
-                      : (rawAvatar || senderMember?.avatar_url || cachedUser?.avatar_url || null);
+                      const avatarUrl = isMe
+                        ? (profile?.avatar_url || user?.avatarUrl || senderMember?.avatar_url || cachedUser?.avatar_url || null)
+                        : (rawAvatar || senderMember?.avatar_url || cachedUser?.avatar_url || null);
 
-                    return (
-                      <div
-                        key={`group-${firstMsg.id}`}
-                        className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} group`}
-                      >
-                        {/* Meta header: name, host badge, focusing status, timestamp, ban action */}
-                        <div className={`flex items-center gap-2 mb-1.5 ${isMe ? 'mr-1 flex-row-reverse' : 'ml-1'}`}>
-                          <div className="inline-flex items-center gap-1 min-w-0">
-                            <span className={`text-xs font-hud font-bold tracking-tight ${isMe ? 'text-amber-400' : 'text-slate-200'}`}>
-                              {isMe ? 'YOU' : username}
+                      return (
+                        <div
+                          key={`group-${firstMsg.id}`}
+                          className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} group`}
+                        >
+                          {/* Meta header: name, host badge, focusing status, timestamp, ban action */}
+                          <div className={`flex items-center gap-2 mb-1.5 ${isMe ? 'mr-1 flex-row-reverse' : 'ml-1'}`}>
+                            <div className="inline-flex items-center gap-1 min-w-0">
+                              <span className={`text-xs font-hud font-bold tracking-tight ${isMe ? 'text-amber-400' : 'text-slate-200'}`}>
+                                {isMe ? 'YOU' : username}
+                              </span>
+                              {flairMap[firstMsg.user_id] && (
+                                <FlairCrown frame={flairMap[firstMsg.user_id]} size={12} className="-ml-0.5" />
+                              )}
+                            </div>
+                            {isHostUser && (
+                              <span className="text-[9px] font-hud font-bold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 uppercase">
+                                HOST
+                              </span>
+                            )}
+                            {isStudying && (
+                              <span className="text-[9px] font-hud px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center gap-1 uppercase font-semibold">
+                                <Flame className="w-3 h-3 fill-amber-400" /> FOCUSING
+                              </span>
+                            )}
+                            <span className="text-[10px] font-hud-mono text-neutral-500">
+                              {timeString}
                             </span>
-                            {flairMap[firstMsg.user_id] && (
-                              <FlairCrown frame={flairMap[firstMsg.user_id]} size={12} className="-ml-0.5" />
+                            {isHost && !isMe && !isHostUser && (
+                              <button
+                                type="button"
+                                onClick={() => setMemberToBan({ userId: firstMsg.user_id, username })}
+                                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded text-rose-400 hover:text-rose-300 hover:bg-rose-500/20 cursor-pointer"
+                                title={`Ban ${username} from room`}
+                              >
+                                <Ban className="w-3 h-3" />
+                              </button>
                             )}
                           </div>
-                          {isHostUser && (
-                            <span className="text-[9px] font-hud font-bold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 uppercase">
-                              HOST
-                            </span>
-                          )}
-                          {isStudying && (
-                            <span className="text-[9px] font-hud px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center gap-1 uppercase font-semibold">
-                              <Flame className="w-3 h-3 fill-amber-400" /> FOCUSING
-                            </span>
-                          )}
-                          <span className="text-[10px] font-hud-mono text-neutral-500">
-                            {timeString}
-                          </span>
-                          {isHost && !isMe && !isHostUser && (
-                            <button
-                              type="button"
-                              onClick={() => setMemberToBan({ userId: firstMsg.user_id, username })}
-                              className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded text-rose-400 hover:text-rose-300 hover:bg-rose-500/20 cursor-pointer"
-                              title={`Ban ${username} from room`}
-                            >
-                              <Ban className="w-3 h-3" />
-                            </button>
-                          )}
-                        </div>
 
-                        {/* Avatar and Bubble Row */}
-                        <div className={`flex gap-3 ${isMe ? 'flex-row-reverse' : ''} items-end max-w-[88%] sm:max-w-[75%]`}>
-                          {/* Avatar */}
-                          <div className="relative shrink-0">
-                            <UserAvatar
-                              src={avatarUrl}
-                              name={username}
-                              size={36}
-                              className={`rounded-full border transition-all ${isStudying
-                                ? 'border-amber-500 ring-2 ring-amber-500/30 shadow-[0_0_8px_rgba(245,158,11,0.4)]'
-                                : 'border-white/10'
+                          {/* Avatar and Bubble Row */}
+                          <div className={`flex gap-3 ${isMe ? 'flex-row-reverse' : ''} items-end max-w-[88%] sm:max-w-[75%]`}>
+                            {/* Avatar */}
+                            <div className="relative shrink-0">
+                              <UserAvatar
+                                src={avatarUrl}
+                                name={username}
+                                size={36}
+                                className={`rounded-full border transition-all ${
+                                  isStudying
+                                    ? 'border-amber-500 ring-2 ring-amber-500/30 shadow-[0_0_8px_rgba(245,158,11,0.4)]'
+                                    : 'border-white/10'
                                 }`}
-                            />
-                          </div>
+                              />
+                            </div>
 
-                          {/* Bubble Stack */}
-                          <div className={`flex flex-col gap-1.5 ${isMe ? 'items-end' : 'items-start'}`}>
-                            {group.map((msg: any, idx: number) => {
-                              const isFirst = idx === 0;
-                              const isLast = idx === group.length - 1;
-                              return (
-                                <div
-                                  key={msg.id}
-                                  className={`px-4 py-2.5 text-sm leading-relaxed transition-all break-words chat-message chat-bubble selectable-text ${isMe
-                                    ? 'bg-gradient-to-br from-amber-500/25 via-amber-500/15 to-amber-600/10 border border-amber-500/35 text-amber-50 shadow-[0_2px_12px_rgba(245,158,11,0.1)]'
-                                    : 'bg-white/[0.05] border border-white/[0.1] text-slate-100 shadow-md hover:border-white/20'
-                                    } ${isMe
-                                      ? `rounded-2xl ${isFirst ? 'rounded-tr-md' : 'rounded-tr-md'} ${isLast ? 'rounded-br-2xl' : 'rounded-br-md'}`
-                                      : `rounded-2xl ${isFirst ? 'rounded-tl-md' : 'rounded-tl-md'} ${isLast ? 'rounded-bl-2xl' : 'rounded-bl-md'}`
+                            {/* Bubble Stack */}
+                            <div className={`flex flex-col gap-1.5 ${isMe ? 'items-end' : 'items-start'}`}>
+                              {group.map((msg: any, idx: number) => {
+                                const isFirst = idx === 0;
+                                const isLast = idx === group.length - 1;
+                                return (
+                                  <div
+                                    key={msg.id}
+                                    className={`px-4 py-2.5 text-sm leading-relaxed transition-all break-words chat-message chat-bubble selectable-text ${
+                                      isMe
+                                        ? 'bg-gradient-to-br from-amber-500/25 via-amber-500/15 to-amber-600/10 border border-amber-500/35 text-amber-50 shadow-[0_2px_12px_rgba(245,158,11,0.1)]'
+                                        : 'bg-white/[0.05] border border-white/[0.1] text-slate-100 shadow-md hover:border-white/20'
+                                    } ${
+                                      isMe
+                                        ? `rounded-2xl ${isFirst ? 'rounded-tr-md' : 'rounded-tr-md'} ${isLast ? 'rounded-br-2xl' : 'rounded-br-md'}`
+                                        : `rounded-2xl ${isFirst ? 'rounded-tl-md' : 'rounded-tl-md'} ${isLast ? 'rounded-bl-2xl' : 'rounded-bl-md'}`
                                     }`}
-                                >
-                                  {msg.content}
-                                </div>
-                              );
-                            })}
+                                  >
+                                    {msg.content}
+                                  </div>
+                                );
+                              })}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  });
-                })()}
+                      );
+                    });
+                  })()}
               </div>
             </div>
 
@@ -2380,39 +2340,43 @@ CREATE POLICY "Hosts can update their own study rooms"
               </div>
             </div>
 
-            {/* Study Emblem Customization Card */}
+            {/* Room Avatar Flair Customization Card */}
             <div className="p-5 rounded-3xl bg-white/[0.03] border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-lg">
               <div className="flex items-center gap-3.5">
                 <div className="relative shrink-0">
-                  <GrowthEmblem
-                    family={userStudyEmblem}
-                    stage={stageFromSeconds(getTodayTotalSeconds ? getTodayTotalSeconds() : 0)}
-                    state="studying"
-                    size="sm"
-                    isPremium={Boolean(isPremium)}
-                    showPips={false}
-                  />
+                  <RoomAvatarFlair
+                    flair={userRoomFlair}
+                    isStudying={true}
+                    isOnline={true}
+                    size={52}
+                  >
+                    <UserAvatar
+                      src={user?.avatarUrl || profile?.avatar_url}
+                      name={user?.displayName || profile?.username || 'Scholar'}
+                      size={52}
+                    />
+                  </RoomAvatarFlair>
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
                     <h3 className="text-sm font-hud font-bold text-white uppercase tracking-wider">
-                      Study Emblem
+                      Room Avatar Flair
                     </h3>
                     <span className="text-[10px] font-hud font-bold uppercase px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">
-                      Active: {EMBLEM_FAMILIES[userStudyEmblem]?.name || 'Spark'}
+                      Active: {ROOM_FLAIRS[userRoomFlair]?.name || 'Focus Ring'}
                     </span>
                   </div>
                   <p className="text-xs text-slate-400 mt-0.5">
-                    Choose your living study scene that grows as your focus time increases today.
+                    Select and preview your animated orbital aura rings when studying in rooms.
                   </p>
                 </div>
               </div>
               <button
                 type="button"
-                onClick={() => setIsStudyEmblemModalOpen(true)}
+                onClick={() => setIsFlairModalOpen(true)}
                 className="px-4 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 hover:text-white text-xs font-hud font-bold uppercase tracking-wider transition-all cursor-pointer self-start sm:self-center shrink-0 shadow-sm"
               >
-                Customize Emblem
+                Customize Flair
               </button>
             </div>
 
@@ -2505,10 +2469,11 @@ CREATE POLICY "Hosts can update their own study rooms"
                       Password & Room Privacy
                     </h3>
                   </div>
-                  <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${isPrivate
-                    ? 'bg-[var(--accent-soft)] text-[var(--accent)] border-[var(--border)]'
-                    : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                    }`}>
+                  <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${
+                    isPrivate
+                      ? 'bg-[var(--accent-soft)] text-[var(--accent)] border-[var(--border)]'
+                      : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                  }`}>
                     {isPrivate ? 'Protected' : 'Public Access'}
                   </span>
                 </div>
@@ -2525,10 +2490,11 @@ CREATE POLICY "Hosts can update their own study rooms"
                       isFormDirtyRef.current = true;
                       setIsPrivate(false);
                     }}
-                    className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl border text-xs font-bold transition-all cursor-pointer ${!isPrivate
-                      ? 'bg-white/10 border-[var(--border)] text-white shadow-md'
-                      : 'bg-white/[0.02] border-white/5 text-slate-400 hover:text-white hover:bg-white/5'
-                      }`}
+                    className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                      !isPrivate
+                        ? 'bg-white/10 border-[var(--border)] text-white shadow-md'
+                        : 'bg-white/[0.02] border-white/5 text-slate-400 hover:text-white hover:bg-white/5'
+                    }`}
                   >
                     <Unlock className="w-3.5 h-3.5 text-emerald-400" />
                     <span>Public (No Password)</span>
@@ -2540,10 +2506,11 @@ CREATE POLICY "Hosts can update their own study rooms"
                       isFormDirtyRef.current = true;
                       setIsPrivate(true);
                     }}
-                    className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl border text-xs font-bold transition-all cursor-pointer ${isPrivate
-                      ? 'bg-[var(--accent-soft)] border-[var(--border)] text-[var(--accent)] shadow-md'
-                      : 'bg-white/[0.02] border-white/5 text-slate-400 hover:text-white hover:bg-white/5'
-                      }`}
+                    className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                      isPrivate
+                        ? 'bg-[var(--accent-soft)] border-[var(--border)] text-[var(--accent)] shadow-md'
+                        : 'bg-white/[0.02] border-white/5 text-slate-400 hover:text-white hover:bg-white/5'
+                    }`}
                   >
                     <Lock className="w-3.5 h-3.5 text-[var(--accent)]" />
                     <span>Private (Password)</span>
@@ -2644,10 +2611,11 @@ CREATE POLICY "Hosts can update their own study rooms"
                 <div className="space-y-1.5">
                   <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden border border-white/5">
                     <div
-                      className={`h-full transition-all duration-300 ${dbMembers.length >= editMaxCapacity
-                        ? 'bg-red-500'
-                        : 'bg-gradient-to-r from-amber-500 to-orange-500'
-                        }`}
+                      className={`h-full transition-all duration-300 ${
+                        dbMembers.length >= editMaxCapacity
+                          ? 'bg-red-500'
+                          : 'bg-gradient-to-r from-amber-500 to-orange-500'
+                      }`}
                       style={{
                         width: `${Math.min(100, Math.round((dbMembers.length / Math.max(1, editMaxCapacity)) * 100))}%`,
                       }}
@@ -2734,12 +2702,13 @@ CREATE POLICY "Hosts can update their own study rooms"
                             isFormDirtyRef.current = true;
                             setEditMaxCapacity(preset.count);
                           }}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${isSelected
-                            ? 'border-[var(--border)] shadow-md'
-                            : isDisabled
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                            isSelected
+                              ? 'border-[var(--border)] shadow-md'
+                              : isDisabled
                               ? 'opacity-30 bg-white/[0.02] border-white/5 text-slate-600 cursor-not-allowed'
                               : 'bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border-white/10'
-                            }`}
+                          }`}
                           style={isSelected ? { backgroundColor: 'var(--accent)', color: 'var(--accent-contrast)' } : undefined}
                         >
                           {preset.label}
@@ -2828,25 +2797,13 @@ CREATE POLICY "Hosts can update their own study rooms"
                         tabIndex={0}
                         className="flex items-center justify-between p-2.5 rounded-xl bg-black/40 border border-white/5 hover:border-amber-400/40 hover:bg-black/70 transition-all cursor-pointer"
                       >
-                        <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="flex items-center gap-3 min-w-0">
                           <UserAvatar
                             src={member.avatar_url}
                             name={member.username}
                             size={32}
                             className="rounded-full border shrink-0 border-white/10"
                           />
-                          <div className="shrink-0 w-8 h-8 flex items-center justify-center overflow-hidden rounded-lg">
-                            <div className="scale-50 origin-center">
-                              <GrowthEmblem
-                                family={member.study_icon || 'spark'}
-                                stage={stageFromSeconds(member.total_focus_seconds || 0)}
-                                state={member.is_studying ? 'studying' : member.is_online ? 'paused' : 'offline'}
-                                size="sm"
-                                isPremium={Boolean(flairMap[member.user_id])}
-                                showPips={false}
-                              />
-                            </div>
-                          </div>
                           <div className="min-w-0">
                             <div className="flex items-center gap-1.5">
                               <div className="inline-flex items-center gap-1 min-w-0">
@@ -3003,12 +2960,13 @@ CREATE POLICY "Hosts can update their own study rooms"
                 type="button"
                 onClick={handleStartOrResume}
                 disabled={isRunning}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] sm:text-[11px] font-hud font-bold uppercase tracking-wider transition-all cursor-pointer ${isRunning
-                  ? 'opacity-25 cursor-not-allowed bg-white/[0.02] text-slate-500 border border-white/5'
-                  : isPaused
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] sm:text-[11px] font-hud font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                  isRunning
+                    ? 'opacity-25 cursor-not-allowed bg-white/[0.02] text-slate-500 border border-white/5'
+                    : isPaused
                     ? 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 backdrop-blur-sm shadow-[0_0_12px_rgba(16,185,129,0.2)] active:scale-95'
                     : 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/35 backdrop-blur-sm shadow-[0_0_12px_rgba(16,185,129,0.2)] active:scale-95'
-                  }`}
+                }`}
                 title={isRunning ? 'Timer is currently running' : isPaused ? 'Resume focus timer' : 'Start focus timer'}
               >
                 <Play className="w-2.5 h-2.5 sm:w-3 sm:h-3 fill-current" />
@@ -3020,10 +2978,11 @@ CREATE POLICY "Hosts can update their own study rooms"
                 type="button"
                 onClick={handlePauseTimer}
                 disabled={!isRunning}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] sm:text-[11px] font-hud font-bold uppercase tracking-wider transition-all cursor-pointer ${isRunning
-                  ? 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/35 backdrop-blur-sm shadow-[0_0_12px_rgba(245,158,11,0.2)] active:scale-95'
-                  : 'opacity-25 cursor-not-allowed bg-white/[0.02] text-slate-500 border border-white/5'
-                  }`}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] sm:text-[11px] font-hud font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                  isRunning
+                    ? 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/35 backdrop-blur-sm shadow-[0_0_12px_rgba(245,158,11,0.2)] active:scale-95'
+                    : 'opacity-25 cursor-not-allowed bg-white/[0.02] text-slate-500 border border-white/5'
+                }`}
                 title={isRunning ? 'Pause focus timer' : 'Timer is not running'}
               >
                 <Pause className="w-2.5 h-2.5 sm:w-3 sm:h-3 fill-current" />
@@ -3144,18 +3103,19 @@ CREATE POLICY "Hosts can update their own study rooms"
         onClose={() => setSelectedScholar(null)}
       />
 
-      {/* Study Emblem Picker Modal */}
-      <StudyEmblemModal
-        isOpen={isStudyEmblemModalOpen}
-        onClose={() => setIsStudyEmblemModalOpen(false)}
-        currentFamily={userStudyEmblem}
-        currentTodaySeconds={getTodayTotalSeconds ? getTodayTotalSeconds() : 0}
-        onEquipFamily={(fam) => {
-          setUserStudyEmblem(fam);
-          userStudyEmblemRef.current = fam;
+      {/* Room Avatar Flair Customization Modal */}
+      <RoomAvatarFlairModal
+        isOpen={isFlairModalOpen}
+        onClose={() => setIsFlairModalOpen(false)}
+        currentFlair={userRoomFlair}
+        onEquipFlair={(newFlair) => {
+          setUserRoomFlair(newFlair);
+          userRoomFlairRef.current = newFlair;
           sendFocusBroadcast();
         }}
         isPro={Boolean(isPremium)}
+        userAvatarUrl={user?.avatarUrl || profile?.avatar_url}
+        username={user?.displayName || profile?.username || 'Scholar'}
         onOpenUpgradeModal={openPremiumModal}
       />
     </div>
