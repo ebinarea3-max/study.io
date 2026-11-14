@@ -1,57 +1,52 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 
 export interface ProFocusAuraProps {
-  progress: number; // 0.0 to 1.0
+  progress?: number; // 0.0 to 1.0
   isActive: boolean;
   isPro: boolean;
   children?: React.ReactNode;
-  size?: number; // default 320
-  strokeWidth?: number; // default 4
+  size?: number | string;
   className?: string;
+  renderRing?: boolean; // Default false: purely background ambient radial glow to avoid duplicate circles
 }
 
+/**
+ * ProFocusAura
+ * A background-only ambient radial glow that gently pulses when the timer is active.
+ * Guarantees zero layout interference and eliminates duplicate inner circles crowding the digits.
+ */
 export function ProFocusAura({
-  progress,
+  progress = 0,
   isActive,
   isPro,
   children,
-  size = 320,
-  strokeWidth = 4,
   className = '',
+  renderRing = false,
 }: ProFocusAuraProps) {
   const shouldReduceMotion = useReducedMotion();
 
-  // Clamp progress strictly between 0 and 1
-  const safeProgress = Math.max(0, Math.min(1, isNaN(progress) ? 0 : progress));
-
-  // Geometry
-  const radius = (size - strokeWidth * 2) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference * (1 - safeProgress);
-
   // Palette tokens
-  const strokeColor = isPro ? '#E6C15A' : 'var(--accent, #34D399)';
   const glowColor = isPro
-    ? 'rgba(230, 193, 90, 0.28)'
-    : 'rgba(52, 211, 153, 0.25)';
+    ? 'rgba(230, 193, 90, 0.24)'
+    : 'var(--accent-soft, rgba(52, 211, 153, 0.2))';
 
   return (
     <div
-      className={`relative flex items-center justify-center select-none ${className}`}
-      style={{ width: size, height: size }}
+      aria-hidden={!children}
+      className={`absolute inset-0 w-full h-full pointer-events-none select-none flex items-center justify-center ${className}`}
     >
-      {/* 1. GPU-Composited Soft Pulsing Radial Aura (active when studying/running) */}
+      {/* 1. GPU-Composited Soft Pulsing Radial Aura (Active while studying / timer running) */}
       <motion.div
         aria-hidden="true"
         animate={
           shouldReduceMotion
-            ? { opacity: isActive ? 0.35 : 0.12, scale: 1 }
+            ? { opacity: isActive ? 0.35 : 0.08, scale: 1 }
             : {
-                opacity: isActive ? [0.25, 0.55, 0.25] : 0.12,
-                scale: isActive ? [1, 1.06, 1] : 1,
+                opacity: isActive ? [0.2, 0.48, 0.2] : 0.08,
+                scale: isActive ? [0.98, 1.04, 0.98] : 0.96,
               }
         }
         transition={
@@ -65,75 +60,34 @@ export function ProFocusAura({
         }
         className="absolute inset-0 rounded-full pointer-events-none will-change-transform transform-gpu"
         style={{
-          background: `radial-gradient(circle at 50% 50%, ${glowColor} 0%, transparent 70%)`,
-          filter: 'blur(36px)',
+          background: `radial-gradient(circle at 50% 50%, ${glowColor} 0%, transparent 72%)`,
+          filter: 'blur(45px)',
         }}
       />
 
-      {/* 2. Secondary Ambient Ring Layer for Pro Members */}
-      {isPro && !shouldReduceMotion && (
+      {/* 2. Optional Secondary Ambient Gold Ring for Pro Members (only when explicitly requested) */}
+      {isPro && renderRing && !shouldReduceMotion && (
         <motion.div
           aria-hidden="true"
           animate={
             isActive
-              ? { rotate: 360, opacity: [0.15, 0.3, 0.15] }
-              : { rotate: 0, opacity: 0.1 }
+              ? { rotate: 360, opacity: [0.12, 0.25, 0.12] }
+              : { rotate: 0, opacity: 0.08 }
           }
           transition={{
-            rotate: { duration: 24, repeat: Infinity, ease: 'linear' },
+            rotate: { duration: 28, repeat: Infinity, ease: 'linear' },
             opacity: { duration: 4, repeat: Infinity, ease: 'easeInOut' },
           }}
-          className="absolute inset-2 rounded-full pointer-events-none will-change-transform transform-gpu border border-dashed border-[#E6C15A]/25"
+          className="absolute inset-4 rounded-full pointer-events-none will-change-transform transform-gpu border border-dashed border-[#E6C15A]/20"
         />
       )}
 
-      {/* 3. SVG Precision Circular Progress Ring */}
-      <svg
-        viewBox={`0 0 ${size} ${size}`}
-        className="absolute inset-0 w-full h-full pointer-events-none -rotate-90"
-      >
-        {/* Background Track Circle */}
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke="rgba(255, 255, 255, 0.08)"
-          strokeWidth={strokeWidth}
-        />
-
-        {/* Animated Progress Arc (Interpolating strokeDashoffset with Spring Physics) */}
-        <motion.circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke={strokeColor}
-          strokeWidth={strokeWidth}
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          animate={{ strokeDashoffset }}
-          transition={
-            shouldReduceMotion
-              ? { duration: 0 }
-              : {
-                  type: 'spring',
-                  stiffness: 90,
-                  damping: 18,
-                  mass: 0.5,
-                }
-          }
-          style={{
-            filter: `drop-shadow(0 0 6px ${isPro ? 'rgba(230,193,90,0.5)' : 'rgba(52,211,153,0.45)'})`,
-          }}
-        />
-      </svg>
-
-      {/* 4. Center Slotted Content (e.g. Timer Digits & Controls) */}
-      <div className="relative z-10 flex flex-col items-center justify-center text-center">
-        {children}
-      </div>
+      {/* 3. Center Children (if any passed, rendered with pointer-events-auto) */}
+      {children && (
+        <div className="relative z-10 pointer-events-auto flex flex-col items-center justify-center text-center">
+          {children}
+        </div>
+      )}
     </div>
   );
 }
-

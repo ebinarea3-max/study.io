@@ -1,18 +1,19 @@
 'use client';
 
 import React, { useEffect, useState, useMemo } from 'react';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Flame } from 'lucide-react';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    1. STREAK FLAME
-   Animated streak flame/counter badge with spring scale-up & glow pulse
+   Animated streak flame/counter badge with spring scale-up & subtle bounce
    ═══════════════════════════════════════════════════════════════════════════ */
 export interface StreakFlameProps {
   count: number;
   boosted?: boolean;
   className?: string;
   onClick?: () => void;
+  renderContentOnly?: boolean;
 }
 
 export function StreakFlame({
@@ -20,110 +21,65 @@ export function StreakFlame({
   boosted = false,
   className = '',
   onClick,
+  renderContentOnly = false,
 }: StreakFlameProps) {
   const shouldReduceMotion = useReducedMotion();
-  const [prevCount, setPrevCount] = useState(count);
-  const [isIncremented, setIsIncremented] = useState(false);
 
-  useEffect(() => {
-    if (count > prevCount) {
-      setIsIncremented(true);
-      const timer = setTimeout(() => setIsIncremented(false), 900);
-      setPrevCount(count);
-      return () => clearTimeout(timer);
-    }
-    setPrevCount(count);
-  }, [count, prevCount]);
+  const flameIcon = (
+    <motion.div
+      animate={
+        !shouldReduceMotion && count > 0
+          ? {
+              scale: [1, 1.15, 1],
+              rotate: [0, -3, 3, 0],
+            }
+          : undefined
+      }
+      transition={{
+        duration: 2.2,
+        repeat: Infinity,
+        ease: 'easeInOut',
+      }}
+      className="will-change-transform transform-gpu shrink-0 flex items-center justify-center"
+    >
+      <Flame
+        className={`w-4 h-4 shrink-0 drop-shadow-sm ${
+          boosted ? 'text-amber-400' : 'text-orange-500'
+        }`}
+        fill="currentColor"
+        strokeWidth={2}
+      />
+    </motion.div>
+  );
+
+  const counterText = (
+    <span
+      className={`text-xs font-bold font-mono min-w-[1ch] text-center inline-block ${
+        boosted ? 'text-amber-300 font-extrabold' : 'text-[var(--text)]'
+      }`}
+    >
+      {count}
+    </span>
+  );
+
+  if (renderContentOnly) {
+    return (
+      <>
+        {flameIcon}
+        {counterText}
+      </>
+    );
+  }
 
   return (
-    <motion.div
+    <div
       onClick={onClick}
-      whileHover={shouldReduceMotion ? undefined : { scale: 1.05 }}
-      whileTap={shouldReduceMotion ? undefined : { scale: 0.95 }}
-      animate={
-        isIncremented && !shouldReduceMotion
-          ? {
-              scale: [1, 1.25, 0.95, 1.05, 1],
-            }
-          : { scale: 1 }
-      }
-      transition={{ type: 'spring', stiffness: 450, damping: 18 }}
-      className={`relative inline-flex items-center h-8 sm:h-9 px-2.5 sm:px-3 rounded-xl border select-none cursor-default shadow-card gap-1.5 shrink-0 overflow-hidden will-change-transform transform-gpu ${className}`}
-      style={{
-        background: boosted
-          ? 'linear-gradient(135deg, rgba(245,158,11,0.18) 0%, rgba(217,119,6,0.1) 100%)'
-          : 'var(--surface)',
-        borderColor: boosted
-          ? 'rgba(245, 158, 11, 0.45)'
-          : 'var(--border)',
-        boxShadow: boosted
-          ? '0 0 14px rgba(245, 158, 11, 0.22)'
-          : undefined,
-      }}
+      className={`flex items-center h-8 sm:h-9 px-2 sm:px-3 bg-[var(--surface)] border border-[var(--border)] text-[var(--text)] shadow-card cursor-default select-none rounded-xl gap-1 sm:gap-1.5 shrink-0 ${className}`}
       title={`${count} Day Streak${boosted ? ' (Pro Boost Active)' : ''}`}
     >
-      {/* Background Glow Flash when incremented or boosted */}
-      <motion.div
-        aria-hidden="true"
-        animate={
-          isIncremented && !shouldReduceMotion
-            ? { opacity: [0, 0.65, 0] }
-            : { opacity: boosted ? [0.2, 0.4, 0.2] : 0 }
-        }
-        transition={
-          isIncremented
-            ? { duration: 0.8, ease: 'easeOut' }
-            : { duration: 2.5, repeat: Infinity, ease: 'easeInOut' }
-        }
-        className="absolute inset-0 pointer-events-none rounded-xl"
-        style={{
-          background:
-            'radial-gradient(circle at 50% 50%, rgba(249,115,22,0.4) 0%, transparent 80%)',
-        }}
-      />
-
-      {/* Flame Icon with Animated Bounce */}
-      <motion.div
-        animate={
-          !shouldReduceMotion && count > 0
-            ? {
-                scale: [1, 1.1, 1],
-                rotate: [0, -4, 4, 0],
-              }
-            : undefined
-        }
-        transition={{
-          duration: 2.2,
-          repeat: Infinity,
-          ease: 'easeInOut',
-        }}
-        className="will-change-transform transform-gpu shrink-0"
-      >
-        <Flame
-          className={`w-4 h-4 shrink-0 drop-shadow-sm ${
-            boosted ? 'text-amber-400' : 'text-orange-500'
-          }`}
-          fill="currentColor"
-          strokeWidth={2}
-        />
-      </motion.div>
-
-      {/* Numerical Streak Count */}
-      <AnimatePresence mode="popLayout">
-        <motion.span
-          key={count}
-          initial={shouldReduceMotion ? false : { opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={shouldReduceMotion ? undefined : { opacity: 0, y: 8 }}
-          transition={{ type: 'spring', stiffness: 500, damping: 25 }}
-          className={`text-xs font-bold font-mono tracking-tight min-w-[1ch] text-center inline-block ${
-            boosted ? 'text-amber-300 font-extrabold' : 'text-[var(--text)]'
-          }`}
-        >
-          {count}
-        </motion.span>
-      </AnimatePresence>
-    </motion.div>
+      {flameIcon}
+      {counterText}
+    </div>
   );
 }
 
@@ -233,4 +189,3 @@ export function CompletionBurst({
     </div>
   );
 }
-

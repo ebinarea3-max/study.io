@@ -118,15 +118,11 @@ export const TimerDial = React.memo(function TimerDial({
         }
       `}</style>
 
-      {/* Pro Focus Aura & Radial Ring Pulse */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none -z-10">
-        <ProFocusAura
-          progress={safePercent / 100}
-          isActive={isRunning}
-          isPro={Boolean(isPremium)}
-          size={300}
-        />
-      </div>
+      {/* Background Ambient Focus Aura (Zero duplicate SVG rings, pure ambient breathing glow) */}
+      <ProFocusAura
+        isActive={isRunning}
+        isPro={Boolean(isPremium)}
+      />
 
       {/* Soft Ambient Radial Glow */}
       <AmbientGlow isRunning={isRunning} />

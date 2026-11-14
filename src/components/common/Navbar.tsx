@@ -41,7 +41,8 @@ import { RankCrestBadge } from './RankCrestBadge';
 import Image from 'next/image';
 import { getRankIconPath } from '../../utils/rankIcons';
 import { FacetedTrophyIcon, FacetedGearIcon } from './GeometricIcons';
-import { StreakFlame, ProBadge, AnimatedTabPill } from '../animations';
+import { motion } from 'framer-motion';
+import { ProBadge, AnimatedTabPill } from '../animations';
 import { triggerHaptic } from '../../lib/native-feel';
 
 export type NavTabType = 'timer' | 'tasks' | 'analytics' | 'leaderboard' | 'settings' | 'rooms';
@@ -54,14 +55,24 @@ interface NavbarProps {
   onOpenSettings: () => void;
 }
 
-const StreakBadge = React.memo(function StreakBadge({
-  streak,
-  isBoosted = false,
-}: {
-  streak: number;
-  isBoosted?: boolean;
-}) {
-  return <StreakFlame count={streak} boosted={isBoosted} />;
+const StreakBadge = React.memo(function StreakBadge({ streak }: { streak: number }) {
+  return (
+    <div
+      className="flex items-center h-8 sm:h-9 px-2 sm:px-3 bg-[var(--surface)] border border-[var(--border)] text-[var(--text)] shadow-card cursor-default select-none rounded-xl gap-1 sm:gap-1.5 shrink-0"
+      title={`${streak} Day Streak`}
+    >
+      <motion.div
+        animate={streak > 0 ? { scale: [1, 1.15, 1], rotate: [0, -3, 3, 0] } : undefined}
+        transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+        className="shrink-0 flex items-center justify-center will-change-transform transform-gpu"
+      >
+        <Flame className="w-4 h-4 text-orange-500 shrink-0" fill="currentColor" strokeWidth={2} />
+      </motion.div>
+      <span className="text-xs font-bold font-mono text-[var(--text)] min-w-[1ch] text-center inline-block">
+        {streak}
+      </span>
+    </div>
+  );
 });
 
 export function Navbar({
@@ -337,7 +348,7 @@ export function Navbar({
           ) : (
             <div className="flex items-center gap-2">
               {/* Streak Pill */}
-              <StreakBadge streak={displayStreak} isBoosted={isPremium} />
+              <StreakBadge streak={displayStreak} />
 
               {/* Rank Status Pill */}
               {isLoading && (!user || user.id.startsWith('user-scholar') || user.id === 'guest') ? (
