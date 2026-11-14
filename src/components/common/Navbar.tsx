@@ -41,6 +41,8 @@ import { RankCrestBadge } from './RankCrestBadge';
 import Image from 'next/image';
 import { getRankIconPath } from '../../utils/rankIcons';
 import { FacetedTrophyIcon, FacetedGearIcon } from './GeometricIcons';
+import { StreakFlame, ProBadge, AnimatedTabPill } from '../animations';
+import { triggerHaptic } from '../../lib/native-feel';
 
 export type NavTabType = 'timer' | 'tasks' | 'analytics' | 'leaderboard' | 'settings' | 'rooms';
 
@@ -52,18 +54,14 @@ interface NavbarProps {
   onOpenSettings: () => void;
 }
 
-const StreakBadge = React.memo(function StreakBadge({ streak }: { streak: number }) {
-  return (
-    <div
-      className="flex items-center h-8 sm:h-9 px-2 sm:px-3 bg-[var(--surface)] border border-[var(--border)] text-[var(--text)] shadow-card cursor-default select-none rounded-xl gap-1 sm:gap-1.5 shrink-0"
-      title={`${streak} Day Streak`}
-    >
-      <Flame className="w-4 h-4 text-orange-500 shrink-0" fill="currentColor" strokeWidth={2} />
-      <span className="text-xs font-bold font-mono text-[var(--text)] min-w-[1ch] text-center inline-block">
-        {streak}
-      </span>
-    </div>
-  );
+const StreakBadge = React.memo(function StreakBadge({
+  streak,
+  isBoosted = false,
+}: {
+  streak: number;
+  isBoosted?: boolean;
+}) {
+  return <StreakFlame count={streak} boosted={isBoosted} />;
 });
 
 export function Navbar({
@@ -83,6 +81,11 @@ export function Navbar({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  const handleTabClick = useCallback((tab: NavTabType) => {
+    triggerHaptic('light');
+    setActiveTab(tab);
+  }, [setActiveTab]);
 
   const displayStreak = useMemo(() => {
     // 1. If sessions are available, calculate the live streak
@@ -266,7 +269,7 @@ export function Navbar({
       <div className="max-w-7xl mx-auto px-3 sm:px-6 h-16 flex items-center justify-between gap-2 sm:gap-4">
         {/* Logo & Brand */}
         <div className="flex items-center gap-2.5 sm:gap-6">
-          <div className="flex items-center gap-2.5 cursor-pointer select-none group" onClick={() => setActiveTab('timer')}>
+          <div className="flex items-center gap-2.5 cursor-pointer select-none group" onClick={() => handleTabClick('timer')}>
             <Logo className="w-7 h-7 transition-transform group-hover:scale-105" />
             <div className="flex flex-col justify-center">
               <div className="text-sm sm:text-base font-hud font-extrabold tracking-tight text-[var(--text)] flex items-center gap-1.5 leading-none lowercase">
@@ -276,68 +279,20 @@ export function Navbar({
           </div>
 
           {/* Navigation Tabs - Desktop HUD strip */}
-          <nav className="hidden md:flex items-center gap-1 p-1 rounded-2xl bg-[var(--surface)] border border-[var(--border)] shadow-card">
-            <button
-              onClick={() => setActiveTab('timer')}
-              className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-xl text-xs font-hud font-bold tracking-wider transition-all cursor-pointer ${
-                activeTab === 'timer'
-                  ? 'bg-fg/[0.08] [[data-theme="paper"]_&]:bg-[var(--surface)] border border-fg/[0.15] [[data-theme="paper"]_&]:border-[var(--border-strong)] text-[var(--text)] font-semibold shadow-card'
-                  : 'text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-fg/[0.04] border border-transparent'
-              }`}
-            >
-              <Timer className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span>TIMER</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('tasks')}
-              className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-xl text-xs font-hud font-bold tracking-wider transition-all cursor-pointer ${
-                activeTab === 'tasks'
-                  ? 'bg-fg/[0.08] [[data-theme="paper"]_&]:bg-[var(--surface)] border border-fg/[0.15] [[data-theme="paper"]_&]:border-[var(--border-strong)] text-[var(--text)] font-semibold shadow-card'
-                  : 'text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-fg/[0.04] border border-transparent'
-              }`}
-            >
-              <CheckSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span>TASKS</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('analytics')}
-              className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-xl text-xs font-hud font-bold tracking-wider transition-all cursor-pointer ${
-                activeTab === 'analytics'
-                  ? 'bg-fg/[0.08] [[data-theme="paper"]_&]:bg-[var(--surface)] border border-fg/[0.15] [[data-theme="paper"]_&]:border-[var(--border-strong)] text-[var(--text)] font-semibold shadow-card'
-                  : 'text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-fg/[0.04] border border-transparent'
-              }`}
-            >
-              <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span>STATS</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('leaderboard')}
-              className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-xl text-xs font-hud font-bold tracking-wider transition-all cursor-pointer ${
-                activeTab === 'leaderboard'
-                  ? 'bg-fg/[0.08] [[data-theme="paper"]_&]:bg-[var(--surface)] border border-fg/[0.15] [[data-theme="paper"]_&]:border-[var(--border-strong)] text-[var(--text)] font-semibold shadow-card'
-                  : 'text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-fg/[0.04] border border-transparent'
-              }`}
-            >
-              <FacetedTrophyIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span>LEADERBOARD</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('rooms')}
-              className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-xl text-xs font-hud font-bold tracking-wider transition-all cursor-pointer ${
-                activeTab === 'rooms'
-                  ? 'bg-fg/[0.08] [[data-theme="paper"]_&]:bg-[var(--surface)] border border-fg/[0.15] [[data-theme="paper"]_&]:border-[var(--border-strong)] text-[var(--text)] font-semibold shadow-card'
-                  : 'text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-fg/[0.04] border border-transparent'
-              }`}
-            >
-              <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span>ROOMS</span>
-            </button>
-
-          </nav>
+          <div className="hidden md:flex items-center">
+            <AnimatedTabPill
+              tabs={[
+                { id: 'timer', label: 'TIMER', icon: Timer },
+                { id: 'tasks', label: 'TASKS', icon: CheckSquare },
+                { id: 'analytics', label: 'STATS', icon: BarChart3 },
+                { id: 'leaderboard', label: 'LEADERBOARD', icon: FacetedTrophyIcon },
+                { id: 'rooms', label: 'ROOMS', icon: Users },
+              ]}
+              activeTab={activeTab}
+              onChange={(id) => handleTabClick(id as NavTabType)}
+              layoutId="desktop-navbar-tab"
+            />
+          </div>
         </div>
 
         {/* Right Action Bar */}
@@ -361,19 +316,11 @@ export function Navbar({
           ) : (
             <Link
               href="/premium"
-              className="inline-flex items-center justify-center h-8 sm:h-9 px-2 sm:px-2.5 rounded-xl border transition-all hover:scale-105 active:scale-95 select-none flex-shrink-0"
-              style={{
-                background: 'rgba(230, 193, 90, 0.12)',
-                borderColor: PREMIUM_GOLD_BORDER,
-                boxShadow: `0 0 8px ${PREMIUM_GOLD_GLOW}`,
-              }}
+              className="inline-flex items-center select-none flex-shrink-0"
               title="Premium Active — Click to view membership status"
               aria-label="Premium Active"
             >
-              <Crown className="w-3.5 h-3.5 text-[#E6C15A] fill-[#E6C15A]" />
-              <span className="hidden md:inline text-[10px] font-hud font-bold tracking-wider text-[#E6C15A] ml-1 uppercase">
-                PRO
-              </span>
+              <ProBadge size="sm" label="PRO" />
             </Link>
           )}
 
@@ -390,7 +337,7 @@ export function Navbar({
           ) : (
             <div className="flex items-center gap-2">
               {/* Streak Pill */}
-              <StreakBadge streak={displayStreak} />
+              <StreakBadge streak={displayStreak} isBoosted={isPremium} />
 
               {/* Rank Status Pill */}
               {isLoading && (!user || user.id.startsWith('user-scholar') || user.id === 'guest') ? (
@@ -697,7 +644,7 @@ export function Navbar({
 
         {/* Tab 1: Timer */}
         <button
-          onClick={() => setActiveTab('timer')}
+          onClick={() => handleTabClick('timer')}
           className={`relative z-10 flex-1 flex flex-col items-center justify-center py-1.5 rounded-full transition-all active:scale-95 cursor-pointer ${
             activeTab === 'timer'
               ? 'text-[var(--text)] font-bold drop-shadow-sm'
@@ -711,7 +658,7 @@ export function Navbar({
 
         {/* Tab 2: Tasks */}
         <button
-          onClick={() => setActiveTab('tasks')}
+          onClick={() => handleTabClick('tasks')}
           className={`relative z-10 flex-1 flex flex-col items-center justify-center py-1.5 rounded-full transition-all active:scale-95 cursor-pointer ${
             activeTab === 'tasks'
               ? 'text-[var(--text)] font-bold drop-shadow-sm'
@@ -725,7 +672,7 @@ export function Navbar({
 
         {/* Tab 3: Analytics */}
         <button
-          onClick={() => setActiveTab('analytics')}
+          onClick={() => handleTabClick('analytics')}
           className={`relative z-10 flex-1 flex flex-col items-center justify-center py-1.5 rounded-full transition-all active:scale-95 cursor-pointer ${
             activeTab === 'analytics'
               ? 'text-[var(--text)] font-bold drop-shadow-sm'
@@ -739,7 +686,7 @@ export function Navbar({
 
         {/* Tab 4: Leaderboard */}
         <button
-          onClick={() => setActiveTab('leaderboard')}
+          onClick={() => handleTabClick('leaderboard')}
           className={`relative z-10 flex-1 flex flex-col items-center justify-center py-1.5 rounded-full transition-all active:scale-95 cursor-pointer ${
             activeTab === 'leaderboard'
               ? 'text-[var(--text)] font-bold drop-shadow-sm'
@@ -753,7 +700,7 @@ export function Navbar({
 
         {/* Tab 5: Rooms */}
         <button
-          onClick={() => setActiveTab('rooms')}
+          onClick={() => handleTabClick('rooms')}
           className={`relative z-10 flex-1 flex flex-col items-center justify-center py-1.5 rounded-full transition-all active:scale-95 cursor-pointer ${
             activeTab === 'rooms'
               ? 'text-[var(--text)] font-bold drop-shadow-sm'

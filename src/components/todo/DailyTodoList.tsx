@@ -21,6 +21,8 @@ import { useStudy } from '../../context/StudyContext';
 import { useStudyMode } from '../../context/StudyModeContext';
 import toast from 'react-hot-toast';
 import { parseSmartTasks, isMultiTaskPaste } from '../../lib/smartTaskParser';
+import { AnimatedTaskItem, CompletionBurst } from '../animations';
+import { triggerHaptic } from '../../lib/native-feel';
 
 export interface DailyTodo {
   id: string;
@@ -56,6 +58,7 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
   const [taskPriority, setTaskPriority] = useState<'low' | 'medium' | 'high'>('medium');
   const [taskSubjectId, setTaskSubjectId] = useState<string>('none');
   const [bulkAddFeedback, setBulkAddFeedback] = useState<{ count: number; visible: boolean }>({ count: 0, visible: false });
+  const [burstTrigger, setBurstTrigger] = useState(false);
 
   const handleFocusTask = (subjectId?: string) => {
     if (!isFocus && subjectId && subjectId !== 'none') {
@@ -436,12 +439,16 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
   const handleToggleTask = async (id: string, currentCompleted: boolean) => {
     const nextCompleted = !currentCompleted;
     if (nextCompleted) {
+      triggerHaptic('medium');
       soundFx.playReactionPop();
+      setBurstTrigger(true);
       confetti({
         particleCount: 25,
         spread: 45,
         origin: { y: 0.6 },
       });
+    } else {
+      triggerHaptic('light');
     }
 
     inFlightOpsRef.current += 1;
@@ -722,6 +729,9 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
 
       {/* Main Task List Container */}
       <div className="flex-1 flex flex-col gap-4 overflow-y-auto pr-1 sm:pr-2 select-none relative z-10">
+        {/* GPU Confetti Celebration Burst */}
+        <CompletionBurst trigger={burstTrigger} onComplete={() => setBurstTrigger(false)} />
+
         {/* Empty States */}
         {displayActiveTodos.length === 0 && displayCompletedTodos.length === 0 && filter === 'all' && (
           <div className="m-auto flex flex-col items-center justify-center text-center py-12 opacity-60">
@@ -852,12 +862,11 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
                   <GripVertical className="w-4 h-4" />
                 </div>
 
-                {/* Cyberpunk Checkbox */}
-                <button
-                  type="button"
-                  onClick={() => handleToggleTask(item.id, item.is_completed)}
-                  aria-label="Mark task complete"
-                  className="w-5 h-5 sm:w-6 sm:h-6 rounded-md border-2 border-[var(--border-strong)] hover:border-[var(--accent)] hover:bg-[var(--accent-soft)] transition-all flex items-center justify-center flex-shrink-0 cursor-pointer active:scale-90 shadow-inner"
+                {/* Cyberpunk Animated Spring Checkbox */}
+                <AnimatedTaskItem
+                  completed={false}
+                  onToggle={() => handleToggleTask(item.id, item.is_completed)}
+                  renderCheckboxOnly
                 />
 
                 {/* Content */}
@@ -937,16 +946,12 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
                     className="group flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--surface-2)] transition-colors bg-[var(--surface)]/50 border border-transparent shadow-card relative overflow-hidden"
                   >
                     <div className="w-4 flex-shrink-0" />
-                    {/* Checked Box */}
-                    <button
-                      type="button"
-                      onClick={() => handleToggleTask(item.id, item.is_completed)}
-                      aria-label="Mark task incomplete"
-                      className="w-5 h-5 sm:w-6 sm:h-6 rounded-md flex items-center justify-center transition-all cursor-pointer shadow-[0_0_10px_var(--glow)] active:scale-95 flex-shrink-0 z-10"
-                      style={{ backgroundColor: 'var(--accent)', color: 'var(--accent-contrast)' }}
-                    >
-                      <Check className="w-3.5 h-3.5 stroke-[3]" />
-                    </button>
+                    {/* Checked Animated Spring Box */}
+                    <AnimatedTaskItem
+                      completed={true}
+                      onToggle={() => handleToggleTask(item.id, item.is_completed)}
+                      renderCheckboxOnly
+                    />
                     {/* Strikethrough Content */}
                     <div className="flex-1 min-w-0 opacity-40 group-hover:opacity-60 transition-opacity z-10">
                       <span className="block text-xs sm:text-[14px] text-[var(--text)] line-through py-0.5 tracking-wide leading-relaxed font-sans truncate">

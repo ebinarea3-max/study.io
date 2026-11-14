@@ -20,22 +20,24 @@
 }
 
 @layer base {
-  /* 1 & 3: Remove tap highlight flash and rubber-band bounce effect */
+  /* 1. Global tap-highlight removal */
   *,
   *::before,
   *::after {
     -webkit-tap-highlight-color: transparent;
   }
 
-  /* 1, 2 & 3: Global native mobile behavior & text selection disable */
+  /* 2. Global native app feel: disable rubber-band bounce, callouts, text selection */
+  html,
   body {
     overscroll-behavior-y: none;
+    -webkit-touch-callout: none;
     -webkit-user-select: none;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
   }
 
-  /* 4: Re-enable text selection for typing, editing, and copying in inputs, textareas, and chat messages */
+  /* 3. Re-enable text selection ONLY on inputs, textareas, and study notes */
   input,
   textarea,
   [contenteditable],
@@ -45,8 +47,44 @@
   .chat-bubble,
   .chat-text,
   [data-selectable="true"] {
-    -webkit-user-select: auto;
-    user-select: auto;
+    -webkit-user-select: text;
+    user-select: text;
+  }
+
+  /* 4. Eliminate 300ms mobile tap delay and optimize touch responsiveness */
+  button,
+  a,
+  [role="button"],
+  input[type="button"],
+  input[type="submit"],
+  select {
+    touch-action: manipulation;
+  }
+
+  /* 5. Prevent dragging of images, SVGs, and links */
+  img,
+  svg,
+  a {
+    -webkit-user-drag: none;
+    user-select: none;
+  }
+
+  /* 6. Instant Tactile Button Depression (immediate physical feedback on touch-down) */
+  button:not(:disabled):active,
+  [role="button"]:not([aria-disabled="true"]):active,
+  a:active,
+  .interactive-tap:active {
+    transform: scale(0.97);
+    transition: transform 75ms ease-out;
+  }
+
+  /* 7. Disable sticky hover states on touch devices */
+  @media (hover: none) and (pointer: coarse) {
+    button:hover,
+    a:hover,
+    [role="button"]:hover {
+      transform: none;
+    }
   }
 }
 

@@ -59,6 +59,7 @@ import { getLocalDateString, isSessionToday, isSessionYesterday } from '../../li
 import { Skeleton } from '../common/Skeleton';
 import { useRankTheme } from '../../hooks/useRankTheme';
 import { useStudyMode } from '../../context/StudyModeContext';
+import { triggerHaptic } from '../../lib/native-feel';
 
 const EMPTY_STATE_QUOTES = [
   'Every long streak starts with one session.',
@@ -256,19 +257,23 @@ export function StudyTimer() {
     }
     setSubjectWarning(false);
     setShowRecoveryBanner(false);
+    triggerHaptic('medium');
     startTimer(activeSub.id);
   }, [activeSubjects, selectedSubject, selectedSubjectId, startTimer, handleOpenSubjectManager]);
 
   const handlePause = useCallback(() => {
+    triggerHaptic('light');
     pauseTimer();
   }, [pauseTimer]);
 
   const handleResume = useCallback(() => {
     setShowRecoveryBanner(false);
+    triggerHaptic('medium');
     resumeTimer();
   }, [resumeTimer]);
 
   const handleReset = useCallback(() => {
+    triggerHaptic('light');
     setIsCountdownCompleted(false);
     setIsCountdownHalfwayNotified(false);
     try {
@@ -282,6 +287,7 @@ export function StudyTimer() {
 
   const handleStopAndSave = useCallback(async (durationOverride?: number | React.MouseEvent) => {
     if (isSaving) return;
+    triggerHaptic('medium');
 
     // 1. Prevent race conditions: Capture exact real-time duration BEFORE mutating any state or resetting timer display
     const rawSeconds = isRunning && startTimeRef?.current
