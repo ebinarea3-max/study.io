@@ -24,7 +24,6 @@ import { RankCrestBadge } from '../../components/common/RankCrestBadge';
 import { RankTierName } from '../../lib/rankedSystem';
 import { useRazorpayCheckout } from '../../hooks/useRazorpayCheckout';
 import { PAYMENTS_ENABLED } from '../../config/billing';
-import { ProUpgradeCard, ProBadge } from '../../components/animations';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    PREMIUM CONSTANTS & TOKENS
@@ -115,8 +114,9 @@ function BentoCard({
       onPointerMove={handlePointerMove}
       onPointerLeave={handlePointerLeave}
       onClick={handleClick}
-      className={`group relative flex flex-col justify-between overflow-hidden rounded-3xl bg-white/[0.04] p-5 sm:p-6 transition-all duration-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)] ${isPremium && href ? 'cursor-pointer hover:border-[rgba(230,193,90,0.35)]' : ''
-        } ${className}`}
+      className={`group relative flex flex-col justify-between overflow-hidden rounded-3xl bg-white/[0.04] p-5 sm:p-6 transition-all duration-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)] ${
+        isPremium && href ? 'cursor-pointer hover:border-[rgba(230,193,90,0.35)]' : ''
+      } ${className}`}
       style={{
         border: `1px solid ${PREMIUM_HAIRLINE}`,
         opacity: isVisible || shouldReduceMotion ? 1 : 0,
@@ -145,10 +145,11 @@ function BentoCard({
           Preview
         </span>
         <div
-          className={`flex h-6 w-6 items-center justify-center rounded-full border ${isPremium
+          className={`flex h-6 w-6 items-center justify-center rounded-full border ${
+            isPremium
               ? 'border-[#E6C15A]/40 bg-[#E6C15A]/15 text-[#E6C15A]'
               : 'border-white/10 bg-white/5 text-white/40'
-            }`}
+          }`}
           title={isPremium ? 'Unlocked' : 'Requires Premium'}
         >
           {isPremium ? (
@@ -262,10 +263,11 @@ function ThemesDemo() {
               key={theme.id}
               type="button"
               onClick={() => setActiveThemeId(theme.id)}
-              className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-mono transition-all cursor-pointer ${isSelected
+              className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-mono transition-all cursor-pointer ${
+                isSelected
                   ? 'border shadow-sm'
                   : 'border border-transparent text-white/40 hover:text-white'
-                }`}
+              }`}
               style={{
                 backgroundColor: isSelected ? `${theme.accent}20` : 'transparent',
                 borderColor: isSelected ? theme.accent : 'transparent',
@@ -329,10 +331,11 @@ function TimeTravelDemo() {
             return (
               <div
                 key={idx}
-                className={`flex h-7 items-center justify-center rounded-lg transition-all duration-300 ${isTarget
+                className={`flex h-7 items-center justify-center rounded-lg transition-all duration-300 ${
+                  isTarget
                     ? 'border border-[#E6C15A] bg-[#E6C15A] font-bold text-[#141006] shadow-[0_0_12px_rgba(230,193,90,0.5)]'
                     : 'text-white/40 hover:text-white/70'
-                  }`}
+                }`}
               >
                 {d}
               </div>
@@ -503,17 +506,18 @@ function FocusScenesDemo() {
               type="button"
               key={scene.id}
               onClick={() => setActiveSceneId(scene.id)}
-              className={`px-2 py-0.5 rounded-full text-[10px] font-hud uppercase tracking-wider transition-all cursor-pointer ${isActive
+              className={`px-2 py-0.5 rounded-full text-[10px] font-hud uppercase tracking-wider transition-all cursor-pointer ${
+                isActive
                   ? 'border shadow-xs scale-105'
                   : 'text-white/40 border border-transparent hover:text-white/70'
-                }`}
+              }`}
               style={
                 isActive
                   ? {
-                    backgroundColor: 'rgba(255, 255, 255, 0.12)',
-                    borderColor: scene.accent,
-                    color: scene.accent,
-                  }
+                      backgroundColor: 'rgba(255, 255, 255, 0.12)',
+                      borderColor: scene.accent,
+                      color: scene.accent,
+                    }
                   : undefined
               }
             >
@@ -775,10 +779,10 @@ export default function PremiumPage() {
 
   const formattedDate = premiumUntil
     ? new Date(premiumUntil).toLocaleDateString(undefined, {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    })
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      })
     : null;
 
   return (
@@ -1027,37 +1031,35 @@ export default function PremiumPage() {
             </div>
           ) : isPremium ? (
             /* Premium User Card */
-            <ProUpgradeCard isPro={true} className="max-w-xl mx-auto shadow-2xl">
-              <div
-                id="premium-status-section"
-                className="p-6 sm:p-8 text-center"
-              >
-                <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[#E6C15A]/15 border border-[#E6C15A]/30 text-[#E6C15A] mb-3">
-                  <Crown className="w-6 h-6 fill-current" />
-                </div>
-                <div className="mb-2">
-                  <ProBadge size="md" label="PRO ACTIVE" />
-                </div>
-                <h2 className="font-hud text-xl sm:text-2xl font-bold text-white mt-1">
-                  You&apos;re Premium
-                </h2>
-                <p className="mt-1.5 text-xs text-white/60">
-                  {formattedDate
-                    ? `Active until ${formattedDate}. All features are unlocked.`
-                    : 'Your subscription is active. All features are unlocked.'}
-                </p>
-
-                <div className="mt-6 flex justify-center">
-                  <Link
-                    href="/dashboard"
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-xs font-hud font-bold uppercase tracking-wider text-white transition-colors"
-                  >
-                    <span>Go to Dashboard</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
-                </div>
+            <div
+              id="premium-status-section"
+              className="max-w-xl mx-auto rounded-3xl p-6 sm:p-8 text-center bg-white/[0.03] shadow-xl"
+              style={{
+                border: `1px solid ${PREMIUM_HAIRLINE}`,
+              }}
+            >
+              <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[#E6C15A]/15 border border-[#E6C15A]/30 text-[#E6C15A] mb-3">
+                <Crown className="w-6 h-6 fill-current" />
               </div>
-            </ProUpgradeCard>
+              <h2 className="font-hud text-xl sm:text-2xl font-bold text-white">
+                You&apos;re Premium
+              </h2>
+              <p className="mt-1.5 text-xs text-white/60">
+                {formattedDate
+                  ? `Active until ${formattedDate}. All features are unlocked.`
+                  : 'Your subscription is active. All features are unlocked.'}
+              </p>
+
+              <div className="mt-6 flex justify-center">
+                <Link
+                  href="/dashboard"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-xs font-hud font-bold uppercase tracking-wider text-white transition-colors"
+                >
+                  <span>Go to Dashboard</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            </div>
           ) : (
             /* Free Users: Monthly & Yearly Cards */
             <div className="max-w-2xl mx-auto">
@@ -1108,52 +1110,53 @@ export default function PremiumPage() {
                   </button>
                 </div>
 
-                {/* Yearly Plan (Highlighted with ProUpgradeCard) */}
-                <ProUpgradeCard isPro={false} className="h-full shadow-xl">
-                  <div className="p-6 flex flex-col justify-between h-full relative overflow-hidden">
-                    {/* Real Computed Saving Tag */}
-                    {savingPercentage > 0 && (
-                      <div className="absolute top-4 right-4 rounded-full bg-[#E6C15A]/15 border border-[#E6C15A]/30 px-2.5 py-0.5 text-[9px] font-mono font-bold text-[#E6C15A]">
-                        Save {savingPercentage}%
-                      </div>
-                    )}
-
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-hud text-xs font-bold uppercase text-[#E6C15A]">
-                          Yearly
-                        </span>
-                        <ProBadge size="sm" label="POPULAR" showCrown={false} />
-                      </div>
-                      <div className="mt-2 text-3xl font-hud font-bold text-white">
-                        {yearlyFormatted}
-                        <span className="text-xs font-mono font-normal text-white/40">
-                          {' '}/ yr
-                        </span>
-                      </div>
-                      <p className="mt-2 text-xs text-white/50">
-                        Billed annually. Best value.
-                      </p>
+                {/* Yearly Plan (Highlighted) */}
+                <div
+                  className="rounded-3xl bg-white/[0.04] p-6 flex flex-col justify-between relative overflow-hidden"
+                  style={{
+                    border: '1px solid rgba(230, 193, 90, 0.4)',
+                    boxShadow: '0 0 25px rgba(230, 193, 90, 0.08)',
+                  }}
+                >
+                  {/* Real Computed Saving Tag */}
+                  {savingPercentage > 0 && (
+                    <div className="absolute top-4 right-4 rounded-full bg-[#E6C15A]/15 border border-[#E6C15A]/30 px-2.5 py-0.5 text-[9px] font-mono font-bold text-[#E6C15A]">
+                      Save {savingPercentage}%
                     </div>
+                  )}
 
-                    <button
-                      type="button"
-                      onClick={() => startCheckout('yearly')}
-                      disabled={isProcessing || !PAYMENTS_ENABLED}
-                      className="mt-6 w-full py-3 rounded-xl text-xs font-hud font-bold uppercase tracking-wider text-[#1A1405] transition-all cursor-pointer hover:opacity-95 active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md"
-                      style={{ background: PREMIUM_GOLD_GRADIENT }}
-                    >
-                      {isProcessing ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <>
-                          <Sparkles className="w-3.5 h-3.5" />
-                          <span>Subscribe Yearly</span>
-                        </>
-                      )}
-                    </button>
+                  <div>
+                    <span className="font-hud text-xs font-bold uppercase text-[#E6C15A]">
+                      Yearly
+                    </span>
+                    <div className="mt-2 text-3xl font-hud font-bold text-white">
+                      {yearlyFormatted}
+                      <span className="text-xs font-mono font-normal text-white/40">
+                        {' '}/ yr
+                      </span>
+                    </div>
+                    <p className="mt-2 text-xs text-white/50">
+                      Billed annually. Best value.
+                    </p>
                   </div>
-                </ProUpgradeCard>
+
+                  <button
+                    type="button"
+                    onClick={() => startCheckout('yearly')}
+                    disabled={isProcessing || !PAYMENTS_ENABLED}
+                    className="mt-6 w-full py-3 rounded-xl text-xs font-hud font-bold uppercase tracking-wider text-[#1A1405] transition-all cursor-pointer hover:opacity-95 active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md"
+                    style={{ background: PREMIUM_GOLD_GRADIENT }}
+                  >
+                    {isProcessing ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <>
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>Subscribe Yearly</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           )}

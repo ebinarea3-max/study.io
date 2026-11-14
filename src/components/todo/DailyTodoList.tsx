@@ -11,7 +11,6 @@ import {
   Check,
   ChevronDown,
   GripVertical,
-  Target,
   Flag,
   CircleDot,
   Sparkles,
@@ -21,8 +20,6 @@ import { useStudy } from '../../context/StudyContext';
 import { useStudyMode } from '../../context/StudyModeContext';
 import toast from 'react-hot-toast';
 import { parseSmartTasks, isMultiTaskPaste } from '../../lib/smartTaskParser';
-import { AnimatedTaskItem, CompletionBurst } from '../animations';
-import { triggerHaptic } from '../../lib/native-feel';
 
 export interface DailyTodo {
   id: string;
@@ -58,7 +55,6 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
   const [taskPriority, setTaskPriority] = useState<'low' | 'medium' | 'high'>('medium');
   const [taskSubjectId, setTaskSubjectId] = useState<string>('none');
   const [bulkAddFeedback, setBulkAddFeedback] = useState<{ count: number; visible: boolean }>({ count: 0, visible: false });
-  const [burstTrigger, setBurstTrigger] = useState(false);
 
   const handleFocusTask = (subjectId?: string) => {
     if (!isFocus && subjectId && subjectId !== 'none') {
@@ -439,16 +435,12 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
   const handleToggleTask = async (id: string, currentCompleted: boolean) => {
     const nextCompleted = !currentCompleted;
     if (nextCompleted) {
-      triggerHaptic('medium');
       soundFx.playReactionPop();
-      setBurstTrigger(true);
       confetti({
         particleCount: 25,
         spread: 45,
         origin: { y: 0.6 },
       });
-    } else {
-      triggerHaptic('light');
     }
 
     inFlightOpsRef.current += 1;
@@ -585,20 +577,15 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
     <div className="space-y-4 sm:space-y-6 relative flex flex-col min-h-[70vh] w-full">
       {/* HUD Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[var(--border)] relative z-10">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-[var(--accent-soft)] border border-[var(--border)] flex items-center justify-center text-[var(--accent)] shadow-[0_0_20px_var(--glow)]">
-            <Target className="w-5 h-5" />
-          </div>
-          <div>
-            <h2 className="text-lg sm:text-xl font-hud font-bold tracking-widest uppercase text-[var(--text)] drop-shadow-md flex items-center gap-2">
-              TO DO LIST
-              {todos.length > 0 && progressPercent === 100 && (
-                <span className="px-1.5 py-0.5 rounded text-[10px] font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 animate-pulse">ALL CLEARED</span>
-              )}
-            </h2>
-            <div className="text-xs text-[var(--text-dim)] font-mono tracking-wider mt-0.5">
-              <span className="text-[var(--accent)] font-bold">{completedTodos.length}</span> / {todos.length} COMPLETED
-            </div>
+        <div>
+          <h2 className="text-lg sm:text-xl font-hud font-bold tracking-widest uppercase text-[var(--text)] drop-shadow-md flex items-center gap-2">
+            TO DO LIST
+            {todos.length > 0 && progressPercent === 100 && (
+              <span className="px-1.5 py-0.5 rounded text-[10px] font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 animate-pulse">ALL CLEARED</span>
+            )}
+          </h2>
+          <div className="text-xs text-[var(--text-dim)] font-mono tracking-wider mt-0.5">
+            <span className="text-[var(--accent)] font-bold">{completedTodos.length}</span> / {todos.length} COMPLETED
           </div>
         </div>
 
@@ -729,9 +716,6 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
 
       {/* Main Task List Container */}
       <div className="flex-1 flex flex-col gap-4 overflow-y-auto pr-1 sm:pr-2 select-none relative z-10">
-        {/* GPU Confetti Celebration Burst */}
-        <CompletionBurst trigger={burstTrigger} onComplete={() => setBurstTrigger(false)} />
-
         {/* Empty States */}
         {displayActiveTodos.length === 0 && displayCompletedTodos.length === 0 && filter === 'all' && (
           <div className="m-auto flex flex-col items-center justify-center text-center py-12 opacity-60">
@@ -862,11 +846,12 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
                   <GripVertical className="w-4 h-4" />
                 </div>
 
-                {/* Cyberpunk Animated Spring Checkbox */}
-                <AnimatedTaskItem
-                  completed={false}
-                  onToggle={() => handleToggleTask(item.id, item.is_completed)}
-                  renderCheckboxOnly
+                {/* Cyberpunk Checkbox */}
+                <button
+                  type="button"
+                  onClick={() => handleToggleTask(item.id, item.is_completed)}
+                  aria-label="Mark task complete"
+                  className="w-5 h-5 sm:w-6 sm:h-6 rounded-md border-2 border-[var(--border-strong)] hover:border-[var(--accent)] hover:bg-[var(--accent-soft)] transition-all flex items-center justify-center flex-shrink-0 cursor-pointer active:scale-90 shadow-inner"
                 />
 
                 {/* Content */}
@@ -946,12 +931,16 @@ export function DailyTodoList({ isEmbedded = false }: { isEmbedded?: boolean } =
                     className="group flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--surface-2)] transition-colors bg-[var(--surface)]/50 border border-transparent shadow-card relative overflow-hidden"
                   >
                     <div className="w-4 flex-shrink-0" />
-                    {/* Checked Animated Spring Box */}
-                    <AnimatedTaskItem
-                      completed={true}
-                      onToggle={() => handleToggleTask(item.id, item.is_completed)}
-                      renderCheckboxOnly
-                    />
+                    {/* Checked Box */}
+                    <button
+                      type="button"
+                      onClick={() => handleToggleTask(item.id, item.is_completed)}
+                      aria-label="Mark task incomplete"
+                      className="w-5 h-5 sm:w-6 sm:h-6 rounded-md flex items-center justify-center transition-all cursor-pointer shadow-[0_0_10px_var(--glow)] active:scale-95 flex-shrink-0 z-10"
+                      style={{ backgroundColor: 'var(--accent)', color: 'var(--accent-contrast)' }}
+                    >
+                      <Check className="w-3.5 h-3.5 stroke-[3]" />
+                    </button>
                     {/* Strikethrough Content */}
                     <div className="flex-1 min-w-0 opacity-40 group-hover:opacity-60 transition-opacity z-10">
                       <span className="block text-xs sm:text-[14px] text-[var(--text)] line-through py-0.5 tracking-wide leading-relaxed font-sans truncate">

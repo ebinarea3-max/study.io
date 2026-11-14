@@ -41,9 +41,6 @@ import { RankCrestBadge } from './RankCrestBadge';
 import Image from 'next/image';
 import { getRankIconPath } from '../../utils/rankIcons';
 import { FacetedTrophyIcon, FacetedGearIcon } from './GeometricIcons';
-import { motion } from 'framer-motion';
-import { ProBadge, AnimatedTabPill } from '../animations';
-import { triggerHaptic } from '../../lib/native-feel';
 
 export type NavTabType = 'timer' | 'tasks' | 'analytics' | 'leaderboard' | 'settings' | 'rooms';
 
@@ -61,13 +58,7 @@ const StreakBadge = React.memo(function StreakBadge({ streak }: { streak: number
       className="flex items-center h-8 sm:h-9 px-2 sm:px-3 bg-[var(--surface)] border border-[var(--border)] text-[var(--text)] shadow-card cursor-default select-none rounded-xl gap-1 sm:gap-1.5 shrink-0"
       title={`${streak} Day Streak`}
     >
-      <motion.div
-        animate={streak > 0 ? { scale: [1, 1.15, 1], rotate: [0, -3, 3, 0] } : undefined}
-        transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
-        className="shrink-0 flex items-center justify-center will-change-transform transform-gpu"
-      >
-        <Flame className="w-4 h-4 text-orange-500 shrink-0" fill="currentColor" strokeWidth={2} />
-      </motion.div>
+      <Flame className="w-4 h-4 text-orange-500 shrink-0" fill="currentColor" strokeWidth={2} />
       <span className="text-xs font-bold font-mono text-[var(--text)] min-w-[1ch] text-center inline-block">
         {streak}
       </span>
@@ -92,11 +83,6 @@ export function Navbar({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-
-  const handleTabClick = useCallback((tab: NavTabType) => {
-    triggerHaptic('light');
-    setActiveTab(tab);
-  }, [setActiveTab]);
 
   const displayStreak = useMemo(() => {
     // 1. If sessions are available, calculate the live streak
@@ -280,7 +266,7 @@ export function Navbar({
       <div className="max-w-7xl mx-auto px-3 sm:px-6 h-16 flex items-center justify-between gap-2 sm:gap-4">
         {/* Logo & Brand */}
         <div className="flex items-center gap-2.5 sm:gap-6">
-          <div className="flex items-center gap-2.5 cursor-pointer select-none group" onClick={() => handleTabClick('timer')}>
+          <div className="flex items-center gap-2.5 cursor-pointer select-none group" onClick={() => setActiveTab('timer')}>
             <Logo className="w-7 h-7 transition-transform group-hover:scale-105" />
             <div className="flex flex-col justify-center">
               <div className="text-sm sm:text-base font-hud font-extrabold tracking-tight text-[var(--text)] flex items-center gap-1.5 leading-none lowercase">
@@ -290,20 +276,28 @@ export function Navbar({
           </div>
 
           {/* Navigation Tabs - Desktop HUD strip */}
-          <div className="hidden md:flex items-center">
-            <AnimatedTabPill
-              tabs={[
-                { id: 'timer', label: 'TIMER', icon: Timer },
-                { id: 'tasks', label: 'TASKS', icon: CheckSquare },
-                { id: 'analytics', label: 'STATS', icon: BarChart3 },
-                { id: 'leaderboard', label: 'LEADERBOARD', icon: FacetedTrophyIcon },
-                { id: 'rooms', label: 'ROOMS', icon: Users },
-              ]}
-              activeTab={activeTab}
-              onChange={(id) => handleTabClick(id as NavTabType)}
-              layoutId="desktop-navbar-tab"
-            />
-          </div>
+          <nav className="hidden md:flex items-center gap-1 p-1 rounded-2xl bg-[var(--surface)] border border-[var(--border)] shadow-card">
+            {([
+              { id: 'timer', label: 'TIMER', Icon: Timer },
+              { id: 'tasks', label: 'TASKS', Icon: CheckSquare },
+              { id: 'analytics', label: 'STATS', Icon: BarChart3 },
+              { id: 'leaderboard', label: 'LEADERBOARD', Icon: FacetedTrophyIcon },
+              { id: 'rooms', label: 'ROOMS', Icon: Users },
+            ] as const).map(({ id, label, Icon }) => (
+              <button
+                key={id}
+                onClick={() => setActiveTab(id)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-hud font-bold tracking-wider uppercase transition-all cursor-pointer ${
+                  activeTab === id
+                    ? 'bg-[var(--accent)] text-[var(--accent-contrast)] shadow-sm'
+                    : 'text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-fg/[0.06]'
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                <span>{label}</span>
+              </button>
+            ))}
+          </nav>
         </div>
 
         {/* Right Action Bar */}
@@ -327,11 +321,16 @@ export function Navbar({
           ) : (
             <Link
               href="/premium"
-              className="inline-flex items-center select-none flex-shrink-0"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl text-xs font-hud font-bold tracking-wider uppercase text-[#1A1405] hover:opacity-95 active:scale-95 transition-all shadow-sm select-none flex-shrink-0"
+              style={{
+                background: PREMIUM_GOLD_GRADIENT,
+                boxShadow: `0 0 10px ${PREMIUM_GOLD_GLOW}`,
+              }}
               title="Premium Active — Click to view membership status"
               aria-label="Premium Active"
             >
-              <ProBadge size="sm" label="PRO" />
+              <Crown className="w-3.5 h-3.5 fill-current" />
+              <span className="hidden sm:inline">PRO</span>
             </Link>
           )}
 
@@ -655,7 +654,7 @@ export function Navbar({
 
         {/* Tab 1: Timer */}
         <button
-          onClick={() => handleTabClick('timer')}
+          onClick={() => setActiveTab('timer')}
           className={`relative z-10 flex-1 flex flex-col items-center justify-center py-1.5 rounded-full transition-all active:scale-95 cursor-pointer ${
             activeTab === 'timer'
               ? 'text-[var(--text)] font-bold drop-shadow-sm'
@@ -669,7 +668,7 @@ export function Navbar({
 
         {/* Tab 2: Tasks */}
         <button
-          onClick={() => handleTabClick('tasks')}
+          onClick={() => setActiveTab('tasks')}
           className={`relative z-10 flex-1 flex flex-col items-center justify-center py-1.5 rounded-full transition-all active:scale-95 cursor-pointer ${
             activeTab === 'tasks'
               ? 'text-[var(--text)] font-bold drop-shadow-sm'
@@ -683,7 +682,7 @@ export function Navbar({
 
         {/* Tab 3: Analytics */}
         <button
-          onClick={() => handleTabClick('analytics')}
+          onClick={() => setActiveTab('analytics')}
           className={`relative z-10 flex-1 flex flex-col items-center justify-center py-1.5 rounded-full transition-all active:scale-95 cursor-pointer ${
             activeTab === 'analytics'
               ? 'text-[var(--text)] font-bold drop-shadow-sm'
@@ -697,7 +696,7 @@ export function Navbar({
 
         {/* Tab 4: Leaderboard */}
         <button
-          onClick={() => handleTabClick('leaderboard')}
+          onClick={() => setActiveTab('leaderboard')}
           className={`relative z-10 flex-1 flex flex-col items-center justify-center py-1.5 rounded-full transition-all active:scale-95 cursor-pointer ${
             activeTab === 'leaderboard'
               ? 'text-[var(--text)] font-bold drop-shadow-sm'
@@ -711,7 +710,7 @@ export function Navbar({
 
         {/* Tab 5: Rooms */}
         <button
-          onClick={() => handleTabClick('rooms')}
+          onClick={() => setActiveTab('rooms')}
           className={`relative z-10 flex-1 flex flex-col items-center justify-center py-1.5 rounded-full transition-all active:scale-95 cursor-pointer ${
             activeTab === 'rooms'
               ? 'text-[var(--text)] font-bold drop-shadow-sm'
@@ -731,4 +730,6 @@ export function Navbar({
     </>
   );
 }
+
+
 

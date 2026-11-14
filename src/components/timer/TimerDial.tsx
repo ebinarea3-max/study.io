@@ -1,8 +1,6 @@
 'use client';
 
 import React from 'react';
-import { usePremium } from '../../context/PremiumContext';
-import { ProFocusAura } from '../animations';
 
 interface BezelTick {
   index: number;
@@ -102,7 +100,6 @@ export const TimerDial = React.memo(function TimerDial({
   timerMode,
   onStartCountdownEdit,
 }: TimerDialProps) {
-  const { isPremium } = usePremium();
   const safePercent = Math.max(0, Math.min(100, ringPercent || 0));
   const strokeDashoffset = CIRCUMFERENCE - (safePercent / 100) * CIRCUMFERENCE;
 
@@ -117,12 +114,6 @@ export const TimerDial = React.memo(function TimerDial({
           animation: timerDotPulse 2s ease-in-out infinite;
         }
       `}</style>
-
-      {/* Background Ambient Focus Aura (Zero duplicate SVG rings, pure ambient breathing glow) */}
-      <ProFocusAura
-        isActive={isRunning}
-        isPro={Boolean(isPremium)}
-      />
 
       {/* Soft Ambient Radial Glow */}
       <AmbientGlow isRunning={isRunning} />

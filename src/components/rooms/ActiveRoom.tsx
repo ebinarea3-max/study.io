@@ -34,12 +34,16 @@ import {
   UserCheck,
   MoreVertical,
   Loader2,
+  Sparkles,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { UserAvatar } from '../common/UserAvatar';
 import { resolveAppAvatar, isAppAvatar } from '@/lib/avatars';
 import { FlairFrame, fetchFlairMap } from '../../lib/flair';
 import { AvatarFlairRing, FlairCrown } from '../common/FlairBadge';
+import { RoomAvatarFlair } from './RoomAvatarFlair';
+import { RoomAvatarFlairModal } from './RoomAvatarFlairModal';
+import { RoomFlairId, getEquippedRoomFlair, ROOM_FLAIRS } from '../../lib/roomFlairs';
 import { ScholarProfileModal, ScholarModalData } from '../common/ScholarProfileModal';
 import { getSupabase, broadcast } from '../../lib/supabase';
 import {
@@ -155,7 +159,7 @@ import { usePremium } from '../../context/PremiumContext';
 
 export default function ActiveRoom({ roomId, onBack, initialTab }: ActiveRoomProps) {
   const { user } = useAuth();
-  const { isPremium } = usePremium();
+  const { isPremium, openPremiumModal } = usePremium();
   const { isRunning, elapsedSeconds, getTodayTotalSeconds } = useStudy();
 
   const [roomName, setRoomName] = useState<string>('Loading...');
@@ -194,6 +198,26 @@ export default function ActiveRoom({ roomId, onBack, initialTab }: ActiveRoomPro
 
   // Premium flair for room members
   const [flairMap, setFlairMap] = useState<Record<string, FlairFrame>>({});
+
+  // Room Avatar Flair state
+  const [userRoomFlair, setUserRoomFlair] = useState<RoomFlairId>('default');
+  const userRoomFlairRef = useRef<RoomFlairId>('default');
+  const [isFlairModalOpen, setIsFlairModalOpen] = useState(false);
+
+  useEffect(() => {
+    const equipped = getEquippedRoomFlair();
+    setUserRoomFlair(equipped);
+    userRoomFlairRef.current = equipped;
+
+    const handleFlairEvent = (e: any) => {
+      if (e?.detail) {
+        setUserRoomFlair(e.detail);
+        userRoomFlairRef.current = e.detail;
+      }
+    };
+    window.addEventListener('studyio_room_flair_changed', handleFlairEvent);
+    return () => window.removeEventListener('studyio_room_flair_changed', handleFlairEvent);
+  }, []);
 
   // Scholar profile modal state
   const [selectedScholar, setSelectedScholar] = useState<ScholarModalData | null>(null);
@@ -301,6 +325,9 @@ CREATE POLICY "Hosts can update their own study rooms"
         base_today_seconds: number; // Base today seconds (total minus session)
         today_seconds: number;
         last_seen: number;
+        room_flair?: RoomFlairId | null;
+        is_premium?: boolean;
+        flair_frame?: string | null;
       }
     >
   >({});
@@ -421,8 +448,9 @@ CREATE POLICY "Hosts can update their own study rooms"
             base_session_seconds: effectiveBaseSession,
             base_today_seconds: baseToday,
             today_seconds: todayTotal,
-              is_premium: isPremium,
-              flair_frame: isPremium ? 'gold' : null,
+            is_premium: isPremium,
+            flair_frame: isPremium ? 'gold' : null,
+            room_flair: payload.room_flair || payload.flair || null,
             last_seen: now,
           },
         };
@@ -445,8 +473,9 @@ CREATE POLICY "Hosts can update their own study rooms"
       session_seconds: elapsed,
       base_today_seconds: baseToday,
       today_seconds: todayTotal,
-              is_premium: isPremium,
-              flair_frame: isPremium ? 'gold' : null,
+      is_premium: isPremium,
+      flair_frame: isPremium ? 'gold' : null,
+      room_flair: userRoomFlairRef.current,
       timestamp: Date.now(),
     };
 
@@ -893,6 +922,7 @@ CREATE POLICY "Hosts can update their own study rooms"
               today_seconds: todayTotal,
               is_premium: isPremium,
               flair_frame: isPremium ? 'gold' : null,
+              room_flair: userRoomFlairRef.current,
             });
           } catch (err) {
             console.error('Initial presence track error:', err);
@@ -979,8 +1009,9 @@ CREATE POLICY "Hosts can update their own study rooms"
           elapsed_seconds: elapsed,
           base_today_seconds: baseToday,
           today_seconds: todayTotal,
-              is_premium: isPremium,
-              flair_frame: isPremium ? 'gold' : null,
+          is_premium: isPremium,
+          flair_frame: isPremium ? 'gold' : null,
+          room_flair: userRoomFlairRef.current,
         });
       } catch (err) {
         console.error('Tracking error:', err);
@@ -1446,6 +1477,7 @@ CREATE POLICY "Hosts can update their own study rooms"
         total_focus_seconds: totalFocusSeconds,
         is_online: isOnline,
         is_current_user: isCurrentUser,
+        flair: isCurrentUser ? userRoomFlair : (liveFocus?.room_flair || pu?.room_flair || 'default'),
       });
     }
 
@@ -1466,6 +1498,7 @@ CREATE POLICY "Hosts can update their own study rooms"
         total_focus_seconds: totalFocus,
         is_online: true,
         is_current_user: true,
+        flair: userRoomFlair,
       });
       seenUserIds.add(user.id);
     }
@@ -1507,6 +1540,7 @@ CREATE POLICY "Hosts can update their own study rooms"
           total_focus_seconds: totalFocus,
           is_online: true,
           is_current_user: false,
+          flair: liveFocus?.room_flair || pu?.room_flair || 'default',
         });
       }
     }
@@ -1832,6 +1866,15 @@ CREATE POLICY "Hosts can update their own study rooms"
                 <span>SETTINGS</span>
               </button>
             )}
+            {/* Customize Room Avatar Flair */}
+            <button
+              onClick={() => setIsFlairModalOpen(true)}
+              className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-hud font-bold uppercase tracking-wider text-amber-400 hover:text-amber-300 hover:bg-amber-400/10 transition-all cursor-pointer shrink-0"
+              title="Customize Room Avatar Flair"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden xs:inline">FLAIR</span>
+            </button>
           </div>
         </div>
       </header>
@@ -1848,24 +1891,36 @@ CREATE POLICY "Hosts can update their own study rooms"
               return (
                 <div
                   key={u.user_id}
-                  onClick={() => handleOpenScholarModal(u)}
+                  onClick={() => {
+                    if (u.is_current_user) {
+                      setIsFlairModalOpen(true);
+                    } else {
+                      handleOpenScholarModal(u);
+                    }
+                  }}
                   role="button"
                   tabIndex={0}
                   className="flex flex-col items-center gap-2 group relative transition-all duration-300 cursor-pointer hover:scale-105 active:scale-95 select-none"
                 >
                   <div className="relative">
-                    <UserAvatar
-                      src={u.avatar_url}
-                      name={u.username}
+                    <RoomAvatarFlair
+                      flair={u.is_current_user ? userRoomFlair : (u.flair || 'default')}
+                      isStudying={isStudying}
+                      isOnline={u.is_online}
                       size={64}
-                      className={`border-2 transition-all duration-300 ${
-                        isStudying
-                          ? 'border-amber-500 shadow-[0_0_18px_rgba(245,158,11,0.55)] scale-105'
-                          : u.is_online
-                          ? 'border-amber-500/40 border-dashed opacity-95'
-                          : 'border-slate-700/80 opacity-60'
-                      }`}
-                    />
+                      showCustomBadge={u.is_current_user}
+                      onClick={u.is_current_user ? (e) => {
+                        e.stopPropagation();
+                        setIsFlairModalOpen(true);
+                      } : undefined}
+                    >
+                      <UserAvatar
+                        src={u.avatar_url}
+                        name={u.username}
+                        size={64}
+                        className="transition-transform duration-300"
+                      />
+                    </RoomAvatarFlair>
 
 
 
@@ -2220,6 +2275,46 @@ CREATE POLICY "Hosts can update their own study rooms"
                   </button>
                 )}
               </div>
+            </div>
+
+            {/* Room Avatar Flair Customization Card */}
+            <div className="p-5 rounded-3xl bg-white/[0.03] border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-lg">
+              <div className="flex items-center gap-3.5">
+                <div className="relative shrink-0">
+                  <RoomAvatarFlair
+                    flair={userRoomFlair}
+                    isStudying={true}
+                    isOnline={true}
+                    size={52}
+                  >
+                    <UserAvatar
+                      src={user?.avatarUrl || profile?.avatar_url}
+                      name={user?.displayName || profile?.username || 'Scholar'}
+                      size={52}
+                    />
+                  </RoomAvatarFlair>
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-hud font-bold text-white uppercase tracking-wider">
+                      Room Avatar Flair
+                    </h3>
+                    <span className="text-[10px] font-hud font-bold uppercase px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                      Active: {ROOM_FLAIRS[userRoomFlair]?.name || 'Focus Ring'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Select and preview your animated orbital aura rings when studying in rooms.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsFlairModalOpen(true)}
+                className="px-4 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 hover:text-white text-xs font-hud font-bold uppercase tracking-wider transition-all cursor-pointer self-start sm:self-center shrink-0 shadow-sm"
+              >
+                Customize Flair
+              </button>
             </div>
 
             {settingsError && (
@@ -2864,6 +2959,22 @@ CREATE POLICY "Hosts can update their own study rooms"
         scholar={selectedScholar}
         isOpen={Boolean(selectedScholar)}
         onClose={() => setSelectedScholar(null)}
+      />
+
+      {/* Room Avatar Flair Customization Modal */}
+      <RoomAvatarFlairModal
+        isOpen={isFlairModalOpen}
+        onClose={() => setIsFlairModalOpen(false)}
+        currentFlair={userRoomFlair}
+        onEquipFlair={(newFlair) => {
+          setUserRoomFlair(newFlair);
+          userRoomFlairRef.current = newFlair;
+          sendFocusBroadcast();
+        }}
+        isPro={Boolean(isPremium)}
+        userAvatarUrl={user?.avatarUrl || profile?.avatar_url}
+        username={user?.displayName || profile?.username || 'Scholar'}
+        onOpenUpgradeModal={openPremiumModal}
       />
     </div>
   );
