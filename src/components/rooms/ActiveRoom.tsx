@@ -320,6 +320,7 @@ CREATE POLICY "Hosts can update their own study rooms"
       string,
       {
         is_studying: boolean;
+        start_time?: number;
         received_at: number; // Local timestamp (Date.now()) when update arrived
         base_session_seconds: number; // Session elapsed seconds at received_at
         base_today_seconds: number; // Base today seconds (total minus session)
@@ -429,27 +430,49 @@ CREATE POLICY "Hosts can update their own study rooms"
 
       setLiveFocusMap((prev) => {
         const existing = prev[payload.user_id];
-        let effectiveBaseSession = sessionSeconds;
+        let effectiveStartTime: number;
 
-        // Monotonic protection: If peer was and is studying, prevent backwards jumps caused by network latency or drift
-        if (isStudying && existing && existing.is_studying) {
-          const prevElapsedSinceSync = Math.max(0, Math.floor((now - existing.received_at) / 1000));
-          const previouslyTicked = existing.base_session_seconds + prevElapsedSinceSync;
-          if (sessionSeconds < previouslyTicked) {
-            effectiveBaseSession = previouslyTicked;
+        if (isStudying) {
+          if (payload.session_start_time) {
+            effectiveStartTime = payload.session_start_time;
+          } else if (existing && existing.is_studying && existing.start_time) {
+            // Smooth monotonic check: if local calculated progress is within 3s of payload, preserve start_time
+            const currentComputed = Math.max(0, Math.floor((now - existing.start_time) / 1000));
+            if (Math.abs(sessionSeconds - currentComputed) <= 3) {
+              effectiveStartTime = existing.start_time;
+            } else {
+              effectiveStartTime = now - (sessionSeconds * 1000);
+            }
+          } else {
+            effectiveStartTime = now - (sessionSeconds * 1000);
           }
+        } else {
+          effectiveStartTime = 0;
+        }
+
+        // Deduplication: prevent duplicate state updates if telemetry hasn't changed
+        if (
+          existing &&
+          existing.is_studying === isStudying &&
+          existing.start_time === effectiveStartTime &&
+          existing.room_flair === (payload.room_flair || payload.flair || null) &&
+          existing.base_today_seconds === baseToday &&
+          now - existing.last_seen < 4000
+        ) {
+          return prev;
         }
 
         return {
           ...prev,
           [payload.user_id]: {
             is_studying: isStudying,
+            start_time: effectiveStartTime,
             received_at: now,
-            base_session_seconds: effectiveBaseSession,
+            base_session_seconds: sessionSeconds,
             base_today_seconds: baseToday,
             today_seconds: todayTotal,
-            is_premium: isPremium,
-            flair_frame: isPremium ? 'gold' : null,
+            is_premium: Boolean(payload.is_premium),
+            flair_frame: payload.flair_frame || (payload.is_premium ? 'gold' : null),
             room_flair: payload.room_flair || payload.flair || null,
             last_seen: now,
           },
@@ -466,17 +489,19 @@ CREATE POLICY "Hosts can update their own study rooms"
     const elapsed = elapsedSecondsRef.current;
     const todayTotal = getTodayTotalSecondsRef.current ? getTodayTotalSecondsRef.current() : 0;
     const baseToday = Math.max(0, todayTotal - (isRunning ? elapsed : 0));
+    const now = Date.now();
     
     const payload = {
       user_id: user.id,
       is_studying: isRunning,
       session_seconds: elapsed,
+      session_start_time: isRunning ? now - (elapsed * 1000) : null,
       base_today_seconds: baseToday,
       today_seconds: todayTotal,
       is_premium: isPremium,
       flair_frame: isPremium ? 'gold' : null,
       room_flair: userRoomFlairRef.current,
-      timestamp: Date.now(),
+      timestamp: now,
     };
 
     if (chatChannelRef.current) {
@@ -502,16 +527,16 @@ CREATE POLICY "Hosts can update their own study rooms"
           .catch(() => {});
       } catch (err) {}
     }
-  }, [user?.id]);
+  }, [user?.id, isPremium]);
 
-  // Periodic heartbeat broadcast while studying so all peers see live progress
+  // Periodic heartbeat broadcast while studying so all peers see live progress (12s is optimal for start_time anchors)
   useEffect(() => {
     sendFocusBroadcast();
     if (!isTimerRunning) return;
 
     const interval = setInterval(() => {
       sendFocusBroadcast();
-    }, 3000);
+    }, 12000);
 
     return () => clearInterval(interval);
   }, [isTimerRunning, sendFocusBroadcast]);
@@ -704,8 +729,10 @@ CREATE POLICY "Hosts can update their own study rooms"
               const elapsed = m.timer_start_at
                 ? Math.max(0, Math.floor((nowTs - m.timer_start_at) / 1000)) + (m.accumulated_seconds || 0)
                 : (m.accumulated_seconds || 0);
+              const startTime = m.timer_start_at || (nowTs - elapsed * 1000);
               updated[m.user_id] = {
                 is_studying: true,
+                start_time: startTime,
                 received_at: nowTs,
                 base_session_seconds: elapsed,
                 base_today_seconds: m.base_today_seconds || 0,
@@ -860,7 +887,7 @@ CREATE POLICY "Hosts can update their own study rooms"
         for (const p of flat as any[]) {
           if (!p?.user_id || p.user_id === user?.id) continue;
           const existing = prev[p.user_id];
-          if (!existing || now - existing.last_seen > 10000) {
+          if (!existing || now - existing.last_seen > 12000) {
             hasChanges = true;
             const isStudying = Boolean(p.is_studying);
             const elapsed = Math.max(0, Number(p.elapsed_seconds || 0));
@@ -869,12 +896,20 @@ CREATE POLICY "Hosts can update their own study rooms"
               ? Math.max(0, Number(p.base_today_seconds))
               : Math.max(0, today - (isStudying ? elapsed : 0));
 
+            const startTime = isStudying
+              ? (p.session_start_time || existing?.start_time || (now - elapsed * 1000))
+              : 0;
+
             updated[p.user_id] = {
               is_studying: isStudying,
+              start_time: startTime,
               received_at: now,
               base_session_seconds: elapsed,
               base_today_seconds: baseToday,
               today_seconds: today,
+              is_premium: Boolean(p.is_premium),
+              flair_frame: p.flair_frame || (p.is_premium ? 'gold' : null),
+              room_flair: p.room_flair || null,
               last_seen: now,
             };
           }
@@ -981,8 +1016,8 @@ CREATE POLICY "Hosts can update their own study rooms"
     if (channelRef.current && user?.id && isSubscribedRef.current) {
       try {
         const isRunning = isTimerRunning;
-        const elapsed = elapsedSeconds;
-        const todayTotal = getTodayTotalSeconds ? getTodayTotalSeconds() : 0;
+        const elapsed = elapsedSecondsRef.current;
+        const todayTotal = getTodayTotalSecondsRef.current ? getTodayTotalSecondsRef.current() : 0;
         const baseToday = Math.max(0, todayTotal - (isRunning ? elapsed : 0));
 
         const myUsername =
@@ -1020,11 +1055,11 @@ CREATE POLICY "Hosts can update their own study rooms"
     sendFocusBroadcast();
   }, [
     isTimerRunning,
-    elapsedSeconds,
     user?.id,
     profile?.username,
     profile?.avatar_url,
-    getTodayTotalSeconds,
+    userRoomFlair,
+    isPremium,
     sendFocusBroadcast,
   ]);
 
@@ -1415,8 +1450,12 @@ CREATE POLICY "Hosts can update their own study rooms"
         baseToday = Math.max(baseToday, liveFocus.base_today_seconds ?? 0);
 
         if (isStudying) {
-          const elapsedSinceSync = Math.max(0, Math.floor((nowTick - liveFocus.received_at) / 1000));
-          sessionSeconds = (liveFocus.base_session_seconds || 0) + elapsedSinceSync;
+          if (liveFocus.start_time) {
+            sessionSeconds = Math.max(0, Math.floor((nowTick - liveFocus.start_time) / 1000));
+          } else {
+            const elapsedSinceSync = Math.max(0, Math.floor((nowTick - liveFocus.received_at) / 1000));
+            sessionSeconds = (liveFocus.base_session_seconds || 0) + elapsedSinceSync;
+          }
           totalFocusSeconds = baseToday + sessionSeconds;
         } else {
           sessionSeconds = liveFocus.base_session_seconds || 0;
@@ -1519,8 +1558,12 @@ CREATE POLICY "Hosts can update their own study rooms"
           isStudying = liveFocus.is_studying;
           baseToday = Math.max(baseToday, liveFocus.base_today_seconds ?? 0);
           if (isStudying) {
-            const elapsedSinceSync = Math.max(0, Math.floor((nowTick - liveFocus.received_at) / 1000));
-            sessionSeconds = (liveFocus.base_session_seconds || 0) + elapsedSinceSync;
+            if (liveFocus.start_time) {
+              sessionSeconds = Math.max(0, Math.floor((nowTick - liveFocus.start_time) / 1000));
+            } else {
+              const elapsedSinceSync = Math.max(0, Math.floor((nowTick - liveFocus.received_at) / 1000));
+              sessionSeconds = (liveFocus.base_session_seconds || 0) + elapsedSinceSync;
+            }
             totalFocus = baseToday + sessionSeconds;
           } else {
             sessionSeconds = liveFocus.base_session_seconds || 0;
@@ -1579,15 +1622,20 @@ CREATE POLICY "Hosts can update their own study rooms"
     roomInfo?.host_id,
   ]);
 
-  // Batch-fetch flair for visible room members and chat participants
+  // Batch-fetch flair for visible room members and chat participants (stabilized key to avoid 1-second refetch loops)
+  const memberIdsKey = useMemo(() => {
+    const memberIds = dbMembers.map((m) => m.user_id);
+    const presentIds = presentUsers.map((p) => p?.user_id).filter(Boolean);
+    const chatIds = messages.map((m) => m.user_id).filter(Boolean);
+    return Array.from(new Set([...memberIds, ...presentIds, ...chatIds])).filter(Boolean).sort().join(',');
+  }, [dbMembers, presentUsers, messages]);
+
   useEffect(() => {
-    const memberUids = displayUsers.map((u) => u.user_id);
-    const chatUids = messages.map((m) => m.user_id);
-    const uids = Array.from(new Set([...memberUids, ...chatUids])).filter(Boolean);
-    if (uids.length === 0) {
+    if (!memberIdsKey) {
       setFlairMap({});
       return;
     }
+    const uids = memberIdsKey.split(',');
     let active = true;
     fetchFlairMap(uids)
       .then((map) => {
@@ -1615,7 +1663,7 @@ CREATE POLICY "Hosts can update their own study rooms"
     return () => {
       active = false;
     };
-  }, [displayUsers, isPremium, user?.id]);
+  }, [memberIdsKey, isPremium, user?.id]);
 
   const handleCopyPassword = () => {
     if (!editPassword) return;
@@ -1909,10 +1957,7 @@ CREATE POLICY "Hosts can update their own study rooms"
                       isOnline={u.is_online}
                       size={64}
                       showCustomBadge={u.is_current_user}
-                      onClick={u.is_current_user ? (e) => {
-                        e.stopPropagation();
-                        setIsFlairModalOpen(true);
-                      } : undefined}
+                      onClick={u.is_current_user ? () => setIsFlairModalOpen(true) : undefined}
                     >
                       <UserAvatar
                         src={u.avatar_url}

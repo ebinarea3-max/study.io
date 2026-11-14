@@ -15,7 +15,7 @@ interface RoomAvatarFlairProps {
   showCustomBadge?: boolean;
 }
 
-export function RoomAvatarFlair({
+export const RoomAvatarFlair = React.memo(function RoomAvatarFlair({
   flair = 'default',
   isStudying,
   isOnline = true,
@@ -64,6 +64,9 @@ export function RoomAvatarFlair({
       <svg
         viewBox="0 0 100 100"
         className="absolute inset-[-14px] w-[calc(100%+28px)] h-[calc(100%+28px)] pointer-events-none select-none overflow-visible z-0 will-change-transform transform-gpu"
+        style={{
+          filter: isStudying ? `drop-shadow(0 0 5px ${config.themeColor}90)` : undefined,
+        }}
       >
         <defs>
           {/* Gradients */}
@@ -100,11 +103,6 @@ export function RoomAvatarFlair({
             <stop offset="50%" stopColor="#10B981" />
             <stop offset="100%" stopColor="#0D9488" />
           </linearGradient>
-
-          {/* Glow Filters */}
-          <filter id={`glow_${uniqueId}`} x="-20%" y="-20%" width="140%" height="140%">
-            <feDropShadow dx="0" dy="0" stdDeviation="2.5" floodColor={config.themeColor} floodOpacity="0.75" />
-          </filter>
         </defs>
 
         {/* STATE A: NOT STUDYING / PAUSED (Calm Low-Power Amber Dashed Ring with Gentle Breathing) */}
@@ -176,7 +174,6 @@ export function RoomAvatarFlair({
                   fill="none"
                   stroke={`url(#defaultGrad_${uniqueId})`}
                   strokeWidth="2.5"
-                  filter={`url(#glow_${uniqueId})`}
                   animate={{
                     scale: [1, 1.025, 1],
                     opacity: [0.9, 1, 0.9],
@@ -195,7 +192,7 @@ export function RoomAvatarFlair({
                   transition={{ duration: 5, repeat: Infinity, ease: 'linear' }}
                   style={{ transformOrigin: '50px 50px' }}
                 >
-                  <circle cx="50" cy={50 - ringRadius} r="3" fill="#10B981" filter={`url(#glow_${uniqueId})`} />
+                  <circle cx="50" cy={50 - ringRadius} r="3" fill="#10B981" />
                   <circle cx="50" cy={50 - ringRadius} r="1.5" fill="#FFFFFF" />
                 </motion.g>
               </g>
@@ -212,7 +209,6 @@ export function RoomAvatarFlair({
                   fill="none"
                   stroke={`url(#solarGrad_${uniqueId})`}
                   strokeWidth="2.75"
-                  filter={`url(#glow_${uniqueId})`}
                   animate={{
                     scale: [1, 1.035, 1],
                     opacity: [0.85, 1, 0.85],
@@ -247,15 +243,15 @@ export function RoomAvatarFlair({
                   style={{ transformOrigin: '50px 50px' }}
                 >
                   {/* 0 deg */}
-                  <circle cx="50" cy={50 - ringRadius - 1} r="2.5" fill="#FDE047" filter={`url(#glow_${uniqueId})`} />
+                  <circle cx="50" cy={50 - ringRadius - 1} r="2.5" fill="#FDE047" />
                   {/* 60 deg */}
                   <circle cx={50 + (ringRadius + 1) * 0.866} cy={50 - (ringRadius + 1) * 0.5} r="2" fill="#F97316" />
                   {/* 120 deg */}
-                  <circle cx={50 + (ringRadius + 1) * 0.866} cy={50 + (ringRadius + 1) * 0.5} r="2.5" fill="#FDE047" filter={`url(#glow_${uniqueId})`} />
+                  <circle cx={50 + (ringRadius + 1) * 0.866} cy={50 + (ringRadius + 1) * 0.5} r="2.5" fill="#FDE047" />
                   {/* 180 deg */}
                   <circle cx="50" cy={50 + ringRadius + 1} r="2" fill="#EF4444" />
                   {/* 240 deg */}
-                  <circle cx={50 - (ringRadius + 1) * 0.866} cy={50 + (ringRadius + 1) * 0.5} r="2.5" fill="#FDE047" filter={`url(#glow_${uniqueId})`} />
+                  <circle cx={50 - (ringRadius + 1) * 0.866} cy={50 + (ringRadius + 1) * 0.5} r="2.5" fill="#FDE047" />
                   {/* 300 deg */}
                   <circle cx={50 - (ringRadius + 1) * 0.866} cy={50 - (ringRadius + 1) * 0.5} r="2" fill="#F97316" />
                 </motion.g>
@@ -279,12 +275,11 @@ export function RoomAvatarFlair({
                     stroke={`url(#cyberCyan_${uniqueId})`}
                     strokeWidth="1.6"
                     strokeDasharray="18 6 4 6"
-                    filter={`url(#glow_${uniqueId})`}
                   />
                   {/* Outer Orbit Nodes at 0° and 180° */}
-                  <circle cx="50" cy={50 - (ringRadius + 2.5)} r="2.4" fill="#06B6D4" filter={`url(#glow_${uniqueId})`} />
+                  <circle cx="50" cy={50 - (ringRadius + 2.5)} r="2.4" fill="#06B6D4" />
                   <circle cx="50" cy={50 - (ringRadius + 2.5)} r="1.2" fill="#FFFFFF" />
-                  <circle cx="50" cy={50 + (ringRadius + 2.5)} r="2.4" fill="#06B6D4" filter={`url(#glow_${uniqueId})`} />
+                  <circle cx="50" cy={50 + (ringRadius + 2.5)} r="2.4" fill="#06B6D4" />
                   <circle cx="50" cy={50 + (ringRadius + 2.5)} r="1.2" fill="#FFFFFF" />
                 </motion.g>
 
@@ -370,7 +365,6 @@ export function RoomAvatarFlair({
                   fill="none"
                   stroke={`url(#voidGrad_${uniqueId})`}
                   strokeWidth="2.8"
-                  filter={`url(#glow_${uniqueId})`}
                   animate={{
                     scale: [1, 1.03, 1],
                     opacity: [0.85, 1, 0.85],
@@ -469,7 +463,6 @@ export function RoomAvatarFlair({
                   fill="none"
                   stroke={`url(#zenGrad_${uniqueId})`}
                   strokeWidth="2.5"
-                  filter={`url(#glow_${uniqueId})`}
                   animate={{
                     scale: [1, 1.025, 1],
                     opacity: [0.9, 1, 0.9],
@@ -519,4 +512,6 @@ export function RoomAvatarFlair({
       )}
     </div>
   );
-}
+});
+
+RoomAvatarFlair.displayName = 'RoomAvatarFlair';
