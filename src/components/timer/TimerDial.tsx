@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { PomodoroPreset } from '../../types';
 
 interface BezelTick {
   index: number;
@@ -82,6 +83,8 @@ interface TimerDialProps {
   shouldReduceMotion?: boolean;
   timerMode: 'stopwatch' | 'countdown' | 'pomodoro';
   onStartCountdownEdit?: () => void;
+  pomodoroPreset?: PomodoroPreset;
+  onSelectPomodoroPreset?: (preset: PomodoroPreset) => void;
 }
 
 const RADIUS = 124;
@@ -99,6 +102,8 @@ export const TimerDial = React.memo(function TimerDial({
   shouldReduceMotion = false,
   timerMode,
   onStartCountdownEdit,
+  pomodoroPreset,
+  onSelectPomodoroPreset,
 }: TimerDialProps) {
   const safePercent = Math.max(0, Math.min(100, ringPercent || 0));
   const strokeDashoffset = CIRCUMFERENCE - (safePercent / 100) * CIRCUMFERENCE;
@@ -184,6 +189,29 @@ export const TimerDial = React.memo(function TimerDial({
             <span className="font-mono tabular-nums inline-block text-center">{displayTime}</span>
           )}
         </div>
+
+        {/* Pomodoro Presets inside the Dial (clean, zero layout shift) */}
+        {timerMode === 'pomodoro' && !isStudying && (
+          <div className="inline-flex items-center p-0.5 mt-2 rounded-full bg-fg/[0.05] border border-fg/[0.1] shadow-xs pointer-events-auto z-20">
+            {(['25/5', '50/10'] as const).map((preset) => {
+              const isActive = pomodoroPreset === preset;
+              return (
+                <button
+                  key={preset}
+                  type="button"
+                  onClick={() => onSelectPomodoroPreset?.(preset)}
+                  className={`px-2.5 py-0.5 text-xs font-mono rounded-full transition-all cursor-pointer ${
+                    isActive
+                      ? "bg-fg/[0.12] [[data-theme='paper']_&]:bg-[var(--surface)] border border-fg/20 [[data-theme='paper']_&]:border-[var(--border-strong)] text-[var(--text)] font-semibold shadow-xs"
+                      : 'text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-fg/[0.05] border border-transparent'
+                  }`}
+                >
+                  {preset}
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         {/* Status Line in sentence case with small dot */}
         <div className="flex items-center justify-center gap-1.5 mt-2">

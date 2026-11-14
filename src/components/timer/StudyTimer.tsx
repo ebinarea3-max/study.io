@@ -1075,27 +1075,6 @@ export function StudyTimer() {
             })}
           </div>
 
-          {/* Pomodoro interval presets on their own row under mode selector */}
-          {timerMode === 'pomodoro' && (
-            <div className="flex items-center justify-center gap-1.5 mt-1.5">
-              {(['25/5', '50/10'] as const).map((preset) => (
-                <button
-                  key={preset}
-                  type="button"
-                  disabled={isStudying}
-                  onClick={() => { if (!isStudying) setPomodoroPreset(preset); }}
-                  className={`px-3 py-1 text-xs font-mono rounded-full border transition-colors ${
-                    pomodoroPreset === preset
-                      ? "bg-fg/[0.1] [[data-theme='paper']_&]:bg-[var(--surface)] border-fg/20 [[data-theme='paper']_&]:border-[var(--border-strong)] text-[var(--text)] font-medium shadow-card"
-                      : 'bg-transparent border-fg/[0.06] text-[var(--text-dim)] hover:text-[var(--text)]'
-                  } ${isStudying ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
-                >
-                  {preset}
-                </button>
-              ))}
-            </div>
-          )}
-
           {/* 2. Subject chip - quiet skeleton while study mode is loading; hidden in Focus mode; normal in Subject mode */}
           {studyModeLoading ? (
             <div className="relative mt-2 sm:mt-2.5 mb-1 z-30">
@@ -1225,6 +1204,8 @@ export function StudyTimer() {
             shouldReduceMotion={shouldReduceMotion}
             timerMode={timerMode}
             onStartCountdownEdit={() => setIsEditingCountdown(true)}
+            pomodoroPreset={pomodoroPreset}
+            onSelectPomodoroPreset={setPomodoroPreset}
           />
         </motion.div>
       </div>
